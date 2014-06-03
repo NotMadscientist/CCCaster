@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="netLink" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="libnetLink" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="obj/Debug/" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="libnetLink" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="obj/Release/" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add directory="include" />
+		</Compiler>
+		<Unit filename="include/netlink/config.h" />
+		<Unit filename="include/netlink/core.h" />
+		<Unit filename="include/netlink/exception.code.inc" />
+		<Unit filename="include/netlink/exception.h" />
+		<Unit filename="include/netlink/netlink.h" />
+		<Unit filename="include/netlink/release_manager.h" />
+		<Unit filename="include/netlink/release_manager.inline.h" />
+		<Unit filename="include/netlink/smart_buffer.h" />
+		<Unit filename="include/netlink/smart_buffer.inline.h" />
+		<Unit filename="include/netlink/socket.h" />
+		<Unit filename="include/netlink/socket.inline.h" />
+		<Unit filename="include/netlink/socket_group.h" />
+		<Unit filename="include/netlink/socket_group.inline.h" />
+		<Unit filename="include/netlink/util.h" />
+		<Unit filename="include/netlink/util.inline.h" />
+		<Unit filename="src/core.cc" />
+		<Unit filename="src/smart_buffer.cc" />
+		<Unit filename="src/socket.cc" />
+		<Unit filename="src/socket_group.cc" />
+		<Unit filename="src/util.cc" />
+		<Extensions>
+			<envvars />
+			<code_completion />
+			<lib_finder disable_auto="1" />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

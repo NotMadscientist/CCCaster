@@ -1,0 +1,166 @@
+# depslib dependency file v1.0
+1341716642 source:/home/pedro/Dropbox/Develop/netLink/src/socket.cc
+	"netlink/socket.h"
+	<string.h>
+	<stdio.h>
+
+1342370725 /home/pedro/Dropbox/Develop/netLink/include/netlink/socket.h
+	"netlink/core.h"
+	<netlink/socket.inline.h>
+
+1341709054 /home/pedro/Dropbox/Develop/netLink/include/netlink/core.h
+	"netlink/config.h"
+	<winsock2.h>
+	<ws2tcpip.h>
+	<arpa/inet.h>
+	<sys/fcntl.h>
+	<sys/types.h>
+	<sys/socket.h>
+	<sys/unistd.h>
+	<sys/time.h>
+	<netdb.h>
+	<sys/ioctl.h>
+	<errno.h>
+	<string>
+	"netlink/exception.h"
+	"netlink/release_manager.h"
+	"netlink/util.h"
+
+1342288942 /home/pedro/Dropbox/Develop/netLink/include/netlink/config.h
+	<string.h>
+
+1342371492 /home/pedro/Dropbox/Develop/netLink/include/netlink/socket.inline.h
+	<netlink/socket.h>
+
+1342370807 /home/pedro/Dropbox/Develop/netLink/include/netlink/exception.h
+	"netlink/core.h"
+	"netlink/exception.code.inc"
+
+1342284163 /home/pedro/Dropbox/Develop/netLink/include/netlink/exception.code.inc
+
+1342370900 /home/pedro/Dropbox/Develop/netLink/include/netlink/release_manager.h
+	<netlink/core.h>
+	<vector>
+	"netlink/release_manager.inline.h"
+
+1340455289 /home/pedro/Dropbox/Develop/netLink/include/netlink/release_manager.inline.h
+
+1342284991 /home/pedro/Dropbox/Develop/netLink/include/netlink/util.h
+	<netlink/core.h>
+	<netlink/util.inline.h>
+
+1341682493 source:/home/pedro/Dropbox/Develop/netLink/src/socket_group.cc
+	<netlink/socket_group.h>
+
+1342371002 /home/pedro/Dropbox/Develop/netLink/include/netlink/socket_group.h
+	<netlink/core.h>
+	<netlink/socket.h>
+	<netlink/socket_group.inline.h>
+
+1342371517 /home/pedro/Dropbox/Develop/netLink/include/netlink/socket_group.inline.h
+	<netlink/socket_group.h>
+
+1341601949 source:/home/pedro/Dropbox/Develop/netLink/src/util.cc
+	<netlink/util.h>
+
+1342285022 /home/pedro/Dropbox/Develop/netLink/include/netlink/util.inline.h
+
+1341708432 source:/home/pedro/Dropbox/Develop/netLink/src/core.cc
+	<netlink/core.h>
+	<iostream>
+
+1342288255 source:/home/pedro/Dropbox/Develop/netLink/src/smart_buffer.cc
+	<netlink/smart_buffer.h>
+
+1342352522 /home/pedro/Dropbox/Develop/netLink/include/netlink/smart_buffer.h
+	<stdlib.h>
+	<netlink/core.h>
+	<netlink/util.h>
+	<netlink/socket.h>
+	<netlink/smart_buffer.inline.h>
+
+1342352615 /home/pedro/Dropbox/Develop/netLink/include/netlink/smart_buffer.inline.h
+
+1342730738 source:/home/pedro/develop/netLink/src/core.cc
+	<netlink/core.h>
+
+1389202759 /home/pedro/develop/netLink/include/netlink/core.h
+	"netlink/config.h"
+	<winsock2.h>
+	<ws2tcpip.h>
+	<arpa/inet.h>
+	<sys/fcntl.h>
+	<sys/types.h>
+	<sys/socket.h>
+	<sys/unistd.h>
+	<sys/time.h>
+	<netdb.h>
+	<sys/ioctl.h>
+	<errno.h>
+	<string>
+	"netlink/exception.h"
+	"netlink/release_manager.h"
+	"netlink/util.h"
+
+1348331664 /home/pedro/develop/netLink/include/netlink/config.h
+	<string.h>
+
+1342370807 /home/pedro/develop/netLink/include/netlink/exception.h
+	"netlink/core.h"
+	"netlink/exception.code.inc"
+
+1342284163 /home/pedro/develop/netLink/include/netlink/exception.code.inc
+
+1366274682 /home/pedro/develop/netLink/include/netlink/release_manager.h
+	<netlink/core.h>
+	<vector>
+	"netlink/release_manager.inline.h"
+
+1366274829 /home/pedro/develop/netLink/include/netlink/release_manager.inline.h
+
+1342284991 /home/pedro/develop/netLink/include/netlink/util.h
+	<netlink/core.h>
+	<netlink/util.inline.h>
+
+1342285022 /home/pedro/develop/netLink/include/netlink/util.inline.h
+
+1341682493 source:/home/pedro/develop/netLink/src/socket_group.cc
+	<netlink/socket_group.h>
+
+1342371002 /home/pedro/develop/netLink/include/netlink/socket_group.h
+	<netlink/core.h>
+	<netlink/socket.h>
+	<netlink/socket_group.inline.h>
+
+1342370725 /home/pedro/develop/netLink/include/netlink/socket.h
+	"netlink/core.h"
+	<netlink/socket.inline.h>
+
+1366276925 /home/pedro/develop/netLink/include/netlink/socket.inline.h
+	<netlink/socket.h>
+
+1366281352 /home/pedro/develop/netLink/include/netlink/socket_group.inline.h
+	<netlink/socket_group.h>
+
+1341601949 source:/home/pedro/develop/netLink/src/util.cc
+	<netlink/util.h>
+
+1386188084 source:/home/pedro/develop/netLink/src/smart_buffer.cc
+	<netlink/smart_buffer.h>
+
+1386187985 /home/pedro/develop/netLink/include/netlink/smart_buffer.h
+	<stdlib.h>
+	<string.h>
+	<netlink/core.h>
+	<netlink/util.h>
+	<netlink/socket.h>
+	<netlink/smart_buffer.inline.h>
+
+1366281462 /home/pedro/develop/netLink/include/netlink/smart_buffer.inline.h
+	<netlink/smart_buffer.h>
+
+1386185970 source:/home/pedro/develop/netLink/src/socket.cc
+	"netlink/socket.h"
+	<string.h>
+	<stdio.h>
+

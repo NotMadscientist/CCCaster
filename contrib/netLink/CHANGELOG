@@ -1,0 +1,29 @@
+1.0.0-pre-6
+===========
+	* Fixed: getTime() return type changed to unsigned long long
+
+1.0.0-pre-5
+===========
+	* Compiler: now MingW compatible.
+	* Added copy constructor and copy operator to SmartBuffer class.
+	* Fixed: (remotely) possible memory leaks in NL::Socket::accept and NL::SmartBuffer::read
+
+1.0.0-pre-4
+===========
+	* Fixed: memory leak in NL::Socket::initSocket(): some blocks of addrinfo were not completely freed
+
+1.0.0-pre-3
+===========
+	* Fixed example: NL::init() was missing in udpDirectChat.cc
+	* Added sourceForge logo to documentation
+
+1.0.0-pre-2
+===========
+	* Added SmartBuffer Class
+	* Added webGet.cc example
+	* Documentation improvements
+
+1.0.0-pre-1
+===========
+	* First v1 release
+
