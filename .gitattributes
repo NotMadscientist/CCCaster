@@ -1,0 +1,13 @@
+# Normalize line-endings
+* text eol=lf
+
+# Binary files
+*.exe binary
+*.zip binary
+*.a binary
+*.lib binary
+*.png binary
+
+# Text files
+*.txt text eol=crlf
+*.CT text eol=crlf
