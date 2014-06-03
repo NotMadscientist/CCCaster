@@ -1,54 +1,74 @@
-#include <cereal/types/unordered_map.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/types/string.hpp>
-#include <cereal/archives/binary.hpp>
+#include "Socket.h"
+#include "Thread.h"
 
+#include <cstdlib>
 #include <cstdio>
-#include <cctype>
-#include <sstream>
-#include <string>
 
 using namespace std;
-using namespace cereal;
 
-struct MsgVersion
+class Server : public Socket
 {
-    uint8_t major, minor;
-    string sub;
+    CondVar acceptCond;
+    uint32_t acceptId;
 
-    void serialize ( BinaryOutputArchive& ar )
+protected:
+    void accepted ( uint32_t id )
     {
-        ar ( major, minor, sub );
+        LOCK ( mutex );
+        acceptId = id;
+        acceptCond.signal();
     }
 
-    void deserialize ( BinaryInputArchive& ar )
+public:
+    Server() : acceptId ( 0 ) {}
+
+    uint32_t accept()
     {
-        ar ( major, minor, sub );
+        LOCK ( mutex );
+        if ( !acceptId )
+            acceptCond.wait ( mutex );
+        return acceptId;
+    }
+};
+
+class Client : public Socket
+{
+    CondVar connectCond;
+
+protected:
+    void connected()
+    {
+        LOCK ( mutex );
+        connectCond.signal();
+    }
+
+public:
+    void wait()
+    {
+        LOCK ( mutex );
+        if ( !isConnected() )
+            connectCond.wait ( mutex );
     }
 };
 
 int main ( int argc, char *argv[] )
 {
-    stringstream ss ( stringstream::in | stringstream::out | stringstream::binary );
+    if ( argc == 2 )
+    {
+        Server server;
+        server.listen ( atoi ( argv[1] ) );
+        uint32_t id = server.accept();
 
-    BinaryOutputArchive boa ( ss );
+        printf ( "%s\n", server.remoteAddr ( id ).c_str() );
+    }
+    else if ( argc == 3 )
+    {
+        Client client;
+        client.connect ( argv[1], atoi ( argv[2] ) );
+        client.wait();
 
-    MsgVersion v = { 1, 2, "asdfa" };
-
-    v.serialize ( boa );
-
-    BinaryInputArchive bia ( ss );
-
-    MsgVersion u;
-    u.deserialize ( bia );
-
-    printf ( "sizeof ( size_t ) = %d\n", sizeof ( size_t ) );
-
-    for ( char c : ss.str() )
-        printf ( "%02x ", ( int ) c );
-    printf ( "\n" );
-
-    printf ( "%d %d %s\n", u.major, u.minor, u.sub.c_str() );
+        printf ( "%s\n", client.remoteAddr().c_str() );
+    }
 
     return 0;
 }

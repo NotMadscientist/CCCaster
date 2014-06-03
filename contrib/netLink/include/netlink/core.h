@@ -40,7 +40,7 @@
 #if defined(_WIN32) || defined(__WIN32__) || defined(_MSC_VER)
 
     #define OS_WIN32
-    #define _WIN32_WINNT 0x501
+    // #define _WIN32_WINNT 0x501
 
 
     #include <winsock2.h>
@@ -50,7 +50,7 @@
     // Link to Ws2_32.lib library
 
 
-	#define snprintf _snprintf
+    // #define snprintf _snprintf
 
 #else
 

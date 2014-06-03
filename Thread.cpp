@@ -1,4 +1,4 @@
-#include "Threading.h"
+#include "Thread.h"
 
 void *Thread::func ( void *ptr )
 {

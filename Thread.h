@@ -1,6 +1,9 @@
 #pragma once
 
+#include <sys/time.h>
 #include <pthread.h>
+
+#include <unordered_set>
 
 inline timespec gettimeoffset ( long milliseconds )
 {

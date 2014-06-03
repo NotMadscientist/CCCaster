@@ -1,0 +1,16 @@
+*.o
+*.swp
+*.kate-swp
+*.log
+*.cfg
+*.exe
+*.res
+*.session
+.svn
+.directory
+.unison*
+.depend
+Thumbs.db
+cccaster*
+version.h
+deploy
