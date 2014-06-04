@@ -12,5 +12,5 @@
 .depend
 Thumbs.db
 cccaster*
-version.h
+Version.h
 deploy

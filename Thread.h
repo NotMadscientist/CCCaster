@@ -24,11 +24,15 @@ class Thread
     static void *func ( void *ptr );
 
 public:
+
     inline Thread() : running ( false ) {}
     virtual ~Thread() { join(); }
 
-    inline void start()
+    virtual void start()
     {
+        if ( running )
+            return;
+
         running = true;
 
         pthread_attr_t attr;
@@ -37,16 +41,16 @@ public:
         pthread_attr_destroy ( &attr );
     }
 
-    inline void join()
+    virtual void join()
     {
-        if ( running )
-        {
-            pthread_join ( thread, 0 );
-            running = false;
-        }
+        if ( !running )
+            return;
+
+        pthread_join ( thread, 0 );
+        running = false;
     }
 
-    inline bool active() const { return running; }
+    inline bool isRunning() const { return running; }
 
     virtual void run() = 0;
 };
@@ -56,7 +60,7 @@ public:
     {                                                           \
         CONTEXT& context;                                       \
     public:                                                     \
-        NAME ( CONTEXT& context ) : context ( context ) {};     \
+        NAME ( CONTEXT& context ) : context ( context ) {}      \
         void run();                                             \
     }
 
@@ -65,9 +69,13 @@ class Mutex
     pthread_mutex_t mutex;
 
 public:
+
     inline Mutex()
     {
-        pthread_mutex_init ( &mutex, 0 );
+        pthread_mutexattr_t attr;
+        pthread_mutexattr_init ( &attr );
+        pthread_mutexattr_settype ( &attr, PTHREAD_MUTEX_RECURSIVE );
+        pthread_mutex_init ( &mutex, &attr );
     }
 
     inline ~Mutex()
@@ -93,6 +101,7 @@ class Lock
     Mutex& mutex;
 
 public:
+
     inline Lock ( Mutex& mutex ) : mutex ( mutex )
     {
         mutex.lock();
@@ -111,6 +120,7 @@ class CondVar
     pthread_cond_t cond;
 
 public:
+
     inline CondVar()
     {
         pthread_cond_init ( &cond, 0 );

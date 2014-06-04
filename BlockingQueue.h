@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Threading.h"
+#include "Thread.h"
 
 #include <list>
 #include <unordered_set>
@@ -12,6 +12,7 @@ template<typename T> class BlockingQueue
     mutable CondVar cond;
 
 public:
+
     void push ( const T& t )
     {
         LOCK ( mutex );
@@ -81,11 +82,12 @@ public:
 template<typename T> class BlockingSetQueue
 {
     std::list<T> queue;
-    std::tr1::unordered_set<T> set;
+    std::unordered_set<T> set;
     mutable Mutex mutex;
     mutable CondVar cond;
 
 public:
+
     bool push ( const T& t )
     {
         LOCK ( mutex );
@@ -178,6 +180,7 @@ template<typename T, std::size_t N> class StaticBlockingQueue
     mutable CondVar cond;
 
 public:
+
     StaticBlockingQueue() : count ( 0 ), head ( 0 ), tail ( 0 ) {}
 
     void push ( const T& t )

@@ -35,6 +35,7 @@ OBJECTS = $(CPP_SRCS:.cpp=.o) $(LIB_CPP_SRCS:.cc=.o) $(LIB_C_CSRCS:.c=.o)
 BUILD_TYPE = Debug
 
 all: STRIP = touch
+all: DEFINES += -D_GLIBCXX_DEBUG
 all: CC_FLAGS += -g
 all: binary
 
@@ -42,24 +43,27 @@ binary: $(BINARY)
 depend: .depend
 
 $(BINARY): depend $(OBJECTS) icon.res
+	@echo
 	$(CXX) -o $@ $(OBJECTS) $(LD_FLAGS) icon.res
+	@echo
 	$(STRIP) $(BINARY)
 	icacls $(BINARY) /grant Everyone:F
-	@echo
 
 icon.res: icon.rc icon.ico
-	windres -F pe-i386 icon.rc -O coff -o icon.res
 	@echo
+	windres -F pe-i386 icon.rc -O coff -o icon.res
+
+Version.h:
+	date +"#define BUILD %s" > Version.h
 
 .PHONY: clean check trim format count
 
-.depend:
-	date +"#define BUILD %s" > version.h
-	$(CXX) $(CC_FLAGS) -std=c++11 -MM $(wildcard *.cpp) > .depend
+.depend: Version.h
+	$(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp > .depend
 	@echo
 
 clean:
-	rm -f version.h .depend *.res *.o *.exe *.zip
+	rm -f Version.h .depend *.res *.o *.exe *.zip
 	rm -rf contrib/netLink/src/*.o
 
 check:
