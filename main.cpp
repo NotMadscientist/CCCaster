@@ -77,14 +77,14 @@ int main ( int argc, char *argv[] )
     {
         if ( argc == 2 )
         {
-            Server server;
-            server.listen ( atoi ( argv[1] ) );
+            shared_ptr<Server> server ( new Server() );
+            server->listen ( atoi ( argv[1] ) );
 
             for ( ;; )
             {
-                uint32_t id = server.accept();
+                uint32_t id = server->accept();
 
-                printf ( "%s [%08x]\n", server.remoteAddr ( id ).c_str(), id );
+                printf ( "%s [%08x]\n", server->remoteAddr ( id ).c_str(), id );
 
                 Sleep ( 300 );
 
@@ -95,18 +95,17 @@ int main ( int argc, char *argv[] )
         }
         else if ( argc == 3 )
         {
-            vector<Client> clients;
+            vector<shared_ptr<Client>> clients;
 
             for ( ;; )
             {
-                printf ( "resizing\n" );
-                clients.resize ( clients.size() + 1 );
-                printf ( "resized\n" );
-                clients.back().connect ( argv[1], atoi ( argv[2] ) );
-                clients.back().wait();
+                shared_ptr<Client> client ( new Client() );
+                clients.push_back ( client );
+                client->connect ( argv[1], atoi ( argv[2] ) );
+                client->wait();
 
-                if ( clients.back().isConnected() )
-                    printf ( "%s\n", clients.back().remoteAddr().c_str() );
+                if ( client->isConnected() )
+                    printf ( "%s\n", client->remoteAddr().c_str() );
                 else
                     printf ( "failed to connect\n" );
 
