@@ -1,4 +1,5 @@
 #include "Socket.h"
+#include "Log.h"
 
 using namespace std;
 
@@ -17,6 +18,8 @@ Socket::Socket()
     , listenThread ( *this )
 {
     ++numSocketInstances;
+
+    LOG ( "numSocketInstances=%d", numSocketInstances );
 }
 
 Socket::~Socket()
@@ -25,36 +28,58 @@ Socket::~Socket()
 
     --numSocketInstances;
 
+    LOG ( "numSocketInstances=%d", numSocketInstances );
+
     if ( numSocketInstances == 0 )
+    {
+        LOG ( "reaperThread.join()" );
         reaperThread.join();
+    }
 }
 
 void Socket::Accept::exec ( NL::Socket *serverSocket, NL::SocketGroup *, void * )
 {
-    Lock lock ( context.mutex );
-
     NL::Socket *socket = serverSocket->accept();
     uint32_t id = ( uint32_t ) socket;
+
+    LOG ( "id=%08x", id );
+
+    Lock lock ( context.mutex );
+
     context.acceptedSockets[id] = shared_ptr<NL::Socket> ( socket );
     context.socketGroup->add ( socket );
+
+    LOG ( "Socket::accepted ( %08x )", id );
     context.accepted ( id );
 }
 
 void Socket::Disconnect::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
 {
+    uint32_t id = ( uint32_t ) socket;
+
+    LOG ( "id=%08x", id );
+
     Lock lock ( context.mutex );
 
-    uint32_t id = ( uint32_t ) socket;
     context.socketGroup->remove ( socket );
     context.acceptedSockets.erase ( id );
     if ( context.tcpSocket.get() == socket )
         context.tcpSocket.reset();
+
+    LOG ( "Socket::disconnected ( %08x )", id );
     context.disconnected ( id );
 }
 
 void Socket::Read::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
 {
+    uint32_t id = ( uint32_t ) socket;
+
+    LOG ( "id=%08x", id );
+
     Lock lock ( context.mutex );
+
+    LOG ( "Socket::received ( %08x, bytes, len )", id );
+    // context.received
 }
 
 void Socket::ListenThread::start()
@@ -85,7 +110,7 @@ void Socket::ListenThread::run()
         }
         catch ( const NL::Exception& e )
         {
-            // LOG ( "[%d] %s", e.nativeErrorCode(), e.what() );
+            LOG ( "[%d] %s", e.nativeErrorCode(), e.what() );
             break;
         }
     }
@@ -106,8 +131,12 @@ void Socket::ConnectThread::run()
     }
     catch ( const NL::Exception& e )
     {
-        // LOG ( "[%d] %s", e.nativeErrorCode(), e.what() );
+        LOG ( "[%d] %s", e.nativeErrorCode(), e.what() );
     }
+
+    uint32_t id = ( uint32_t ) socket.get();
+    if ( !id )
+        return;
 
     Lock lock ( context.mutex );
     if ( !context.tcpSocket )
@@ -115,7 +144,9 @@ void Socket::ConnectThread::run()
         context.tcpSocket = socket;
         context.addSocketToGroup ( socket );
     }
-    context.connected ( ( uint32_t ) socket.get() );
+
+    LOG ( "Socket::connected ( %08x )", id );
+    context.connected ( id );
 }
 
 void Socket::ReaperThread::run()
@@ -139,6 +170,8 @@ void Socket::ReaperThread::join()
 
 void Socket::addSocketToGroup ( const shared_ptr<NL::Socket>& socket )
 {
+    LOG ( "id=%08x", ( uint32_t ) socket.get() );
+
     if ( !socketGroup )
     {
         socketGroup.reset ( new NL::SocketGroup() );
@@ -154,6 +187,8 @@ void Socket::addSocketToGroup ( const shared_ptr<NL::Socket>& socket )
 
 void Socket::listen ( int port )
 {
+    LOG ( "port=%d", port );
+
     serverSocket.reset ( new NL::Socket ( port ) );
     udpSocket.reset ( new NL::Socket ( port, NL::UDP ) );
 
@@ -163,6 +198,8 @@ void Socket::listen ( int port )
 
 void Socket::connect ( string addr, int port )
 {
+    LOG ( "addr=%s, port=%d", addr.c_str(), port );
+
     shared_ptr<ConnectThread> connectThread ( new ConnectThread ( *this, addr, port ) );
     connectThread->start();
     connectingThreads.push ( connectThread );
@@ -170,6 +207,8 @@ void Socket::connect ( string addr, int port )
 
 void Socket::disconnect ( uint32_t id )
 {
+    LOG ( "id=%08x", id );
+
     LOCK ( mutex );
 
     if ( id == 0 || tcpSocket.get() )

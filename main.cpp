@@ -1,5 +1,6 @@
 #include "Socket.h"
 #include "Thread.h"
+#include "Log.h"
 
 #include <windows.h>
 
@@ -24,7 +25,7 @@ protected:
 
     void disconnected ( uint32_t id )
     {
-        printf ( "disconnected\n" );
+        LOG ( "disconnected" );
     }
 
 public:
@@ -56,22 +57,28 @@ protected:
 
     void disconnected ( uint32_t id )
     {
-        printf ( "disconnected\n" );
+        LOG ( "disconnected" );
     }
 
 public:
 
-    void wait()
+    void wait ( long timeout = 0 )
     {
         LOCK ( mutex );
         while ( !isConnected() )
-            connectCond.wait ( mutex );
+        {
+            if ( timeout )
+                connectCond.wait ( mutex, timeout );
+            else
+                connectCond.wait ( mutex );
+        }
     }
 };
 
 int main ( int argc, char *argv[] )
 {
     NL::init();
+    Log::open();
 
     try
     {
@@ -80,24 +87,24 @@ int main ( int argc, char *argv[] )
             shared_ptr<Server> server ( new Server() );
             server->listen ( atoi ( argv[1] ) );
 
-            for ( ;; )
+            // for ( ;; )
             {
                 uint32_t id = server->accept();
 
-                printf ( "%s [%08x]\n", server->remoteAddr ( id ).c_str(), id );
+                LOG ( "%s [%08x]", server->remoteAddr ( id ).c_str(), id );
 
-                Sleep ( 300 );
+                Sleep ( 3000 );
 
                 // server.disconnect ( id );
 
-                // Sleep ( 3000 );
+                // Sleep ( 1000 );
             }
         }
         else if ( argc == 3 )
         {
             vector<shared_ptr<Client>> clients;
 
-            for ( ;; )
+            // for ( ;; )
             {
                 shared_ptr<Client> client ( new Client() );
                 clients.push_back ( client );
@@ -105,22 +112,23 @@ int main ( int argc, char *argv[] )
                 client->wait();
 
                 if ( client->isConnected() )
-                    printf ( "%s\n", client->remoteAddr().c_str() );
+                    LOG ( "%s", client->remoteAddr().c_str() );
                 else
-                    printf ( "failed to connect\n" );
+                    LOG ( "connect failed" );
 
                 Sleep ( 1000 );
 
-                // client.disconnect();
+                client->disconnect();
 
-                // Sleep ( 1000 );
+                Sleep ( 1000 );
             }
         }
     }
     catch ( const NL::Exception& e )
     {
-        fprintf ( stderr, "[%d] %s", e.nativeErrorCode(), e.what() );
+        LOG ( "[%d] %s", e.nativeErrorCode(), e.what() );
     }
 
+    Log::close();
     return 0;
 }
