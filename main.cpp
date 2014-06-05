@@ -87,6 +87,7 @@ public:
 
 int main ( int argc, char *argv[] )
 {
+    srand ( time ( 0 ) );
     NL::init();
     Log::open();
 
@@ -103,7 +104,7 @@ int main ( int argc, char *argv[] )
 
                 LOG ( "%s [%08x]", server->remoteAddr ( id ).c_str(), id );
 
-                server->send ( "Hi I'm the server", 17, id );
+                server->sendReliable ( "Hi, I'm the server", 17, id );
 
                 Sleep ( 3000 );
             }
@@ -124,7 +125,7 @@ int main ( int argc, char *argv[] )
                 else
                     LOG ( "Connect failed" );
 
-                client->send ( "Hi I'm the client", 17 );
+                client->send ( "Hi, I'm the client", 17 );
 
                 Sleep ( 1000 );
             }

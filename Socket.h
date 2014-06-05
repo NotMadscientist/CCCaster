@@ -83,6 +83,8 @@ protected:
 
     virtual void received ( char *bytes, std::size_t len, uint32_t id ) {}
 
+    virtual void received ( char *bytes, std::size_t len, const std::string& addr, unsigned port ) {}
+
 public:
 
     Socket();
@@ -91,11 +93,11 @@ public:
     void lock() { mutex.lock(); }
     void unlock() { mutex.unlock(); }
 
-    void listen ( int port );
+    void listen ( unsigned port );
 
-    void connect ( std::string addr, int port );
+    void connect ( std::string addr, unsigned port );
 
-    void relay ( std::string room, std::string server, int port );
+    void relay ( std::string room, std::string server, unsigned port );
 
     void disconnect ( uint32_t id = 0 );
 
@@ -105,7 +107,8 @@ public:
     std::string localAddr() const;
     std::string remoteAddr ( uint32_t id = 0 ) const;
 
-    void send ( char *bytes, std::size_t len, uint32_t id = 0 );
+    void send ( char *bytes, std::size_t len );
+    void sendReliable ( char *bytes, std::size_t len, uint32_t id = 0 );
 
     static void release();
 };

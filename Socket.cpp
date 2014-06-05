@@ -1,9 +1,18 @@
 #include "Socket.h"
 #include "Log.h"
 
+#include <cstdlib>
+
 using namespace std;
 
-#define LISTEN_INTERVAL 1000
+#define LISTEN_INTERVAL     1000
+
+#define UDP_BIND_ATTEMPTS   10
+
+#define PORT_MIN            4096
+#define PORT_MAX            65535
+
+#define RANDOM_PORT         ( PORT_MIN + rand() % ( PORT_MAX - PORT_MIN ) )
 
 BlockingQueue<shared_ptr<Socket::ConnectThread>> Socket::connectingThreads;
 
@@ -57,15 +66,28 @@ void Socket::Disconnect::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
 
 void Socket::Read::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
 {
+    // TODO handle UDP socket id/addr/port addressing
     uint32_t id = ( uint32_t ) socket;
 
     LOG ( "id=%08x", id );
 
     Lock lock ( context.mutex );
 
-    size_t len = socket->read ( context.readBuffer, sizeof ( context.readBuffer ) );
+    size_t len;
+    string addr;
+    unsigned port;
 
-    LOG ( "Socket::received ( [%u bytes], %08x )", len, id );
+    if ( socket->protocol() == NL::TCP )
+    {
+        len = socket->read ( context.readBuffer, sizeof ( context.readBuffer ) );
+        LOG ( "Socket::received ( [%u bytes], %08x )", len, id );
+    }
+    else
+    {
+        len = socket->readFrom ( context.readBuffer, sizeof ( context.readBuffer ), &addr, &port );
+        LOG ( "Socket::received ( [%u bytes], %s, %u )", len, id, addr.c_str(), port );
+    }
+
     context.received ( context.readBuffer, len, id );
 }
 
@@ -114,7 +136,7 @@ void Socket::ConnectThread::run()
     shared_ptr<NL::Socket> socket;
     try
     {
-        socket.reset ( new NL::Socket ( addr, port ) );
+        socket.reset ( new NL::Socket ( addr, port, NL::TCP, NL::IP4 ) );
     }
     catch ( const NL::Exception& e )
     {
@@ -172,20 +194,38 @@ void Socket::addSocketToGroup ( const shared_ptr<NL::Socket>& socket )
     listenThread.start();
 }
 
-void Socket::listen ( int port )
+void Socket::listen ( unsigned port )
 {
     LOG ( "port=%d", port );
 
-    serverSocket.reset ( new NL::Socket ( port ) );
-    udpSocket.reset ( new NL::Socket ( port, NL::UDP ) );
+    serverSocket.reset ( new NL::Socket ( port, NL::TCP, NL::IP4 ) );
+    udpSocket.reset ( new NL::Socket ( port, NL::UDP, NL::IP4 ) );
 
     addSocketToGroup ( serverSocket );
     addSocketToGroup ( udpSocket );
 }
 
-void Socket::connect ( string addr, int port )
+void Socket::connect ( string addr, unsigned port )
 {
     LOG ( "addr=%s, port=%d", addr.c_str(), port );
+
+    for ( int i = 0; i < UDP_BIND_ATTEMPTS; ++i )
+    {
+        try
+        {
+            udpSocket.reset ( new NL::Socket ( addr, port, RANDOM_PORT, NL::IP4 ) );
+            break;
+        }
+        catch ( ... )
+        {
+            if ( i + 1 == UDP_BIND_ATTEMPTS )
+                throw;
+            else
+                continue;
+        }
+    }
+
+    addSocketToGroup ( udpSocket );
 
     shared_ptr<ConnectThread> connectThread ( new ConnectThread ( *this, addr, port ) );
     connectThread->start();
@@ -258,7 +298,15 @@ string Socket::remoteAddr ( uint32_t id ) const
     return "";
 }
 
-void Socket::send ( char *bytes, size_t len, uint32_t id )
+void Socket::send ( char *bytes, size_t len )
+{
+    LOCK ( mutex );
+
+    if ( udpSocket.get() )
+        udpSocket->send ( bytes, len );
+}
+
+void Socket::sendReliable ( char *bytes, size_t len, uint32_t id )
 {
     LOCK ( mutex );
 
