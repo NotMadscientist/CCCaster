@@ -9,32 +9,17 @@ BlockingQueue<shared_ptr<Socket::ConnectThread>> Socket::connectingThreads;
 
 Socket::ReaperThread Socket::reaperThread;
 
-uint32_t Socket::numSocketInstances = 0;
-
 Socket::Socket()
     : socketAcceptCmd ( *this )
     , socketDisconnectCmd ( *this )
     , socketReadCmd ( *this )
     , listenThread ( *this )
 {
-    ++numSocketInstances;
-
-    LOG ( "numSocketInstances=%d", numSocketInstances );
 }
 
 Socket::~Socket()
 {
     disconnect();
-
-    --numSocketInstances;
-
-    LOG ( "numSocketInstances=%d", numSocketInstances );
-
-    if ( numSocketInstances == 0 )
-    {
-        LOG ( "reaperThread.join()" );
-        reaperThread.join();
-    }
 }
 
 void Socket::Accept::exec ( NL::Socket *serverSocket, NL::SocketGroup *, void * )
@@ -274,4 +259,10 @@ string Socket::remoteAddr ( uint32_t id ) const
 void Socket::send ( uint32_t id, char *bytes, size_t len )
 {
     LOCK ( mutex );
+}
+
+void Socket::release()
+{
+    LOG ( "ReaperThread::release()" );
+    reaperThread.release();
 }

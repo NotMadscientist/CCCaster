@@ -65,8 +65,6 @@ class Socket
 
     static ReaperThread reaperThread;
 
-    static uint32_t numSocketInstances;
-
     void addSocketToGroup ( const std::shared_ptr<NL::Socket>& socket );
 
 protected:
@@ -103,4 +101,6 @@ public:
     std::string remoteAddr ( uint32_t id = 0 ) const;
 
     void send ( uint32_t id, char *bytes, std::size_t len );
+
+    static void release();
 };

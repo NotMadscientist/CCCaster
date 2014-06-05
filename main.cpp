@@ -65,7 +65,7 @@ public:
     void wait ( long timeout = 0 )
     {
         LOCK ( mutex );
-        while ( !isConnected() )
+        if ( !isConnected() )
         {
             if ( timeout )
                 connectCond.wait ( mutex, timeout );
@@ -109,7 +109,7 @@ int main ( int argc, char *argv[] )
                 shared_ptr<Client> client ( new Client() );
                 clients.push_back ( client );
                 client->connect ( argv[1], atoi ( argv[2] ) );
-                client->wait();
+                client->wait ( 5000 );
 
                 if ( client->isConnected() )
                     LOG ( "%s", client->remoteAddr().c_str() );
@@ -118,9 +118,9 @@ int main ( int argc, char *argv[] )
 
                 Sleep ( 1000 );
 
-                client->disconnect();
+                // client->disconnect();
 
-                Sleep ( 1000 );
+                // Sleep ( 1000 );
             }
         }
     }
@@ -129,6 +129,7 @@ int main ( int argc, char *argv[] )
         LOG ( "[%d] %s", e.nativeErrorCode(), e.what() );
     }
 
+    Socket::release();
     Log::close();
     return 0;
 }

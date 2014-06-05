@@ -50,6 +50,8 @@ public:
         running = false;
     }
 
+    inline void release() { running = false; }
+
     inline bool isRunning() const { return running; }
 
     virtual void run() = 0;
