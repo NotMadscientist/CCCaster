@@ -25,7 +25,12 @@ protected:
 
     void disconnected ( uint32_t id )
     {
-        LOG ( "disconnected" );
+        LOG ( "Disconnected" );
+    }
+
+    void received ( char *bytes, size_t len, uint32_t id )
+    {
+        LOG ( "Received '%s' from %08x", string ( bytes, len ).c_str(), id );
     }
 
 public:
@@ -57,7 +62,12 @@ protected:
 
     void disconnected ( uint32_t id )
     {
-        LOG ( "disconnected" );
+        LOG ( "Disconnected" );
+    }
+
+    void received ( char *bytes, size_t len, uint32_t id )
+    {
+        LOG ( "Received '%s' from %08x", string ( bytes, len ).c_str(), id );
     }
 
 public:
@@ -93,11 +103,9 @@ int main ( int argc, char *argv[] )
 
                 LOG ( "%s [%08x]", server->remoteAddr ( id ).c_str(), id );
 
+                server->send ( "Hi I'm the server", 17, id );
+
                 Sleep ( 3000 );
-
-                // server.disconnect ( id );
-
-                // Sleep ( 1000 );
             }
         }
         else if ( argc == 3 )
@@ -114,13 +122,11 @@ int main ( int argc, char *argv[] )
                 if ( client->isConnected() )
                     LOG ( "%s", client->remoteAddr().c_str() );
                 else
-                    LOG ( "connect failed" );
+                    LOG ( "Connect failed" );
+
+                client->send ( "Hi I'm the client", 17 );
 
                 Sleep ( 1000 );
-
-                // client->disconnect();
-
-                // Sleep ( 1000 );
             }
         }
     }

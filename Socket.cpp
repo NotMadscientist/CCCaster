@@ -63,8 +63,10 @@ void Socket::Read::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
 
     Lock lock ( context.mutex );
 
-    LOG ( "Socket::received ( %08x, bytes, len )", id );
-    // context.received
+    size_t len = socket->read ( context.readBuffer, sizeof ( context.readBuffer ) );
+
+    LOG ( "Socket::received ( [%u bytes], %08x )", len, id );
+    context.received ( context.readBuffer, len, id );
 }
 
 void Socket::ListenThread::start()
@@ -220,7 +222,7 @@ void Socket::disconnect ( uint32_t id )
 bool Socket::isServer() const
 {
     LOCK ( mutex );
-    return ( ( bool ) serverSocket && !tcpSocket );
+    return ( serverSocket.get() && !tcpSocket );
 }
 
 bool Socket::isConnected() const
@@ -256,9 +258,20 @@ string Socket::remoteAddr ( uint32_t id ) const
     return "";
 }
 
-void Socket::send ( uint32_t id, char *bytes, size_t len )
+void Socket::send ( char *bytes, size_t len, uint32_t id )
 {
     LOCK ( mutex );
+
+    if ( id == 0 || tcpSocket.get() )
+    {
+        tcpSocket->send ( bytes, len );
+    }
+    else
+    {
+        auto it = acceptedSockets.find ( id );
+        if ( it != acceptedSockets.end() && it->second )
+            it->second->send ( bytes, len );
+    }
 }
 
 void Socket::release()

@@ -10,6 +10,8 @@
 #include <memory>
 #include <unordered_map>
 
+#define READ_BUFFER_SIZE ( 1024 * 4096 )
+
 #define NL_SOCKET_GROUP_CMD(NAME)                                   \
     class NAME : public NL::SocketGroupCmd {                        \
         Socket& context;                                            \
@@ -48,6 +50,8 @@ class Socket
         void run();
     };
 
+    char readBuffer[READ_BUFFER_SIZE];
+
     struct ReaperThread : public Thread { void run(); void join(); };
 
     std::shared_ptr<NL::Socket> serverSocket;
@@ -77,7 +81,7 @@ protected:
 
     virtual void disconnected ( uint32_t id ) {}
 
-    virtual void received ( uint32_t id, char *bytes, std::size_t len ) {}
+    virtual void received ( char *bytes, std::size_t len, uint32_t id ) {}
 
 public:
 
@@ -97,10 +101,11 @@ public:
 
     bool isServer() const;
     bool isConnected() const;
+
     std::string localAddr() const;
     std::string remoteAddr ( uint32_t id = 0 ) const;
 
-    void send ( uint32_t id, char *bytes, std::size_t len );
+    void send ( char *bytes, std::size_t len, uint32_t id = 0 );
 
     static void release();
 };
