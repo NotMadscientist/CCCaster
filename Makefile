@@ -1,5 +1,5 @@
 # Main program
-BINARY = cccaster.exe
+BINARY = CCCaster.exe
 
 # Main program sources
 CPP_SRCS = $(wildcard *.cpp)

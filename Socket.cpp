@@ -43,8 +43,8 @@ void Socket::Accept::exec ( NL::Socket *serverSocket, NL::SocketGroup *, void * 
     context.acceptedSockets[id] = shared_ptr<NL::Socket> ( socket );
     context.socketGroup->add ( socket );
 
-    LOG ( "Socket::accepted ( %08x )", id );
-    context.accepted ( id );
+    LOG ( "Socket::tcpAccepted ( %08x )", id );
+    context.tcpAccepted ( id );
 }
 
 void Socket::Disconnect::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
@@ -60,13 +60,12 @@ void Socket::Disconnect::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
     if ( context.tcpSocket.get() == socket )
         context.tcpSocket.reset();
 
-    LOG ( "Socket::disconnected ( %08x )", id );
-    context.disconnected ( id );
+    LOG ( "Socket::tcpDisconnected ( %08x )", id );
+    context.tcpDisconnected ( id );
 }
 
 void Socket::Read::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
 {
-    // TODO handle UDP socket id/addr/port addressing
     uint32_t id = ( uint32_t ) socket;
 
     LOG ( "id=%08x", id );
@@ -74,21 +73,23 @@ void Socket::Read::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
     Lock lock ( context.mutex );
 
     size_t len;
-    string addr;
-    unsigned port;
 
     if ( socket->protocol() == NL::TCP )
     {
         len = socket->read ( context.readBuffer, sizeof ( context.readBuffer ) );
-        LOG ( "Socket::received ( [%u bytes], %08x )", len, id );
+
+        LOG ( "Socket::tcpReceived ( [%u bytes], %08x )", len, id );
+        context.tcpReceived ( context.readBuffer, len, id );
     }
     else
     {
+        string addr;
+        unsigned port;
         len = socket->readFrom ( context.readBuffer, sizeof ( context.readBuffer ), &addr, &port );
-        LOG ( "Socket::received ( [%u bytes], %s, %u )", len, id, addr.c_str(), port );
-    }
 
-    context.received ( context.readBuffer, len, id );
+        LOG ( "Socket::udpReceived ( [%u bytes], %s:%u )", len, addr.c_str(), port );
+        context.udpReceived ( context.readBuffer, len, addr, port );
+    }
 }
 
 void Socket::ListenThread::start()
@@ -154,8 +155,8 @@ void Socket::ConnectThread::run()
         context.addSocketToGroup ( socket );
     }
 
-    LOG ( "Socket::connected ( %08x )", id );
-    context.connected ( id );
+    LOG ( "Socket::tcpConnected ( %08x )", id );
+    context.tcpConnected ( id );
 }
 
 void Socket::ReaperThread::run()
@@ -298,15 +299,7 @@ string Socket::remoteAddr ( uint32_t id ) const
     return "";
 }
 
-void Socket::send ( char *bytes, size_t len )
-{
-    LOCK ( mutex );
-
-    if ( udpSocket.get() )
-        udpSocket->send ( bytes, len );
-}
-
-void Socket::sendReliable ( char *bytes, size_t len, uint32_t id )
+void Socket::tcpSend ( char *bytes, size_t len, uint32_t id )
 {
     LOCK ( mutex );
 
@@ -319,6 +312,19 @@ void Socket::sendReliable ( char *bytes, size_t len, uint32_t id )
         auto it = acceptedSockets.find ( id );
         if ( it != acceptedSockets.end() && it->second )
             it->second->send ( bytes, len );
+    }
+}
+
+void Socket::udpSend ( char *bytes, size_t len, const string& addr, unsigned port )
+{
+    LOCK ( mutex );
+
+    if ( udpSocket.get() )
+    {
+        if ( addr.empty() || !port )
+            udpSocket->send ( bytes, len );
+        else
+            udpSocket->sendTo ( bytes, len, addr, port );
     }
 }
 

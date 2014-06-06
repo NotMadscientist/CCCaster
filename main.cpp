@@ -17,20 +17,25 @@ class Server : public Socket
 
 protected:
 
-    void accepted ( uint32_t id )
+    void tcpAccepted ( uint32_t id )
     {
         acceptId = id;
         acceptCond.signal();
     }
 
-    void disconnected ( uint32_t id )
+    void tcpDisconnected ( uint32_t id )
     {
         LOG ( "Disconnected" );
     }
 
-    void received ( char *bytes, size_t len, uint32_t id )
+    void tcpReceived ( char *bytes, size_t len, uint32_t id )
     {
         LOG ( "Received '%s' from %08x", string ( bytes, len ).c_str(), id );
+    }
+
+    void udpReceived ( char *bytes, size_t len, const string& addr, unsigned port )
+    {
+        LOG ( "Received '%s' from %s:%u", string ( bytes, len ).c_str(), addr.c_str(), port );
     }
 
 public:
@@ -55,19 +60,24 @@ class Client : public Socket
 
 protected:
 
-    void connected ( uint32_t id )
+    void tcpConnected ( uint32_t id )
     {
         connectCond.signal();
     }
 
-    void disconnected ( uint32_t id )
+    void tcpDisconnected ( uint32_t id )
     {
         LOG ( "Disconnected" );
     }
 
-    void received ( char *bytes, size_t len, uint32_t id )
+    void tcpReceived ( char *bytes, size_t len, uint32_t id )
     {
         LOG ( "Received '%s' from %08x", string ( bytes, len ).c_str(), id );
+    }
+
+    void udpReceived ( char *bytes, size_t len, const string& addr, unsigned port )
+    {
+        LOG ( "Received '%s' from %s:%u", string ( bytes, len ).c_str(), addr.c_str(), port );
     }
 
 public:
@@ -104,7 +114,7 @@ int main ( int argc, char *argv[] )
 
                 LOG ( "%s [%08x]", server->remoteAddr ( id ).c_str(), id );
 
-                server->sendReliable ( "Hi, I'm the server", 17, id );
+                server->tcpSend ( "Hi, I'm the server", 18, id );
 
                 Sleep ( 3000 );
             }
@@ -125,7 +135,7 @@ int main ( int argc, char *argv[] )
                 else
                     LOG ( "Connect failed" );
 
-                client->send ( "Hi, I'm the client", 17 );
+                client->udpSend ( "Hi, I'm the client", 18 );
 
                 Sleep ( 1000 );
             }

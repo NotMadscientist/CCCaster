@@ -65,25 +65,22 @@ class Socket
 
     ListenThread listenThread;
 
+    void addSocketToGroup ( const std::shared_ptr<NL::Socket>& socket );
+
     static BlockingQueue<std::shared_ptr<ConnectThread>> connectingThreads;
 
     static ReaperThread reaperThread;
-
-    void addSocketToGroup ( const std::shared_ptr<NL::Socket>& socket );
 
 protected:
 
     mutable Mutex mutex;
 
-    virtual void accepted ( uint32_t id ) {}
+    virtual void tcpAccepted ( uint32_t id ) {}
+    virtual void tcpConnected ( uint32_t id ) {}
+    virtual void tcpDisconnected ( uint32_t id ) {}
 
-    virtual void connected ( uint32_t id ) {}
-
-    virtual void disconnected ( uint32_t id ) {}
-
-    virtual void received ( char *bytes, std::size_t len, uint32_t id ) {}
-
-    virtual void received ( char *bytes, std::size_t len, const std::string& addr, unsigned port ) {}
+    virtual void tcpReceived ( char *bytes, std::size_t len, uint32_t id ) {}
+    virtual void udpReceived ( char *bytes, std::size_t len, const std::string& addr, unsigned port ) {}
 
 public:
 
@@ -94,11 +91,7 @@ public:
     void unlock() { mutex.unlock(); }
 
     void listen ( unsigned port );
-
     void connect ( std::string addr, unsigned port );
-
-    void relay ( std::string room, std::string server, unsigned port );
-
     void disconnect ( uint32_t id = 0 );
 
     bool isServer() const;
@@ -107,8 +100,8 @@ public:
     std::string localAddr() const;
     std::string remoteAddr ( uint32_t id = 0 ) const;
 
-    void send ( char *bytes, std::size_t len );
-    void sendReliable ( char *bytes, std::size_t len, uint32_t id = 0 );
+    void tcpSend ( char *bytes, std::size_t len, uint32_t id = 0 );
+    void udpSend ( char *bytes, std::size_t len, const std::string& addr = "", unsigned port = 0 );
 
     static void release();
 };
