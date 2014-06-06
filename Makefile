@@ -7,7 +7,7 @@ CPP_SRCS = $(wildcard *.cpp)
 # Library sources
 NETLINK_SRCS = $(wildcard contrib/netLink/src/*.cc)
 LIB_CPP_SRCS = $(NETLINK_SRCS)
-LIB_C_CSRCS =
+LIB_C_CSRCS = $(wildcard contrib/*.c)
 
 # Tool chain
 GCC = gcc
@@ -63,8 +63,7 @@ Version.h:
 	@echo
 
 clean:
-	rm -f Version.h .depend *.res *.o *.exe *.zip
-	rm -rf contrib/netLink/src/*.o
+	rm -f Version.h .depend *.res *.exe *.zip $(OBJECTS)
 
 check:
 	cppcheck --enable=all *.cpp *h

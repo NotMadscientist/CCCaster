@@ -33,3 +33,12 @@ inline std::string trim ( std::string str, const std::string& ws = " \t\r\n" )
 
     return str;
 }
+
+// MD5 calculation
+std::string getMD5 ( const char *bytes, std::size_t len );
+std::string getMD5 ( const std::string& str );
+
+// zlib compression
+std::size_t compress ( const char *src, std::size_t srcLen, char *dst, std::size_t dstLen, int level = 9 );
+std::size_t uncompess ( const char *src, std::size_t srcLen, char *dst, std::size_t dstLen );
+std::size_t compressBound ( std::size_t srcLen );
