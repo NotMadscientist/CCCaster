@@ -42,6 +42,9 @@ void Log::open ( const string& name, bool prependPidToName )
 
 void Log::log ( const char *file, int line, const char *func, const char *format, ... )
 {
+    if ( !fd )
+        return;
+
     time_t t;
     time ( &t );
     tm *ts = localtime ( &t );
@@ -64,6 +67,8 @@ void Log::close()
 {
     LOCK ( mutex );
     fclose ( fd );
+    fd = 0;
+    isEnabled = false;
 }
 
 void Log::flush()
