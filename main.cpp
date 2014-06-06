@@ -13,44 +13,42 @@ using namespace std;
 class Server : public Socket
 {
     CondVar acceptCond;
-    uint32_t acceptId;
+    string acceptAddrPort;
 
 protected:
 
-    void tcpAccepted ( uint32_t id )
+    void tcpAccepted ( const std::string& addrPort )
     {
-        acceptId = id;
+        acceptAddrPort = addrPort;
         acceptCond.signal();
     }
 
-    void tcpDisconnected ( uint32_t id )
+    void tcpDisconnected ( const std::string& addrPort )
     {
-        LOG ( "Disconnected" );
+        LOG ( "Disconnected %s", addrPort.c_str() );
     }
 
-    void tcpReceived ( char *bytes, size_t len, uint32_t id )
+    void tcpReceived ( char *bytes, size_t len, const std::string& addrPort )
     {
-        LOG ( "Received '%s' from %08x", string ( bytes, len ).c_str(), id );
+        LOG ( "Received '%s' from '%s'", string ( bytes, len ).c_str(), addrPort.c_str() );
     }
 
     void udpReceived ( char *bytes, size_t len, const string& addr, unsigned port )
     {
-        LOG ( "Received '%s' from %s:%u", string ( bytes, len ).c_str(), addr.c_str(), port );
+        LOG ( "Received '%s' from '%s:%u'", string ( bytes, len ).c_str(), addr.c_str(), port );
     }
 
 public:
 
-    Server() : acceptId ( 0 ) {}
-
-    uint32_t accept()
+    string accept()
     {
-        uint32_t id = 0;
+        string addrPort;
         LOCK ( mutex );
-        if ( !acceptId )
+        if ( acceptAddrPort.empty() )
             acceptCond.wait ( mutex );
-        id = acceptId;
-        acceptId = 0;
-        return id;
+        addrPort = acceptAddrPort;
+        acceptAddrPort.clear();
+        return addrPort;
     }
 };
 
@@ -60,24 +58,24 @@ class Client : public Socket
 
 protected:
 
-    void tcpConnected ( uint32_t id )
+    void tcpConnected ( const std::string& addrPort )
     {
         connectCond.signal();
     }
 
-    void tcpDisconnected ( uint32_t id )
+    void tcpDisconnected ( const std::string& addrPort )
     {
-        LOG ( "Disconnected" );
+        LOG ( "Disconnected %s", addrPort.c_str() );
     }
 
-    void tcpReceived ( char *bytes, size_t len, uint32_t id )
+    void tcpReceived ( char *bytes, size_t len, const std::string& addrPort )
     {
-        LOG ( "Received '%s' from %08x", string ( bytes, len ).c_str(), id );
+        LOG ( "Received '%s' from '%s'", string ( bytes, len ).c_str(), addrPort.c_str() );
     }
 
     void udpReceived ( char *bytes, size_t len, const string& addr, unsigned port )
     {
-        LOG ( "Received '%s' from %s:%u", string ( bytes, len ).c_str(), addr.c_str(), port );
+        LOG ( "Received '%s' from '%s:%u'", string ( bytes, len ).c_str(), addr.c_str(), port );
     }
 
 public:
@@ -110,34 +108,38 @@ int main ( int argc, char *argv[] )
 
             // for ( ;; )
             {
-                uint32_t id = server->accept();
+                string addrPort = server->accept();
 
-                LOG ( "%s [%08x]", server->remoteAddr ( id ).c_str(), id );
+                LOG ( "Accepted %s", addrPort.c_str() );
 
-                server->tcpSend ( "Hi, I'm the server", 18, id );
+                server->tcpSend ( "Hi, I'm the server (TCP)", 24, addrPort );
 
-                Sleep ( 3000 );
+                Sleep ( 1000 );
+
+                server->disconnect ( addrPort );
             }
         }
         else if ( argc == 3 )
         {
-            vector<shared_ptr<Client>> clients;
+            shared_ptr<Client> client ( new Client() );
+            client->tcpConnect ( argv[1], atoi ( argv[2] ) );
+            client->udpConnect ( argv[1], atoi ( argv[2] ) );
 
             // for ( ;; )
             {
-                shared_ptr<Client> client ( new Client() );
-                clients.push_back ( client );
-                client->connect ( argv[1], atoi ( argv[2] ) );
                 client->wait ( 5000 );
 
                 if ( client->isConnected() )
-                    LOG ( "%s", client->remoteAddr().c_str() );
+                    LOG ( "Connected to %s%u", argv[1], atoi ( argv[2] ) );
                 else
                     LOG ( "Connect failed" );
 
-                client->udpSend ( "Hi, I'm the client", 18 );
+                client->tcpSend ( "Hi, I'm the client (TCP)", 24 );
+                client->udpSend ( "Hi, I'm the client (UDP)", 24 );
 
-                Sleep ( 1000 );
+                Sleep ( 5000 );
+
+                client->disconnect();
             }
         }
     }

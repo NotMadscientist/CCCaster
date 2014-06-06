@@ -57,15 +57,13 @@ class Socket
     std::shared_ptr<NL::Socket> serverSocket;
     std::shared_ptr<NL::Socket> tcpSocket, udpSocket;
     std::shared_ptr<NL::SocketGroup> socketGroup;
-    std::unordered_map<uint32_t, std::shared_ptr<NL::Socket>> acceptedSockets;
+    std::unordered_map<std::string, std::shared_ptr<NL::Socket>> acceptedSockets;
 
     NL_SOCKET_GROUP_CMD ( Accept ) socketAcceptCmd;
     NL_SOCKET_GROUP_CMD ( Disconnect ) socketDisconnectCmd;
     NL_SOCKET_GROUP_CMD ( Read ) socketReadCmd;
 
     ListenThread listenThread;
-
-    void addSocketToGroup ( const std::shared_ptr<NL::Socket>& socket );
 
     static BlockingQueue<std::shared_ptr<ConnectThread>> connectingThreads;
 
@@ -75,11 +73,13 @@ protected:
 
     mutable Mutex mutex;
 
-    virtual void tcpAccepted ( uint32_t id ) {}
-    virtual void tcpConnected ( uint32_t id ) {}
-    virtual void tcpDisconnected ( uint32_t id ) {}
+    void addSocketToGroup ( const std::shared_ptr<NL::Socket>& socket );
 
-    virtual void tcpReceived ( char *bytes, std::size_t len, uint32_t id ) {}
+    virtual void tcpAccepted ( const std::string& addrPort ) {}
+    virtual void tcpConnected ( const std::string& addrPort ) {}
+    virtual void tcpDisconnected ( const std::string& addrPort ) {}
+
+    virtual void tcpReceived ( char *bytes, std::size_t len, const std::string& addrPort ) {}
     virtual void udpReceived ( char *bytes, std::size_t len, const std::string& addr, unsigned port ) {}
 
 public:
@@ -91,17 +91,19 @@ public:
     void unlock() { mutex.unlock(); }
 
     void listen ( unsigned port );
-    void connect ( const std::string& addr, unsigned port );
-    void disconnect ( uint32_t id = 0 );
+    void tcpConnect ( const std::string& addr, unsigned port );
+    void udpConnect ( const std::string& addr, unsigned port );
+    void disconnect ( const std::string& addrPort = "" );
 
     bool isServer() const;
     bool isConnected() const;
 
-    std::string localAddr() const;
-    std::string remoteAddr ( uint32_t id = 0 ) const;
-
-    void tcpSend ( char *bytes, std::size_t len, uint32_t id = 0 );
+    void tcpSend ( char *bytes, std::size_t len, const std::string& addrPort = "" );
     void udpSend ( char *bytes, std::size_t len, const std::string& addr = "", unsigned port = 0 );
 
     static void release();
+
+    static std::string getAddrPort ( const std::shared_ptr<NL::Socket>& socket );
+    static std::string getAddrPort ( const NL::Socket *socket );
+    static std::string getAddrPort ( const std::string& addr, unsigned port );
 };
