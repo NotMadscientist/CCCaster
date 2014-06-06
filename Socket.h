@@ -44,7 +44,7 @@ class Socket
 
     public:
 
-        ConnectThread ( Socket& context, std::string addr, int port )
+        ConnectThread ( Socket& context, const std::string& addr, int port )
             : context ( context ), addr ( addr ), port ( port ) {}
         void start();
         void run();
@@ -91,7 +91,7 @@ public:
     void unlock() { mutex.unlock(); }
 
     void listen ( unsigned port );
-    void connect ( std::string addr, unsigned port );
+    void connect ( const std::string& addr, unsigned port );
     void disconnect ( uint32_t id = 0 );
 
     bool isServer() const;

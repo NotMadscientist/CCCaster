@@ -206,7 +206,7 @@ void Socket::listen ( unsigned port )
     addSocketToGroup ( udpSocket );
 }
 
-void Socket::connect ( string addr, unsigned port )
+void Socket::connect ( const string& addr, unsigned port )
 {
     LOG ( "addr=%s, port=%d", addr.c_str(), port );
 
