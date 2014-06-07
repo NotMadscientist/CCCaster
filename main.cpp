@@ -110,11 +110,11 @@ int main ( int argc, char *argv[] )
             {
                 IpAddrPort address = server->accept();
 
-                LOG ( "Accepted %s", address.c_str() );
+                LOG ( "Accepted '%s'", address.c_str() );
 
                 server->tcpSend ( "Hi, I'm the server (TCP)", 24, address );
 
-                Sleep ( 1000 );
+                Sleep ( 5000 );
 
                 server->tcpDisconnect ( address );
             }
@@ -122,22 +122,23 @@ int main ( int argc, char *argv[] )
         else if ( argc == 3 )
         {
             shared_ptr<Client> client ( new Client() );
-            client->tcpConnect ( argv[1], atoi ( argv[2] ) );
-            client->udpConnect ( argv[1], atoi ( argv[2] ) );
+            IpAddrPort address ( argv[1], atoi ( argv[2] ) );
+            client->tcpConnect ( address );
+            client->udpConnect ( address );
 
             // for ( ;; )
             {
                 client->wait ( 5000 );
 
                 if ( client->isConnected() )
-                    LOG ( "Connected to %s%u", argv[1], atoi ( argv[2] ) );
+                    LOG ( "Connected to '%s'", address.c_str() );
                 else
                     LOG ( "Connect failed" );
 
                 client->tcpSend ( "Hi, I'm the client (TCP)", 24 );
                 client->udpSend ( "Hi, I'm the client (UDP)", 24 );
 
-                Sleep ( 5000 );
+                Sleep ( 1000 );
 
                 client->tcpDisconnect();
             }

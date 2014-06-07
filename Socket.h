@@ -27,15 +27,15 @@ struct IpAddrPort
     std::string addr;
     unsigned port;
 
-    IpAddrPort() : port ( 0 ) {}
+    inline IpAddrPort() : port ( 0 ) {}
 
-    IpAddrPort ( const std::shared_ptr<NL::Socket>& socket )
+    inline IpAddrPort ( const std::shared_ptr<NL::Socket>& socket )
         : addr ( socket->hostTo() ), port ( socket->portTo() ) {}
 
-    IpAddrPort ( const NL::Socket *socket )
+    inline IpAddrPort ( const NL::Socket *socket )
         : addr ( socket->hostTo() ), port ( socket->portTo() ) {}
 
-    IpAddrPort ( const std::string& addr, unsigned port )
+    inline IpAddrPort ( const std::string& addr, unsigned port )
         : addr ( addr ), port ( port ) {}
 
     inline bool empty() const
@@ -49,7 +49,7 @@ struct IpAddrPort
         port = 0;
     }
 
-    inline std::string getAddrPort() const
+    inline std::string str() const
     {
         if ( empty() )
             return "";
@@ -112,6 +112,7 @@ class Socket
 
         ListenThread ( Socket& context )
             : context ( context ), isListening ( false ) {}
+
         void start();
         void join();
         void run();
@@ -120,13 +121,13 @@ class Socket
     class ConnectThread : public Thread
     {
         Socket& context;
-        const std::string addr;
-        const int port;
+        const IpAddrPort address;
 
     public:
 
-        ConnectThread ( Socket& context, const std::string& addr, int port )
-            : context ( context ), addr ( addr ), port ( port ) {}
+        ConnectThread ( Socket& context, const IpAddrPort& address )
+            : context ( context ), address ( address ) {}
+
         void start();
         void run();
     };
@@ -172,8 +173,8 @@ public:
     void unlock() { mutex.unlock(); }
 
     void listen ( unsigned port );
-    void tcpConnect ( const std::string& addr, unsigned port );
-    void udpConnect ( const std::string& addr, unsigned port );
+    void tcpConnect ( const IpAddrPort& address );
+    void udpConnect ( const IpAddrPort& address );
     void tcpDisconnect ( const IpAddrPort& address = IpAddrPort() );
     void udpDisconnect();
 

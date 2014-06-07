@@ -2,6 +2,7 @@
 #include "Log.h"
 
 #include <cstdlib>
+#include <cassert>
 
 using namespace std;
 
@@ -136,7 +137,7 @@ void Socket::ConnectThread::run()
     shared_ptr<NL::Socket> socket;
     try
     {
-        socket.reset ( new NL::Socket ( addr, port, NL::TCP, NL::IP4 ) );
+        socket.reset ( new NL::Socket ( address.addr, address.port, NL::TCP, NL::IP4 ) );
     }
     catch ( const NL::Exception& e )
     {
@@ -146,6 +147,7 @@ void Socket::ConnectThread::run()
     if ( !socket.get() )
         return;
     IpAddrPort address ( socket );
+    assert ( address == this->address );
 
     Lock lock ( context.mutex );
     if ( !context.tcpSocket )
@@ -207,24 +209,24 @@ void Socket::listen ( unsigned port )
     addSocketToGroup ( udpSocket );
 }
 
-void Socket::tcpConnect ( const string& addr, unsigned port )
+void Socket::tcpConnect ( const IpAddrPort& address )
 {
-    LOG ( "addr='%s', port=%u", addr.c_str(), port );
+    LOG ( "address='%s'", address.c_str() );
 
-    shared_ptr<ConnectThread> connectThread ( new ConnectThread ( *this, addr, port ) );
+    shared_ptr<ConnectThread> connectThread ( new ConnectThread ( *this, address ) );
     connectThread->start();
     connectingThreads.push ( connectThread );
 }
 
-void Socket::udpConnect ( const string& addr, unsigned port )
+void Socket::udpConnect ( const IpAddrPort& address )
 {
-    LOG ( "addr='%s', port=%u", addr.c_str(), port );
+    LOG ( "address='%s'", address.c_str() );
 
     for ( int i = 0; i < UDP_BIND_ATTEMPTS; ++i )
     {
         try
         {
-            udpSocket.reset ( new NL::Socket ( addr, port, RANDOM_PORT, NL::IP4 ) );
+            udpSocket.reset ( new NL::Socket ( address.addr, address.port, RANDOM_PORT, NL::IP4 ) );
             break;
         }
         catch ( ... )
