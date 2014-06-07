@@ -13,42 +13,42 @@ using namespace std;
 class Server : public Socket
 {
     CondVar acceptCond;
-    string acceptAddrPort;
+    IpAddrPort acceptAddress;
 
 protected:
 
-    void tcpAccepted ( const std::string& addrPort )
+    void tcpAccepted ( const IpAddrPort& address )
     {
-        acceptAddrPort = addrPort;
+        acceptAddress = address;
         acceptCond.signal();
     }
 
-    void tcpDisconnected ( const std::string& addrPort )
+    void tcpDisconnected ( const IpAddrPort& address )
     {
-        LOG ( "Disconnected %s", addrPort.c_str() );
+        LOG ( "Disconnected %s", address.c_str() );
     }
 
-    void tcpReceived ( char *bytes, size_t len, const std::string& addrPort )
+    void tcpReceived ( char *bytes, size_t len, const IpAddrPort& address )
     {
-        LOG ( "Received '%s' from '%s'", string ( bytes, len ).c_str(), addrPort.c_str() );
+        LOG ( "Received '%s' from '%s'", string ( bytes, len ).c_str(), address.c_str() );
     }
 
-    void udpReceived ( char *bytes, size_t len, const string& addr, unsigned port )
+    void udpReceived ( char *bytes, size_t len, const IpAddrPort& address )
     {
-        LOG ( "Received '%s' from '%s:%u'", string ( bytes, len ).c_str(), addr.c_str(), port );
+        LOG ( "Received '%s' from '%s'", string ( bytes, len ).c_str(), address.c_str() );
     }
 
 public:
 
-    string accept()
+    IpAddrPort accept()
     {
-        string addrPort;
+        IpAddrPort address;
         LOCK ( mutex );
-        if ( acceptAddrPort.empty() )
+        if ( acceptAddress.empty() )
             acceptCond.wait ( mutex );
-        addrPort = acceptAddrPort;
-        acceptAddrPort.clear();
-        return addrPort;
+        address = acceptAddress;
+        acceptAddress.clear();
+        return address;
     }
 };
 
@@ -58,24 +58,24 @@ class Client : public Socket
 
 protected:
 
-    void tcpConnected ( const std::string& addrPort )
+    void tcpConnected ( const IpAddrPort& address )
     {
         connectCond.signal();
     }
 
-    void tcpDisconnected ( const std::string& addrPort )
+    void tcpDisconnected ( const IpAddrPort& address )
     {
-        LOG ( "Disconnected %s", addrPort.c_str() );
+        LOG ( "Disconnected %s", address.c_str() );
     }
 
-    void tcpReceived ( char *bytes, size_t len, const std::string& addrPort )
+    void tcpReceived ( char *bytes, size_t len, const IpAddrPort& address )
     {
-        LOG ( "Received '%s' from '%s'", string ( bytes, len ).c_str(), addrPort.c_str() );
+        LOG ( "Received '%s' from '%s'", string ( bytes, len ).c_str(), address.c_str() );
     }
 
-    void udpReceived ( char *bytes, size_t len, const string& addr, unsigned port )
+    void udpReceived ( char *bytes, size_t len, const IpAddrPort& address )
     {
-        LOG ( "Received '%s' from '%s:%u'", string ( bytes, len ).c_str(), addr.c_str(), port );
+        LOG ( "Received '%s' from '%s'", string ( bytes, len ).c_str(), address.c_str() );
     }
 
 public:
@@ -108,15 +108,15 @@ int main ( int argc, char *argv[] )
 
             // for ( ;; )
             {
-                string addrPort = server->accept();
+                IpAddrPort address = server->accept();
 
-                LOG ( "Accepted %s", addrPort.c_str() );
+                LOG ( "Accepted %s", address.c_str() );
 
-                server->tcpSend ( "Hi, I'm the server (TCP)", 24, addrPort );
+                server->tcpSend ( "Hi, I'm the server (TCP)", 24, address );
 
                 Sleep ( 1000 );
 
-                server->disconnect ( addrPort );
+                server->tcpDisconnect ( address );
             }
         }
         else if ( argc == 3 )
@@ -139,7 +139,7 @@ int main ( int argc, char *argv[] )
 
                 Sleep ( 5000 );
 
-                client->disconnect();
+                client->tcpDisconnect();
             }
         }
     }

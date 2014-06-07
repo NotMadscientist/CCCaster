@@ -1,7 +1,6 @@
 #include "Socket.h"
 #include "Log.h"
 
-#include <sstream>
 #include <cstdlib>
 
 using namespace std;
@@ -29,47 +28,48 @@ Socket::Socket()
 
 Socket::~Socket()
 {
-    disconnect();
+    tcpDisconnect();
+    udpDisconnect();
 }
 
 void Socket::Accept::exec ( NL::Socket *serverSocket, NL::SocketGroup *, void * )
 {
     NL::Socket *socket = serverSocket->accept();
-    string addrPort = getAddrPort ( socket );
+    IpAddrPort address ( socket );
 
-    LOG ( "addrPort='%s'", addrPort.c_str() );
+    LOG ( "address='%s'", address.c_str() );
 
     Lock lock ( context.mutex );
 
-    context.acceptedSockets[addrPort] = shared_ptr<NL::Socket> ( socket );
+    context.acceptedSockets[address] = shared_ptr<NL::Socket> ( socket );
     context.socketGroup->add ( socket );
 
-    LOG ( "Socket::tcpAccepted ( %s )", addrPort.c_str() );
-    context.tcpAccepted ( addrPort );
+    LOG ( "Socket::tcpAccepted ( %s )", address.c_str() );
+    context.tcpAccepted ( address );
 }
 
 void Socket::Disconnect::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
 {
-    string addrPort = getAddrPort ( socket );
+    IpAddrPort address ( socket );
 
-    LOG ( "addrPort='%s'", addrPort.c_str() );
+    LOG ( "address='%s'", address.c_str() );
 
     Lock lock ( context.mutex );
 
     context.socketGroup->remove ( socket );
-    context.acceptedSockets.erase ( addrPort );
+    context.acceptedSockets.erase ( address );
     if ( context.tcpSocket.get() == socket )
         context.tcpSocket.reset();
 
-    LOG ( "Socket::tcpDisconnected ( %s )", addrPort.c_str() );
-    context.tcpDisconnected ( addrPort );
+    LOG ( "Socket::tcpDisconnected ( %s )", address.c_str() );
+    context.tcpDisconnected ( address );
 }
 
 void Socket::Read::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
 {
-    string addrPort = getAddrPort ( socket );
+    IpAddrPort address ( socket );
 
-    LOG ( "addrPort='%s'", addrPort.c_str() );
+    LOG ( "address='%s'", address.c_str() );
 
     Lock lock ( context.mutex );
 
@@ -79,17 +79,15 @@ void Socket::Read::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
     {
         len = socket->read ( context.readBuffer, sizeof ( context.readBuffer ) );
 
-        LOG ( "Socket::tcpReceived ( [%u bytes], '%s' )", len, addrPort.c_str() );
-        context.tcpReceived ( context.readBuffer, len, addrPort );
+        LOG ( "Socket::tcpReceived ( [%u bytes], '%s' )", len, address.c_str() );
+        context.tcpReceived ( context.readBuffer, len, address );
     }
     else
     {
-        string addr;
-        unsigned port;
-        len = socket->readFrom ( context.readBuffer, sizeof ( context.readBuffer ), &addr, &port );
+        len = socket->readFrom ( context.readBuffer, sizeof ( context.readBuffer ), &address.addr, &address.port );
 
-        LOG ( "Socket::udpReceived ( [%u bytes], '%s:%u' )", len, addr.c_str(), port );
-        context.udpReceived ( context.readBuffer, len, addr, port );
+        LOG ( "Socket::udpReceived ( [%u bytes], '%s' )", len, address.c_str() );
+        context.tcpReceived ( context.readBuffer, len, address );
     }
 }
 
@@ -147,7 +145,7 @@ void Socket::ConnectThread::run()
 
     if ( !socket.get() )
         return;
-    string addrPort = getAddrPort ( socket );
+    IpAddrPort address ( socket );
 
     Lock lock ( context.mutex );
     if ( !context.tcpSocket )
@@ -156,8 +154,8 @@ void Socket::ConnectThread::run()
         context.addSocketToGroup ( socket );
     }
 
-    LOG ( "Socket::tcpConnected ( %s )", addrPort.c_str() );
-    context.tcpConnected ( addrPort );
+    LOG ( "Socket::tcpConnected ( %s )", address.c_str() );
+    context.tcpConnected ( address );
 }
 
 void Socket::ReaperThread::run()
@@ -241,37 +239,39 @@ void Socket::udpConnect ( const string& addr, unsigned port )
     addSocketToGroup ( udpSocket );
 }
 
-void Socket::disconnect ( const string& addrPort )
+void Socket::tcpDisconnect ( const IpAddrPort& address )
 {
-    LOG ( "addrPort='%s'", addrPort.c_str() );
+    LOG ( "address='%s'", address.c_str() );
 
     LOCK ( mutex );
 
-    if ( addrPort.empty() || tcpSocket.get() )
+    if ( address.empty() || tcpSocket.get() )
     {
         LOG ( "ListenThread::join()" );
         listenThread.join();
 
-        LOG ( "Closing all sockets" );
+        LOG ( "Closing all TCP sockets" );
         acceptedSockets.clear();
         socketGroup.reset();
-        udpSocket.reset();
         tcpSocket.reset();
         serverSocket.reset();
     }
     else
     {
-        auto it = acceptedSockets.find ( addrPort );
+        auto it = acceptedSockets.find ( address );
         if ( it != acceptedSockets.end() && it->second )
         {
             socketGroup->remove ( it->second.get() );
             acceptedSockets.erase ( it );
         }
-        else if ( addrPort == getAddrPort ( udpSocket ) )
-        {
-            udpSocket.reset();
-        }
     }
+}
+
+void Socket::udpDisconnect()
+{
+    LOCK ( mutex );
+    LOG ( "Closing UDP socket" );
+    udpSocket.reset();
 }
 
 bool Socket::isServer() const
@@ -286,32 +286,32 @@ bool Socket::isConnected() const
     return tcpSocket.get();
 }
 
-void Socket::tcpSend ( char *bytes, size_t len, const string& addrPort )
+void Socket::tcpSend ( char *bytes, size_t len, const IpAddrPort& address )
 {
     LOCK ( mutex );
 
-    if ( addrPort.empty() && tcpSocket.get() )
+    if ( address.empty() && tcpSocket.get() )
     {
         tcpSocket->send ( bytes, len );
     }
     else
     {
-        auto it = acceptedSockets.find ( addrPort );
+        auto it = acceptedSockets.find ( address );
         if ( it != acceptedSockets.end() && it->second )
             it->second->send ( bytes, len );
     }
 }
 
-void Socket::udpSend ( char *bytes, size_t len, const string& addr, unsigned port )
+void Socket::udpSend ( char *bytes, size_t len, const IpAddrPort& address )
 {
     LOCK ( mutex );
 
     if ( udpSocket.get() )
     {
-        if ( addr.empty() || !port )
+        if ( address.empty() )
             udpSocket->send ( bytes, len );
         else
-            udpSocket->sendTo ( bytes, len, addr, port );
+            udpSocket->sendTo ( bytes, len, address.addr, address.port );
     }
 }
 
@@ -319,27 +319,4 @@ void Socket::release()
 {
     LOG ( "ReaperThread::release()" );
     reaperThread.release();
-}
-
-string Socket::getAddrPort ( const shared_ptr<NL::Socket>& socket )
-{
-    return getAddrPort ( socket.get() );
-}
-
-string Socket::getAddrPort ( const NL::Socket *socket )
-{
-    if ( !socket )
-        return "";
-    stringstream ss;
-    ss << socket->hostTo() << ':' << socket->portTo();
-    return ss.str();
-}
-
-string Socket::getAddrPort ( const string& addr, unsigned port )
-{
-    if ( addr.empty() || !port )
-        return "";
-    stringstream ss;
-    ss << addr << ':' << port;
-    return ss.str();
 }
