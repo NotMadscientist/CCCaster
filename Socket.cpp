@@ -15,7 +15,7 @@ using namespace std;
 
 #define RANDOM_PORT         ( PORT_MIN + rand() % ( PORT_MAX - PORT_MIN ) )
 
-BlockingQueue<shared_ptr<Socket::ConnectThread>> Socket::connectingThreads;
+BlockingQueue<shared_ptr<Thread>> Socket::connectingThreads;
 
 Socket::ReaperThread Socket::reaperThread;
 
@@ -126,13 +126,7 @@ void Socket::ListenThread::run()
     }
 }
 
-void Socket::ConnectThread::start()
-{
-    reaperThread.start();
-    Thread::start();
-}
-
-void Socket::ConnectThread::run()
+void Socket::TcpConnectThread::run()
 {
     shared_ptr<NL::Socket> socket;
     try
@@ -146,8 +140,7 @@ void Socket::ConnectThread::run()
 
     if ( !socket.get() )
         return;
-    IpAddrPort address ( socket );
-    assert ( address == this->address );
+    assert ( address == IpAddrPort ( socket ) );
 
     Lock lock ( context.mutex );
     if ( !context.tcpSocket )
@@ -164,10 +157,10 @@ void Socket::ReaperThread::run()
 {
     for ( ;; )
     {
-        shared_ptr<ConnectThread> connectThread = connectingThreads.pop();
+        shared_ptr<Thread> thread = connectingThreads.pop();
 
-        if ( connectThread )
-            connectThread->join();
+        if ( thread )
+            thread->join();
         else
             break;
     }
@@ -175,8 +168,14 @@ void Socket::ReaperThread::run()
 
 void Socket::ReaperThread::join()
 {
-    connectingThreads.push ( shared_ptr<ConnectThread>() );
+    connectingThreads.push ( shared_ptr<Thread>() );
     Thread::join();
+}
+
+void Socket::addConnectingThread ( const shared_ptr<Thread>& thread )
+{
+    reaperThread.start();
+    connectingThreads.push ( thread );
 }
 
 void Socket::addSocketToGroup ( const shared_ptr<NL::Socket>& socket )
@@ -213,9 +212,10 @@ void Socket::tcpConnect ( const IpAddrPort& address )
 {
     LOG ( "address='%s'", address.c_str() );
 
-    shared_ptr<ConnectThread> connectThread ( new ConnectThread ( *this, address ) );
-    connectThread->start();
-    connectingThreads.push ( connectThread );
+    shared_ptr<Thread> thread ( new TcpConnectThread ( *this, address ) );
+    thread->start();
+
+    addConnectingThread ( thread );
 }
 
 void Socket::udpConnect ( const IpAddrPort& address )

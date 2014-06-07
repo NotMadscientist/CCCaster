@@ -118,17 +118,16 @@ class Socket
         void run();
     };
 
-    class ConnectThread : public Thread
+    class TcpConnectThread : public Thread
     {
         Socket& context;
         const IpAddrPort address;
 
     public:
 
-        ConnectThread ( Socket& context, const IpAddrPort& address )
+        TcpConnectThread ( Socket& context, const IpAddrPort& address )
             : context ( context ), address ( address ) {}
 
-        void start();
         void run();
     };
 
@@ -147,13 +146,15 @@ class Socket
 
     ListenThread listenThread;
 
-    static BlockingQueue<std::shared_ptr<ConnectThread>> connectingThreads;
+    static BlockingQueue<std::shared_ptr<Thread>> connectingThreads;
 
     static ReaperThread reaperThread;
 
 protected:
 
     mutable Mutex mutex;
+
+    void addConnectingThread ( const std::shared_ptr<Thread>& thread );
 
     void addSocketToGroup ( const std::shared_ptr<NL::Socket>& socket );
 
