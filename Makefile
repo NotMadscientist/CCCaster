@@ -37,33 +37,40 @@ BUILD_TYPE = Debug
 all: STRIP = touch
 all: DEFINES += -D_GLIBCXX_DEBUG
 all: CC_FLAGS += -g
-all: binary
+all: $(BINARY)
 
-binary: $(BINARY)
-depend: .depend
-
-$(BINARY): depend $(OBJECTS) icon.res
+$(BINARY): .depend $(OBJECTS) icon.res
 	@echo
 	$(CXX) -o $@ $(OBJECTS) $(LD_FLAGS) icon.res
 	@echo
-	$(STRIP) $(BINARY)
-	icacls $(BINARY) /grant Everyone:F
+	$(STRIP) $@
+	icacls $@ /grant Everyone:F
 
 icon.res: icon.rc icon.ico
 	@echo
-	windres -F pe-i386 icon.rc -O coff -o icon.res
+	windres -F pe-i386 icon.rc -O coff -o $@
 
 Version.h:
-	date +"#define BUILD %s" > Version.h
+	@date +"#define BUILD %s" > $@
+
+Protocol.type.h:
+	@grep " : public Serializable" *.h | sed -r 's/^(.+\.h):[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nSerializableType \2::type() const { return \2Type; }/' > $@
+
+Protocol.enum.h:
+	@grep " : public Serializable" *.h | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/\1Type,/' > $@
+
+Protocol.decode.h:
+	@grep " : public Serializable" *.h | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/case \1Type:\n{\n    msg.reset ( new \1() );\n    msg->deserialize ( archive );\n    break;\n}/' > $@
+
+.depend: Version.h Protocol.type.h Protocol.enum.h Protocol.decode.h
+	@echo Making auto-generated files...
+	@$(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp > $@
+	@echo
 
 .PHONY: clean check trim format count
 
-.depend: Version.h
-	$(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp > .depend
-	@echo
-
 clean:
-	rm -f Version.h .depend *.res *.exe *.zip $(OBJECTS)
+	rm -f Version.h Protocol.*.h .depend *.res *.exe *.zip $(OBJECTS)
 
 check:
 	cppcheck --enable=all *.cpp *h

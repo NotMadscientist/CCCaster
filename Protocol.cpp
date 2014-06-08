@@ -1,5 +1,5 @@
 #include "Protocol.h"
-#include "IpAddrPort.h"
+#include "Protocol.type.h"
 
 using namespace std;
 using namespace cereal;
@@ -9,7 +9,7 @@ string Serializable::encode ( const Serializable& msg )
     ostringstream ss ( stringstream::binary );
     BinaryOutputArchive archive ( ss );
 
-    archive ( msg.type() );
+    archive ( ( uint8_t ) msg.type() );
     msg.serialize ( archive );
 
     return ss.str();
@@ -20,18 +20,15 @@ shared_ptr<Serializable> Serializable::decode ( char *bytes, size_t len )
     istringstream ss ( string ( bytes, len ), stringstream::binary );
     BinaryInputArchive archive ( ss );
 
-    uint32_t type;
+    uint8_t type;
     archive ( type );
 
     shared_ptr<Serializable> msg;
 
-    if ( type == 1 )
+    switch ( ( SerializableType ) type )
     {
-        msg.reset ( new IpAddrPort() );
-        msg->deserialize ( archive );
+#include "Protocol.decode.h"
     }
 
     return msg;
 }
-
-uint32_t IpAddrPort::type() const { return 1; }

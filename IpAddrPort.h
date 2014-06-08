@@ -54,7 +54,7 @@ struct IpAddrPort : public Serializable
 
     void deserialize ( cereal::BinaryInputArchive& ar ) { ar ( addr, port ); }
 
-    uint32_t type() const;
+    SerializableType type() const;
 };
 
 inline bool operator== ( const IpAddrPort& a, const IpAddrPort& b )
