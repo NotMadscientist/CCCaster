@@ -17,55 +17,6 @@ inline timespec gettimeoffset ( long milliseconds )
     return ts;
 }
 
-class Thread
-{
-    volatile bool running;
-    pthread_t thread;
-    static void *func ( void *ptr );
-
-public:
-
-    inline Thread() : running ( false ) {}
-    virtual ~Thread() { join(); }
-
-    virtual void start()
-    {
-        if ( running )
-            return;
-
-        running = true;
-
-        pthread_attr_t attr;
-        pthread_attr_init ( &attr );
-        pthread_create ( &thread, &attr, func, this );
-        pthread_attr_destroy ( &attr );
-    }
-
-    virtual void join()
-    {
-        if ( !running )
-            return;
-
-        pthread_join ( thread, 0 );
-        running = false;
-    }
-
-    inline void release() { running = false; }
-
-    inline bool isRunning() const { return running; }
-
-    virtual void run() = 0;
-};
-
-#define THREAD(NAME, CONTEXT)                                   \
-    class NAME : public Thread                                  \
-    {                                                           \
-        CONTEXT& context;                                       \
-    public:                                                     \
-        NAME ( CONTEXT& context ) : context ( context ) {}      \
-        void run();                                             \
-    }
-
 class Mutex
 {
     pthread_mutex_t mutex;
@@ -154,3 +105,43 @@ public:
         pthread_cond_broadcast ( &cond );
     }
 };
+
+class Thread
+{
+    mutable Mutex mutex;
+    bool running;
+    pthread_t thread;
+    static void *func ( void *ptr );
+
+public:
+
+    inline Thread() : running ( false ) {}
+    virtual ~Thread() { join(); }
+
+    virtual void start();
+
+    virtual void join();
+
+    inline void release()
+    {
+        LOCK ( mutex );
+        running = false;
+    }
+
+    inline bool isRunning() const
+    {
+        LOCK ( mutex );
+        return running;
+    }
+
+    virtual void run() = 0;
+};
+
+#define THREAD(NAME, CONTEXT)                                   \
+    class NAME : public Thread                                  \
+    {                                                           \
+        CONTEXT& context;                                       \
+    public:                                                     \
+        NAME ( CONTEXT& context ) : context ( context ) {}      \
+        void run();                                             \
+    }

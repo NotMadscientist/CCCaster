@@ -94,26 +94,40 @@ void Socket::Read::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
 
 void Socket::ListenThread::start()
 {
-    if ( isListening )
-        return;
+    {
+        LOCK ( mutex );
+        if ( isListening )
+            return;
+        isListening = true;
+    }
 
-    isListening = true;
     Thread::start();
 }
 
 void Socket::ListenThread::join()
 {
-    if ( !isListening )
-        return;
+    {
+        LOCK ( mutex );
+        if ( !isListening )
+            return;
+        isListening = false;
+    }
 
-    isListening = false;
     Thread::join();
 }
 
 void Socket::ListenThread::run()
 {
-    while ( isListening )
+    for ( ;; )
     {
+        {
+            LOCK ( mutex );
+            if ( !isListening )
+                break;
+        }
+
+        LOG ( "Listening..." );
+
         try
         {
             context.socketGroup->listen ( LISTEN_INTERVAL );
