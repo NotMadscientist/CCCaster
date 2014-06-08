@@ -45,7 +45,7 @@ void Socket::Accept::exec ( NL::Socket *serverSocket, NL::SocketGroup *, void * 
     context.acceptedSockets[address] = shared_ptr<NL::Socket> ( socket );
     context.socketGroup->add ( socket );
 
-    LOG ( "Socket::tcpAccepted ( %s )", address.c_str() );
+    LOG ( "Socket::tcpAccepted ( '%s' )", address.c_str() );
     context.tcpAccepted ( address );
 }
 
@@ -62,7 +62,7 @@ void Socket::Disconnect::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
     if ( context.tcpSocket.get() == socket )
         context.tcpSocket.reset();
 
-    LOG ( "Socket::tcpDisconnected ( %s )", address.c_str() );
+    LOG ( "Socket::tcpDisconnected ( '%s' )", address.c_str() );
     context.tcpDisconnected ( address );
 }
 
@@ -88,7 +88,7 @@ void Socket::Read::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
         len = socket->readFrom ( context.readBuffer, sizeof ( context.readBuffer ), &address.addr, &address.port );
 
         LOG ( "Socket::udpReceived ( [%u bytes], '%s' )", len, address.c_str() );
-        context.tcpReceived ( context.readBuffer, len, address );
+        context.udpReceived ( context.readBuffer, len, address );
     }
 }
 
@@ -149,7 +149,7 @@ void Socket::TcpConnectThread::run()
         context.addSocketToGroup ( socket );
     }
 
-    LOG ( "Socket::tcpConnected ( %s )", address.c_str() );
+    LOG ( "Socket::tcpConnected ( '%s' )", address.c_str() );
     context.tcpConnected ( address );
 }
 
@@ -294,13 +294,17 @@ void Socket::tcpSend ( char *bytes, size_t len, const IpAddrPort& address )
 
     if ( address.empty() && tcpSocket.get() )
     {
+        LOG ( "tcpSocket->send ( [ %u bytes ] ); address='%s'", len, address.c_str() );
         tcpSocket->send ( bytes, len );
     }
     else
     {
         auto it = acceptedSockets.find ( address );
         if ( it != acceptedSockets.end() && it->second )
+        {
+            LOG ( "it->second->send ( [ %u bytes ] ); address='%s'", len, address.c_str() );
             it->second->send ( bytes, len );
+        }
     }
 }
 
@@ -311,9 +315,15 @@ void Socket::udpSend ( char *bytes, size_t len, const IpAddrPort& address )
     if ( udpSocket.get() )
     {
         if ( address.empty() )
+        {
+            LOG ( "udpSocket->send ( [ %u bytes ] ); address='%s'", len, IpAddrPort ( udpSocket ).c_str() );
             udpSocket->send ( bytes, len );
+        }
         else
+        {
+            LOG ( "udpSocket->sendTo ( [ %u bytes ], '%s' )", len, address.c_str() );
             udpSocket->sendTo ( bytes, len, address.addr, address.port );
+        }
     }
 }
 
