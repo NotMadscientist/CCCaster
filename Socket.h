@@ -105,7 +105,9 @@ public:
     bool isServer() const;
     bool isConnected() const;
 
+    void tcpSend ( const Serializable& msg, const IpAddrPort& address = IpAddrPort() );
     void tcpSend ( char *bytes, std::size_t len, const IpAddrPort& address = IpAddrPort() );
+    void udpSend ( const Serializable& msg, const IpAddrPort& address = IpAddrPort() );
     void udpSend ( char *bytes, std::size_t len, const IpAddrPort& address = IpAddrPort() );
 
     static void release();

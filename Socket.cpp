@@ -126,8 +126,6 @@ void Socket::ListenThread::run()
                 break;
         }
 
-        LOG ( "Listening..." );
-
         try
         {
             context.socketGroup->listen ( LISTEN_INTERVAL );
@@ -262,10 +260,13 @@ void Socket::tcpDisconnect ( const IpAddrPort& address )
     if ( address.empty() )
     {
         LOG ( "listenThread.join()" );
+
         listenThread.join();
 
         LOG ( "Closing all TCP sockets" );
+
         LOCK ( mutex );
+
         acceptedSockets.clear();
         socketGroup.reset();
         tcpSocket.reset();
@@ -274,7 +275,9 @@ void Socket::tcpDisconnect ( const IpAddrPort& address )
     else
     {
         LOG ( "Closing TCP socket for '%s'", address.c_str() );
+
         LOCK ( mutex );
+
         auto it = acceptedSockets.find ( address );
         if ( it != acceptedSockets.end() && it->second )
         {
@@ -303,6 +306,12 @@ bool Socket::isConnected() const
     return tcpSocket.get();
 }
 
+void Socket::tcpSend ( const Serializable& msg, const IpAddrPort& address )
+{
+    string bytes = Serializable::encode ( msg );
+    tcpSend ( &bytes[0], bytes.size(), address );
+}
+
 void Socket::tcpSend ( char *bytes, size_t len, const IpAddrPort& address )
 {
     LOCK ( mutex );
@@ -321,6 +330,12 @@ void Socket::tcpSend ( char *bytes, size_t len, const IpAddrPort& address )
             it->second->send ( bytes, len );
         }
     }
+}
+
+void Socket::udpSend ( const Serializable& msg, const IpAddrPort& address )
+{
+    string bytes = Serializable::encode ( msg );
+    tcpSend ( &bytes[0], bytes.size(), address );
 }
 
 void Socket::udpSend ( char *bytes, size_t len, const IpAddrPort& address )

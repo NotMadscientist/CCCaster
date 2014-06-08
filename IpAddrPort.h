@@ -1,12 +1,11 @@
 #pragma once
 
+#include "Protocol.h"
+
+#include <cereal/types/string.hpp>
 #include <netlink/socket.h>
 
-#include <memory>
-#include <sstream>
-#include <cstdio>
-
-struct IpAddrPort
+struct IpAddrPort : public Serializable
 {
     std::string addr;
     unsigned port;
@@ -50,6 +49,12 @@ struct IpAddrPort
         std::sprintf ( buffer, "%s:%u", addr.c_str(), port );
         return buffer;
     }
+
+    void serialize ( cereal::BinaryOutputArchive& ar ) const { ar ( addr, port ); }
+
+    void deserialize ( cereal::BinaryInputArchive& ar ) { ar ( addr, port ); }
+
+    uint32_t type() const;
 };
 
 inline bool operator== ( const IpAddrPort& a, const IpAddrPort& b )

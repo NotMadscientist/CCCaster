@@ -20,7 +20,7 @@ BUILD_ENV = mingw-builds
 
 # Build flags
 DEFINES =
-CC_FLAGS = -m32 -s -Icontrib -Icontrib/netLink/include $(DEFINES)
+CC_FLAGS = -m32 -s -Icontrib -Icontrib/netLink/include -Icontrib/cereal/include $(DEFINES)
 LD_FLAGS = -m32 -static -lws2_32 -lmingw32
 LD_FLAGS += -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid
 
