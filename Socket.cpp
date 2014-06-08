@@ -45,7 +45,7 @@ void Socket::Accept::exec ( NL::Socket *serverSocket, NL::SocketGroup *, void * 
     context.acceptedSockets[address] = shared_ptr<NL::Socket> ( socket );
     context.socketGroup->add ( socket );
 
-    LOG ( "Socket::tcpAccepted ( '%s' )", address.c_str() );
+    LOG ( "tcpAccepted ( '%s' )", address.c_str() );
     context.tcpAccepted ( address );
 }
 
@@ -62,7 +62,7 @@ void Socket::Disconnect::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
     if ( context.tcpSocket.get() == socket )
         context.tcpSocket.reset();
 
-    LOG ( "Socket::tcpDisconnected ( '%s' )", address.c_str() );
+    LOG ( "tcpDisconnected ( '%s' )", address.c_str() );
     context.tcpDisconnected ( address );
 }
 
@@ -80,14 +80,14 @@ void Socket::Read::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
     {
         len = socket->read ( context.readBuffer, sizeof ( context.readBuffer ) );
 
-        LOG ( "Socket::tcpReceived ( [%u bytes], '%s' )", len, address.c_str() );
+        LOG ( "tcpReceived ( [%u bytes], '%s' )", len, address.c_str() );
         context.tcpReceived ( context.readBuffer, len, address );
     }
     else
     {
         len = socket->readFrom ( context.readBuffer, sizeof ( context.readBuffer ), &address.addr, &address.port );
 
-        LOG ( "Socket::udpReceived ( [%u bytes], '%s' )", len, address.c_str() );
+        LOG ( "udpReceived ( [%u bytes], '%s' )", len, address.c_str() );
         context.udpReceived ( context.readBuffer, len, address );
     }
 }
@@ -149,7 +149,7 @@ void Socket::TcpConnectThread::run()
         context.addSocketToGroup ( socket );
     }
 
-    LOG ( "Socket::tcpConnected ( '%s' )", address.c_str() );
+    LOG ( "tcpConnected ( '%s' )", address.c_str() );
     context.tcpConnected ( address );
 }
 
@@ -180,7 +180,7 @@ void Socket::addConnectingThread ( const shared_ptr<Thread>& thread )
 
 void Socket::addSocketToGroup ( const shared_ptr<NL::Socket>& socket )
 {
-    LOG ( "protocol=%s, local='%s:%u', remote='%s:%u'",
+    LOG ( "protocol=%s; local='%s:%u'; remote='%s:%u'",
           socket->protocol() == NL::TCP ? "TCP" : "UDP",
           socket->hostFrom().c_str(), socket->portFrom(), socket->hostTo().c_str(), socket->portTo() );
 
@@ -245,14 +245,13 @@ void Socket::tcpDisconnect ( const IpAddrPort& address )
 {
     LOG ( "address='%s'", address.c_str() );
 
-    LOCK ( mutex );
-
-    if ( address.empty() || tcpSocket.get() )
+    if ( address.empty() )
     {
-        LOG ( "ListenThread::join()" );
+        LOG ( "listenThread.join()" );
         listenThread.join();
 
         LOG ( "Closing all TCP sockets" );
+        LOCK ( mutex );
         acceptedSockets.clear();
         socketGroup.reset();
         tcpSocket.reset();
@@ -260,6 +259,8 @@ void Socket::tcpDisconnect ( const IpAddrPort& address )
     }
     else
     {
+        LOG ( "Closing TCP socket for '%s'", address.c_str() );
+        LOCK ( mutex );
         auto it = acceptedSockets.find ( address );
         if ( it != acceptedSockets.end() && it->second )
         {
@@ -329,6 +330,6 @@ void Socket::udpSend ( char *bytes, size_t len, const IpAddrPort& address )
 
 void Socket::release()
 {
-    LOG ( "ReaperThread::release()" );
+    LOG ( "reaperThread.release()" );
     reaperThread.release();
 }
