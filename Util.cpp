@@ -1,4 +1,5 @@
 #include "Util.h"
+#include "Log.h"
 
 #include <md5.h>
 
@@ -32,7 +33,7 @@ size_t compress ( const char *src, size_t srcLen, char *dst, size_t dstLen, int 
     if ( rc == MZ_OK )
         return len;
 
-    fprintf ( stderr, "zlib error %d: %s\n", rc, mz_error ( rc ) );
+    LOG ( "zlib error: [%d] %s", rc, mz_error ( rc ) );
     return 0;
 }
 
@@ -43,7 +44,7 @@ size_t uncompress ( const char *src, size_t srcLen, char *dst, size_t dstLen )
     if ( rc == MZ_OK )
         return len;
 
-    fprintf ( stderr, "zlib error %d: %s\n", rc, mz_error ( rc ) );
+    LOG ( "zlib error: [%d] %s", rc, mz_error ( rc ) );
     return 0;
 }
 

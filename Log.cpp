@@ -47,7 +47,7 @@ void Log::log ( const char *file, int line, const char *func, const char *format
 
     time_t t;
     time ( &t );
-    tm *ts = localtime ( &t );
+    tm *ts = gmtime ( &t );
 
     LOCK ( mutex );
 
