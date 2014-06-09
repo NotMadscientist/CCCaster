@@ -40,8 +40,6 @@ void Socket::Accept::exec ( NL::Socket *serverSocket, NL::SocketGroup *, void * 
 
     LOG ( "address='%s'", address.c_str() );
 
-    Lock lock ( context.mutex );
-
     context.acceptedSockets[address] = shared_ptr<NL::Socket> ( socket );
     context.socketGroup->add ( socket );
 
@@ -54,8 +52,6 @@ void Socket::Disconnect::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
     IpAddrPort address ( socket );
 
     LOG ( "address='%s'", address.c_str() );
-
-    Lock lock ( context.mutex );
 
     context.socketGroup->remove ( socket );
     context.acceptedSockets.erase ( address );
@@ -71,8 +67,6 @@ void Socket::Read::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
     IpAddrPort address ( socket );
 
     LOG ( "address='%s'", address.c_str() );
-
-    Lock lock ( context.mutex );
 
     size_t len;
 
@@ -123,9 +117,10 @@ void Socket::ListenThread::run()
         {
             LOCK ( mutex );
             if ( !isListening )
-                break;
+                return;
         }
 
+        Lock lock ( context.mutex );
         try
         {
             context.socketGroup->listen ( LISTEN_INTERVAL );
@@ -133,7 +128,7 @@ void Socket::ListenThread::run()
         catch ( const NL::Exception& e )
         {
             LOG ( "[%d] %s", e.nativeErrorCode(), e.what() );
-            break;
+            return;
         }
     }
 }
@@ -174,7 +169,7 @@ void Socket::ReaperThread::run()
         if ( thread )
             thread->join();
         else
-            break;
+            return;
     }
 }
 
@@ -195,6 +190,8 @@ void Socket::addSocketToGroup ( const shared_ptr<NL::Socket>& socket )
     LOG ( "protocol=%s; local='%s:%u'; remote='%s:%u'",
           socket->protocol() == NL::TCP ? "TCP" : "UDP",
           socket->hostFrom().c_str(), socket->portFrom(), socket->hostTo().c_str(), socket->portTo() );
+
+    LOCK ( mutex );
 
     if ( !socketGroup )
     {
