@@ -1,6 +1,9 @@
 #include "Protocol.h"
 #include "Protocol.type.h"
 
+// Increase the size of this type as needed
+typedef uint8_t SerializableTypeUInt;
+
 using namespace std;
 using namespace cereal;
 
@@ -9,7 +12,7 @@ string Serializable::encode ( const Serializable& msg )
     ostringstream ss ( stringstream::binary );
     BinaryOutputArchive archive ( ss );
 
-    archive ( ( uint8_t ) msg.type() );
+    archive ( ( SerializableTypeUInt ) msg.type() );
     msg.serialize ( archive );
 
     return ss.str();
@@ -20,7 +23,7 @@ MsgPtr Serializable::decode ( char *bytes, size_t len )
     istringstream ss ( string ( bytes, len ), stringstream::binary );
     BinaryInputArchive archive ( ss );
 
-    uint8_t type;
+    SerializableTypeUInt type;
     archive ( type );
 
     MsgPtr msg;
