@@ -332,7 +332,7 @@ void Socket::tcpSend ( char *bytes, size_t len, const IpAddrPort& address )
 void Socket::udpSend ( const Serializable& msg, const IpAddrPort& address )
 {
     string bytes = Serializable::encode ( msg );
-    tcpSend ( &bytes[0], bytes.size(), address );
+    udpSend ( &bytes[0], bytes.size(), address );
 }
 
 void Socket::udpSend ( char *bytes, size_t len, const IpAddrPort& address )
@@ -351,6 +351,10 @@ void Socket::udpSend ( char *bytes, size_t len, const IpAddrPort& address )
             LOG ( "udpSocket->sendTo ( [ %u bytes ], '%s' )", len, address.c_str() );
             udpSocket->sendTo ( bytes, len, address.addr, address.port );
         }
+    }
+    else
+    {
+        LOG ( "udpSocket is not initialized" );
     }
 }
 
