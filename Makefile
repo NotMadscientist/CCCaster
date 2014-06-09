@@ -54,13 +54,13 @@ Version.h:
 	@date +"#define BUILD %s" > $@
 
 Protocol.type.h:
-	@grep " : public Serializable" *.h | sed -r 's/^(.+\.h):[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nSerializableType \2::type() const { return \2Type; }/' > $@
+	@grep " : public Serializable" *.h | sed -r 's/^(.+\.h):[ ]*[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nSerializableType \2::type() const { return \2Type; }/' > $@
 
 Protocol.enum.h:
-	@grep " : public Serializable" *.h | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/\1Type,/' > $@
+	@grep " : public Serializable" *.h | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/\1Type,/' > $@
 
 Protocol.decode.h:
-	@grep " : public Serializable" *.h | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/case \1Type:\n{\n    msg.reset ( new \1() );\n    msg->deserialize ( archive );\n    break;\n}/' > $@
+	@grep " : public Serializable" *.h | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/case \1Type:\n{\n    msg.reset ( new \1() );\n    msg->deserialize ( archive );\n    break;\n}/' > $@
 
 .depend: Version.h Protocol.type.h Protocol.enum.h Protocol.decode.h
 	@echo Making auto-generated files...
