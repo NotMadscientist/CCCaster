@@ -39,7 +39,7 @@ all: DEFINES += -D_GLIBCXX_DEBUG
 all: CC_FLAGS += -g
 all: $(BINARY)
 
-$(BINARY): .depend $(OBJECTS) icon.res
+$(BINARY): Version.h .depend $(OBJECTS) icon.res
 	@echo
 	$(CXX) -o $@ $(OBJECTS) $(LD_FLAGS) icon.res
 	@echo
@@ -50,9 +50,6 @@ icon.res: icon.rc icon.ico
 	@echo
 	windres -F pe-i386 icon.rc -O coff -o $@
 
-Version.h:
-	@date +"#define BUILD %s" > $@
-
 Protocol.type.h:
 	@grep " : public Serializable" *.h | sed -r 's/^(.+\.h):[ ]*[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nSerializableType \2::type() const { return \2Type; }/' > $@
 
@@ -62,12 +59,16 @@ Protocol.enum.h:
 Protocol.decode.h:
 	@grep " : public Serializable" *.h | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/case \1Type:\n{\n    msg.reset ( new \1() );\n    msg->deserialize ( archive );\n    break;\n}/' > $@
 
-.depend: Version.h Protocol.type.h Protocol.enum.h Protocol.decode.h
+Version.h:
+	@date +"#define BUILD %s" > $@
+
+.depend: Protocol.type.h Protocol.enum.h Protocol.decode.h
 	@echo Making auto-generated files...
+	@date +"#define BUILD %s" > Version.h
 	@$(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp > $@
 	@echo
 
-.PHONY: clean check trim format count
+.PHONY: clean check trim format count Version.h
 
 clean:
 	rm -f Version.h Protocol.*.h .depend *.res *.exe *.zip $(OBJECTS)
