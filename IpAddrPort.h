@@ -50,11 +50,11 @@ struct IpAddrPort : public Serializable
         return buffer;
     }
 
-    void serialize ( cereal::BinaryOutputArchive& ar ) const { ar ( addr, port ); }
+    virtual void serialize ( cereal::BinaryOutputArchive& ar ) const { ar ( addr, port ); }
 
-    void deserialize ( cereal::BinaryInputArchive& ar ) { ar ( addr, port ); }
+    virtual void deserialize ( cereal::BinaryInputArchive& ar ) { ar ( addr, port ); }
 
-    SerializableType type() const;
+    virtual SerializableType type() const;
 };
 
 inline bool operator== ( const IpAddrPort& a, const IpAddrPort& b )
