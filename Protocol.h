@@ -10,6 +10,10 @@ enum SerializableType
 #include "Protocol.enum.h"
 };
 
+struct Serializable;
+
+typedef std::shared_ptr<Serializable> MsgPtr;
+
 struct Serializable
 {
     virtual void serialize ( cereal::BinaryOutputArchive& ar ) const = 0;
@@ -17,5 +21,5 @@ struct Serializable
     virtual SerializableType type() const = 0;
 
     static std::string encode ( const Serializable& msg );
-    static std::shared_ptr<Serializable> decode ( char *bytes, std::size_t len );
+    static MsgPtr decode ( char *bytes, std::size_t len );
 };

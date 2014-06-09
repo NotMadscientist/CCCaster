@@ -15,7 +15,7 @@ string Serializable::encode ( const Serializable& msg )
     return ss.str();
 }
 
-shared_ptr<Serializable> Serializable::decode ( char *bytes, size_t len )
+MsgPtr Serializable::decode ( char *bytes, size_t len )
 {
     istringstream ss ( string ( bytes, len ), stringstream::binary );
     BinaryInputArchive archive ( ss );
@@ -23,7 +23,7 @@ shared_ptr<Serializable> Serializable::decode ( char *bytes, size_t len )
     uint8_t type;
     archive ( type );
 
-    shared_ptr<Serializable> msg;
+    MsgPtr msg;
 
     switch ( ( SerializableType ) type )
     {
