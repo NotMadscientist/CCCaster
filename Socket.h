@@ -81,14 +81,15 @@ protected:
 
     void addSocketToGroup ( const std::shared_ptr<NL::Socket>& socket );
 
-    virtual void tcpAccepted ( const IpAddrPort& address ) {}
-    virtual void tcpConnected ( const IpAddrPort& address ) {}
-    virtual void tcpDisconnected ( const IpAddrPort& address ) {}
-
-    virtual void tcpReceived ( char *bytes, std::size_t len, const IpAddrPort& address ) {}
-    virtual void udpReceived ( char *bytes, std::size_t len, const IpAddrPort& address ) {}
-
 public:
+
+    struct Owner
+    {
+        virtual Owner *accepted ( Socket *socket ) { return 0; }
+        virtual void connected ( Socket *socket ) {}
+        virtual void disconnected ( Socket *socket ) {}
+        virtual void received ( Socket *socket, char *bytes, std::size_t len, const IpAddrPort& address ) {}
+    };
 
     Socket();
     virtual ~Socket();
