@@ -1,5 +1,5 @@
 #include "Socket.h"
-#include "Thread.h"
+#include "EventManager.h"
 #include "Log.h"
 
 #include <windows.h>
@@ -10,86 +10,22 @@
 
 using namespace std;
 
-class Server : public Socket
+struct Test : public Socket::Owner
 {
-    CondVar acceptCond;
-    IpAddrPort acceptAddress;
-
-protected:
-
-    void tcpAccepted ( const IpAddrPort& address )
+    void acceptEvent ( Socket *serverSocket )
     {
-        acceptAddress = address;
-        acceptCond.signal();
     }
 
-    void tcpDisconnected ( const IpAddrPort& address )
+    void connectEvent ( Socket *socket )
     {
-        LOG ( "Disconnected %s", address.c_str() );
     }
 
-    void tcpReceived ( char *bytes, size_t len, const IpAddrPort& address )
+    void disconnectEvent ( Socket *socket )
     {
-        LOG ( "Received '%s' from '%s'", string ( bytes, len ).c_str(), address.c_str() );
     }
 
-    void udpReceived ( char *bytes, size_t len, const IpAddrPort& address )
+    void readEvent ( Socket *socket, char *bytes, std::size_t len, const IpAddrPort& address )
     {
-        LOG ( "Received '%s' from '%s'", string ( bytes, len ).c_str(), address.c_str() );
-    }
-
-public:
-
-    IpAddrPort accept()
-    {
-        IpAddrPort address;
-        LOCK ( mutex );
-        if ( acceptAddress.empty() )
-            acceptCond.wait ( mutex );
-        address = acceptAddress;
-        acceptAddress.clear();
-        return address;
-    }
-};
-
-class Client : public Socket
-{
-    CondVar connectCond;
-
-protected:
-
-    void tcpConnected ( const IpAddrPort& address )
-    {
-        connectCond.signal();
-    }
-
-    void tcpDisconnected ( const IpAddrPort& address )
-    {
-        LOG ( "Disconnected %s", address.c_str() );
-    }
-
-    void tcpReceived ( char *bytes, size_t len, const IpAddrPort& address )
-    {
-        LOG ( "Received '%s' from '%s'", string ( bytes, len ).c_str(), address.c_str() );
-    }
-
-    void udpReceived ( char *bytes, size_t len, const IpAddrPort& address )
-    {
-        LOG ( "Received '%s' from '%s'", string ( bytes, len ).c_str(), address.c_str() );
-    }
-
-public:
-
-    void wait ( long timeout = 0 )
-    {
-        LOCK ( mutex );
-        if ( !isConnected() )
-        {
-            if ( timeout )
-                connectCond.wait ( mutex, timeout );
-            else
-                connectCond.wait ( mutex );
-        }
     }
 };
 
@@ -99,57 +35,23 @@ int main ( int argc, char *argv[] )
     NL::init();
     Log::open();
 
+    Test test;
+    shared_ptr<Socket> socket;
+
     try
     {
         if ( argc == 2 )
-        {
-            shared_ptr<Server> server ( new Server() );
-            server->listen ( atoi ( argv[1] ) );
-
-            // for ( ;; )
-            {
-                IpAddrPort address = server->accept();
-
-                LOG ( "Accepted '%s'", address.c_str() );
-
-                server->tcpSend ( "Hi, I'm the server (TCP)", 24, address );
-
-                Sleep ( 5000 );
-
-                server->tcpDisconnect ( address );
-            }
-        }
+            socket = Socket::listen ( test, atoi ( argv[1] ), Socket::TCP );
         else if ( argc == 3 )
-        {
-            shared_ptr<Client> client ( new Client() );
-            IpAddrPort address ( argv[1], atoi ( argv[2] ) );
-            client->tcpConnect ( address );
-            client->udpConnect ( address );
-
-            // for ( ;; )
-            {
-                client->wait ( 5000 );
-
-                if ( client->isConnected() )
-                    LOG ( "Connected to '%s'", address.c_str() );
-                else
-                    LOG ( "Connect failed" );
-
-                client->tcpSend ( "Hi, I'm the client (TCP)", 24 );
-                client->udpSend ( "Hi, I'm the client (UDP)", 24 );
-
-                Sleep ( 1000 );
-
-                client->tcpDisconnect();
-            }
-        }
+            socket = Socket::connect ( test, argv[1], atoi ( argv[2] ), Socket::TCP );
     }
     catch ( const NL::Exception& e )
     {
         LOG ( "[%d] %s", e.nativeErrorCode(), e.what() );
     }
 
-    Socket::release();
+    EventManager::get().start();
+
     Log::close();
     return 0;
 }

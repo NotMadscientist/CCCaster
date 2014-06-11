@@ -1,12 +1,8 @@
 #include "Socket.h"
+#include "EventManager.h"
 #include "Log.h"
 
-#include <cstdlib>
-#include <cassert>
-
 using namespace std;
-
-#define LISTEN_INTERVAL     1000
 
 #define UDP_BIND_ATTEMPTS   10
 
@@ -15,351 +11,119 @@ using namespace std;
 
 #define RANDOM_PORT         ( PORT_MIN + rand() % ( PORT_MAX - PORT_MIN ) )
 
-BlockingQueue<shared_ptr<Thread>> Socket::connectingThreads;
-
-Socket::ReaperThread Socket::reaperThread;
-
-Socket::Socket()
-    : socketAcceptCmd ( *this )
-    , socketDisconnectCmd ( *this )
-    , socketReadCmd ( *this )
-    , listenThread ( *this )
+Socket::Socket ( Owner& owner, NL::Socket *socket )
+    : owner ( owner ), socket ( socket )
 {
+    EventManager::get().addSocket ( this );
+}
+
+Socket::Socket ( Owner& owner, const shared_ptr<NL::Socket>& socket )
+    : owner ( owner ), socket ( socket )
+{
+    EventManager::get().addSocket ( this );
+}
+
+Socket::Socket ( Owner& owner, const string& address, unsigned port )
+    : owner ( owner )
+{
+    EventManager::get().connectTcpSocket ( this, IpAddrPort ( address, port ) );
 }
 
 Socket::~Socket()
 {
-    tcpDisconnect();
-    udpDisconnect();
+    disconnect();
 }
 
-void Socket::Accept::exec ( NL::Socket *serverSocket, NL::SocketGroup *, void * )
+shared_ptr<Socket> Socket::listen ( Owner& owner, unsigned port, Proto protocol )
 {
-    NL::Socket *socket = serverSocket->accept();
-    IpAddrPort address ( socket );
-
-    LOG ( "address='%s'", address.c_str() );
-
-    context.acceptedSockets[address] = shared_ptr<NL::Socket> ( socket );
-    context.socketGroup->add ( socket );
-
-    LOG ( "tcpAccepted ( '%s' )", address.c_str() );
-    context.tcpAccepted ( address );
+    LOG ( "Binding socket to port %u", port );
+    return shared_ptr<Socket> (
+               new Socket ( owner, new NL::Socket ( port, protocol == TCP ? NL::TCP : NL::UDP, NL::IP4 ) ) );
 }
 
-void Socket::Disconnect::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
+shared_ptr<Socket> Socket::connect ( Owner& owner, const string& address, unsigned port, Proto protocol )
 {
-    IpAddrPort address ( socket );
-
-    LOG ( "address='%s'", address.c_str() );
-
-    context.socketGroup->remove ( socket );
-    context.acceptedSockets.erase ( address );
-    if ( context.tcpSocket.get() == socket )
-        context.tcpSocket.reset();
-
-    LOG ( "tcpDisconnected ( '%s' )", address.c_str() );
-    context.tcpDisconnected ( address );
-}
-
-void Socket::Read::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
-{
-    IpAddrPort address ( socket );
-
-    LOG ( "address='%s'", address.c_str() );
-
-    size_t len;
-
-    if ( socket->protocol() == NL::TCP )
+    if ( protocol == TCP )
     {
-        len = socket->read ( context.readBuffer, sizeof ( context.readBuffer ) );
-
-        LOG ( "tcpReceived ( [%u bytes], '%s' )", len, address.c_str() );
-        context.tcpReceived ( context.readBuffer, len, address );
+        LOG ( "Connecting TCP socket; address='%s:%u'", address.c_str(), port );
+        return shared_ptr<Socket> ( new Socket ( owner, address, port ) );
     }
     else
     {
-        len = socket->readFrom ( context.readBuffer, sizeof ( context.readBuffer ), &address.addr, &address.port );
+        shared_ptr<NL::Socket> socket;
 
-        LOG ( "udpReceived ( [%u bytes], '%s' )", len, address.c_str() );
-        context.udpReceived ( context.readBuffer, len, address );
-    }
-}
-
-void Socket::ListenThread::start()
-{
-    {
-        LOCK ( mutex );
-        if ( isListening )
-            return;
-        isListening = true;
-    }
-
-    Thread::start();
-}
-
-void Socket::ListenThread::join()
-{
-    {
-        LOCK ( mutex );
-        if ( !isListening )
-            return;
-        isListening = false;
-    }
-
-    Thread::join();
-}
-
-void Socket::ListenThread::run()
-{
-    for ( ;; )
-    {
+        for ( int i = 0; i < UDP_BIND_ATTEMPTS; ++i )
         {
-            LOCK ( mutex );
-            if ( !isListening )
-                return;
+            unsigned port = RANDOM_PORT;
+            LOG ( "Trying to bind local UDP port %u", port );
+
+            try
+            {
+                socket.reset ( new NL::Socket ( address, port, RANDOM_PORT, NL::IP4 ) );
+                break;
+            }
+            catch ( ... )
+            {
+                if ( i + 1 == UDP_BIND_ATTEMPTS )
+                    throw;
+                else
+                    continue;
+            }
         }
 
-        Lock lock ( context.mutex );
-        try
-        {
-            context.socketGroup->listen ( LISTEN_INTERVAL );
-        }
-        catch ( const NL::Exception& e )
-        {
-            LOG ( "[%d] %s", e.nativeErrorCode(), e.what() );
-            return;
-        }
+        LOG ( "New UDP socket; address='%s:%u'", address.c_str(), port );
+        return shared_ptr<Socket> ( new Socket ( owner, socket ) );
     }
 }
 
-void Socket::TcpConnectThread::run()
+shared_ptr<Socket> Socket::accept ( Owner& owner )
 {
-    shared_ptr<NL::Socket> socket;
-    try
-    {
-        socket.reset ( new NL::Socket ( address.addr, address.port, NL::TCP, NL::IP4 ) );
-    }
-    catch ( const NL::Exception& e )
-    {
-        LOG ( "[%d] %s", e.nativeErrorCode(), e.what() );
-    }
+    if ( socket->type() != NL::SERVER )
+        return shared_ptr<Socket>();
 
-    if ( !socket.get() )
-        return;
-    assert ( address == IpAddrPort ( socket ) );
+    shared_ptr<NL::Socket> rawSocket ( socket->accept() );
 
-    Lock lock ( context.mutex );
-    if ( !context.tcpSocket )
-    {
-        context.tcpSocket = socket;
-        context.addSocketToGroup ( socket );
-    }
-
-    LOG ( "tcpConnected ( '%s' )", address.c_str() );
-    context.tcpConnected ( address );
+    LOG ( "Accepted TCP socket; address='%s'", IpAddrPort ( rawSocket ).c_str() );
+    return shared_ptr<Socket> ( new Socket ( owner, rawSocket ) );
 }
 
-void Socket::ReaperThread::run()
+void Socket::disconnect()
 {
-    for ( ;; )
-    {
-        shared_ptr<Thread> thread = connectingThreads.pop();
+    // if ( !socket.get() )
+    // return;
 
-        if ( thread )
-            thread->join();
-        else
-            return;
-    }
-}
-
-void Socket::ReaperThread::join()
-{
-    connectingThreads.push ( shared_ptr<Thread>() );
-    Thread::join();
-}
-
-void Socket::addConnectingThread ( const shared_ptr<Thread>& thread )
-{
-    reaperThread.start();
-    connectingThreads.push ( thread );
-}
-
-void Socket::addSocketToGroup ( const shared_ptr<NL::Socket>& socket )
-{
-    LOG ( "protocol=%s; local='%s:%u'; remote='%s:%u'",
-          socket->protocol() == NL::TCP ? "TCP" : "UDP",
-          socket->hostFrom().c_str(), socket->portFrom(), socket->hostTo().c_str(), socket->portTo() );
-
-    LOCK ( mutex );
-
-    if ( !socketGroup )
-    {
-        socketGroup.reset ( new NL::SocketGroup() );
-        socketGroup->setCmdOnAccept ( &socketAcceptCmd );
-        socketGroup->setCmdOnDisconnect ( &socketDisconnectCmd );
-        socketGroup->setCmdOnRead ( &socketReadCmd );
-    }
-
-    socketGroup->add ( socket.get() );
-
-    listenThread.start();
-}
-
-void Socket::listen ( unsigned port )
-{
-    LOG ( "port=%u", port );
-
-    serverSocket.reset ( new NL::Socket ( port, NL::TCP, NL::IP4 ) );
-    udpSocket.reset ( new NL::Socket ( port, NL::UDP, NL::IP4 ) );
-
-    addSocketToGroup ( serverSocket );
-    addSocketToGroup ( udpSocket );
-}
-
-void Socket::tcpConnect ( const IpAddrPort& address )
-{
-    LOG ( "address='%s'", address.c_str() );
-
-    shared_ptr<Thread> thread ( new TcpConnectThread ( *this, address ) );
-    thread->start();
-
-    addConnectingThread ( thread );
-}
-
-void Socket::udpConnect ( const IpAddrPort& address )
-{
-    LOG ( "address='%s'", address.c_str() );
-
-    for ( int i = 0; i < UDP_BIND_ATTEMPTS; ++i )
-    {
-        try
-        {
-            udpSocket.reset ( new NL::Socket ( address.addr, address.port, RANDOM_PORT, NL::IP4 ) );
-            break;
-        }
-        catch ( ... )
-        {
-            if ( i + 1 == UDP_BIND_ATTEMPTS )
-                throw;
-            else
-                continue;
-        }
-    }
-
-    addSocketToGroup ( udpSocket );
-}
-
-void Socket::tcpDisconnect ( const IpAddrPort& address )
-{
-    LOG ( "address='%s'", address.c_str() );
-
-    if ( address.empty() )
-    {
-        LOG ( "listenThread.join()" );
-
-        listenThread.join();
-
-        LOG ( "Closing all TCP sockets" );
-
-        LOCK ( mutex );
-
-        acceptedSockets.clear();
-        socketGroup.reset();
-        tcpSocket.reset();
-        serverSocket.reset();
-    }
-    else
-    {
-        LOG ( "Closing TCP socket for '%s'", address.c_str() );
-
-        LOCK ( mutex );
-
-        auto it = acceptedSockets.find ( address );
-        if ( it != acceptedSockets.end() && it->second )
-        {
-            socketGroup->remove ( it->second.get() );
-            acceptedSockets.erase ( it );
-        }
-    }
-}
-
-void Socket::udpDisconnect()
-{
-    LOCK ( mutex );
-    LOG ( "Closing UDP socket" );
-    udpSocket.reset();
-}
-
-bool Socket::isServer() const
-{
-    LOCK ( mutex );
-    return ( serverSocket.get() && !tcpSocket );
+    // EventManager::get().removeSocket ( this );
+    // socket.reset();
 }
 
 bool Socket::isConnected() const
 {
-    LOCK ( mutex );
-    return tcpSocket.get();
+    return socket.get();
 }
 
-void Socket::tcpSend ( const Serializable& msg, const IpAddrPort& address )
+void Socket::send ( const Serializable& msg, const IpAddrPort& address )
 {
     string bytes = Serializable::encode ( msg );
-    tcpSend ( &bytes[0], bytes.size(), address );
+    send ( &bytes[0], bytes.size(), address );
 }
 
-void Socket::tcpSend ( char *bytes, size_t len, const IpAddrPort& address )
+void Socket::send ( char *bytes, size_t len, const IpAddrPort& address )
 {
-    LOCK ( mutex );
-
-    if ( address.empty() && tcpSocket.get() )
-    {
-        LOG ( "tcpSocket->send ( [ %u bytes ] ); address='%s'", len, address.c_str() );
-        tcpSocket->send ( bytes, len );
-    }
-    else
-    {
-        auto it = acceptedSockets.find ( address );
-        if ( it != acceptedSockets.end() && it->second )
-        {
-            LOG ( "it->second->send ( [ %u bytes ] ); address='%s'", len, address.c_str() );
-            it->second->send ( bytes, len );
-        }
-    }
-}
-
-void Socket::udpSend ( const Serializable& msg, const IpAddrPort& address )
-{
-    string bytes = Serializable::encode ( msg );
-    udpSend ( &bytes[0], bytes.size(), address );
-}
-
-void Socket::udpSend ( char *bytes, size_t len, const IpAddrPort& address )
-{
-    LOCK ( mutex );
-
-    if ( udpSocket.get() )
+    if ( socket.get() )
     {
         if ( address.empty() )
         {
-            LOG ( "udpSocket->send ( [ %u bytes ] ); address='%s'", len, IpAddrPort ( udpSocket ).c_str() );
-            udpSocket->send ( bytes, len );
+            LOG ( "socket->send ( [ %u bytes ] ); address='%s'", len, IpAddrPort ( socket ).c_str() );
+            socket->send ( bytes, len );
         }
         else
         {
-            LOG ( "udpSocket->sendTo ( [ %u bytes ], '%s' )", len, address.c_str() );
-            udpSocket->sendTo ( bytes, len, address.addr, address.port );
+            LOG ( "socket->sendTo ( [ %u bytes ], '%s' )", len, address.c_str() );
+            socket->sendTo ( bytes, len, address.addr, address.port );
         }
     }
     else
     {
-        LOG ( "udpSocket is not initialized" );
+        LOG ( "Unconnected socket!" );
     }
-}
-
-void Socket::release()
-{
-    LOG ( "reaperThread.release()" );
-    reaperThread.release();
 }
