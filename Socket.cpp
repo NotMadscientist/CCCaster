@@ -101,6 +101,14 @@ bool Socket::isConnected() const
     return socket.get();
 }
 
+IpAddrPort Socket::getRemoteAddress() const
+{
+    if ( !socket.get() )
+        return IpAddrPort();
+
+    return IpAddrPort ( socket );
+}
+
 void Socket::send ( const Serializable& msg, const IpAddrPort& address )
 {
     string bytes = Serializable::encode ( msg );

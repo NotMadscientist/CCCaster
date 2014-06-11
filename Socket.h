@@ -41,6 +41,8 @@ public:
     bool isServer() const;
     bool isConnected() const;
 
+    IpAddrPort getRemoteAddress() const;
+
     void send ( const Serializable& msg, const IpAddrPort& address = IpAddrPort() );
     void send ( char *bytes, size_t len, const IpAddrPort& address = IpAddrPort() );
 
