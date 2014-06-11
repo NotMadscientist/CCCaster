@@ -50,19 +50,22 @@ icon.res: icon.rc icon.ico
 	@echo
 	windres -F pe-i386 icon.rc -O coff -o $@
 
-Protocol.type.h:
-	@grep " : public Serializable" *.h | sed -r 's/^(.+\.h):[ ]*[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nSerializableType \2::type() const { return \2Type; }/' > $@
+Protocol.types.h:
+	@grep " : public Serializable" *.h | sed -r 's/^(.+\.h):[ ]*[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nconst MsgType\& \2::type() const { static const MsgType type ( MsgType::\2 ); return type; }/' > $@
+
+Protocol.strings.h:
+	@grep " : public Serializable" *.h | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1:\nreturn "\1";/' > $@
 
 Protocol.enum.h:
-	@grep " : public Serializable" *.h | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/\1Type,/' > $@
+	@grep " : public Serializable" *.h | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/\1,/' > $@
 
 Protocol.decode.h:
-	@grep " : public Serializable" *.h | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/case \1Type:\n{\n    msg.reset ( new \1() );\n    msg->deserialize ( archive );\n    break;\n}/' > $@
+	@grep " : public Serializable" *.h | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1:\n{\n    msg.reset ( new \1() );\n    msg->deserialize ( archive );\n    break;\n}/' > $@
 
 Version.h:
 	@date +"#define BUILD %s" > $@
 
-.depend: Protocol.type.h Protocol.enum.h Protocol.decode.h
+.depend: Protocol.types.h Protocol.strings.h Protocol.enum.h Protocol.decode.h
 	@echo Making auto-generated files...
 	@date +"#define BUILD %s" > Version.h
 	@$(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp > $@

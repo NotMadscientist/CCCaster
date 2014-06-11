@@ -1,18 +1,28 @@
 #include "Protocol.h"
-#include "Protocol.type.h"
-
-// Increase the size of this type as needed
-typedef uint8_t SerializableTypeUInt;
+#include "Protocol.types.h"
 
 using namespace std;
 using namespace cereal;
+
+// Increase size as needed
+#define MSG_TYPE_UINT uint8_t
+
+const char *MsgType::c_str() const
+{
+    switch ( value )
+    {
+#include "Protocol.strings.h"
+    }
+
+    return "Unknown type!";
+}
 
 string Serializable::encode ( const Serializable& msg )
 {
     ostringstream ss ( stringstream::binary );
     BinaryOutputArchive archive ( ss );
 
-    archive ( ( SerializableTypeUInt ) msg.type() );
+    archive ( ( MSG_TYPE_UINT ) msg.type().value );
     msg.serialize ( archive );
 
     return ss.str();
@@ -23,12 +33,12 @@ MsgPtr Serializable::decode ( char *bytes, size_t len )
     istringstream ss ( string ( bytes, len ), stringstream::binary );
     BinaryInputArchive archive ( ss );
 
-    SerializableTypeUInt type;
+    MSG_TYPE_UINT type;
     archive ( type );
 
     MsgPtr msg;
 
-    switch ( ( SerializableType ) type )
+    switch ( ( MsgType::Enum ) type )
     {
 #include "Protocol.decode.h"
     }
