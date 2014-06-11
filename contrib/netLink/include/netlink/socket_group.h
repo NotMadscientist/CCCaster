@@ -81,6 +81,7 @@ class SocketGroup {
         void remove(Socket* socket);
 
         size_t size() const;
+        bool empty() const;
 
         void setCmdOnAccept(SocketGroupCmd* cmd);
         void setCmdOnRead(SocketGroupCmd* cmd);

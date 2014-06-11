@@ -4,8 +4,6 @@
 
 #include <netlink/socket.h>
 
-#include <memory>
-
 struct Socket
 {
     struct Owner
@@ -16,27 +14,32 @@ struct Socket
         virtual void readEvent ( Socket *socket, char *bytes, size_t len, const IpAddrPort& address ) {}
     };
 
-    enum Proto { TCP, UDP };
+    enum Protocol { TCP, UDP };
 
 private:
 
     Owner& owner;
-    std::shared_ptr<NL::Socket> socket;
+    NL::Socket *socket;
 
     Socket ( Owner& owner, NL::Socket *socket );
-    Socket ( Owner& owner, const std::shared_ptr<NL::Socket>& socket );
-    Socket ( Owner& owner, const std::string& address, unsigned port );
+    Socket ( Owner& owner, unsigned port, Protocol protocol );
+    Socket ( Owner& owner, const std::string& address, unsigned port, Protocol protocol );
+
+protected:
+
+    const IpAddrPort address;
+    const Protocol protocol;
 
 public:
 
+    static Socket *listen ( Owner& owner, unsigned port, Protocol protocol );
+    static Socket *connect ( Owner& owner, const std::string& address, unsigned port, Protocol protocol );
+
     ~Socket();
 
-    static std::shared_ptr<Socket> listen ( Owner& owner, unsigned port, Proto protocol );
-    static std::shared_ptr<Socket> connect ( Owner& owner, const std::string& address, unsigned port, Proto protocol );
-
-    std::shared_ptr<Socket> accept ( Owner& owner );
-
     void disconnect();
+
+    Socket *accept ( Owner& owner );
 
     bool isServer() const;
     bool isConnected() const;

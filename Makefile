@@ -39,6 +39,11 @@ all: DEFINES += -D_GLIBCXX_DEBUG
 all: CC_FLAGS += -g
 all: $(BINARY)
 
+release: DEFINES += -DNDEBUG -DRELEASE
+release: CC_FLAGS += -Os -O2
+release: BUILD_TYPE = Release
+release: $(BINARY)
+
 $(BINARY): Version.h .depend $(OBJECTS) icon.res
 	@echo
 	$(CXX) -o $@ $(OBJECTS) $(LD_FLAGS) icon.res

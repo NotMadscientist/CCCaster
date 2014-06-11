@@ -82,6 +82,17 @@ inline size_t SocketGroup::size() const {
 }
 
 /**
+* Returns if the group is empty
+*
+* @return True if and only if there are no Sockets contained in the SocketGroup
+*/
+
+inline bool SocketGroup::empty() const {
+
+    return _vSocket.empty();
+}
+
+/**
 * Sets the onAcceptReady callback
 *
 * This callback will be call for any incoming connection waiting to be accepted

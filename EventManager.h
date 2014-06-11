@@ -32,8 +32,7 @@ class EventManager
 
     public:
 
-        ReaperThread ( BlockingQueue<std::shared_ptr<Thread>>& zombieThreads )
-            : zombieThreads ( zombieThreads ) {}
+        ReaperThread ( BlockingQueue<std::shared_ptr<Thread>>& zombieThreads ) : zombieThreads ( zombieThreads ) {}
 
         void run();
         void join();
@@ -42,21 +41,23 @@ class EventManager
     class TcpConnectThread : public Thread
     {
         Socket *socket;
-        const IpAddrPort address;
 
     public:
 
-        TcpConnectThread ( Socket *socket, const IpAddrPort& address )
-            : socket ( socket ), address ( address ) {}
+        TcpConnectThread ( Socket *socket ) : socket ( socket ) {}
 
         void run();
     };
 
     mutable Mutex mutex;
+    mutable CondVar socketsCond;
 
     NL::SocketGroup socketGroup;
 
     std::unordered_map<NL::Socket *, Socket *> socketMap;
+    std::unordered_map<NL::Socket *, std::shared_ptr<NL::Socket>> rawSocketMap;
+
+    std::vector<NL::Socket *> rawSocketsToAdd, rawSocketsToRemove;
 
     NL_SOCKET_GROUP_CMD ( SocketAccept ) socketAcceptCmd;
     NL_SOCKET_GROUP_CMD ( SocketDisconnect ) socketDisconnectCmd;
@@ -81,8 +82,6 @@ public:
     void addSocket ( Socket *socket );
 
     void removeSocket ( Socket *socket );
-
-    void connectTcpSocket ( Socket *socket, const IpAddrPort& address );
 
     void start();
 

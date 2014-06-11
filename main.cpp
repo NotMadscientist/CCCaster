@@ -14,6 +14,7 @@ struct Test : public Socket::Owner
 {
     void acceptEvent ( Socket *serverSocket )
     {
+        shared_ptr<Socket> socket ( serverSocket->accept ( *this ) );
     }
 
     void connectEvent ( Socket *socket )
@@ -41,9 +42,9 @@ int main ( int argc, char *argv[] )
     try
     {
         if ( argc == 2 )
-            socket = Socket::listen ( test, atoi ( argv[1] ), Socket::TCP );
+            socket.reset ( Socket::listen ( test, atoi ( argv[1] ), Socket::TCP ) );
         else if ( argc == 3 )
-            socket = Socket::connect ( test, argv[1], atoi ( argv[2] ), Socket::TCP );
+            socket.reset ( Socket::connect ( test, argv[1], atoi ( argv[2] ), Socket::TCP ) );
     }
     catch ( const NL::Exception& e )
     {
