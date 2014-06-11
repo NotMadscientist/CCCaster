@@ -21,5 +21,5 @@ struct Serializable
     virtual SerializableType type() const = 0;
 
     static std::string encode ( const Serializable& msg );
-    static MsgPtr decode ( char *bytes, std::size_t len );
+    static MsgPtr decode ( char *bytes, size_t len );
 };

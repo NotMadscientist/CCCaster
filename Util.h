@@ -22,12 +22,12 @@ template<typename T> std::string toString ( const char *fmt, T val )
 inline std::string trim ( std::string str, const std::string& ws = " \t\r\n" )
 {
     // trim trailing spaces
-    std::size_t endpos = str.find_last_not_of ( ws );
+    size_t endpos = str.find_last_not_of ( ws );
     if ( std::string::npos != endpos )
         str = str.substr ( 0, endpos + 1 );
 
     // trim leading spaces
-    std::size_t startpos = str.find_first_not_of ( ws );
+    size_t startpos = str.find_first_not_of ( ws );
     if ( std::string::npos != startpos )
         str = str.substr ( startpos );
 
@@ -35,10 +35,10 @@ inline std::string trim ( std::string str, const std::string& ws = " \t\r\n" )
 }
 
 // MD5 calculation
-std::string getMD5 ( const char *bytes, std::size_t len );
+std::string getMD5 ( const char *bytes, size_t len );
 std::string getMD5 ( const std::string& str );
 
 // zlib compression
-std::size_t compress ( const char *src, std::size_t srcLen, char *dst, std::size_t dstLen, int level = 9 );
-std::size_t uncompess ( const char *src, std::size_t srcLen, char *dst, std::size_t dstLen );
-std::size_t compressBound ( std::size_t srcLen );
+size_t compress ( const char *src, size_t srcLen, char *dst, size_t dstLen, int level = 9 );
+size_t uncompess ( const char *src, size_t srcLen, char *dst, size_t dstLen );
+size_t compressBound ( size_t srcLen );

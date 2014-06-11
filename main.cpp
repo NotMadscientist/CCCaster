@@ -24,7 +24,7 @@ struct Test : public Socket::Owner
     {
     }
 
-    void readEvent ( Socket *socket, char *bytes, std::size_t len, const IpAddrPort& address )
+    void readEvent ( Socket *socket, char *bytes, size_t len, const IpAddrPort& address )
     {
     }
 };

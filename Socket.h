@@ -13,7 +13,7 @@ struct Socket
         virtual void acceptEvent ( Socket *serverSocket ) {}
         virtual void connectEvent ( Socket *socket ) {}
         virtual void disconnectEvent ( Socket *socket ) {}
-        virtual void readEvent ( Socket *socket, char *bytes, std::size_t len, const IpAddrPort& address ) {}
+        virtual void readEvent ( Socket *socket, char *bytes, size_t len, const IpAddrPort& address ) {}
     };
 
     enum Proto { TCP, UDP };
@@ -42,7 +42,7 @@ public:
     bool isConnected() const;
 
     void send ( const Serializable& msg, const IpAddrPort& address = IpAddrPort() );
-    void send ( char *bytes, std::size_t len, const IpAddrPort& address = IpAddrPort() );
+    void send ( char *bytes, size_t len, const IpAddrPort& address = IpAddrPort() );
 
     friend class EventManager;
 };

@@ -60,7 +60,7 @@ public:
         return placebo;
     }
 
-    std::size_t size() const
+    size_t size() const
     {
         LOCK ( mutex );
         return queue.size();
@@ -153,7 +153,7 @@ public:
         return placebo;
     }
 
-    std::size_t size() const
+    size_t size() const
     {
         LOCK ( mutex );
         return queue.size();
@@ -172,10 +172,10 @@ public:
     }
 };
 
-template<typename T, std::size_t N> class StaticBlockingQueue
+template<typename T, size_t N> class StaticBlockingQueue
 {
     T elements[N];
-    std::size_t count, head, tail;
+    size_t count, head, tail;
     mutable Mutex mutex;
     mutable CondVar cond;
 
@@ -254,7 +254,7 @@ public:
         return placebo;
     }
 
-    std::size_t size() const
+    size_t size() const
     {
         LOCK ( mutex );
         return count;
