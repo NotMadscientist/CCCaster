@@ -10,7 +10,7 @@ struct Timer
 private:
 
     Owner& owner;
-    double expiry;
+    double delay, expiry;
 
 public:
 

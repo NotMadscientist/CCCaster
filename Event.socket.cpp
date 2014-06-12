@@ -21,6 +21,10 @@ static char socketReadBuffer[READ_BUFFER_SIZE];
 
 void EventManager::addSocket ( Socket *socket )
 {
+    assert ( socketSet.find ( socket ) == socketSet.end() );
+
+    socketSet.insert ( socket );
+
     if ( socket->socket )
     {
         LOG ( "Adding %s socket %08x ( %08x ); address='%s'",
@@ -92,7 +96,7 @@ void EventManager::addSocket ( Socket *socket )
 
 void EventManager::removeSocket ( Socket *socket )
 {
-    if ( !socket->socket )
+    if ( !socketSet.erase ( socket ) )
         return;
 
     LOG ( "Removing socket %08x ( %08x )", socket, socket->socket );
@@ -118,10 +122,14 @@ void EventManager::TcpConnectThread::run()
         return;
     }
 
-    assert ( socket->address == IpAddrPort ( rawSocket ) );
-
     EventManager& em = EventManager::get();
     Lock lock ( em.mutex );
+
+    if ( em.socketSet.find ( socket ) == em.socketSet.end() )
+        return;
+    em.socketSet.erase ( socket );
+
+    assert ( socket->address == IpAddrPort ( rawSocket ) );
 
     socket->socket = rawSocket.get();
     em.socketMap[rawSocket.get()] = socket;
@@ -194,8 +202,16 @@ void EventManager::socketListenLoop()
 
 void EventManager::SocketAccept::exec ( NL::Socket *serverSocket, NL::SocketGroup *, void * )
 {
-    auto it = socketMap.find ( serverSocket );
-    assert ( it != socketMap.end() );
+    EventManager& em = EventManager::get();
+
+    auto it = em.socketMap.find ( serverSocket );
+    assert ( it != em.socketMap.end() );
+
+    if ( em.socketSet.find ( it->second ) == em.socketSet.end() )
+        return;
+
+    if ( !it->second->socket )
+        return;
 
     LOG ( "serverSocket %08x ( %08x )", it->second, it->second->socket );
     it->second->owner.acceptEvent ( it->second );
@@ -203,8 +219,13 @@ void EventManager::SocketAccept::exec ( NL::Socket *serverSocket, NL::SocketGrou
 
 void EventManager::SocketDisconnect::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
 {
-    auto it = socketMap.find ( socket );
-    assert ( it != socketMap.end() );
+    EventManager& em = EventManager::get();
+
+    auto it = em.socketMap.find ( socket );
+    assert ( it != em.socketMap.end() );
+
+    if ( em.socketSet.find ( it->second ) == em.socketSet.end() )
+        return;
 
     if ( !it->second->socket )
         return;
@@ -216,8 +237,16 @@ void EventManager::SocketDisconnect::exec ( NL::Socket *socket, NL::SocketGroup 
 
 void EventManager::SocketRead::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
 {
-    auto it = socketMap.find ( socket );
-    assert ( it != socketMap.end() );
+    EventManager& em = EventManager::get();
+
+    auto it = em.socketMap.find ( socket );
+    assert ( it != em.socketMap.end() );
+
+    if ( em.socketSet.find ( it->second ) == em.socketSet.end() )
+        return;
+
+    if ( !it->second->socket )
+        return;
 
     IpAddrPort address ( socket );
     size_t len;

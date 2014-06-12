@@ -8,19 +8,21 @@
 
 using namespace std;
 
-static double now = 0.0;
+static double now = 0;
 
 void EventManager::addTimer ( Timer *timer )
 {
+    LOCK ( mutex );
+    LOG ( "Added timer %08x; delay=%.2f", timer, timer->delay );
     timerSet.insert ( timer );
 }
 
 void EventManager::removeTimer ( Timer *timer )
 {
+    LOCK ( mutex );
+    LOG ( "Removed timer %08x", timer );
     timerSet.erase ( timer );
 }
-
-double EventManager::now() const { return ::now; }
 
 void EventManager::TimerThread::start()
 {
@@ -57,24 +59,26 @@ void EventManager::TimerThread::run()
         }
     }
 
+    EventManager& em = EventManager::get();
+
     if ( useHiRes )
     {
         while ( running )
         {
             Sleep ( 1 );
 
-            Lock lock ( context.mutex );
+            Lock lock ( em.mutex );
 
-            while ( context.timerSet.empty() && context.running )
-                context.timersCond.wait ( context.mutex );
+            while ( em.timerSet.empty() && em.running )
+                em.timersCond.wait ( em.mutex );
 
-            if ( !context.running )
+            if ( !em.running )
                 break;
 
             QueryPerformanceCounter ( &ticks );
-            ::now = 1000.0 * ticks.QuadPart / ticksPerSecond.QuadPart;
+            now = 1000.0 * ticks.QuadPart / ticksPerSecond.QuadPart;
 
-            checkTimers ( ::now );
+            checkTimers();
         }
     }
     else
@@ -85,39 +89,49 @@ void EventManager::TimerThread::run()
         {
             Sleep ( 1 );
 
-            Lock lock ( context.mutex );
+            Lock lock ( em.mutex );
 
-            while ( context.timerSet.empty() && context.running )
-                context.timersCond.wait ( context.mutex );
+            while ( em.timerSet.empty() && em.running )
+                em.timersCond.wait ( em.mutex );
 
-            if ( !context.running )
+            if ( !em.running )
                 break;
 
-            ::now = timeGetTime();
+            now = timeGetTime();
 
-            checkTimers ( ::now );
+            checkTimers();
         }
 
         timeEndPeriod ( 1 );
     }
 }
 
-void EventManager::TimerThread::checkTimers ( double now )
+void EventManager::TimerThread::checkTimers()
 {
+    EventManager& em = EventManager::get();
+
     vector<Timer *> toRemove;
 
-    for ( Timer *timer : context.timerSet )
+    for ( Timer *timer : em.timerSet )
     {
-        if ( now >= timer->expiry )
+        if ( timer->delay > 0 )
         {
-            Lock lock ( context.mutex );
+            timer->expiry = now + timer->delay;
+            timer->delay = 0;
+        }
+        else if ( now >= timer->expiry )
+        {
             timer->owner.timerExpired ( timer );
+            timer->expiry = 0;
 
-            if ( now >= timer->expiry )
+            if ( timer->delay <= 0 )
                 toRemove.push_back ( timer );
         }
     }
 
     for ( Timer *timer : toRemove )
-        context.timerSet.erase ( timer );
+    {
+        LOG ( "Removed timer %08x", timer );
+        em.timerSet.erase ( timer );
+    }
 }

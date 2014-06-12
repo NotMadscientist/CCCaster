@@ -8,14 +8,10 @@ using namespace std;
 EventManager::EventManager()
     : running ( false )
     , reaperThread ( zombieThreads )
-    , socketAcceptCmd ( socketMap )
-    , socketDisconnectCmd ( socketMap )
-    , socketReadCmd ( socketMap )
-    , timerThread ( *this )
 {
-    socketGroup.setCmdOnAccept ( &socketAcceptCmd );
-    socketGroup.setCmdOnDisconnect ( &socketDisconnectCmd );
-    socketGroup.setCmdOnRead ( &socketReadCmd );
+    socketGroup.setCmdOnAccept ( &sac );
+    socketGroup.setCmdOnDisconnect ( &sdc );
+    socketGroup.setCmdOnRead ( &srd );
 }
 
 EventManager::~EventManager()

@@ -3,7 +3,7 @@
 
 using namespace std;
 
-Timer::Timer ( Owner& owner ) : owner ( owner ), expiry ( 0.0 )
+Timer::Timer ( Owner& owner ) : owner ( owner ), delay ( 0 ), expiry ( 0 )
 {
 }
 
@@ -14,7 +14,10 @@ Timer::~Timer()
 
 void Timer::start ( double delay )
 {
-    expiry = EventManager::get().now() + delay;
+    if ( delay <= 0 )
+        return;
+
+    this->delay = delay;
 
     EventManager::get().addTimer ( this );
 }

@@ -11,14 +11,6 @@
 #include <array>
 #include <unordered_map>
 
-#define NL_SOCKET_GROUP_CMD(NAME)                                                                       \
-    class NAME : public NL::SocketGroupCmd {                                                            \
-        std::unordered_map<NL::Socket *, Socket *>& socketMap;                                          \
-    public:                                                                                             \
-        NAME ( std::unordered_map<NL::Socket *, Socket *>& socketMap ) : socketMap ( socketMap ) {}     \
-        void exec ( NL::Socket *, NL::SocketGroup *, void * );                                          \
-    }
-
 class Socket;
 
 class Timer;
@@ -64,14 +56,15 @@ class EventManager
 
     NL::SocketGroup socketGroup;
 
+    std::unordered_set<Socket *> socketSet;
     std::unordered_map<NL::Socket *, Socket *> socketMap;
     std::unordered_map<NL::Socket *, std::shared_ptr<NL::Socket>> rawSocketMap;
 
     std::vector<NL::Socket *> rawSocketsToAdd, rawSocketsToRemove;
 
-    NL_SOCKET_GROUP_CMD ( SocketAccept ) socketAcceptCmd;
-    NL_SOCKET_GROUP_CMD ( SocketDisconnect ) socketDisconnectCmd;
-    NL_SOCKET_GROUP_CMD ( SocketRead ) socketReadCmd;
+    struct SocketAccept     : public NL::SocketGroupCmd { void exec ( NL::Socket *, NL::SocketGroup *, void * ); } sac;
+    struct SocketDisconnect : public NL::SocketGroupCmd { void exec ( NL::Socket *, NL::SocketGroup *, void * ); } sdc;
+    struct SocketRead       : public NL::SocketGroupCmd { void exec ( NL::Socket *, NL::SocketGroup *, void * ); } srd;
 
     void socketListenLoop();
 
@@ -79,16 +72,14 @@ class EventManager
 
     class TimerThread : public Thread
     {
-        EventManager& context;
         volatile bool running;
         bool useHiRes;
 
-        void checkTimers ( double now );
+        void checkTimers();
 
     public:
 
-        TimerThread ( EventManager& context, bool useHiRes = true )
-            : context ( context ), running ( false ), useHiRes ( useHiRes ) {}
+        TimerThread ( bool useHiRes = true ) : running ( false ), useHiRes ( useHiRes ) {}
 
         void start();
         void join();
@@ -123,13 +114,9 @@ public:
 
     void removeTimer ( Timer *timer );
 
-    double now() const;
-
     void start();
 
     void stop();
 
     static EventManager& get();
 };
-
-#undef NL_SOCKET_GROUP_CMD
