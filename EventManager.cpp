@@ -111,6 +111,7 @@ void EventManager::addSocket ( Socket *socket )
 
 void EventManager::removeSocket ( Socket *socket )
 {
+    assert ( socket->socket );
     LOG ( "Removing socket %08x ( %08x )", socket, socket->socket );
     rawSocketsToRemove.push_back ( socket->socket );
     socket->socket = 0;
@@ -160,10 +161,11 @@ void EventManager::start()
 
         for ( ;; )
         {
-            LOG ( "Waiting for sockets..." );
-
             if ( socketGroup.empty() && rawSocketsToAdd.empty() )
+            {
+                LOG ( "Waiting for sockets..." );
                 socketsCond.wait ( mutex );
+            }
 
             for ( NL::Socket *rawSocket : rawSocketsToAdd )
             {
@@ -196,7 +198,7 @@ void EventManager::start()
         catch ( const NL::Exception& e )
         {
             LOG ( "[%d] %s", e.nativeErrorCode(), e.what() );
-            return;
+            break;
         }
     }
 }
@@ -225,7 +227,7 @@ void EventManager::SocketAccept::exec ( NL::Socket *serverSocket, NL::SocketGrou
     auto it = socketMap.find ( serverSocket );
     assert ( it != socketMap.end() );
 
-    LOG ( "Got accept for socket %08x ( %08x )", it->second, it->second->socket );
+    LOG ( "serverSocket %08x ( %08x )", it->second, it->second->socket );
     it->second->owner.acceptEvent ( it->second );
 }
 
@@ -234,7 +236,10 @@ void EventManager::SocketDisconnect::exec ( NL::Socket *socket, NL::SocketGroup 
     auto it = socketMap.find ( socket );
     assert ( it != socketMap.end() );
 
-    LOG ( "Got disconnect for socket %08x ( %08x )", it->second, it->second->socket );
+    if ( !it->second->socket )
+        return;
+
+    LOG ( "socket %08x ( %08x )", it->second, it->second->socket );
     it->second->owner.disconnectEvent ( it->second );
     it->second->disconnect();
 }
@@ -252,7 +257,7 @@ void EventManager::SocketRead::exec ( NL::Socket *socket, NL::SocketGroup *, voi
     else
         len = socket->readFrom ( socketReadBuffer, sizeof ( socketReadBuffer ), &address.addr, &address.port );
 
-    LOG ( "Got read for socket %08x ( %08x ); %u bytes from '%s'",
+    LOG ( "socket %08x ( %08x ); %u bytes from '%s'",
           it->second, it->second->socket, len, address.c_str() );
     it->second->owner.readEvent ( it->second, socketReadBuffer, len, address );
 }
