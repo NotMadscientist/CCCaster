@@ -3,7 +3,6 @@
 #include "Thread.h"
 #include "Util.h"
 #include "BlockingQueue.h"
-#include "IpAddrPort.h"
 
 #include <netlink/socket.h>
 #include <netlink/socket_group.h>
@@ -11,8 +10,6 @@
 #include <memory>
 #include <array>
 #include <unordered_map>
-
-#define SOCKET_READ_BUFFER_SIZE ( 1024 * 4096 )
 
 #define NL_SOCKET_GROUP_CMD(NAME)                                                                       \
     class NAME : public NL::SocketGroupCmd {                                                            \
@@ -24,8 +21,16 @@
 
 class Socket;
 
+class Timer;
+
 class EventManager
 {
+    mutable Mutex mutex;
+
+    bool running;
+
+    // Thread stuff
+
     class ReaperThread : public Thread
     {
         BlockingQueue<std::shared_ptr<Thread>>& zombieThreads;
@@ -38,6 +43,12 @@ class EventManager
         void join();
     };
 
+    BlockingQueue<std::shared_ptr<Thread>> zombieThreads;
+
+    ReaperThread reaperThread;
+
+    // Socket stuff
+
     class TcpConnectThread : public Thread
     {
         Socket *socket;
@@ -49,7 +60,6 @@ class EventManager
         void run();
     };
 
-    mutable Mutex mutex;
     mutable CondVar socketsCond;
 
     NL::SocketGroup socketGroup;
@@ -63,9 +73,35 @@ class EventManager
     NL_SOCKET_GROUP_CMD ( SocketDisconnect ) socketDisconnectCmd;
     NL_SOCKET_GROUP_CMD ( SocketRead ) socketReadCmd;
 
-    BlockingQueue<std::shared_ptr<Thread>> zombieThreads;
+    void socketListenLoop();
 
-    ReaperThread reaperThread;
+    // Timer stuff
+
+    class TimerThread : public Thread
+    {
+        EventManager& context;
+        volatile bool running;
+        bool useHiRes;
+
+        void checkTimers ( double now );
+
+    public:
+
+        TimerThread ( EventManager& context, bool useHiRes = true )
+            : context ( context ), running ( false ), useHiRes ( useHiRes ) {}
+
+        void start();
+        void join();
+        void run();
+    };
+
+    mutable CondVar timersCond;
+
+    TimerThread timerThread;
+
+    std::unordered_set<Timer *> timerSet;
+
+    // General stuff
 
     EventManager();
 
@@ -83,7 +119,17 @@ public:
 
     void removeSocket ( Socket *socket );
 
+    void addTimer ( Timer *timer );
+
+    void removeTimer ( Timer *timer );
+
+    double now() const;
+
     void start();
+
+    void stop();
 
     static EventManager& get();
 };
+
+#undef NL_SOCKET_GROUP_CMD

@@ -1,4 +1,4 @@
-#include "EventManager.h"
+#include "Event.h"
 #include "Socket.h"
 #include "Log.h"
 
@@ -15,28 +15,9 @@ using namespace std;
 
 #define RANDOM_PORT         ( PORT_MIN + rand() % ( PORT_MAX - PORT_MIN ) )
 
-static char socketReadBuffer[SOCKET_READ_BUFFER_SIZE];
+#define READ_BUFFER_SIZE    ( 1024 * 4096 )
 
-EventManager::EventManager()
-    : socketAcceptCmd ( socketMap )
-    , socketDisconnectCmd ( socketMap )
-    , socketReadCmd ( socketMap )
-    , reaperThread ( zombieThreads )
-{
-    socketGroup.setCmdOnAccept ( &socketAcceptCmd );
-    socketGroup.setCmdOnDisconnect ( &socketDisconnectCmd );
-    socketGroup.setCmdOnRead ( &socketReadCmd );
-}
-
-EventManager::~EventManager()
-{
-}
-
-void EventManager::addThread ( const shared_ptr<Thread>& thread )
-{
-    reaperThread.start();
-    zombieThreads.push ( thread );
-}
+static char socketReadBuffer[READ_BUFFER_SIZE];
 
 void EventManager::addSocket ( Socket *socket )
 {
@@ -111,7 +92,9 @@ void EventManager::addSocket ( Socket *socket )
 
 void EventManager::removeSocket ( Socket *socket )
 {
-    assert ( socket->socket );
+    if ( !socket->socket )
+        return;
+
     LOG ( "Removing socket %08x ( %08x )", socket, socket->socket );
     rawSocketsToRemove.push_back ( socket->socket );
     socket->socket = 0;
@@ -151,9 +134,9 @@ void EventManager::TcpConnectThread::run()
     socket->owner.connectEvent ( socket );
 }
 
-void EventManager::start()
+void EventManager::socketListenLoop()
 {
-    LOG ( "Started listen loop" );
+    running = true;
 
     for ( ;; )
     {
@@ -165,6 +148,9 @@ void EventManager::start()
             {
                 LOG ( "Waiting for sockets..." );
                 socketsCond.wait ( mutex );
+
+                if ( !running )
+                    return;
             }
 
             for ( NL::Socket *rawSocket : rawSocketsToAdd )
@@ -200,26 +186,10 @@ void EventManager::start()
             LOG ( "[%d] %s", e.nativeErrorCode(), e.what() );
             break;
         }
-    }
-}
 
-void EventManager::ReaperThread::run()
-{
-    for ( ;; )
-    {
-        shared_ptr<Thread> thread = zombieThreads.pop();
-
-        if ( thread )
-            thread->join();
-        else
+        if ( !running )
             return;
     }
-}
-
-void EventManager::ReaperThread::join()
-{
-    zombieThreads.push ( shared_ptr<Thread>() );
-    Thread::join();
 }
 
 void EventManager::SocketAccept::exec ( NL::Socket *serverSocket, NL::SocketGroup *, void * )
@@ -260,10 +230,4 @@ void EventManager::SocketRead::exec ( NL::Socket *socket, NL::SocketGroup *, voi
     LOG ( "socket %08x ( %08x ); %u bytes from '%s'",
           it->second, it->second->socket, len, address.c_str() );
     it->second->owner.readEvent ( it->second, socketReadBuffer, len, address );
-}
-
-EventManager& EventManager::get()
-{
-    static EventManager em;
-    return em;
 }

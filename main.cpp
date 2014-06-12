@@ -1,5 +1,6 @@
+#include "Event.h"
 #include "Socket.h"
-#include "EventManager.h"
+#include "Timer.h"
 #include "Log.h"
 
 #include <windows.h>
@@ -10,11 +11,12 @@
 
 using namespace std;
 
-struct Test : public Socket::Owner
+struct Test : public Socket::Owner, public Timer::Owner
 {
     void acceptEvent ( Socket *serverSocket )
     {
         shared_ptr<Socket> socket ( serverSocket->accept ( *this ) );
+        socket->send ( socket->getRemoteAddress() );
     }
 
     void connectEvent ( Socket *socket )
@@ -27,6 +29,32 @@ struct Test : public Socket::Owner
 
     void readEvent ( Socket *socket, char *bytes, size_t len, const IpAddrPort& address )
     {
+        MsgPtr msg = Serializable::decode ( bytes, len );
+
+        if ( !msg.get() )
+        {
+            LOG ( "Failed to decode [ %u bytes ]", len );
+        }
+        else
+        {
+            switch ( msg->type().value )
+            {
+                case MsgType::IpAddrPort:
+                {
+                    LOG ( "IpAddrPort '%s'", static_cast<IpAddrPort *> ( msg.get() )->c_str() );
+                    break;
+                }
+            }
+        }
+
+        EventManager::get().stop();
+    }
+
+    void timerExpired ( Timer *timer )
+    {
+        LOG ( "Tick" );
+
+        timer->start ( 1.0 );
     }
 };
 
@@ -38,6 +66,8 @@ int main ( int argc, char *argv[] )
 
     Test test;
     shared_ptr<Socket> socket;
+    Timer timer ( test );
+    timer.start ( 1000.0 );
 
     try
     {

@@ -21,7 +21,7 @@ BUILD_ENV = mingw-builds
 # Build flags
 DEFINES =
 CC_FLAGS = -m32 -s -Icontrib -Icontrib/netLink/include -Icontrib/cereal/include $(DEFINES)
-LD_FLAGS = -m32 -static -lws2_32 -lmingw32
+LD_FLAGS = -m32 -static -lws2_32 -lmingw32 -lwinmm
 LD_FLAGS += -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid
 
 ifeq ($(BUILD_ENV),mingw-builds)
@@ -79,7 +79,7 @@ Version.h:
 .PHONY: clean check trim format count Version.h
 
 clean:
-	rm -f Version.h Protocol.*.h .depend *.res *.exe *.zip $(OBJECTS)
+	rm -f Version.h Protocol.*.h .depend *.res *.exe *.zip *.o $(OBJECTS)
 
 check:
 	cppcheck --enable=all *.cpp *h

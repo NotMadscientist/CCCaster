@@ -1,5 +1,5 @@
+#include "Event.h"
 #include "Socket.h"
-#include "EventManager.h"
 #include "Log.h"
 
 using namespace std;
