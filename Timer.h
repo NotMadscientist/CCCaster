@@ -10,14 +10,14 @@ struct Timer
 private:
 
     Owner& owner;
-    double delay, expiry;
+    long delay, expiry;
 
 public:
 
     Timer ( Owner& owner );
     ~Timer();
 
-    void start ( double delay );
+    void start ( long delay );
 
     friend class EventManager;
 };

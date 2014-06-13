@@ -8,12 +8,12 @@
 
 using namespace std;
 
-static double now = 0;
+static long now = 0;
 
 void EventManager::addTimer ( Timer *timer )
 {
     LOCK ( mutex );
-    LOG ( "Added timer %08x; delay=%.2f", timer, timer->delay );
+    LOG ( "Added timer %08x; delay='%lu ms'", timer, timer->delay );
     timerSet.insert ( timer );
 }
 
@@ -76,7 +76,7 @@ void EventManager::TimerThread::run()
                 break;
 
             QueryPerformanceCounter ( &ticks );
-            now = 1000.0 * ticks.QuadPart / ticksPerSecond.QuadPart;
+            now = 1000 * ticks.QuadPart / ticksPerSecond.QuadPart;
 
             checkTimers();
         }
@@ -114,17 +114,21 @@ void EventManager::TimerThread::checkTimers()
 
     for ( Timer *timer : em.timerSet )
     {
-        if ( timer->delay > 0 )
+        if ( timer->delay >= 0 )
         {
+            LOG ( "Started timer %08x; delay='%lu ms'", timer, timer->delay );
+
             timer->expiry = now + timer->delay;
-            timer->delay = 0;
+            timer->delay = -1;
         }
         else if ( now >= timer->expiry )
         {
-            timer->owner.timerExpired ( timer );
-            timer->expiry = 0;
+            LOG ( "Expired timer %08x", timer );
 
-            if ( timer->delay <= 0 )
+            timer->owner.timerExpired ( timer );
+            timer->expiry = -1;
+
+            if ( timer->delay < 0 )
                 toRemove.push_back ( timer );
         }
     }

@@ -45,6 +45,7 @@ void EventManager::addSocket ( Socket *socket )
               socket->protocol == Socket::TCP ? "TCP" : "UDP", socket, rawSocket.get(), socket->address.port );
 
         socket->socket = rawSocket.get();
+
         socketMap[rawSocket.get()] = socket;
         rawSocketMap[rawSocket.get()] = rawSocket;
         rawSocketsToAdd.push_back ( rawSocket.get() );
@@ -55,7 +56,7 @@ void EventManager::addSocket ( Socket *socket )
     {
         LOG ( "Connecting TCP socket %08x; address='%s'", socket, socket->address.c_str() );
 
-        shared_ptr<Thread> thread ( new TcpConnectThread ( socket ) );
+        shared_ptr<Thread> thread ( new TcpConnectThread ( socket, socket->address ) );
         thread->start();
         addThread ( thread );
     }
@@ -86,6 +87,7 @@ void EventManager::addSocket ( Socket *socket )
         LOG ( "Connecting UDP socket %08x ( %08x ); address='%s'", socket, rawSocket.get(), socket->address.c_str() );
 
         socket->socket = rawSocket.get();
+
         socketMap[rawSocket.get()] = socket;
         rawSocketMap[rawSocket.get()] = rawSocket;
         rawSocketsToAdd.push_back ( rawSocket.get() );
@@ -109,29 +111,30 @@ void EventManager::TcpConnectThread::run()
     shared_ptr<NL::Socket> rawSocket;
     try
     {
-        rawSocket.reset ( new NL::Socket ( socket->address.addr, socket->address.port, NL::TCP, NL::IP4 ) );
+        rawSocket.reset ( new NL::Socket ( address.addr, address.port, NL::TCP, NL::IP4 ) );
     }
     catch ( const NL::Exception& e )
     {
         LOG ( "[%d] %s", e.nativeErrorCode(), e.what() );
     }
 
-    if ( !rawSocket.get() )
-    {
-        LOG ( "Failed to connect TCP socket %08x; address='%s'", socket, socket->address.c_str() );
-        return;
-    }
-
     EventManager& em = EventManager::get();
     Lock lock ( em.mutex );
 
+    if ( !rawSocket.get() )
+    {
+        LOG ( "Failed to connect TCP socket %08x; address='%s'", socket, socket->address.c_str() );
+        em.socketSet.erase ( socket );
+        return;
+    }
+
     if ( em.socketSet.find ( socket ) == em.socketSet.end() )
         return;
-    em.socketSet.erase ( socket );
 
     assert ( socket->address == IpAddrPort ( rawSocket ) );
 
     socket->socket = rawSocket.get();
+
     em.socketMap[rawSocket.get()] = socket;
     em.rawSocketMap[rawSocket.get()] = rawSocket;
     em.rawSocketsToAdd.push_back ( rawSocket.get() );

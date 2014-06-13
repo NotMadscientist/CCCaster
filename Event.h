@@ -2,6 +2,7 @@
 
 #include "Thread.h"
 #include "Util.h"
+#include "IpAddrPort.h"
 #include "BlockingQueue.h"
 
 #include <netlink/socket.h>
@@ -44,10 +45,11 @@ class EventManager
     class TcpConnectThread : public Thread
     {
         Socket *socket;
+        IpAddrPort address;
 
     public:
 
-        TcpConnectThread ( Socket *socket ) : socket ( socket ) {}
+        TcpConnectThread ( Socket *socket, const IpAddrPort& address ) : socket ( socket ), address ( address ) {}
 
         void run();
     };
