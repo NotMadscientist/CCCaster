@@ -1,5 +1,5 @@
 #include "Event.h"
-#include "Socket.h"
+#include "DoubleSocket.h"
 #include "Timer.h"
 #include "Log.h"
 
@@ -8,50 +8,47 @@
 #include <vector>
 #include <cstdlib>
 #include <cstdio>
+#include <cassert>
 
 using namespace std;
 
-struct Test : public Socket::Owner, public Timer::Owner
+struct Test : public DoubleSocket::Owner, public Timer::Owner
 {
-    shared_ptr<Socket> socket, accepted;
+    shared_ptr<DoubleSocket> socket, accepted;
     Timer timer;
 
     Test() : timer ( *this ) {}
 
-    void acceptEvent ( Socket *serverSocket )
+    void acceptEvent ( DoubleSocket *serverSocket )
     {
-        accepted.reset ( serverSocket->accept ( *this ) );
-        accepted->send ( accepted->getRemoteAddress() );
+        // accepted.reset ( serverSocket->accept ( *this ) );
+        // accepted->send ( accepted->getRemoteAddress() );
     }
 
-    void connectEvent ( Socket *socket )
+    void connectEvent ( DoubleSocket *socket )
     {
         // this->socket.reset();
     }
 
-    void disconnectEvent ( Socket *socket )
+    void disconnectEvent ( DoubleSocket *socket )
     {
         // this->socket.reset();
     }
 
-    void readEvent ( Socket *socket, char *bytes, size_t len, const IpAddrPort& address )
+    void readEvent ( DoubleSocket *socket, const MsgPtr& msg, const IpAddrPort& address )
     {
-        MsgPtr msg = Serializable::decode ( bytes, len );
+        assert ( msg.get() );
 
-        if ( !msg.get() )
+        switch ( msg->type().value )
         {
-            LOG ( "Failed to decode [ %u bytes ]", len );
-        }
-        else
-        {
-            switch ( msg->type().value )
+            case MsgType::IpAddrPort:
             {
-                case MsgType::IpAddrPort:
-                {
-                    LOG ( "IpAddrPort '%s'", static_cast<IpAddrPort *> ( msg.get() )->c_str() );
-                    break;
-                }
+                LOG ( "IpAddrPort '%s'", static_cast<IpAddrPort *> ( msg.get() )->c_str() );
+                break;
             }
+
+            default:
+                break;
         }
 
         // this->socket.reset();
@@ -61,12 +58,12 @@ struct Test : public Socket::Owner, public Timer::Owner
 
     void timerExpired ( Timer *timer )
     {
-        if ( socket.get() && !socket->isConnected() )
-        {
-            socket.reset();
-            timer->start ( 30000 );
-            return;
-        }
+        // if ( socket.get() && !socket->isConnected() )
+        // {
+        // socket.reset();
+        // timer->start ( 30000 );
+        // return;
+        // }
 
         EventManager::get().stop();
     }
@@ -84,18 +81,19 @@ int main ( int argc, char *argv[] )
     {
         if ( argc == 2 )
         {
-            test.socket.reset ( Socket::listen ( test, atoi ( argv[1] ), Protocol::TCP ) );
+            test.socket.reset ( DoubleSocket::listen ( test, atoi ( argv[1] ) ) );
         }
         else if ( argc == 3 )
         {
-            test.socket.reset ( Socket::connect ( test, argv[1], atoi ( argv[2] ), Protocol::TCP ) );
-            test.timer.start ( 5000 );
+            test.socket.reset ( DoubleSocket::connect ( test, argv[1], atoi ( argv[2] ) ) );
         }
     }
     catch ( const NL::Exception& e )
     {
         LOG ( "[%d] %s", e.nativeErrorCode(), e.what() );
     }
+
+    // test.timer.start ( 5000 );
 
     EventManager::get().start();
 

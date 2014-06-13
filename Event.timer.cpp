@@ -13,7 +13,7 @@ static long now = 0;
 void EventManager::addTimer ( Timer *timer )
 {
     LOCK ( mutex );
-    LOG ( "Added timer %08x; delay='%lu ms'", timer, timer->delay );
+    // LOG ( "Added timer %08x; delay='%lu ms'", timer, timer->delay );
     timerSet.insert ( timer );
 }
 

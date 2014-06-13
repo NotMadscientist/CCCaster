@@ -39,12 +39,13 @@ public:
 
     Socket *accept ( Owner& owner );
 
-    bool isServer() const;
-    bool isConnected() const;
+    inline bool isConnected() const { return ( socket != 0 ); }
+    inline bool isServer() const { if ( !isConnected() ) return false; return ( socket->type() == NL::SERVER ); }
 
-    const IpAddrPort& getRemoteAddress() const;
-    Protocol getProtocol() const;
+    inline const IpAddrPort& getRemoteAddress() const { return address; }
+    inline Protocol getProtocol() const { return protocol; }
 
+    void send ( const MsgPtr& msg, const IpAddrPort& address = IpAddrPort() );
     void send ( const Serializable& msg, const IpAddrPort& address = IpAddrPort() );
     void send ( char *bytes, size_t len, const IpAddrPort& address = IpAddrPort() );
 

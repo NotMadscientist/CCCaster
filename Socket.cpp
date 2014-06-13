@@ -51,19 +51,9 @@ Socket *Socket::accept ( Owner& owner )
     return new Socket ( owner, socket->accept() );
 }
 
-bool Socket::isConnected() const
+void Socket::send ( const MsgPtr& msg, const IpAddrPort& address )
 {
-    return ( socket != 0 );
-}
-
-const IpAddrPort& Socket::getRemoteAddress() const
-{
-    return address;
-}
-
-Protocol Socket::getProtocol() const
-{
-    return protocol;
+    send ( *msg, address );
 }
 
 void Socket::send ( const Serializable& msg, const IpAddrPort& address )

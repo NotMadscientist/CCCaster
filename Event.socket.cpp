@@ -6,7 +6,7 @@
 
 using namespace std;
 
-#define LISTEN_INTERVAL     1000
+#define LISTEN_INTERVAL     100
 
 #define UDP_BIND_ATTEMPTS   10
 
@@ -157,6 +157,8 @@ void EventManager::socketListenLoop()
 
     for ( ;; )
     {
+        Sleep ( 1 );
+
         LOCK ( mutex );
 
         for ( ;; )
@@ -192,7 +194,7 @@ void EventManager::socketListenLoop()
                 break;
         }
 
-        LOG ( "Listening to %u socket(s)...", socketGroup.size() );
+        // LOG ( "Listening to %u socket(s)...", socketGroup.size() );
 
         try
         {
