@@ -84,11 +84,11 @@ int main ( int argc, char *argv[] )
     {
         if ( argc == 2 )
         {
-            test.socket.reset ( Socket::listen ( test, atoi ( argv[1] ), Socket::TCP ) );
+            test.socket.reset ( Socket::listen ( test, atoi ( argv[1] ), Protocol::TCP ) );
         }
         else if ( argc == 3 )
         {
-            test.socket.reset ( Socket::connect ( test, argv[1], atoi ( argv[2] ), Socket::TCP ) );
+            test.socket.reset ( Socket::connect ( test, argv[1], atoi ( argv[2] ), Protocol::TCP ) );
             test.timer.start ( 5000 );
         }
     }

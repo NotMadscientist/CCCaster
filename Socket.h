@@ -4,6 +4,8 @@
 
 #include <netlink/socket.h>
 
+enum class Protocol : uint8_t { TCP, UDP };
+
 struct Socket
 {
     struct Owner
@@ -14,21 +16,17 @@ struct Socket
         virtual void readEvent ( Socket *socket, char *bytes, size_t len, const IpAddrPort& address ) {}
     };
 
-    enum Protocol { TCP, UDP };
-
 private:
 
     Owner& owner;
     NL::Socket *socket;
 
+    const IpAddrPort address;
+    const Protocol protocol;
+
     Socket ( Owner& owner, NL::Socket *socket );
     Socket ( Owner& owner, unsigned port, Protocol protocol );
     Socket ( Owner& owner, const std::string& address, unsigned port, Protocol protocol );
-
-protected:
-
-    const IpAddrPort address;
-    const Protocol protocol;
 
 public:
 
@@ -44,7 +42,8 @@ public:
     bool isServer() const;
     bool isConnected() const;
 
-    IpAddrPort getRemoteAddress() const;
+    const IpAddrPort& getRemoteAddress() const;
+    Protocol getProtocol() const;
 
     void send ( const Serializable& msg, const IpAddrPort& address = IpAddrPort() );
     void send ( char *bytes, size_t len, const IpAddrPort& address = IpAddrPort() );

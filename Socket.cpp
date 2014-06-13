@@ -5,7 +5,8 @@
 using namespace std;
 
 Socket::Socket ( Owner& owner, NL::Socket *socket )
-    : owner ( owner ), socket ( socket ), address ( socket ), protocol ( socket->protocol() == NL::TCP ? TCP : UDP )
+    : owner ( owner ), socket ( socket ), address ( socket )
+    , protocol ( socket->protocol() == NL::TCP ? Protocol::TCP : Protocol::UDP )
 {
     EventManager::get().addSocket ( this );
 }
@@ -55,12 +56,14 @@ bool Socket::isConnected() const
     return ( socket != 0 );
 }
 
-IpAddrPort Socket::getRemoteAddress() const
+const IpAddrPort& Socket::getRemoteAddress() const
 {
-    if ( !socket )
-        return IpAddrPort();
+    return address;
+}
 
-    return IpAddrPort ( socket );
+Protocol Socket::getProtocol() const
+{
+    return protocol;
 }
 
 void Socket::send ( const Serializable& msg, const IpAddrPort& address )

@@ -28,7 +28,9 @@ void EventManager::addSocket ( Socket *socket )
     if ( socket->socket )
     {
         LOG ( "Adding %s socket %08x ( %08x ); address='%s'",
-              socket->protocol == Socket::TCP ? "TCP" : "UDP", socket, socket->socket, socket->address.c_str() );
+              socket->protocol == Protocol::TCP ? "TCP" : "UDP", socket, socket->socket, socket->address.c_str() );
+
+        assert ( socket->address == IpAddrPort ( socket->socket ) );
 
         socketMap[socket->socket] = socket;
         rawSocketMap[socket->socket] = shared_ptr<NL::Socket> ( socket->socket );
@@ -39,10 +41,12 @@ void EventManager::addSocket ( Socket *socket )
     else if ( socket->address.addr.empty() )
     {
         shared_ptr<NL::Socket> rawSocket (
-            new NL::Socket ( socket->address.port, socket->protocol == Socket::TCP ? NL::TCP : NL::UDP, NL::IP4 ) );
+            new NL::Socket ( socket->address.port, socket->protocol == Protocol::TCP ? NL::TCP : NL::UDP, NL::IP4 ) );
 
         LOG ( "Opening %s socket %08x ( %08x ); port=%u",
-              socket->protocol == Socket::TCP ? "TCP" : "UDP", socket, rawSocket.get(), socket->address.port );
+              socket->protocol == Protocol::TCP ? "TCP" : "UDP", socket, rawSocket.get(), socket->address.port );
+
+        assert ( socket->address.port == rawSocket->portFrom() );
 
         socket->socket = rawSocket.get();
 
@@ -52,7 +56,7 @@ void EventManager::addSocket ( Socket *socket )
 
         socketsCond.signal();
     }
-    else if ( socket->protocol == Socket::TCP )
+    else if ( socket->protocol == Protocol::TCP )
     {
         LOG ( "Connecting TCP socket %08x; address='%s'", socket, socket->address.c_str() );
 
@@ -85,6 +89,8 @@ void EventManager::addSocket ( Socket *socket )
         }
 
         LOG ( "Connecting UDP socket %08x ( %08x ); address='%s'", socket, rawSocket.get(), socket->address.c_str() );
+
+        assert ( socket->address == IpAddrPort ( rawSocket ) );
 
         socket->socket = rawSocket.get();
 
