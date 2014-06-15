@@ -7,19 +7,19 @@
 #include <memory>
 #include <list>
 
-struct PrimaryId : public Serializable
+struct PrimaryId : public SerializableSequence
 {
     uint32_t id;
 
     PrimaryId() : id ( 0 ) {}
 
-    PrimaryId ( uint32_t id ) : id ( id ) {}
+    PrimaryId ( uint32_t sequence, uint32_t id ) : SerializableSequence ( sequence ), id ( id ) {}
 
     virtual void serialize ( cereal::BinaryOutputArchive& ar ) const { ar ( id ); }
 
     virtual void deserialize ( cereal::BinaryInputArchive& ar ) { ar ( id ); }
 
-    virtual const MsgType& type() const;
+    virtual MsgType type() const;
 };
 
 struct DoubleSocket : public Socket::Owner, public Timer::Owner

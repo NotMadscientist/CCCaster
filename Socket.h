@@ -10,7 +10,7 @@ struct Socket
 {
     struct Owner
     {
-        virtual void acceptEvent ( Socket *serverSocket ) {}
+        virtual void acceptEvent ( Socket *serverSocket ) { delete serverSocket->accept ( *this ); }
         virtual void connectEvent ( Socket *socket ) {}
         virtual void disconnectEvent ( Socket *socket ) {}
         virtual void readEvent ( Socket *socket, char *bytes, size_t len, const IpAddrPort& address ) {}
@@ -45,7 +45,6 @@ public:
     inline const IpAddrPort& getRemoteAddress() const { return address; }
     inline Protocol getProtocol() const { return protocol; }
 
-    void send ( const MsgPtr& msg, const IpAddrPort& address = IpAddrPort() );
     void send ( const Serializable& msg, const IpAddrPort& address = IpAddrPort() );
     void send ( char *bytes, size_t len, const IpAddrPort& address = IpAddrPort() );
 

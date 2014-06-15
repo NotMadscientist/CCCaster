@@ -1,6 +1,7 @@
 #include "Event.h"
 #include "Socket.h"
 #include "Log.h"
+#include "Util.h"
 
 using namespace std;
 
@@ -51,15 +52,10 @@ Socket *Socket::accept ( Owner& owner )
     return new Socket ( owner, socket->accept() );
 }
 
-void Socket::send ( const MsgPtr& msg, const IpAddrPort& address )
-{
-    send ( *msg, address );
-}
-
 void Socket::send ( const Serializable& msg, const IpAddrPort& address )
 {
     string bytes = Serializable::encode ( msg );
-    LOG ( "Encoded '%s' to [ %u bytes ]", msg.type().c_str(), bytes.size() );
+    LOG ( "Encoded '%s' to [ %u bytes ]", toString ( msg.type() ).c_str(), bytes.size() );
     send ( &bytes[0], bytes.size(), address );
 }
 

@@ -39,7 +39,7 @@ struct Test : public DoubleSocket::Owner, public Timer::Owner
     {
         assert ( msg.get() );
 
-        switch ( msg->type().value )
+        switch ( msg->type() )
         {
             case MsgType::IpAddrPort:
             {

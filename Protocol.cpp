@@ -4,17 +4,14 @@
 using namespace std;
 using namespace cereal;
 
-// Increase size as needed
-#define MSG_TYPE_UINT uint8_t
-
-const char *MsgType::c_str() const
+ostream& operator<< ( ostream& os, const MsgType& type )
 {
-    switch ( value )
+    switch ( type )
     {
 #include "Protocol.strings.h"
     }
 
-    return "Unknown type!";
+    return ( os << "Unknown type!" );
 }
 
 string Serializable::encode ( const Serializable& msg )
@@ -22,7 +19,18 @@ string Serializable::encode ( const Serializable& msg )
     ostringstream ss ( stringstream::binary );
     BinaryOutputArchive archive ( ss );
 
-    archive ( ( MSG_TYPE_UINT ) msg.type().value );
+    archive ( msg.type() );
+
+    switch ( msg.base() )
+    {
+        case BaseType::SerializableMessage:
+            break;
+
+        case BaseType::SerializableSequence:
+            archive ( static_cast<const SerializableSequence&> ( msg ).sequence );
+            break;
+    }
+
     msg.serialize ( archive );
 
     return ss.str();
@@ -33,12 +41,12 @@ MsgPtr Serializable::decode ( char *bytes, size_t len )
     istringstream ss ( string ( bytes, len ), stringstream::binary );
     BinaryInputArchive archive ( ss );
 
-    MSG_TYPE_UINT type;
+    MsgType type;
     archive ( type );
 
     MsgPtr msg;
 
-    switch ( ( MsgType::Enum ) type )
+    switch ( type )
     {
 #include "Protocol.decode.h"
     }

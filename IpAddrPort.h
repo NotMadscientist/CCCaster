@@ -5,7 +5,7 @@
 #include <cereal/types/string.hpp>
 #include <netlink/socket.h>
 
-struct IpAddrPort : public Serializable
+struct IpAddrPort : public SerializableMessage
 {
     std::string addr;
     unsigned port;
@@ -54,7 +54,7 @@ struct IpAddrPort : public Serializable
 
     virtual void deserialize ( cereal::BinaryInputArchive& ar ) { ar ( addr, port ); }
 
-    virtual const MsgType& type() const;
+    virtual MsgType type() const;
 };
 
 inline bool operator== ( const IpAddrPort& a, const IpAddrPort& b )

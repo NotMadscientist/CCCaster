@@ -3,7 +3,7 @@
 
 #include <cassert>
 
-#define RESEND_INTERVAL     300
+#define RESEND_INTERVAL     100
 
 using namespace std;
 
@@ -16,7 +16,7 @@ void DoubleSocket::acceptEvent ( Socket *serverSocket )
 
     assert ( socket );
 
-    socket->send ( PrimaryId ( ( uint32_t ) socket ) );
+    socket->send ( PrimaryId ( 0, ( uint32_t ) socket ) );
 }
 
 void DoubleSocket::connectEvent ( Socket *socket )
@@ -41,7 +41,7 @@ void DoubleSocket::readEvent ( Socket *socket, char *bytes, size_t len, const Ip
     }
     else
     {
-        switch ( msg->type().value )
+        switch ( msg->type() )
         {
             case MsgType::PrimaryId:
             {
@@ -53,7 +53,7 @@ void DoubleSocket::readEvent ( Socket *socket, char *bytes, size_t len, const Ip
                 }
                 else if ( primary->isServer() )
                 {
-                    secondary->send ( msg, address );
+                    secondary->send ( *msg, address );
                 }
                 else
                 {
@@ -76,8 +76,8 @@ void DoubleSocket::timerExpired ( Timer *timer )
     assert ( timer == &resendTimer );
 
     // TODO sequence number and socket selection
-    for ( MsgPtr msg : resendList )
-        secondary->send ( msg );
+    for ( const MsgPtr& msg : resendList )
+        secondary->send ( *msg );
 
     if ( !resendList.empty() )
         resendTimer.start ( RESEND_INTERVAL );

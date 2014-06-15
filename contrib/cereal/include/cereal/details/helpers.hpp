@@ -55,7 +55,7 @@ namespace cereal
   /*! To ensure compatability between 32, 64, etc bit machines, we need to use
    * a fixed size type instead of size_t, which may vary from machine to
    * machine. */
-  using size_type = uint64_t;
+  using size_type = uint32_t;
 
   // forward decls
   class BinaryOutputArchive;

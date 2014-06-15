@@ -56,16 +56,16 @@ icon.res: icon.rc icon.ico
 	windres -F pe-i386 icon.rc -O coff -o $@
 
 Protocol.types.h:
-	@grep " : public Serializable" *.h | sed -r 's/^(.+\.h):[ ]*[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nconst MsgType\& \2::type() const { static const MsgType type ( MsgType::\2 ); return type; }/' > $@
+	@grep " : public Serializable[A-Z]" *.h | sed -r 's/^(.+\.h):[ ]*[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nMsgType \2::type() const { return MsgType::\2; }/' > $@
 
 Protocol.strings.h:
-	@grep " : public Serializable" *.h | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1:\nreturn "\1";/' > $@
+	@grep " : public Serializable[A-Z]" *.h | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1:\nreturn ( os << "\1" );/' > $@
 
 Protocol.enum.h:
-	@grep " : public Serializable" *.h | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/\1,/' > $@
+	@grep " : public Serializable[A-Z]" *.h | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/\1,/' > $@
 
 Protocol.decode.h:
-	@grep " : public Serializable" *.h | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1:\n{\n    msg.reset ( new \1() );\n    msg->deserialize ( archive );\n    break;\n}/' > $@
+	@grep " : public Serializable[A-Z]" *.h | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1:\n{\n    msg.reset ( new \1() );\n    msg->deserialize ( archive );\n    break;\n}/' > $@
 
 Version.h:
 	@date +"#define BUILD %s" > $@
