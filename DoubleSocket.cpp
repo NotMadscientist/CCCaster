@@ -1,5 +1,6 @@
 #include "DoubleSocket.h"
 #include "Log.h"
+#include "Util.h"
 
 #include <cassert>
 
@@ -21,9 +22,7 @@ void DoubleSocket::acceptEvent ( Socket *serverSocket )
 
 void DoubleSocket::connectEvent ( Socket *socket )
 {
-    assert ( socket == primary.get() );
-
-    resendTimer.start ( RESEND_INTERVAL );
+    // assert ( socket == primary.get() );
 }
 
 void DoubleSocket::disconnectEvent ( Socket *socket )
@@ -49,7 +48,8 @@ void DoubleSocket::readEvent ( Socket *socket, char *bytes, size_t len, const Ip
 
                 if ( socket == primary.get() )
                 {
-                    resendList.push_back ( msg );
+                    static_cast<PrimaryId *> ( msg.get() )->sequence = 0;
+                    addMsgToResend ( msg );
                 }
                 else if ( primary->isServer() )
                 {
@@ -57,8 +57,7 @@ void DoubleSocket::readEvent ( Socket *socket, char *bytes, size_t len, const Ip
                 }
                 else
                 {
-                    // TODO delete specific message
-                    resendList.clear();
+                    removeMsgToResend ( 0 );
                 }
 
                 break;
@@ -71,16 +70,62 @@ void DoubleSocket::readEvent ( Socket *socket, char *bytes, size_t len, const Ip
     }
 }
 
+void DoubleSocket::addMsgToResend ( const MsgPtr& msg )
+{
+    LOG ( "Added '%s' to resend", TO_C_STR ( msg->type() ) );
+    assert ( msg->base() == BaseType::SerializableSequence );
+    resendList.push_back ( msg );
+    resendTimer.start ( RESEND_INTERVAL );
+}
+
+void DoubleSocket::removeMsgToResend ( uint32_t sequence )
+{
+    LOG ( "Removing sequence=%u from resend", sequence );
+    resendToDel.insert ( sequence );
+}
+
 void DoubleSocket::timerExpired ( Timer *timer )
 {
     assert ( timer == &resendTimer );
 
-    // TODO sequence number and socket selection
-    for ( const MsgPtr& msg : resendList )
-        secondary->send ( *msg );
+    do
+    {
+        if ( resendList.empty() )
+            break;
 
-    if ( !resendList.empty() )
+        if ( resendIter == resendList.end() )
+            resendIter = resendList.begin();
+
+        if ( resendToDel.find ( static_cast<SerializableSequence&> ( **resendIter ).sequence ) != resendToDel.end() )
+        {
+            LOG ( "Removed '%s' from resend", TO_C_STR ( ( **resendIter ).type() ) );
+            resendList.erase ( resendIter );
+            continue;
+        }
+
+        switch ( ( **resendIter ).type() )
+        {
+            default:
+                if ( primary.get() )
+                    primary->send ( **resendIter );
+                else
+                    LOG ( "Primary socket not initialized!" );
+                break;
+
+            case MsgType::PrimaryId:
+                if ( secondary.get() )
+                    secondary->send ( **resendIter );
+                else
+                    LOG ( "Secondary socket not initialized!" );
+                break;
+        }
+
+        ++resendIter;
         resendTimer.start ( RESEND_INTERVAL );
+    }
+    while ( 0 );
+
+    resendToDel.clear();
 }
 
 DoubleSocket::DoubleSocket ( Owner& owner, unsigned port )
@@ -88,6 +133,7 @@ DoubleSocket::DoubleSocket ( Owner& owner, unsigned port )
     , primary ( Socket::listen ( *this, port, Protocol::TCP ) )
     , secondary ( Socket::listen ( *this, port, Protocol::UDP ) )
     , resendTimer ( *this )
+    , resendIter ( resendList.end() )
 {
 }
 
@@ -96,6 +142,7 @@ DoubleSocket::DoubleSocket ( Owner& owner, const string& address, unsigned port 
     , primary ( Socket::connect ( *this, address, port, Protocol::TCP ) )
     , secondary ( Socket::connect ( *this, address, port, Protocol::UDP ) )
     , resendTimer ( *this )
+    , resendIter ( resendList.end() )
 {
 }
 

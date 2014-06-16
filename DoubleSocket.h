@@ -43,6 +43,11 @@ private:
 
     Timer resendTimer;
     std::list<MsgPtr> resendList;
+    std::list<MsgPtr>::iterator resendIter;
+    std::unordered_set<uint32_t> resendToDel;
+
+    void addMsgToResend ( const MsgPtr& msg );
+    void removeMsgToResend ( uint32_t sequence );
 
     void acceptEvent ( Socket *serverSocket );
     void connectEvent ( Socket *socket );
