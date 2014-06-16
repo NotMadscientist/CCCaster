@@ -15,6 +15,7 @@ void EventManager::addTimer ( Timer *timer )
     LOCK ( mutex );
     // LOG ( "Added timer %08x; delay='%lu ms'", timer, timer->delay );
     timerSet.insert ( timer );
+    timersCond.signal();
 }
 
 void EventManager::removeTimer ( Timer *timer )
