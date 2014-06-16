@@ -23,7 +23,7 @@ struct IpAddrPort : public SerializableMessage
 
     inline bool empty() const
     {
-        return ( addr.empty() || !port );
+        return ( addr.empty() && !port );
     }
 
     inline void clear()

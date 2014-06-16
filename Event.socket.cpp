@@ -21,6 +21,8 @@ static char socketReadBuffer[READ_BUFFER_SIZE];
 
 void EventManager::addSocket ( Socket *socket )
 {
+    LOCK ( mutex );
+
     assert ( socketSet.find ( socket ) == socketSet.end() );
 
     socketSet.insert ( socket );
@@ -28,7 +30,7 @@ void EventManager::addSocket ( Socket *socket )
     if ( socket->socket )
     {
         LOG ( "Adding %s socket %08x ( %08x ); address='%s'",
-              socket->protocol == Protocol::TCP ? "TCP" : "UDP", socket, socket->socket, socket->address.c_str() );
+              TO_C_STR ( socket->protocol ), socket, socket->socket, socket->address.c_str() );
 
         assert ( socket->address == IpAddrPort ( socket->socket ) );
 
@@ -43,8 +45,8 @@ void EventManager::addSocket ( Socket *socket )
         shared_ptr<NL::Socket> rawSocket (
             new NL::Socket ( socket->address.port, socket->protocol == Protocol::TCP ? NL::TCP : NL::UDP, NL::IP4 ) );
 
-        LOG ( "Opening %s socket %08x ( %08x ); port=%u",
-              socket->protocol == Protocol::TCP ? "TCP" : "UDP", socket, rawSocket.get(), socket->address.port );
+        LOG ( "Opening %s socket %08x ( %08x ); address='%s'",
+              TO_C_STR ( socket->protocol ), socket, rawSocket.get(), socket->address.c_str() );
 
         assert ( socket->address.port == rawSocket->portFrom() );
 
@@ -104,10 +106,13 @@ void EventManager::addSocket ( Socket *socket )
 
 void EventManager::removeSocket ( Socket *socket )
 {
+    LOCK ( mutex );
+
     if ( !socketSet.erase ( socket ) )
         return;
 
-    LOG ( "Removing socket %08x ( %08x )", socket, socket->socket );
+    LOG ( "Removing %s socket %08x ( %08x ); address='%s'",
+          TO_C_STR ( socket->protocol ), socket, socket->socket, socket->address.c_str() );
     rawSocketsToRemove.push_back ( socket->socket );
     socket->socket = 0;
 }
@@ -174,7 +179,8 @@ void EventManager::socketListenLoop()
 
             for ( NL::Socket *rawSocket : rawSocketsToAdd )
             {
-                LOG ( "Added socket %08x ( %08x )", socketMap[rawSocket], rawSocket );
+                LOG ( "Added %s socket %08x ( %08x ); address='%s'", TO_C_STR ( socketMap[rawSocket]->protocol ),
+                      socketMap[rawSocket], rawSocket, socketMap[rawSocket]->address.c_str() );
                 socketGroup.add ( rawSocket );
             }
 
@@ -182,7 +188,8 @@ void EventManager::socketListenLoop()
 
             for ( NL::Socket *rawSocket : rawSocketsToRemove )
             {
-                LOG ( "Removed socket %08x ( %08x )", socketMap[rawSocket], rawSocket );
+                LOG ( "Removed %s socket %08x ( %08x ); address='%s'", TO_C_STR ( socketMap[rawSocket]->protocol ),
+                      socketMap[rawSocket], rawSocket, socketMap[rawSocket]->address.c_str() );
                 socketGroup.remove ( rawSocket );
                 socketMap.erase ( rawSocket );
                 rawSocketMap.erase ( rawSocket );

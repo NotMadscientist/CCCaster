@@ -4,7 +4,11 @@
 
 #include <netlink/socket.h>
 
+#include <iostream>
+
 enum class Protocol : uint8_t { TCP, UDP };
+
+std::ostream& operator<< ( std::ostream& os, const Protocol& protocol );
 
 struct Socket
 {

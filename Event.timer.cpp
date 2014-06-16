@@ -12,16 +12,18 @@ static long now = 0;
 
 void EventManager::addTimer ( Timer *timer )
 {
+    LOG ( "Adding timer %08x; delay='%lu ms'", timer, timer->delay );
+
     LOCK ( mutex );
-    // LOG ( "Added timer %08x; delay='%lu ms'", timer, timer->delay );
     timerSet.insert ( timer );
     timersCond.signal();
 }
 
 void EventManager::removeTimer ( Timer *timer )
 {
+    LOG ( "Removing timer %08x", timer );
+
     LOCK ( mutex );
-    LOG ( "Removed timer %08x", timer );
     timerSet.erase ( timer );
 }
 
