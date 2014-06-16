@@ -55,7 +55,7 @@ Socket *Socket::accept ( Owner& owner )
 void Socket::send ( const Serializable& msg, const IpAddrPort& address )
 {
     string bytes = Serializable::encode ( msg );
-    LOG ( "Encoded '%s' to [ %u bytes ]", toString ( msg.type() ).c_str(), bytes.size() );
+    LOG ( "Encoded '%s' to [ %u bytes ]", TO_C_STR ( msg.type() ), bytes.size() );
     send ( &bytes[0], bytes.size(), address );
 }
 

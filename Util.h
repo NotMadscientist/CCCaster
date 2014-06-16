@@ -18,6 +18,8 @@ template<typename T> std::string toString ( const char *fmt, T val )
     return buffer;
 }
 
+#define TO_C_STR(...) toString ( __VA_ARGS__ ).c_str()
+
 // String trim
 inline std::string trim ( std::string str, const std::string& ws = " \t\r\n" )
 {
