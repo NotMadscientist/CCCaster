@@ -8,8 +8,6 @@
 
 enum class Protocol : uint8_t { TCP, UDP };
 
-std::ostream& operator<< ( std::ostream& os, const Protocol& protocol );
-
 struct Socket
 {
     struct Owner
@@ -54,3 +52,6 @@ public:
 
     friend class EventManager;
 };
+
+std::ostream& operator<< ( std::ostream& os, const Protocol& protocol );
+std::ostream& operator<< ( std::ostream& os, const NL::Protocol& protocol );

@@ -5,20 +5,6 @@
 
 using namespace std;
 
-ostream& operator<< ( ostream& os, const Protocol& protocol )
-{
-    switch ( protocol )
-    {
-        case Protocol::TCP:
-            return ( os << "TCP" );
-
-        case Protocol::UDP:
-            return ( os << "UDP" );
-    }
-
-    return ( os << "Unknown protocol!" );
-}
-
 Socket::Socket ( Owner& owner, NL::Socket *socket )
     : owner ( owner ), socket ( socket ), address ( socket )
     , protocol ( socket->protocol() == NL::TCP ? Protocol::TCP : Protocol::UDP )
@@ -92,4 +78,32 @@ void Socket::send ( char *bytes, size_t len, const IpAddrPort& address )
     {
         LOG ( "Unconnected socket!" );
     }
+}
+
+ostream& operator<< ( ostream& os, const Protocol& protocol )
+{
+    switch ( protocol )
+    {
+        case Protocol::TCP:
+            return ( os << "TCP" );
+
+        case Protocol::UDP:
+            return ( os << "UDP" );
+    }
+
+    return ( os << "Unknown protocol!" );
+}
+
+ostream& operator<< ( ostream& os, const NL::Protocol& protocol )
+{
+    switch ( protocol )
+    {
+        case NL::TCP:
+            return ( os << "TCP" );
+
+        case NL::UDP:
+            return ( os << "UDP" );
+    }
+
+    return ( os << "Unknown protocol!" );
 }

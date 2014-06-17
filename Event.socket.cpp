@@ -18,7 +18,7 @@ using namespace std;
 #define READ_BUFFER_SIZE    ( 1024 * 4096 )
 
 #define LOG_SOCKET(VERB, SOCKET)                                                                        \
-    LOG ( "%s %s socket %08x ( %08x, '%s' )",                                                           \
+    LOG ( "%s %s socket %08x { %08x, '%s' }",                                                           \
           VERB, TO_C_STR ( SOCKET->protocol ), SOCKET, SOCKET->socket, SOCKET->address.c_str() )
 
 static char socketReadBuffer[READ_BUFFER_SIZE];
@@ -181,7 +181,9 @@ void EventManager::socketListenLoop()
 
             for ( NL::Socket *rawSocket : rawSocketsToAdd )
             {
-                LOG_SOCKET ( "Added", socketMap[rawSocket] );
+                LOG ( "Added %s socket %08x { %08x, '%s:%u' }",
+                      TO_C_STR ( rawSocket->protocol() ), socketMap[rawSocket], rawSocket, rawSocket->hostTo().c_str(),
+                      ( rawSocket->type() == NL::SERVER ? rawSocket->portFrom() : rawSocket->portTo() ) );
                 socketGroup.add ( rawSocket );
             }
 
@@ -189,7 +191,9 @@ void EventManager::socketListenLoop()
 
             for ( NL::Socket *rawSocket : rawSocketsToRemove )
             {
-                LOG_SOCKET ( "Removed", socketMap[rawSocket] );
+                LOG ( "Removed %s socket %08x { %08x, '%s:%u' }",
+                      TO_C_STR ( rawSocket->protocol() ), socketMap[rawSocket], rawSocket, rawSocket->hostTo().c_str(),
+                      ( rawSocket->type() == NL::SERVER ? rawSocket->portFrom() : rawSocket->portTo() ) );
                 socketGroup.remove ( rawSocket );
                 socketMap.erase ( rawSocket );
                 rawSocketMap.erase ( rawSocket );

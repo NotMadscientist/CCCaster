@@ -32,12 +32,15 @@ struct DoubleSocket : public Socket::Owner, public Timer::Owner
         virtual void readEvent ( DoubleSocket *socket, const MsgPtr& msg, const IpAddrPort& address ) {}
     };
 
+    enum class State { Listening, Connecting, Connected, Disconnected };
+
 private:
 
     Owner& owner;
 
-    std::unordered_map<Socket *, std::shared_ptr<Socket>> primaryMap;
-    std::unordered_map<Socket *, std::shared_ptr<Socket>> secondaryMap;
+    State state;
+
+    std::unordered_map<Socket *, std::shared_ptr<Socket>> pendingAccepts;
 
     std::shared_ptr<Socket> primary, secondary;
 
@@ -73,3 +76,5 @@ public:
     void sendPrimary   ( const Serializable& msg, const IpAddrPort& address = IpAddrPort() );
     void sendSecondary ( const Serializable& msg, const IpAddrPort& address = IpAddrPort() );
 };
+
+std::ostream& operator<< ( std::ostream& os, DoubleSocket::State state );

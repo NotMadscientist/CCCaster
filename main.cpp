@@ -21,7 +21,7 @@ struct Test : public DoubleSocket::Owner, public Timer::Owner
 
     void acceptEvent ( DoubleSocket *serverSocket )
     {
-        // accepted.reset ( serverSocket->accept ( *this ) );
+        accepted.reset ( serverSocket->accept ( *this ) );
         // accepted->send ( accepted->getRemoteAddress() );
     }
 
@@ -37,19 +37,19 @@ struct Test : public DoubleSocket::Owner, public Timer::Owner
 
     void readEvent ( DoubleSocket *socket, const MsgPtr& msg, const IpAddrPort& address )
     {
-        assert ( msg.get() );
+        LOG ( "Read '%s'", TO_C_STR ( msg ) );
 
-        switch ( msg->type() )
-        {
-            case MsgType::IpAddrPort:
-            {
-                LOG ( "IpAddrPort '%s'", static_cast<IpAddrPort *> ( msg.get() )->c_str() );
-                break;
-            }
+        // switch ( msg->type() )
+        // {
+        // case MsgType::IpAddrPort:
+        // {
+        // LOG ( "IpAddrPort '%s'", static_cast<IpAddrPort *> ( msg.get() )->c_str() );
+        // break;
+        // }
 
-            default:
-                break;
-        }
+        // default:
+        // break;
+        // }
 
         // this->socket.reset();
 

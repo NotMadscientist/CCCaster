@@ -8,14 +8,27 @@
 
 using namespace std;
 
+#define LOG_UNEXPECTED_READ                                                                                     \
+    LOG ( "Unexpected '%s' from %s socket %08x address '%s' while '%s'",                                        \
+          TO_C_STR ( msg ), TO_C_STR ( socket->getProtocol() ), socket, address.c_str(), TO_C_STR ( state ) )
+
 void DoubleSocket::acceptEvent ( Socket *serverSocket )
 {
     assert ( serverSocket == primary.get() );
 
-    // TODO proper accept
+    // shared_ptr<Socket> socket ( serverSocket->accept ( *this ) );
+
+    // assert ( socket.get() );
+
+    // if ( state != State::Listening )
+    // return;
+
+    // socket->send ( PrimaryId ( 0, ( uint32_t ) socket.get() ) );
+
     Socket *socket = serverSocket->accept ( *this );
 
-    assert ( socket );
+    if ( state != State::Listening )
+        return;
 
     socket->send ( PrimaryId ( 0, ( uint32_t ) socket ) );
 }
@@ -27,46 +40,75 @@ void DoubleSocket::connectEvent ( Socket *socket )
 
 void DoubleSocket::disconnectEvent ( Socket *socket )
 {
-    // assert ( socket == primary.get() );
+    state = State::Disconnected;
 }
 
 void DoubleSocket::readEvent ( Socket *socket, char *bytes, size_t len, const IpAddrPort& address )
 {
-    MsgPtr msg = Serializable::decode ( bytes, len );
+    MsgPtr msg;
 
-    if ( !msg.get() )
+    if ( len > 0 )
     {
-        LOG ( "Failed to decode [ %u bytes ]", len );
-    }
-    else
-    {
-        switch ( msg->type() )
+        msg = Serializable::decode ( bytes, len );
+
+        if ( !msg.get() )
         {
-            case MsgType::PrimaryId:
+            LOG ( "Failed to decode [ %u bytes ]", len );
+            return;
+        }
+    }
+
+    switch ( state )
+    {
+        default:
+            LOG_UNEXPECTED_READ;
+            break;
+
+        case State::Listening:
+            if ( socket != secondary.get() )
             {
-                LOG ( "PrimaryId %08x", static_cast<PrimaryId *> ( msg.get() )->id );
-
-                if ( socket == primary.get() )
-                {
-                    static_cast<PrimaryId *> ( msg.get() )->sequence = 0;
-                    addMsgToResend ( msg );
-                }
-                else if ( primary->isServer() )
-                {
-                    secondary->send ( *msg, address );
-                }
-                else
-                {
-                    removeMsgToResend ( 0 );
-                }
-
+                LOG_UNEXPECTED_READ;
                 break;
             }
 
-            default:
-                owner.readEvent ( this, msg, address );
+            if ( msg->type() != MsgType::PrimaryId )
+            {
+                LOG_UNEXPECTED_READ;
                 break;
-        }
+            }
+
+            assert ( primary->isServer() );
+            LOG ( "Echoing 'PrimaryId' to '%s'", address.c_str() );
+            secondary->send ( *msg, address );
+            break;
+
+        case State::Connecting:
+            if ( msg->type() != MsgType::PrimaryId )
+            {
+                LOG_UNEXPECTED_READ;
+                break;
+            }
+
+            LOG ( "Got 'PrimaryId' %08x", static_cast<PrimaryId *> ( msg.get() )->id );
+
+            if ( socket == primary.get() )
+            {
+                static_cast<PrimaryId *> ( msg.get() )->sequence = 0;
+                addMsgToResend ( msg );
+            }
+            else if ( socket == secondary.get() )
+            {
+                removeMsgToResend ( 0 );
+            }
+            else
+            {
+                LOG ( "Unknown socket %08x", socket );
+            }
+            break;
+
+        case State::Connected:
+            owner.readEvent ( this, msg, address );
+            break;
     }
 }
 
@@ -130,20 +172,24 @@ void DoubleSocket::timerExpired ( Timer *timer )
 
 DoubleSocket::DoubleSocket ( Owner& owner, unsigned port )
     : owner ( owner )
+    , state ( State::Listening )
     , primary ( Socket::listen ( *this, port, Protocol::TCP ) )
     , secondary ( Socket::listen ( *this, port, Protocol::UDP ) )
     , resendTimer ( *this )
     , resendIter ( resendList.end() )
 {
+    LOG ( "primary=%08x; secondary=%08x", primary.get(), secondary.get() );
 }
 
 DoubleSocket::DoubleSocket ( Owner& owner, const string& address, unsigned port )
     : owner ( owner )
+    , state ( State::Connecting )
     , primary ( Socket::connect ( *this, address, port, Protocol::TCP ) )
     , secondary ( Socket::connect ( *this, address, port, Protocol::UDP ) )
     , resendTimer ( *this )
     , resendIter ( resendList.end() )
 {
+    LOG ( "primary=%08x; secondary=%08x", primary.get(), secondary.get() );
 }
 
 DoubleSocket *DoubleSocket::listen ( Owner& owner, unsigned port )
@@ -168,8 +214,7 @@ DoubleSocket::~DoubleSocket()
 
 void DoubleSocket::disconnect()
 {
-    primaryMap.clear();
-    secondaryMap.clear();
+    state = State::Disconnected;
     primary.reset();
     secondary.reset();
 }
@@ -193,4 +238,24 @@ void DoubleSocket::sendPrimary ( const Serializable& msg, const IpAddrPort& addr
 void DoubleSocket::sendSecondary ( const Serializable& msg, const IpAddrPort& address )
 {
     secondary->send ( msg, address );
+}
+
+ostream& operator<< ( ostream& os, DoubleSocket::State state )
+{
+    switch ( state )
+    {
+        case DoubleSocket::State::Listening:
+            return ( os << "Listening" );
+
+        case DoubleSocket::State::Connecting:
+            return ( os << "Connecting" );
+
+        case DoubleSocket::State::Connected:
+            return ( os << "Connected" );
+
+        case DoubleSocket::State::Disconnected:
+            return ( os << "Disconnected" );
+    }
+
+    return ( os << "Unknown state!" );
 }

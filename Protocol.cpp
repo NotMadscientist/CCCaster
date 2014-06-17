@@ -4,16 +4,6 @@
 using namespace std;
 using namespace cereal;
 
-ostream& operator<< ( ostream& os, const MsgType& type )
-{
-    switch ( type )
-    {
-#include "Protocol.strings.h"
-    }
-
-    return ( os << "Unknown type!" );
-}
-
 string Serializable::encode ( const Serializable& msg )
 {
     ostringstream ss ( stringstream::binary );
@@ -52,4 +42,36 @@ MsgPtr Serializable::decode ( char *bytes, size_t len )
     }
 
     return msg;
+}
+
+ostream& operator<< ( ostream& os, const MsgPtr& msg )
+{
+    if ( !msg.get() )
+        return ( os << "NullMsg" );
+    else
+        return ( os << msg->type() );
+}
+
+ostream& operator<< ( ostream& os, MsgType type )
+{
+    switch ( type )
+    {
+#include "Protocol.strings.h"
+    }
+
+    return ( os << "Unknown type!" );
+}
+
+ostream& operator<< ( ostream& os, BaseType type )
+{
+    switch ( type )
+    {
+        case BaseType::SerializableMessage:
+            return ( os << "SerializableMessage" );
+
+        case BaseType::SerializableSequence:
+            return ( os << "SerializableSequence" );
+    }
+
+    return ( os << "Unknown type!" );
 }

@@ -12,8 +12,6 @@ enum class MsgType : uint8_t
 #include "Protocol.enum.h"
 };
 
-std::ostream& operator<< ( std::ostream& os, const MsgType& type );
-
 enum class BaseType : uint8_t { SerializableMessage, SerializableSequence };
 
 struct Serializable;
@@ -21,6 +19,8 @@ struct SerializableMessage;
 struct SerializableSequence;
 
 typedef std::shared_ptr<Serializable> MsgPtr;
+
+const MsgPtr NullMsg;
 
 struct Serializable
 {
@@ -47,3 +47,7 @@ struct SerializableSequence : public Serializable
 
     BaseType base() const { return BaseType::SerializableSequence; }
 };
+
+std::ostream& operator<< ( std::ostream& os, const MsgPtr& msg );
+std::ostream& operator<< ( std::ostream& os, MsgType type );
+std::ostream& operator<< ( std::ostream& os, BaseType type );
