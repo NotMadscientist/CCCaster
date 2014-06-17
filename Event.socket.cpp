@@ -17,6 +17,10 @@ using namespace std;
 
 #define READ_BUFFER_SIZE    ( 1024 * 4096 )
 
+#define LOG_SOCKET(VERB, SOCKET)                                                                        \
+    LOG ( "%s %s socket %08x ( %08x, '%s' )",                                                           \
+          VERB, TO_C_STR ( SOCKET->protocol ), SOCKET, SOCKET->socket, SOCKET->address.c_str() )
+
 static char socketReadBuffer[READ_BUFFER_SIZE];
 
 void EventManager::addSocket ( Socket *socket )
@@ -29,8 +33,7 @@ void EventManager::addSocket ( Socket *socket )
 
     if ( socket->socket )
     {
-        LOG ( "Adding %s socket %08x ( %08x ); address='%s'",
-              TO_C_STR ( socket->protocol ), socket, socket->socket, socket->address.c_str() );
+        LOG_SOCKET ( "Adding", socket );
 
         assert ( socket->address == IpAddrPort ( socket->socket ) );
 
@@ -45,8 +48,7 @@ void EventManager::addSocket ( Socket *socket )
         shared_ptr<NL::Socket> rawSocket (
             new NL::Socket ( socket->address.port, socket->protocol == Protocol::TCP ? NL::TCP : NL::UDP, NL::IP4 ) );
 
-        LOG ( "Opening %s socket %08x ( %08x ); address='%s'",
-              TO_C_STR ( socket->protocol ), socket, rawSocket.get(), socket->address.c_str() );
+        LOG_SOCKET ( "Opening", socket );
 
         assert ( socket->address.port == rawSocket->portFrom() );
 
@@ -60,7 +62,7 @@ void EventManager::addSocket ( Socket *socket )
     }
     else if ( socket->protocol == Protocol::TCP )
     {
-        LOG ( "Connecting TCP socket %08x; address='%s'", socket, socket->address.c_str() );
+        LOG_SOCKET ( "Connecting", socket );
 
         shared_ptr<Thread> thread ( new TcpConnectThread ( socket, socket->address ) );
         thread->start();
@@ -90,7 +92,7 @@ void EventManager::addSocket ( Socket *socket )
             }
         }
 
-        LOG ( "Connecting UDP socket %08x ( %08x ); address='%s'", socket, rawSocket.get(), socket->address.c_str() );
+        LOG_SOCKET ( "Connecting", socket );
 
         assert ( socket->address == IpAddrPort ( rawSocket ) );
 
@@ -111,8 +113,8 @@ void EventManager::removeSocket ( Socket *socket )
     if ( !socketSet.erase ( socket ) )
         return;
 
-    LOG ( "Removing %s socket %08x ( %08x ); address='%s'",
-          TO_C_STR ( socket->protocol ), socket, socket->socket, socket->address.c_str() );
+    LOG_SOCKET ( "Removing", socket );
+
     rawSocketsToRemove.push_back ( socket->socket );
     socket->socket = 0;
 }
@@ -134,7 +136,7 @@ void EventManager::TcpConnectThread::run()
 
     if ( !rawSocket.get() )
     {
-        LOG ( "Failed to connect TCP socket %08x; address='%s'", socket, socket->address.c_str() );
+        LOG_SOCKET ( "Failed to connect", socket );
         em.socketSet.erase ( socket );
         return;
     }
@@ -152,7 +154,7 @@ void EventManager::TcpConnectThread::run()
 
     em.socketsCond.signal();
 
-    LOG ( "Connected TCP socket %08x ( %08x ); address='%s'", socket, rawSocket.get(), socket->address.c_str() );
+    LOG_SOCKET ( "Connected", socket );
     socket->owner.connectEvent ( socket );
 }
 
@@ -179,8 +181,7 @@ void EventManager::socketListenLoop()
 
             for ( NL::Socket *rawSocket : rawSocketsToAdd )
             {
-                LOG ( "Added %s socket %08x ( %08x ); address='%s'", TO_C_STR ( socketMap[rawSocket]->protocol ),
-                      socketMap[rawSocket], rawSocket, socketMap[rawSocket]->address.c_str() );
+                LOG_SOCKET ( "Added", socketMap[rawSocket] );
                 socketGroup.add ( rawSocket );
             }
 
@@ -188,8 +189,7 @@ void EventManager::socketListenLoop()
 
             for ( NL::Socket *rawSocket : rawSocketsToRemove )
             {
-                LOG ( "Removed %s socket %08x ( %08x ); address='%s'", TO_C_STR ( socketMap[rawSocket]->protocol ),
-                      socketMap[rawSocket], rawSocket, socketMap[rawSocket]->address.c_str() );
+                LOG_SOCKET ( "Removed", socketMap[rawSocket] );
                 socketGroup.remove ( rawSocket );
                 socketMap.erase ( rawSocket );
                 rawSocketMap.erase ( rawSocket );
@@ -231,7 +231,7 @@ void EventManager::SocketAccept::exec ( NL::Socket *serverSocket, NL::SocketGrou
     if ( !it->second->socket )
         return;
 
-    LOG ( "serverSocket %08x ( %08x )", it->second, it->second->socket );
+    LOG_SOCKET ( "Accept from server", it->second );
     it->second->owner.acceptEvent ( it->second );
 }
 
@@ -248,7 +248,7 @@ void EventManager::SocketDisconnect::exec ( NL::Socket *socket, NL::SocketGroup 
     if ( !it->second->socket )
         return;
 
-    LOG ( "socket %08x ( %08x )", it->second, it->second->socket );
+    LOG_SOCKET ( "Disconnected", it->second );
     it->second->owner.disconnectEvent ( it->second );
     it->second->disconnect();
 }
@@ -274,7 +274,7 @@ void EventManager::SocketRead::exec ( NL::Socket *socket, NL::SocketGroup *, voi
     else
         len = socket->readFrom ( socketReadBuffer, sizeof ( socketReadBuffer ), &address.addr, &address.port );
 
-    LOG ( "socket %08x ( %08x ); %u bytes from '%s'",
-          it->second, it->second->socket, len, address.c_str() );
+    LOG_SOCKET ( "Read from", it->second );
+    LOG ( "Read [ %u bytes ] from '%s'", len, address.c_str() );
     it->second->owner.readEvent ( it->second, socketReadBuffer, len, address );
 }
