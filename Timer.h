@@ -7,9 +7,10 @@ struct Timer
         virtual void timerExpired ( Timer *timer ) {}
     };
 
+    Owner *owner;
+
 private:
 
-    Owner *owner;
     long delay, expiry;
 
 public:

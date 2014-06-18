@@ -36,9 +36,9 @@ struct DoubleSocket : public Socket::Owner, public Timer::Owner
 
     enum class State { Listening, Connecting, Connected, Disconnected };
 
-private:
-
     Owner *owner;
+
+private:
 
     State state;
 

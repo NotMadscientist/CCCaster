@@ -18,9 +18,10 @@ struct Socket
         virtual void readEvent ( Socket *socket, char *bytes, size_t len, const IpAddrPort& address ) {}
     };
 
+    Owner *owner;
+
 private:
 
-    Owner *owner;
     NL::Socket *socket;
 
     std::shared_ptr<Socket> acceptedSocket;
@@ -54,7 +55,6 @@ public:
     void send ( char *bytes, size_t len, const IpAddrPort& address = IpAddrPort() );
 
     friend class EventManager;
-    friend class DoubleSocket;
 };
 
 std::ostream& operator<< ( std::ostream& os, const Protocol& protocol );
