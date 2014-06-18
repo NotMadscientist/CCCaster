@@ -67,15 +67,21 @@ private:
 
 public:
 
-    static DoubleSocket *listen ( Owner *owner, unsigned port );
-    static DoubleSocket *connect ( Owner *owner, const std::string& address, unsigned port );
-    static DoubleSocket *relay ( Owner *owner, const std::string& room, const std::string& server, unsigned port );
+    static std::shared_ptr<DoubleSocket> listen ( Owner *owner, unsigned port );
+    static std::shared_ptr<DoubleSocket> connect ( Owner *owner, const std::string& address, unsigned port );
+    static std::shared_ptr<DoubleSocket> relay (
+        Owner *owner, const std::string& room, const std::string& server, unsigned port );
 
     ~DoubleSocket();
 
     void disconnect();
 
     std::shared_ptr<DoubleSocket> accept ( Owner *owner );
+
+    inline bool isConnected() const { return ( primary.get() && secondary.get() && state == State::Connected ); }
+    inline bool isServer() const { if ( !isConnected() ) return false; return primary->isServer(); }
+
+    inline const IpAddrPort& getRemoteAddress() const { return primary->getRemoteAddress(); }
 
     void sendPrimary   ( const Serializable& msg, const IpAddrPort& address = IpAddrPort() );
     void sendSecondary ( const Serializable& msg, const IpAddrPort& address = IpAddrPort() );

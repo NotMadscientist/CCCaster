@@ -34,14 +34,14 @@ void Socket::disconnect()
     EventManager::get().removeSocket ( this );
 }
 
-Socket *Socket::listen ( Owner *owner, unsigned port, Protocol protocol )
+shared_ptr<Socket> Socket::listen ( Owner *owner, unsigned port, Protocol protocol )
 {
-    return new Socket ( owner, port, protocol );
+    return shared_ptr<Socket> ( new Socket ( owner, port, protocol ) );
 }
 
-Socket *Socket::connect ( Owner *owner, const string& address, unsigned port, Protocol protocol )
+shared_ptr<Socket> Socket::connect ( Owner *owner, const string& address, unsigned port, Protocol protocol )
 {
-    return new Socket ( owner, address, port, protocol );
+    return shared_ptr<Socket> ( new Socket ( owner, address, port, protocol ) );
 }
 
 shared_ptr<Socket> Socket::accept ( Owner *owner )
@@ -72,12 +72,14 @@ void Socket::send ( char *bytes, size_t len, const IpAddrPort& address )
     {
         if ( address.empty() )
         {
-            LOG ( "socket->send ( [ %u bytes ] ); address='%s'", len, IpAddrPort ( socket ).c_str() );
+            LOG ( "%s socket->send ( [ %u bytes ] ); address='%s'",
+                  TO_C_STR ( socket->protocol() ), len, IpAddrPort ( socket ).c_str() );
             socket->send ( bytes, len );
         }
         else
         {
-            LOG ( "socket->sendTo ( [ %u bytes ], '%s' )", len, address.c_str() );
+            LOG ( "%s socket->sendTo ( [ %u bytes ], '%s' )",
+                  TO_C_STR ( socket->protocol() ), len, address.c_str() );
             socket->sendTo ( bytes, len, address.addr, address.port );
         }
     }

@@ -34,8 +34,9 @@ private:
 
 public:
 
-    static Socket *listen ( Owner *owner, unsigned port, Protocol protocol );
-    static Socket *connect ( Owner *owner, const std::string& address, unsigned port, Protocol protocol );
+    static std::shared_ptr<Socket> listen ( Owner *owner, unsigned port, Protocol protocol );
+    static std::shared_ptr<Socket> connect (
+        Owner *owner, const std::string& address, unsigned port, Protocol protocol );
 
     ~Socket();
 

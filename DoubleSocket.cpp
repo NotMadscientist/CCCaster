@@ -219,19 +219,19 @@ DoubleSocket::DoubleSocket ( const shared_ptr<Socket>& primary, const shared_ptr
     LOG ( "primary=%08x; secondary=%08x", primary.get(), secondary.get() );
 }
 
-DoubleSocket *DoubleSocket::listen ( Owner *owner, unsigned port )
+shared_ptr<DoubleSocket> DoubleSocket::listen ( Owner *owner, unsigned port )
 {
-    return new DoubleSocket ( owner, port );
+    return shared_ptr<DoubleSocket> ( new DoubleSocket ( owner, port ) );
 }
 
-DoubleSocket *DoubleSocket::connect ( Owner *owner, const string& address, unsigned port )
+shared_ptr<DoubleSocket> DoubleSocket::connect ( Owner *owner, const string& address, unsigned port )
 {
-    return new DoubleSocket ( owner, address, port );
+    return shared_ptr<DoubleSocket> ( new DoubleSocket ( owner, address, port ) );
 }
 
-DoubleSocket *DoubleSocket::relay ( Owner *owner, const string& room, const string& server, unsigned port )
+shared_ptr<DoubleSocket> DoubleSocket::relay ( Owner *owner, const string& room, const string& server, unsigned port )
 {
-    return 0;
+    return shared_ptr<DoubleSocket>();
 }
 
 DoubleSocket::~DoubleSocket()
@@ -249,7 +249,7 @@ void DoubleSocket::disconnect()
 shared_ptr<DoubleSocket> DoubleSocket::accept ( Owner *owner )
 {
     if ( !acceptedSocket.get() )
-        return 0;
+        return shared_ptr<DoubleSocket>();
 
     acceptedSocket->owner = owner;
     return acceptedSocket;

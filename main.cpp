@@ -21,8 +21,9 @@ struct Test : public DoubleSocket::Owner, public Timer::Owner
 
     void acceptEvent ( DoubleSocket *serverSocket )
     {
-        // accepted.reset ( serverSocket->accept ( *this ) );
-        // accepted->send ( accepted->getRemoteAddress() );
+        accepted = serverSocket->accept ( this );
+        accepted->sendPrimary ( accepted->getRemoteAddress() );
+        accepted->sendSecondary ( accepted->getRemoteAddress() );
     }
 
     void connectEvent ( DoubleSocket *socket )
@@ -81,11 +82,11 @@ int main ( int argc, char *argv[] )
     {
         if ( argc == 2 )
         {
-            test.socket.reset ( DoubleSocket::listen ( &test, atoi ( argv[1] ) ) );
+            test.socket = DoubleSocket::listen ( &test, atoi ( argv[1] ) );
         }
         else if ( argc == 3 )
         {
-            test.socket.reset ( DoubleSocket::connect ( &test, argv[1], atoi ( argv[2] ) ) );
+            test.socket = DoubleSocket::connect ( &test, argv[1], atoi ( argv[2] ) );
         }
     }
     catch ( const NL::Exception& e )
