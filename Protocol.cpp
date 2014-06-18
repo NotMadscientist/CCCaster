@@ -10,8 +10,8 @@ string Serializable::encode ( const Serializable& msg )
     BinaryOutputArchive archive ( ss );
 
     archive ( msg.type() );
-
     msg.serializeBase ( archive );
+    msg.serialize ( archive );
 
     return ss.str();
 }
