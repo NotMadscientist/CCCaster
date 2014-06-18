@@ -3,6 +3,7 @@ BINARY = cccaster.exe
 
 # Main program sources
 CPP_SRCS = $(wildcard *.cpp)
+NON_PROTOCOL_HEADERS = $(filter-out Protocol.%.h, $(wildcard *.h))
 
 # Library sources
 NETLINK_SRCS = $(wildcard contrib/netLink/src/*.cc)
@@ -44,7 +45,7 @@ release: CC_FLAGS += -Os -O2
 release: BUILD_TYPE = Release
 release: $(BINARY)
 
-$(BINARY): Version.h .depend $(OBJECTS) icon.res
+$(BINARY): Version.h protocol .depend $(OBJECTS) icon.res
 	@echo
 	$(CXX) -o $@ $(OBJECTS) $(LD_FLAGS) icon.res
 	@echo
@@ -55,28 +56,20 @@ icon.res: icon.rc icon.ico
 	@echo
 	windres -F pe-i386 icon.rc -O coff -o $@
 
-Protocol.types.h:
-	@grep " : public Serializable[A-Z]" *.h | sed -r 's/^(.+\.h):[ ]*[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nMsgType \2::type() const { return MsgType::\2; }/' > $@
-
-Protocol.strings.h:
-	@grep " : public Serializable[A-Z]" *.h | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1:\nreturn ( os << "\1" );/' > $@
-
-Protocol.enum.h:
-	@grep " : public Serializable[A-Z]" *.h | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/\1,/' > $@
-
-Protocol.decode.h:
-	@grep " : public Serializable[A-Z]" *.h | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1:\n{\n    msg.reset ( new \1() );\n    msg->deserializeBase ( archive );\n    break;\n}/' > $@
+protocol:
+	@./make_protocol $(NON_PROTOCOL_HEADERS)
 
 Version.h:
 	@date +"#define BUILD %s" > $@
 
-.depend: Protocol.types.h Protocol.strings.h Protocol.enum.h Protocol.decode.h
-	@echo Making auto-generated files...
+.depend:
+	@./make_protocol $(NON_PROTOCOL_HEADERS)
 	@date +"#define BUILD %s" > Version.h
+	@echo "Regenerating .depend ..."
 	@$(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp > $@
 	@echo
 
-.PHONY: clean check trim format count Version.h
+.PHONY: clean check trim format count Version.h protocol
 
 clean:
 	rm -f Version.h Protocol.*.h .depend *.res *.exe *.zip *.o $(OBJECTS)
