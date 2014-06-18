@@ -11,17 +11,7 @@ string Serializable::encode ( const Serializable& msg )
 
     archive ( msg.type() );
 
-    switch ( msg.base() )
-    {
-        case BaseType::SerializableMessage:
-            break;
-
-        case BaseType::SerializableSequence:
-            archive ( static_cast<const SerializableSequence&> ( msg ).sequence );
-            break;
-    }
-
-    msg.serialize ( archive );
+    msg.serializeBase ( archive );
 
     return ss.str();
 }

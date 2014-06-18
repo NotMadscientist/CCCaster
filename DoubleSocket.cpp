@@ -16,21 +16,16 @@ void DoubleSocket::acceptEvent ( Socket *serverSocket )
 {
     assert ( serverSocket == primary.get() );
 
-    // shared_ptr<Socket> socket ( serverSocket->accept ( *this ) );
+    shared_ptr<Socket> socket ( serverSocket->accept ( this ) );
 
-    // assert ( socket.get() );
+    assert ( socket.get() );
 
-    // if ( state != State::Listening )
-    // return;
-
-    // socket->send ( PrimaryId ( 0, ( uint32_t ) socket.get() ) );
-
-    Socket *socket = serverSocket->accept ( *this );
+    pendingAccepts[socket.get()] = socket;
 
     if ( state != State::Listening )
         return;
 
-    socket->send ( PrimaryId ( 0, ( uint32_t ) socket ) );
+    socket->send ( PrimaryId ( 0, ( uint32_t ) socket.get() ) );
 }
 
 void DoubleSocket::connectEvent ( Socket *socket )
@@ -65,21 +60,40 @@ void DoubleSocket::readEvent ( Socket *socket, char *bytes, size_t len, const Ip
             break;
 
         case State::Listening:
-            if ( socket != secondary.get() )
-            {
-                LOG_UNEXPECTED_READ;
-                break;
-            }
-
             if ( msg->type() != MsgType::PrimaryId )
             {
                 LOG_UNEXPECTED_READ;
                 break;
             }
 
+            LOG ( "Got 'PrimaryId' %08x", static_cast<PrimaryId *> ( msg.get() )->id );
+
             assert ( primary->isServer() );
-            LOG ( "Echoing 'PrimaryId' to '%s'", address.c_str() );
-            secondary->send ( *msg, address );
+
+            if ( socket == secondary.get() )
+            {
+                LOG ( "Echoing 'PrimaryId' to '%s'", address.c_str() );
+                secondary->send ( *msg, address );
+            }
+            else if ( static_cast<PrimaryId *> ( msg.get() )->id == ( uint32_t ) socket )
+            {
+                auto it = pendingAccepts.find ( socket );
+                if ( it == pendingAccepts.end() )
+                {
+                    LOG ( "Unknown socket %08x", socket );
+                    return;
+                }
+
+                acceptedSocket.reset ( new DoubleSocket ( it->second, secondary ) );
+                owner->acceptEvent ( this );
+
+                acceptedSocket.reset();
+                pendingAccepts.erase ( it );
+            }
+            else
+            {
+                LOG ( "Unknown socket %08x", socket );
+            }
             break;
 
         case State::Connecting:
@@ -98,7 +112,9 @@ void DoubleSocket::readEvent ( Socket *socket, char *bytes, size_t len, const Ip
             }
             else if ( socket == secondary.get() )
             {
+                state = State::Connected;
                 removeMsgToResend ( 0 );
+                primary->send ( *msg );
             }
             else
             {
@@ -107,7 +123,7 @@ void DoubleSocket::readEvent ( Socket *socket, char *bytes, size_t len, const Ip
             break;
 
         case State::Connected:
-            owner.readEvent ( this, msg, address );
+            owner->readEvent ( this, msg, address );
             break;
     }
 }
@@ -170,39 +186,50 @@ void DoubleSocket::timerExpired ( Timer *timer )
     resendToDel.clear();
 }
 
-DoubleSocket::DoubleSocket ( Owner& owner, unsigned port )
+DoubleSocket::DoubleSocket ( Owner *owner, unsigned port )
     : owner ( owner )
     , state ( State::Listening )
-    , primary ( Socket::listen ( *this, port, Protocol::TCP ) )
-    , secondary ( Socket::listen ( *this, port, Protocol::UDP ) )
-    , resendTimer ( *this )
+    , primary ( Socket::listen ( this, port, Protocol::TCP ) )
+    , secondary ( Socket::listen ( this, port, Protocol::UDP ) )
+    , resendTimer ( this )
     , resendIter ( resendList.end() )
 {
     LOG ( "primary=%08x; secondary=%08x", primary.get(), secondary.get() );
 }
 
-DoubleSocket::DoubleSocket ( Owner& owner, const string& address, unsigned port )
+DoubleSocket::DoubleSocket ( Owner *owner, const string& address, unsigned port )
     : owner ( owner )
     , state ( State::Connecting )
-    , primary ( Socket::connect ( *this, address, port, Protocol::TCP ) )
-    , secondary ( Socket::connect ( *this, address, port, Protocol::UDP ) )
-    , resendTimer ( *this )
+    , primary ( Socket::connect ( this, address, port, Protocol::TCP ) )
+    , secondary ( Socket::connect ( this, address, port, Protocol::UDP ) )
+    , resendTimer ( this )
     , resendIter ( resendList.end() )
 {
     LOG ( "primary=%08x; secondary=%08x", primary.get(), secondary.get() );
 }
 
-DoubleSocket *DoubleSocket::listen ( Owner& owner, unsigned port )
+DoubleSocket::DoubleSocket ( const shared_ptr<Socket>& primary, const shared_ptr<Socket>& secondary )
+    : owner ( 0 )
+    , state ( State::Connecting )
+    , primary ( primary )
+    , secondary ( secondary )
+    , resendTimer ( this )
+    , resendIter ( resendList.end() )
+{
+    LOG ( "primary=%08x; secondary=%08x", primary.get(), secondary.get() );
+}
+
+DoubleSocket *DoubleSocket::listen ( Owner *owner, unsigned port )
 {
     return new DoubleSocket ( owner, port );
 }
 
-DoubleSocket *DoubleSocket::connect ( Owner& owner, const string& address, unsigned port )
+DoubleSocket *DoubleSocket::connect ( Owner *owner, const string& address, unsigned port )
 {
     return new DoubleSocket ( owner, address, port );
 }
 
-DoubleSocket *DoubleSocket::relay ( Owner& owner, const string& room, const string& server, unsigned port )
+DoubleSocket *DoubleSocket::relay ( Owner *owner, const string& room, const string& server, unsigned port )
 {
     return 0;
 }
@@ -219,15 +246,13 @@ void DoubleSocket::disconnect()
     secondary.reset();
 }
 
-DoubleSocket *DoubleSocket::accept ( Owner& owner )
+shared_ptr<DoubleSocket> DoubleSocket::accept ( Owner *owner )
 {
-    // if ( !primary.get() )
-    // return 0;
+    if ( !acceptedSocket.get() )
+        return 0;
 
-    // if ( primary->getProtocol() == Protocol::TCP )
-    // return primary->accept ( owner );
-
-    return 0;
+    acceptedSocket->owner = owner;
+    return acceptedSocket;
 }
 
 void DoubleSocket::sendPrimary ( const Serializable& msg, const IpAddrPort& address )

@@ -17,11 +17,11 @@ struct Test : public DoubleSocket::Owner, public Timer::Owner
     shared_ptr<DoubleSocket> socket, accepted;
     Timer timer;
 
-    Test() : timer ( *this ) {}
+    Test() : timer ( this ) {}
 
     void acceptEvent ( DoubleSocket *serverSocket )
     {
-        accepted.reset ( serverSocket->accept ( *this ) );
+        // accepted.reset ( serverSocket->accept ( *this ) );
         // accepted->send ( accepted->getRemoteAddress() );
     }
 
@@ -81,11 +81,11 @@ int main ( int argc, char *argv[] )
     {
         if ( argc == 2 )
         {
-            test.socket.reset ( DoubleSocket::listen ( test, atoi ( argv[1] ) ) );
+            test.socket.reset ( DoubleSocket::listen ( &test, atoi ( argv[1] ) ) );
         }
         else if ( argc == 3 )
         {
-            test.socket.reset ( DoubleSocket::connect ( test, argv[1], atoi ( argv[2] ) ) );
+            test.socket.reset ( DoubleSocket::connect ( &test, argv[1], atoi ( argv[2] ) ) );
         }
     }
     catch ( const NL::Exception& e )

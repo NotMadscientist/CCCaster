@@ -128,7 +128,7 @@ void EventManager::TimerThread::checkTimers()
         {
             LOG ( "Expired timer %08x", timer );
 
-            timer->owner.timerExpired ( timer );
+            timer->owner->timerExpired ( timer );
             timer->expiry = -1;
 
             if ( timer->delay < 0 )

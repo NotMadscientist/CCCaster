@@ -9,12 +9,12 @@ struct Timer
 
 private:
 
-    Owner& owner;
+    Owner *owner;
     long delay, expiry;
 
 public:
 
-    Timer ( Owner& owner );
+    Timer ( Owner *owner );
     ~Timer();
 
     void start ( long delay );

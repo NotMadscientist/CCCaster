@@ -155,7 +155,7 @@ void EventManager::TcpConnectThread::run()
     em.socketsCond.signal();
 
     LOG_SOCKET ( "Connected", socket );
-    socket->owner.connectEvent ( socket );
+    socket->owner->connectEvent ( socket );
 }
 
 void EventManager::socketListenLoop()
@@ -229,14 +229,20 @@ void EventManager::SocketAccept::exec ( NL::Socket *serverSocket, NL::SocketGrou
     auto it = em.socketMap.find ( serverSocket );
     assert ( it != em.socketMap.end() );
 
-    if ( em.socketSet.find ( it->second ) == em.socketSet.end() )
+    if ( em.socketSet.find ( it->second ) == em.socketSet.end() || !it->second->owner || !it->second->socket )
         return;
 
     if ( !it->second->socket )
         return;
 
     LOG_SOCKET ( "Accept from server", it->second );
-    it->second->owner.acceptEvent ( it->second );
+
+    NL::Socket *rawSocket = serverSocket->accept();
+    assert ( rawSocket );
+    it->second->acceptedSocket.reset ( new Socket ( rawSocket ) );
+
+    it->second->owner->acceptEvent ( it->second );
+    it->second->acceptedSocket.reset();
 }
 
 void EventManager::SocketDisconnect::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
@@ -246,14 +252,11 @@ void EventManager::SocketDisconnect::exec ( NL::Socket *socket, NL::SocketGroup 
     auto it = em.socketMap.find ( socket );
     assert ( it != em.socketMap.end() );
 
-    if ( em.socketSet.find ( it->second ) == em.socketSet.end() )
-        return;
-
-    if ( !it->second->socket )
+    if ( em.socketSet.find ( it->second ) == em.socketSet.end() || !it->second->owner || !it->second->socket )
         return;
 
     LOG_SOCKET ( "Disconnected", it->second );
-    it->second->owner.disconnectEvent ( it->second );
+    it->second->owner->disconnectEvent ( it->second );
     it->second->disconnect();
 }
 
@@ -264,10 +267,7 @@ void EventManager::SocketRead::exec ( NL::Socket *socket, NL::SocketGroup *, voi
     auto it = em.socketMap.find ( socket );
     assert ( it != em.socketMap.end() );
 
-    if ( em.socketSet.find ( it->second ) == em.socketSet.end() )
-        return;
-
-    if ( !it->second->socket )
+    if ( em.socketSet.find ( it->second ) == em.socketSet.end() || !it->second->owner || !it->second->socket )
         return;
 
     IpAddrPort address ( socket );
@@ -280,5 +280,5 @@ void EventManager::SocketRead::exec ( NL::Socket *socket, NL::SocketGroup *, voi
 
     LOG_SOCKET ( "Read from", it->second );
     LOG ( "Read [ %u bytes ] from '%s'", len, address.c_str() );
-    it->second->owner.readEvent ( it->second, socketReadBuffer, len, address );
+    it->second->owner->readEvent ( it->second, socketReadBuffer, len, address );
 }

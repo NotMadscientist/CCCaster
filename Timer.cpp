@@ -3,7 +3,7 @@
 
 using namespace std;
 
-Timer::Timer ( Owner& owner ) : owner ( owner ), delay ( -1 ), expiry ( -1 )
+Timer::Timer ( Owner *owner ) : owner ( owner ), delay ( -1 ), expiry ( -1 )
 {
 }
 

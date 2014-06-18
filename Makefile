@@ -65,7 +65,7 @@ Protocol.enum.h:
 	@grep " : public Serializable[A-Z]" *.h | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/\1,/' > $@
 
 Protocol.decode.h:
-	@grep " : public Serializable[A-Z]" *.h | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1:\n{\n    msg.reset ( new \1() );\n    msg->deserialize ( archive );\n    break;\n}/' > $@
+	@grep " : public Serializable[A-Z]" *.h | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1:\n{\n    msg.reset ( new \1() );\n    msg->deserializeBase ( archive );\n    break;\n}/' > $@
 
 Version.h:
 	@date +"#define BUILD %s" > $@

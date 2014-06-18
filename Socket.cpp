@@ -5,20 +5,20 @@
 
 using namespace std;
 
-Socket::Socket ( Owner& owner, NL::Socket *socket )
-    : owner ( owner ), socket ( socket ), address ( socket )
+Socket::Socket ( NL::Socket *socket )
+    : owner ( 0 ), socket ( socket ), address ( socket )
     , protocol ( socket->protocol() == NL::TCP ? Protocol::TCP : Protocol::UDP )
 {
     EventManager::get().addSocket ( this );
 }
 
-Socket::Socket ( Owner& owner, unsigned port, Protocol protocol )
+Socket::Socket ( Owner *owner, unsigned port, Protocol protocol )
     : owner ( owner ), socket ( 0 ), address ( "", port ), protocol ( protocol )
 {
     EventManager::get().addSocket ( this );
 }
 
-Socket::Socket ( Owner& owner, const string& address, unsigned port, Protocol protocol )
+Socket::Socket ( Owner *owner, const string& address, unsigned port, Protocol protocol )
     : owner ( owner ), socket ( 0 ), address ( address, port ), protocol ( protocol )
 {
     EventManager::get().addSocket ( this );
@@ -34,28 +34,35 @@ void Socket::disconnect()
     EventManager::get().removeSocket ( this );
 }
 
-Socket *Socket::listen ( Owner& owner, unsigned port, Protocol protocol )
+Socket *Socket::listen ( Owner *owner, unsigned port, Protocol protocol )
 {
     return new Socket ( owner, port, protocol );
 }
 
-Socket *Socket::connect ( Owner& owner, const string& address, unsigned port, Protocol protocol )
+Socket *Socket::connect ( Owner *owner, const string& address, unsigned port, Protocol protocol )
 {
     return new Socket ( owner, address, port, protocol );
 }
 
-Socket *Socket::accept ( Owner& owner )
+shared_ptr<Socket> Socket::accept ( Owner *owner )
 {
-    if ( socket->type() != NL::SERVER )
-        return 0;
+    if ( !acceptedSocket.get() )
+        return shared_ptr<Socket>();
 
-    return new Socket ( owner, socket->accept() );
+    acceptedSocket->owner = owner;
+    return acceptedSocket;
 }
 
 void Socket::send ( const Serializable& msg, const IpAddrPort& address )
 {
     string bytes = Serializable::encode ( msg );
     LOG ( "Encoded '%s' to [ %u bytes ]", TO_C_STR ( msg.type() ), bytes.size() );
+
+    string base64;
+    for ( char c : bytes )
+        base64 += " " + toString ( "%02x", ( unsigned char ) c );
+    LOG ( "Base64 :%s", base64.c_str() );
+
     send ( &bytes[0], bytes.size(), address );
 }
 

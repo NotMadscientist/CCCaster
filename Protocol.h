@@ -14,32 +14,53 @@ enum class MsgType : uint8_t
 
 enum class BaseType : uint8_t { SerializableMessage, SerializableSequence };
 
-struct Serializable;
-struct SerializableMessage;
-struct SerializableSequence;
+class Serializable;
+class SerializableMessage;
+class SerializableSequence;
 
 typedef std::shared_ptr<Serializable> MsgPtr;
 
 const MsgPtr NullMsg;
 
-struct Serializable
+class Serializable
 {
+    virtual void serializeBase ( cereal::BinaryOutputArchive& ar ) const = 0;
+    virtual void deserializeBase ( cereal::BinaryInputArchive& ar ) = 0;
+
+protected:
+
     virtual void serialize ( cereal::BinaryOutputArchive& ar ) const = 0;
     virtual void deserialize ( cereal::BinaryInputArchive& ar ) = 0;
+
+public:
+
     virtual MsgType type() const = 0;
     virtual BaseType base() const = 0;
 
     static std::string encode ( const Serializable& msg );
     static MsgPtr decode ( char *bytes, size_t len );
+
+    friend class SerializableMessage;
+    friend class SerializableSequence;
 };
 
-struct SerializableMessage : public Serializable
+class SerializableMessage : public Serializable
 {
+    void serializeBase ( cereal::BinaryOutputArchive& ar ) const { serialize ( ar ); };
+    void deserializeBase ( cereal::BinaryInputArchive& ar ) { deserialize ( ar ); };
+
+public:
+
     BaseType base() const { return BaseType::SerializableMessage; }
 };
 
-struct SerializableSequence : public Serializable
+class SerializableSequence : public Serializable
 {
+    void serializeBase ( cereal::BinaryOutputArchive& ar ) const { ar ( sequence ); serialize ( ar ); };
+    void deserializeBase ( cereal::BinaryInputArchive& ar ) { ar ( sequence ); deserialize ( ar ); };
+
+public:
+
     uint32_t sequence;
 
     SerializableSequence() : sequence ( 0 ) {}
