@@ -19,7 +19,7 @@ using namespace std;
 
 #define LOG_SOCKET(VERB, SOCKET)                                                                        \
     LOG ( "%s %s socket %08x { %08x, '%s' }",                                                           \
-          VERB, TO_C_STR ( SOCKET->protocol ), SOCKET, SOCKET->socket, SOCKET->address.c_str() )
+          VERB, TO_C_STR ( SOCKET->protocol ), SOCKET, SOCKET->socket.get(), SOCKET->address.c_str() )
 
 static char socketReadBuffer[READ_BUFFER_SIZE];
 
@@ -27,23 +27,19 @@ void EventManager::addSocket ( Socket *socket )
 {
     LOCK ( mutex );
 
-    assert ( socketSet.find ( socket ) == socketSet.end() );
+    assert ( activeSockets.find ( socket ) == activeSockets.end() );
 
-    socketSet.insert ( socket );
+    activeSockets.insert ( socket );
 
-    if ( socket->socket )
+    if ( socket->socket.get() ) // Add socket from accept
     {
         LOG_SOCKET ( "Adding", socket );
 
         assert ( socket->address == IpAddrPort ( socket->socket ) );
 
-        socketMap[socket->socket] = socket;
-        rawSocketMap[socket->socket] = shared_ptr<NL::Socket> ( socket->socket );
-        rawSocketsToAdd.push_back ( socket->socket );
-
         socketsCond.signal();
     }
-    else if ( socket->address.addr.empty() )
+    else if ( socket->address.addr.empty() ) // Add socket from listen
     {
         shared_ptr<NL::Socket> rawSocket (
             new NL::Socket ( socket->address.port, socket->protocol == Protocol::TCP ? NL::TCP : NL::UDP, NL::IP4 ) );
@@ -52,15 +48,10 @@ void EventManager::addSocket ( Socket *socket )
 
         assert ( socket->address.port == rawSocket->portFrom() );
 
-        socket->socket = rawSocket.get();
-
-        socketMap[rawSocket.get()] = socket;
-        rawSocketMap[rawSocket.get()] = rawSocket;
-        rawSocketsToAdd.push_back ( rawSocket.get() );
-
+        socket->socket = rawSocket;
         socketsCond.signal();
     }
-    else if ( socket->protocol == Protocol::TCP )
+    else if ( socket->protocol == Protocol::TCP ) // Add socket from TCP connect
     {
         LOG_SOCKET ( "Connecting", socket );
 
@@ -68,7 +59,7 @@ void EventManager::addSocket ( Socket *socket )
         thread->start();
         addThread ( thread );
     }
-    else
+    else // Add socket from UDP connect
     {
         shared_ptr<NL::Socket> rawSocket;
 
@@ -92,16 +83,11 @@ void EventManager::addSocket ( Socket *socket )
             }
         }
 
-        LOG_SOCKET ( "Connecting", socket );
+        LOG_SOCKET ( "Connected", socket );
 
         assert ( socket->address == IpAddrPort ( rawSocket ) );
 
-        socket->socket = rawSocket.get();
-
-        socketMap[rawSocket.get()] = socket;
-        rawSocketMap[rawSocket.get()] = rawSocket;
-        rawSocketsToAdd.push_back ( rawSocket.get() );
-
+        socket->socket = rawSocket;
         socketsCond.signal();
     }
 }
@@ -110,13 +96,11 @@ void EventManager::removeSocket ( Socket *socket )
 {
     LOCK ( mutex );
 
-    if ( !socketSet.erase ( socket ) )
+    if ( !activeSockets.erase ( socket ) )
         return;
 
     LOG_SOCKET ( "Removing", socket );
-
-    rawSocketsToRemove.push_back ( socket->socket );
-    socket->socket = 0;
+    socketsCond.signal();
 }
 
 void EventManager::TcpConnectThread::run()
@@ -137,21 +121,16 @@ void EventManager::TcpConnectThread::run()
     if ( !rawSocket.get() )
     {
         LOG_SOCKET ( "Failed to connect", socket );
-        em.socketSet.erase ( socket );
+        em.activeSockets.erase ( socket );
         return;
     }
 
-    if ( em.socketSet.find ( socket ) == em.socketSet.end() )
+    if ( em.activeSockets.find ( socket ) == em.activeSockets.end() )
         return;
 
     assert ( socket->address == IpAddrPort ( rawSocket ) );
 
-    socket->socket = rawSocket.get();
-
-    em.socketMap[rawSocket.get()] = socket;
-    em.rawSocketMap[rawSocket.get()] = rawSocket;
-    em.rawSocketsToAdd.push_back ( rawSocket.get() );
-
+    socket->socket = rawSocket;
     em.socketsCond.signal();
 
     LOG_SOCKET ( "Connected", socket );
@@ -170,7 +149,7 @@ void EventManager::socketListenLoop()
 
         for ( ;; )
         {
-            if ( socketGroup.empty() && rawSocketsToAdd.empty() )
+            if ( socketGroup.empty() && activeSockets.empty() )
             {
                 LOG ( "Waiting for sockets..." );
                 socketsCond.wait ( mutex );
@@ -179,27 +158,36 @@ void EventManager::socketListenLoop()
                     return;
             }
 
-            for ( NL::Socket *rawSocket : rawSocketsToAdd )
+            for ( Socket *socket : activeSockets )
             {
-                LOG ( "Added %s socket %08x { %08x, '%s:%u' }",
-                      TO_C_STR ( rawSocket->protocol() ), socketMap[rawSocket], rawSocket, rawSocket->hostTo().c_str(),
-                      ( rawSocket->type() == NL::SERVER ? rawSocket->portFrom() : rawSocket->portTo() ) );
-                socketGroup.add ( rawSocket );
+                if ( activeRawSockets.find ( socket ) != activeRawSockets.end() || !socket->socket.get() )
+                    continue;
+
+                LOG ( "Added %s socket %08x { %08x, '%s' }",
+                      TO_C_STR ( socket->protocol ), socket, socket->socket.get(), socket->address.c_str() );
+
+                socketGroup.add ( socket->socket.get() );
+                rawSocketToSocket[socket->socket.get()] = socket;
+                activeRawSockets[socket] = socket->socket;
             }
 
-            rawSocketsToAdd.clear();
-
-            for ( NL::Socket *rawSocket : rawSocketsToRemove )
+            auto it = activeRawSockets.begin();
+            while ( it != activeRawSockets.end() )
             {
+                if ( activeSockets.find ( it->first ) != activeSockets.end() )
+                {
+                    ++it;
+                    continue;
+                }
+
                 LOG ( "Removed %s socket %08x { %08x, '%s:%u' }",
-                      TO_C_STR ( rawSocket->protocol() ), socketMap[rawSocket], rawSocket, rawSocket->hostTo().c_str(),
-                      ( rawSocket->type() == NL::SERVER ? rawSocket->portFrom() : rawSocket->portTo() ) );
-                socketGroup.remove ( rawSocket );
-                socketMap.erase ( rawSocket );
-                rawSocketMap.erase ( rawSocket );
-            }
+                      TO_C_STR ( it->second->protocol() ), it->first, it->second.get(), it->second->hostTo().c_str(),
+                      ( it->second->type() == NL::SERVER ? it->second->portFrom() : it->second->portTo() ) );
 
-            rawSocketsToRemove.clear();
+                socketGroup.remove ( it->second.get() );
+                rawSocketToSocket.erase ( it->second.get() );
+                activeRawSockets.erase ( it++ );
+            }
 
             if ( !socketGroup.empty() )
                 break;
@@ -226,13 +214,11 @@ void EventManager::SocketAccept::exec ( NL::Socket *serverSocket, NL::SocketGrou
 {
     EventManager& em = EventManager::get();
 
-    auto it = em.socketMap.find ( serverSocket );
-    assert ( it != em.socketMap.end() );
+    auto it = em.rawSocketToSocket.find ( serverSocket );
+    assert ( it != em.rawSocketToSocket.end() );
 
-    if ( em.socketSet.find ( it->second ) == em.socketSet.end() || !it->second->owner || !it->second->socket )
-        return;
-
-    if ( !it->second->socket )
+    if ( em.activeSockets.find ( it->second ) == em.activeSockets.end()
+            || !it->second->owner || !it->second->socket.get() )
         return;
 
     LOG_SOCKET ( "Accept from server", it->second );
@@ -249,10 +235,11 @@ void EventManager::SocketDisconnect::exec ( NL::Socket *socket, NL::SocketGroup 
 {
     EventManager& em = EventManager::get();
 
-    auto it = em.socketMap.find ( socket );
-    assert ( it != em.socketMap.end() );
+    auto it = em.rawSocketToSocket.find ( socket );
+    assert ( it != em.rawSocketToSocket.end() );
 
-    if ( em.socketSet.find ( it->second ) == em.socketSet.end() || !it->second->owner || !it->second->socket )
+    if ( em.activeSockets.find ( it->second ) == em.activeSockets.end()
+            || !it->second->owner || !it->second->socket.get() )
         return;
 
     LOG_SOCKET ( "Disconnected", it->second );
@@ -264,10 +251,11 @@ void EventManager::SocketRead::exec ( NL::Socket *socket, NL::SocketGroup *, voi
 {
     EventManager& em = EventManager::get();
 
-    auto it = em.socketMap.find ( socket );
-    assert ( it != em.socketMap.end() );
+    auto it = em.rawSocketToSocket.find ( socket );
+    assert ( it != em.rawSocketToSocket.end() );
 
-    if ( em.socketSet.find ( it->second ) == em.socketSet.end() || !it->second->owner || !it->second->socket )
+    if ( em.activeSockets.find ( it->second ) == em.activeSockets.end()
+            || !it->second->owner || !it->second->socket.get() )
         return;
 
     IpAddrPort address ( socket );

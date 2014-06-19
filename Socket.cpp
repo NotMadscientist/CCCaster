@@ -13,13 +13,13 @@ Socket::Socket ( NL::Socket *socket )
 }
 
 Socket::Socket ( Owner *owner, unsigned port, Protocol protocol )
-    : owner ( owner ), socket ( 0 ), address ( "", port ), protocol ( protocol )
+    : owner ( owner ), address ( "", port ), protocol ( protocol )
 {
     EventManager::get().addSocket ( this );
 }
 
 Socket::Socket ( Owner *owner, const string& address, unsigned port, Protocol protocol )
-    : owner ( owner ), socket ( 0 ), address ( address, port ), protocol ( protocol )
+    : owner ( owner ), address ( address, port ), protocol ( protocol )
 {
     EventManager::get().addSocket ( this );
 }

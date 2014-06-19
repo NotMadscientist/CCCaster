@@ -22,7 +22,7 @@ struct Socket
 
 private:
 
-    NL::Socket *socket;
+    std::shared_ptr<NL::Socket> socket;
 
     std::shared_ptr<Socket> acceptedSocket;
 

@@ -1,0 +1,8 @@
+set breakpoint pending on
+break assert
+break _assert
+break __assert
+break exit
+break _exit
+break __exit
+run

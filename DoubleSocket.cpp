@@ -35,7 +35,7 @@ void DoubleSocket::connectEvent ( Socket *socket )
 
 void DoubleSocket::disconnectEvent ( Socket *socket )
 {
-    state = State::Disconnected;
+    disconnect();
 }
 
 void DoubleSocket::readEvent ( Socket *socket, char *bytes, size_t len, const IpAddrPort& address )

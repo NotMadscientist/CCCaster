@@ -23,7 +23,7 @@ struct Test : public DoubleSocket::Owner, public Timer::Owner
     {
         accepted = serverSocket->accept ( this );
         accepted->sendPrimary ( accepted->getRemoteAddress() );
-        accepted->sendSecondary ( accepted->getRemoteAddress() );
+        // accepted->sendSecondary ( accepted->getRemoteAddress() );
     }
 
     void connectEvent ( DoubleSocket *socket )
@@ -66,7 +66,14 @@ struct Test : public DoubleSocket::Owner, public Timer::Owner
         // return;
         // }
 
-        EventManager::get().stop();
+        if ( socket.get() )
+            socket.reset();
+        else if ( accepted.get() )
+            accepted.reset();
+        else
+            EventManager::get().stop();
+
+        timer->start ( 5000 );
     }
 };
 
@@ -83,6 +90,7 @@ int main ( int argc, char *argv[] )
         if ( argc == 2 )
         {
             test.socket = DoubleSocket::listen ( &test, atoi ( argv[1] ) );
+            test.timer.start ( 5000 );
         }
         else if ( argc == 3 )
         {
@@ -93,8 +101,6 @@ int main ( int argc, char *argv[] )
     {
         LOG ( "[%d] %s", e.nativeErrorCode(), e.what() );
     }
-
-    // test.timer.start ( 5000 );
 
     EventManager::get().start();
 

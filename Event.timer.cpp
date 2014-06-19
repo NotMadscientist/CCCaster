@@ -15,7 +15,7 @@ void EventManager::addTimer ( Timer *timer )
     LOG ( "Adding timer %08x; delay='%lu ms'", timer, timer->delay );
 
     LOCK ( mutex );
-    timerSet.insert ( timer );
+    activeTimers.insert ( timer );
     timersCond.signal();
 }
 
@@ -24,7 +24,7 @@ void EventManager::removeTimer ( Timer *timer )
     LOG ( "Removing timer %08x", timer );
 
     LOCK ( mutex );
-    timerSet.erase ( timer );
+    activeTimers.erase ( timer );
 }
 
 void EventManager::TimerThread::start()
@@ -72,7 +72,7 @@ void EventManager::TimerThread::run()
 
             Lock lock ( em.mutex );
 
-            while ( em.timerSet.empty() && em.running )
+            while ( em.activeTimers.empty() && em.running )
                 em.timersCond.wait ( em.mutex );
 
             if ( !em.running )
@@ -94,7 +94,7 @@ void EventManager::TimerThread::run()
 
             Lock lock ( em.mutex );
 
-            while ( em.timerSet.empty() && em.running )
+            while ( em.activeTimers.empty() && em.running )
                 em.timersCond.wait ( em.mutex );
 
             if ( !em.running )
@@ -115,7 +115,7 @@ void EventManager::TimerThread::checkTimers()
 
     vector<Timer *> toRemove;
 
-    for ( Timer *timer : em.timerSet )
+    for ( Timer *timer : em.activeTimers )
     {
         if ( timer->delay >= 0 )
         {
@@ -139,6 +139,6 @@ void EventManager::TimerThread::checkTimers()
     for ( Timer *timer : toRemove )
     {
         LOG ( "Removed timer %08x", timer );
-        em.timerSet.erase ( timer );
+        em.activeTimers.erase ( timer );
     }
 }
