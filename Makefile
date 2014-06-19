@@ -7,7 +7,8 @@ NON_PROTOCOL_HEADERS = $(filter-out Protocol.%.h, $(wildcard *.h))
 
 # Library sources
 NETLINK_SRCS = $(wildcard contrib/netLink/src/*.cc)
-LIB_CPP_SRCS = $(NETLINK_SRCS)
+GTEST_SRCS = contrib/gtest/fused-src/gtest/gtest-all.cc
+LIB_CPP_SRCS = $(NETLINK_SRCS) $(GTEST_SRCS)
 LIB_C_CSRCS = $(wildcard contrib/*.c)
 
 # Tool chain
@@ -21,7 +22,8 @@ BUILD_ENV = mingw-builds
 
 # Build flags
 DEFINES =
-CC_FLAGS = -m32 -s -Icontrib -Icontrib/netLink/include -Icontrib/cereal/include $(DEFINES)
+INCLUDES = -Icontrib -Icontrib/netLink/include -Icontrib/cereal/include -Icontrib/gtest/include
+CC_FLAGS = -m32 -s $(INCLUDES) $(DEFINES)
 LD_FLAGS = -m32 -static -lws2_32 -lmingw32 -lwinmm
 LD_FLAGS += -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid
 

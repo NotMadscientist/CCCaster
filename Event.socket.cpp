@@ -6,7 +6,7 @@
 
 using namespace std;
 
-#define LISTEN_INTERVAL     100
+#define LISTEN_INTERVAL     1000
 
 #define UDP_BIND_ATTEMPTS   10
 
@@ -27,16 +27,13 @@ void EventManager::addSocket ( Socket *socket )
 {
     LOCK ( mutex );
 
-    assert ( activeSockets.find ( socket ) == activeSockets.end() );
-
-    activeSockets.insert ( socket );
-
     if ( socket->socket.get() ) // Add socket from accept
     {
         LOG_SOCKET ( "Adding", socket );
 
         assert ( socket->address == IpAddrPort ( socket->socket ) );
 
+        activeSockets.insert ( socket );
         socketsCond.signal();
     }
     else if ( socket->address.addr.empty() ) // Add socket from listen
@@ -49,11 +46,14 @@ void EventManager::addSocket ( Socket *socket )
         assert ( socket->address.port == rawSocket->portFrom() );
 
         socket->socket = rawSocket;
+        activeSockets.insert ( socket );
         socketsCond.signal();
     }
     else if ( socket->protocol == Protocol::TCP ) // Add socket from TCP connect
     {
         LOG_SOCKET ( "Connecting", socket );
+
+        connectingSockets.insert ( socket );
 
         shared_ptr<Thread> thread ( new TcpConnectThread ( socket, socket->address ) );
         thread->start();
@@ -88,6 +88,7 @@ void EventManager::addSocket ( Socket *socket )
         assert ( socket->address == IpAddrPort ( rawSocket ) );
 
         socket->socket = rawSocket;
+        activeSockets.insert ( socket );
         socketsCond.signal();
     }
 }
@@ -96,10 +97,11 @@ void EventManager::removeSocket ( Socket *socket )
 {
     LOCK ( mutex );
 
-    if ( !activeSockets.erase ( socket ) )
+    if ( !activeSockets.erase ( socket ) && !connectingSockets.erase ( socket ) )
         return;
 
     LOG_SOCKET ( "Removing", socket );
+    socket->socket.reset();
     socketsCond.signal();
 }
 
@@ -116,6 +118,7 @@ void EventManager::TcpConnectThread::run()
     }
 
     EventManager& em = EventManager::get();
+
     Lock lock ( em.mutex );
 
     if ( !rawSocket.get() )
@@ -125,12 +128,14 @@ void EventManager::TcpConnectThread::run()
         return;
     }
 
-    if ( em.activeSockets.find ( socket ) == em.activeSockets.end() )
+    if ( em.connectingSockets.find ( socket ) == em.connectingSockets.end() )
         return;
 
     assert ( socket->address == IpAddrPort ( rawSocket ) );
 
     socket->socket = rawSocket;
+    em.connectingSockets.erase ( socket );
+    em.activeSockets.insert ( socket );
     em.socketsCond.signal();
 
     LOG_SOCKET ( "Connected", socket );
@@ -160,7 +165,7 @@ void EventManager::socketListenLoop()
 
             for ( Socket *socket : activeSockets )
             {
-                if ( activeRawSockets.find ( socket ) != activeRawSockets.end() || !socket->socket.get() )
+                if ( activeRawSockets.find ( socket ) != activeRawSockets.end() )
                     continue;
 
                 LOG ( "Added %s socket %08x { %08x, '%s' }",
@@ -193,7 +198,7 @@ void EventManager::socketListenLoop()
                 break;
         }
 
-        // LOG ( "Listening to %u socket(s)...", socketGroup.size() );
+        LOG ( "Listening to %u socket(s)...", socketGroup.size() );
 
         try
         {

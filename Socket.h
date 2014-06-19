@@ -45,7 +45,7 @@ public:
 
     std::shared_ptr<Socket> accept ( Owner *owner );
 
-    inline bool isConnected() const { return ( socket != 0 ); }
+    inline bool isConnected() const { return ( socket.get() ); }
     inline bool isServer() const { if ( !isConnected() ) return false; return ( socket->type() == NL::SERVER ); }
 
     inline const IpAddrPort& getRemoteAddress() const { return address; }

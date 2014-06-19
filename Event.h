@@ -68,8 +68,8 @@ class EventManager
     // Map of raw socket to socket instance, for socket events
     std::unordered_map<NL::Socket *, Socket *> rawSocketToSocket;
 
-    // Set of active socket instances
-    std::unordered_set<Socket *> activeSockets;
+    // Set of active and connecting socket instances
+    std::unordered_set<Socket *> activeSockets, connectingSockets;
 
     // Map of socket instance to corresponding raw socket, for ownership
     std::unordered_map<Socket *, std::shared_ptr<NL::Socket>> activeRawSockets;
@@ -138,8 +138,8 @@ public:
     // Start the event manager
     void start();
 
-    // Stop the event manager
-    void stop();
+    // Stop the event manager, flag to release background threads
+    void stop ( bool release = false );
 
     // Get the singleton instance
     static EventManager& get();

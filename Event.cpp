@@ -31,7 +31,7 @@ void EventManager::start()
     socketListenLoop();
 }
 
-void EventManager::stop()
+void EventManager::stop ( bool release )
 {
     LOG ( "Stopping everything" );
 
@@ -39,8 +39,17 @@ void EventManager::stop()
     running = false;
     socketsCond.signal();
     timersCond.signal();
-    timerThread.release();
-    reaperThread.release();
+
+    if ( release )
+    {
+        timerThread.release();
+        reaperThread.release();
+    }
+    else
+    {
+        timerThread.join();
+        reaperThread.join();
+    }
 }
 
 EventManager& EventManager::get()
