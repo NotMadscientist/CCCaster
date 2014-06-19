@@ -35,7 +35,10 @@ void DoubleSocket::connectEvent ( Socket *socket )
 
 void DoubleSocket::disconnectEvent ( Socket *socket )
 {
-    disconnect();
+    if ( socket == primary.get() )
+        disconnect();
+    else
+        pendingAccepts.erase ( socket );
 }
 
 void DoubleSocket::readEvent ( Socket *socket, char *bytes, size_t len, const IpAddrPort& address )
@@ -85,6 +88,7 @@ void DoubleSocket::readEvent ( Socket *socket, char *bytes, size_t len, const Ip
                 }
 
                 acceptedSocket.reset ( new DoubleSocket ( it->second, secondary ) );
+                LOG ( "Accepted double socket %08x", acceptedSocket.get() );
                 owner->acceptEvent ( this );
 
                 acceptedSocket.reset();
@@ -194,7 +198,7 @@ DoubleSocket::DoubleSocket ( Owner *owner, unsigned port )
     , resendTimer ( this )
     , resendIter ( resendList.end() )
 {
-    LOG ( "primary=%08x; secondary=%08x", primary.get(), secondary.get() );
+    LOG ( "this=%08x; primary=%08x; secondary=%08x", this, primary.get(), secondary.get() );
 }
 
 DoubleSocket::DoubleSocket ( Owner *owner, const string& address, unsigned port )
@@ -205,7 +209,7 @@ DoubleSocket::DoubleSocket ( Owner *owner, const string& address, unsigned port 
     , resendTimer ( this )
     , resendIter ( resendList.end() )
 {
-    LOG ( "primary=%08x; secondary=%08x", primary.get(), secondary.get() );
+    LOG ( "this=%08x; primary=%08x; secondary=%08x", this, primary.get(), secondary.get() );
 }
 
 DoubleSocket::DoubleSocket ( const shared_ptr<Socket>& primary, const shared_ptr<Socket>& secondary )
@@ -216,7 +220,7 @@ DoubleSocket::DoubleSocket ( const shared_ptr<Socket>& primary, const shared_ptr
     , resendTimer ( this )
     , resendIter ( resendList.end() )
 {
-    LOG ( "primary=%08x; secondary=%08x", primary.get(), secondary.get() );
+    LOG ( "this=%08x; primary=%08x; secondary=%08x", this, primary.get(), secondary.get() );
 }
 
 shared_ptr<DoubleSocket> DoubleSocket::listen ( Owner *owner, unsigned port )
@@ -244,6 +248,7 @@ void DoubleSocket::disconnect()
     state = State::Disconnected;
     primary.reset();
     secondary.reset();
+    LOG ( "this=%08x; primary=%08x; secondary=%08x", this, primary.get(), secondary.get() );
 }
 
 shared_ptr<DoubleSocket> DoubleSocket::accept ( Owner *owner )

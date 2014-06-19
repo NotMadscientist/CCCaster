@@ -25,6 +25,9 @@ struct Serializable
     virtual MsgType type() const = 0;
     virtual BaseType base() const = 0;
 
+    template<typename T> T *getAs() { return static_cast<T *> ( this ); }
+    template<typename T> const T *getAs() const { return static_cast<const T *> ( this ); }
+
     static std::string encode ( const Serializable& msg );
     static MsgPtr decode ( char *bytes, size_t len );
 
