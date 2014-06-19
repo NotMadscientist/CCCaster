@@ -107,6 +107,8 @@ void EventManager::TimerThread::run()
 
         timeEndPeriod ( 1 );
     }
+
+    em.activeTimers.clear();
 }
 
 void EventManager::TimerThread::checkTimers()

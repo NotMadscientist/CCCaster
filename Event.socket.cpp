@@ -6,7 +6,7 @@
 
 using namespace std;
 
-#define LISTEN_INTERVAL     1000
+#define LISTEN_INTERVAL     100
 
 #define UDP_BIND_ATTEMPTS   10
 
@@ -124,7 +124,7 @@ void EventManager::TcpConnectThread::run()
     if ( !rawSocket.get() )
     {
         LOG_SOCKET ( "Failed to connect", socket );
-        em.activeSockets.erase ( socket );
+        em.connectingSockets.erase ( socket );
         return;
     }
 
@@ -144,8 +144,6 @@ void EventManager::TcpConnectThread::run()
 
 void EventManager::socketListenLoop()
 {
-    running = true;
-
     for ( ;; )
     {
         Sleep ( 1 );
@@ -160,8 +158,11 @@ void EventManager::socketListenLoop()
                 socketsCond.wait ( mutex );
 
                 if ( !running )
-                    return;
+                    break;
             }
+
+            if ( !running )
+                break;
 
             for ( Socket *socket : activeSockets )
             {
@@ -198,6 +199,9 @@ void EventManager::socketListenLoop()
                 break;
         }
 
+        if ( !running )
+            break;
+
         LOG ( "Listening to %u socket(s)...", socketGroup.size() );
 
         try
@@ -211,8 +215,13 @@ void EventManager::socketListenLoop()
         }
 
         if ( !running )
-            return;
+            break;
     }
+
+    socketGroup.clear();
+    rawSocketToSocket.clear();
+    connectingSockets.clear();
+    activeRawSockets.clear();
 }
 
 void EventManager::SocketAccept::exec ( NL::Socket *serverSocket, NL::SocketGroup *, void * )

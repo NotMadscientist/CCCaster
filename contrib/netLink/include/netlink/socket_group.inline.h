@@ -93,6 +93,15 @@ inline bool SocketGroup::empty() const {
 }
 
 /**
+* Removes all elements from the group
+*/
+
+inline void SocketGroup::clear() {
+
+    return _vSocket.clear();
+}
+
+/**
 * Sets the onAcceptReady callback
 *
 * This callback will be call for any incoming connection waiting to be accepted

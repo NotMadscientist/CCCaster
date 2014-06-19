@@ -29,26 +29,33 @@ void EventManager::start()
     LOG ( "Starting listen loop" );
 
     socketListenLoop();
+
+    LOG ( "Finished listen loop" );
+
+    timerThread.join();
+
+    LOG ( "Joined timer thread" );
+
+    reaperThread.join();
+
+    LOG ( "Joined reaper thread" );
 }
 
 void EventManager::stop ( bool release )
 {
     LOG ( "Stopping everything" );
 
-    LOCK ( mutex );
-    running = false;
-    socketsCond.signal();
-    timersCond.signal();
+    {
+        LOCK ( mutex );
+        running = false;
+        socketsCond.signal();
+        timersCond.signal();
+    }
 
     if ( release )
     {
         timerThread.release();
         reaperThread.release();
-    }
-    else
-    {
-        timerThread.join();
-        reaperThread.join();
     }
 }
 
