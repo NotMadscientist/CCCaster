@@ -1,15 +1,10 @@
-#include "Event.h"
-#include "DoubleSocket.h"
-#include "Timer.h"
 #include "Log.h"
+#include "Test.h"
 
-#include <windows.h>
-#include <gtest/gtest.h>
+#include <netlink/socket.h>
 
-#include <vector>
 #include <cstdlib>
-#include <cstdio>
-#include <cassert>
+#include <ctime>
 
 using namespace std;
 
@@ -19,8 +14,7 @@ int main ( int argc, char *argv[] )
     NL::init();
     Log::open();
 
-    testing::InitGoogleTest ( &argc, argv );
-    int result = RUN_ALL_TESTS();
+    int result = RunAllTests ( argc, argv );
 
     Log::close();
     return result;

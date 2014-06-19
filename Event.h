@@ -138,8 +138,11 @@ public:
     // Start the event manager
     void start();
 
-    // Stop the event manager, flag to release background threads
-    void stop ( bool release = false );
+    // Stop the event manager
+    void stop();
+
+    // Stop the event manager and release background threads
+    void release();
 
     // Get the singleton instance
     static EventManager& get();

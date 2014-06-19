@@ -41,22 +41,24 @@ void EventManager::start()
     LOG ( "Joined reaper thread" );
 }
 
-void EventManager::stop ( bool release )
+void EventManager::stop()
 {
     LOG ( "Stopping everything" );
 
-    {
-        LOCK ( mutex );
-        running = false;
-        socketsCond.signal();
-        timersCond.signal();
-    }
+    LOCK ( mutex );
+    running = false;
+    socketsCond.signal();
+    timersCond.signal();
+}
 
-    if ( release )
-    {
-        timerThread.release();
-        reaperThread.release();
-    }
+void EventManager::release()
+{
+    stop();
+
+    LOG ( "Releasing everything" );
+
+    timerThread.release();
+    reaperThread.release();
 }
 
 EventManager& EventManager::get()

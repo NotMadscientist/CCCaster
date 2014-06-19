@@ -12,6 +12,36 @@
 
 using namespace std;
 
+int RunAllTests ( int& argc, char *argv[] )
+{
+    testing::InitGoogleTest ( &argc, argv );
+    int result = RUN_ALL_TESTS();
+
+    // Final timeout test with EventManager::release();
+    {
+        struct TestSocket : public Socket::Owner, public Timer::Owner
+        {
+            shared_ptr<Socket> socket;
+
+            void timerExpired ( Timer *timer ) { EventManager::get().release(); }
+
+            TestSocket ( const string& address, unsigned port )
+                : socket ( Socket::connect ( this, address, port, Protocol::TCP ) ) {}
+        };
+
+        TestSocket client ( "google.com" , 23456 );
+
+        Timer timer ( &client );
+        timer.start ( TEST_TIMEOUT );
+
+        EventManager::get().start();
+
+        assert ( client.socket->isConnected() == false );
+    }
+
+    return result;
+}
+
 TEST ( SocketTest, ConnectTcp )
 {
     struct TestSocket : public Socket::Owner, public Timer::Owner
@@ -92,6 +122,76 @@ TEST ( SocketTest, SendTcpMessage )
             : socket ( Socket::listen ( this, port, Protocol::TCP ) ) {}
         TestSocket ( const string& address, unsigned port )
             : socket ( Socket::connect ( this, address, port, Protocol::TCP ) ) {}
+    };
+
+    TestSocket server ( TEST_PORT );
+    TestSocket client ( "127.0.0.1", TEST_PORT );
+
+    Timer timer ( &client );
+    timer.start ( TEST_TIMEOUT );
+
+    EventManager::get().start();
+
+    EXPECT_TRUE ( server.socket->isConnected() );
+    EXPECT_TRUE ( server.msg.get() );
+
+    if ( server.msg.get() )
+    {
+        EXPECT_EQ ( server.msg->type(), MsgType::TestMessage );
+        EXPECT_EQ ( server.msg->getAs<TestMessage>()->str, "Hello server!" );
+    }
+
+    EXPECT_TRUE ( client.socket->isConnected() );
+    EXPECT_TRUE ( client.msg.get() );
+
+    if ( client.msg.get() )
+    {
+        EXPECT_EQ ( client.msg->type(), MsgType::TestMessage );
+        EXPECT_EQ ( client.msg->getAs<TestMessage>()->str, "Hello client!" );
+    }
+}
+
+TEST ( SocketTest, SendUdpMessage )
+{
+    struct TestSocket : public Socket::Owner, public Timer::Owner
+    {
+        shared_ptr<Socket> socket;
+        MsgPtr msg;
+        bool sent;
+
+        void readEvent ( Socket *socket, char *bytes, size_t len, const IpAddrPort& address )
+        {
+            msg = Serializable::decode ( bytes, len );
+
+            if ( socket->getRemoteAddress().addr.empty() )
+            {
+                socket->send ( TestMessage ( "Hello client!" ), address );
+                sent = true;
+            }
+        }
+
+        void timerExpired ( Timer *timer )
+        {
+            if ( !sent )
+            {
+                if ( !socket->getRemoteAddress().addr.empty() )
+                {
+                    socket->send ( TestMessage ( "Hello server!" ) );
+                    sent = true;
+                }
+
+                timer->start ( TEST_TIMEOUT );
+            }
+            else
+            {
+                EventManager::get().stop();
+            }
+        }
+
+        TestSocket ( unsigned port )
+            : socket ( Socket::listen ( this, port, Protocol::UDP ) ), sent ( false ) {}
+        TestSocket ( const string& address, unsigned port )
+            : socket ( Socket::connect ( this, address, port, Protocol::UDP ) ), sent ( false ) {}
     };
 
     TestSocket server ( TEST_PORT );

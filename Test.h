@@ -24,3 +24,5 @@ protected:
 
     void deserialize ( cereal::BinaryInputArchive& ar ) { ar ( str ); }
 };
+
+int RunAllTests ( int& argc, char *argv[] );
