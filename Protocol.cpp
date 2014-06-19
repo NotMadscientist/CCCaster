@@ -18,13 +18,16 @@ string Serializable::encode ( const Serializable& msg )
 
 MsgPtr Serializable::decode ( char *bytes, size_t len )
 {
+    MsgPtr msg;
+
+    if ( len == 0 )
+        return msg;
+
     istringstream ss ( string ( bytes, len ), stringstream::binary );
     BinaryInputArchive archive ( ss );
 
     MsgType type;
     archive ( type );
-
-    MsgPtr msg;
 
     switch ( type )
     {

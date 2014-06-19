@@ -46,6 +46,7 @@ void EventManager::stop()
     LOG ( "Stopping everything" );
 
     LOCK ( mutex );
+
     running = false;
     socketsCond.signal();
     timersCond.signal();

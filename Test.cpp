@@ -2,6 +2,7 @@
 #include "Test.h"
 #include "Socket.h"
 #include "Timer.h"
+#include "GoBackN.h"
 
 #include <gtest/gtest.h>
 
@@ -22,17 +23,18 @@ int RunAllTests ( int& argc, char *argv[] )
         struct TestSocket : public Socket::Owner, public Timer::Owner
         {
             shared_ptr<Socket> socket;
+            Timer timer;
 
             void timerExpired ( Timer *timer ) { EventManager::get().release(); }
 
             TestSocket ( const string& address, unsigned port )
-                : socket ( Socket::connect ( this, address, port, Protocol::TCP ) ) {}
+                : socket ( Socket::connect ( this, address, port, Protocol::TCP ) ), timer ( this )
+            {
+                timer.start ( TEST_TIMEOUT );
+            }
         };
 
         TestSocket client ( "google.com" , 23456 );
-
-        Timer timer ( &client );
-        timer.start ( TEST_TIMEOUT );
 
         EventManager::get().start();
 
@@ -42,27 +44,32 @@ int RunAllTests ( int& argc, char *argv[] )
     return result;
 }
 
-TEST ( SocketTest, ConnectTcp )
+TEST ( Socket, ConnectTcp )
 {
     struct TestSocket : public Socket::Owner, public Timer::Owner
     {
         shared_ptr<Socket> socket, accepted;
+        Timer timer;
 
         void acceptEvent ( Socket *serverSocket ) { accepted = serverSocket->accept ( this ); }
 
         void timerExpired ( Timer *timer ) { EventManager::get().stop(); }
 
         TestSocket ( unsigned port )
-            : socket ( Socket::listen ( this, port, Protocol::TCP ) ) {}
+            : socket ( Socket::listen ( this, port, Protocol::TCP ) ), timer ( this )
+        {
+            timer.start ( TEST_TIMEOUT );
+        }
+
         TestSocket ( const string& address, unsigned port )
-            : socket ( Socket::connect ( this, address, port, Protocol::TCP ) ) {}
+            : socket ( Socket::connect ( this, address, port, Protocol::TCP ) ), timer ( this )
+        {
+            timer.start ( TEST_TIMEOUT );
+        }
     };
 
     TestSocket server ( TEST_PORT );
     TestSocket client ( "127.0.0.1", TEST_PORT );
-
-    Timer timer ( &client );
-    timer.start ( TEST_TIMEOUT );
 
     EventManager::get().start();
 
@@ -71,33 +78,35 @@ TEST ( SocketTest, ConnectTcp )
     EXPECT_TRUE ( client.socket->isConnected() );
 }
 
-TEST ( SocketTest, ConnectTcpTimeout )
+TEST ( Socket, ConnectTcpTimeout )
 {
     struct TestSocket : public Socket::Owner, public Timer::Owner
     {
         shared_ptr<Socket> socket;
+        Timer timer;
 
         void timerExpired ( Timer *timer ) { EventManager::get().stop(); }
 
         TestSocket ( const string& address, unsigned port )
-            : socket ( Socket::connect ( this, address, port, Protocol::TCP ) ) {}
+            : socket ( Socket::connect ( this, address, port, Protocol::TCP ) ), timer ( this )
+        {
+            timer.start ( TEST_TIMEOUT );
+        }
     };
 
     TestSocket client ( "127.0.0.1", TEST_PORT );
-
-    Timer timer ( &client );
-    timer.start ( TEST_TIMEOUT );
 
     EventManager::get().start();
 
     EXPECT_FALSE ( client.socket->isConnected() );
 }
 
-TEST ( SocketTest, SendTcpMessage )
+TEST ( Socket, SendTcpMessage )
 {
     struct TestSocket : public Socket::Owner, public Timer::Owner
     {
         shared_ptr<Socket> socket, accepted;
+        Timer timer;
         MsgPtr msg;
 
         void acceptEvent ( Socket *serverSocket )
@@ -119,16 +128,20 @@ TEST ( SocketTest, SendTcpMessage )
         void timerExpired ( Timer *timer ) { EventManager::get().stop(); }
 
         TestSocket ( unsigned port )
-            : socket ( Socket::listen ( this, port, Protocol::TCP ) ) {}
+            : socket ( Socket::listen ( this, port, Protocol::TCP ) ), timer ( this )
+        {
+            timer.start ( TEST_TIMEOUT );
+        }
+
         TestSocket ( const string& address, unsigned port )
-            : socket ( Socket::connect ( this, address, port, Protocol::TCP ) ) {}
+            : socket ( Socket::connect ( this, address, port, Protocol::TCP ) ), timer ( this )
+        {
+            timer.start ( TEST_TIMEOUT );
+        }
     };
 
     TestSocket server ( TEST_PORT );
     TestSocket client ( "127.0.0.1", TEST_PORT );
-
-    Timer timer ( &client );
-    timer.start ( TEST_TIMEOUT );
 
     EventManager::get().start();
 
@@ -151,11 +164,12 @@ TEST ( SocketTest, SendTcpMessage )
     }
 }
 
-TEST ( SocketTest, SendUdpMessage )
+TEST ( Socket, SendUdpMessage )
 {
     struct TestSocket : public Socket::Owner, public Timer::Owner
     {
         shared_ptr<Socket> socket;
+        Timer timer;
         MsgPtr msg;
         bool sent;
 
@@ -189,16 +203,20 @@ TEST ( SocketTest, SendUdpMessage )
         }
 
         TestSocket ( unsigned port )
-            : socket ( Socket::listen ( this, port, Protocol::UDP ) ), sent ( false ) {}
+            : socket ( Socket::listen ( this, port, Protocol::UDP ) ), timer ( this ), sent ( false )
+        {
+            timer.start ( TEST_TIMEOUT );
+        }
+
         TestSocket ( const string& address, unsigned port )
-            : socket ( Socket::connect ( this, address, port, Protocol::UDP ) ), sent ( false ) {}
+            : socket ( Socket::connect ( this, address, port, Protocol::UDP ) ), timer ( this ), sent ( false )
+        {
+            timer.start ( TEST_TIMEOUT );
+        }
     };
 
     TestSocket server ( TEST_PORT );
     TestSocket client ( "127.0.0.1", TEST_PORT );
-
-    Timer timer ( &client );
-    timer.start ( TEST_TIMEOUT );
 
     EventManager::get().start();
 
