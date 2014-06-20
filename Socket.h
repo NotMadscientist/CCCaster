@@ -22,7 +22,7 @@ struct Socket
         virtual void disconnectEvent ( Socket *socket ) {}
 
         // Read event
-        virtual void readEvent ( Socket *socket, char *bytes, size_t len, const IpAddrPort& address ) {}
+        virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) {}
     };
 
     Owner *owner;
@@ -37,6 +37,9 @@ private:
 
     const IpAddrPort address;
     const Protocol protocol;
+
+    std::string readBuffer;
+    size_t readPos;
 
     Socket ( NL::Socket *socket );
     Socket ( Owner *owner, unsigned port, Protocol protocol );
@@ -66,7 +69,8 @@ public:
     inline const IpAddrPort& getRemoteAddress() const { if ( isServer() ) return NullAddress; return address; }
     inline Protocol getProtocol() const { return protocol; }
 
-    void send ( const Serializable& msg, const IpAddrPort& address = IpAddrPort() );
+    void send ( Serializable *message, const IpAddrPort& address = IpAddrPort() );
+    void send ( const MsgPtr& msg, const IpAddrPort& address = IpAddrPort() );
     void send ( char *bytes, size_t len, const IpAddrPort& address = IpAddrPort() );
 
     friend class EventManager;

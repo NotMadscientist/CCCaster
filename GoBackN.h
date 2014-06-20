@@ -56,6 +56,7 @@ private:
 public:
 
     // Send a message via Go-Back-N
+    void send ( SerializableSequence *message );
     void send ( const MsgPtr& msg );
 
     // Receive a message from the raw socket

@@ -74,6 +74,9 @@ class EventManager
     // Map of socket instance to corresponding raw socket, for ownership
     std::unordered_map<Socket *, std::shared_ptr<NL::Socket>> activeRawSockets;
 
+    std::string socketReadBuffer;
+    size_t socketReadPos;
+
     // Socket read events
     struct SocketAccept     : public NL::SocketGroupCmd { void exec ( NL::Socket *, NL::SocketGroup *, void * ); } sac;
     struct SocketDisconnect : public NL::SocketGroupCmd { void exec ( NL::Socket *, NL::SocketGroup *, void * ); } sdc;

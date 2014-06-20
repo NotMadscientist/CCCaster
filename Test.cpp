@@ -113,17 +113,17 @@ TEST ( Socket, TcpSend )
         void acceptEvent ( Socket *serverSocket )
         {
             accepted = serverSocket->accept ( this );
-            accepted->send ( TestMessage ( "Hello client!" ) );
+            accepted->send ( new TestMessage ( "Hello client!" ) );
         }
 
         void connectEvent ( Socket *socket )
         {
-            socket->send ( TestMessage ( "Hello server!" ) );
+            socket->send ( new TestMessage ( "Hello server!" ) );
         }
 
-        void readEvent ( Socket *socket, char *bytes, size_t len, const IpAddrPort& address )
+        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
         {
-            msg = Serializable::decode ( bytes, len );
+            this->msg = msg;
         }
 
         void timerExpired ( Timer *timer ) { EventManager::get().stop(); }
@@ -147,6 +147,7 @@ TEST ( Socket, TcpSend )
     EventManager::get().start();
 
     EXPECT_TRUE ( server.socket->isConnected() );
+    EXPECT_TRUE ( server.accepted->isConnected() );
     EXPECT_TRUE ( server.msg.get() );
 
     if ( server.msg.get() )
@@ -174,13 +175,13 @@ TEST ( Socket, UdpSend )
         MsgPtr msg;
         bool sent;
 
-        void readEvent ( Socket *socket, char *bytes, size_t len, const IpAddrPort& address )
+        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
         {
-            msg = Serializable::decode ( bytes, len );
+            this->msg = msg;
 
             if ( socket->getRemoteAddress().addr.empty() )
             {
-                socket->send ( TestMessage ( "Hello client!" ), address );
+                socket->send ( new TestMessage ( "Hello client!" ), address );
                 sent = true;
             }
         }
@@ -191,7 +192,7 @@ TEST ( Socket, UdpSend )
             {
                 if ( !socket->getRemoteAddress().addr.empty() )
                 {
-                    socket->send ( TestMessage ( "Hello server!" ) );
+                    socket->send ( new TestMessage ( "Hello server!" ) );
                     sent = true;
                 }
 
@@ -240,6 +241,76 @@ TEST ( Socket, UdpSend )
     }
 }
 
+TEST ( Socket, TcpSendPartial )
+{
+    struct TestSocket : public Socket::Owner, public Timer::Owner
+    {
+        shared_ptr<Socket> socket, accepted;
+        Timer timer;
+        MsgPtr msg;
+        string buffer;
+
+        void acceptEvent ( Socket *serverSocket )
+        {
+            accepted = serverSocket->accept ( this );
+        }
+
+        void connectEvent ( Socket *socket )
+        {
+            socket->send ( &buffer[0], 5 );
+            buffer.erase ( 0, 5 );
+        }
+
+        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
+        {
+            this->msg = msg;
+        }
+
+        void timerExpired ( Timer *timer )
+        {
+            if ( socket->isClient() )
+            {
+                socket->send ( &buffer[0], buffer.size() );
+            }
+            else
+            {
+                EventManager::get().stop();
+            }
+        }
+
+        TestSocket ( unsigned port )
+            : socket ( Socket::listen ( this, port, Protocol::TCP ) ), timer ( this )
+        {
+            timer.start ( 2000 );
+        }
+
+        TestSocket ( const string& address, unsigned port )
+            : socket ( Socket::connect ( this, address, port, Protocol::TCP ) ), timer ( this )
+            , buffer ( Serializable::encode ( new TestMessage ( "Hello server!" ) ) )
+        {
+            timer.start ( 1000 );
+        }
+    };
+
+    TestSocket server ( TEST_PORT );
+    TestSocket client ( "127.0.0.1", TEST_PORT );
+
+    EventManager::get().start();
+
+    EXPECT_TRUE ( server.socket->isConnected() );
+    EXPECT_TRUE ( server.accepted->isConnected() );
+    EXPECT_TRUE ( server.msg.get() );
+
+    if ( server.msg.get() )
+    {
+        EXPECT_EQ ( server.msg->type(), MsgType::TestMessage );
+        EXPECT_EQ ( server.msg->getAs<TestMessage>().str, "Hello server!" );
+    }
+
+    EXPECT_TRUE ( client.socket->isConnected() );
+    EXPECT_FALSE ( client.msg.get() );
+}
+
 TEST ( GoBackN, SendOnce )
 {
     struct TestSocket : public GoBackN::Owner, public Socket::Owner, public Timer::Owner
@@ -253,7 +324,7 @@ TEST ( GoBackN, SendOnce )
 
         void send ( const MsgPtr& msg )
         {
-            socket->send ( *msg, address );
+            socket->send ( msg, address );
         }
 
         void recv ( const MsgPtr& msg )
@@ -263,12 +334,12 @@ TEST ( GoBackN, SendOnce )
             EventManager::get().stop();
         }
 
-        void readEvent ( Socket *socket, char *bytes, size_t len, const IpAddrPort& address )
+        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
         {
+            this->msg = msg;
+
             if ( this->address.empty() )
                 this->address = address;
-
-            msg = Serializable::decode ( bytes, len );
 
             if ( rand() % 100 < 10 )
                 gbn.recv ( msg );
@@ -327,7 +398,7 @@ TEST ( GoBackN, SendSequential )
 
         void send ( const MsgPtr& msg )
         {
-            socket->send ( *msg, address );
+            socket->send ( msg, address );
         }
 
         void recv ( const MsgPtr& msg )
@@ -341,12 +412,10 @@ TEST ( GoBackN, SendSequential )
             }
         }
 
-        void readEvent ( Socket *socket, char *bytes, size_t len, const IpAddrPort& address )
+        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
         {
             if ( this->address.empty() )
                 this->address = address;
-
-            MsgPtr msg = Serializable::decode ( bytes, len );
 
             if ( rand() % 100 < 50 )
                 gbn.recv ( msg );
@@ -356,11 +425,11 @@ TEST ( GoBackN, SendSequential )
         {
             if ( socket->isClient() )
             {
-                gbn.send ( MsgPtr ( new TestMessage ( "Message 1" ) ) );
-                gbn.send ( MsgPtr ( new TestMessage ( "Message 2" ) ) );
-                gbn.send ( MsgPtr ( new TestMessage ( "Message 3" ) ) );
-                gbn.send ( MsgPtr ( new TestMessage ( "Message 4" ) ) );
-                gbn.send ( MsgPtr ( new TestMessage ( "Message 5" ) ) );
+                gbn.send ( new TestMessage ( "Message 1" ) );
+                gbn.send ( new TestMessage ( "Message 2" ) );
+                gbn.send ( new TestMessage ( "Message 3" ) );
+                gbn.send ( new TestMessage ( "Message 4" ) );
+                gbn.send ( new TestMessage ( "Message 5" ) );
             }
             else
             {
@@ -412,7 +481,7 @@ TEST ( GoBackN, SendAndRecv )
         void send ( const MsgPtr& msg )
         {
             if ( !address.empty() )
-                socket->send ( *msg, address );
+                socket->send ( msg, address );
         }
 
         void recv ( const MsgPtr& msg )
@@ -426,12 +495,10 @@ TEST ( GoBackN, SendAndRecv )
             }
         }
 
-        void readEvent ( Socket *socket, char *bytes, size_t len, const IpAddrPort& address )
+        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
         {
             if ( this->address.empty() )
                 this->address = address;
-
-            MsgPtr msg = Serializable::decode ( bytes, len );
 
             if ( rand() % 100 < 50 )
                 gbn.recv ( msg );
@@ -441,11 +508,11 @@ TEST ( GoBackN, SendAndRecv )
         {
             if ( !sent )
             {
-                gbn.send ( MsgPtr ( new TestMessage ( socket->isClient() ? "Client 1" : "Server 1" ) ) );
-                gbn.send ( MsgPtr ( new TestMessage ( socket->isClient() ? "Client 2" : "Server 2" ) ) );
-                gbn.send ( MsgPtr ( new TestMessage ( socket->isClient() ? "Client 3" : "Server 3" ) ) );
-                gbn.send ( MsgPtr ( new TestMessage ( socket->isClient() ? "Client 4" : "Server 4" ) ) );
-                gbn.send ( MsgPtr ( new TestMessage ( socket->isClient() ? "Client 5" : "Server 5" ) ) );
+                gbn.send ( new TestMessage ( socket->isClient() ? "Client 1" : "Server 1" ) );
+                gbn.send ( new TestMessage ( socket->isClient() ? "Client 2" : "Server 2" ) );
+                gbn.send ( new TestMessage ( socket->isClient() ? "Client 3" : "Server 3" ) );
+                gbn.send ( new TestMessage ( socket->isClient() ? "Client 4" : "Server 4" ) );
+                gbn.send ( new TestMessage ( socket->isClient() ? "Client 5" : "Server 5" ) );
                 sent = true;
                 timer->start ( 1000 * 120 );
             }

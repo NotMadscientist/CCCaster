@@ -3,23 +3,28 @@
 #include "Log.h"
 #include "Util.h"
 
+#define READ_BUFFER_SIZE ( 1024 * 4096 )
+
 using namespace std;
 
 Socket::Socket ( NL::Socket *socket )
     : owner ( 0 ), socket ( socket ), address ( socket )
     , protocol ( socket->protocol() == NL::TCP ? Protocol::TCP : Protocol::UDP )
+    , readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 )
 {
     EventManager::get().addSocket ( this );
 }
 
 Socket::Socket ( Owner *owner, unsigned port, Protocol protocol )
     : owner ( owner ), address ( "", port ), protocol ( protocol )
+    , readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 )
 {
     EventManager::get().addSocket ( this );
 }
 
 Socket::Socket ( Owner *owner, const string& address, unsigned port, Protocol protocol )
     : owner ( owner ), address ( address, port ), protocol ( protocol )
+    , readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 )
 {
     EventManager::get().addSocket ( this );
 }
@@ -31,6 +36,8 @@ Socket::~Socket()
 
 void Socket::disconnect()
 {
+    readBuffer.clear();
+    readPos = 0;
     EventManager::get().removeSocket ( this );
 }
 
@@ -53,15 +60,24 @@ shared_ptr<Socket> Socket::accept ( Owner *owner )
     return acceptedSocket;
 }
 
-void Socket::send ( const Serializable& msg, const IpAddrPort& address )
+void Socket::send ( Serializable *message, const IpAddrPort& address )
+{
+    MsgPtr msg ( message );
+    send ( msg, address );
+}
+
+void Socket::send ( const MsgPtr& msg, const IpAddrPort& address )
 {
     string bytes = Serializable::encode ( msg );
-    LOG ( "Encoded '%s' to [ %u bytes ]", TO_C_STR ( msg.type() ), bytes.size() );
+    LOG ( "Encoded '%s' to [ %u bytes ]", TO_C_STR ( msg ), bytes.size() );
 
-    string base64;
-    for ( char c : bytes )
-        base64 += " " + toString ( "%02x", ( unsigned char ) c );
-    LOG ( "Base64 :%s", base64.c_str() );
+    if ( !bytes.empty() && Log::isEnabled )
+    {
+        string base64;
+        for ( char c : bytes )
+            base64 += " " + toString ( "%02x", ( unsigned char ) c );
+        LOG ( "Base64 :%s", base64.c_str() );
+    }
 
     send ( &bytes[0], bytes.size(), address );
 }

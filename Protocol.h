@@ -28,8 +28,9 @@ struct Serializable
     template<typename T> T& getAs() { return *static_cast<T *> ( this ); }
     template<typename T> const T& getAs() const { return *static_cast<const T *> ( this ); }
 
-    static std::string encode ( const Serializable& msg );
-    static MsgPtr decode ( char *bytes, size_t len );
+    static std::string encode ( Serializable *message );
+    static std::string encode ( const MsgPtr& msg );
+    static MsgPtr decode ( char *bytes, size_t len, size_t& consumed );
 
 protected:
 

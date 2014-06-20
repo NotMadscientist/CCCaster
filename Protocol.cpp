@@ -1,22 +1,36 @@
 #include "Protocol.h"
 #include "Protocol.types.h"
 
+#include <cassert>
+
 using namespace std;
 using namespace cereal;
 
-string Serializable::encode ( const Serializable& msg )
+string Serializable::encode ( Serializable *message )
 {
+    if ( !message )
+        return "";
+
+    MsgPtr msg ( message );
+    return encode ( msg );
+}
+
+string Serializable::encode ( const MsgPtr& msg )
+{
+    if ( !msg.get() )
+        return "";
+
     ostringstream ss ( stringstream::binary );
     BinaryOutputArchive archive ( ss );
 
-    archive ( msg.type() );
-    msg.serializeBase ( archive );
-    msg.serialize ( archive );
+    archive ( msg->type() );
+    msg->serializeBase ( archive );
+    msg->serialize ( archive );
 
     return ss.str();
 }
 
-MsgPtr Serializable::decode ( char *bytes, size_t len )
+MsgPtr Serializable::decode ( char *bytes, size_t len, size_t& consumed )
 {
     MsgPtr msg;
 
@@ -33,6 +47,12 @@ MsgPtr Serializable::decode ( char *bytes, size_t len )
     {
 #include "Protocol.decode.h"
     }
+
+    string remaining;
+    getline ( ss, remaining );
+
+    assert ( len >= remaining.size() );
+    consumed = len - remaining.size();
 
     return msg;
 }

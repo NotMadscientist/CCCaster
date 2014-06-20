@@ -37,6 +37,12 @@ void GoBackN::timerExpired ( Timer *timer )
     sendTimer.start ( SEND_INTERVAL );
 }
 
+void GoBackN::send ( SerializableSequence *message )
+{
+    MsgPtr msg ( message );
+    send ( msg );
+}
+
 void GoBackN::send ( const MsgPtr& msg )
 {
     LOG ( "Adding '%s'; sendSequence=%d", TO_C_STR ( msg ), sendSequence + 1 );

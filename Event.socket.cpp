@@ -15,13 +15,9 @@ using namespace std;
 
 #define RANDOM_PORT         ( PORT_MIN + rand() % ( PORT_MAX - PORT_MIN ) )
 
-#define READ_BUFFER_SIZE    ( 1024 * 4096 )
-
 #define LOG_SOCKET(VERB, SOCKET)                                                                        \
     LOG ( "%s %s socket %08x { %08x, '%s' }",                                                           \
           VERB, TO_C_STR ( SOCKET->protocol ), SOCKET, SOCKET->socket.get(), SOCKET->address.c_str() )
-
-static char socketReadBuffer[READ_BUFFER_SIZE];
 
 void EventManager::addSocket ( Socket *socket )
 {
@@ -272,15 +268,35 @@ void EventManager::SocketRead::exec ( NL::Socket *socket, NL::SocketGroup *, voi
             || !it->second->owner || !it->second->socket.get() )
         return;
 
+    char *buffer = & ( it->second->readBuffer[it->second->readPos] );
+    size_t bufferSize = it->second->readBuffer.size() - it->second->readPos;
+
     IpAddrPort address ( socket );
-    size_t len;
+    size_t len, consumed;
 
     if ( socket->protocol() == NL::TCP )
-        len = socket->read ( socketReadBuffer, sizeof ( socketReadBuffer ) );
+        len = socket->read ( buffer, bufferSize );
     else
-        len = socket->readFrom ( socketReadBuffer, sizeof ( socketReadBuffer ), &address.addr, &address.port );
+        len = socket->readFrom ( buffer, bufferSize, & ( address.addr ), & ( address.port ) );
+
+    if ( len == 0 )
+        return;
+
+    it->second->readPos += len;
 
     LOG_SOCKET ( "Read from", it->second );
     LOG ( "Read [ %u bytes ] from '%s'", len, address.c_str() );
-    it->second->owner->readEvent ( it->second, socketReadBuffer, len, address );
+
+    MsgPtr msg = Serializable::decode ( buffer, it->second->readPos, consumed );
+
+    assert ( consumed <= it->second->readPos );
+
+    it->second->readBuffer.erase ( 0, consumed );
+    it->second->readPos -= consumed;
+
+    if ( msg.get() )
+    {
+        LOG ( "Decoded [ %u bytes ] to '%s'", len, TO_C_STR ( msg ) );
+        it->second->owner->readEvent ( it->second, msg, address );
+    }
 }
