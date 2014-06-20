@@ -30,22 +30,38 @@ string Serializable::encode ( const MsgPtr& msg )
     return ss.str();
 }
 
-MsgPtr Serializable::decode ( char *bytes, size_t len, size_t& consumed )
+MsgPtr Serializable::decode ( const char *bytes, size_t len, size_t& consumed )
 {
     MsgPtr msg;
 
     if ( len == 0 )
+    {
+        consumed = 0;
         return msg;
+    }
 
     istringstream ss ( string ( bytes, len ), stringstream::binary );
     BinaryInputArchive archive ( ss );
 
-    MsgType type;
-    archive ( type );
-
-    switch ( type )
+    try
     {
+        MsgType type;
+        archive ( type );
+
+        switch ( type )
+        {
 #include "Protocol.decode.h"
+        }
+    }
+    catch ( ... )
+    {
+        msg.reset();
+    }
+
+    if ( !msg.get() )
+    {
+        consumed = 0;
+        return msg;
     }
 
     string remaining;
@@ -53,7 +69,6 @@ MsgPtr Serializable::decode ( char *bytes, size_t len, size_t& consumed )
 
     assert ( len >= remaining.size() );
     consumed = len - remaining.size();
-
     return msg;
 }
 

@@ -30,7 +30,7 @@ struct Serializable
 
     static std::string encode ( Serializable *message );
     static std::string encode ( const MsgPtr& msg );
-    static MsgPtr decode ( char *bytes, size_t len, size_t& consumed );
+    static MsgPtr decode ( const char *bytes, size_t len, size_t& consumed );
 
 protected:
 

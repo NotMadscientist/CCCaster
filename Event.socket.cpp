@@ -268,16 +268,16 @@ void EventManager::SocketRead::exec ( NL::Socket *socket, NL::SocketGroup *, voi
             || !it->second->owner || !it->second->socket.get() )
         return;
 
-    char *buffer = & ( it->second->readBuffer[it->second->readPos] );
-    size_t bufferSize = it->second->readBuffer.size() - it->second->readPos;
+    char *bufferEnd = & ( it->second->readBuffer[it->second->readPos] );
+    size_t bufferRemainingSize = it->second->readBuffer.size() - it->second->readPos;
 
     IpAddrPort address ( socket );
-    size_t len, consumed;
+    size_t len;
 
     if ( socket->protocol() == NL::TCP )
-        len = socket->read ( buffer, bufferSize );
+        len = socket->read ( bufferEnd, bufferRemainingSize );
     else
-        len = socket->readFrom ( buffer, bufferSize, & ( address.addr ), & ( address.port ) );
+        len = socket->readFrom ( bufferEnd, bufferRemainingSize, & ( address.addr ), & ( address.port ) );
 
     if ( len == 0 )
         return;
@@ -287,16 +287,17 @@ void EventManager::SocketRead::exec ( NL::Socket *socket, NL::SocketGroup *, voi
     LOG_SOCKET ( "Read from", it->second );
     LOG ( "Read [ %u bytes ] from '%s'", len, address.c_str() );
 
-    MsgPtr msg = Serializable::decode ( buffer, it->second->readPos, consumed );
+    size_t consumed = 0;
+    MsgPtr msg = Serializable::decode ( & ( it->second->readBuffer[0] ), it->second->readPos, consumed );
+
+    if ( !msg.get() )
+        return;
+
+    LOG ( "Decoded [ %u bytes ] to '%s'", it->second->readPos, TO_C_STR ( msg ) );
+    it->second->owner->readEvent ( it->second, msg, address );
 
     assert ( consumed <= it->second->readPos );
 
     it->second->readBuffer.erase ( 0, consumed );
     it->second->readPos -= consumed;
-
-    if ( msg.get() )
-    {
-        LOG ( "Decoded [ %u bytes ] to '%s'", len, TO_C_STR ( msg ) );
-        it->second->owner->readEvent ( it->second, msg, address );
-    }
 }
