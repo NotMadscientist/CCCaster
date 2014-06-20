@@ -21,3 +21,10 @@ void Timer::start ( long delay )
 
     EventManager::get().addTimer ( this );
 }
+
+void Timer::stop()
+{
+    delay = expiry = -1;
+
+    EventManager::get().removeTimer ( this );
+}

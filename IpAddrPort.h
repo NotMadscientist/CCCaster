@@ -59,6 +59,8 @@ protected:
     void deserialize ( cereal::BinaryInputArchive& ar ) { ar ( addr, port ); }
 };
 
+const IpAddrPort NullAddress;
+
 inline bool operator== ( const IpAddrPort& a, const IpAddrPort& b )
 {
     return ( a.addr == b.addr && a.port == b.port );

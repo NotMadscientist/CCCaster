@@ -9,34 +9,49 @@
 
 using namespace std;
 
+#define LOG_LIST(LIST)                                                                                              \
+    do {                                                                                                            \
+        if ( !Log::isEnabled )                                                                                      \
+            break;                                                                                                  \
+        string list;                                                                                                \
+        for ( const MsgPtr& msg : LIST )                                                                            \
+            list += toString ( " %u:'", msg->getAs<SerializableSequence>().sequence ) + toString ( msg ) + "',";    \
+        if ( !LIST.empty() )                                                                                        \
+            list [ list.size() - 1 ] = ' ';                                                                         \
+        LOG ( #LIST "=[%s]", list.c_str() );                                                                        \
+    } while ( 0 )
+
 void GoBackN::timerExpired ( Timer *timer )
 {
     assert ( timer == &sendTimer );
 
-    // TODO
+    if ( sendList.empty() )
+        return;
+
+    if ( sendListPos == sendList.end() )
+        sendListPos = sendList.begin();
+
+    owner->send ( *sendListPos );
+    ++sendListPos;
+
+    sendTimer.start ( SEND_INTERVAL );
 }
 
 void GoBackN::send ( const MsgPtr& msg )
 {
-    LOG ( "Added '%s' to resend", TO_C_STR ( msg ) );
+    LOG ( "Adding '%s'; sendSequence=%d", TO_C_STR ( msg ), sendSequence + 1 );
 
     assert ( msg->base() == BaseType::SerializableSequence );
     assert ( sendList.empty() || sendList.back()->getAs<SerializableSequence>().sequence == sendSequence );
     assert ( owner != 0 );
 
-    msg->getAs<SerializableSequence>().sequence = sendSequence++;
+    msg->getAs<SerializableSequence>().sequence = ++sendSequence;
 
     owner->send ( msg );
 
     sendList.push_back ( msg );
 
-    if ( Log::isEnabled )
-    {
-        string list;
-        for ( const MsgPtr& msg : sendList )
-            list += " '" + toString ( msg ) + "',";
-        LOG ( "sendList=%s", list.c_str() );
-    }
+    LOG_LIST ( sendList );
 
     if ( !sendTimer.isStarted() )
         sendTimer.start ( SEND_INTERVAL );
@@ -46,6 +61,7 @@ void GoBackN::recv ( const MsgPtr& msg )
 {
     assert ( owner != 0 );
 
+    // Ignore non-sequential messages
     if ( !msg.get() || msg->base() != BaseType::SerializableSequence )
     {
         LOG ( "Unexpected '%s'", TO_C_STR ( msg ) );
@@ -54,66 +70,48 @@ void GoBackN::recv ( const MsgPtr& msg )
 
     uint32_t sequence = msg->getAs<SerializableSequence>().sequence;
 
+    // Check for ACK messages
     if ( msg->type() == MsgType::AckSequence )
     {
+        if ( sequence > ackSequence )
+            ackSequence = sequence;
+
         LOG ( "Got 'AckSequence'; sequence=%u; sendSequence=%u", sequence, sendSequence );
 
-        while ( !sendList.empty() || sendList.front()->getAs<SerializableSequence>().sequence <= sequence )
+        // Remove messages from sendList with sequence <= the ACKed sequence
+        while ( !sendList.empty() && sendList.front()->getAs<SerializableSequence>().sequence <= sequence )
             sendList.pop_front();
+        sendListPos = sendList.end();
 
-        if ( Log::isEnabled )
-        {
-            string list;
-            for ( const MsgPtr& msg : sendList )
-                list += " '" + toString ( msg ) + "',";
-            LOG ( "sendList=%s", list.c_str() );
-        }
-
+        LOG_LIST ( sendList );
         return;
     }
 
-    LOG ( "Got '%s'; sequence=%u; recvSequence=%u", TO_C_STR ( msg ), sequence, recvSequence );
-
-    if ( recvList.empty() || sequence < recvList.front()->getAs<SerializableSequence>().sequence )
+    if ( sequence != recvSequence + 1 )
     {
-        recvList.push_front ( msg );
-    }
-    else
-    {
-        auto it = recvList.begin();
-        for ( ++it; it != recvList.end(); ++it )
-            if ( sequence < ( **it ).getAs<SerializableSequence>().sequence )
-                break;
-        recvList.insert ( it, msg );
+        owner->send ( MsgPtr ( new AckSequence ( recvSequence ) ) );
+        return;
     }
 
-    if ( Log::isEnabled )
-    {
-        string list;
-        for ( const MsgPtr& msg : recvList )
-            list += " '" + toString ( msg ) + "',";
-        LOG ( "recvList=%s", list.c_str() );
-    }
+    LOG ( "Received '%s'; sequence=%u; recvSequence=%u", TO_C_STR ( msg ), sequence, recvSequence );
 
-    while ( recvList.front()->getAs<SerializableSequence>().sequence == recvSequence )
-    {
-        LOG ( "Received '%s'; sequence=%u", TO_C_STR ( recvList.front() ), recvSequence );
-        owner->recv ( recvList.front() );
+    ++recvSequence;
 
-        recvList.pop_front();
-        ++recvSequence;
+    owner->recv ( msg );
 
-        if ( recvList.empty() )
-            break;
-    }
+    owner->send ( MsgPtr ( new AckSequence ( recvSequence ) ) );
 }
 
 void GoBackN::reset()
 {
-    // TODO
+    sendSequence = recvSequence = 0;
+    sendList.clear();
+    sendListPos = sendList.end();
+    sendTimer.stop();
 }
 
 GoBackN::GoBackN ( Owner *owner )
-    : owner ( owner ), sendSequence ( 0 ), recvSequence ( 0 ), sendListPos ( sendList.end() ), sendTimer ( this )
+    : owner ( owner ), sendSequence ( 0 ), recvSequence ( 0 ), ackSequence ( 0 )
+    , sendListPos ( sendList.end() ), sendTimer ( this )
 {
 }
