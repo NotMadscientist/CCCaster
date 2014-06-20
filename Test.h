@@ -14,8 +14,6 @@ struct TestMessage : public SerializableSequence
 
     TestMessage ( const std::string& str ) : str ( str ) {}
 
-    TestMessage ( uint32_t sequence, const std::string& str ) : SerializableSequence ( sequence ), str ( str ) {}
-
     MsgType type() const;
 
 protected:

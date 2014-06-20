@@ -44,7 +44,7 @@ int RunAllTests ( int& argc, char *argv[] )
     return result;
 }
 
-TEST ( Socket, ConnectTcp )
+TEST ( Socket, TcpConnect )
 {
     struct TestSocket : public Socket::Owner, public Timer::Owner
     {
@@ -78,7 +78,7 @@ TEST ( Socket, ConnectTcp )
     EXPECT_TRUE ( client.socket->isConnected() );
 }
 
-TEST ( Socket, ConnectTcpTimeout )
+TEST ( Socket, TcpTimeout )
 {
     struct TestSocket : public Socket::Owner, public Timer::Owner
     {
@@ -101,7 +101,7 @@ TEST ( Socket, ConnectTcpTimeout )
     EXPECT_FALSE ( client.socket->isConnected() );
 }
 
-TEST ( Socket, SendTcpMessage )
+TEST ( Socket, TcpSend )
 {
     struct TestSocket : public Socket::Owner, public Timer::Owner
     {
@@ -151,7 +151,7 @@ TEST ( Socket, SendTcpMessage )
     if ( server.msg.get() )
     {
         EXPECT_EQ ( server.msg->type(), MsgType::TestMessage );
-        EXPECT_EQ ( server.msg->getAs<TestMessage>()->str, "Hello server!" );
+        EXPECT_EQ ( server.msg->getAs<TestMessage>().str, "Hello server!" );
     }
 
     EXPECT_TRUE ( client.socket->isConnected() );
@@ -160,11 +160,11 @@ TEST ( Socket, SendTcpMessage )
     if ( client.msg.get() )
     {
         EXPECT_EQ ( client.msg->type(), MsgType::TestMessage );
-        EXPECT_EQ ( client.msg->getAs<TestMessage>()->str, "Hello client!" );
+        EXPECT_EQ ( client.msg->getAs<TestMessage>().str, "Hello client!" );
     }
 }
 
-TEST ( Socket, SendUdpMessage )
+TEST ( Socket, UdpSend )
 {
     struct TestSocket : public Socket::Owner, public Timer::Owner
     {
@@ -226,7 +226,7 @@ TEST ( Socket, SendUdpMessage )
     if ( server.msg.get() )
     {
         EXPECT_EQ ( server.msg->type(), MsgType::TestMessage );
-        EXPECT_EQ ( server.msg->getAs<TestMessage>()->str, "Hello server!" );
+        EXPECT_EQ ( server.msg->getAs<TestMessage>().str, "Hello server!" );
     }
 
     EXPECT_TRUE ( client.socket->isConnected() );
@@ -235,6 +235,6 @@ TEST ( Socket, SendUdpMessage )
     if ( client.msg.get() )
     {
         EXPECT_EQ ( client.msg->type(), MsgType::TestMessage );
-        EXPECT_EQ ( client.msg->getAs<TestMessage>()->str, "Hello client!" );
+        EXPECT_EQ ( client.msg->getAs<TestMessage>().str, "Hello client!" );
     }
 }

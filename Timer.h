@@ -20,5 +20,7 @@ public:
 
     void start ( long delay );
 
+    inline bool isStarted() const { return ( delay >= 0 || expiry >= 0 ); }
+
     friend class EventManager;
 };
