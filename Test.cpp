@@ -238,3 +238,67 @@ TEST ( Socket, UdpSend )
         EXPECT_EQ ( client.msg->getAs<TestMessage>().str, "Hello client!" );
     }
 }
+
+TEST ( GoBackN, Send )
+{
+    struct TestSocket : public GoBackN::Owner, public Socket::Owner, public Timer::Owner
+    {
+        shared_ptr<Socket> socket;
+        IpAddrPort address;
+        GoBackN gbn;
+        Timer timer;
+        MsgPtr msg;
+        bool server;
+
+        void send ( const MsgPtr& msg )
+        {
+            socket->send ( *msg, address );
+        }
+
+        void recv ( const MsgPtr& msg )
+        {
+            this->msg = msg;
+        }
+
+        void readEvent ( Socket *socket, char *bytes, size_t len, const IpAddrPort& address )
+        {
+            if ( this->address.empty() )
+                this->address = address;
+
+            msg = Serializable::decode ( bytes, len );
+
+            if ( rand() % 100 < 50 )
+                gbn.recv ( msg );
+        }
+
+        void timerExpired ( Timer *timer )
+        {
+            if ( !server )
+            {
+                gbn.send ( MsgPtr ( new TestMessage ( "Hello server!" ) ) );
+            }
+            else
+            {
+                EventManager::get().stop();
+            }
+        }
+
+        TestSocket ( unsigned port )
+            : socket ( Socket::listen ( this, port, Protocol::UDP ) ), gbn ( this ), timer ( this ), server ( true )
+        {
+            timer.start ( TEST_TIMEOUT * 10 );
+        }
+
+        TestSocket ( const string& address, unsigned port )
+            : socket ( Socket::connect ( this, address, port, Protocol::UDP ) )
+            , address ( address, port ), gbn ( this ), timer ( this ), server ( false )
+        {
+            timer.start ( TEST_TIMEOUT );
+        }
+    };
+
+    TestSocket server ( TEST_PORT );
+    TestSocket client ( "127.0.0.1", TEST_PORT );
+
+    EventManager::get().start();
+}
