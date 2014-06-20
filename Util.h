@@ -42,5 +42,5 @@ std::string getMD5 ( const std::string& str );
 
 // zlib compression
 size_t compress ( const char *src, size_t srcLen, char *dst, size_t dstLen, int level = 9 );
-size_t uncompess ( const char *src, size_t srcLen, char *dst, size_t dstLen );
+size_t uncompress ( const char *src, size_t srcLen, char *dst, size_t dstLen );
 size_t compressBound ( size_t srcLen );
