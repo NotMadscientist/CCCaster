@@ -6,6 +6,8 @@
 
 #include <string>
 
+#define TEST_LOCAL_PORT 258258
+
 struct TestMessage : public SerializableSequence
 {
     std::string str;

@@ -15,7 +15,6 @@ int main ( int argc, char *argv[] )
     Log::open();
 
     int result = RunAllTests ( argc, argv );
-    LOG ( "Finished all tests" );
 
     Log::close();
     return result;
