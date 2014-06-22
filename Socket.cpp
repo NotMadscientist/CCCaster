@@ -71,13 +71,8 @@ void Socket::send ( const MsgPtr& msg, const IpAddrPort& address )
     string bytes = Serializable::encode ( msg );
     LOG ( "Encoded '%s' to [ %u bytes ]", TO_C_STR ( msg ), bytes.size() );
 
-    if ( !bytes.empty() && Log::isEnabled )
-    {
-        string base64;
-        for ( char c : bytes )
-            base64 += " " + toString ( "%02x", ( unsigned char ) c );
-        LOG ( "Base64 :%s", base64.c_str() );
-    }
+    if ( Log::isEnabled )
+        LOG ( "Base64 : %s", toBase64 ( bytes ).c_str() );
 
     send ( &bytes[0], bytes.size(), address );
 }

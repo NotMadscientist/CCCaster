@@ -22,6 +22,10 @@ const MsgPtr NullMsg;
 
 struct Serializable
 {
+    mutable uint8_t compressionLevel;
+
+    Serializable();
+
     virtual MsgType type() const = 0;
     virtual BaseType base() const = 0;
 
@@ -38,6 +42,9 @@ protected:
     virtual void deserialize ( cereal::BinaryInputArchive& ar ) = 0;
 
 private:
+
+    mutable char md5[16];
+    mutable bool md5empty;
 
     virtual void serializeBase ( cereal::BinaryOutputArchive& ar ) const {};
     virtual void deserializeBase ( cereal::BinaryInputArchive& ar ) {};

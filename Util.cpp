@@ -6,24 +6,33 @@
 #define MINIZ_NO_ZLIB_COMPATIBLE_NAMES
 #include <miniz.h>
 
+#include <cstring>
+
 using namespace std;
 
-string getMD5 ( const char *bytes, size_t len )
+void getMD5 ( const char *bytes, size_t len, char dst[16] )
 {
-    unsigned char md5sum[17];
-    md5sum[16] = '\0';
-
     MD5_CTX md5;
     MD5_Init ( &md5 );
     MD5_Update ( &md5, bytes, len );
-    MD5_Final ( md5sum, &md5 );
-
-    return string ( ( char * ) md5sum );
+    MD5_Final ( ( unsigned char * ) dst, &md5 );
 }
 
-string getMD5 ( const string& str )
+void getMD5 ( const string& str, char dst[16] )
 {
-    return getMD5 ( &str[0], str.size() );
+    getMD5 ( &str[0], str.size(), dst );
+}
+
+bool checkMD5 ( const char *bytes, size_t len, const char md5[16] )
+{
+    char tmp[16];
+    getMD5 ( bytes, len, tmp );
+    return !strncmp ( tmp, md5, sizeof ( tmp ) );
+}
+
+bool checkMD5 ( const string& str, const char md5[16] )
+{
+    return checkMD5 ( &str[0], str.size(), md5 );
 }
 
 size_t compress ( const char *src, size_t srcLen, char *dst, size_t dstLen, int level )

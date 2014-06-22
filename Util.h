@@ -4,21 +4,36 @@
 #include <sstream>
 #include <cstdio>
 
+#define TO_C_STR(...) toString ( __VA_ARGS__ ).c_str()
+
 // Lexical cast
-template<typename T> std::string toString ( T val )
+template<typename T>
+inline std::string toString ( T val )
 {
     std::stringstream ss;
     ss << val;
     return ss.str();
 }
-template<typename T> std::string toString ( const char *fmt, T val )
+
+template<typename T>
+inline std::string toString ( const char *fmt, T val )
 {
     char buffer[4096];
     std::sprintf ( buffer, fmt, val );
     return buffer;
 }
 
-#define TO_C_STR(...) toString ( __VA_ARGS__ ).c_str()
+inline std::string toBase64 ( const std::string& bytes )
+{
+    if ( bytes.empty() )
+        return "";
+
+    std::string str;
+    for ( char c : bytes )
+        str += toString ( "%02x ", ( unsigned char ) c );
+
+    return str.substr ( 0, str.size() - 1 );
+}
 
 // String trim
 inline std::string trim ( std::string str, const std::string& ws = " \t\r\n" )
@@ -37,8 +52,10 @@ inline std::string trim ( std::string str, const std::string& ws = " \t\r\n" )
 }
 
 // MD5 calculation
-std::string getMD5 ( const char *bytes, size_t len );
-std::string getMD5 ( const std::string& str );
+void getMD5 ( const char *bytes, size_t len, char dst[16] );
+void getMD5 ( const std::string& str, char dst[16] );
+bool checkMD5 ( const char *bytes, size_t len, const char md5[16] );
+bool checkMD5 ( const std::string& str, const char md5[16] );
 
 // zlib compression
 size_t compress ( const char *src, size_t srcLen, char *dst, size_t dstLen, int level = 9 );

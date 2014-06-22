@@ -469,6 +469,9 @@ TEST ( GoBackN, SendSequential )
 
 TEST ( GoBackN, SendAndRecv )
 {
+    static int done = 0;
+    done = 0;
+
     struct TestSocket : public GoBackN::Owner, public Socket::Owner, public Timer::Owner
     {
         shared_ptr<Socket> socket;
@@ -488,7 +491,10 @@ TEST ( GoBackN, SendAndRecv )
         {
             msgs.push_back ( msg );
 
-            if ( msgs.size() == 5 && gbn.getAckCount() == 5 )
+            if ( msgs.size() == 5 )
+                ++done;
+
+            if ( done >= 2 )
             {
                 LOG ( "Stopping because all msgs have been received" );
                 EventManager::get().stop();
