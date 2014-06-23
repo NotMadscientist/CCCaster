@@ -31,7 +31,8 @@ void GoBackN::timerExpired ( Timer *timer )
     if ( sendListPos == sendList.end() )
         sendListPos = sendList.begin();
 
-    LOG ( "Sending '%s'; sendSequence=%d", TO_C_STR ( *sendListPos ), sendSequence );
+    LOG ( "Sending '%s'; sequence=%u; sendSequence=%d",
+          TO_C_STR ( *sendListPos ), ( **sendListPos ).getAs<SerializableSequence>().sequence, sendSequence );
     owner->sendGoBackN ( *sendListPos );
     ++sendListPos;
 
