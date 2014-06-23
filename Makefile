@@ -12,27 +12,21 @@ LIB_CPP_SRCS = $(NETLINK_SRCS) $(GTEST_SRCS)
 LIB_C_CSRCS = $(wildcard contrib/*.c)
 
 # Tool chain
-GCC = gcc
-CXX = g++
-STRIP = strip
+PREFIX = i686-w64-mingw32-
+GCC = $(PREFIX)gcc
+CXX = $(PREFIX)g++
+WINDRES = $(PREFIX)windres
+STRIP = $(PREFIX)strip
 ZIP = zip
 MSBUILD = C:/Windows/Microsoft.NET/Framework/v4.0.30319/MSBuild.exe
 ASTYLE = contrib/astyle.exe
-BUILD_ENV = mingw-builds
 
 # Build flags
 DEFINES =
 INCLUDES = -Icontrib -Icontrib/netLink/include -Icontrib/cereal/include -Icontrib/gtest/include
 CC_FLAGS = -m32 -s $(INCLUDES) $(DEFINES)
-LD_FLAGS = -m32 -static -lws2_32 -lmingw32 -lwinmm
+LD_FLAGS = -m32 -static -lws2_32 -lmingw32 -lwinmm -lwinpthread
 LD_FLAGS += -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid
-
-ifeq ($(BUILD_ENV),mingw-builds)
-    LD_FLAGS += -lwinpthread
-else
-    LD_FLAGS += -lpthreadGC2
-    DEFINES += -D_WIN32_WINNT=0x501 -DMISSING_CONSOLE_FONT_SIZE
-endif
 
 OBJECTS = $(CPP_SRCS:.cpp=.o) $(LIB_CPP_SRCS:.cc=.o) $(LIB_C_CSRCS:.c=.o)
 BUILD_TYPE = Debug
@@ -52,20 +46,20 @@ $(BINARY): Version.h protocol .depend $(OBJECTS) icon.res
 	$(CXX) -o $@ $(OBJECTS) $(LD_FLAGS) icon.res
 	@echo
 	$(STRIP) $@
-	icacls $@ /grant Everyone:F
+	icacls $@ /grant Everyone:F 2> /dev/null || echo
 
 icon.res: icon.rc icon.ico
 	@echo
-	windres -F pe-i386 icon.rc -O coff -o $@
+	$(WINDRES) -F pe-i386 icon.rc -O coff -o $@
 
 protocol:
-	@./make_protocol $(NON_PROTOCOL_HEADERS)
+	@sh make_protocol $(NON_PROTOCOL_HEADERS)
 
 Version.h:
 	@date +"#define BUILD %s" > $@
 
 .depend:
-	@./make_protocol $(NON_PROTOCOL_HEADERS)
+	@sh make_protocol $(NON_PROTOCOL_HEADERS)
 	@date +"#define BUILD %s" > Version.h
 	@echo "Regenerating .depend ..."
 	@$(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp > $@
