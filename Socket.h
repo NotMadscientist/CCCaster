@@ -59,10 +59,10 @@ public:
     // Completely disconnect the socket
     void disconnect();
 
-    // Accept a TCP socket
+    // Accept a new TCP socket
     std::shared_ptr<Socket> accept ( Owner *owner );
 
-    inline bool isConnected() const { return ( socket.get() ); }
+    inline bool isConnected() const { return ( isClient() && socket.get() ); }
     inline bool isClient() const { return !address.addr.empty(); }
     inline bool isServer() const { return address.addr.empty(); }
 

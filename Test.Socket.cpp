@@ -39,9 +39,17 @@ TEST ( Socket, TcpConnect )
 
     EventManager::get().start();
 
-    EXPECT_TRUE ( server.socket->isConnected() );
-    EXPECT_TRUE ( server.accepted->isConnected() );
-    EXPECT_TRUE ( client.socket->isConnected() );
+    EXPECT_TRUE ( server.socket.get() );
+    if ( server.socket.get() )
+        EXPECT_TRUE ( server.socket->isServer() );
+
+    EXPECT_TRUE ( server.accepted.get() );
+    if ( server.accepted.get() )
+        EXPECT_TRUE ( server.accepted->isConnected() );
+
+    EXPECT_TRUE ( client.socket.get() );
+    if ( client.socket.get() )
+        EXPECT_TRUE ( client.socket->isConnected() );
 }
 
 TEST ( Socket, TcpTimeout )
@@ -64,7 +72,9 @@ TEST ( Socket, TcpTimeout )
 
     EventManager::get().start();
 
-    EXPECT_FALSE ( client.socket->isConnected() );
+    EXPECT_TRUE ( client.socket.get() );
+    if ( client.socket.get() )
+        EXPECT_FALSE ( client.socket->isConnected() );
 }
 
 TEST ( Socket, TcpSend )
@@ -111,8 +121,14 @@ TEST ( Socket, TcpSend )
 
     EventManager::get().start();
 
-    EXPECT_TRUE ( server.socket->isConnected() );
-    EXPECT_TRUE ( server.accepted->isConnected() );
+    EXPECT_TRUE ( server.socket.get() );
+    if ( server.socket.get() )
+        EXPECT_TRUE ( server.socket->isServer() );
+
+    EXPECT_TRUE ( server.accepted.get() );
+    if ( server.accepted.get() )
+        EXPECT_TRUE ( server.accepted->isConnected() );
+
     EXPECT_TRUE ( server.msg.get() );
 
     if ( server.msg.get() )
@@ -121,7 +137,10 @@ TEST ( Socket, TcpSend )
         EXPECT_EQ ( server.msg->getAs<TestMessage>().str, "Hello server!" );
     }
 
-    EXPECT_TRUE ( client.socket->isConnected() );
+    EXPECT_TRUE ( client.socket.get() );
+    if ( client.socket.get() )
+        EXPECT_TRUE ( client.socket->isConnected() );
+
     EXPECT_TRUE ( client.msg.get() );
 
     if ( client.msg.get() )
@@ -187,7 +206,10 @@ TEST ( Socket, UdpSend )
 
     EventManager::get().start();
 
-    EXPECT_TRUE ( server.socket->isConnected() );
+    EXPECT_TRUE ( server.socket.get() );
+    if ( server.socket.get() )
+        EXPECT_TRUE ( server.socket->isServer() );
+
     EXPECT_TRUE ( server.msg.get() );
 
     if ( server.msg.get() )
@@ -196,7 +218,10 @@ TEST ( Socket, UdpSend )
         EXPECT_EQ ( server.msg->getAs<TestMessage>().str, "Hello server!" );
     }
 
-    EXPECT_TRUE ( client.socket->isConnected() );
+    EXPECT_TRUE ( client.socket.get() );
+    if ( client.socket.get() )
+        EXPECT_TRUE ( client.socket->isConnected() );
+
     EXPECT_TRUE ( client.msg.get() );
 
     if ( client.msg.get() )
@@ -262,8 +287,14 @@ TEST ( Socket, TcpSendPartial )
 
     EventManager::get().start();
 
-    EXPECT_TRUE ( server.socket->isConnected() );
-    EXPECT_TRUE ( server.accepted->isConnected() );
+    EXPECT_TRUE ( server.socket.get() );
+    if ( server.socket.get() )
+        EXPECT_TRUE ( server.socket->isServer() );
+
+    EXPECT_TRUE ( server.accepted.get() );
+    if ( server.accepted.get() )
+        EXPECT_TRUE ( server.accepted->isConnected() );
+
     EXPECT_TRUE ( server.msg.get() );
 
     if ( server.msg.get() )
@@ -272,6 +303,9 @@ TEST ( Socket, TcpSendPartial )
         EXPECT_EQ ( server.msg->getAs<TestMessage>().str, "Hello server!" );
     }
 
-    EXPECT_TRUE ( client.socket->isConnected() );
+    EXPECT_TRUE ( client.socket.get() );
+    if ( client.socket.get() )
+        EXPECT_TRUE ( client.socket->isConnected() );
+
     EXPECT_FALSE ( client.msg.get() );
 }
