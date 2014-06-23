@@ -79,9 +79,13 @@ void Socket::send ( const MsgPtr& msg, const IpAddrPort& address )
 
 void Socket::send ( char *bytes, size_t len, const IpAddrPort& address )
 {
-    if ( socket )
+    if ( socket.get() )
     {
-        if ( address.empty() )
+        if ( address.empty() && isServer() )
+        {
+            LOG ( "Cannot send over server %s socket with no address!", TO_C_STR ( protocol ) );
+        }
+        else if ( address.empty() )
         {
             LOG ( "%s socket->send ( [ %u bytes ] ); address='%s'",
                   TO_C_STR ( socket->protocol() ), len, IpAddrPort ( socket ).c_str() );
