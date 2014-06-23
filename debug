@@ -1,0 +1,4 @@
+#!/bin/sh
+
+gdb --command=gdb_cmds.txt --args ./cccaster $@
+
