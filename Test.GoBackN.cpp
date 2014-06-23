@@ -22,12 +22,12 @@ TEST ( GoBackN, SendOnce )
         MsgPtr msg;
         bool server;
 
-        void send ( const MsgPtr& msg )
+        void sendGoBackN ( const MsgPtr& msg )
         {
             socket->send ( msg, address );
         }
 
-        void recv ( const MsgPtr& msg )
+        void recvGoBackN ( const MsgPtr& msg )
         {
             this->msg = msg;
             LOG ( "Stopping because msg has been received" );
@@ -41,7 +41,7 @@ TEST ( GoBackN, SendOnce )
             if ( this->address.empty() )
                 this->address = address;
 
-            if ( rand() % 100 < 10 )
+            if ( rand() % 100 >= 90 ) // 90% packet loss
                 gbn.recv ( msg );
         }
 
@@ -96,12 +96,12 @@ TEST ( GoBackN, SendSequential )
         Timer timer;
         vector<MsgPtr> msgs;
 
-        void send ( const MsgPtr& msg )
+        void sendGoBackN ( const MsgPtr& msg )
         {
             socket->send ( msg, address );
         }
 
-        void recv ( const MsgPtr& msg )
+        void recvGoBackN ( const MsgPtr& msg )
         {
             msgs.push_back ( msg );
 
@@ -117,7 +117,7 @@ TEST ( GoBackN, SendSequential )
             if ( this->address.empty() )
                 this->address = address;
 
-            if ( rand() % 100 < 50 )
+            if ( rand() % 100 >= 50 ) // 50% packet loss
                 gbn.recv ( msg );
         }
 
@@ -181,13 +181,13 @@ TEST ( GoBackN, SendAndRecv )
         vector<MsgPtr> msgs;
         bool sent;
 
-        void send ( const MsgPtr& msg )
+        void sendGoBackN ( const MsgPtr& msg )
         {
             if ( !address.empty() )
                 socket->send ( msg, address );
         }
 
-        void recv ( const MsgPtr& msg )
+        void recvGoBackN ( const MsgPtr& msg )
         {
             msgs.push_back ( msg );
 
@@ -206,7 +206,7 @@ TEST ( GoBackN, SendAndRecv )
             if ( this->address.empty() )
                 this->address = address;
 
-            if ( rand() % 100 < 50 )
+            if ( rand() % 100 >= 50 ) // 50% packet loss
                 gbn.recv ( msg );
         }
 

@@ -31,7 +31,8 @@ void GoBackN::timerExpired ( Timer *timer )
     if ( sendListPos == sendList.end() )
         sendListPos = sendList.begin();
 
-    owner->send ( *sendListPos );
+    LOG ( "Sending '%s'; sendSequence=%d", TO_C_STR ( *sendListPos ), sendSequence );
+    owner->sendGoBackN ( *sendListPos );
     ++sendListPos;
 
     sendTimer.start ( SEND_INTERVAL );
@@ -53,7 +54,7 @@ void GoBackN::send ( const MsgPtr& msg )
 
     msg->getAs<SerializableSequence>().sequence = ++sendSequence;
 
-    owner->send ( msg );
+    owner->sendGoBackN ( msg );
 
     sendList.push_back ( msg );
 
@@ -70,7 +71,7 @@ void GoBackN::recv ( const MsgPtr& msg )
     // Ignore non-sequential messages
     if ( !msg.get() || msg->base() != BaseType::SerializableSequence )
     {
-        LOG ( "Unexpected '%s'", TO_C_STR ( msg ) );
+        LOG ( "Unexpected '%s'; recvSequence=%u", TO_C_STR ( msg ), recvSequence );
         return;
     }
 
@@ -95,7 +96,7 @@ void GoBackN::recv ( const MsgPtr& msg )
 
     if ( sequence != recvSequence + 1 )
     {
-        owner->send ( MsgPtr ( new AckSequence ( recvSequence ) ) );
+        owner->sendGoBackN ( MsgPtr ( new AckSequence ( recvSequence ) ) );
         return;
     }
 
@@ -103,9 +104,9 @@ void GoBackN::recv ( const MsgPtr& msg )
 
     ++recvSequence;
 
-    owner->recv ( msg );
+    owner->recvGoBackN ( msg );
 
-    owner->send ( MsgPtr ( new AckSequence ( recvSequence ) ) );
+    owner->sendGoBackN ( MsgPtr ( new AckSequence ( recvSequence ) ) );
 }
 
 void GoBackN::reset()

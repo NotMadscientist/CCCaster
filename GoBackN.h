@@ -25,10 +25,10 @@ struct GoBackN : public Timer::Owner
     struct Owner
     {
         // Send a message via raw socket
-        virtual void send ( const MsgPtr& msg ) {}
+        virtual void sendGoBackN ( const MsgPtr& msg ) {}
 
         // Receive a message from Go-Back-N
-        virtual void recv ( const MsgPtr& msg ) {}
+        virtual void recvGoBackN ( const MsgPtr& msg ) {}
     };
 
     Owner *owner;
