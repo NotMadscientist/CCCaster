@@ -21,6 +21,12 @@ ZIP = zip
 MSBUILD = C:/Windows/Microsoft.NET/Framework/v4.0.30319/MSBuild.exe
 ASTYLE = contrib/astyle.exe
 
+ifeq ($(OS),Windows_NT)
+    CHMOD_X_BINARY = icacls $(BINARY) /grant Everyone:F
+else
+    CHMOD_X_BINARY = chmod +x $(BINARY)
+endif
+
 # Build flags
 DEFINES =
 INCLUDES = -Icontrib -Icontrib/netLink/include -Icontrib/cereal/include -Icontrib/gtest/include
@@ -46,7 +52,7 @@ $(BINARY): Version.h protocol .depend $(OBJECTS) icon.res
 	$(CXX) -o $@ $(OBJECTS) $(LD_FLAGS) icon.res
 	@echo
 	$(STRIP) $@
-	icacls $@ /grant Everyone:F 2> /dev/null || echo
+	$(CHMOD_X_BINARY)
 
 icon.res: icon.rc icon.ico
 	@echo
@@ -97,11 +103,11 @@ format:
 count:
 	wc -l *.cpp *h
 
-ifeq (,$(findstring clean,$(MAKECMDGOALS)))
-ifeq (,$(findstring check,$(MAKECMDGOALS)))
-ifeq (,$(findstring trim,$(MAKECMDGOALS)))
-ifeq (,$(findstring format,$(MAKECMDGOALS)))
-ifeq (,$(findstring count,$(MAKECMDGOALS)))
+ifeq (,$(findstring clean, $(MAKECMDGOALS)))
+ifeq (,$(findstring check, $(MAKECMDGOALS)))
+ifeq (,$(findstring trim, $(MAKECMDGOALS)))
+ifeq (,$(findstring format, $(MAKECMDGOALS)))
+ifeq (,$(findstring count, $(MAKECMDGOALS)))
 -include .depend
 endif
 endif
