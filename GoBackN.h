@@ -11,7 +11,7 @@ struct AckSequence : public SerializableSequence
 
     AckSequence ( uint32_t sequence ) : SerializableSequence ( sequence ) {}
 
-    MsgType type() const;
+    MsgType getType() const;
 
 protected:
 

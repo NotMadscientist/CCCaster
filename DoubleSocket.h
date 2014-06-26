@@ -17,7 +17,7 @@ struct PrimaryId : public SerializableSequence
 
     PrimaryId ( uint32_t id ) : id ( id ) {}
 
-    MsgType type() const;
+    MsgType getType() const;
 
 protected:
 

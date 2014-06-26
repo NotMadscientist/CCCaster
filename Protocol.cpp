@@ -110,7 +110,7 @@ string encodeStageTwo ( const MsgPtr& msg, const string& msgData )
     ostringstream ss ( stringstream::binary );
     BinaryOutputArchive archive ( ss );
 
-    archive ( msg->type() );
+    archive ( msg->getType() );
 
     // Compress msg data if needed
     if ( msg->compressionLevel )
@@ -193,7 +193,7 @@ ostream& operator<< ( ostream& os, const MsgPtr& msg )
     if ( !msg.get() )
         return ( os << "NullMsg" );
     else
-        return ( os << msg->type() );
+        return ( os << msg->getType() );
 }
 
 ostream& operator<< ( ostream& os, MsgType type )

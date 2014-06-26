@@ -49,7 +49,7 @@ void GoBackN::send ( const MsgPtr& msg )
 {
     LOG ( "Adding '%s'; sendSequence=%d", TO_C_STR ( msg ), sendSequence + 1 );
 
-    assert ( msg->base() == BaseType::SerializableSequence );
+    assert ( msg->getBaseType() == BaseType::SerializableSequence );
     assert ( sendList.empty() || sendList.back()->getAs<SerializableSequence>().sequence == sendSequence );
     assert ( owner != 0 );
 
@@ -70,7 +70,7 @@ void GoBackN::recv ( const MsgPtr& msg )
     assert ( owner != 0 );
 
     // Ignore non-sequential messages
-    if ( !msg.get() || msg->base() != BaseType::SerializableSequence )
+    if ( !msg.get() || msg->getBaseType() != BaseType::SerializableSequence )
     {
         LOG ( "Unexpected '%s'; recvSequence=%u", TO_C_STR ( msg ), recvSequence );
         return;
@@ -79,7 +79,7 @@ void GoBackN::recv ( const MsgPtr& msg )
     uint32_t sequence = msg->getAs<SerializableSequence>().sequence;
 
     // Check for ACK messages
-    if ( msg->type() == MsgType::AckSequence )
+    if ( msg->getType() == MsgType::AckSequence )
     {
         if ( sequence > ackSequence )
             ackSequence = sequence;

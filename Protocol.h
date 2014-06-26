@@ -26,8 +26,8 @@ struct Serializable
 
     Serializable();
 
-    virtual MsgType type() const = 0;
-    virtual BaseType base() const = 0;
+    virtual MsgType getType() const = 0;
+    virtual BaseType getBaseType() const = 0;
 
     template<typename T> T& getAs() { return *static_cast<T *> ( this ); }
     template<typename T> const T& getAs() const { return *static_cast<const T *> ( this ); }
@@ -55,7 +55,7 @@ private:
 
 struct SerializableMessage : public Serializable
 {
-    BaseType base() const { return BaseType::SerializableMessage; }
+    BaseType getBaseType() const { return BaseType::SerializableMessage; }
 };
 
 struct SerializableSequence : public Serializable
@@ -65,7 +65,7 @@ struct SerializableSequence : public Serializable
     SerializableSequence() : sequence ( 0 ) {}
     SerializableSequence ( uint32_t sequence ) : sequence ( sequence ) {}
 
-    BaseType base() const { return BaseType::SerializableSequence; }
+    BaseType getBaseType() const { return BaseType::SerializableSequence; }
 
 private:
 

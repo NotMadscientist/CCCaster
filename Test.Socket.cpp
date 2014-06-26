@@ -133,7 +133,7 @@ TEST ( Socket, TcpSend )
 
     if ( server.msg.get() )
     {
-        EXPECT_EQ ( server.msg->type(), MsgType::TestMessage );
+        EXPECT_EQ ( server.msg->getType(), MsgType::TestMessage );
         EXPECT_EQ ( server.msg->getAs<TestMessage>().str, "Hello server!" );
     }
 
@@ -145,7 +145,7 @@ TEST ( Socket, TcpSend )
 
     if ( client.msg.get() )
     {
-        EXPECT_EQ ( client.msg->type(), MsgType::TestMessage );
+        EXPECT_EQ ( client.msg->getType(), MsgType::TestMessage );
         EXPECT_EQ ( client.msg->getAs<TestMessage>().str, "Hello client!" );
     }
 }
@@ -214,7 +214,7 @@ TEST ( Socket, UdpSend )
 
     if ( server.msg.get() )
     {
-        EXPECT_EQ ( server.msg->type(), MsgType::TestMessage );
+        EXPECT_EQ ( server.msg->getType(), MsgType::TestMessage );
         EXPECT_EQ ( server.msg->getAs<TestMessage>().str, "Hello server!" );
     }
 
@@ -226,7 +226,7 @@ TEST ( Socket, UdpSend )
 
     if ( client.msg.get() )
     {
-        EXPECT_EQ ( client.msg->type(), MsgType::TestMessage );
+        EXPECT_EQ ( client.msg->getType(), MsgType::TestMessage );
         EXPECT_EQ ( client.msg->getAs<TestMessage>().str, "Hello client!" );
     }
 }
@@ -299,7 +299,7 @@ TEST ( Socket, TcpSendPartial )
 
     if ( server.msg.get() )
     {
-        EXPECT_EQ ( server.msg->type(), MsgType::TestMessage );
+        EXPECT_EQ ( server.msg->getType(), MsgType::TestMessage );
         EXPECT_EQ ( server.msg->getAs<TestMessage>().str, "Hello server!" );
     }
 

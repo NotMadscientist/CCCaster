@@ -1,6 +1,6 @@
 #!/bin/sh
 
-grep " : public Serializable[A-Z]" "$@" | sed -r 's/^(.+\.h):[ ]*[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nMsgType \2::type() const { return MsgType::\2; }/' > tmp
+grep " : public Serializable[A-Z]" "$@" | sed -r 's/^(.+\.h):[ ]*[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nMsgType \2::getType() const { return MsgType::\2; }/' > tmp
 
 diff tmp Protocol.types.h 1> /dev/null 2>&1
 
@@ -8,7 +8,7 @@ if [ $? -ne 0 ]; then
 
     echo Regenerating protocol ...
 
-    grep " : public Serializable[A-Z]" "$@" | sed -r 's/^(.+\.h):[ ]*[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nMsgType \2::type() const { return MsgType::\2; }/' > Protocol.types.h
+    grep " : public Serializable[A-Z]" "$@" | sed -r 's/^(.+\.h):[ ]*[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nMsgType \2::getType() const { return MsgType::\2; }/' > Protocol.types.h
 
     grep " : public Serializable[A-Z]" "$@" | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1:\nreturn ( os << "\1" );/' > Protocol.strings.h
 

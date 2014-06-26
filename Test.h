@@ -16,7 +16,7 @@ struct TestMessage : public SerializableSequence
 
     TestMessage ( const std::string& str ) : str ( str ) {}
 
-    MsgType type() const;
+    MsgType getType() const;
 
 protected:
 

@@ -154,7 +154,7 @@ shared_ptr<DoubleSocket> DoubleSocket::accept ( Owner *owner )
 void DoubleSocket::sendPrimary ( const MsgPtr& msg )
 {
     assert ( primary.get() );
-    assert ( msg->base() == BaseType::SerializableMessage );
+    assert ( msg->getBaseType() == BaseType::SerializableMessage );
 
     if ( primary->getProtocol() == Protocol::TCP )
         primary->send ( msg );
@@ -170,7 +170,7 @@ void DoubleSocket::sendPrimary ( SerializableSequence *msg )
 void DoubleSocket::sendSecondary ( const MsgPtr& msg )
 {
     assert ( secondary.get() );
-    assert ( msg->base() == BaseType::SerializableMessage );
+    assert ( msg->getBaseType() == BaseType::SerializableMessage );
     secondary->send ( msg );
 }
 
