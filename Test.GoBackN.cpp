@@ -22,12 +22,12 @@ TEST ( GoBackN, SendOnce )
         MsgPtr msg;
         bool server;
 
-        void sendGoBackN ( const MsgPtr& msg )
+        void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg )
         {
             socket->send ( msg, address );
         }
 
-        void recvGoBackN ( const MsgPtr& msg )
+        void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
         {
             this->msg = msg;
             LOG ( "Stopping because msg has been received" );
@@ -96,12 +96,12 @@ TEST ( GoBackN, SendSequential )
         Timer timer;
         vector<MsgPtr> msgs;
 
-        void sendGoBackN ( const MsgPtr& msg )
+        void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg )
         {
             socket->send ( msg, address );
         }
 
-        void recvGoBackN ( const MsgPtr& msg )
+        void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
         {
             msgs.push_back ( msg );
 
@@ -181,13 +181,13 @@ TEST ( GoBackN, SendAndRecv )
         vector<MsgPtr> msgs;
         bool sent;
 
-        void sendGoBackN ( const MsgPtr& msg )
+        void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg )
         {
             if ( !address.empty() )
                 socket->send ( msg, address );
         }
 
-        void recvGoBackN ( const MsgPtr& msg )
+        void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
         {
             msgs.push_back ( msg );
 

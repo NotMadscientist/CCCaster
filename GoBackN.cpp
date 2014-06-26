@@ -33,7 +33,7 @@ void GoBackN::timerExpired ( Timer *timer )
 
     LOG ( "Sending '%s'; sequence=%u; sendSequence=%d",
           TO_C_STR ( *sendListPos ), ( **sendListPos ).getAs<SerializableSequence>().sequence, sendSequence );
-    owner->sendGoBackN ( *sendListPos );
+    owner->sendGoBackN ( this, *sendListPos );
     ++sendListPos;
 
     sendTimer.start ( SEND_INTERVAL );
@@ -55,7 +55,7 @@ void GoBackN::send ( const MsgPtr& msg )
 
     msg->getAs<SerializableSequence>().sequence = ++sendSequence;
 
-    owner->sendGoBackN ( msg );
+    owner->sendGoBackN ( this, msg );
 
     sendList.push_back ( msg );
 
@@ -97,7 +97,7 @@ void GoBackN::recv ( const MsgPtr& msg )
 
     if ( sequence != recvSequence + 1 )
     {
-        owner->sendGoBackN ( MsgPtr ( new AckSequence ( recvSequence ) ) );
+        owner->sendGoBackN ( this, MsgPtr ( new AckSequence ( recvSequence ) ) );
         return;
     }
 
@@ -105,9 +105,9 @@ void GoBackN::recv ( const MsgPtr& msg )
 
     ++recvSequence;
 
-    owner->recvGoBackN ( msg );
+    owner->recvGoBackN ( this, msg );
 
-    owner->sendGoBackN ( MsgPtr ( new AckSequence ( recvSequence ) ) );
+    owner->sendGoBackN ( this, MsgPtr ( new AckSequence ( recvSequence ) ) );
 }
 
 void GoBackN::reset()
