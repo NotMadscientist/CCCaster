@@ -16,13 +16,13 @@ struct TestMessage : public SerializableSequence
 
     TestMessage ( const std::string& str ) : str ( str ) {}
 
-    MsgType getType() const;
+    MsgType getType() const override;
 
 protected:
 
-    void serialize ( cereal::BinaryOutputArchive& ar ) const { ar ( str ); }
+    void serialize ( cereal::BinaryOutputArchive& ar ) const override { ar ( str ); }
 
-    void deserialize ( cereal::BinaryInputArchive& ar ) { ar ( str ); }
+    void deserialize ( cereal::BinaryInputArchive& ar ) override { ar ( str ); }
 };
 
 int RunAllTests ( int& argc, char *argv[] );

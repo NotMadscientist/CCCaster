@@ -20,7 +20,7 @@ int RunAllTests ( int& argc, char *argv[] )
             shared_ptr<Socket> socket;
             Timer timer;
 
-            void timerExpired ( Timer *timer ) { EventManager::get().release(); }
+            void timerExpired ( Timer *timer ) override { EventManager::get().release(); }
 
             TestSocket ( const string& address, unsigned port )
                 : socket ( Socket::connect ( this, address, port, Protocol::TCP ) ), timer ( this )

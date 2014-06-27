@@ -50,13 +50,13 @@ struct IpAddrPort : public SerializableMessage
         return buffer;
     }
 
-    MsgType getType() const;
+    MsgType getType() const override;
 
 protected:
 
-    void serialize ( cereal::BinaryOutputArchive& ar ) const { ar ( addr, port ); }
+    void serialize ( cereal::BinaryOutputArchive& ar ) const override { ar ( addr, port ); }
 
-    void deserialize ( cereal::BinaryInputArchive& ar ) { ar ( addr, port ); }
+    void deserialize ( cereal::BinaryInputArchive& ar ) override { ar ( addr, port ); }
 };
 
 const IpAddrPort NullAddress;

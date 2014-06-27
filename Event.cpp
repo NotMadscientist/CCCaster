@@ -9,9 +9,9 @@ EventManager::EventManager()
     : running ( false )
     , reaperThread ( zombieThreads )
 {
-    socketGroup.setCmdOnAccept ( &sac );
-    socketGroup.setCmdOnDisconnect ( &sdc );
-    socketGroup.setCmdOnRead ( &srd );
+    socketGroup.setCmdOnAccept ( &socketAcceptCmd );
+    socketGroup.setCmdOnDisconnect ( &socketDisconnectCmd );
+    socketGroup.setCmdOnRead ( &socketReadCmd );
 }
 
 EventManager::~EventManager()

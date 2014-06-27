@@ -12,6 +12,9 @@
 #include <unordered_set>
 #include <unordered_map>
 
+#define NL_GROUP_CMD(NAME, VAR) \
+    struct NAME : public NL::SocketGroupCmd { void exec ( NL::Socket *, NL::SocketGroup *, void * ) override; } VAR
+
 class Socket;
 class Timer;
 
@@ -34,8 +37,8 @@ class EventManager
 
         ReaperThread ( BlockingQueue<std::shared_ptr<Thread>>& zombieThreads ) : zombieThreads ( zombieThreads ) {}
 
-        void run();
-        void join();
+        void run() override;
+        void join() override;
     };
 
     // Finished threads to kill
@@ -56,7 +59,7 @@ class EventManager
 
         TcpConnectThread ( Socket *socket, const IpAddrPort& address ) : socket ( socket ), address ( address ) {}
 
-        void run();
+        void run() override;
     };
 
     // Condition var to signal changes to the list of sockets
@@ -75,9 +78,9 @@ class EventManager
     std::unordered_map<Socket *, std::shared_ptr<NL::Socket>> activeRawSockets;
 
     // Socket read events
-    struct SocketAccept     : public NL::SocketGroupCmd { void exec ( NL::Socket *, NL::SocketGroup *, void * ); } sac;
-    struct SocketDisconnect : public NL::SocketGroupCmd { void exec ( NL::Socket *, NL::SocketGroup *, void * ); } sdc;
-    struct SocketRead       : public NL::SocketGroupCmd { void exec ( NL::Socket *, NL::SocketGroup *, void * ); } srd;
+    NL_GROUP_CMD ( SocketAccept,     socketAcceptCmd );
+    NL_GROUP_CMD ( SocketDisconnect, socketDisconnectCmd );
+    NL_GROUP_CMD ( SocketRead,       socketReadCmd );
 
     // Main socket event loop
     void socketListenLoop();
@@ -96,9 +99,9 @@ class EventManager
 
         TimerThread ( bool useHiRes = true ) : running ( false ), useHiRes ( useHiRes ) {}
 
-        void start();
-        void join();
-        void run();
+        void start() override;
+        void join() override;
+        void run() override;
     };
 
     // Condition var to signal changes to the list of timers

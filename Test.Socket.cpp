@@ -17,9 +17,9 @@ TEST ( Socket, TcpConnect )
         shared_ptr<Socket> socket, accepted;
         Timer timer;
 
-        void acceptEvent ( Socket *serverSocket ) { accepted = serverSocket->accept ( this ); }
+        void acceptEvent ( Socket *serverSocket ) override { accepted = serverSocket->accept ( this ); }
 
-        void timerExpired ( Timer *timer ) { EventManager::get().stop(); }
+        void timerExpired ( Timer *timer ) override { EventManager::get().stop(); }
 
         TestSocket ( unsigned port )
             : socket ( Socket::listen ( this, port, Protocol::TCP ) ), timer ( this )
@@ -59,7 +59,7 @@ TEST ( Socket, TcpTimeout )
         shared_ptr<Socket> socket;
         Timer timer;
 
-        void timerExpired ( Timer *timer ) { EventManager::get().stop(); }
+        void timerExpired ( Timer *timer ) override { EventManager::get().stop(); }
 
         TestSocket ( const string& address, unsigned port )
             : socket ( Socket::connect ( this, address, port, Protocol::TCP ) ), timer ( this )
@@ -85,23 +85,23 @@ TEST ( Socket, TcpSend )
         Timer timer;
         MsgPtr msg;
 
-        void acceptEvent ( Socket *serverSocket )
+        void acceptEvent ( Socket *serverSocket ) override
         {
             accepted = serverSocket->accept ( this );
             accepted->send ( new TestMessage ( "Hello client!" ) );
         }
 
-        void connectEvent ( Socket *socket )
+        void connectEvent ( Socket *socket ) override
         {
             socket->send ( new TestMessage ( "Hello server!" ) );
         }
 
-        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
+        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
         {
             this->msg = msg;
         }
 
-        void timerExpired ( Timer *timer ) { EventManager::get().stop(); }
+        void timerExpired ( Timer *timer ) override { EventManager::get().stop(); }
 
         TestSocket ( unsigned port )
             : socket ( Socket::listen ( this, port, Protocol::TCP ) ), timer ( this )
@@ -159,7 +159,7 @@ TEST ( Socket, UdpSend )
         MsgPtr msg;
         bool sent;
 
-        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
+        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
         {
             this->msg = msg;
 
@@ -170,7 +170,7 @@ TEST ( Socket, UdpSend )
             }
         }
 
-        void timerExpired ( Timer *timer )
+        void timerExpired ( Timer *timer ) override
         {
             if ( !sent )
             {
@@ -240,23 +240,23 @@ TEST ( Socket, TcpSendPartial )
         MsgPtr msg;
         string buffer;
 
-        void acceptEvent ( Socket *serverSocket )
+        void acceptEvent ( Socket *serverSocket ) override
         {
             accepted = serverSocket->accept ( this );
         }
 
-        void connectEvent ( Socket *socket )
+        void connectEvent ( Socket *socket ) override
         {
             socket->send ( &buffer[0], 5 );
             buffer.erase ( 0, 5 );
         }
 
-        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
+        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
         {
             this->msg = msg;
         }
 
-        void timerExpired ( Timer *timer )
+        void timerExpired ( Timer *timer ) override
         {
             if ( socket->isClient() )
             {

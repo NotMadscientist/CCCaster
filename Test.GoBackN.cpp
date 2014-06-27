@@ -22,19 +22,19 @@ TEST ( GoBackN, SendOnce )
         MsgPtr msg;
         bool server;
 
-        void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg )
+        void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override
         {
             socket->send ( msg, address );
         }
 
-        void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
+        void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override
         {
             this->msg = msg;
             LOG ( "Stopping because msg has been received" );
             EventManager::get().stop();
         }
 
-        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
+        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
         {
             this->msg = msg;
 
@@ -42,7 +42,7 @@ TEST ( GoBackN, SendOnce )
                 this->address = address;
         }
 
-        void timerExpired ( Timer *timer )
+        void timerExpired ( Timer *timer ) override
         {
             if ( socket->isClient() )
             {
@@ -95,12 +95,12 @@ TEST ( GoBackN, SendSequential )
         Timer timer;
         vector<MsgPtr> msgs;
 
-        void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg )
+        void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override
         {
             socket->send ( msg, address );
         }
 
-        void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
+        void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override
         {
             msgs.push_back ( msg );
 
@@ -111,7 +111,7 @@ TEST ( GoBackN, SendSequential )
             }
         }
 
-        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
+        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
         {
             if ( this->address.empty() )
                 this->address = address;
@@ -119,7 +119,7 @@ TEST ( GoBackN, SendSequential )
             gbn.recv ( msg );
         }
 
-        void timerExpired ( Timer *timer )
+        void timerExpired ( Timer *timer ) override
         {
             if ( socket->isClient() )
             {
@@ -181,13 +181,13 @@ TEST ( GoBackN, SendAndRecv )
         vector<MsgPtr> msgs;
         bool sent;
 
-        void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg )
+        void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override
         {
             if ( !address.empty() )
                 socket->send ( msg, address );
         }
 
-        void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
+        void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override
         {
             msgs.push_back ( msg );
 
@@ -201,7 +201,7 @@ TEST ( GoBackN, SendAndRecv )
             }
         }
 
-        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
+        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
         {
             if ( this->address.empty() )
                 this->address = address;
@@ -209,7 +209,7 @@ TEST ( GoBackN, SendAndRecv )
             gbn.recv ( msg );
         }
 
-        void timerExpired ( Timer *timer )
+        void timerExpired ( Timer *timer ) override
         {
             if ( !sent )
             {

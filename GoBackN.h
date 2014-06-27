@@ -11,13 +11,13 @@ struct AckSequence : public SerializableSequence
 
     AckSequence ( uint32_t sequence ) : SerializableSequence ( sequence ) {}
 
-    MsgType getType() const;
+    MsgType getType() const override;
 
 protected:
 
-    void serialize ( cereal::BinaryOutputArchive& ar ) const {}
+    void serialize ( cereal::BinaryOutputArchive& ar ) const override {}
 
-    void deserialize ( cereal::BinaryInputArchive& ar ) {}
+    void deserialize ( cereal::BinaryInputArchive& ar ) override {}
 };
 
 class GoBackN : public Timer::Owner
@@ -53,7 +53,7 @@ private:
     Timer sendTimer;
 
     // Timer callback that sends the messages
-    void timerExpired ( Timer *timer );
+    void timerExpired ( Timer *timer ) override;
 
 public:
 
