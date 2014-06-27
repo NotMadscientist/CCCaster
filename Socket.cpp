@@ -10,21 +10,21 @@ using namespace std;
 Socket::Socket ( NL::Socket *socket )
     : owner ( 0 ), socket ( socket ), address ( socket )
     , protocol ( socket->protocol() == NL::TCP ? Protocol::TCP : Protocol::UDP )
-    , readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 )
+    , readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 ), packetLoss ( 0 )
 {
     EventManager::get().addSocket ( this );
 }
 
 Socket::Socket ( Owner *owner, unsigned port, Protocol protocol )
     : owner ( owner ), address ( "", port ), protocol ( protocol )
-    , readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 )
+    , readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 ), packetLoss ( 0 )
 {
     EventManager::get().addSocket ( this );
 }
 
 Socket::Socket ( Owner *owner, const string& address, unsigned port, Protocol protocol )
     : owner ( owner ), address ( address, port ), protocol ( protocol )
-    , readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 )
+    , readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 ), packetLoss ( 0 )
 {
     EventManager::get().addSocket ( this );
 }
@@ -102,6 +102,8 @@ void Socket::send ( char *bytes, size_t len, const IpAddrPort& address )
         LOG ( "Unconnected socket!" );
     }
 }
+
+void Socket::setPacketLoss ( uint8_t percentage ) { packetLoss = percentage; }
 
 ostream& operator<< ( ostream& os, const Protocol& protocol )
 {

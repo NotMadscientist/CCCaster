@@ -40,9 +40,6 @@ TEST ( GoBackN, SendOnce )
 
             if ( this->address.empty() )
                 this->address = address;
-
-            if ( rand() % 100 >= 90 ) // 90% packet loss
-                gbn.recv ( msg );
         }
 
         void timerExpired ( Timer *timer )
@@ -61,6 +58,7 @@ TEST ( GoBackN, SendOnce )
         TestSocket ( unsigned port )
             : socket ( Socket::listen ( this, port, Protocol::UDP ) ), gbn ( this ), timer ( this )
         {
+            socket->setPacketLoss ( 90 );
             timer.start ( 1000 * 10 );
         }
 
@@ -68,6 +66,7 @@ TEST ( GoBackN, SendOnce )
             : socket ( Socket::connect ( this, address, port, Protocol::UDP ) )
             , address ( address, port ), gbn ( this ), timer ( this )
         {
+            socket->setPacketLoss ( 90 );
             timer.start ( 1000 );
         }
     };
@@ -117,8 +116,7 @@ TEST ( GoBackN, SendSequential )
             if ( this->address.empty() )
                 this->address = address;
 
-            if ( rand() % 100 >= 50 ) // 50% packet loss
-                gbn.recv ( msg );
+            gbn.recv ( msg );
         }
 
         void timerExpired ( Timer *timer )
@@ -141,6 +139,7 @@ TEST ( GoBackN, SendSequential )
         TestSocket ( unsigned port )
             : socket ( Socket::listen ( this, port, Protocol::UDP ) ), gbn ( this ), timer ( this )
         {
+            socket->setPacketLoss ( 50 );
             timer.start ( 1000 * 30 );
         }
 
@@ -148,6 +147,7 @@ TEST ( GoBackN, SendSequential )
             : socket ( Socket::connect ( this, address, port, Protocol::UDP ) )
             , address ( address, port ), gbn ( this ), timer ( this )
         {
+            socket->setPacketLoss ( 50 );
             timer.start ( 1000 );
         }
     };
@@ -206,8 +206,7 @@ TEST ( GoBackN, SendAndRecv )
             if ( this->address.empty() )
                 this->address = address;
 
-            if ( rand() % 100 >= 50 ) // 50% packet loss
-                gbn.recv ( msg );
+            gbn.recv ( msg );
         }
 
         void timerExpired ( Timer *timer )
@@ -232,6 +231,7 @@ TEST ( GoBackN, SendAndRecv )
         TestSocket ( unsigned port )
             : socket ( Socket::listen ( this, port, Protocol::UDP ) ), gbn ( this ), timer ( this ), sent ( false )
         {
+            socket->setPacketLoss ( 50 );
             timer.start ( 1000 );
         }
 
@@ -239,6 +239,7 @@ TEST ( GoBackN, SendAndRecv )
             : socket ( Socket::connect ( this, address, port, Protocol::UDP ) )
             , address ( address, port ), gbn ( this ), timer ( this ), sent ( false )
         {
+            socket->setPacketLoss ( 50 );
             timer.start ( 1000 );
         }
     };

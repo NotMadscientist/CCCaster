@@ -282,6 +282,13 @@ void EventManager::SocketRead::exec ( NL::Socket *socket, NL::SocketGroup *, voi
     if ( len == 0 )
         return;
 
+    if ( rand() % 100 < it->second->packetLoss )
+    {
+        LOG_SOCKET ( "Read from", it->second );
+        LOG ( "Discarding [ %u bytes ] from '%s'", len, address.c_str() );
+        return;
+    }
+
     it->second->readPos += len;
 
     LOG_SOCKET ( "Read from", it->second );

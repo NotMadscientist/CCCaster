@@ -41,6 +41,8 @@ private:
     std::string readBuffer;
     size_t readPos;
 
+    uint8_t packetLoss;
+
     Socket ( NL::Socket *socket );
     Socket ( Owner *owner, unsigned port, Protocol protocol );
     Socket ( Owner *owner, const std::string& address, unsigned port, Protocol protocol );
@@ -72,6 +74,9 @@ public:
     void send ( Serializable *message, const IpAddrPort& address = IpAddrPort() );
     void send ( const MsgPtr& msg, const IpAddrPort& address = IpAddrPort() );
     void send ( char *bytes, size_t len, const IpAddrPort& address = IpAddrPort() );
+
+    // Set the packet loss for testing purposes
+    void setPacketLoss ( uint8_t percentage );
 
     friend class EventManager;
 };

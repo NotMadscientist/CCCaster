@@ -5,7 +5,7 @@
 #include <string>
 #include <cassert>
 
-#define SEND_INTERVAL       100
+#define SEND_INTERVAL 100
 
 using namespace std;
 
