@@ -48,8 +48,8 @@ private:
     mutable char md5[16];
     mutable bool md5empty;
 
-    virtual void serializeBase ( cereal::BinaryOutputArchive& ar ) const {};
-    virtual void deserializeBase ( cereal::BinaryInputArchive& ar ) {};
+    inline virtual void serializeBase ( cereal::BinaryOutputArchive& ar ) const {};
+    inline virtual void deserializeBase ( cereal::BinaryInputArchive& ar ) {};
 
     friend struct SerializableMessage;
     friend struct SerializableSequence;

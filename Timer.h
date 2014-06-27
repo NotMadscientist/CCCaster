@@ -4,7 +4,7 @@ struct Timer
 {
     struct Owner
     {
-        virtual void timerExpired ( Timer *timer ) {}
+        inline virtual void timerExpired ( Timer *timer ) {}
     };
 
     Owner *owner;

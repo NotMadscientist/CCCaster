@@ -13,16 +13,16 @@ struct Socket
     struct Owner
     {
         // Accepted a TCP socket from server socket
-        virtual void acceptEvent ( Socket *serverSocket ) {}
+        inline virtual void acceptEvent ( Socket *serverSocket ) {}
 
         // TCP connected event
-        virtual void connectEvent ( Socket *socket ) {}
+        inline virtual void connectEvent ( Socket *socket ) {}
 
         // TCP disconnected event
-        virtual void disconnectEvent ( Socket *socket ) {}
+        inline virtual void disconnectEvent ( Socket *socket ) {}
 
         // Read event
-        virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) {}
+        inline virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) {}
     };
 
     Owner *owner;

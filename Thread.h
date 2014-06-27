@@ -116,7 +116,7 @@ class Thread
 public:
 
     inline Thread() : running ( false ) {}
-    virtual ~Thread() { join(); }
+    inline virtual ~Thread() { join(); }
 
     virtual void start();
 
