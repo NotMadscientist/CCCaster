@@ -27,7 +27,7 @@ struct GoBackN : public Timer::Owner
         // Send a message via raw socket
         virtual void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg ) {}
 
-        // Receive a message from Go-Back-N
+        // Receive a message from GoBackN
         virtual void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) {}
     };
 
@@ -55,7 +55,7 @@ private:
 
 public:
 
-    // Send a message via Go-Back-N
+    // Send a message via GoBackN
     void send ( SerializableSequence *message );
     void send ( const MsgPtr& msg );
 
@@ -69,7 +69,7 @@ public:
     // Get the number of messages ACKed
     inline uint32_t getAckCount() const { return ackSequence; }
 
-    // Reset the state of Go-Back-N
+    // Reset the state of GoBackN
     void reset();
 
     GoBackN ( Owner *owner );
