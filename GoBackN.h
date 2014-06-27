@@ -20,8 +20,10 @@ protected:
     void deserialize ( cereal::BinaryInputArchive& ar ) {}
 };
 
-struct GoBackN : public Timer::Owner
+class GoBackN : public Timer::Owner
 {
+public:
+
     struct Owner
     {
         // Send a message via raw socket

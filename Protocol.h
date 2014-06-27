@@ -60,10 +60,8 @@ struct SerializableMessage : public Serializable
     BaseType getBaseType() const { return BaseType::SerializableMessage; }
 };
 
-class SerializableSequence : public Serializable
+struct SerializableSequence : public Serializable
 {
-    mutable uint32_t sequence;
-
 public:
 
     SerializableSequence() : sequence ( 0 ) {}
@@ -75,6 +73,8 @@ public:
     inline void setSequence ( uint32_t sequence ) const { invalidate(); this->sequence = sequence; }
 
 private:
+
+    mutable uint32_t sequence;
 
     void serializeBase ( cereal::BinaryOutputArchive& ar ) const { ar ( sequence ); };
     void deserializeBase ( cereal::BinaryInputArchive& ar ) { ar ( sequence ); };

@@ -8,8 +8,10 @@
 
 enum class Protocol : uint8_t { TCP, UDP };
 
-struct Socket
+class Socket
 {
+public:
+
     struct Owner
     {
         // Accepted a socket from server socket

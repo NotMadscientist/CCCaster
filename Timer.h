@@ -1,7 +1,9 @@
 #pragma once
 
-struct Timer
+class Timer
 {
+public:
+
     struct Owner
     {
         inline virtual void timerExpired ( Timer *timer ) {}
