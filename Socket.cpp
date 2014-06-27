@@ -54,7 +54,7 @@ shared_ptr<Socket> Socket::connect ( Owner *owner, const string& address, unsign
 shared_ptr<Socket> Socket::accept ( Owner *owner )
 {
     if ( !acceptedSocket.get() )
-        return shared_ptr<Socket>();
+        return 0;
 
     acceptedSocket->owner = owner;
     return acceptedSocket;
@@ -69,10 +69,9 @@ void Socket::send ( Serializable *message, const IpAddrPort& address )
 void Socket::send ( const MsgPtr& msg, const IpAddrPort& address )
 {
     string bytes = Serializable::encode ( msg );
-    LOG ( "Encoded '%s' to [ %u bytes ]", TO_C_STR ( msg ), bytes.size() );
 
-    if ( Log::isEnabled )
-        LOG ( "Base64 : %s", toBase64 ( bytes ).c_str() );
+    LOG ( "Encoded '%s' to [ %u bytes ]", TO_C_STR ( msg ), bytes.size() );
+    LOG ( "Base64 : %s", toBase64 ( bytes ).c_str() );
 
     send ( &bytes[0], bytes.size(), address );
 }

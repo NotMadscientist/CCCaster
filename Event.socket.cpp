@@ -286,6 +286,7 @@ void EventManager::SocketRead::exec ( NL::Socket *socket, NL::SocketGroup *, voi
 
     LOG_SOCKET ( "Read from", it->second );
     LOG ( "Read [ %u bytes ] from '%s'", len, address.c_str() );
+    LOG ( "Base64 : %s", toBase64 ( bufferEnd, len ).c_str() );
 
     size_t consumed = 0;
     MsgPtr msg = Serializable::decode ( & ( it->second->readBuffer[0] ), it->second->readPos, consumed );

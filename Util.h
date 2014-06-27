@@ -35,6 +35,18 @@ inline std::string toBase64 ( const std::string& bytes )
     return str.substr ( 0, str.size() - 1 );
 }
 
+inline std::string toBase64 ( const char *bytes, size_t len )
+{
+    if ( len == 0 )
+        return "";
+
+    std::string str;
+    for ( size_t i = 0; i < len; ++i )
+        str += toString ( "%02x ", ( unsigned char ) bytes[i] );
+
+    return str.substr ( 0, str.size() - 1 );
+}
+
 // String trim
 inline std::string trim ( std::string str, const std::string& ws = " \t\r\n" )
 {
