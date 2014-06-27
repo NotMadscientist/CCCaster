@@ -32,6 +32,8 @@ struct Serializable
     template<typename T> T& getAs() { return *static_cast<T *> ( this ); }
     template<typename T> const T& getAs() const { return *static_cast<const T *> ( this ); }
 
+    inline void invalidate() const { md5empty = true; }
+
     static std::string encode ( Serializable *message );
     static std::string encode ( const MsgPtr& msg );
     static MsgPtr decode ( const char *bytes, size_t len, size_t& consumed );
@@ -58,14 +60,19 @@ struct SerializableMessage : public Serializable
     BaseType getBaseType() const { return BaseType::SerializableMessage; }
 };
 
-struct SerializableSequence : public Serializable
+class SerializableSequence : public Serializable
 {
     mutable uint32_t sequence;
+
+public:
 
     SerializableSequence() : sequence ( 0 ) {}
     SerializableSequence ( uint32_t sequence ) : sequence ( sequence ) {}
 
     BaseType getBaseType() const { return BaseType::SerializableSequence; }
+
+    inline uint32_t getSequence() const { return sequence; }
+    inline void setSequence ( uint32_t sequence ) const { invalidate(); this->sequence = sequence; }
 
 private:
 

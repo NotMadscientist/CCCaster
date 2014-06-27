@@ -9,16 +9,16 @@
 
 using namespace std;
 
-#define LOG_LIST(LIST)                                                                                              \
-    do {                                                                                                            \
-        if ( !Log::isEnabled )                                                                                      \
-            break;                                                                                                  \
-        string list;                                                                                                \
-        for ( const MsgPtr& msg : LIST )                                                                            \
-            list += toString ( " %u:'", msg->getAs<SerializableSequence>().sequence ) + toString ( msg ) + "',";    \
-        if ( !LIST.empty() )                                                                                        \
-            list [ list.size() - 1 ] = ' ';                                                                         \
-        LOG ( #LIST "=[%s]", list.c_str() );                                                                        \
+#define LOG_LIST(LIST)                                                                                                \
+    do {                                                                                                              \
+        if ( !Log::isEnabled )                                                                                        \
+            break;                                                                                                    \
+        string list;                                                                                                  \
+        for ( const MsgPtr& msg : LIST )                                                                              \
+            list += toString ( " %u:'", msg->getAs<SerializableSequence>().getSequence() ) + toString ( msg ) + "',"; \
+        if ( !LIST.empty() )                                                                                          \
+            list [ list.size() - 1 ] = ' ';                                                                           \
+        LOG ( #LIST "=[%s]", list.c_str() );                                                                          \
     } while ( 0 )
 
 void GoBackN::timerExpired ( Timer *timer )
@@ -32,7 +32,7 @@ void GoBackN::timerExpired ( Timer *timer )
         sendListPos = sendList.begin();
 
     LOG ( "Sending '%s'; sequence=%u; sendSequence=%d",
-          TO_C_STR ( *sendListPos ), ( **sendListPos ).getAs<SerializableSequence>().sequence, sendSequence );
+          TO_C_STR ( *sendListPos ), ( **sendListPos ).getAs<SerializableSequence>().getSequence(), sendSequence );
     owner->sendGoBackN ( this, *sendListPos );
     ++sendListPos;
 
@@ -50,10 +50,10 @@ void GoBackN::send ( const MsgPtr& msg )
     LOG ( "Adding '%s'; sendSequence=%d", TO_C_STR ( msg ), sendSequence + 1 );
 
     assert ( msg->getBaseType() == BaseType::SerializableSequence );
-    assert ( sendList.empty() || sendList.back()->getAs<SerializableSequence>().sequence == sendSequence );
+    assert ( sendList.empty() || sendList.back()->getAs<SerializableSequence>().getSequence() == sendSequence );
     assert ( owner != 0 );
 
-    msg->getAs<SerializableSequence>().sequence = ++sendSequence;
+    msg->getAs<SerializableSequence>().setSequence ( ++sendSequence );
 
     owner->sendGoBackN ( this, msg );
 
@@ -76,7 +76,7 @@ void GoBackN::recv ( const MsgPtr& msg )
         return;
     }
 
-    uint32_t sequence = msg->getAs<SerializableSequence>().sequence;
+    uint32_t sequence = msg->getAs<SerializableSequence>().getSequence();
 
     // Check for ACK messages
     if ( msg->getType() == MsgType::AckSequence )
@@ -87,7 +87,7 @@ void GoBackN::recv ( const MsgPtr& msg )
         LOG ( "Got 'AckSequence'; sequence=%u; sendSequence=%u", sequence, sendSequence );
 
         // Remove messages from sendList with sequence <= the ACKed sequence
-        while ( !sendList.empty() && sendList.front()->getAs<SerializableSequence>().sequence <= sequence )
+        while ( !sendList.empty() && sendList.front()->getAs<SerializableSequence>().getSequence() <= sequence )
             sendList.pop_front();
         sendListPos = sendList.end();
 
