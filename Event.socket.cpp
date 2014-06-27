@@ -288,17 +288,23 @@ void EventManager::SocketRead::exec ( NL::Socket *socket, NL::SocketGroup *, voi
     LOG ( "Read [ %u bytes ] from '%s'", len, address.c_str() );
     LOG ( "Base64 : %s", toBase64 ( bufferEnd, len ).c_str() );
 
-    size_t consumed = 0;
-    MsgPtr msg = Serializable::decode ( & ( it->second->readBuffer[0] ), it->second->readPos, consumed );
+    size_t consumed;
+    MsgPtr msg;
 
-    if ( !msg.get() )
-        return;
+    for ( ;; )
+    {
+        consumed = 0;
+        msg = Serializable::decode ( & ( it->second->readBuffer[0] ), it->second->readPos, consumed );
 
-    LOG ( "Decoded [ %u bytes ] to '%s'", it->second->readPos, TO_C_STR ( msg ) );
-    it->second->owner->readEvent ( it->second, msg, address );
+        if ( !msg.get() )
+            return;
 
-    assert ( consumed <= it->second->readPos );
+        LOG ( "Decoded [ %u bytes ] to '%s'", consumed, TO_C_STR ( msg ) );
+        it->second->owner->readEvent ( it->second, msg, address );
 
-    it->second->readBuffer.erase ( 0, consumed );
-    it->second->readPos -= consumed;
+        assert ( consumed <= it->second->readPos );
+
+        it->second->readBuffer.erase ( 0, consumed );
+        it->second->readPos -= consumed;
+    }
 }

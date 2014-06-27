@@ -107,7 +107,8 @@ void GoBackN::recv ( const MsgPtr& msg )
 
     owner->recvGoBackN ( this, msg );
 
-    owner->sendGoBackN ( this, MsgPtr ( new AckSequence ( recvSequence ) ) );
+    if ( recvSequence )
+        owner->sendGoBackN ( this, MsgPtr ( new AckSequence ( recvSequence ) ) );
 }
 
 void GoBackN::reset()
