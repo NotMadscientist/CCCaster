@@ -81,10 +81,10 @@ TEST ( Socket, UdpSend )
     }
 }
 
-TEST_CONNECT ( Socket, Tcp )
+TEST_CONNECT ( Socket, Tcp, 0 )
 
-TEST_TIMEOUT ( Socket, Tcp )
+TEST_TIMEOUT ( Socket, Tcp, 0 )
 
-TEST_SEND ( Socket, Tcp )
+TEST_SEND ( Socket, Tcp, 0 )
 
 TEST_SEND_PARTIAL ( Socket, Tcp )

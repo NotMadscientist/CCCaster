@@ -1,7 +1,9 @@
 #include "Test.Socket.h"
 
-TEST_CONNECT ( ReliableUdp, Udp )
+#define PACKET_LOSS 0
 
-TEST_TIMEOUT ( ReliableUdp, Udp )
+TEST_CONNECT ( ReliableUdp, Udp, PACKET_LOSS )
 
-TEST_SEND ( ReliableUdp, Udp )
+TEST_TIMEOUT ( ReliableUdp, Udp, PACKET_LOSS )
+
+TEST_SEND ( ReliableUdp, Udp, PACKET_LOSS )

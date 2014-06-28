@@ -18,7 +18,7 @@ using namespace std;
             list += toString ( " %u:'", msg->getAs<SerializableSequence>().getSequence() ) + toString ( msg ) + "',"; \
         if ( !LIST.empty() )                                                                                          \
             list [ list.size() - 1 ] = ' ';                                                                           \
-        LOG ( #LIST "=[%s]", list.c_str() );                                                                          \
+        LOG ( "this=%08x; "#LIST "=[%s]", this, list.c_str() );                                                       \
     } while ( 0 )
 
 void GoBackN::timerExpired ( Timer *timer )
@@ -30,6 +30,8 @@ void GoBackN::timerExpired ( Timer *timer )
 
     if ( sendListPos == sendList.end() )
         sendListPos = sendList.begin();
+
+    LOG_LIST ( sendList );
 
     LOG ( "Sending '%s'; sequence=%u; sendSequence=%d",
           TO_C_STR ( *sendListPos ), ( **sendListPos ).getAs<SerializableSequence>().getSequence(), sendSequence );

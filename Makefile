@@ -43,7 +43,7 @@ all: CC_FLAGS += -g
 all: $(BINARY)
 
 release: DEFINES += -DNDEBUG -DRELEASE
-release: CC_FLAGS += -Os -O2
+release: CC_FLAGS += -Os -O2 -fno-rtti
 release: BUILD_TYPE = Release
 release: $(BINARY)
 

@@ -51,13 +51,14 @@ struct BaseTestSocket<ReliableUdp> : public Socket::Owner, public Timer::Owner
     }
 };
 
-#define TEST_CONNECT(T, PREFIX)                                                                                     \
+#define TEST_CONNECT(T, PREFIX, LOSS)                                                                               \
     TEST ( T, PREFIX ## Connect ) {                                                                                 \
         struct TestSocket : public BaseTestSocket<T> {                                                              \
             void acceptEvent ( Socket *serverSocket ) override { accepted = serverSocket->accept ( this ); }        \
             void timerExpired ( Timer *timer ) override { EventManager::get().stop(); }                             \
-            TestSocket ( unsigned port ) : BaseTestSocket ( port ) {}                                               \
-            TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port ) {}               \
+            TestSocket ( unsigned port ) : BaseTestSocket ( port ) { socket->setPacketLoss ( LOSS ); }              \
+            TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port )                  \
+            { socket->setPacketLoss ( LOSS ); }                                                                     \
         };                                                                                                          \
         TestSocket server ( TEST_LOCAL_PORT );                                                                      \
         TestSocket client ( "127.0.0.1", TEST_LOCAL_PORT );                                                         \
@@ -68,16 +69,18 @@ struct BaseTestSocket<ReliableUdp> : public Socket::Owner, public Timer::Owner
         EXPECT_TRUE ( server.accepted.get() );                                                                      \
         if ( server.accepted.get() )                                                                                \
             EXPECT_TRUE ( server.accepted->isConnected() );                                                         \
+        EXPECT_EQ ( server.socket->getPendingCount(), 0 );                                                          \
         EXPECT_TRUE ( client.socket.get() );                                                                        \
         if ( client.socket.get() )                                                                                  \
             EXPECT_TRUE ( client.socket->isConnected() );                                                           \
     }
 
-#define TEST_TIMEOUT(T, PREFIX)                                                                                     \
+#define TEST_TIMEOUT(T, PREFIX, LOSS)                                                                               \
     TEST ( T, PREFIX ## Timeout ) {                                                                                 \
         struct TestSocket : public BaseTestSocket<T> {                                                              \
             void timerExpired ( Timer *timer ) override { EventManager::get().stop(); }                             \
-            TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port ) {}               \
+            TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port )                  \
+            { socket->setPacketLoss ( LOSS ); }                                                                     \
         };                                                                                                          \
         TestSocket client ( "127.0.0.1", TEST_LOCAL_PORT );                                                         \
         EventManager::get().start();                                                                                \
@@ -86,7 +89,7 @@ struct BaseTestSocket<ReliableUdp> : public Socket::Owner, public Timer::Owner
             EXPECT_FALSE ( client.socket->isConnected() );                                                          \
     }
 
-#define TEST_SEND(T, PREFIX)                                                                                        \
+#define TEST_SEND(T, PREFIX, LOSS)                                                                                  \
     TEST ( T, PREFIX ## Send ) {                                                                                    \
         struct TestSocket : public BaseTestSocket<T> {                                                              \
             MsgPtr msg;                                                                                             \
@@ -101,8 +104,9 @@ struct BaseTestSocket<ReliableUdp> : public Socket::Owner, public Timer::Owner
                 this->msg = msg;                                                                                    \
             }                                                                                                       \
             void timerExpired ( Timer *timer ) override { EventManager::get().stop(); }                             \
-            TestSocket ( unsigned port ) : BaseTestSocket ( port ) {}                                               \
-            TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port ) {}               \
+            TestSocket ( unsigned port ) : BaseTestSocket ( port ) { socket->setPacketLoss ( LOSS ); }              \
+            TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port )                  \
+            { socket->setPacketLoss ( LOSS ); }                                                                     \
         };                                                                                                          \
         TestSocket server ( TEST_LOCAL_PORT );                                                                      \
         TestSocket client ( "127.0.0.1", TEST_LOCAL_PORT );                                                         \
@@ -113,6 +117,7 @@ struct BaseTestSocket<ReliableUdp> : public Socket::Owner, public Timer::Owner
         EXPECT_TRUE ( server.accepted.get() );                                                                      \
         if ( server.accepted.get() )                                                                                \
             EXPECT_TRUE ( server.accepted->isConnected() );                                                         \
+        EXPECT_EQ ( server.socket->getPendingCount(), 0 );                                                          \
         EXPECT_TRUE ( server.msg.get() );                                                                           \
         if ( server.msg.get() ) {                                                                                   \
             EXPECT_EQ ( server.msg->getType(), MsgType::TestMessage );                                              \
@@ -160,6 +165,7 @@ struct BaseTestSocket<ReliableUdp> : public Socket::Owner, public Timer::Owner
         EXPECT_TRUE ( server.accepted.get() );                                                                      \
         if ( server.accepted.get() )                                                                                \
             EXPECT_TRUE ( server.accepted->isConnected() );                                                         \
+        EXPECT_EQ ( server.socket->getPendingCount(), 0 );                                                          \
         EXPECT_TRUE ( server.msg.get() );                                                                           \
         if ( server.msg.get() ) {                                                                                   \
             EXPECT_EQ ( server.msg->getType(), MsgType::TestMessage );                                              \

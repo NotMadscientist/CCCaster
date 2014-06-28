@@ -36,9 +36,6 @@ private:
     // Underlying raw socket
     std::shared_ptr<NL::Socket> socket;
 
-    // Currently accepted TCP socket
-    std::shared_ptr<Socket> acceptedSocket;
-
     // Socket address
     const IpAddrPort address;
 
@@ -56,6 +53,9 @@ private:
     Socket ( NL::Socket *socket );
 
 protected:
+
+    // Currently accepted socket
+    std::shared_ptr<Socket> acceptedSocket;
 
     // Construct a server socket
     Socket ( Owner *owner, unsigned port, Protocol protocol );
@@ -99,6 +99,9 @@ public:
 
     // Set the packet loss for testing purposes
     void setPacketLoss ( uint8_t percentage );
+
+    // Get the number of sockets pending acceptance for testing purposes
+    inline virtual size_t getPendingCount() const { return ( acceptedSocket.get() ? 1 : 0 ); };
 
     friend class EventManager;
 };
