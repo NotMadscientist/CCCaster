@@ -13,7 +13,7 @@
 
 using namespace std;
 
-template<typename T>
+template<typename T, int timeout>
 struct BaseTestSocket : public Socket::Owner, public Timer::Owner
 {
     shared_ptr<Socket> socket, accepted;
@@ -22,18 +22,18 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
     BaseTestSocket ( unsigned port )
         : socket ( T::listen ( this, port, Protocol::TCP ) ), timer ( this )
     {
-        timer.start ( 1000 );
+        timer.start ( timeout );
     }
 
     BaseTestSocket ( const string& address, unsigned port )
         : socket ( T::connect ( this, address, port, Protocol::TCP ) ), timer ( this )
     {
-        timer.start ( 1000 );
+        timer.start ( timeout );
     }
 };
 
-template<>
-struct BaseTestSocket<ReliableUdp> : public Socket::Owner, public Timer::Owner
+template<int timeout>
+struct BaseTestSocket<ReliableUdp, timeout> : public Socket::Owner, public Timer::Owner
 {
     shared_ptr<Socket> socket, accepted;
     Timer timer;
@@ -41,21 +41,40 @@ struct BaseTestSocket<ReliableUdp> : public Socket::Owner, public Timer::Owner
     BaseTestSocket ( unsigned port )
         : socket ( ReliableUdp::listen ( this, port ) ), timer ( this )
     {
-        timer.start ( 1000 );
+        timer.start ( timeout );
     }
 
     BaseTestSocket ( const string& address, unsigned port )
         : socket ( ReliableUdp::connect ( this, address, port ) ), timer ( this )
     {
-        timer.start ( 1000 );
+        timer.start ( timeout );
     }
 };
 
-#define TEST_CONNECT(T, PREFIX, LOSS)                                                                               \
+#define TEST_CONNECT(T, PREFIX, LOSS, TIMEOUT)                                                                      \
     TEST ( T, PREFIX ## Connect ) {                                                                                 \
-        struct TestSocket : public BaseTestSocket<T> {                                                              \
-            void acceptEvent ( Socket *serverSocket ) override { accepted = serverSocket->accept ( this ); }        \
-            void timerExpired ( Timer *timer ) override { EventManager::get().stop(); }                             \
+        static int done = 0;                                                                                        \
+        done = 0;                                                                                                   \
+        struct TestSocket : public BaseTestSocket<T, TIMEOUT> {                                                     \
+            void acceptEvent ( Socket *serverSocket ) override {                                                    \
+                accepted = serverSocket->accept ( this );                                                           \
+                ++done;                                                                                             \
+                if ( done >= 2 ) {                                                                                  \
+                    LOG ( "Stopping because connected" );                                                           \
+                    EventManager::get().stop();                                                                     \
+                }                                                                                                   \
+            }                                                                                                       \
+            void connectEvent ( Socket *socket ) override {                                                         \
+                ++done;                                                                                             \
+                if ( done >= 2 ) {                                                                                  \
+                    LOG ( "Stopping because connected" );                                                           \
+                    EventManager::get().stop();                                                                     \
+                }                                                                                                   \
+            }                                                                                                       \
+            void timerExpired ( Timer *timer ) override {                                                           \
+                LOG ( "Stopping because of timeout" );                                                              \
+                EventManager::get().stop();                                                                         \
+            }                                                                                                       \
             TestSocket ( unsigned port ) : BaseTestSocket ( port ) { socket->setPacketLoss ( LOSS ); }              \
             TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port )                  \
             { socket->setPacketLoss ( LOSS ); }                                                                     \
@@ -75,9 +94,9 @@ struct BaseTestSocket<ReliableUdp> : public Socket::Owner, public Timer::Owner
             EXPECT_TRUE ( client.socket->isConnected() );                                                           \
     }
 
-#define TEST_TIMEOUT(T, PREFIX, LOSS)                                                                               \
+#define TEST_TIMEOUT(T, PREFIX, LOSS, TIMEOUT)                                                                      \
     TEST ( T, PREFIX ## Timeout ) {                                                                                 \
-        struct TestSocket : public BaseTestSocket<T> {                                                              \
+        struct TestSocket : public BaseTestSocket<T, TIMEOUT> {                                                     \
             void timerExpired ( Timer *timer ) override { EventManager::get().stop(); }                             \
             TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port )                  \
             { socket->setPacketLoss ( LOSS ); }                                                                     \
@@ -89,9 +108,11 @@ struct BaseTestSocket<ReliableUdp> : public Socket::Owner, public Timer::Owner
             EXPECT_FALSE ( client.socket->isConnected() );                                                          \
     }
 
-#define TEST_SEND(T, PREFIX, LOSS)                                                                                  \
+#define TEST_SEND(T, PREFIX, LOSS, TIMEOUT)                                                                         \
     TEST ( T, PREFIX ## Send ) {                                                                                    \
-        struct TestSocket : public BaseTestSocket<T> {                                                              \
+        static int done = 0;                                                                                        \
+        done = 0;                                                                                                   \
+        struct TestSocket : public BaseTestSocket<T, TIMEOUT> {                                                     \
             MsgPtr msg;                                                                                             \
             void acceptEvent ( Socket *serverSocket ) override {                                                    \
                 accepted = serverSocket->accept ( this );                                                           \
@@ -102,8 +123,16 @@ struct BaseTestSocket<ReliableUdp> : public Socket::Owner, public Timer::Owner
             }                                                                                                       \
             void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override {              \
                 this->msg = msg;                                                                                    \
+                ++done;                                                                                             \
+                if ( done >= 2 ) {                                                                                  \
+                    LOG ( "Stopping because connected" );                                                           \
+                    EventManager::get().stop();                                                                     \
+                }                                                                                                   \
             }                                                                                                       \
-            void timerExpired ( Timer *timer ) override { EventManager::get().stop(); }                             \
+            void timerExpired ( Timer *timer ) override {                                                           \
+                LOG ( "Stopping because of timeout" );                                                              \
+                EventManager::get().stop();                                                                         \
+            }                                                                                                       \
             TestSocket ( unsigned port ) : BaseTestSocket ( port ) { socket->setPacketLoss ( LOSS ); }              \
             TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port )                  \
             { socket->setPacketLoss ( LOSS ); }                                                                     \
@@ -135,7 +164,7 @@ struct BaseTestSocket<ReliableUdp> : public Socket::Owner, public Timer::Owner
 
 #define TEST_SEND_PARTIAL(T, PREFIX)                                                                                \
     TEST ( T, PREFIX ## SendPartial ) {                                                                             \
-        struct TestSocket : public BaseTestSocket<T> {                                                              \
+        struct TestSocket : public BaseTestSocket<T, 1000> {                                                        \
             MsgPtr msg;                                                                                             \
             string buffer;                                                                                          \
             void acceptEvent ( Socket *serverSocket ) override { accepted = serverSocket->accept ( this ); }        \

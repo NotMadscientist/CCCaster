@@ -1,25 +1,69 @@
+#pragma once
+
 #include "Socket.h"
 #include "GoBackN.h"
+#include "Log.h"
 
-class ReliableUdp : public GoBackN::Owner, public Socket
+struct ReliableUdpConnect : public SerializableSequence
 {
-    class ProxyOwner : public GoBackN::Owner, public Socket::Owner
+    ReliableUdpConnect() {}
+    MsgType getType() const override;
+protected:
+    void serialize ( cereal::BinaryOutputArchive& ar ) const override {}
+    void deserialize ( cereal::BinaryInputArchive& ar ) override {}
+};
+
+struct ReliableUdpConnected : public SerializableSequence
+{
+    ReliableUdpConnected() {}
+    MsgType getType() const override;
+protected:
+    void serialize ( cereal::BinaryOutputArchive& ar ) const override {}
+    void deserialize ( cereal::BinaryInputArchive& ar ) override {}
+};
+
+class ReliableUdp : public Socket
+{
+    // Proxy socket owner that transfers msgs via GoBackN
+    struct ProxyOwner : public GoBackN::Owner, public Socket::Owner
     {
+        // Parent socket
+        ReliableUdp *parent;
+
+        // Proxied socket owner
         Socket::Owner *owner;
 
-    public:
+        // GoBackN instance
+        GoBackN gbn;
 
-        inline ProxyOwner ( Socket::Owner *owner ) : owner ( owner ) {}
+        // Remote address
+        IpAddrPort address;
 
+        inline ProxyOwner ( ReliableUdp *parent, Socket::Owner *owner )
+            : parent ( parent ), owner ( owner ), gbn ( this ) {}
+
+        inline ProxyOwner ( ReliableUdp *parent, Socket::Owner *owner, const IpAddrPort& address )
+            : parent ( parent ), owner ( owner ), gbn ( this ), address ( address ) {}
+
+        // GoBackN callbacks
         void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override;
         void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override;
 
+        // Socket read callback
         void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override;
     };
 
-    ProxyOwner proxy;
-    GoBackN gbn;
+    // Connection state
+    enum class State : uint8_t { Listening, Connecting, Connected, Disconnected } state;
 
+    // Proxy socket owners
+    std::shared_ptr<ProxyOwner> proxy;
+    std::unordered_map<IpAddrPort, std::shared_ptr<ProxyOwner>> proxies;
+
+    void sendGbnAddressed ( const MsgPtr& msg, const IpAddrPort& address );
+    void recvGbnAddressed ( const MsgPtr& msg, const IpAddrPort& address );
+
+    ReliableUdp ( const std::shared_ptr<ProxyOwner>& proxy );
     ReliableUdp ( Socket::Owner *owner, unsigned port );
     ReliableUdp ( Socket::Owner *owner, const std::string& address, unsigned port );
 
@@ -31,6 +75,7 @@ public:
     // Connect to the given address and port
     static std::shared_ptr<Socket> connect ( Socket::Owner *owner, const std::string& address, unsigned port );
 
+    // Destructor
     ~ReliableUdp() override;
 
     // Completely disconnect the socket
@@ -39,7 +84,7 @@ public:
     // Accept a new socket
     std::shared_ptr<Socket> accept ( Socket::Owner *owner ) override;
 
-    inline bool isConnected() const override { return false; } // TODO
+    inline bool isConnected() const override { return Socket::isConnected() && ( state == State::Connected ); }
 
     void send ( Serializable *message, const IpAddrPort& address = IpAddrPort() ) override;
     void send ( const MsgPtr& msg, const IpAddrPort& address = IpAddrPort() ) override;
