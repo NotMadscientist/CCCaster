@@ -55,6 +55,8 @@ private:
     // Construct with an existing raw socket
     Socket ( NL::Socket *socket );
 
+protected:
+
     // Construct a server socket
     Socket ( Owner *owner, unsigned port, Protocol protocol );
 
@@ -70,23 +72,29 @@ public:
     static std::shared_ptr<Socket> connect (
         Owner *owner, const std::string& address, unsigned port, Protocol protocol );
 
-    ~Socket();
+    // Virtual destructor
+    virtual ~Socket();
 
     // Completely disconnect the socket
-    void disconnect();
+    virtual void disconnect();
 
-    // Accept a new TCP socket
-    std::shared_ptr<Socket> accept ( Owner *owner );
+    // Accept a new socket
+    virtual std::shared_ptr<Socket> accept ( Owner *owner );
 
-    inline bool isConnected() const { return ( isClient() && socket.get() ); }
-    inline bool isClient() const { return !address.addr.empty(); }
-    inline bool isServer() const { return address.addr.empty(); }
+    // Socket status
+    inline virtual bool isConnected() const { return ( isClient() && socket.get() ); }
+    inline virtual bool isClient() const { return !address.addr.empty(); }
+    inline virtual bool isServer() const { return address.addr.empty(); }
 
-    inline const IpAddrPort& getRemoteAddress() const { if ( isServer() ) return NullAddress; return address; }
-    inline Protocol getProtocol() const { return protocol; }
+    // Socket parameters
+    inline virtual const IpAddrPort& getRemoteAddress() const { if ( isServer() ) return NullAddress; return address; }
+    inline virtual Protocol getProtocol() const { return protocol; }
 
-    void send ( Serializable *message, const IpAddrPort& address = IpAddrPort() );
-    void send ( const MsgPtr& msg, const IpAddrPort& address = IpAddrPort() );
+    // Send a protocol message
+    virtual void send ( Serializable *message, const IpAddrPort& address = IpAddrPort() );
+    virtual void send ( const MsgPtr& msg, const IpAddrPort& address = IpAddrPort() );
+
+    // Send raw bytes directly
     void send ( char *bytes, size_t len, const IpAddrPort& address = IpAddrPort() );
 
     // Set the packet loss for testing purposes
