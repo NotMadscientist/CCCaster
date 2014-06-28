@@ -10,11 +10,11 @@ if [ $? -ne 0 ]; then
 
     grep " : public Serializable[A-Z]" "$@" | sed -r 's/^(.+\.h):[ ]*[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nMsgType \2::getType() const { return MsgType::\2; }/' > Protocol.types.h
 
-    grep " : public Serializable[A-Z]" "$@" | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1:\nreturn ( os << "\1" );/' > Protocol.strings.h
+    grep " : public Serializable[A-Z]" "$@" | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1: return ( os << "\1" );/' > Protocol.strings.h
 
     grep " : public Serializable[A-Z]" "$@" | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/\1,/' > Protocol.enum.h
 
-    grep " : public Serializable[A-Z]" "$@" | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1:\n{\n    msg.reset ( new \1() );\n    break;\n}/' > Protocol.decode.h
+    grep " : public Serializable[A-Z]" "$@" | sed -r 's/^.+\.h:[ ]*[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1: msg.reset ( new \1() ); break;/' > Protocol.decode.h
 fi
 
 rm tmp

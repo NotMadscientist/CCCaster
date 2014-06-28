@@ -77,11 +77,11 @@ clean:
 	rm -f Version.h Protocol.*.h .depend *.res *.exe *.zip *.o $(OBJECTS)
 
 check:
-	cppcheck --enable=all *.cpp *h
+	cppcheck --enable=all *.cpp *.h
 
 trim:
-	sed --binary --in-place 's/\\r$$//' *.cpp *h
-	sed --in-place 's/[[:space:]]\\+$$//' *.cpp *h
+	sed --binary --in-place 's/\\r$$//' *.cpp $(NON_PROTOCOL_HEADERS)
+	sed --in-place 's/[[:space:]]\\+$$//' *.cpp $(NON_PROTOCOL_HEADERS)
 
 format:
 	$(ASTYLE)              \
@@ -98,10 +98,10 @@ format:
     --keep-one-line-blocks      \
     --align-pointer=name        \
     --align-reference=type      \
-    *.cpp *h
+    *.cpp $(NON_PROTOCOL_HEADERS)
 
 count:
-	wc -l *.cpp *h
+	wc -l *.cpp $(NON_PROTOCOL_HEADERS)
 
 ifeq (,$(findstring clean, $(MAKECMDGOALS)))
 ifeq (,$(findstring check, $(MAKECMDGOALS)))
