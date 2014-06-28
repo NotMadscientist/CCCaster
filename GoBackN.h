@@ -27,10 +27,10 @@ public:
     struct Owner
     {
         // Send a message via raw socket
-        inline virtual void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg ) {}
+        virtual void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg ) = 0;
 
         // Receive a message from GoBackN
-        inline virtual void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) {}
+        virtual void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) = 0;
     };
 
     Owner *owner;

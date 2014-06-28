@@ -147,6 +147,13 @@ public:
     // Stop the event manager and release background threads
     void release();
 
+    // Indicates if the event manager is running
+    inline bool isRunning() const
+    {
+        LOCK ( mutex );
+        return running;
+    }
+
     // Get the singleton instance
     static EventManager& get();
 };

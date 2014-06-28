@@ -6,7 +6,7 @@ public:
 
     struct Owner
     {
-        inline virtual void timerExpired ( Timer *timer ) {}
+        virtual void timerExpired ( Timer *timer ) = 0;
     };
 
     Owner *owner;

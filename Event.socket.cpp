@@ -127,6 +127,10 @@ void EventManager::TcpConnectThread::run()
     if ( em.connectingSockets.find ( socket ) == em.connectingSockets.end() )
         return;
 
+    // Wait for the socket event loop to start
+    if ( !em.isRunning() )
+        em.socketsCond.wait ( em.mutex );
+
     assert ( socket->address == IpAddrPort ( rawSocket ) );
 
     socket->socket = rawSocket;
@@ -140,6 +144,12 @@ void EventManager::TcpConnectThread::run()
 
 void EventManager::socketListenLoop()
 {
+    // Signal socket event loop has started
+    {
+        LOCK ( mutex );
+        socketsCond.signal();
+    }
+
     for ( ;; )
     {
         Sleep ( 1 );

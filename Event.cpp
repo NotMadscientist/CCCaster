@@ -20,7 +20,10 @@ EventManager::~EventManager()
 
 void EventManager::start()
 {
-    running = true;
+    {
+        LOCK ( mutex );
+        running = true;
+    }
 
     LOG ( "Starting timer thread" );
 
