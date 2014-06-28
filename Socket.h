@@ -12,6 +12,7 @@ class Socket
 {
 public:
 
+    // Socket owner interface
     struct Owner
     {
         // Accepted a socket from server socket
@@ -27,6 +28,7 @@ public:
         inline virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) {}
     };
 
+    // Socket owner
     Owner *owner;
 
 private:
@@ -37,16 +39,26 @@ private:
     // Currently accepted TCP socket
     std::shared_ptr<Socket> acceptedSocket;
 
+    // Socket address
     const IpAddrPort address;
+
+    // Socket protocol
     const Protocol protocol;
 
+    // Socket read buffer and position
     std::string readBuffer;
     size_t readPos;
 
+    // Simulated packet loss percentage for testing
     uint8_t packetLoss;
 
+    // Construct with an existing raw socket
     Socket ( NL::Socket *socket );
+
+    // Construct a server socket
     Socket ( Owner *owner, unsigned port, Protocol protocol );
+
+    // Construct a client socket
     Socket ( Owner *owner, const std::string& address, unsigned port, Protocol protocol );
 
 public:
