@@ -83,21 +83,21 @@ void Socket::send ( char *bytes, size_t len, const IpAddrPort& address )
 {
     if ( socket.get() )
     {
-        if ( address.empty() && isServer() )
-        {
-            LOG ( "Cannot send over server %s socket with no address!", TO_C_STR ( protocol ) );
-        }
-        else if ( address.empty() )
+        if ( isClient() )
         {
             LOG ( "%s socket->send ( [ %u bytes ] ); address='%s'",
                   TO_C_STR ( socket->protocol() ), len, IpAddrPort ( socket ).c_str() );
             socket->send ( bytes, len );
         }
-        else
+        else if ( !address.empty() )
         {
             LOG ( "%s socket->sendTo ( [ %u bytes ], '%s' )",
                   TO_C_STR ( socket->protocol() ), len, address.c_str() );
             socket->sendTo ( bytes, len, address.addr, address.port );
+        }
+        else
+        {
+            LOG ( "Cannot send over server %s socket with no address!", TO_C_STR ( protocol ) );
         }
     }
     else
