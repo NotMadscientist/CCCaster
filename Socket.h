@@ -16,7 +16,7 @@ public:
     struct Owner
     {
         // Accepted a socket from server socket
-        inline virtual void acceptEvent ( Socket *serverSocket ) {}
+        inline virtual void acceptEvent ( Socket *serverSocket ) { serverSocket->accept ( this )->disconnect(); }
 
         // Socket connected event
         inline virtual void connectEvent ( Socket *socket ) {}

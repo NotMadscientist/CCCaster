@@ -42,8 +42,7 @@ void GoBackN::timerExpired ( Timer *timer )
 
         LOG ( "Sending '%s'; sequence=%u; sendSequence=%d",
               TO_C_STR ( *sendListPos ), ( **sendListPos ).getAs<SerializableSequence>().getSequence(), sendSequence );
-        owner->sendGoBackN ( this, *sendListPos );
-        ++sendListPos;
+        owner->sendGoBackN ( this, * ( sendListPos++ ) );
     }
 
     if ( keepAlive )
@@ -133,15 +132,12 @@ void GoBackN::recv ( const MsgPtr& msg )
 
     ++recvSequence;
 
+    owner->sendGoBackN ( this, MsgPtr ( new AckSequence ( recvSequence ) ) );
+
+    if ( keepAlive && !sendTimer.isStarted() )
+        sendTimer.start ( SEND_INTERVAL );
+
     owner->recvGoBackN ( this, msg );
-
-    if ( recvSequence )
-    {
-        owner->sendGoBackN ( this, MsgPtr ( new AckSequence ( recvSequence ) ) );
-
-        if ( keepAlive && !sendTimer.isStarted() )
-            sendTimer.start ( SEND_INTERVAL );
-    }
 }
 
 void GoBackN::setKeepAlive ( const uint64_t& timeout )

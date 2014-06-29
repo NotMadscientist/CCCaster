@@ -30,13 +30,14 @@ Socket::Socket ( Owner *owner, const string& address, unsigned port, Protocol pr
 
 Socket::~Socket()
 {
-    EventManager::get().removeSocket ( this );
+    disconnect();
 }
 
 void Socket::disconnect()
 {
+    owner = 0;
     readBuffer.clear();
-    readPos = 0;
+    readPos = packetLoss = 0;
     EventManager::get().removeSocket ( this );
 }
 
@@ -56,7 +57,10 @@ shared_ptr<Socket> Socket::accept ( Owner *owner )
         return 0;
 
     acceptedSocket->owner = owner;
-    return acceptedSocket;
+
+    shared_ptr<Socket> ret;
+    acceptedSocket.swap ( ret );
+    return ret;
 }
 
 void Socket::send ( Serializable *message, const IpAddrPort& address )

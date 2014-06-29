@@ -7,17 +7,17 @@
 
 using namespace std;
 
-#define TIMEOUT 2000
+#define KEEP_ALIVE 2000
 
 #define LOG_SOCKET(VERB, SOCKET)                                                                                \
     LOG ( "%s UDP socket %08x; proxy=%08x; owner=%08x; address='%s'",                                           \
           VERB, SOCKET, SOCKET->proxy.get(), SOCKET->proxy->owner, SOCKET->address.c_str() )
 
 ReliableUdp::ProxyOwner::ProxyOwner ( ReliableUdp *parent, Socket::Owner *owner )
-    : parent ( parent ), owner ( owner ), gbn ( this ) {}
+    : parent ( parent ), owner ( owner ), gbn ( this, KEEP_ALIVE ) {}
 
 ReliableUdp::ProxyOwner::ProxyOwner ( ReliableUdp *parent, Socket::Owner *owner, const IpAddrPort& address )
-    : parent ( parent ), owner ( owner ), gbn ( this ), address ( address ) {}
+    : parent ( parent ), owner ( owner ), gbn ( this, KEEP_ALIVE ), address ( address ) {}
 
 void ReliableUdp::ProxyOwner::sendGoBackN ( GoBackN *gbn, const MsgPtr& msg )
 {
@@ -45,10 +45,8 @@ void ReliableUdp::ProxyOwner::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
         switch ( msg->getType() )
         {
             case MsgType::ReliableUdpConnected:
-                parent->state = State::Connected;
-
                 LOG_SOCKET ( "Connected", parent );
-
+                parent->state = State::Connected;
                 owner->connectEvent ( parent );
                 break;
 
@@ -68,13 +66,10 @@ void ReliableUdp::ProxyOwner::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
         switch ( msg->getType() )
         {
             case MsgType::ReliableUdpConnect:
+                LOG_SOCKET ( "Accept from server", parent );
                 parent->acceptedSocket.reset ( new ReliableUdp ( parent->proxies[address] ) );
                 parent->acceptedSocket->send ( new ReliableUdpConnected() );
-
-                LOG_SOCKET ( "Accept from server", parent );
-
                 owner->acceptEvent ( parent );
-                parent->acceptedSocket.reset();
                 break;
 
             default:
@@ -82,6 +77,11 @@ void ReliableUdp::ProxyOwner::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
                 break;
         }
     }
+}
+
+void ReliableUdp::ProxyOwner::timeoutGoBackN ( GoBackN *gbn )
+{
+
 }
 
 void ReliableUdp::ProxyOwner::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
@@ -164,6 +164,7 @@ void ReliableUdp::disconnect()
 {
     Socket::disconnect();
     state = State::Disconnected;
+    proxy.reset();
 }
 
 shared_ptr<Socket> ReliableUdp::listen ( Socket::Owner *owner, unsigned port )
@@ -183,7 +184,10 @@ shared_ptr<Socket> ReliableUdp::accept ( Socket::Owner *owner )
 
     assert ( typeid ( *acceptedSocket ) == typeid ( ReliableUdp ) );
     static_cast<ReliableUdp *> ( acceptedSocket.get() )->proxy->owner = owner;
-    return acceptedSocket;
+
+    shared_ptr<Socket> ret;
+    acceptedSocket.swap ( ret );
+    return ret;
 }
 
 void ReliableUdp::send ( Serializable *message, const IpAddrPort& address )

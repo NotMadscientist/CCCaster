@@ -248,7 +248,6 @@ void EventManager::SocketAccept::exec ( NL::Socket *serverSocket, NL::SocketGrou
     it->second->acceptedSocket.reset ( new Socket ( rawSocket ) );
 
     it->second->owner->acceptEvent ( it->second );
-    it->second->acceptedSocket.reset();
 }
 
 void EventManager::SocketDisconnect::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
@@ -264,7 +263,10 @@ void EventManager::SocketDisconnect::exec ( NL::Socket *socket, NL::SocketGroup 
 
     LOG_SOCKET ( "Disconnected", it->second );
     it->second->owner->disconnectEvent ( it->second );
-    it->second->disconnect();
+
+    // Only modify if the socket is still alive
+    if ( em.activeSockets.find ( it->second ) != em.activeSockets.end() )
+        it->second->disconnect();
 }
 
 void EventManager::SocketRead::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
@@ -326,6 +328,10 @@ void EventManager::SocketRead::exec ( NL::Socket *socket, NL::SocketGroup *, voi
 
         LOG ( "Decoded [ %u bytes ] to '%s'", consumed, TO_C_STR ( msg ) );
         it->second->owner->readEvent ( it->second, msg, address );
+
+        // Abort if the socket no longer alive
+        if ( em.activeSockets.find ( it->second ) == em.activeSockets.end() )
+            return;
 
         assert ( consumed <= it->second->readPos );
 

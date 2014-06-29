@@ -46,6 +46,7 @@ class ReliableUdp : public Socket
         // GoBackN callbacks
         void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override;
         void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override;
+        void timeoutGoBackN ( GoBackN *gbn ) override;
 
         // Socket read callback
         void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override;
