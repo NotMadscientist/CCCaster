@@ -109,11 +109,12 @@ static unsigned getLocalPort(int socketHandler) {
 static void checkReadError(const string& functionName) {
 
     #ifdef OS_WIN32
-        if(WSAGetLastError() != WSAEWOULDBLOCK)
-            throw Exception(Exception::ERROR_READ, string("Socket::") + functionName + ": error detected", getSocketErrorCode());
+        int err = WSAGetLastError();
+        if(err != WSAEWOULDBLOCK)
+            throw Exception(Exception::ERROR_READ, string("Socket::") + functionName + ": error detected", err);
     #else
         if(errno != EAGAIN && errno != EWOULDBLOCK)
-            throw Exception(Exception::ERROR_READ, string("Socket::") + functionName + ": error detected", getSocketErrorCode());
+            throw Exception(Exception::ERROR_READ, string("Socket::") + functionName + ": error detected", errno);
     #endif
 }
 
