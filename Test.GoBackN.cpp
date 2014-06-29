@@ -20,7 +20,6 @@ TEST ( GoBackN, SendOnce )
         GoBackN gbn;
         Timer timer;
         MsgPtr msg;
-        bool server;
 
         void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override
         {
@@ -267,4 +266,95 @@ TEST ( GoBackN, SendAndRecv )
         EXPECT_EQ ( client.msgs[i]->getType(), MsgType::TestMessage );
         EXPECT_EQ ( client.msgs[i]->getAs<TestMessage>().str, toString ( "Server %u", i + 1 ) );
     }
+}
+
+TEST ( GoBackN, Timeout )
+{
+    static int done = 0;
+    done = 0;
+
+    struct TestSocket : public GoBackN::Owner, public Socket::Owner, public Timer::Owner
+    {
+        shared_ptr<Socket> socket;
+        IpAddrPort address;
+        GoBackN gbn;
+        Timer timer;
+        bool properTimeout;
+        int stage;
+
+        void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override
+        {
+            socket->send ( msg, address );
+        }
+
+        void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override
+        {
+        }
+
+        void timeoutGoBackN ( GoBackN *gbn ) override
+        {
+            properTimeout = true;
+            ++done;
+
+            if ( done >= 2 )
+            {
+                LOG ( "Stopping because both GoBackN instances have timed out" );
+                EventManager::get().stop();
+            }
+        }
+
+        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
+        {
+            if ( this->address.empty() )
+                this->address = address;
+
+            gbn.recv ( msg );
+        }
+
+        void timerExpired ( Timer *timer ) override
+        {
+            if ( stage == 0 )
+            {
+                if ( socket->isClient() )
+                    gbn.send ( MsgPtr ( new TestMessage ( "Hello server!" ) ) );
+                timer->start ( 1000 );
+            }
+            else if ( stage == 1 )
+            {
+                socket->setPacketLoss ( 100 );
+                timer->start ( 10 * 1000 );
+            }
+            else
+            {
+                LOG ( "Stopping because of timeout" );
+                EventManager::get().stop();
+            }
+
+            ++stage;
+        }
+
+        TestSocket ( unsigned port )
+            : socket ( Socket::listen ( this, port, Protocol::UDP ) )
+            , gbn ( this, 1000 ), timer ( this ), properTimeout ( false ), stage ( 0 )
+        {
+            timer.start ( 1000 );
+        }
+
+        TestSocket ( const string& address, unsigned port )
+            : socket ( Socket::connect ( this, address, port, Protocol::UDP ) ), address ( address, port )
+            , gbn ( this, 1000 ), timer ( this ), properTimeout ( false ), stage ( 0 )
+        {
+            timer.start ( 1000 );
+        }
+    };
+
+    TestSocket server ( TEST_LOCAL_PORT );
+    TestSocket client ( "127.0.0.1", TEST_LOCAL_PORT );
+
+    EventManager::get().start();
+
+    EXPECT_TRUE ( server.socket.get() );
+    EXPECT_TRUE ( client.socket.get() );
+    EXPECT_TRUE ( server.properTimeout );
+    EXPECT_TRUE ( client.properTimeout );
 }

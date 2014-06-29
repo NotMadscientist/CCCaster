@@ -25,18 +25,40 @@ void GoBackN::timerExpired ( Timer *timer )
 {
     assert ( timer == &sendTimer );
 
-    if ( sendList.empty() )
+    if ( sendList.empty() && !keepAlive )
+    {
         return;
+    }
+    else if ( sendList.empty() && keepAlive )
+    {
+        owner->sendGoBackN ( this, NullMsg );
+    }
+    else
+    {
+        if ( sendListPos == sendList.end() )
+            sendListPos = sendList.begin();
 
-    if ( sendListPos == sendList.end() )
-        sendListPos = sendList.begin();
+        LOG_LIST ( sendList );
 
-    LOG_LIST ( sendList );
+        LOG ( "Sending '%s'; sequence=%u; sendSequence=%d",
+              TO_C_STR ( *sendListPos ), ( **sendListPos ).getAs<SerializableSequence>().getSequence(), sendSequence );
+        owner->sendGoBackN ( this, *sendListPos );
+        ++sendListPos;
+    }
 
-    LOG ( "Sending '%s'; sequence=%u; sendSequence=%d",
-          TO_C_STR ( *sendListPos ), ( **sendListPos ).getAs<SerializableSequence>().getSequence(), sendSequence );
-    owner->sendGoBackN ( this, *sendListPos );
-    ++sendListPos;
+    if ( keepAlive )
+    {
+        if ( countDown )
+        {
+            --countDown;
+        }
+        else
+        {
+            LOG ( "owner->timeoutGoBackN ( this=%08x ); owner=%08x", this, owner );
+            owner->timeoutGoBackN ( this );
+            return;
+        }
+    }
 
     sendTimer.start ( SEND_INTERVAL );
 }
@@ -71,10 +93,14 @@ void GoBackN::recv ( const MsgPtr& msg )
 {
     assert ( owner != 0 );
 
+    // Refresh keep alive count down
+    countDown = ( keepAlive / SEND_INTERVAL );
+
     // Ignore non-sequential messages
     if ( !msg.get() || msg->getBaseType() != BaseType::SerializableSequence )
     {
-        LOG ( "Unexpected '%s'; recvSequence=%u", TO_C_STR ( msg ), recvSequence );
+        if ( msg.get() )
+            LOG ( "Unexpected '%s'; recvSequence=%u", TO_C_STR ( msg ), recvSequence );
         return;
     }
 
@@ -110,7 +136,18 @@ void GoBackN::recv ( const MsgPtr& msg )
     owner->recvGoBackN ( this, msg );
 
     if ( recvSequence )
+    {
         owner->sendGoBackN ( this, MsgPtr ( new AckSequence ( recvSequence ) ) );
+
+        if ( keepAlive && !sendTimer.isStarted() )
+            sendTimer.start ( SEND_INTERVAL );
+    }
+}
+
+void GoBackN::setKeepAlive ( const uint64_t& timeout )
+{
+    keepAlive = timeout;
+    countDown = ( timeout / SEND_INTERVAL );
 }
 
 void GoBackN::reset()
@@ -121,8 +158,8 @@ void GoBackN::reset()
     sendTimer.stop();
 }
 
-GoBackN::GoBackN ( Owner *owner )
+GoBackN::GoBackN ( Owner *owner, uint64_t timeout )
     : owner ( owner ), sendSequence ( 0 ), recvSequence ( 0 ), ackSequence ( 0 )
-    , sendListPos ( sendList.end() ), sendTimer ( this )
+    , sendListPos ( sendList.end() ), sendTimer ( this ), keepAlive ( timeout ), countDown ( 0 )
 {
 }

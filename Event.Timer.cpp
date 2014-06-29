@@ -8,7 +8,7 @@
 
 using namespace std;
 
-static long now = 0;
+static uint64_t now = 0;
 
 void EventManager::addTimer ( Timer *timer )
 {
@@ -119,21 +119,21 @@ void EventManager::TimerThread::checkTimers()
 
     for ( Timer *timer : em.activeTimers )
     {
-        if ( timer->delay >= 0 )
+        if ( timer->delay > 0 )
         {
             LOG ( "Started timer %08x; delay='%lu ms'", timer, timer->delay );
 
             timer->expiry = now + timer->delay;
-            timer->delay = -1;
+            timer->delay = 0;
         }
         else if ( now >= timer->expiry )
         {
             LOG ( "Expired timer %08x", timer );
 
             timer->owner->timerExpired ( timer );
-            timer->expiry = -1;
+            timer->expiry = 0;
 
-            if ( timer->delay < 0 )
+            if ( timer->delay == 0 )
                 toRemove.push_back ( timer );
         }
     }

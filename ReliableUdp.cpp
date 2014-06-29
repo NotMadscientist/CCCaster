@@ -7,9 +7,17 @@
 
 using namespace std;
 
+#define TIMEOUT 2000
+
 #define LOG_SOCKET(VERB, SOCKET)                                                                                \
     LOG ( "%s UDP socket %08x; proxy=%08x; owner=%08x; address='%s'",                                           \
           VERB, SOCKET, SOCKET->proxy.get(), SOCKET->proxy->owner, SOCKET->address.c_str() )
+
+ReliableUdp::ProxyOwner::ProxyOwner ( ReliableUdp *parent, Socket::Owner *owner )
+    : parent ( parent ), owner ( owner ), gbn ( this ) {}
+
+ReliableUdp::ProxyOwner::ProxyOwner ( ReliableUdp *parent, Socket::Owner *owner, const IpAddrPort& address )
+    : parent ( parent ), owner ( owner ), gbn ( this ), address ( address ) {}
 
 void ReliableUdp::ProxyOwner::sendGoBackN ( GoBackN *gbn, const MsgPtr& msg )
 {

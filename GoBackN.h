@@ -31,6 +31,9 @@ public:
 
         // Receive a message from GoBackN
         virtual void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) = 0;
+
+        // Timeout GoBackN if keep alive is enabled
+        inline virtual void timeoutGoBackN ( GoBackN *gbn ) {};
     };
 
     Owner *owner;
@@ -52,10 +55,16 @@ private:
     // Timer for repeatedly sending messages
     Timer sendTimer;
 
+    // The timeout for keep alive packets, 0 to disable
+    uint64_t keepAlive, countDown;
+
     // Timer callback that sends the messages
     void timerExpired ( Timer *timer ) override;
 
 public:
+
+    // Constructor
+    GoBackN ( Owner *owner, uint64_t timeout = 0 );
 
     // Send a message via GoBackN
     void send ( SerializableSequence *message );
@@ -63,6 +72,9 @@ public:
 
     // Receive a message from the raw socket
     void recv ( const MsgPtr& msg );
+
+    // Set the timeout for keep alive packets, 0 to disable
+    void setKeepAlive ( const uint64_t& timeout );
 
     // Get the number of messages sent and received
     inline uint32_t getSendCount() const { return sendSequence; }
@@ -73,6 +85,4 @@ public:
 
     // Reset the state of GoBackN
     void reset();
-
-    GoBackN ( Owner *owner );
 };

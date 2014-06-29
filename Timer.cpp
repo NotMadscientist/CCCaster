@@ -3,7 +3,7 @@
 
 using namespace std;
 
-Timer::Timer ( Owner *owner ) : owner ( owner ), delay ( -1 ), expiry ( -1 )
+Timer::Timer ( Owner *owner ) : owner ( owner ), delay ( 0 ), expiry ( 0 )
 {
 }
 
@@ -12,9 +12,9 @@ Timer::~Timer()
     EventManager::get().removeTimer ( this );
 }
 
-void Timer::start ( long delay )
+void Timer::start ( const uint64_t& delay )
 {
-    if ( delay < 0 )
+    if ( delay == 0 )
         return;
 
     this->delay = delay;
@@ -24,7 +24,12 @@ void Timer::start ( long delay )
 
 void Timer::stop()
 {
-    delay = expiry = -1;
+    delay = expiry = 0;
 
     EventManager::get().removeTimer ( this );
+}
+
+const uint64_t& Timer::now() const
+{
+    return expiry;
 }

@@ -289,9 +289,7 @@ void EventManager::SocketRead::exec ( NL::Socket *socket, NL::SocketGroup *, voi
     else
         len = socket->readFrom ( bufferEnd, bufferRemainingSize, & ( address.addr ), & ( address.port ) );
 
-    if ( len == 0 )
-        return;
-
+    // Simulated packet loss
     if ( rand() % 100 < it->second->packetLoss )
     {
         LOG_SOCKET ( "Read from", it->second );
@@ -303,11 +301,21 @@ void EventManager::SocketRead::exec ( NL::Socket *socket, NL::SocketGroup *, voi
 
     LOG_SOCKET ( "Read from", it->second );
     LOG ( "Read [ %u bytes ] from '%s'", len, address.c_str() );
+
+    // Handle zero byte packets
+    if ( len == 0 )
+    {
+        LOG ( "Decoded [ 0 bytes ] to 'NullMsg'" );
+        it->second->owner->readEvent ( it->second, NullMsg, address );
+        return;
+    }
+
     LOG ( "Base64 : %s", toBase64 ( bufferEnd, len ).c_str() );
 
     size_t consumed;
     MsgPtr msg;
 
+    // Try to decode as many messages from the buffer as possible
     for ( ;; )
     {
         consumed = 0;

@@ -13,18 +13,20 @@ public:
 
 private:
 
-    long delay, expiry;
+    uint64_t delay, expiry;
 
 public:
 
     Timer ( Owner *owner );
     ~Timer();
 
-    void start ( long delay );
+    void start ( const uint64_t& delay );
 
     void stop();
 
-    inline bool isStarted() const { return ( delay >= 0 || expiry >= 0 ); }
+    const uint64_t& now() const;
+
+    inline bool isStarted() const { return ( delay > 0 || expiry > 0 ); }
 
     friend class EventManager;
 };

@@ -39,11 +39,9 @@ class ReliableUdp : public Socket
         // Remote address
         IpAddrPort address;
 
-        inline ProxyOwner ( ReliableUdp *parent, Socket::Owner *owner )
-            : parent ( parent ), owner ( owner ), gbn ( this ) {}
-
-        inline ProxyOwner ( ReliableUdp *parent, Socket::Owner *owner, const IpAddrPort& address )
-            : parent ( parent ), owner ( owner ), gbn ( this ), address ( address ) {}
+        // Constructors
+        ProxyOwner ( ReliableUdp *parent, Socket::Owner *owner );
+        ProxyOwner ( ReliableUdp *parent, Socket::Owner *owner, const IpAddrPort& address );
 
         // GoBackN callbacks
         void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override;
@@ -84,8 +82,13 @@ public:
     // Accept a new socket
     std::shared_ptr<Socket> accept ( Socket::Owner *owner ) override;
 
+    // Socket status
     inline bool isConnected() const override { return Socket::isConnected() && ( state == State::Connected ); }
 
+    // Send a protocol message
     void send ( Serializable *message, const IpAddrPort& address = IpAddrPort() ) override;
     void send ( const MsgPtr& msg, const IpAddrPort& address = IpAddrPort() ) override;
+
+    // Set the timeout for keep alive packets, 0 to disable
+    inline void setKeepAlive ( const uint64_t& timeout ) { proxy->gbn.setKeepAlive ( timeout ); };
 };
