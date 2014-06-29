@@ -11,7 +11,7 @@ using namespace std;
 
 #define LOG_SOCKET(VERB, SOCKET)                                                                                \
     LOG ( "%s UDP socket %08x; proxy=%08x; owner=%08x; address='%s'",                                           \
-          VERB, SOCKET, SOCKET->proxy.get(), SOCKET->proxy->owner, SOCKET->address.c_str() )
+          VERB, SOCKET, SOCKET->proxy.get(), SOCKET->proxy.get() ? SOCKET->proxy->owner : 0, SOCKET->address.c_str() )
 
 ReliableUdp::ProxyOwner::ProxyOwner ( ReliableUdp *parent, Socket::Owner *owner )
     : parent ( parent ), owner ( owner ), gbn ( this, KEEP_ALIVE ) {}
@@ -155,13 +155,13 @@ ReliableUdp::ReliableUdp ( Socket::Owner *owner, const string& address, unsigned
 
 ReliableUdp::~ReliableUdp()
 {
-    LOG_SOCKET ( "Disconnect", this );
-
     disconnect();
 }
 
 void ReliableUdp::disconnect()
 {
+    LOG_SOCKET ( "Disconnect", this );
+
     Socket::disconnect();
     state = State::Disconnected;
     proxy.reset();
