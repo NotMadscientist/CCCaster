@@ -90,6 +90,7 @@ public:
     void send ( Serializable *message, const IpAddrPort& address = IpAddrPort() ) override;
     void send ( const MsgPtr& msg, const IpAddrPort& address = IpAddrPort() ) override;
 
-    // Set the timeout for keep alive packets, 0 to disable
+    // Get/set the timeout for keep alive packets, 0 to disable
+    inline const uint64_t& getKeepAlive() const { return proxy->gbn.getKeepAlive(); };
     inline void setKeepAlive ( const uint64_t& timeout ) { proxy->gbn.setKeepAlive ( timeout ); };
 };

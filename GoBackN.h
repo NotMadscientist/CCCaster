@@ -73,7 +73,8 @@ public:
     // Receive a message from the raw socket
     void recv ( const MsgPtr& msg );
 
-    // Set the timeout for keep alive packets, 0 to disable
+    // Get/set the timeout for keep alive packets, 0 to disable
+    inline const uint64_t& getKeepAlive() const { return keepAlive; }
     void setKeepAlive ( const uint64_t& timeout );
 
     // Get the number of messages sent and received

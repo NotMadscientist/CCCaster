@@ -47,7 +47,7 @@ void GoBackN::timerExpired ( Timer *timer )
 
     if ( keepAlive )
     {
-        LOG ( "Keep alive: countDown=%llu", countDown );
+        LOG ( "this=%08x; keepAlive=%llu; countDown=%llu", this, keepAlive, countDown );
 
         if ( countDown )
         {
@@ -99,7 +99,7 @@ void GoBackN::recv ( const MsgPtr& msg )
         // Refresh keep alive count down
         countDown = ( keepAlive / SEND_INTERVAL );
 
-        LOG ( "Keep alive: countDown=%llu", countDown );
+        LOG ( "this=%08x; keepAlive=%llu; countDown=%llu", this, keepAlive, countDown );
     }
 
     // Ignore non-sequential messages
