@@ -30,16 +30,17 @@ TEST ( GoBackN, SendOnce )
         void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override
         {
             this->msg = msg;
-            LOG ( "Stopping because msg has been received" );
+
+            LOG ( "Stopping because the msg was received" );
             EventManager::get().stop();
         }
 
         void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
         {
-            this->msg = msg;
-
             if ( this->address.empty() )
                 this->address = address;
+
+            gbn.recv ( msg );
         }
 
         void timerExpired ( Timer *timer ) override
