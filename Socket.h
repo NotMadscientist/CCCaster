@@ -36,9 +36,6 @@ private:
     // Underlying raw socket
     std::shared_ptr<NL::Socket> socket;
 
-    // Socket address
-    const IpAddrPort address;
-
     // Socket protocol
     const Protocol protocol;
 
@@ -53,6 +50,9 @@ private:
     Socket ( NL::Socket *socket );
 
 protected:
+
+    // Socket address
+    const IpAddrPort address;
 
     // Currently accepted socket
     std::shared_ptr<Socket> acceptedSocket;

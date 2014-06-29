@@ -8,23 +8,22 @@
 using namespace std;
 
 Socket::Socket ( NL::Socket *socket )
-    : owner ( 0 ), socket ( socket ), address ( socket )
-    , protocol ( socket->protocol() == NL::TCP ? Protocol::TCP : Protocol::UDP )
-    , readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 ), packetLoss ( 0 )
+    : owner ( 0 ), socket ( socket ), protocol ( socket->protocol() == NL::TCP ? Protocol::TCP : Protocol::UDP )
+    , readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 ), packetLoss ( 0 ), address ( socket )
 {
     EventManager::get().addSocket ( this );
 }
 
 Socket::Socket ( Owner *owner, unsigned port, Protocol protocol )
-    : owner ( owner ), address ( "", port ), protocol ( protocol )
-    , readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 ), packetLoss ( 0 )
+    : owner ( owner ), protocol ( protocol ), readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 )
+    , packetLoss ( 0 ), address ( "", port )
 {
     EventManager::get().addSocket ( this );
 }
 
 Socket::Socket ( Owner *owner, const string& address, unsigned port, Protocol protocol )
-    : owner ( owner ), address ( address, port ), protocol ( protocol )
-    , readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 ), packetLoss ( 0 )
+    : owner ( owner ), protocol ( protocol ), readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 )
+    , packetLoss ( 0 ), address ( address, port )
 {
     EventManager::get().addSocket ( this );
 }
