@@ -262,11 +262,9 @@ void EventManager::SocketDisconnect::exec ( NL::Socket *socket, NL::SocketGroup 
         return;
 
     LOG_SOCKET ( "Disconnected", it->second );
-    it->second->owner->disconnectEvent ( it->second );
-
-    // Only modify if the socket is still alive
-    if ( em.activeSockets.find ( it->second ) != em.activeSockets.end() )
-        it->second->disconnect();
+    Socket::Owner *owner = it->second->owner;
+    it->second->disconnect();
+    owner->disconnectEvent ( it->second );
 }
 
 void EventManager::SocketRead::exec ( NL::Socket *socket, NL::SocketGroup *, void * )
