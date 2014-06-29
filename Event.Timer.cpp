@@ -12,7 +12,7 @@ static uint64_t now = 0;
 
 void EventManager::addTimer ( Timer *timer )
 {
-    LOG ( "Adding timer %08x; delay='%lu ms'", timer, timer->delay );
+    LOG ( "Adding timer %08x; delay='%llu ms'", timer, timer->delay );
 
     LOCK ( mutex );
     activeTimers.insert ( timer );
@@ -121,7 +121,7 @@ void EventManager::TimerThread::checkTimers()
     {
         if ( timer->delay > 0 )
         {
-            LOG ( "Started timer %08x; delay='%lu ms'", timer, timer->delay );
+            LOG ( "Started timer %08x; delay='%llu ms'", timer, timer->delay );
 
             timer->expiry = now + timer->delay;
             timer->delay = 0;

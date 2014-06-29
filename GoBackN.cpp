@@ -47,6 +47,8 @@ void GoBackN::timerExpired ( Timer *timer )
 
     if ( keepAlive )
     {
+        LOG ( "Keep alive: countDown=%llu", countDown );
+
         if ( countDown )
         {
             --countDown;
@@ -92,8 +94,13 @@ void GoBackN::recv ( const MsgPtr& msg )
 {
     assert ( owner != 0 );
 
-    // Refresh keep alive count down
-    countDown = ( keepAlive / SEND_INTERVAL );
+    if ( keepAlive )
+    {
+        // Refresh keep alive count down
+        countDown = ( keepAlive / SEND_INTERVAL );
+
+        LOG ( "Keep alive: countDown=%llu", countDown );
+    }
 
     // Ignore non-sequential messages
     if ( !msg.get() || msg->getBaseType() != BaseType::SerializableSequence )
@@ -144,6 +151,8 @@ void GoBackN::setKeepAlive ( const uint64_t& timeout )
 {
     keepAlive = timeout;
     countDown = ( timeout / SEND_INTERVAL );
+
+    LOG ( "setKeepAlive ( %llu ); countDown=%llu", keepAlive, countDown );
 }
 
 void GoBackN::reset()
@@ -156,6 +165,6 @@ void GoBackN::reset()
 
 GoBackN::GoBackN ( Owner *owner, uint64_t timeout )
     : owner ( owner ), sendSequence ( 0 ), recvSequence ( 0 ), ackSequence ( 0 )
-    , sendListPos ( sendList.end() ), sendTimer ( this ), keepAlive ( timeout ), countDown ( 0 )
+    , sendListPos ( sendList.end() ), sendTimer ( this ), keepAlive ( timeout ), countDown ( timeout / SEND_INTERVAL )
 {
 }
