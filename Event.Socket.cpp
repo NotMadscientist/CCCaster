@@ -217,6 +217,7 @@ void EventManager::socketListenLoop()
         catch ( const NL::Exception& e )
         {
             LOG ( "[%d] %s", e.nativeErrorCode(), e.what() );
+            assert ( false );
             break;
         }
 
@@ -284,10 +285,31 @@ void EventManager::SocketRead::exec ( NL::Socket *socket, NL::SocketGroup *, voi
     IpAddrPort address ( socket );
     size_t len;
 
-    if ( socket->protocol() == NL::TCP )
-        len = socket->read ( bufferEnd, bufferRemainingSize );
-    else
-        len = socket->readFrom ( bufferEnd, bufferRemainingSize, & ( address.addr ), & ( address.port ) );
+    try
+    {
+        if ( socket->protocol() == NL::TCP )
+            len = socket->read ( bufferEnd, bufferRemainingSize );
+        else
+            len = socket->readFrom ( bufferEnd, bufferRemainingSize, & ( address.addr ), & ( address.port ) );
+    }
+    catch ( const NL::Exception& e )
+    {
+        // Disconnect or remove the socket if an error occured during read
+        LOG ( "[%d] %s", e.nativeErrorCode(), e.what() );
+
+        if ( socket->protocol() == NL::TCP )
+        {
+            LOG_SOCKET ( "Disconnected", it->second );
+            Socket::Owner *owner = it->second->owner;
+            it->second->disconnect();
+            owner->disconnectEvent ( it->second );
+        }
+        else
+        {
+            em.removeSocket ( it->second );
+        }
+        return;
+    }
 
     // Simulated packet loss
     if ( rand() % 100 < it->second->packetLoss )
