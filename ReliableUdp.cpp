@@ -107,6 +107,7 @@ void ReliableUdp::sendGbnAddressed ( const MsgPtr& msg, const IpAddrPort& addres
     else
     {
         proxy.reset ( new ProxyOwner ( this, 0, address ) );
+        proxy->gbn.setKeepAlive ( getKeepAlive() );
         proxies.insert ( make_pair ( address, proxy ) );
     }
 
@@ -125,6 +126,7 @@ void ReliableUdp::recvGbnAddressed ( const MsgPtr& msg, const IpAddrPort& addres
     else
     {
         proxy.reset ( new ProxyOwner ( this, 0, address ) );
+        proxy->gbn.setKeepAlive ( getKeepAlive() );
         proxies.insert ( make_pair ( address, proxy ) );
     }
 
