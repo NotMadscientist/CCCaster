@@ -8,24 +8,30 @@
 using namespace std;
 
 Socket::Socket ( NL::Socket *socket )
-    : owner ( 0 ), socket ( socket ), protocol ( socket->protocol() == NL::TCP ? Protocol::TCP : Protocol::UDP )
-    , readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 ), packetLoss ( 0 ), address ( socket )
+    : socket ( socket ), protocol ( socket->protocol() == NL::TCP ? Protocol::TCP : Protocol::UDP )
+    , readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 ), packetLoss ( 0 ), owner ( 0 ), address ( socket )
 {
     EventManager::get().addSocket ( this );
 }
 
 Socket::Socket ( Owner *owner, unsigned port, Protocol protocol )
-    : owner ( owner ), protocol ( protocol ), readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 )
-    , packetLoss ( 0 ), address ( "", port )
+    : protocol ( protocol ), readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 )
+    , packetLoss ( 0 ), owner ( owner ), address ( "", port )
 {
     EventManager::get().addSocket ( this );
 }
 
 Socket::Socket ( Owner *owner, const string& address, unsigned port, Protocol protocol )
-    : owner ( owner ), protocol ( protocol ), readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 )
-    , packetLoss ( 0 ), address ( address, port )
+    : protocol ( protocol ), readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 )
+    , packetLoss ( 0 ), owner ( owner ), address ( address, port )
 {
     EventManager::get().addSocket ( this );
+}
+
+Socket::Socket ( Owner *owner, const string& address, unsigned port )
+    : socket ( 0 ), protocol ( Protocol::UDP ), readBuffer ( READ_BUFFER_SIZE, ( char ) 0 )
+    , readPos ( 0 ), packetLoss ( 0 ), owner ( owner ), address ( address, port )
+{
 }
 
 Socket::~Socket()
@@ -56,7 +62,7 @@ shared_ptr<Socket> Socket::accept ( Owner *owner )
     if ( !acceptedSocket.get() )
         return 0;
 
-    acceptedSocket->owner = owner;
+    acceptedSocket->setOwner ( owner );
 
     shared_ptr<Socket> ret;
     acceptedSocket.swap ( ret );
@@ -102,7 +108,7 @@ void Socket::send ( char *bytes, size_t len, const IpAddrPort& address )
     }
     else
     {
-        LOG ( "Unconnected socket!" );
+        LOG ( "Cannot send to '%s' over unconnected %s socket!", address.c_str(), TO_C_STR ( protocol ) );
     }
 }
 

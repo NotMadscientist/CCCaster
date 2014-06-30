@@ -28,8 +28,8 @@ public:
         inline virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) {}
     };
 
-    // Socket owner
-    Owner *owner;
+    // Set the socket owner
+    inline virtual void setOwner ( Owner *owner ) { this->owner = owner; }
 
 private:
 
@@ -51,6 +51,9 @@ private:
 
 protected:
 
+    // Socket owner
+    Owner *owner;
+
     // Socket address
     const IpAddrPort address;
 
@@ -62,6 +65,9 @@ protected:
 
     // Construct a client socket
     Socket ( Owner *owner, const std::string& address, unsigned port, Protocol protocol );
+
+    // Construct a proxy socket (for UDP server clients)
+    Socket ( Owner *owner, const std::string& address, unsigned port );
 
 public:
 

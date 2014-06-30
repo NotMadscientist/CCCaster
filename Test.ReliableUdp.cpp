@@ -5,11 +5,11 @@
 
 TEST_CONNECT                ( ReliableUdp, Udp, PACKET_LOSS, KEEP_ALIVE, 60 * 1000 )
 
-TEST_TIMEOUT                ( ReliableUdp, Udp, PACKET_LOSS, KEEP_ALIVE, 1000 )
+TEST_TIMEOUT                ( ReliableUdp, Udp, 0, 1000, 1000 )
 
-TEST_CLIENT_DISCONNECT      ( ReliableUdp, Udp, 0, 0, 2000 )
+TEST_CLIENT_DISCONNECT      ( ReliableUdp, Udp, 0, 1000, 3000 )
 
-TEST_SERVER_DISCONNECT      ( ReliableUdp, Udp, 0, 0, 2000 )
+TEST_SERVER_DISCONNECT      ( ReliableUdp, Udp, 0, 1000, 5000 )
 
 TEST_SEND                   ( ReliableUdp, Udp, PACKET_LOSS, KEEP_ALIVE, 120 * 1000 )
 

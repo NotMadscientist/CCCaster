@@ -9,150 +9,155 @@ using namespace std;
 
 #define KEEP_ALIVE 2000
 
-#define LOG_SOCKET(VERB, SOCKET)                                                                                \
-    LOG ( "%s UDP socket %08x; proxy=%08x; owner=%08x; address='%s'",                                           \
-          VERB, SOCKET, SOCKET->proxy.get(), SOCKET->proxy.get() ? SOCKET->proxy->owner : 0, SOCKET->address.c_str() )
+#define LOG_SOCKET(VERB, SOCKET)                                                                            \
+    LOG ( "%s UDP socket %08x; parent=%08x; owner=%08x; address='%s'",                                      \
+          VERB, SOCKET, SOCKET->parentSocket, SOCKET->proxiedOwner, SOCKET->address.c_str() )
 
-ReliableUdp::ProxyOwner::ProxyOwner ( ReliableUdp *parent, Socket::Owner *owner )
-    : parent ( parent ), owner ( owner ), gbn ( this, KEEP_ALIVE ) {}
-
-ReliableUdp::ProxyOwner::ProxyOwner ( ReliableUdp *parent, Socket::Owner *owner, const IpAddrPort& address )
-    : parent ( parent ), owner ( owner ), gbn ( this, KEEP_ALIVE ), address ( address ) {}
-
-void ReliableUdp::ProxyOwner::sendGoBackN ( GoBackN *gbn, const MsgPtr& msg )
+void ReliableUdp::sendGoBackN ( GoBackN *gbn, const MsgPtr& msg )
 {
-    assert ( parent != 0 );
     assert ( gbn == &this->gbn );
-    assert ( gbn->owner == this );
+    assert ( !getRemoteAddress().empty() );
 
-    parent->Socket::send ( msg, address );
+    if ( state == State::Disconnected )
+        return;
+
+    if ( parentSocket == 0 )
+        Socket::send ( msg, getRemoteAddress() );
+    else
+        parentSocket->Socket::send ( msg, getRemoteAddress() );
 }
 
-void ReliableUdp::ProxyOwner::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
+void ReliableUdp::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
 {
-    assert ( parent != 0 );
-    assert ( parent->proxy.get() != 0 );
     assert ( gbn == &this->gbn );
-    assert ( gbn->owner == this );
+    assert ( !getRemoteAddress().empty() );
 
-    LOG_SOCKET ( TO_C_STR ( "Got '%s' from", TO_C_STR ( msg ) ), parent );
+    if ( state == State::Disconnected )
+        return;
 
-    if ( parent->proxy.get() == this )
+    LOG_SOCKET ( TO_C_STR ( "Got '%s' from", TO_C_STR ( msg ) ), this );
+
+    if ( parentSocket == 0 )
     {
-        assert ( parent->owner == this );
-        assert ( owner != 0 );
-
         switch ( msg->getType() )
         {
-            case MsgType::ReliableUdpConnected:
-                LOG_SOCKET ( "Connected", parent );
-                parent->state = State::Connected;
-                owner->connectEvent ( parent );
+            case MsgType::UdpConnect:
+                if ( msg->getAs<UdpConnect>().type == UdpConnect::Type::Reply )
+                {
+                    LOG_SOCKET ( "Connected", this );
+                    send ( new UdpConnect ( UdpConnect::Type::Final ) );
+                    state = State::Connected;
+                    proxiedOwner->connectEvent ( this );
+                }
                 break;
 
             default:
-                owner->readEvent ( parent, msg, address );
+                proxiedOwner->readEvent ( this, msg, getRemoteAddress() );
                 break;
         }
     }
     else
     {
-        Socket::Owner *owner = ( this->owner ? this->owner : parent->proxy->owner );
-
-        assert ( parent->proxies.find ( address ) != parent->proxies.end() );
-        assert ( parent->proxies[address].get() == this );
-        assert ( owner != 0 );
+        assert ( parentSocket->acceptedSockets.find ( getRemoteAddress() ) != parentSocket->acceptedSockets.end() );
 
         switch ( msg->getType() )
         {
-            case MsgType::ReliableUdpConnect:
-                LOG_SOCKET ( "Accept from server", parent );
-                parent->acceptedSocket.reset ( new ReliableUdp ( parent->proxies[address] ) );
-                parent->acceptedSocket->send ( new ReliableUdpConnected() );
-                owner->acceptEvent ( parent );
+            case MsgType::UdpConnect:
+                switch ( msg->getAs<UdpConnect>().type )
+                {
+                    case UdpConnect::Type::Request:
+                        parentSocket->acceptedSockets[getRemoteAddress()]->send (
+                            new UdpConnect ( UdpConnect::Type::Reply ) );
+                        break;
+
+                    case UdpConnect::Type::Final:
+                        LOG_SOCKET ( "Accept from server", parentSocket );
+                        parentSocket->acceptedSocket = parentSocket->acceptedSockets[getRemoteAddress()];
+                        parentSocket->proxiedOwner->acceptEvent ( parentSocket );
+                        break;
+
+                    default:
+                        break;
+                }
                 break;
 
             default:
-                owner->readEvent ( parent, msg, address );
+                proxiedOwner->readEvent ( this, msg, getRemoteAddress() );
                 break;
         }
     }
 }
 
-void ReliableUdp::ProxyOwner::timeoutGoBackN ( GoBackN *gbn )
+void ReliableUdp::timeoutGoBackN ( GoBackN *gbn )
 {
+    assert ( gbn == &this->gbn );
+    assert ( !getRemoteAddress().empty() );
 
+    LOG_SOCKET ( "Disconnected", this );
+    Socket::Owner *owner = ( parentSocket == 0 ? proxiedOwner : parentSocket->proxiedOwner );
+    disconnect();
+    owner->disconnectEvent ( this );
 }
 
-void ReliableUdp::ProxyOwner::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
+void ReliableUdp::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
 {
-    assert ( parent->owner == this );
-    assert ( parent == socket );
+    assert ( owner == this );
+    assert ( socket == this );
 
-    if ( parent->isClient() )
-        parent->proxy->gbn.recv ( msg );
+    if ( isClient() )
+        gbn.recv ( msg );
     else
-        parent->recvGbnAddressed ( msg, address );
+        gbnRecvAddressed ( msg, address );
 }
 
-void ReliableUdp::sendGbnAddressed ( const MsgPtr& msg, const IpAddrPort& address )
+void ReliableUdp::gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address )
 {
-    shared_ptr<ProxyOwner> proxy;
+    ReliableUdp *socket;
 
-    auto it = proxies.find ( address );
-    if ( it != proxies.end() )
+    auto it = acceptedSockets.find ( address );
+    if ( it != acceptedSockets.end() )
     {
-        proxy = it->second;
+        assert ( typeid ( *it->second ) == typeid ( ReliableUdp ) );
+        socket = static_cast<ReliableUdp *> ( it->second.get() );
+
+        if ( socket->state == State::Disconnected )
+            return;
     }
-    else
+    else if ( msg.get() && msg->getType() == MsgType::UdpConnect
+              && msg->getAs<UdpConnect>().type == UdpConnect::Type::Request )
     {
-        proxy.reset ( new ProxyOwner ( this, 0, address ) );
-        proxy->gbn.setKeepAlive ( getKeepAlive() );
-        proxies.insert ( make_pair ( address, proxy ) );
-    }
-
-    proxy->gbn.send ( msg );
-}
-
-void ReliableUdp::recvGbnAddressed ( const MsgPtr& msg, const IpAddrPort& address )
-{
-    shared_ptr<ProxyOwner> proxy;
-
-    auto it = proxies.find ( address );
-    if ( it != proxies.end() )
-    {
-        proxy = it->second;
+        // Only a connect request is allowed to open a new accepted socket
+        socket = new ReliableUdp ( this, 0, address.addr, address.port );
+        acceptedSockets.insert ( make_pair ( address, shared_ptr<Socket> ( socket ) ) );
     }
     else
     {
-        proxy.reset ( new ProxyOwner ( this, 0, address ) );
-        proxy->gbn.setKeepAlive ( getKeepAlive() );
-        proxies.insert ( make_pair ( address, proxy ) );
+        return;
     }
 
-    proxy->gbn.recv ( msg );
-}
-
-ReliableUdp::ReliableUdp ( const shared_ptr<ProxyOwner>& proxy )
-    : Socket ( proxy.get(), proxy->address.addr, proxy->address.port, Protocol::UDP ), state ( State::Connected )
-    , proxy ( proxy )
-{
+    socket->gbn.recv ( msg );
 }
 
 ReliableUdp::ReliableUdp ( Socket::Owner *owner, unsigned port )
-    : Socket ( 0, port, Protocol::UDP ), state ( State::Listening ), proxy ( new ProxyOwner ( this, owner ) )
+    : Socket ( this, port, Protocol::UDP ), state ( State::Listening )
+    , parentSocket ( 0 ), proxiedOwner ( owner ), gbn ( this, KEEP_ALIVE )
 {
-    this->owner = proxy.get();
+    LOG_SOCKET ( "Listening to server", this );
 }
 
 ReliableUdp::ReliableUdp ( Socket::Owner *owner, const string& address, unsigned port )
-    : Socket ( 0, address, port, Protocol::UDP ), state ( State::Connecting )
-    , proxy ( new ProxyOwner ( this, owner, IpAddrPort ( address, port ) ) )
+    : Socket ( this, address, port, Protocol::UDP ), state ( State::Connecting )
+    , parentSocket ( 0 ), proxiedOwner ( owner ), gbn ( this, KEEP_ALIVE )
 {
-    this->owner = proxy.get();
-    send ( new ReliableUdpConnect() );
-
     LOG_SOCKET ( "Connecting", this );
+    send ( new UdpConnect ( UdpConnect::Type::Request ) );
+}
+
+ReliableUdp::ReliableUdp ( ReliableUdp *parent, Socket::Owner *owner, const string& address, unsigned port )
+    : Socket ( this, address, port ), state ( State::Connected )
+    , parentSocket ( parent ), proxiedOwner ( owner ), gbn ( this, parent->getKeepAlive() )
+{
+    LOG_SOCKET ( "Pending", this );
 }
 
 ReliableUdp::~ReliableUdp()
@@ -164,9 +169,23 @@ void ReliableUdp::disconnect()
 {
     LOG_SOCKET ( "Disconnect", this );
 
-    Socket::disconnect();
+    if ( parentSocket == 0 )
+        Socket::disconnect();
+
     state = State::Disconnected;
-    proxy.reset();
+
+    gbn.reset();
+    gbn.setKeepAlive ( 0 );
+
+    for ( auto& kv : acceptedSockets )
+    {
+        assert ( typeid ( *kv.second ) == typeid ( ReliableUdp ) );
+        assert ( static_cast<ReliableUdp *> ( kv.second.get() )->parentSocket == this );
+        static_cast<ReliableUdp *> ( kv.second.get() )->parentSocket = 0;
+    }
+
+    if ( parentSocket != 0 )
+        parentSocket->acceptedSockets.erase ( getRemoteAddress() );
 }
 
 shared_ptr<Socket> ReliableUdp::listen ( Socket::Owner *owner, unsigned port )
@@ -184,8 +203,7 @@ shared_ptr<Socket> ReliableUdp::accept ( Socket::Owner *owner )
     if ( !acceptedSocket.get() )
         return 0;
 
-    assert ( typeid ( *acceptedSocket ) == typeid ( ReliableUdp ) );
-    static_cast<ReliableUdp *> ( acceptedSocket.get() )->proxy->owner = owner;
+    acceptedSocket->setOwner ( owner );
 
     shared_ptr<Socket> ret;
     acceptedSocket.swap ( ret );
@@ -194,12 +212,18 @@ shared_ptr<Socket> ReliableUdp::accept ( Socket::Owner *owner )
 
 void ReliableUdp::send ( Serializable *message, const IpAddrPort& address )
 {
+    if ( state == State::Disconnected )
+        return;
+
     MsgPtr msg ( message );
     send ( msg, address );
 }
 
 void ReliableUdp::send ( const MsgPtr& msg, const IpAddrPort& address )
 {
+    if ( state == State::Disconnected )
+        return;
+
     switch ( msg->getBaseType() )
     {
         case BaseType::SerializableMessage:
@@ -207,10 +231,8 @@ void ReliableUdp::send ( const MsgPtr& msg, const IpAddrPort& address )
             break;
 
         case BaseType::SerializableSequence:
-            if ( address.empty() || address == getRemoteAddress() )
-                proxy->gbn.send ( msg );
-            else
-                sendGbnAddressed ( msg, address );
+            assert ( !getRemoteAddress().empty() );
+            gbn.send ( msg );
             break;
 
         default:

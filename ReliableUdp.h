@@ -4,67 +4,57 @@
 #include "GoBackN.h"
 #include "Log.h"
 
-struct ReliableUdpConnect : public SerializableSequence
+struct UdpConnect : public SerializableSequence
 {
-    ReliableUdpConnect() {}
+    enum class Type : uint8_t { Request, Reply, Final } type;
+
+    UdpConnect() {}
+
+    UdpConnect ( Type type ) : type ( type ) {}
+
     MsgType getType() const override;
+
 protected:
-    void serialize ( cereal::BinaryOutputArchive& ar ) const override {}
-    void deserialize ( cereal::BinaryInputArchive& ar ) override {}
+
+    void serialize ( cereal::BinaryOutputArchive& ar ) const override { ar ( type ); }
+
+    void deserialize ( cereal::BinaryInputArchive& ar ) override { ar ( type ); }
 };
 
-struct ReliableUdpConnected : public SerializableSequence
+class ReliableUdp : public Socket, public GoBackN::Owner, public Socket::Owner
 {
-    ReliableUdpConnected() {}
-    MsgType getType() const override;
-protected:
-    void serialize ( cereal::BinaryOutputArchive& ar ) const override {}
-    void deserialize ( cereal::BinaryInputArchive& ar ) override {}
-};
-
-class ReliableUdp : public Socket
-{
-    // Proxy socket owner that transfers msgs via GoBackN
-    struct ProxyOwner : public GoBackN::Owner, public Socket::Owner
-    {
-        // Parent socket
-        ReliableUdp *parent;
-
-        // Proxied socket owner
-        Socket::Owner *owner;
-
-        // GoBackN instance
-        GoBackN gbn;
-
-        // Remote address
-        IpAddrPort address;
-
-        // Constructors
-        ProxyOwner ( ReliableUdp *parent, Socket::Owner *owner );
-        ProxyOwner ( ReliableUdp *parent, Socket::Owner *owner, const IpAddrPort& address );
-
-        // GoBackN callbacks
-        void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override;
-        void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override;
-        void timeoutGoBackN ( GoBackN *gbn ) override;
-
-        // Socket read callback
-        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override;
-    };
-
     // Connection state
     enum class State : uint8_t { Listening, Connecting, Connected, Disconnected } state;
 
-    // Proxy socket owners
-    std::shared_ptr<ProxyOwner> proxy;
-    std::unordered_map<IpAddrPort, std::shared_ptr<ProxyOwner>> proxies;
+    // Parent socket
+    ReliableUdp *parentSocket;
 
-    void sendGbnAddressed ( const MsgPtr& msg, const IpAddrPort& address );
-    void recvGbnAddressed ( const MsgPtr& msg, const IpAddrPort& address );
+    // Proxied socket owner
+    Socket::Owner *proxiedOwner;
 
-    ReliableUdp ( const std::shared_ptr<ProxyOwner>& proxy );
+    // GoBackN instance
+    GoBackN gbn;
+
+    // Accepted sockets
+    std::unordered_map<IpAddrPort, std::shared_ptr<Socket>> acceptedSockets;
+
+    // GoBackN callbacks
+    void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override;
+    void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override;
+    void timeoutGoBackN ( GoBackN *gbn ) override;
+
+    // Socket read callbacks
+    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override;
+    void gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address );
+
+    // Construct a server socket
     ReliableUdp ( Socket::Owner *owner, unsigned port );
+
+    // Construct a client socket
     ReliableUdp ( Socket::Owner *owner, const std::string& address, unsigned port );
+
+    // Construct a proxy socket (for UDP server clients)
+    ReliableUdp ( ReliableUdp *parent, Socket::Owner *owner, const std::string& address, unsigned port );
 
 public:
 
@@ -84,13 +74,16 @@ public:
     std::shared_ptr<Socket> accept ( Socket::Owner *owner ) override;
 
     // Socket status
-    inline bool isConnected() const override { return Socket::isConnected() && ( state == State::Connected ); }
+    inline bool isConnected() const override { return ( state == State::Connected ); }
 
     // Send a protocol message
     void send ( Serializable *message, const IpAddrPort& address = IpAddrPort() ) override;
     void send ( const MsgPtr& msg, const IpAddrPort& address = IpAddrPort() ) override;
 
     // Get/set the timeout for keep alive packets, 0 to disable
-    inline const uint64_t& getKeepAlive() const { return proxy->gbn.getKeepAlive(); };
-    inline void setKeepAlive ( const uint64_t& timeout ) { proxy->gbn.setKeepAlive ( timeout ); };
+    inline const uint64_t& getKeepAlive() const { return gbn.getKeepAlive(); };
+    inline void setKeepAlive ( const uint64_t& timeout ) { gbn.setKeepAlive ( timeout ); };
+
+    // Set the socket owner
+    inline void setOwner ( Socket::Owner *owner ) { proxiedOwner = owner; }
 };
