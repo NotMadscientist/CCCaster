@@ -6,6 +6,18 @@
 
 #define TO_C_STR(...) toString ( __VA_ARGS__ ).c_str()
 
+#define LOG_LIST(LIST, TO_STRING)                                       \
+    do {                                                                \
+        if ( !Log::isEnabled )                                          \
+            break;                                                      \
+        string list;                                                    \
+        for ( const auto& val : LIST )                                  \
+            list += " " + TO_STRING ( val ) + ",";                      \
+        if ( !LIST.empty() )                                            \
+            list [ list.size() - 1 ] = ' ';                             \
+        LOG ( "this=%08x; "#LIST "=[%s]", this, list.c_str() );         \
+    } while ( 0 )
+
 // Lexical cast
 template<typename T>
 inline std::string toString ( T val )
@@ -15,13 +27,7 @@ inline std::string toString ( T val )
     return ss.str();
 }
 
-template<typename T>
-inline std::string toString ( const char *fmt, T val )
-{
-    char buffer[4096];
-    std::sprintf ( buffer, fmt, val );
-    return buffer;
-}
+std::string toString ( const char *fmt, ... );
 
 inline std::string toBase64 ( const std::string& bytes )
 {

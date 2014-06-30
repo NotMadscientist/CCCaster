@@ -27,7 +27,7 @@ void Log::open ( const string& name, bool prependPidToName )
     else
     {
         if ( prependPidToName )
-            fd = fopen ( ( "log" + toString ( "%08d", _getpid() ) + name ).c_str(), "w" );
+            fd = fopen ( ( toString ( "log%08d", _getpid() ) + name ).c_str(), "w" );
         else
             fd = fopen ( name.c_str(), "w" );
 

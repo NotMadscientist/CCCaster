@@ -1,6 +1,7 @@
 #include "Event.h"
 #include "Timer.h"
 #include "Log.h"
+#include "Util.h"
 
 #include <windows.h>
 
@@ -10,12 +11,21 @@ using namespace std;
 
 static uint64_t now = 0;
 
+string Timer::formatTimer ( const Timer *timer )
+{
+    return toString ( "%08x:'%llu ms'", timer, timer->delay );
+}
+
 void EventManager::addTimer ( Timer *timer )
 {
     LOG ( "Adding timer %08x; delay='%llu ms'", timer, timer->delay );
 
     LOCK ( mutex );
+
+//     LOG_LIST ( activeTimers, Timer::formatTimer );
+
     activeTimers.insert ( timer );
+
     timersCond.signal();
 }
 
@@ -24,7 +34,10 @@ void EventManager::removeTimer ( Timer *timer )
     LOG ( "Removing timer %08x", timer );
 
     LOCK ( mutex );
+
     activeTimers.erase ( timer );
+
+//     LOG_LIST ( activeTimers, Timer::formatTimer );
 }
 
 void EventManager::TimerThread::start()
@@ -108,6 +121,7 @@ void EventManager::TimerThread::run()
         timeEndPeriod ( 1 );
     }
 
+    Lock lock ( em.mutex );
     em.activeTimers.clear();
 }
 
@@ -136,11 +150,15 @@ void EventManager::TimerThread::checkTimers()
             if ( timer->delay == 0 )
                 toRemove.push_back ( timer );
         }
+
     }
 
     for ( Timer *timer : toRemove )
     {
         LOG ( "Removed timer %08x", timer );
+
         em.activeTimers.erase ( timer );
+
+//         LOG_LIST ( em.activeTimers, Timer::formatTimer );
     }
 }

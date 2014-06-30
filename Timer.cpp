@@ -25,8 +25,6 @@ void Timer::start ( const uint64_t& delay )
 void Timer::stop()
 {
     delay = expiry = 0;
-
-    EventManager::get().removeTimer ( this );
 }
 
 const uint64_t& Timer::now() const

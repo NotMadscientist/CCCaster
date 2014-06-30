@@ -9,17 +9,11 @@
 
 using namespace std;
 
-#define LOG_LIST(LIST)                                                                                                \
-    do {                                                                                                              \
-        if ( !Log::isEnabled )                                                                                        \
-            break;                                                                                                    \
-        string list;                                                                                                  \
-        for ( const MsgPtr& msg : LIST )                                                                              \
-            list += toString ( " %u:'", msg->getAs<SerializableSequence>().getSequence() ) + toString ( msg ) + "',"; \
-        if ( !LIST.empty() )                                                                                          \
-            list [ list.size() - 1 ] = ' ';                                                                           \
-        LOG ( "this=%08x; "#LIST "=[%s]", this, list.c_str() );                                                       \
-    } while ( 0 )
+string formatSerializableSequence ( const MsgPtr& msg )
+{
+    assert ( msg->getBaseType() == BaseType::SerializableSequence );
+    return toString ( "%u:'%s'", msg->getAs<SerializableSequence>().getSequence(), TO_C_STR ( msg ) );
+}
 
 void GoBackN::timerExpired ( Timer *timer )
 {
@@ -38,7 +32,7 @@ void GoBackN::timerExpired ( Timer *timer )
         if ( sendListPos == sendList.end() )
             sendListPos = sendList.begin();
 
-        LOG_LIST ( sendList );
+        LOG_LIST ( sendList, formatSerializableSequence );
 
         LOG ( "Sending '%s'; sequence=%u; sendSequence=%d",
               TO_C_STR ( *sendListPos ), ( **sendListPos ).getAs<SerializableSequence>().getSequence(), sendSequence );
@@ -84,7 +78,7 @@ void GoBackN::send ( const MsgPtr& msg )
 
     sendList.push_back ( msg );
 
-    LOG_LIST ( sendList );
+    LOG_LIST ( sendList, formatSerializableSequence );
 
     if ( !sendTimer.isStarted() )
         sendTimer.start ( SEND_INTERVAL );
@@ -125,7 +119,7 @@ void GoBackN::recv ( const MsgPtr& msg )
             sendList.pop_front();
         sendListPos = sendList.end();
 
-        LOG_LIST ( sendList );
+        LOG_LIST ( sendList, formatSerializableSequence );
         return;
     }
 
