@@ -39,13 +39,13 @@ void ReliableUdp::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
 
     if ( parentSocket == 0 )
     {
-        switch ( msg->getType() )
+        switch ( msg->getMsgType() )
         {
             case MsgType::UdpConnect:
-                if ( msg->getAs<UdpConnect>().type == UdpConnect::Type::Reply )
+                if ( msg->getAs<UdpConnect>().connectType == UdpConnect::ConnectType::Reply )
                 {
                     LOG_SOCKET ( "Connected", this );
-                    send ( new UdpConnect ( UdpConnect::Type::Final ) );
+                    send ( new UdpConnect ( UdpConnect::ConnectType::Final ) );
                     state = State::Connected;
                     proxiedOwner->connectEvent ( this );
                 }
@@ -60,17 +60,17 @@ void ReliableUdp::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
     {
         assert ( parentSocket->acceptedSockets.find ( getRemoteAddress() ) != parentSocket->acceptedSockets.end() );
 
-        switch ( msg->getType() )
+        switch ( msg->getMsgType() )
         {
             case MsgType::UdpConnect:
-                switch ( msg->getAs<UdpConnect>().type )
+                switch ( msg->getAs<UdpConnect>().connectType )
                 {
-                    case UdpConnect::Type::Request:
+                    case UdpConnect::ConnectType::Request:
                         parentSocket->acceptedSockets[getRemoteAddress()]->send (
-                            new UdpConnect ( UdpConnect::Type::Reply ) );
+                            new UdpConnect ( UdpConnect::ConnectType::Reply ) );
                         break;
 
-                    case UdpConnect::Type::Final:
+                    case UdpConnect::ConnectType::Final:
                         LOG_SOCKET ( "Accept from server", parentSocket );
                         parentSocket->acceptedSocket = parentSocket->acceptedSockets[getRemoteAddress()];
                         parentSocket->proxiedOwner->acceptEvent ( parentSocket );
@@ -123,8 +123,8 @@ void ReliableUdp::gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& addres
         if ( socket->state == State::Disconnected )
             return;
     }
-    else if ( msg.get() && msg->getType() == MsgType::UdpConnect
-              && msg->getAs<UdpConnect>().type == UdpConnect::Type::Request )
+    else if ( msg.get() && msg->getMsgType() == MsgType::UdpConnect
+              && msg->getAs<UdpConnect>().connectType == UdpConnect::ConnectType::Request )
     {
         // Only a connect request is allowed to open a new accepted socket
         socket = new ReliableUdp ( this, 0, address.addr, address.port );
@@ -150,7 +150,7 @@ ReliableUdp::ReliableUdp ( Socket::Owner *owner, const string& address, unsigned
     , parentSocket ( 0 ), proxiedOwner ( owner ), gbn ( this, KEEP_ALIVE )
 {
     LOG_SOCKET ( "Connecting", this );
-    send ( new UdpConnect ( UdpConnect::Type::Request ) );
+    send ( new UdpConnect ( UdpConnect::ConnectType::Request ) );
 }
 
 ReliableUdp::ReliableUdp ( ReliableUdp *parent, Socket::Owner *owner, const string& address, unsigned port )

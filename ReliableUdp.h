@@ -6,19 +6,19 @@
 
 struct UdpConnect : public SerializableSequence
 {
-    enum class Type : uint8_t { Request, Reply, Final } type;
+    enum class ConnectType : uint8_t { Request, Reply, Final } connectType;
 
     UdpConnect() {}
 
-    UdpConnect ( Type type ) : type ( type ) {}
+    UdpConnect ( ConnectType connectType ) : connectType ( connectType ) {}
 
-    MsgType getType() const override;
+    MsgType getMsgType() const override;
 
 protected:
 
-    void serialize ( cereal::BinaryOutputArchive& ar ) const override { ar ( type ); }
+    void serialize ( cereal::BinaryOutputArchive& ar ) const override { ar ( connectType ); }
 
-    void deserialize ( cereal::BinaryInputArchive& ar ) override { ar ( type ); }
+    void deserialize ( cereal::BinaryInputArchive& ar ) override { ar ( connectType ); }
 };
 
 class ReliableUdp : public Socket, public GoBackN::Owner, public Socket::Owner

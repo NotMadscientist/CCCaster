@@ -107,7 +107,7 @@ void GoBackN::recv ( const MsgPtr& msg )
     uint32_t sequence = msg->getAs<SerializableSequence>().getSequence();
 
     // Check for ACK messages
-    if ( msg->getType() == MsgType::AckSequence )
+    if ( msg->getMsgType() == MsgType::AckSequence )
     {
         if ( sequence > ackSequence )
             ackSequence = sequence;

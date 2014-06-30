@@ -228,7 +228,7 @@ struct BaseTestSocket<ReliableUdp, keepAlive, timeout> : public Socket::Owner, p
         EXPECT_EQ ( server.socket->getPendingCount(), 0 );                                                          \
         EXPECT_TRUE ( server.msg.get() );                                                                           \
         if ( server.msg.get() ) {                                                                                   \
-            EXPECT_EQ ( server.msg->getType(), MsgType::TestMessage );                                              \
+            EXPECT_EQ ( server.msg->getMsgType(), MsgType::TestMessage );                                           \
             EXPECT_EQ ( server.msg->getAs<TestMessage>().str, "Hello server!" );                                    \
         }                                                                                                           \
         EXPECT_TRUE ( client.socket.get() );                                                                        \
@@ -236,7 +236,7 @@ struct BaseTestSocket<ReliableUdp, keepAlive, timeout> : public Socket::Owner, p
             EXPECT_TRUE ( client.socket->isConnected() );                                                           \
         EXPECT_TRUE ( client.msg.get() );                                                                           \
         if ( client.msg.get() ) {                                                                                   \
-            EXPECT_EQ ( client.msg->getType(), MsgType::TestMessage );                                              \
+            EXPECT_EQ ( client.msg->getMsgType(), MsgType::TestMessage );                                           \
             EXPECT_EQ ( client.msg->getAs<TestMessage>().str, "Hello client!" );                                    \
         }                                                                                                           \
     }
@@ -280,7 +280,7 @@ struct BaseTestSocket<ReliableUdp, keepAlive, timeout> : public Socket::Owner, p
             EXPECT_TRUE ( server.accepted->isConnected() );                                                         \
         EXPECT_TRUE ( server.msg.get() );                                                                           \
         if ( server.msg.get() ) {                                                                                   \
-            EXPECT_EQ ( server.msg->getType(), MsgType::TestMessage );                                              \
+            EXPECT_EQ ( server.msg->getMsgType(), MsgType::TestMessage );                                           \
             EXPECT_EQ ( server.msg->getAs<TestMessage>().str, "Hello server!" );                                    \
         }                                                                                                           \
         EXPECT_TRUE ( client.socket.get() );                                                                        \
@@ -288,7 +288,7 @@ struct BaseTestSocket<ReliableUdp, keepAlive, timeout> : public Socket::Owner, p
             EXPECT_TRUE ( client.socket->isConnected() );                                                           \
         EXPECT_TRUE ( client.msg.get() );                                                                           \
         if ( client.msg.get() ) {                                                                                   \
-            EXPECT_EQ ( client.msg->getType(), MsgType::TestMessage );                                              \
+            EXPECT_EQ ( client.msg->getMsgType(), MsgType::TestMessage );                                           \
             EXPECT_EQ ( client.msg->getAs<TestMessage>().str, "Hello client!" );                                    \
         }                                                                                                           \
     }
@@ -328,7 +328,7 @@ struct BaseTestSocket<ReliableUdp, keepAlive, timeout> : public Socket::Owner, p
         EXPECT_EQ ( server.socket->getPendingCount(), 0 );                                                          \
         EXPECT_TRUE ( server.msg.get() );                                                                           \
         if ( server.msg.get() ) {                                                                                   \
-            EXPECT_EQ ( server.msg->getType(), MsgType::TestMessage );                                              \
+            EXPECT_EQ ( server.msg->getMsgType(), MsgType::TestMessage );                                           \
             EXPECT_EQ ( server.msg->getAs<TestMessage>().str, "Hello server!" );                                    \
         }                                                                                                           \
         EXPECT_TRUE ( client.socket.get() );                                                                        \

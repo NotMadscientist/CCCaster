@@ -80,7 +80,7 @@ TEST ( GoBackN, SendOnce )
 
     if ( server.msg.get() )
     {
-        EXPECT_EQ ( server.msg->getType(), MsgType::TestMessage );
+        EXPECT_EQ ( server.msg->getMsgType(), MsgType::TestMessage );
         EXPECT_EQ ( server.msg->getAs<TestMessage>().str, "Hello server!" );
     }
 }
@@ -162,7 +162,7 @@ TEST ( GoBackN, SendSequential )
     for ( size_t i = 0; i < server.msgs.size(); ++i )
     {
         LOG ( "Server got '%s'", server.msgs[i]->getAs<TestMessage>().str.c_str() );
-        EXPECT_EQ ( server.msgs[i]->getType(), MsgType::TestMessage );
+        EXPECT_EQ ( server.msgs[i]->getMsgType(), MsgType::TestMessage );
         EXPECT_EQ ( server.msgs[i]->getAs<TestMessage>().str, toString ( "Message %u", i + 1 ) );
     }
 }
@@ -254,7 +254,7 @@ TEST ( GoBackN, SendAndRecv )
     for ( size_t i = 0; i < server.msgs.size(); ++i )
     {
         LOG ( "Server got '%s'", server.msgs[i]->getAs<TestMessage>().str.c_str() );
-        EXPECT_EQ ( server.msgs[i]->getType(), MsgType::TestMessage );
+        EXPECT_EQ ( server.msgs[i]->getMsgType(), MsgType::TestMessage );
         EXPECT_EQ ( server.msgs[i]->getAs<TestMessage>().str, toString ( "Client %u", i + 1 ) );
     }
 
@@ -263,7 +263,7 @@ TEST ( GoBackN, SendAndRecv )
     for ( size_t i = 0; i < client.msgs.size(); ++i )
     {
         LOG ( "Client got '%s'", client.msgs[i]->getAs<TestMessage>().str.c_str() );
-        EXPECT_EQ ( client.msgs[i]->getType(), MsgType::TestMessage );
+        EXPECT_EQ ( client.msgs[i]->getMsgType(), MsgType::TestMessage );
         EXPECT_EQ ( client.msgs[i]->getAs<TestMessage>().str, toString ( "Server %u", i + 1 ) );
     }
 }

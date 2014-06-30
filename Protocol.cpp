@@ -110,7 +110,7 @@ string encodeStageTwo ( const MsgPtr& msg, const string& msgData )
     ostringstream ss ( stringstream::binary );
     BinaryOutputArchive archive ( ss );
 
-    archive ( msg->getType() );
+    archive ( msg->getMsgType() );
 
     // Compress msg data if needed
     if ( msg->compressionLevel )
@@ -192,23 +192,23 @@ ostream& operator<< ( ostream& os, const MsgPtr& msg )
 {
     if ( !msg.get() )
         return ( os << "NullMsg" );
-    else if ( msg->getType() == MsgType::UdpConnect )
-        switch ( msg->getAs<UdpConnect>().type )
+    else if ( msg->getMsgType() == MsgType::UdpConnect )
+        switch ( msg->getAs<UdpConnect>().connectType )
         {
-            case UdpConnect::Type::Request:
-                return ( os << "UdpConnect::Type::Request" );
+            case UdpConnect::ConnectType::Request:
+                return ( os << "UdpConnect::Request" );
 
-            case UdpConnect::Type::Reply:
-                return ( os << "UdpConnect::Type::Reply" );
+            case UdpConnect::ConnectType::Reply:
+                return ( os << "UdpConnect::Reply" );
 
-            case UdpConnect::Type::Final:
-                return ( os << "UdpConnect::Type::Final" );
+            case UdpConnect::ConnectType::Final:
+                return ( os << "UdpConnect::Final" );
 
             default:
                 return ( os << "Unknown type!" );
         }
     else
-        return ( os << msg->getType() );
+        return ( os << msg->getMsgType() );
 }
 
 ostream& operator<< ( ostream& os, MsgType type )

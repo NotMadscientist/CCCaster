@@ -16,7 +16,7 @@ struct TestMessage : public SerializableSequence
 
     TestMessage ( const std::string& str ) : str ( str ) {}
 
-    MsgType getType() const override;
+    MsgType getMsgType() const override;
 
 protected:
 

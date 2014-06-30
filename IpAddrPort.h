@@ -50,7 +50,7 @@ struct IpAddrPort : public SerializableMessage
         return buffer;
     }
 
-    MsgType getType() const override;
+    MsgType getMsgType() const override;
 
 protected:
 

@@ -27,7 +27,7 @@ struct Serializable
     Serializable();
     inline virtual ~Serializable() {}
 
-    virtual MsgType getType() const = 0;
+    virtual MsgType getMsgType() const = 0;
     virtual BaseType getBaseType() const = 0;
 
     template<typename T> T& getAs() { return *static_cast<T *> ( this ); }

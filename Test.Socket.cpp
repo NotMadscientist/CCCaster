@@ -64,7 +64,7 @@ TEST ( Socket, UdpSend )
 
     if ( server.msg.get() )
     {
-        EXPECT_EQ ( server.msg->getType(), MsgType::TestMessage );
+        EXPECT_EQ ( server.msg->getMsgType(), MsgType::TestMessage );
         EXPECT_EQ ( server.msg->getAs<TestMessage>().str, "Hello server!" );
     }
 
@@ -76,7 +76,7 @@ TEST ( Socket, UdpSend )
 
     if ( client.msg.get() )
     {
-        EXPECT_EQ ( client.msg->getType(), MsgType::TestMessage );
+        EXPECT_EQ ( client.msg->getMsgType(), MsgType::TestMessage );
         EXPECT_EQ ( client.msg->getAs<TestMessage>().str, "Hello client!" );
     }
 }
