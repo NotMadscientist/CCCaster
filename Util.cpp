@@ -4,6 +4,7 @@
 #define MINIZ_NO_ZLIB_COMPATIBLE_NAMES
 #include <miniz.h>
 #include <md5.h>
+#include <windows.h>
 
 #include <cstring>
 #include <cstdarg>
@@ -85,6 +86,6 @@ string getWindowsErrorAsString ( int error )
     return str;
 }
 
-string getLastWindowsError() { return getWindowsErrorAsString ( getLastError() ); }
+string getLastWindowsError() { return getWindowsErrorAsString ( GetLastError() ); }
 
 string getLastWinSockError() { return getWindowsErrorAsString ( WSAGetLastError() ); }
