@@ -204,7 +204,7 @@ struct BaseTestSocket<ReliableUdp, keepAlive, timeout> : public Socket::Owner, p
                 this->msg = msg;                                                                                    \
                 ++done;                                                                                             \
                 if ( done >= 2 ) {                                                                                  \
-                    LOG ( "Stopping because connected" );                                                           \
+                    LOG ( "Stopping because all msgs have been received" );                                         \
                     EventManager::get().stop();                                                                     \
                 }                                                                                                   \
             }                                                                                                       \
