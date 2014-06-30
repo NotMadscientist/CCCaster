@@ -73,3 +73,18 @@ size_t compressBound ( size_t srcLen )
 {
     return mz_compressBound ( srcLen );
 }
+
+string getWindowsErrorAsString ( int error )
+{
+    string str;
+    char *errorString = 0;
+    FormatMessage ( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+                    0, error, 0, ( LPSTR ) &errorString, 0, 0 );
+    str = toString ( "[%d] '%s'", error, errorString );
+    LocalFree ( errorString );
+    return str;
+}
+
+string getLastWindowsError() { return getWindowsErrorAsString ( getLastError() ); }
+
+string getLastWinSockError() { return getWindowsErrorAsString ( WSAGetLastError() ); }

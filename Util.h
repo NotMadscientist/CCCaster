@@ -18,7 +18,7 @@
         LOG ( "this=%08x; "#LIST "=[%s]", this, list.c_str() );         \
     } while ( 0 )
 
-// Lexical cast
+// String utilities
 template<typename T>
 inline std::string toString ( T val )
 {
@@ -79,3 +79,12 @@ bool checkMD5 ( const std::string& str, const char md5[16] );
 size_t compress ( const char *src, size_t srcLen, char *dst, size_t dstLen, int level = 9 );
 size_t uncompress ( const char *src, size_t srcLen, char *dst, size_t dstLen );
 size_t compressBound ( size_t srcLen );
+
+// Convert the Windows error to a formatted string
+std::string getWindowsErrorAsString ( int error );
+
+// Get the last Windows API error as a formatted string
+std::string getLastWindowsError();
+
+// Get the last Windows socket error as a formatted string
+std::string getLastWinSockError();
