@@ -88,7 +88,7 @@ public:
     inline bool isRunning() const { return running; }
 
     // Get the current time in milliseconds
-    inline const uint64_t& getNow() const { return now; }
+    inline uint64_t getNow() const { return now; }
 
     // Indicates if the event manager is initialized
     inline static bool isInitialized() { return initialized; }

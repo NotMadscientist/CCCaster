@@ -3,7 +3,6 @@
 #include "Timer.h"
 #include "Log.h"
 
-#include <winsock2.h>
 #include <windows.h>
 
 #include <cassert>

@@ -74,8 +74,8 @@ public:
     void recv ( const MsgPtr& msg );
 
     // Get/set the timeout for keep alive packets, 0 to disable
-    inline const uint64_t& getKeepAlive() const { return keepAlive; }
-    void setKeepAlive ( const uint64_t& timeout );
+    inline uint64_t getKeepAlive() const { return keepAlive; }
+    void setKeepAlive ( uint64_t timeout );
 
     // Get the number of messages sent and received
     inline uint32_t getSendCount() const { return sendSequence; }

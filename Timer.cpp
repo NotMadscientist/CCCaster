@@ -13,7 +13,7 @@ Timer::~Timer()
     EventManager::get().removeTimer ( this );
 }
 
-void Timer::start ( const uint64_t& delay )
+void Timer::start ( uint64_t delay )
 {
     if ( delay == 0 )
         return;

@@ -22,11 +22,11 @@ public:
     Timer ( Owner *owner );
     ~Timer();
 
-    void start ( const uint64_t& delay );
+    void start ( uint64_t delay );
 
     void stop();
 
-    inline const uint64_t& getDelay() const { return delay; }
+    inline uint64_t getDelay() const { return delay; }
 
     inline bool isStarted() const { return ( delay > 0 || expiry > 0 ); }
 

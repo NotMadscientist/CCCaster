@@ -141,7 +141,7 @@ void GoBackN::recv ( const MsgPtr& msg )
     owner->recvGoBackN ( this, msg );
 }
 
-void GoBackN::setKeepAlive ( const uint64_t& timeout )
+void GoBackN::setKeepAlive ( uint64_t timeout )
 {
     keepAlive = timeout;
     countDown = ( timeout / SEND_INTERVAL );
