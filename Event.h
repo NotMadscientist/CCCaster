@@ -40,6 +40,9 @@ class EventManager
     // Flag to indicate the event loop is running
     bool running;
 
+    // Flag to indicate the event manager is initialized
+    static bool initialized;
+
     // Check and expire timers
     void checkTimers();
 
@@ -86,6 +89,9 @@ public:
 
     // Get the current time in milliseconds
     inline const uint64_t& getNow() const { return now; }
+
+    // Indicates if the event manager is initialized
+    inline static bool isInitialized() { return initialized; }
 
     // Initialize the event manager
     static void initialize();

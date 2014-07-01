@@ -1,4 +1,5 @@
 #include "Log.h"
+#include "Event.h"
 #include "Test.h"
 
 #include <cstdlib>
@@ -9,6 +10,8 @@ using namespace std;
 int main ( int argc, char *argv[] )
 {
     Log::open();
+
+    EventManager::initialize();
 
     int result = RunAllTests ( argc, argv );
 

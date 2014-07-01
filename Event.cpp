@@ -12,6 +12,8 @@
 
 using namespace std;
 
+bool EventManager::initialized = false;
+
 void EventManager::eventLoop()
 {
     // Seed the RNG in this thread because Windows has per-thread RNG
@@ -354,6 +356,9 @@ EventManager::~EventManager()
 
 void EventManager::initialize()
 {
+    if ( initialized )
+        return;
+
     WSADATA wsaData;
     int error = WSAStartup ( MAKEWORD ( 2, 2 ), &wsaData );
 
@@ -362,10 +367,14 @@ void EventManager::initialize()
         LOG ( "WSAStartup failed: %s", getWindowsErrorAsString ( error ).c_str() );
         throw "something"; // TODO
     }
+
+    initialized = true;
 }
 
 void EventManager::start()
 {
+    assert ( initialized == true );
+
     running = true;
 
     LOG ( "Starting event loop" );
