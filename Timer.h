@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include <iostream>
 
 class Timer
 {
@@ -26,9 +26,11 @@ public:
 
     void stop();
 
-    inline bool isStarted() const { return ( delay > 0 || expiry > 0 ); }
+    inline const uint64_t& getDelay() const { return delay; }
 
-    static std::string formatTimer ( const Timer *timer );
+    inline bool isStarted() const { return ( delay > 0 || expiry > 0 ); }
 
     friend class EventManager;
 };
+
+std::ostream& operator<< ( std::ostream& os, const Timer *timer );

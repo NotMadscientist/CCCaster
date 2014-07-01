@@ -209,8 +209,8 @@ void EventManager::checkTimers()
         {
             LOG ( "Expired timer %08x", timer );
 
+            timer->delay = timer->expiry = 0;
             timer->owner->timerExpired ( timer );
-            timer->expiry = 0;
         }
     }
 }

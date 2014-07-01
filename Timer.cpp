@@ -30,7 +30,7 @@ void Timer::stop()
     EventManager::get().removeTimer ( this );
 }
 
-string Timer::formatTimer ( const Timer *timer )
+ostream& operator<< ( ostream& os, const Timer& timer )
 {
-    return toString ( "%08x:'%llu ms'", timer, timer->delay );
+    return os << toString ( "%08x:'%llu ms'", &timer, timer.getDelay() );
 }
