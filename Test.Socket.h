@@ -1,16 +1,38 @@
 #pragma once
 
-#include "Test.h"
 #include "Log.h"
 #include "Event.h"
 #include "Socket.h"
 #include "Timer.h"
+#include "Protocol.h"
 
 #include <gtest/gtest.h>
+#include <cereal/types/string.hpp>
 
 #include <vector>
+#include <string>
+
+#define TEST_LOCAL_PORT 258258
 
 using namespace std;
+
+struct TestMessage : public SerializableSequence
+{
+    std::string str;
+
+    TestMessage() {}
+
+    TestMessage ( const std::string& str ) : str ( str ) {}
+
+    MsgType getMsgType() const override;
+
+protected:
+
+    void serialize ( cereal::BinaryOutputArchive& ar ) const override { ar ( str ); }
+
+    void deserialize ( cereal::BinaryInputArchive& ar ) override { ar ( str ); }
+};
+
 
 template<typename T, uint64_t keepAlive, uint64_t timeout>
 struct BaseTestSocket : public Socket::Owner, public Timer::Owner

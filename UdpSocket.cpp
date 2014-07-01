@@ -1,20 +1,22 @@
-// #include "UdpSocket.h"
-// #include "Log.h"
-// #include "Util.h"
-//
-// #include <cassert>
-// #include <typeinfo>
-//
-// using namespace std;
-//
-// #define KEEP_ALIVE 2000
-//
-// #define LOG_SOCKET(VERB, SOCKET)                                                                            \
-//     LOG ( "%s UDP socket %08x; parent=%08x; owner=%08x; address='%s'",                                      \
-//           VERB, SOCKET, SOCKET->parentSocket, SOCKET->proxiedOwner, SOCKET->address.c_str() )
-//
-// void UdpSocket::sendGoBackN ( GoBackN *gbn, const MsgPtr& msg )
-// {
+#include "Event.h"
+#include "UdpSocket.h"
+#include "Log.h"
+#include "Util.h"
+#include "Protocol.h"
+
+#include <winsock2.h>
+#include <windows.h>
+#include <ws2tcpip.h>
+
+#include <cassert>
+#include <typeinfo>
+
+#define DEFAULT_KEEP_ALIVE 2000
+
+using namespace std;
+
+void UdpSocket::sendGoBackN ( GoBackN *gbn, const MsgPtr& msg )
+{
 //     assert ( gbn == &this->gbn );
 //     assert ( !getRemoteAddress().empty() );
 //
@@ -25,10 +27,10 @@
 //         Socket::send ( msg, getRemoteAddress() );
 //     else
 //         parentSocket->Socket::send ( msg, getRemoteAddress() );
-// }
-//
-// void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
-// {
+}
+
+void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
+{
 //     assert ( gbn == &this->gbn );
 //     assert ( !getRemoteAddress().empty() );
 //
@@ -86,10 +88,10 @@
 //                 break;
 //         }
 //     }
-// }
-//
-// void UdpSocket::timeoutGoBackN ( GoBackN *gbn )
-// {
+}
+
+void UdpSocket::timeoutGoBackN ( GoBackN *gbn )
+{
 //     assert ( gbn == &this->gbn );
 //     assert ( !getRemoteAddress().empty() );
 //
@@ -97,8 +99,8 @@
 //     Socket::Owner *owner = ( parentSocket == 0 ? proxiedOwner : parentSocket->proxiedOwner );
 //     disconnect();
 //     owner->disconnectEvent ( this );
-// }
-//
+}
+
 // void UdpSocket::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
 // {
 //     assert ( owner == this );
@@ -137,17 +139,35 @@
 //
 //     socket->gbn.recv ( msg );
 // }
-//
+
+UdpSocket::UdpSocket ( Socket::Owner *owner, unsigned port, uint64_t keepAlive  )
+    : Socket ( IpAddrPort ( "", port ), Protocol::UDP ), gbn ( this, keepAlive )
+{
+    this->owner = owner;
+    this->state = State::Listening;
+    Socket::init();
+    EventManager::get().addSocket ( this );
+}
+
+UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, uint64_t keepAlive )
+    : Socket ( address, Protocol::UDP ), gbn ( this, keepAlive )
+{
+    this->owner = owner;
+    this->state = ( keepAlive ? State::Connecting : State::Connected );
+    Socket::init();
+    EventManager::get().addSocket ( this );
+}
+
 // UdpSocket::UdpSocket ( Socket::Owner *owner, unsigned port )
 //     : Socket ( this, port, Protocol::UDP ), state ( State::Listening )
-//     , parentSocket ( 0 ), proxiedOwner ( owner ), gbn ( this, KEEP_ALIVE )
+//     , gbn ( this, DEFAULT_KEEP_ALIVE )
 // {
 //     LOG_SOCKET ( "Listening to server", this );
 // }
 //
 // UdpSocket::UdpSocket ( Socket::Owner *owner, const string& address, unsigned port )
 //     : Socket ( this, address, port, Protocol::UDP ), state ( State::Connecting )
-//     , parentSocket ( 0 ), proxiedOwner ( owner ), gbn ( this, KEEP_ALIVE )
+//     , gbn ( this, DEFAULT_KEEP_ALIVE )
 // {
 //     LOG_SOCKET ( "Connecting", this );
 //     send ( new UdpConnect ( UdpConnect::ConnectType::Request ) );
@@ -155,18 +175,21 @@
 //
 // UdpSocket::UdpSocket ( UdpSocket *parent, Socket::Owner *owner, const string& address, unsigned port )
 //     : Socket ( this, address, port ), state ( State::Connected )
-//     , parentSocket ( parent ), proxiedOwner ( owner ), gbn ( this, parent->getKeepAlive() )
+//     , gbn ( this, DEFAULT_KEEP_ALIVE )
 // {
 //     LOG_SOCKET ( "Pending", this );
 // }
-//
-// UdpSocket::~UdpSocket()
-// {
-//     disconnect();
-// }
-//
-// void UdpSocket::disconnect()
-// {
+
+UdpSocket::~UdpSocket()
+{
+    disconnect();
+}
+
+void UdpSocket::disconnect()
+{
+    EventManager::get().removeSocket ( this );
+    Socket::disconnect();
+
 //     LOG_SOCKET ( "Disconnect", this );
 //
 //     if ( parentSocket == 0 )
@@ -186,41 +209,61 @@
 //
 //     if ( parentSocket != 0 )
 //         parentSocket->acceptedSockets.erase ( getRemoteAddress() );
-// }
-//
-// shared_ptr<Socket> UdpSocket::listen ( Socket::Owner *owner, unsigned port )
-// {
-//     return shared_ptr<Socket> ( new UdpSocket ( owner, port ) );
-// }
-//
-// shared_ptr<Socket> UdpSocket::connect ( Socket::Owner *owner, const string& address, unsigned port )
-// {
-//     return shared_ptr<Socket> ( new UdpSocket ( owner, address, port ) );
-// }
-//
-// shared_ptr<Socket> UdpSocket::accept ( Socket::Owner *owner )
-// {
+}
+
+shared_ptr<Socket> UdpSocket::listen ( Socket::Owner *owner, unsigned port )
+{
+    return shared_ptr<Socket> ( new UdpSocket ( owner, port, DEFAULT_KEEP_ALIVE ) );
+}
+
+shared_ptr<Socket> UdpSocket::connect ( Socket::Owner *owner, const IpAddrPort& address )
+{
+    return shared_ptr<Socket> ( new UdpSocket ( owner, address, DEFAULT_KEEP_ALIVE ) );
+}
+
+shared_ptr<Socket> UdpSocket::bind ( Socket::Owner *owner,  unsigned port )
+{
+    return shared_ptr<Socket> ( new UdpSocket ( owner, port, 0 ) );
+}
+
+shared_ptr<Socket> UdpSocket::bind ( Socket::Owner *owner, const IpAddrPort& address )
+{
+    return shared_ptr<Socket> ( new UdpSocket ( owner, address, 0 ) );
+}
+
+shared_ptr<Socket> UdpSocket::accept ( Socket::Owner *owner )
+{
 //     if ( !acceptedSocket.get() )
 //         return 0;
 //
-//     acceptedSocket->setOwner ( owner );
+//     acceptedSocket->owner ( owner );
 //
 //     shared_ptr<Socket> ret;
 //     acceptedSocket.swap ( ret );
 //     return ret;
-// }
-//
-// void UdpSocket::send ( Serializable *message, const IpAddrPort& address )
-// {
-//     if ( state == State::Disconnected )
-//         return;
-//
-//     MsgPtr msg ( message );
-//     send ( msg, address );
-// }
-//
-// void UdpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
-// {
+
+    return 0;
+}
+
+bool UdpSocket::send ( SerializableMessage *message, const IpAddrPort& address )
+{
+    return send ( MsgPtr ( message ), address );
+}
+
+bool UdpSocket::send ( SerializableSequence *message, const IpAddrPort& address )
+{
+    return send ( MsgPtr ( message ), address );
+}
+
+bool UdpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
+{
+    string buffer = Serializable::encode ( msg );
+
+    LOG ( "Encoded '%s' to [ %u bytes ]", TO_C_STR ( msg ), buffer.size() );
+    LOG ( "Base64 : %s", toBase64 ( buffer ).c_str() );
+
+    return Socket::send ( &buffer[0], buffer.size(), address.empty() ? this->address : address );
+
 //     if ( state == State::Disconnected )
 //         return;
 //
@@ -239,4 +282,10 @@
 //             LOG ( "Unhandled BaseType '%s'!", TO_C_STR ( msg->getBaseType() ) );
 //             break;
 //     }
-// }
+}
+
+void UdpSocket::readEvent ( const MsgPtr& msg, const IpAddrPort& address )
+{
+    if ( owner )
+        owner->readEvent ( this, msg, address );
+}

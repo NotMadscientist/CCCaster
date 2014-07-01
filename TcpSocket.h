@@ -15,11 +15,11 @@ class TcpSocket : public Socket
 
 protected:
 
-    // EventManager callbacks
+    // Socket event callbacks
     virtual void acceptEvent() override;
     virtual void connectEvent() override;
     virtual void disconnectEvent() override;
-    virtual void readEvent() override;
+    virtual void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) override;
 
 public:
 

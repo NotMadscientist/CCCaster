@@ -58,11 +58,16 @@ protected:
     // Packet loss percentage for testing purposes
     uint8_t packetLoss;
 
-    // EventManager callbacks
-    virtual void acceptEvent() = 0;
-    virtual void connectEvent() = 0;
-    virtual void disconnectEvent() = 0;
-    virtual void readEvent() = 0;
+    // TCP event callbacks
+    virtual void acceptEvent() {};
+    virtual void connectEvent() {};
+    virtual void disconnectEvent() {};
+
+    // Read event callback, calls the function below
+    virtual void readEvent();
+
+    // Read protocol message callback, not optional
+    virtual void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) = 0;
 
 public:
 

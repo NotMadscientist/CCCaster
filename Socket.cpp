@@ -109,7 +109,7 @@ void Socket::init()
 
             // SO_REUSEADDR can replace existing binds
             // SO_EXCLUSIVEADDRUSE only replaces if not exact match
-            if ( setsockopt ( fd, SOL_SOCKET, SO_REUSEADDR, &yes, 1 ) == SOCKET_ERROR )
+            if ( setsockopt ( fd, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, &yes, 1 ) == SOCKET_ERROR )
             {
                 LOG_SOCKET ( ( "setsockopt failed: " + getLastWinSockError() ).c_str(), this );
                 closesocket ( fd );
@@ -252,6 +252,78 @@ bool Socket::recv ( char *buffer, size_t& len, IpAddrPort& address )
 
     len = recvBytes;
     return true;
+}
+
+void Socket::readEvent()
+{
+    LOG_SOCKET ( "Read from", this );
+
+    char *bufferEnd = & ( readBuffer[readPos] );
+    size_t bufferLen = readBuffer.size() - readPos;
+
+    IpAddrPort address = getRemoteAddress();
+    bool success = false;
+
+    if ( protocol == Protocol::TCP )
+        success = recv ( bufferEnd, bufferLen );
+    else
+        success = recv ( bufferEnd, bufferLen, address );
+
+    if ( !success )
+    {
+        // Disconnect the socket if an error occured during read
+        LOG_SOCKET ( "Disconnected", this );
+        if ( protocol == Protocol::TCP )
+            disconnectEvent();
+        else
+            disconnect();
+        return;
+    }
+
+    // Simulated packet loss
+    if ( rand() % 100 < packetLoss )
+    {
+        LOG ( "Discarding [ %u bytes ] from '%s'", bufferLen, address.c_str() );
+        return;
+    }
+
+    // Increment the buffer position
+    readPos += bufferLen;
+    LOG ( "Read [ %u bytes ] from '%s'", bufferLen, address.c_str() );
+
+    // Handle zero byte packets
+    if ( bufferLen == 0 )
+    {
+        LOG ( "Decoded [ 0 bytes ] to 'NullMsg'" );
+        readEvent ( NullMsg, address );
+        return;
+    }
+
+    LOG ( "Base64 : %s", toBase64 ( bufferEnd, bufferLen ).c_str() );
+
+    // Try to decode as many messages from the buffer as possible
+    for ( ;; )
+    {
+        size_t consumed = 0;
+        MsgPtr msg = Serializable::decode ( &readBuffer[0], readPos, consumed );
+
+        if ( !msg.get() )
+            break;
+
+        LOG ( "Decoded [ %u bytes ] to '%s'", consumed, TO_C_STR ( msg ) );
+        readEvent ( msg, address );
+
+        // TODO handle this case
+//         // Abort if the socket is no longer alive
+//         if ( allocatedSockets.find ( socket ) == allocatedSockets.end() )
+//             break;
+
+        assert ( consumed <= readPos );
+
+        // Erase the consumed bytes (shifting the array)
+        readBuffer.erase ( 0, consumed );
+        readPos -= consumed;
+    }
 }
 
 ostream& operator<< ( ostream& os, Socket::Protocol protocol )

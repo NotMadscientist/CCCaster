@@ -1,4 +1,3 @@
-#include "Test.h"
 #include "Log.h"
 #include "Event.h"
 
@@ -9,10 +8,5 @@ using namespace std;
 int RunAllTests ( int& argc, char *argv[] )
 {
     testing::InitGoogleTest ( &argc, argv );
-
-    int result = RUN_ALL_TESTS();
-
-    LOG ( "Finished all tests" );
-
-    return result;
+    return RUN_ALL_TESTS();
 }
