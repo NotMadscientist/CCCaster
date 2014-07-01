@@ -5,13 +5,13 @@
 class TcpSocket : public Socket
 {
     // Construct a server socket
-    TcpSocket ( Owner *owner, unsigned port );
+    TcpSocket ( Socket::Owner *owner, unsigned port );
 
     // Construct a client socket
-    TcpSocket ( Owner *owner, const IpAddrPort& address );
+    TcpSocket ( Socket::Owner *owner, const IpAddrPort& address );
 
     // Construct an accepted client socket
-    TcpSocket ( Owner *owner, int fd, const IpAddrPort& address );
+    TcpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address );
 
 protected:
 
@@ -24,10 +24,10 @@ protected:
 public:
 
     // Listen for connections on the given port
-    static std::shared_ptr<Socket> listen ( Owner *owner, unsigned port );
+    static std::shared_ptr<Socket> listen ( Socket::Owner *owner, unsigned port );
 
     // Connect to the given address and port
-    static std::shared_ptr<Socket> connect ( Owner *owner, const IpAddrPort& address );
+    static std::shared_ptr<Socket> connect ( Socket::Owner *owner, const IpAddrPort& address );
 
     // Virtual destructor
     ~TcpSocket() override;
@@ -36,7 +36,7 @@ public:
     void disconnect() override;
 
     // Accept a new socket
-    std::shared_ptr<Socket> accept ( Owner *owner ) override;
+    std::shared_ptr<Socket> accept ( Socket::Owner *owner ) override;
 
     // Send a protocol message, return false indicates disconnected
     bool send ( SerializableMessage *message, const IpAddrPort& address = IpAddrPort() ) override;

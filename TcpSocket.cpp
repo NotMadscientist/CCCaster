@@ -12,7 +12,7 @@
 
 using namespace std;
 
-TcpSocket::TcpSocket ( Owner *owner, unsigned port ) : Socket ( IpAddrPort ( "", port ), Protocol::TCP )
+TcpSocket::TcpSocket ( Socket::Owner *owner, unsigned port ) : Socket ( IpAddrPort ( "", port ), Protocol::TCP )
 {
     this->owner = owner;
     this->state = State::Listening;
@@ -20,7 +20,7 @@ TcpSocket::TcpSocket ( Owner *owner, unsigned port ) : Socket ( IpAddrPort ( "",
     EventManager::get().addSocket ( this );
 }
 
-TcpSocket::TcpSocket ( Owner *owner, const IpAddrPort& address ) : Socket ( address, Protocol::TCP )
+TcpSocket::TcpSocket ( Socket::Owner *owner, const IpAddrPort& address ) : Socket ( address, Protocol::TCP )
 {
     this->owner = owner;
     this->state = State::Connecting;
@@ -28,7 +28,7 @@ TcpSocket::TcpSocket ( Owner *owner, const IpAddrPort& address ) : Socket ( addr
     EventManager::get().addSocket ( this );
 }
 
-TcpSocket::TcpSocket ( Owner *owner, int fd, const IpAddrPort& address ) : Socket ( address, Protocol::TCP )
+TcpSocket::TcpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address ) : Socket ( address, Protocol::TCP )
 {
     this->owner = owner;
     this->fd = fd;
@@ -47,17 +47,17 @@ void TcpSocket::disconnect()
     Socket::disconnect();
 }
 
-shared_ptr<Socket> TcpSocket::listen ( Owner *owner, unsigned port )
+shared_ptr<Socket> TcpSocket::listen ( Socket::Owner *owner, unsigned port )
 {
     return shared_ptr<Socket> ( new TcpSocket ( owner, port ) );
 }
 
-shared_ptr<Socket> TcpSocket::connect ( Owner *owner, const IpAddrPort& address )
+shared_ptr<Socket> TcpSocket::connect ( Socket::Owner *owner, const IpAddrPort& address )
 {
     return shared_ptr<Socket> ( new TcpSocket ( owner, address ) );
 }
 
-shared_ptr<Socket> TcpSocket::accept ( Owner *owner )
+shared_ptr<Socket> TcpSocket::accept ( Socket::Owner *owner )
 {
     if ( !isServer() )
         return 0;
