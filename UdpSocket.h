@@ -21,10 +21,10 @@ protected:
     void deserialize ( cereal::BinaryInputArchive& ar ) override { ar ( connectType ); }
 };
 
-// class ReliableUdp : public Socket, public GoBackN::Owner, public Socket::Owner
+// class UdpSocket : public Socket, public GoBackN::Owner, public Socket::Owner
 // {
 //     // Parent socket
-//     ReliableUdp *parentSocket;
+//     UdpSocket *parentSocket;
 //
 //     // Proxied socket owner
 //     Socket::Owner *proxiedOwner;
@@ -48,13 +48,13 @@ protected:
 //     void gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address );
 //
 //     // Construct a server socket
-//     ReliableUdp ( Socket::Owner *owner, unsigned port );
+//     UdpSocket ( Socket::Owner *owner, unsigned port );
 //
 //     // Construct a client socket
-//     ReliableUdp ( Socket::Owner *owner, const std::string& address, unsigned port );
+//     UdpSocket ( Socket::Owner *owner, const std::string& address, unsigned port );
 //
 //     // Construct a proxy socket (for UDP server clients)
-//     ReliableUdp ( ReliableUdp *parent, Socket::Owner *owner, const std::string& address, unsigned port );
+//     UdpSocket ( UdpSocket *parent, Socket::Owner *owner, const std::string& address, unsigned port );
 //
 // public:
 //
@@ -65,7 +65,7 @@ protected:
 //     static std::shared_ptr<Socket> connect ( Socket::Owner *owner, const std::string& address, unsigned port );
 //
 //     // Destructor
-//     ~ReliableUdp() override;
+//     ~UdpSocket() override;
 //
 //     // Completely disconnect the socket
 //     void disconnect() override;

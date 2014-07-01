@@ -1,4 +1,4 @@
-// #include "ReliableUdp.h"
+// #include "UdpSocket.h"
 // #include "Log.h"
 // #include "Util.h"
 //
@@ -13,7 +13,7 @@
 //     LOG ( "%s UDP socket %08x; parent=%08x; owner=%08x; address='%s'",                                      \
 //           VERB, SOCKET, SOCKET->parentSocket, SOCKET->proxiedOwner, SOCKET->address.c_str() )
 //
-// void ReliableUdp::sendGoBackN ( GoBackN *gbn, const MsgPtr& msg )
+// void UdpSocket::sendGoBackN ( GoBackN *gbn, const MsgPtr& msg )
 // {
 //     assert ( gbn == &this->gbn );
 //     assert ( !getRemoteAddress().empty() );
@@ -27,7 +27,7 @@
 //         parentSocket->Socket::send ( msg, getRemoteAddress() );
 // }
 //
-// void ReliableUdp::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
+// void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
 // {
 //     assert ( gbn == &this->gbn );
 //     assert ( !getRemoteAddress().empty() );
@@ -88,7 +88,7 @@
 //     }
 // }
 //
-// void ReliableUdp::timeoutGoBackN ( GoBackN *gbn )
+// void UdpSocket::timeoutGoBackN ( GoBackN *gbn )
 // {
 //     assert ( gbn == &this->gbn );
 //     assert ( !getRemoteAddress().empty() );
@@ -99,7 +99,7 @@
 //     owner->disconnectEvent ( this );
 // }
 //
-// void ReliableUdp::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
+// void UdpSocket::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
 // {
 //     assert ( owner == this );
 //     assert ( socket == this );
@@ -110,15 +110,15 @@
 //         gbnRecvAddressed ( msg, address );
 // }
 //
-// void ReliableUdp::gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address )
+// void UdpSocket::gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address )
 // {
-//     ReliableUdp *socket;
+//     UdpSocket *socket;
 //
 //     auto it = acceptedSockets.find ( address );
 //     if ( it != acceptedSockets.end() )
 //     {
-//         assert ( typeid ( *it->second ) == typeid ( ReliableUdp ) );
-//         socket = static_cast<ReliableUdp *> ( it->second.get() );
+//         assert ( typeid ( *it->second ) == typeid ( UdpSocket ) );
+//         socket = static_cast<UdpSocket *> ( it->second.get() );
 //
 //         if ( socket->state == State::Disconnected )
 //             return;
@@ -127,7 +127,7 @@
 //               && msg->getAs<UdpConnect>().connectType == UdpConnect::ConnectType::Request )
 //     {
 //         // Only a connect request is allowed to open a new accepted socket
-//         socket = new ReliableUdp ( this, 0, address.addr, address.port );
+//         socket = new UdpSocket ( this, 0, address.addr, address.port );
 //         acceptedSockets.insert ( make_pair ( address, shared_ptr<Socket> ( socket ) ) );
 //     }
 //     else
@@ -138,14 +138,14 @@
 //     socket->gbn.recv ( msg );
 // }
 //
-// ReliableUdp::ReliableUdp ( Socket::Owner *owner, unsigned port )
+// UdpSocket::UdpSocket ( Socket::Owner *owner, unsigned port )
 //     : Socket ( this, port, Protocol::UDP ), state ( State::Listening )
 //     , parentSocket ( 0 ), proxiedOwner ( owner ), gbn ( this, KEEP_ALIVE )
 // {
 //     LOG_SOCKET ( "Listening to server", this );
 // }
 //
-// ReliableUdp::ReliableUdp ( Socket::Owner *owner, const string& address, unsigned port )
+// UdpSocket::UdpSocket ( Socket::Owner *owner, const string& address, unsigned port )
 //     : Socket ( this, address, port, Protocol::UDP ), state ( State::Connecting )
 //     , parentSocket ( 0 ), proxiedOwner ( owner ), gbn ( this, KEEP_ALIVE )
 // {
@@ -153,19 +153,19 @@
 //     send ( new UdpConnect ( UdpConnect::ConnectType::Request ) );
 // }
 //
-// ReliableUdp::ReliableUdp ( ReliableUdp *parent, Socket::Owner *owner, const string& address, unsigned port )
+// UdpSocket::UdpSocket ( UdpSocket *parent, Socket::Owner *owner, const string& address, unsigned port )
 //     : Socket ( this, address, port ), state ( State::Connected )
 //     , parentSocket ( parent ), proxiedOwner ( owner ), gbn ( this, parent->getKeepAlive() )
 // {
 //     LOG_SOCKET ( "Pending", this );
 // }
 //
-// ReliableUdp::~ReliableUdp()
+// UdpSocket::~UdpSocket()
 // {
 //     disconnect();
 // }
 //
-// void ReliableUdp::disconnect()
+// void UdpSocket::disconnect()
 // {
 //     LOG_SOCKET ( "Disconnect", this );
 //
@@ -179,26 +179,26 @@
 //
 //     for ( auto& kv : acceptedSockets )
 //     {
-//         assert ( typeid ( *kv.second ) == typeid ( ReliableUdp ) );
-//         assert ( static_cast<ReliableUdp *> ( kv.second.get() )->parentSocket == this );
-//         static_cast<ReliableUdp *> ( kv.second.get() )->parentSocket = 0;
+//         assert ( typeid ( *kv.second ) == typeid ( UdpSocket ) );
+//         assert ( static_cast<UdpSocket *> ( kv.second.get() )->parentSocket == this );
+//         static_cast<UdpSocket *> ( kv.second.get() )->parentSocket = 0;
 //     }
 //
 //     if ( parentSocket != 0 )
 //         parentSocket->acceptedSockets.erase ( getRemoteAddress() );
 // }
 //
-// shared_ptr<Socket> ReliableUdp::listen ( Socket::Owner *owner, unsigned port )
+// shared_ptr<Socket> UdpSocket::listen ( Socket::Owner *owner, unsigned port )
 // {
-//     return shared_ptr<Socket> ( new ReliableUdp ( owner, port ) );
+//     return shared_ptr<Socket> ( new UdpSocket ( owner, port ) );
 // }
 //
-// shared_ptr<Socket> ReliableUdp::connect ( Socket::Owner *owner, const string& address, unsigned port )
+// shared_ptr<Socket> UdpSocket::connect ( Socket::Owner *owner, const string& address, unsigned port )
 // {
-//     return shared_ptr<Socket> ( new ReliableUdp ( owner, address, port ) );
+//     return shared_ptr<Socket> ( new UdpSocket ( owner, address, port ) );
 // }
 //
-// shared_ptr<Socket> ReliableUdp::accept ( Socket::Owner *owner )
+// shared_ptr<Socket> UdpSocket::accept ( Socket::Owner *owner )
 // {
 //     if ( !acceptedSocket.get() )
 //         return 0;
@@ -210,7 +210,7 @@
 //     return ret;
 // }
 //
-// void ReliableUdp::send ( Serializable *message, const IpAddrPort& address )
+// void UdpSocket::send ( Serializable *message, const IpAddrPort& address )
 // {
 //     if ( state == State::Disconnected )
 //         return;
@@ -219,7 +219,7 @@
 //     send ( msg, address );
 // }
 //
-// void ReliableUdp::send ( const MsgPtr& msg, const IpAddrPort& address )
+// void UdpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
 // {
 //     if ( state == State::Disconnected )
 //         return;

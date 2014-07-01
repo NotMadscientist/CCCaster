@@ -133,8 +133,7 @@ void EventManager::checkSockets()
                 continue;
 
             LOG_SOCKET ( "Connected", socket );
-            socket->state = Socket::State::Connected;
-            socket->owner->connectEvent ( socket );
+            socket->connectEvent();
         }
         else
         {
@@ -144,7 +143,7 @@ void EventManager::checkSockets()
             if ( socket->isServer() && socket->protocol == Socket::Protocol::TCP )
             {
                 LOG_SOCKET ( "Accept from server", socket );
-                socket->owner->acceptEvent ( socket );
+                socket->acceptEvent();
             }
             else
             {
@@ -159,87 +158,12 @@ void EventManager::checkSockets()
                 if ( socket->protocol == Socket::Protocol::TCP && numBytes == 0 )
                 {
                     LOG_SOCKET ( "Disconnected", socket );
-                    Socket::Owner *owner = socket->owner;
-                    socket->disconnect();
-                    owner->disconnectEvent ( socket );
+                    socket->disconnectEvent();
                 }
                 else
                 {
                     LOG_SOCKET ( "Read from", socket );
-
-                    char *bufferEnd = & ( socket->readBuffer[socket->readPos] );
-                    size_t bufferLen = socket->readBuffer.size() - socket->readPos;
-
-                    IpAddrPort address = socket->getRemoteAddress();
-                    bool success = false;
-
-                    if ( socket->protocol == Socket::Protocol::TCP )
-                        success = socket->recv ( bufferEnd, bufferLen );
-                    else
-                        success = socket->recv ( bufferEnd, bufferLen, address );
-
-                    if ( !success )
-                    {
-                        // Disconnect the socket if an error occured during read
-                        LOG_SOCKET ( "Disconnected", socket );
-
-                        if ( socket->protocol == Socket::Protocol::TCP )
-                        {
-                            Socket::Owner *owner = socket->owner;
-                            socket->disconnect();
-                            owner->disconnectEvent ( socket );
-                        }
-                        else
-                        {
-                            socket->disconnect();
-                        }
-
-                        continue;
-                    }
-
-                    // Simulated packet loss
-                    if ( rand() % 100 < socket->packetLoss )
-                    {
-                        LOG ( "Discarding [ %u bytes ] from '%s'", bufferLen, address.c_str() );
-                        continue;
-                    }
-
-                    // Increment the buffer position
-                    socket->readPos += bufferLen;
-                    LOG ( "Read [ %u bytes ] from '%s'", bufferLen, address.c_str() );
-
-                    // Handle zero byte packets
-                    if ( bufferLen == 0 )
-                    {
-                        LOG ( "Decoded [ 0 bytes ] to 'NullMsg'" );
-                        socket->owner->readEvent ( socket, NullMsg, address );
-                        continue;
-                    }
-
-                    LOG ( "Base64 : %s", toBase64 ( bufferEnd, bufferLen ).c_str() );
-
-                    // Try to decode as many messages from the buffer as possible
-                    for ( ;; )
-                    {
-                        size_t consumed = 0;
-                        MsgPtr msg = Serializable::decode ( & ( socket->readBuffer[0] ), socket->readPos, consumed );
-
-                        if ( !msg.get() )
-                            break;
-
-                        LOG ( "Decoded [ %u bytes ] to '%s'", consumed, TO_C_STR ( msg ) );
-                        socket->owner->readEvent ( socket, msg, address );
-
-                        // Abort if the socket is no longer alive
-                        if ( allocatedSockets.find ( socket ) == allocatedSockets.end() )
-                            break;
-
-                        assert ( consumed <= socket->readPos );
-
-                        // Erase the consumed bytes (shifting the array)
-                        socket->readBuffer.erase ( 0, consumed );
-                        socket->readPos -= consumed;
-                    }
+                    socket->readEvent();
                 }
             }
         }

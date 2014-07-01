@@ -4,7 +4,6 @@
 #include "Log.h"
 #include "Event.h"
 #include "Socket.h"
-#include "ReliableUdp.h"
 #include "Timer.h"
 
 #include <gtest/gtest.h>
@@ -20,41 +19,20 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
     Timer timer;
 
     BaseTestSocket ( unsigned port )
-        : socket ( T::listen ( this, port, Socket::Protocol::TCP ) ), timer ( this )
+        : socket ( T::listen ( this, port ) ), timer ( this )
     {
         timer.start ( timeout );
     }
 
     BaseTestSocket ( const string& address, unsigned port )
-        : socket ( T::connect ( this, address, port, Socket::Protocol::TCP ) ), timer ( this )
+        : socket ( T::connect ( this, IpAddrPort ( address, port ) ) ), timer ( this )
     {
         timer.start ( timeout );
     }
 };
 
-// template<uint64_t keepAlive, uint64_t timeout>
-// struct BaseTestSocket<ReliableUdp, keepAlive, timeout> : public Socket::Owner, public Timer::Owner
-// {
-//     shared_ptr<Socket> socket, accepted;
-//     Timer timer;
-//
-//     BaseTestSocket ( unsigned port )
-//         : socket ( ReliableUdp::listen ( this, port ) ), timer ( this )
-//     {
-//         static_cast<ReliableUdp *> ( socket.get() )->setKeepAlive ( keepAlive );
-//         timer.start ( timeout );
-//     }
-//
-//     BaseTestSocket ( const string& address, unsigned port )
-//         : socket ( ReliableUdp::connect ( this, address, port ) ), timer ( this )
-//     {
-//         static_cast<ReliableUdp *> ( socket.get() )->setKeepAlive ( keepAlive );
-//         timer.start ( timeout );
-//     }
-// };
-
-#define TEST_CONNECT(T, PREFIX, LOSS, KEEP_ALIVE, TIMEOUT)                                                          \
-    TEST ( T, PREFIX ## Connect ) {                                                                                 \
+#define TEST_CONNECT(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                                  \
+    TEST ( T, Connect ) {                                                                                           \
         static int done = 0;                                                                                        \
         done = 0;                                                                                                   \
         struct TestSocket : public BaseTestSocket<T, KEEP_ALIVE, TIMEOUT> {                                         \
@@ -90,14 +68,13 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         EXPECT_TRUE ( server.accepted.get() );                                                                      \
         if ( server.accepted.get() )                                                                                \
             EXPECT_TRUE ( server.accepted->isConnected() );                                                         \
-        EXPECT_EQ ( server.socket->getPendingCount(), 0 );                                                          \
         EXPECT_TRUE ( client.socket.get() );                                                                        \
         if ( client.socket.get() )                                                                                  \
             EXPECT_TRUE ( client.socket->isConnected() );                                                           \
     }
 
-#define TEST_TIMEOUT(T, PREFIX, LOSS, KEEP_ALIVE, TIMEOUT)                                                          \
-    TEST ( T, PREFIX ## Timeout ) {                                                                                 \
+#define TEST_TIMEOUT(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                                  \
+    TEST ( T, Timeout ) {                                                                                           \
         struct TestSocket : public BaseTestSocket<T, KEEP_ALIVE, TIMEOUT> {                                         \
             void timerExpired ( Timer *timer ) override { EventManager::get().stop(); }                             \
             TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port )                  \
@@ -110,8 +87,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             EXPECT_FALSE ( client.socket->isConnected() );                                                          \
     }
 
-#define TEST_CLIENT_DISCONNECT(T, PREFIX, LOSS, KEEP_ALIVE, TIMEOUT)                                                \
-    TEST ( T, PREFIX ## ClientDisconnect ) {                                                                        \
+#define TEST_CLIENT_DISCONNECT(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                        \
+    TEST ( T, ClientDisconnect ) {                                                                                  \
         static int done = 0;                                                                                        \
         done = 0;                                                                                                   \
         struct TestSocket : public BaseTestSocket<T, KEEP_ALIVE, TIMEOUT> {                                         \
@@ -141,14 +118,13 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         EXPECT_TRUE ( server.accepted.get() );                                                                      \
         if ( server.accepted.get() )                                                                                \
             EXPECT_FALSE ( server.accepted->isConnected() );                                                        \
-        EXPECT_EQ ( server.socket->getPendingCount(), 0 );                                                          \
         EXPECT_TRUE ( client.socket.get() );                                                                        \
         if ( client.socket.get() )                                                                                  \
             EXPECT_FALSE ( client.socket->isConnected() );                                                          \
     }
 
-#define TEST_SERVER_DISCONNECT(T, PREFIX, LOSS, KEEP_ALIVE, TIMEOUT)                                                \
-    TEST ( T, PREFIX ## ServerDisconnect ) {                                                                        \
+#define TEST_SERVER_DISCONNECT(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                        \
+    TEST ( T, ServerDisconnect ) {                                                                                  \
         static int done = 0;                                                                                        \
         done = 0;                                                                                                   \
         struct TestSocket : public BaseTestSocket<T, KEEP_ALIVE, TIMEOUT> {                                         \
@@ -181,14 +157,13 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         EXPECT_TRUE ( server.accepted.get() );                                                                      \
         if ( server.accepted.get() )                                                                                \
             EXPECT_FALSE ( server.accepted->isConnected() );                                                        \
-        EXPECT_EQ ( server.socket->getPendingCount(), 0 );                                                          \
         EXPECT_TRUE ( client.socket.get() );                                                                        \
         if ( client.socket.get() )                                                                                  \
             EXPECT_FALSE ( client.socket->isConnected() );                                                          \
     }
 
-#define TEST_SEND(T, PREFIX, LOSS, KEEP_ALIVE, TIMEOUT)                                                             \
-    TEST ( T, PREFIX ## Send ) {                                                                                    \
+#define TEST_SEND(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                                     \
+    TEST ( T, Send ) {                                                                                              \
         static int done = 0;                                                                                        \
         done = 0;                                                                                                   \
         struct TestSocket : public BaseTestSocket<T, KEEP_ALIVE, TIMEOUT> {                                         \
@@ -225,7 +200,6 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         EXPECT_TRUE ( server.accepted.get() );                                                                      \
         if ( server.accepted.get() )                                                                                \
             EXPECT_TRUE ( server.accepted->isConnected() );                                                         \
-        EXPECT_EQ ( server.socket->getPendingCount(), 0 );                                                          \
         EXPECT_TRUE ( server.msg.get() );                                                                           \
         if ( server.msg.get() ) {                                                                                   \
             EXPECT_EQ ( server.msg->getMsgType(), MsgType::TestMessage );                                           \
@@ -241,8 +215,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         }                                                                                                           \
     }
 
-#define TEST_SEND_WITHOUT_SERVER(T, PREFIX, LOSS, KEEP_ALIVE, TIMEOUT)                                              \
-    TEST ( T, PREFIX ## SendWithoutServer ) {                                                                       \
+#define TEST_SEND_WITHOUT_SERVER(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                      \
+    TEST ( T, SendWithoutServer ) {                                                                                 \
         static int done = 0;                                                                                        \
         done = 0;                                                                                                   \
         struct TestSocket : public BaseTestSocket<T, KEEP_ALIVE, TIMEOUT> {                                         \
@@ -293,8 +267,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         }                                                                                                           \
     }
 
-#define TEST_SEND_PARTIAL(T, PREFIX)                                                                                \
-    TEST ( T, PREFIX ## SendPartial ) {                                                                             \
+#define TEST_SEND_PARTIAL(T)                                                                                        \
+    TEST ( T, SendPartial ) {                                                                                       \
         struct TestSocket : public BaseTestSocket<T, 0, 1000> {                                                     \
             MsgPtr msg;                                                                                             \
             string buffer;                                                                                          \
@@ -325,7 +299,6 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         EXPECT_TRUE ( server.accepted.get() );                                                                      \
         if ( server.accepted.get() )                                                                                \
             EXPECT_TRUE ( server.accepted->isConnected() );                                                         \
-        EXPECT_EQ ( server.socket->getPendingCount(), 0 );                                                          \
         EXPECT_TRUE ( server.msg.get() );                                                                           \
         if ( server.msg.get() ) {                                                                                   \
             EXPECT_EQ ( server.msg->getMsgType(), MsgType::TestMessage );                                           \

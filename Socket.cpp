@@ -1,4 +1,3 @@
-#include "Event.h"
 #include "Socket.h"
 #include "Log.h"
 #include "Util.h"
@@ -13,147 +12,10 @@
 
 using namespace std;
 
-Socket::Socket ( Owner *owner, int fd, const string& address, unsigned port )
-    : fd ( fd ), owner ( owner ), state ( State::Connected ), address ( address, port ), protocol ( Protocol::TCP )
+Socket::Socket ( const IpAddrPort& address, Protocol protocol )
+    : address ( address ), protocol ( protocol ), owner ( 0 ), state ( State::Disconnected ), fd ( 0 )
+    , readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 ), packetLoss ( 0 )
 {
-    assert ( this->fd != 0 );
-    init();
-}
-
-Socket::Socket ( Owner *owner, unsigned port, Protocol protocol )
-    : fd ( 0 ), owner ( owner ), state ( State::Listening ), address ( "", port ), protocol ( protocol )
-{
-    init();
-}
-
-Socket::Socket ( Owner *owner, const string& address, unsigned port, Protocol protocol )
-    : fd ( 0 ), owner ( owner ), state ( State::Connecting ), address ( address, port ), protocol ( protocol )
-{
-    assert ( this->address.addr.empty() == false );
-    init();
-}
-
-// Socket::Socket ( Owner *owner, const string& address, unsigned port )
-//     : socket ( 0 ), protocol ( Protocol::UDP ), readBuffer ( READ_BUFFER_SIZE, ( char ) 0 )
-//     , readPos ( 0 ), packetLoss ( 0 ), owner ( owner ), address ( address, port )
-// {
-// }
-
-void Socket::init()
-{
-    if ( fd == 0 )
-    {
-        shared_ptr<addrinfo> addrInfo;
-
-        if ( isClient() && protocol == Protocol::UDP )
-        {
-            state = State::Connected;
-            addrInfo = IpAddrPort().updateAddrInfo ( true );
-        }
-        else
-        {
-            addrInfo = address.updateAddrInfo ( isServer() || protocol == Protocol::UDP );
-        }
-
-        addrinfo *res = addrInfo.get();
-
-        for ( ; res; res = res->ai_next )
-        {
-            fd = ::socket ( res->ai_family,
-                            ( protocol == Protocol::TCP ? SOCK_STREAM : SOCK_DGRAM ),
-                            ( protocol == Protocol::TCP ? IPPROTO_TCP : IPPROTO_UDP ) );
-
-            if ( fd == INVALID_SOCKET )
-            {
-                LOG_SOCKET ( ( "socket failed: " + getLastWinSockError() ).c_str(), this );
-                fd = 0;
-                continue;
-            }
-
-            u_long nonBlocking = 1;
-
-            if ( ioctlsocket ( fd, FIONBIO, &nonBlocking ) != 0 )
-            {
-                LOG_SOCKET ( ( "ioctlsocket failed: " + getLastWinSockError() ).c_str(), this );
-                closesocket ( fd );
-                fd = 0;
-                throw "something"; // TODO
-            }
-
-            if ( isClient() )
-            {
-                if ( protocol == Protocol::TCP )
-                {
-                    if ( ::connect ( fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
-                    {
-                        int error = WSAGetLastError();
-
-                        // Non-blocking connect
-                        if ( error == WSAEWOULDBLOCK )
-                            break;
-
-                        LOG_SOCKET ( ( "connect failed: " + getWindowsErrorAsString ( error ) ).c_str(), this );
-                        closesocket ( fd );
-                        fd = 0;
-                        continue;
-                    }
-                }
-                else
-                {
-                    if ( ::bind ( fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
-                    {
-                        LOG_SOCKET ( ( "bind failed: " + getLastWinSockError() ).c_str(), this );
-                        closesocket ( fd );
-                        fd = 0;
-                        continue;
-                    }
-                }
-            }
-            else
-            {
-                char yes = 1;
-
-                // SO_REUSEADDR can replace existing binds
-                // SO_EXCLUSIVEADDRUSE only replaces if not exact match
-                if ( setsockopt ( fd, SOL_SOCKET, SO_REUSEADDR, &yes, 1 ) == SOCKET_ERROR )
-                {
-                    LOG_SOCKET ( ( "setsockopt failed: " + getLastWinSockError() ).c_str(), this );
-                    closesocket ( fd );
-                    fd = 0;
-                    throw "something"; // TODO
-                }
-
-                if ( ::bind ( fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
-                {
-                    LOG_SOCKET ( ( "bind failed: " + getLastWinSockError() ).c_str(), this );
-                    closesocket ( fd );
-                    fd = 0;
-                    continue;
-                }
-
-                if ( protocol == Protocol::TCP && ( ::listen ( fd, SOMAXCONN ) == SOCKET_ERROR ) )
-                {
-                    LOG_SOCKET ( ( "listen failed: " + getLastWinSockError() ).c_str(), this );
-                    closesocket ( fd );
-                    fd = 0;
-                    throw "something"; // TODO
-                }
-
-                break;
-            }
-        }
-    }
-
-    if ( fd == 0 )
-    {
-        LOG_SOCKET ( "init failed", this );
-        throw "something"; // TODO
-    }
-
-    readBuffer.resize ( READ_BUFFER_SIZE );
-    readPos = packetLoss = 0;
-
-    EventManager::get().addSocket ( this );
 }
 
 Socket::~Socket()
@@ -164,10 +26,7 @@ Socket::~Socket()
 void Socket::disconnect()
 {
     if ( fd )
-    {
-        EventManager::get().removeSocket ( this );
         closesocket ( fd );
-    }
 
     fd = readPos = packetLoss = 0;
     state = State::Disconnected;
@@ -175,117 +34,186 @@ void Socket::disconnect()
     readBuffer.clear();
 }
 
-shared_ptr<Socket> Socket::listen ( Owner *owner, unsigned port, Protocol protocol )
+void Socket::init()
 {
-    return shared_ptr<Socket> ( new Socket ( owner, port, protocol ) );
-}
+    assert ( fd == 0 );
 
-shared_ptr<Socket> Socket::connect ( Owner *owner, const string& address, unsigned port, Protocol protocol )
-{
-    return shared_ptr<Socket> ( new Socket ( owner, address, port, protocol ) );
-}
+    shared_ptr<addrinfo> addrInfo;
 
-shared_ptr<Socket> Socket::accept ( Owner *owner )
-{
-    if ( !isServer() )
-        return 0;
-
-    sockaddr_storage sa;
-    int saLen = sizeof ( sa );
-
-    int newFd = ::accept ( fd, ( struct sockaddr * ) &sa, &saLen );
-
-    if ( newFd == INVALID_SOCKET )
+    if ( isClient() && protocol == Protocol::UDP )
     {
-        LOG_SOCKET ( ( "accept failed: " + getLastWinSockError() ).c_str(), this );
-        return 0;
+        addrInfo = IpAddrPort().updateAddrInfo ( true );
+    }
+    else
+    {
+        addrInfo = address.updateAddrInfo ( isServer() || protocol == Protocol::UDP );
     }
 
-    if ( sa.ss_family != AF_INET )
+    addrinfo *res = addrInfo.get();
+
+    for ( ; res; res = res->ai_next )
     {
-        closesocket ( newFd );
-        LOG_SOCKET ( "Only accepting IPv4 from", this );
-        return 0;
+        fd = ::socket ( res->ai_family,
+                        ( protocol == Protocol::TCP ? SOCK_STREAM : SOCK_DGRAM ),
+                        ( protocol == Protocol::TCP ? IPPROTO_TCP : IPPROTO_UDP ) );
+
+        if ( fd == INVALID_SOCKET )
+        {
+            LOG_SOCKET ( ( "socket failed: " + getLastWinSockError() ).c_str(), this );
+            fd = 0;
+            continue;
+        }
+
+        u_long nonBlocking = 1;
+
+        if ( ioctlsocket ( fd, FIONBIO, &nonBlocking ) != 0 )
+        {
+            LOG_SOCKET ( ( "ioctlsocket failed: " + getLastWinSockError() ).c_str(), this );
+            closesocket ( fd );
+            fd = 0;
+            throw "something"; // TODO
+        }
+
+        if ( isClient() )
+        {
+            if ( protocol == Protocol::TCP )
+            {
+                if ( ::connect ( fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
+                {
+                    int error = WSAGetLastError();
+
+                    // Non-blocking connect
+                    if ( error == WSAEWOULDBLOCK )
+                        break;
+
+                    LOG_SOCKET ( ( "connect failed: " + getWindowsErrorAsString ( error ) ).c_str(), this );
+                    closesocket ( fd );
+                    fd = 0;
+                    continue;
+                }
+            }
+            else
+            {
+                if ( ::bind ( fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
+                {
+                    LOG_SOCKET ( ( "bind failed: " + getLastWinSockError() ).c_str(), this );
+                    closesocket ( fd );
+                    fd = 0;
+                    continue;
+                }
+            }
+        }
+        else
+        {
+            char yes = 1;
+
+            // SO_REUSEADDR can replace existing binds
+            // SO_EXCLUSIVEADDRUSE only replaces if not exact match
+            if ( setsockopt ( fd, SOL_SOCKET, SO_REUSEADDR, &yes, 1 ) == SOCKET_ERROR )
+            {
+                LOG_SOCKET ( ( "setsockopt failed: " + getLastWinSockError() ).c_str(), this );
+                closesocket ( fd );
+                fd = 0;
+                throw "something"; // TODO
+            }
+
+            if ( ::bind ( fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
+            {
+                LOG_SOCKET ( ( "bind failed: " + getLastWinSockError() ).c_str(), this );
+                closesocket ( fd );
+                fd = 0;
+                continue;
+            }
+
+            if ( protocol == Protocol::TCP && ( ::listen ( fd, SOMAXCONN ) == SOCKET_ERROR ) )
+            {
+                LOG_SOCKET ( ( "listen failed: " + getLastWinSockError() ).c_str(), this );
+                closesocket ( fd );
+                fd = 0;
+                throw "something"; // TODO
+            }
+
+            break;
+        }
     }
 
-    // TODO IPv6
-    char newAddr[INET6_ADDRSTRLEN];
-    inet_ntop ( sa.ss_family, & ( ( ( struct sockaddr_in * ) &sa )->sin_addr ), newAddr, sizeof ( newAddr ) );
-
-    unsigned newPort = ntohs ( ( ( struct sockaddr_in * ) &sa )->sin_port );
-
-    return shared_ptr<Socket> ( new Socket ( owner, newFd, newAddr, newPort ) );
+    if ( fd == 0 )
+    {
+        LOG_SOCKET ( "init failed", this );
+        throw "something"; // TODO
+    }
 }
 
-bool Socket::send ( Serializable *message, const IpAddrPort& address )
+bool Socket::send ( const char *buffer, size_t len )
 {
-    MsgPtr msg ( message );
-    return send ( msg, address );
-}
+    assert ( isClient() == true );
+    assert ( isConnected() == true );
+    assert ( fd != 0 );
 
-bool Socket::send ( const MsgPtr& msg, const IpAddrPort& address )
-{
-    string buffer = Serializable::encode ( msg );
+    size_t totalBytes = 0;
 
-    LOG ( "Encoded '%s' to [ %u bytes ]", TO_C_STR ( msg ), buffer.size() );
-    LOG ( "Base64 : %s", toBase64 ( buffer ).c_str() );
+    while ( totalBytes < len )
+    {
+        int sentBytes = SOCKET_ERROR;
 
-    return send ( &buffer[0], buffer.size(), address );
+        if ( protocol == Protocol::TCP )
+        {
+            LOG_SOCKET ( TO_C_STR ( "send ( [ %u bytes ] ); from", len ), this );
+            sentBytes = ::send ( fd, buffer, len, 0 );
+        }
+        else
+        {
+            LOG_SOCKET ( TO_C_STR ( ( "sendto ( [ %u bytes ], '" + address.str() + "' ); from" ).c_str(), len ), this );
+            sentBytes = ::sendto ( fd, buffer, len, 0, address.addrInfo->ai_addr, address.addrInfo->ai_addrlen );
+        }
+
+        if ( sentBytes == SOCKET_ERROR )
+        {
+            LOG_SOCKET ( ( ( protocol == Protocol::TCP ? "send failed: " : "sendto failed: " )
+                           + getLastWinSockError() ).c_str(), this );
+            disconnect();
+            return false;
+        }
+
+        totalBytes += sentBytes;
+    }
+
+    return true;
 }
 
 bool Socket::send ( const char *buffer, size_t len, const IpAddrPort& address )
 {
-    if ( fd != 0 )
+    assert ( protocol == Protocol::UDP );
+    assert ( fd != 0 );
+
+    shared_ptr<addrinfo> res = address.updateAddrInfo();
+
+    assert ( res != 0 );
+
+    size_t totalBytes = 0;
+
+    while ( totalBytes < len )
     {
-        size_t totalBytes = 0;
+        LOG_SOCKET ( TO_C_STR ( ( "sendto ( [ %u bytes ], '" + address.str() + "' ); from" ).c_str(), len ), this );
+        int sentBytes = ::sendto ( fd, buffer, len, 0, res->ai_addr, res->ai_addrlen );
 
-        while ( totalBytes < len )
+        if ( sentBytes == SOCKET_ERROR )
         {
-            int sentBytes = 0;
-
-            if ( protocol == Protocol::TCP && isClient() )
-            {
-                LOG_SOCKET ( TO_C_STR ( "send ( [ %u bytes ] ); from", len ), this );
-                sentBytes = ::send ( fd, buffer, len, 0 );
-            }
-            else
-            {
-                if ( this->address.empty() && address.empty() )
-                {
-                    LOG_SOCKET ( "No address: cannot sendto over", this );
-                    return false;
-                }
-
-                const IpAddrPort& addr = ( address.empty() ? this->address : address );
-                addrinfo *res = addr.updateAddrInfo().get();
-
-                LOG_SOCKET ( TO_C_STR (
-                                 ( "sendto ( [ %u bytes ], '" + addr.str() + "' ); from" ).c_str(), len ), this );
-                sentBytes = ::sendto ( fd, buffer, len, 0, res->ai_addr, res->ai_addrlen );
-            }
-
-            if ( sentBytes == SOCKET_ERROR )
-            {
-                LOG_SOCKET ( ( ( ( protocol == Protocol::TCP && isClient() ) ? "send failed: " : "sendto failed: " )
-                               + getLastWinSockError() ).c_str(), this );
-                return false;
-            }
-
-            totalBytes += sentBytes;
+            LOG_SOCKET ( ( "sendto failed: " + getLastWinSockError() ).c_str(), this );
+            return false;
         }
 
-        return true;
+        totalBytes += sentBytes;
     }
-    else
-    {
-        LOG ( "Cannot send to '%s' over unconnected %s socket!", address.c_str(), TO_C_STR ( protocol ) );
-        return false;
-    }
+
+    return true;
 }
 
 bool Socket::recv ( char *buffer, size_t& len )
 {
     assert ( isClient() == true );
+    assert ( isConnected() == true );
+    assert ( fd != 0 );
 
     int recvBytes = ::recv ( fd, buffer, len, 0 );
 
@@ -302,6 +230,7 @@ bool Socket::recv ( char *buffer, size_t& len )
 bool Socket::recv ( char *buffer, size_t& len, IpAddrPort& address )
 {
     assert ( protocol == Protocol::UDP );
+    assert ( fd != 0 );
 
     sockaddr_storage sa;
     int saLen = sizeof ( sa );
@@ -324,8 +253,6 @@ bool Socket::recv ( char *buffer, size_t& len, IpAddrPort& address )
     len = recvBytes;
     return true;
 }
-
-void Socket::setPacketLoss ( uint8_t percentage ) { packetLoss = percentage; }
 
 ostream& operator<< ( ostream& os, Socket::Protocol protocol )
 {
