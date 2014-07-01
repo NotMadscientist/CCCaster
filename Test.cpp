@@ -11,6 +11,9 @@ using namespace std;
 int RunAllTests ( int& argc, char *argv[] )
 {
     testing::InitGoogleTest ( &argc, argv );
+
+    EventManager::initialize();
+
     int result = RUN_ALL_TESTS();
 
     // Final timeout test with EventManager::release();
@@ -23,7 +26,7 @@ int RunAllTests ( int& argc, char *argv[] )
             void timerExpired ( Timer *timer ) override { EventManager::get().release(); }
 
             TestSocket ( const string& address, unsigned port )
-                : socket ( Socket::connect ( this, address, port, Protocol::TCP ) ), timer ( this )
+                : socket ( Socket::connect ( this, address, port, Socket::Protocol::TCP ) ), timer ( this )
             {
                 timer.start ( 1000 );
             }

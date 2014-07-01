@@ -56,14 +56,15 @@ TEST ( GoBackN, SendOnce )
         }
 
         TestSocket ( unsigned port )
-            : socket ( Socket::listen ( this, port, Protocol::UDP ) ), gbn ( this ), timer ( this )
+            : socket ( Socket::listen ( this, port, Socket::Protocol::UDP ) )
+            , gbn ( this ), timer ( this )
         {
             socket->setPacketLoss ( 90 );
             timer.start ( 1000 * 10 );
         }
 
         TestSocket ( const string& address, unsigned port )
-            : socket ( Socket::connect ( this, address, port, Protocol::UDP ) )
+            : socket ( Socket::connect ( this, address, port, Socket::Protocol::UDP ) )
             , address ( address, port ), gbn ( this ), timer ( this )
         {
             socket->setPacketLoss ( 90 );
@@ -137,14 +138,15 @@ TEST ( GoBackN, SendSequential )
         }
 
         TestSocket ( unsigned port )
-            : socket ( Socket::listen ( this, port, Protocol::UDP ) ), gbn ( this ), timer ( this )
+            : socket ( Socket::listen ( this, port, Socket::Protocol::UDP ) )
+            , gbn ( this ), timer ( this )
         {
             socket->setPacketLoss ( 50 );
             timer.start ( 1000 * 30 );
         }
 
         TestSocket ( const string& address, unsigned port )
-            : socket ( Socket::connect ( this, address, port, Protocol::UDP ) )
+            : socket ( Socket::connect ( this, address, port, Socket::Protocol::UDP ) )
             , address ( address, port ), gbn ( this ), timer ( this )
         {
             socket->setPacketLoss ( 50 );
@@ -229,14 +231,15 @@ TEST ( GoBackN, SendAndRecv )
         }
 
         TestSocket ( unsigned port )
-            : socket ( Socket::listen ( this, port, Protocol::UDP ) ), gbn ( this ), timer ( this ), sent ( false )
+            : socket ( Socket::listen ( this, port, Socket::Protocol::UDP ) )
+            , gbn ( this ), timer ( this ), sent ( false )
         {
             socket->setPacketLoss ( 50 );
             timer.start ( 1000 );
         }
 
         TestSocket ( const string& address, unsigned port )
-            : socket ( Socket::connect ( this, address, port, Protocol::UDP ) )
+            : socket ( Socket::connect ( this, address, port, Socket::Protocol::UDP ) )
             , address ( address, port ), gbn ( this ), timer ( this ), sent ( false )
         {
             socket->setPacketLoss ( 50 );
@@ -334,15 +337,15 @@ TEST ( GoBackN, Timeout )
         }
 
         TestSocket ( unsigned port )
-            : socket ( Socket::listen ( this, port, Protocol::UDP ) )
+            : socket ( Socket::listen ( this, port, Socket::Protocol::UDP ) )
             , gbn ( this, 1000 ), timer ( this ), properTimeout ( false ), stage ( 0 )
         {
             timer.start ( 1000 );
         }
 
         TestSocket ( const string& address, unsigned port )
-            : socket ( Socket::connect ( this, address, port, Protocol::UDP ) ), address ( address, port )
-            , gbn ( this, 1000 ), timer ( this ), properTimeout ( false ), stage ( 0 )
+            : socket ( Socket::connect ( this, address, port, Socket::Protocol::UDP ) )
+            , address ( address, port ), gbn ( this, 1000 ), timer ( this ), properTimeout ( false ), stage ( 0 )
         {
             timer.start ( 1000 );
         }

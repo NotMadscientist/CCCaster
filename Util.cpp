@@ -81,7 +81,7 @@ string getWindowsErrorAsString ( int error )
     char *errorString = 0;
     FormatMessage ( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
                     0, error, 0, ( LPSTR ) &errorString, 0, 0 );
-    str = toString ( "[%d] '%s'", error, errorString );
+    str = toString ( "[%d] '", error ) + ( errorString ? trim ( errorString ) : "(null)" ) + "'";
     LocalFree ( errorString );
     return str;
 }

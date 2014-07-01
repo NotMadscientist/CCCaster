@@ -26,8 +26,6 @@ public:
 
     void stop();
 
-    const uint64_t& now() const;
-
     inline bool isStarted() const { return ( delay > 0 || expiry > 0 ); }
 
     static std::string formatTimer ( const Timer *timer );

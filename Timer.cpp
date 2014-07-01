@@ -1,5 +1,6 @@
 #include "Event.h"
 #include "Timer.h"
+#include "Util.h"
 
 using namespace std;
 
@@ -25,9 +26,11 @@ void Timer::start ( const uint64_t& delay )
 void Timer::stop()
 {
     delay = expiry = 0;
+
+    EventManager::get().removeTimer ( this );
 }
 
-const uint64_t& Timer::now() const
+string Timer::formatTimer ( const Timer *timer )
 {
-    return expiry;
+    return toString ( "%08x:'%llu ms'", timer, timer->delay );
 }

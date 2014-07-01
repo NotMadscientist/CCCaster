@@ -20,38 +20,38 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
     Timer timer;
 
     BaseTestSocket ( unsigned port )
-        : socket ( T::listen ( this, port, Protocol::TCP ) ), timer ( this )
+        : socket ( T::listen ( this, port, Socket::Protocol::TCP ) ), timer ( this )
     {
         timer.start ( timeout );
     }
 
     BaseTestSocket ( const string& address, unsigned port )
-        : socket ( T::connect ( this, address, port, Protocol::TCP ) ), timer ( this )
+        : socket ( T::connect ( this, address, port, Socket::Protocol::TCP ) ), timer ( this )
     {
         timer.start ( timeout );
     }
 };
 
-template<uint64_t keepAlive, uint64_t timeout>
-struct BaseTestSocket<ReliableUdp, keepAlive, timeout> : public Socket::Owner, public Timer::Owner
-{
-    shared_ptr<Socket> socket, accepted;
-    Timer timer;
-
-    BaseTestSocket ( unsigned port )
-        : socket ( ReliableUdp::listen ( this, port ) ), timer ( this )
-    {
-        static_cast<ReliableUdp *> ( socket.get() )->setKeepAlive ( keepAlive );
-        timer.start ( timeout );
-    }
-
-    BaseTestSocket ( const string& address, unsigned port )
-        : socket ( ReliableUdp::connect ( this, address, port ) ), timer ( this )
-    {
-        static_cast<ReliableUdp *> ( socket.get() )->setKeepAlive ( keepAlive );
-        timer.start ( timeout );
-    }
-};
+// template<uint64_t keepAlive, uint64_t timeout>
+// struct BaseTestSocket<ReliableUdp, keepAlive, timeout> : public Socket::Owner, public Timer::Owner
+// {
+//     shared_ptr<Socket> socket, accepted;
+//     Timer timer;
+//
+//     BaseTestSocket ( unsigned port )
+//         : socket ( ReliableUdp::listen ( this, port ) ), timer ( this )
+//     {
+//         static_cast<ReliableUdp *> ( socket.get() )->setKeepAlive ( keepAlive );
+//         timer.start ( timeout );
+//     }
+//
+//     BaseTestSocket ( const string& address, unsigned port )
+//         : socket ( ReliableUdp::connect ( this, address, port ) ), timer ( this )
+//     {
+//         static_cast<ReliableUdp *> ( socket.get() )->setKeepAlive ( keepAlive );
+//         timer.start ( timeout );
+//     }
+// };
 
 #define TEST_CONNECT(T, PREFIX, LOSS, KEEP_ALIVE, TIMEOUT)                                                          \
     TEST ( T, PREFIX ## Connect ) {                                                                                 \

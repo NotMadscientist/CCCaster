@@ -39,13 +39,15 @@ TEST ( Socket, UdpSend )
         }
 
         TestSocket ( unsigned port )
-            : socket ( Socket::listen ( this, port, Protocol::UDP ) ), timer ( this ), sent ( false )
+            : socket ( Socket::listen ( this, port, Socket::Protocol::UDP ) )
+            , timer ( this ), sent ( false )
         {
             timer.start ( 1000 );
         }
 
         TestSocket ( const string& address, unsigned port )
-            : socket ( Socket::connect ( this, address, port, Protocol::UDP ) ), timer ( this ), sent ( false )
+            : socket ( Socket::connect ( this, address, port, Socket::Protocol::UDP ) )
+            , timer ( this ), sent ( false )
         {
             timer.start ( 1000 );
         }

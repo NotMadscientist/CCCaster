@@ -2,11 +2,11 @@
 
 #include "IpAddrPort.h"
 
-#include <netlink/socket.h>
-
 #include <iostream>
 
-enum class Protocol : uint8_t { TCP, UDP };
+#define LOG_SOCKET(PREFIX, SOCK)                                                                                    \
+    LOG ( "%s %s socket=%08x; fd=%08x; state=%s; address='%s'",                                                     \
+          PREFIX, TO_C_STR ( SOCK->protocol ), SOCK, SOCK->fd, TO_C_STR ( SOCK->state ), SOCK->address.c_str() )
 
 class Socket
 {
@@ -16,7 +16,7 @@ public:
     struct Owner
     {
         // Accepted a socket from server socket
-        inline virtual void acceptEvent ( Socket *serverSocket ) { serverSocket->accept ( this )->disconnect(); }
+        inline virtual void acceptEvent ( Socket *serverSocket ) { serverSocket->accept ( this ).reset(); }
 
         // Socket connected event
         inline virtual void connectEvent ( Socket *socket ) {}
@@ -28,16 +28,19 @@ public:
         inline virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) {}
     };
 
+    // Socket protocol
+    enum class Protocol : uint8_t { TCP, UDP };
+
+    // Connection state
+    enum class State : uint8_t { Listening, Connecting, Connected, Disconnected };
+
     // Set the socket owner
     inline virtual void setOwner ( Owner *owner ) { this->owner = owner; }
 
 private:
 
-    // Underlying raw socket
-    std::shared_ptr<NL::Socket> socket;
-
-    // Socket protocol
-    const Protocol protocol;
+    // Underlying socket fd
+    int fd;
 
     // Socket read buffer and position
     std::string readBuffer;
@@ -46,19 +49,25 @@ private:
     // Simulated packet loss percentage for testing
     uint8_t packetLoss;
 
-    // Construct with an existing raw socket
-    Socket ( NL::Socket *socket );
+    // Construct a client socket with an existing fd
+    Socket ( Owner *owner, int fd, const std::string& address, unsigned port );
+
+    // Initialize a socket with the provided address and protocol
+    void init();
 
 protected:
 
     // Socket owner
     Owner *owner;
 
+    // Connection state
+    State state;
+
     // Socket address
     const IpAddrPort address;
 
-    // Currently accepted socket
-    std::shared_ptr<Socket> acceptedSocket;
+    // Socket protocol
+    const Protocol protocol;
 
     // Construct a server socket
     Socket ( Owner *owner, unsigned port, Protocol protocol );
@@ -88,7 +97,8 @@ public:
     virtual std::shared_ptr<Socket> accept ( Owner *owner );
 
     // Socket status
-    inline virtual bool isConnected() const { return ( isClient() && socket.get() ); }
+    inline virtual State getState() const { return state; }
+    inline virtual bool isConnected() const { return isClient() && ( fd != 0 ) && ( state == State::Connected ); }
     inline virtual bool isClient() const { return !address.addr.empty(); }
     inline virtual bool isServer() const { return address.addr.empty(); }
 
@@ -97,20 +107,26 @@ public:
     inline virtual Protocol getProtocol() const { return protocol; }
 
     // Send a protocol message
-    virtual void send ( Serializable *message, const IpAddrPort& address = IpAddrPort() );
-    virtual void send ( const MsgPtr& msg, const IpAddrPort& address = IpAddrPort() );
+    virtual bool send ( Serializable *message, const IpAddrPort& address = IpAddrPort() );
+    virtual bool send ( const MsgPtr& msg, const IpAddrPort& address = IpAddrPort() );
 
     // Send raw bytes directly
-    void send ( char *bytes, size_t len, const IpAddrPort& address = IpAddrPort() );
+    bool send ( const char *buffer, size_t len, const IpAddrPort& address = IpAddrPort() );
+
+    // Read raw bytes directly
+    bool recv ( char *buffer, size_t& len );
+    bool recv ( char *buffer, size_t& len, IpAddrPort& address );
 
     // Set the packet loss for testing purposes
     void setPacketLoss ( uint8_t percentage );
 
     // Get the number of sockets pending acceptance for testing purposes
-    inline virtual size_t getPendingCount() const { return ( acceptedSocket.get() ? 1 : 0 ); };
+    inline virtual size_t getPendingCount() const { return 0; };
 
     friend class EventManager;
 };
 
-std::ostream& operator<< ( std::ostream& os, const Protocol& protocol );
-std::ostream& operator<< ( std::ostream& os, const NL::Protocol& protocol );
+std::ostream& operator<< ( std::ostream& os, Socket::Protocol protocol );
+std::ostream& operator<< ( std::ostream& os, Socket::State state );
+
+const char *inet_ntop ( int af, const void *src, char *dst, size_t size );

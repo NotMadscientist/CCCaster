@@ -3,20 +3,19 @@
 #include "Protocol.h"
 
 #include <cereal/types/string.hpp>
-#include <netlink/socket.h>
+
+#include <memory>
+
+struct addrinfo;
 
 struct IpAddrPort : public SerializableMessage
 {
     std::string addr;
     unsigned port;
 
+    mutable std::shared_ptr<addrinfo> addrInfo;
+
     inline IpAddrPort() : port ( 0 ) {}
-
-    inline IpAddrPort ( const std::shared_ptr<NL::Socket>& socket )
-        : addr ( socket->hostTo() ), port ( socket->portTo() ) {}
-
-    inline IpAddrPort ( const NL::Socket *socket )
-        : addr ( socket->hostTo() ), port ( socket->portTo() ) {}
 
     inline IpAddrPort ( const std::string& addr, unsigned port )
         : addr ( addr ), port ( port ) {}
@@ -49,6 +48,8 @@ struct IpAddrPort : public SerializableMessage
         std::sprintf ( buffer, "%s:%u", addr.c_str(), port );
         return buffer;
     }
+
+    std::shared_ptr<addrinfo>& updateAddrInfo ( bool passive = false ) const;
 
     MsgType getMsgType() const override;
 
