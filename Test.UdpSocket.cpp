@@ -75,8 +75,8 @@ TEST ( UdpSocket, SendConnectionLess )
         }
     };
 
-    TestSocket server ( TEST_LOCAL_PORT );
-    TestSocket client ( "127.0.0.1", TEST_LOCAL_PORT );
+    TestSocket server ( 0 );
+    TestSocket client ( "127.0.0.1", server.socket->address.port );
 
     EventManager::get().start();
 

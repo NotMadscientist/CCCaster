@@ -12,8 +12,6 @@
 #include <vector>
 #include <string>
 
-#define TEST_LOCAL_PORT 258258
-
 using namespace std;
 
 struct TestMessage : public SerializableSequence
@@ -81,8 +79,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port )                  \
             { socket->setPacketLoss ( LOSS ); }                                                                     \
         };                                                                                                          \
-        TestSocket server ( TEST_LOCAL_PORT );                                                                      \
-        TestSocket client ( "127.0.0.1", TEST_LOCAL_PORT );                                                         \
+        TestSocket server ( 0 );                                                                                    \
+        TestSocket client ( "127.0.0.1", server.socket->address.port );                                             \
         EventManager::get().start();                                                                                \
         EXPECT_TRUE ( server.socket.get() );                                                                        \
         if ( server.socket.get() )                                                                                  \
@@ -102,7 +100,7 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port )                  \
             { socket->setPacketLoss ( LOSS ); }                                                                     \
         };                                                                                                          \
-        TestSocket client ( "127.0.0.1", TEST_LOCAL_PORT );                                                         \
+        TestSocket client ( "127.0.0.1", 258258 );                                                                  \
         EventManager::get().start();                                                                                \
         EXPECT_TRUE ( client.socket.get() );                                                                        \
         if ( client.socket.get() )                                                                                  \
@@ -131,8 +129,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port )                  \
             { socket->setPacketLoss ( LOSS ); }                                                                     \
         };                                                                                                          \
-        TestSocket server ( TEST_LOCAL_PORT );                                                                      \
-        TestSocket client ( "127.0.0.1", TEST_LOCAL_PORT );                                                         \
+        TestSocket server ( 0 );                                                                                    \
+        TestSocket client ( "127.0.0.1", server.socket->address.port );                                             \
         EventManager::get().start();                                                                                \
         EXPECT_TRUE ( server.socket.get() );                                                                        \
         if ( server.socket.get() )                                                                                  \
@@ -170,8 +168,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port )                  \
             { socket->setPacketLoss ( LOSS ); }                                                                     \
         };                                                                                                          \
-        TestSocket server ( TEST_LOCAL_PORT );                                                                      \
-        TestSocket client ( "127.0.0.1", TEST_LOCAL_PORT );                                                         \
+        TestSocket server ( 0 );                                                                                    \
+        TestSocket client ( "127.0.0.1", server.socket->address.port );                                             \
         EventManager::get().start();                                                                                \
         EXPECT_TRUE ( server.socket.get() );                                                                        \
         if ( server.socket.get() )                                                                                  \
@@ -213,8 +211,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port )                  \
             { socket->setPacketLoss ( LOSS ); }                                                                     \
         };                                                                                                          \
-        TestSocket server ( TEST_LOCAL_PORT );                                                                      \
-        TestSocket client ( "127.0.0.1", TEST_LOCAL_PORT );                                                         \
+        TestSocket server ( 0 );                                                                                    \
+        TestSocket client ( "127.0.0.1", server.socket->address.port );                                             \
         EventManager::get().start();                                                                                \
         EXPECT_TRUE ( server.socket.get() );                                                                        \
         if ( server.socket.get() )                                                                                  \
@@ -267,8 +265,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port )                  \
             { socket->setPacketLoss ( LOSS ); }                                                                     \
         };                                                                                                          \
-        TestSocket server ( TEST_LOCAL_PORT );                                                                      \
-        TestSocket client ( "127.0.0.1", TEST_LOCAL_PORT );                                                         \
+        TestSocket server ( 0 );                                                                                    \
+        TestSocket client ( "127.0.0.1", server.socket->address.port );                                             \
         EventManager::get().start();                                                                                \
         EXPECT_FALSE ( server.socket.get() );                                                                       \
         EXPECT_TRUE ( server.accepted.get() );                                                                      \
@@ -312,8 +310,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port ),                 \
                 buffer ( Serializable::encode ( new TestMessage ( "Hello server!" ) ) ) {}                          \
         };                                                                                                          \
-        TestSocket server ( TEST_LOCAL_PORT );                                                                      \
-        TestSocket client ( "127.0.0.1", TEST_LOCAL_PORT );                                                         \
+        TestSocket server ( 0 );                                                                                    \
+        TestSocket client ( "127.0.0.1", server.socket->address.port );                                             \
         EventManager::get().start();                                                                                \
         EXPECT_TRUE ( server.socket.get() );                                                                        \
         if ( server.socket.get() )                                                                                  \

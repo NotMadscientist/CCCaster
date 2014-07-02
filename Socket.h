@@ -35,7 +35,9 @@ struct Socket
     enum class State : uint8_t { Listening, Connecting, Connected, Disconnected };
 
     // Socket address
-    const IpAddrPort address;
+    // For server sockets, only the port should be set to the locally bound port
+    // For client sockets, this is the remote server address
+    IpAddrPort address;
 
     // Socket protocol
     const Protocol protocol;

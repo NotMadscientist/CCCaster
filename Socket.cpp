@@ -42,10 +42,12 @@ void Socket::init()
 
     if ( isClient() && protocol == Protocol::UDP )
     {
+        // For client UDP sockets, bind to any available local port
         addrInfo = IpAddrPort().updateAddrInfo ( true );
     }
     else
     {
+        // Otherwise bind to the given address and port
         addrInfo = address.updateAddrInfo ( isServer() || protocol == Protocol::UDP );
     }
 
@@ -141,6 +143,24 @@ void Socket::init()
     {
         LOG_SOCKET ( "init failed", this );
         throw "something"; // TODO
+    }
+
+    // Update the local port if bound to any available port
+    if ( address.port == 0 )
+    {
+        sockaddr_storage sa;
+        int saLen = sizeof ( sa );
+
+        if ( getsockname ( fd, ( struct sockaddr * ) &sa, &saLen ) == SOCKET_ERROR )
+        {
+            LOG_SOCKET ( ( "getsockname failed: " + getLastWinSockError() ).c_str(), this );
+            closesocket ( fd );
+            fd = 0;
+            throw "something"; // TODO
+        }
+
+        // TODO IPv6
+        address.port = ntohs ( ( ( struct sockaddr_in * ) &sa )->sin_port );
     }
 }
 
