@@ -52,7 +52,7 @@ TEST ( GoBackN, SendOnce )
             }
         }
 
-        TestSocket ( unsigned port )
+        TestSocket ( uint16_t port )
             : socket ( UdpSocket::bind ( this, port ) )
             , gbn ( this ), timer ( this )
         {
@@ -60,7 +60,7 @@ TEST ( GoBackN, SendOnce )
             timer.start ( 1000 * 10 );
         }
 
-        TestSocket ( const string& address, unsigned port )
+        TestSocket ( const string& address, uint16_t port )
             : socket ( UdpSocket::bind ( this, IpAddrPort ( address, port ) ) )
             , address ( address, port ), gbn ( this ), timer ( this )
         {
@@ -134,7 +134,7 @@ TEST ( GoBackN, SendSequential )
             }
         }
 
-        TestSocket ( unsigned port )
+        TestSocket ( uint16_t port )
             : socket ( UdpSocket::bind ( this, port ) )
             , gbn ( this ), timer ( this )
         {
@@ -142,7 +142,7 @@ TEST ( GoBackN, SendSequential )
             timer.start ( 1000 * 30 );
         }
 
-        TestSocket ( const string& address, unsigned port )
+        TestSocket ( const string& address, uint16_t port )
             : socket ( UdpSocket::bind ( this, IpAddrPort ( address, port ) ) )
             , address ( address, port ), gbn ( this ), timer ( this )
         {
@@ -227,7 +227,7 @@ TEST ( GoBackN, SendAndRecv )
             }
         }
 
-        TestSocket ( unsigned port )
+        TestSocket ( uint16_t port )
             : socket ( UdpSocket::bind ( this, port ) )
             , gbn ( this ), timer ( this ), sent ( false )
         {
@@ -235,7 +235,7 @@ TEST ( GoBackN, SendAndRecv )
             timer.start ( 1000 );
         }
 
-        TestSocket ( const string& address, unsigned port )
+        TestSocket ( const string& address, uint16_t port )
             : socket ( UdpSocket::bind ( this, IpAddrPort ( address, port ) ) )
             , address ( address, port ), gbn ( this ), timer ( this ), sent ( false )
         {
@@ -333,14 +333,14 @@ TEST ( GoBackN, Timeout )
             ++stage;
         }
 
-        TestSocket ( unsigned port )
+        TestSocket ( uint16_t port )
             : socket ( UdpSocket::bind ( this, port ) )
             , gbn ( this, 1000 ), timer ( this ), properTimeout ( false ), stage ( 0 )
         {
             timer.start ( 1000 );
         }
 
-        TestSocket ( const string& address, unsigned port )
+        TestSocket ( const string& address, uint16_t port )
             : socket ( UdpSocket::bind ( this, IpAddrPort ( address, port ) ) )
             , address ( address, port ), gbn ( this, 1000 ), timer ( this ), properTimeout ( false ), stage ( 0 )
         {

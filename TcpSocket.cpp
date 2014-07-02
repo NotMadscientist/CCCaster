@@ -12,7 +12,7 @@
 
 using namespace std;
 
-TcpSocket::TcpSocket ( Socket::Owner *owner, unsigned port ) : Socket ( IpAddrPort ( "", port ), Protocol::TCP )
+TcpSocket::TcpSocket ( Socket::Owner *owner, uint16_t port ) : Socket ( IpAddrPort ( "", port ), Protocol::TCP )
 {
     this->owner = owner;
     this->state = State::Listening;
@@ -47,7 +47,7 @@ void TcpSocket::disconnect()
     Socket::disconnect();
 }
 
-shared_ptr<Socket> TcpSocket::listen ( Socket::Owner *owner, unsigned port )
+shared_ptr<Socket> TcpSocket::listen ( Socket::Owner *owner, uint16_t port )
 {
     return shared_ptr<Socket> ( new TcpSocket ( owner, port ) );
 }
@@ -84,7 +84,7 @@ shared_ptr<Socket> TcpSocket::accept ( Socket::Owner *owner )
     char newAddr[INET6_ADDRSTRLEN];
     inet_ntop ( sa.ss_family, & ( ( ( struct sockaddr_in * ) &sa )->sin_addr ), newAddr, sizeof ( newAddr ) );
 
-    unsigned newPort = ntohs ( ( ( struct sockaddr_in * ) &sa )->sin_port );
+    uint16_t newPort = ntohs ( ( ( struct sockaddr_in * ) &sa )->sin_port );
 
     return shared_ptr<Socket> ( new TcpSocket ( owner, newFd, IpAddrPort ( newAddr, newPort ) ) );
 }

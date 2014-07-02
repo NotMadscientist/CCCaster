@@ -38,13 +38,13 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
     shared_ptr<Socket> socket, accepted;
     Timer timer;
 
-    BaseTestSocket ( unsigned port )
+    BaseTestSocket ( uint16_t port )
         : socket ( T::listen ( this, port ) ), timer ( this )
     {
         timer.start ( timeout );
     }
 
-    BaseTestSocket ( const string& address, unsigned port )
+    BaseTestSocket ( const string& address, uint16_t port )
         : socket ( T::connect ( this, IpAddrPort ( address, port ) ) ), timer ( this )
     {
         timer.start ( timeout );
@@ -75,8 +75,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
                 LOG ( "Stopping because of timeout" );                                                              \
                 EventManager::get().stop();                                                                         \
             }                                                                                                       \
-            TestSocket ( unsigned port ) : BaseTestSocket ( port ) { socket->setPacketLoss ( LOSS ); }              \
-            TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port )                  \
+            TestSocket ( uint16_t port ) : BaseTestSocket ( port ) { socket->setPacketLoss ( LOSS ); }              \
+            TestSocket ( const string& address, uint16_t port ) : BaseTestSocket ( address, port )                  \
             { socket->setPacketLoss ( LOSS ); }                                                                     \
         };                                                                                                          \
         TestSocket server ( 0 );                                                                                    \
@@ -97,10 +97,10 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
     TEST ( T, Timeout ) {                                                                                           \
         struct TestSocket : public BaseTestSocket<T, KEEP_ALIVE, TIMEOUT> {                                         \
             void timerExpired ( Timer *timer ) override { EventManager::get().stop(); }                             \
-            TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port )                  \
+            TestSocket ( const string& address, uint16_t port ) : BaseTestSocket ( address, port )                  \
             { socket->setPacketLoss ( LOSS ); }                                                                     \
         };                                                                                                          \
-        TestSocket client ( "127.0.0.1", 258258 );                                                                  \
+        TestSocket client ( "127.0.0.1", 39393 );                                                                   \
         EventManager::get().start();                                                                                \
         EXPECT_TRUE ( client.socket.get() );                                                                        \
         if ( client.socket.get() )                                                                                  \
@@ -125,8 +125,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
                 LOG ( "Stopping because of timeout" );                                                              \
                 EventManager::get().stop();                                                                         \
             }                                                                                                       \
-            TestSocket ( unsigned port ) : BaseTestSocket ( port ) { socket->setPacketLoss ( LOSS ); }              \
-            TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port )                  \
+            TestSocket ( uint16_t port ) : BaseTestSocket ( port ) { socket->setPacketLoss ( LOSS ); }              \
+            TestSocket ( const string& address, uint16_t port ) : BaseTestSocket ( address, port )                  \
             { socket->setPacketLoss ( LOSS ); }                                                                     \
         };                                                                                                          \
         TestSocket server ( 0 );                                                                                    \
@@ -164,8 +164,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
                 LOG ( "Stopping because of timeout" );                                                              \
                 EventManager::get().stop();                                                                         \
             }                                                                                                       \
-            TestSocket ( unsigned port ) : BaseTestSocket ( port ) { socket->setPacketLoss ( LOSS ); }              \
-            TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port )                  \
+            TestSocket ( uint16_t port ) : BaseTestSocket ( port ) { socket->setPacketLoss ( LOSS ); }              \
+            TestSocket ( const string& address, uint16_t port ) : BaseTestSocket ( address, port )                  \
             { socket->setPacketLoss ( LOSS ); }                                                                     \
         };                                                                                                          \
         TestSocket server ( 0 );                                                                                    \
@@ -207,8 +207,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
                 LOG ( "Stopping because of timeout" );                                                              \
                 EventManager::get().stop();                                                                         \
             }                                                                                                       \
-            TestSocket ( unsigned port ) : BaseTestSocket ( port ) { socket->setPacketLoss ( LOSS ); }              \
-            TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port )                  \
+            TestSocket ( uint16_t port ) : BaseTestSocket ( port ) { socket->setPacketLoss ( LOSS ); }              \
+            TestSocket ( const string& address, uint16_t port ) : BaseTestSocket ( address, port )                  \
             { socket->setPacketLoss ( LOSS ); }                                                                     \
         };                                                                                                          \
         TestSocket server ( 0 );                                                                                    \
@@ -261,8 +261,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
                 LOG ( "Stopping because of timeout" );                                                              \
                 EventManager::get().stop();                                                                         \
             }                                                                                                       \
-            TestSocket ( unsigned port ) : BaseTestSocket ( port ) { socket->setPacketLoss ( LOSS ); }              \
-            TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port )                  \
+            TestSocket ( uint16_t port ) : BaseTestSocket ( port ) { socket->setPacketLoss ( LOSS ); }              \
+            TestSocket ( const string& address, uint16_t port ) : BaseTestSocket ( address, port )                  \
             { socket->setPacketLoss ( LOSS ); }                                                                     \
         };                                                                                                          \
         TestSocket server ( 0 );                                                                                    \
@@ -306,8 +306,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
                 else                                                                                                \
                     EventManager::get().stop();                                                                     \
             }                                                                                                       \
-            TestSocket ( unsigned port ) : BaseTestSocket ( port ) { timer.start ( 2000 ); }                        \
-            TestSocket ( const string& address, unsigned port ) : BaseTestSocket ( address, port ),                 \
+            TestSocket ( uint16_t port ) : BaseTestSocket ( port ) { timer.start ( 2000 ); }                        \
+            TestSocket ( const string& address, uint16_t port ) : BaseTestSocket ( address, port ),                 \
                 buffer ( Serializable::encode ( new TestMessage ( "Hello server!" ) ) ) {}                          \
         };                                                                                                          \
         TestSocket server ( 0 );                                                                                    \

@@ -47,7 +47,7 @@ class UdpSocket : public Socket, public GoBackN::Owner
 //     void gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address );
 
     // Construct a server socket
-    UdpSocket ( Socket::Owner *owner, unsigned port, uint64_t keepAlive );
+    UdpSocket ( Socket::Owner *owner, uint16_t port, uint64_t keepAlive );
 
     // Construct a client socket
     UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, uint64_t keepAlive );
@@ -63,13 +63,13 @@ protected:
 public:
 
     // Listen for connections on the given port
-    static std::shared_ptr<Socket> listen ( Socket::Owner *owner, unsigned port );
+    static std::shared_ptr<Socket> listen ( Socket::Owner *owner, uint16_t port );
 
     // Connect to the given address and port
     static std::shared_ptr<Socket> connect ( Socket::Owner *owner, const IpAddrPort& address );
 
     // Create connection-less sockets
-    static std::shared_ptr<Socket> bind ( Socket::Owner *owner,  unsigned port );
+    static std::shared_ptr<Socket> bind ( Socket::Owner *owner, uint16_t port );
     static std::shared_ptr<Socket> bind ( Socket::Owner *owner, const IpAddrPort& address );
 
     // Destructor

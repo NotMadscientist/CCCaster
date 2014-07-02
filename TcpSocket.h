@@ -5,7 +5,7 @@
 class TcpSocket : public Socket
 {
     // Construct a server socket
-    TcpSocket ( Socket::Owner *owner, unsigned port );
+    TcpSocket ( Socket::Owner *owner, uint16_t port );
 
     // Construct a client socket
     TcpSocket ( Socket::Owner *owner, const IpAddrPort& address );
@@ -24,7 +24,7 @@ protected:
 public:
 
     // Listen for connections on the given port
-    static std::shared_ptr<Socket> listen ( Socket::Owner *owner, unsigned port );
+    static std::shared_ptr<Socket> listen ( Socket::Owner *owner, uint16_t port );
 
     // Connect to the given address and port
     static std::shared_ptr<Socket> connect ( Socket::Owner *owner, const IpAddrPort& address );

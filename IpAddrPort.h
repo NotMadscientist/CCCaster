@@ -11,13 +11,13 @@ struct addrinfo;
 struct IpAddrPort : public SerializableMessage
 {
     std::string addr;
-    unsigned port;
+    uint16_t port;
 
     mutable std::shared_ptr<addrinfo> addrInfo;
 
     inline IpAddrPort() : port ( 0 ) {}
 
-    inline IpAddrPort ( const std::string& addr, unsigned port )
+    inline IpAddrPort ( const std::string& addr, uint16_t port )
         : addr ( addr ), port ( port ) {}
 
     inline bool empty() const

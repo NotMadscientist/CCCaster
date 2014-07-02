@@ -140,7 +140,7 @@ void UdpSocket::timeoutGoBackN ( GoBackN *gbn )
 //     socket->gbn.recv ( msg );
 // }
 
-UdpSocket::UdpSocket ( Socket::Owner *owner, unsigned port, uint64_t keepAlive  )
+UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, uint64_t keepAlive  )
     : Socket ( IpAddrPort ( "", port ), Protocol::UDP ), gbn ( this, keepAlive )
 {
     this->owner = owner;
@@ -158,14 +158,14 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, uint64_t
     EventManager::get().addSocket ( this );
 }
 
-// UdpSocket::UdpSocket ( Socket::Owner *owner, unsigned port )
+// UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port )
 //     : Socket ( this, port, Protocol::UDP ), state ( State::Listening )
 //     , gbn ( this, DEFAULT_KEEP_ALIVE )
 // {
 //     LOG_SOCKET ( "Listening to server", this );
 // }
 //
-// UdpSocket::UdpSocket ( Socket::Owner *owner, const string& address, unsigned port )
+// UdpSocket::UdpSocket ( Socket::Owner *owner, const string& address, uint16_t port )
 //     : Socket ( this, address, port, Protocol::UDP ), state ( State::Connecting )
 //     , gbn ( this, DEFAULT_KEEP_ALIVE )
 // {
@@ -173,7 +173,7 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, uint64_t
 //     send ( new UdpConnect ( UdpConnect::ConnectType::Request ) );
 // }
 //
-// UdpSocket::UdpSocket ( UdpSocket *parent, Socket::Owner *owner, const string& address, unsigned port )
+// UdpSocket::UdpSocket ( UdpSocket *parent, Socket::Owner *owner, const string& address, uint16_t port )
 //     : Socket ( this, address, port ), state ( State::Connected )
 //     , gbn ( this, DEFAULT_KEEP_ALIVE )
 // {
@@ -211,7 +211,7 @@ void UdpSocket::disconnect()
 //         parentSocket->acceptedSockets.erase ( getRemoteAddress() );
 }
 
-shared_ptr<Socket> UdpSocket::listen ( Socket::Owner *owner, unsigned port )
+shared_ptr<Socket> UdpSocket::listen ( Socket::Owner *owner, uint16_t port )
 {
     return shared_ptr<Socket> ( new UdpSocket ( owner, port, DEFAULT_KEEP_ALIVE ) );
 }
@@ -221,7 +221,7 @@ shared_ptr<Socket> UdpSocket::connect ( Socket::Owner *owner, const IpAddrPort& 
     return shared_ptr<Socket> ( new UdpSocket ( owner, address, DEFAULT_KEEP_ALIVE ) );
 }
 
-shared_ptr<Socket> UdpSocket::bind ( Socket::Owner *owner,  unsigned port )
+shared_ptr<Socket> UdpSocket::bind ( Socket::Owner *owner, uint16_t port )
 {
     return shared_ptr<Socket> ( new UdpSocket ( owner, port, 0 ) );
 }

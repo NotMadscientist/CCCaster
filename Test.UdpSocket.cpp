@@ -60,14 +60,14 @@ TEST ( UdpSocket, SendConnectionLess )
             }
         }
 
-        TestSocket ( unsigned port )
+        TestSocket ( uint16_t port )
             : socket ( UdpSocket::bind ( this, port ) )
             , timer ( this ), sent ( false )
         {
             timer.start ( 1000 );
         }
 
-        TestSocket ( const string& address, unsigned port )
+        TestSocket ( const string& address, uint16_t port )
             : socket ( UdpSocket::bind ( this, IpAddrPort ( address, port ) ) )
             , timer ( this ), sent ( false )
         {
