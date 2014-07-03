@@ -39,7 +39,7 @@ BUILD_TYPE = Debug
 
 all: STRIP = touch
 all: DEFINES += -D_GLIBCXX_DEBUG
-all: CC_FLAGS += -g
+all: CC_FLAGS += -ggdb3 -O0 -fno-inline
 all: $(BINARY)
 
 release: DEFINES += -DNDEBUG -DRELEASE
