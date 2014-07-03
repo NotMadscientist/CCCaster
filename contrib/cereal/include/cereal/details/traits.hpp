@@ -1128,9 +1128,13 @@ namespace cereal
       {
         template<class T>
           base_class_id(T const * const t) :
+#ifndef RELEASE
           type(typeid(T)),
-          ptr(t),
-          hash(std::hash<std::type_index>()(typeid(T)) ^ (std::hash<void const *>()(t) << 1))
+#endif
+          ptr(t)
+#ifndef RELEASE
+          , hash(std::hash<std::type_index>()(typeid(T)) ^ (std::hash<void const *>()(t) << 1))
+#endif
           { }
 
           bool operator==(base_class_id const & other) const

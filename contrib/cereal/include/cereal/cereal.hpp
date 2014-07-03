@@ -192,6 +192,7 @@ namespace cereal
       Interfaces for other forms of serialization functions is similar.  This
       macro should be placed at global scope.
       @ingroup Utility */
+#ifndef RELEASE
   #define CEREAL_CLASS_VERSION(TYPE, VERSION_NUMBER)                             \
   namespace cereal { namespace detail {                                          \
     template <> struct Version<TYPE>                                             \
@@ -207,6 +208,7 @@ namespace cereal
     static const auto CEREAL_CLASS_VERSION_REGISTER##TYPE##VERSION_NUMBER =      \
       Version<TYPE>::registerVersion();                                          \
   } } // end namespaces
+#endif
 
   //! The base output archive class
   /*! This is the base output archive for all output archives.  If you create
@@ -463,10 +465,12 @@ namespace cereal
       template <class T> inline
       void registerClassVersion( const std::uint32_t version )
       {
+#ifndef RELEASE
         static const auto hash = std::type_index(typeid(T)).hash_code();
         const auto insertResult = itsVersionedTypes.insert( hash );
         if( insertResult.second ) // insertion took place, serialize the version number
           process( make_nvp<ArchiveType>("cereal_class_version", version) );
+#endif
       }
 
       //! Member serialization
@@ -846,6 +850,7 @@ namespace cereal
       template <class T> inline
       std::uint32_t loadClassVersion()
       {
+#ifndef RELEASE
         static const auto hash = std::type_index(typeid(T)).hash_code();
         auto lookupResult = itsVersionedTypes.find( hash );
 
@@ -860,6 +865,9 @@ namespace cereal
 
           return version;
         }
+#else
+        return 0;
+#endif
       }
 
       //! Member serialization

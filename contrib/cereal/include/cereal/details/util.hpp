@@ -50,7 +50,11 @@ namespace cereal
     template <class T> inline
       std::string demangledName()
     {
+#ifndef RELEASE
       return typeid( T ).name();
+#else
+      return "";
+#endif
     }
   } // namespace util
 } // namespace cereal
@@ -81,7 +85,11 @@ namespace cereal
     /*! @internal */
     template<class T> inline
       std::string demangledName()
+#ifndef RELEASE
       { return demangle(typeid(T).name()); }
+#else
+      { return ""; }
+#endif
   }
 } // namespace cereal
 #endif
