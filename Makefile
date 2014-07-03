@@ -122,4 +122,4 @@ endif
 	$(CXX) $(CC_FLAGS) -o $@ -c $<
 
 %.o: %.c
-	$(GCC) $(CC_FLAGS) -Wno-attributes -o $@ -c $<
+	$(GCC) $(filter-out -fno-rtti, $(CC_FLAGS)) -Wno-attributes -o $@ -c $<
