@@ -73,19 +73,13 @@ const char *inet_ntop ( int af, const void *src, char *dst, size_t size )
     return 0;
 }
 
-IpAddrPort::IpAddrPort ( bool isV4 )
-    : port ( 0 ), addrInfo ( getAddrInfo ( "", 0, isV4 ) ) {}
-
-IpAddrPort::IpAddrPort ( const string& addr, uint16_t port, bool isV4 )
-    : addr ( addr ), port ( port ), addrInfo ( getAddrInfo ( addr, port, isV4 ) ) {}
-
 IpAddrPort::IpAddrPort ( const sockaddr_storage& sa )
-    : addr ( getAddrFromSockAddr ( sa ) ), port ( getPortFromSockAddr ( sa ) )
-{
-    updateAddrInfo ( sa.ss_family == AF_INET );
-}
+    : addr ( getAddrFromSockAddr ( sa ) ), port ( getPortFromSockAddr ( sa ) ), isV4 ( sa.ss_family == AF_INET ) {}
 
-shared_ptr<addrinfo>& IpAddrPort::updateAddrInfo ( bool isV4 )
+const shared_ptr<addrinfo>& IpAddrPort::getAddrInfo() const
 {
-    return ( addrInfo = getAddrInfo ( addr, port, isV4 ) );
+    if ( addrInfo.get() )
+        return addrInfo;
+    else
+        return ( addrInfo = ::getAddrInfo ( addr, port, isV4 ) );
 }

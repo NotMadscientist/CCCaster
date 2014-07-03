@@ -21,13 +21,17 @@ struct IpAddrPort : public SerializableMessage
 {
     std::string addr;
     uint16_t port;
-    std::shared_ptr<addrinfo> addrInfo;
+    bool isV4;
 
-    explicit IpAddrPort ( bool isV4 = true );
-    IpAddrPort ( const std::string& addr, uint16_t port, bool isV4 = true );
+    inline explicit IpAddrPort ( bool isV4 = true )
+        : port ( 0 ), isV4 ( isV4 ) {}
+
+    inline IpAddrPort ( const std::string& addr, uint16_t port, bool isV4 = true )
+        : addr ( addr ), port ( port ), isV4 ( isV4 ) {}
+
     IpAddrPort ( const sockaddr_storage& sa );
 
-    std::shared_ptr<addrinfo>& updateAddrInfo ( bool isV4 = true );
+    const std::shared_ptr<addrinfo>& getAddrInfo() const;
 
     inline bool empty() const
     {
@@ -65,6 +69,10 @@ protected:
     void serialize ( cereal::BinaryOutputArchive& ar ) const override { ar ( addr, port ); }
 
     void deserialize ( cereal::BinaryInputArchive& ar ) override { ar ( addr, port ); }
+
+private:
+
+    mutable std::shared_ptr<addrinfo> addrInfo;
 };
 
 const IpAddrPort NullAddress;

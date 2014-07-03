@@ -190,7 +190,8 @@ bool Socket::send ( const char *buffer, size_t len )
         else
         {
             LOG_SOCKET ( TO_C_STR ( ( "sendto ( [ %u bytes ], '" + address.str() + "' ); from" ).c_str(), len ), this );
-            sentBytes = ::sendto ( fd, buffer, len, 0, address.addrInfo->ai_addr, address.addrInfo->ai_addrlen );
+            sentBytes = ::sendto ( fd, buffer, len, 0,
+                                   address.getAddrInfo()->ai_addr, address.getAddrInfo()->ai_addrlen );
         }
 
         if ( sentBytes == SOCKET_ERROR )
@@ -217,7 +218,8 @@ bool Socket::send ( const char *buffer, size_t len, const IpAddrPort& address )
     while ( totalBytes < len )
     {
         LOG_SOCKET ( TO_C_STR ( ( "sendto ( [ %u bytes ], '" + address.str() + "' ); from" ).c_str(), len ), this );
-        int sentBytes = ::sendto ( fd, buffer, len, 0, address.addrInfo->ai_addr, address.addrInfo->ai_addrlen );
+        int sentBytes = ::sendto ( fd, buffer, len, 0,
+                                   address.getAddrInfo()->ai_addr, address.getAddrInfo()->ai_addrlen );
 
         if ( sentBytes == SOCKET_ERROR )
         {
