@@ -28,7 +28,7 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
     assert ( gbn == &this->gbn );
     assert ( getRemoteAddress().empty() == false );
 
-    LOG_SOCKET ( ( "Got '" + toString ( msg ) + "' from" ).c_str(), this );
+    LOG_SOCKET ( this, "got '%s'", msg );
 
     if ( !isChild() )
     {
@@ -37,7 +37,7 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
             case MsgType::UdpConnect:
                 if ( msg->getAs<UdpConnect>().connectType == UdpConnect::ConnectType::Reply )
                 {
-                    LOG_SOCKET ( "Connected", this );
+                    LOG_SOCKET ( this, "connectEvent" );
                     send ( new UdpConnect ( UdpConnect::ConnectType::Final ) );
                     state = State::Connected;
                     if ( owner )
@@ -66,7 +66,7 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
                         break;
 
                     case UdpConnect::ConnectType::Final:
-                        LOG_SOCKET ( "Accept from server", parent );
+                        LOG_SOCKET ( this, "acceptEvent" );
                         parent->acceptedSocket = parent->childSockets[getRemoteAddress()];
                         if ( parent->owner )
                             parent->owner->acceptEvent ( parent );
@@ -90,7 +90,7 @@ void UdpSocket::timeoutGoBackN ( GoBackN *gbn )
     assert ( gbn == &this->gbn );
     assert ( getRemoteAddress().empty() == false );
 
-    LOG_SOCKET ( "Disconnected", this );
+    LOG_SOCKET ( this, "disconnectEvent" );
     Socket::Owner *owner = this->owner;
     disconnect();
     if ( owner )
@@ -149,7 +149,6 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, uint64_t keepAlive  
     this->state = State::Listening;
     Socket::init();
     EventManager::get().addSocket ( this );
-    LOG_SOCKET ( "Listening to server", this );
 }
 
 UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, uint64_t keepAlive )
@@ -159,9 +158,8 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, uint64_t
     this->state = ( keepAlive ? State::Connecting : State::Connected );
     Socket::init();
     EventManager::get().addSocket ( this );
-    LOG_SOCKET ( TO_C_STR ( state ), this );
 
-    if ( state == State::Connecting )
+    if ( isConnecting() )
         send ( new UdpConnect ( UdpConnect::ConnectType::Request ) );
 }
 
@@ -169,7 +167,6 @@ UdpSocket::UdpSocket ( UdpSocket *parent, const IpAddrPort& address )
     : Socket ( address, Protocol::UDP ), hasParent ( true ), parent ( parent ), gbn ( this, parent->getKeepAlive() )
 {
     this->state = State::Connected;
-    LOG_SOCKET ( "Pending", this );
 }
 
 UdpSocket::~UdpSocket()
@@ -258,7 +255,7 @@ bool UdpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
             return true;
 
         default:
-            LOG ( "Unhandled BaseType '%s'!", TO_C_STR ( msg->getBaseType() ) );
+            LOG ( "Unhandled BaseType '%s'!", msg->getBaseType() );
             return false;
     }
 }
@@ -267,10 +264,10 @@ bool UdpSocket::sendDirect ( const MsgPtr& msg, const IpAddrPort& address )
 {
     string buffer = Serializable::encode ( msg );
 
-    LOG ( "Encoded '%s' to [ %u bytes ]", TO_C_STR ( msg ), buffer.size() );
+    LOG ( "Encoded '%s' to [ %u bytes ]", msg, buffer.size() );
 
     if ( !buffer.empty() )
-        LOG ( "Base64 : %s", toBase64 ( buffer ).c_str() );
+        LOG ( "Base64 : %s", toBase64 ( buffer ) );
 
     if ( !isChild() )
         return Socket::send ( &buffer[0], buffer.size(), address.empty() ? this->address : address );
@@ -278,6 +275,6 @@ bool UdpSocket::sendDirect ( const MsgPtr& msg, const IpAddrPort& address )
     if ( parent )
         return parent->Socket::send ( &buffer[0], buffer.size(), address.empty() ? this->address : address );
 
-    LOG_SOCKET ( "Cannot send over disconnected socket", this );
+    LOG_SOCKET ( this, "Cannot send over disconnected socket" );
     return false;
 }

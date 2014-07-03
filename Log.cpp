@@ -1,7 +1,4 @@
 #include "Log.h"
-#include "Util.h"
-
-#include <cstdarg>
 
 using namespace std;
 
@@ -40,7 +37,7 @@ void Log::open ( const string& name, bool prependPidToName )
     }
 }
 
-void Log::log ( const char *file, int line, const char *func, const char *format, ... )
+void Log::log ( const char *file, int line, const char *func, const char *message )
 {
     if ( !fd )
         return;
@@ -56,14 +53,7 @@ void Log::log ( const char *file, int line, const char *func, const char *format
     string shortFunc ( func );
     shortFunc = shortFunc.substr ( 0, shortFunc.find ( '(' ) );
 
-    fprintf ( fd, "%s:%s:%d: %s : ", buffer, file, line, shortFunc.c_str() );
-
-    va_list args;
-    va_start ( args, format );
-    vfprintf ( fd, format, args );
-    va_end ( args );
-
-    fprintf ( Log::fd, "\n" );
+    fprintf ( fd, "%s:%s:%d: %s : %s\n", buffer, file, line, shortFunc.c_str(), message );
     fflush ( fd );
 }
 

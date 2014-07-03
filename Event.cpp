@@ -80,7 +80,7 @@ void EventManager::checkSockets()
         if ( activeSockets.find ( socket ) != activeSockets.end() )
             continue;
 
-        LOG_SOCKET ( "Added", socket );
+        LOG_SOCKET ( socket, "added" );
         activeSockets.insert ( socket );
     }
 
@@ -92,7 +92,7 @@ void EventManager::checkSockets()
             continue;
         }
 
-        LOG ( "Removed socket %08x", *it ); // Don't log any extra data cus already dealloc'd
+        LOG ( "socket %08x removed", *it ); // Don't log any extra data cus already deleted
         activeSockets.erase ( it++ );
     }
 
@@ -105,7 +105,7 @@ void EventManager::checkSockets()
 
     for ( Socket *socket : activeSockets )
     {
-        if ( socket->state == Socket::State::Connecting && socket->protocol == Socket::Protocol::TCP )
+        if ( socket->isConnecting() && socket->isTCP() )
             FD_SET ( socket->fd, &writeFds );
         else
             FD_SET ( socket->fd, &readFds );
@@ -119,7 +119,7 @@ void EventManager::checkSockets()
 
     if ( count == SOCKET_ERROR )
     {
-        LOG ( "select failed: %s", getLastWinSockError().c_str() );
+        LOG ( "select failed: %s", getLastWinSockError() );
         throw "something"; // TODO
     }
 
@@ -131,12 +131,12 @@ void EventManager::checkSockets()
         if ( allocatedSockets.find ( socket ) == allocatedSockets.end() )
             continue;
 
-        if ( socket->state == Socket::State::Connecting && socket->protocol == Socket::Protocol::TCP )
+        if ( socket->isConnecting() && socket->isTCP() )
         {
             if ( !FD_ISSET ( socket->fd, &writeFds ) )
                 continue;
 
-            LOG_SOCKET ( "Connected", socket );
+            LOG_SOCKET ( socket, "connectEvent" );
             socket->connectEvent();
         }
         else
@@ -144,9 +144,9 @@ void EventManager::checkSockets()
             if ( !FD_ISSET ( socket->fd, &readFds ) )
                 continue;
 
-            if ( socket->isServer() && socket->protocol == Socket::Protocol::TCP )
+            if ( socket->isServer() && socket->isTCP() )
             {
-                LOG_SOCKET ( "Accept from server", socket );
+                LOG_SOCKET ( socket, "acceptEvent" );
                 socket->acceptEvent();
             }
             else
@@ -155,18 +155,18 @@ void EventManager::checkSockets()
 
                 if ( ioctlsocket ( socket->fd, FIONREAD, &numBytes ) != 0 )
                 {
-                    LOG ( "ioctlsocket failed: %s", getLastWinSockError().c_str() );
+                    LOG ( "ioctlsocket failed: %s", getLastWinSockError() );
                     throw "something"; // TODO
                 }
 
-                if ( socket->protocol == Socket::Protocol::TCP && numBytes == 0 )
+                if ( socket->isTCP() && numBytes == 0 )
                 {
-                    LOG_SOCKET ( "Disconnected", socket );
+                    LOG_SOCKET ( socket, "disconnectEvent" );
                     socket->disconnectEvent();
                 }
                 else
                 {
-                    LOG_SOCKET ( "Read from", socket );
+                    LOG_SOCKET ( socket, "readEvent" );
                     socket->readEvent();
                 }
             }
@@ -193,7 +193,7 @@ void EventManager::checkTimers()
             continue;
         }
 
-        LOG ( "Removed timer %08x", *it ); // Don't log any extra data cus already dealloc'd
+        LOG ( "Removed timer %08x", *it ); // Don't log any extra data cus already deleted
         activeTimers.erase ( it++ );
     }
 
@@ -245,7 +245,7 @@ void EventManager::ReaperThread::join()
 
 void EventManager::addTimer ( Timer *timer )
 {
-    LOG ( "Adding timer %08x; delay='%llu ms'", timer, timer->delay );
+    LOG ( "Adding timer %s; delay='%llu ms'", timer, timer->delay );
     allocatedTimers.insert ( timer );
 }
 
@@ -257,13 +257,13 @@ void EventManager::removeTimer ( Timer *timer )
 
 void EventManager::addSocket ( Socket *socket )
 {
-    LOG_SOCKET ( "Adding", socket );
+    LOG_SOCKET ( socket, "addSocket" );
     allocatedSockets.insert ( socket );
 }
 
 void EventManager::removeSocket ( Socket *socket )
 {
-    LOG_SOCKET ( "Removing", socket );
+    LOG_SOCKET ( socket, "removeSocket" );
     allocatedSockets.erase ( socket );
 }
 
@@ -292,7 +292,7 @@ void EventManager::initialize()
 
     if ( error != NO_ERROR )
     {
-        LOG ( "WSAStartup failed: %s", getWindowsErrorAsString ( error ).c_str() );
+        LOG ( "WSAStartup failed: %s", getWindowsErrorAsString ( error ) );
         throw "something"; // TODO
     }
 

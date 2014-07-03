@@ -5,9 +5,9 @@
 #include <vector>
 #include <memory>
 
-#define LOG_SOCKET(MSG, SOCKET)                                                                                     \
-    LOG ( "%s %s socket=%08x; fd=%08x; state=%s; address='%s'",                                                     \
-          MSG, TO_C_STR ( SOCKET->protocol ), SOCKET, SOCKET->fd, TO_C_STR ( SOCKET->state ), SOCKET->address.c_str() )
+#define LOG_SOCKET(SOCKET, FORMAT, ...)                                                                         \
+    LOG ( "%s socket=%08x; fd=%08x; state=%s; address='%s'; " FORMAT,                                           \
+          SOCKET->protocol, SOCKET, SOCKET->fd, SOCKET->state, SOCKET->address, ## __VA_ARGS__ )
 
 // Generic socket base class
 struct Socket
@@ -86,7 +86,10 @@ public:
     void init();
 
     // Socket state query functions
+    inline bool isTCP() const { return ( protocol == Protocol::TCP ); }
+    inline bool isUDP() const { return ( protocol == Protocol::UDP ); }
     inline virtual State getState() const { return state; }
+    inline virtual bool isConnecting() const { return isClient() && ( state == State::Connecting ); }
     inline virtual bool isConnected() const { return isClient() && ( state == State::Connected ); }
     inline virtual bool isDisconnected() const { return ( state == State::Disconnected ); }
     inline virtual bool isClient() const { return !address.addr.empty(); }

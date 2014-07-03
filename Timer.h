@@ -32,5 +32,3 @@ public:
 
     friend class EventManager;
 };
-
-std::ostream& operator<< ( std::ostream& os, const Timer *timer );

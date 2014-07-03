@@ -47,7 +47,7 @@ void Socket::init()
     shared_ptr<addrinfo> addrInfo;
 
     // TODO proper binding of IPv6 interfaces
-    if ( isClient() && protocol == Protocol::UDP )
+    if ( isClient() && isUDP() )
     {
         // For client UDP sockets, bind to any available local port
         addrInfo = getAddrInfo ( "", 0, true, true );
@@ -55,20 +55,21 @@ void Socket::init()
     else
     {
         // Otherwise bind to the given address and port
-        addrInfo = getAddrInfo ( address.addr, address.port, true, isServer() || protocol == Protocol::UDP );
+        addrInfo = getAddrInfo ( address.addr, address.port, true, isServer() || isUDP() );
     }
 
     addrinfo *res = addrInfo.get();
 
     for ( ; res; res = res->ai_next )
     {
-        fd = ::socket ( res->ai_family,
-                        ( protocol == Protocol::TCP ? SOCK_STREAM : SOCK_DGRAM ),
-                        ( protocol == Protocol::TCP ? IPPROTO_TCP : IPPROTO_UDP ) );
+        if ( isTCP() )
+            fd = ::socket ( res->ai_family, SOCK_STREAM, IPPROTO_TCP );
+        else
+            fd = ::socket ( res->ai_family, SOCK_DGRAM, IPPROTO_UDP );
 
         if ( fd == INVALID_SOCKET )
         {
-            LOG_SOCKET ( ( "socket failed: " + getLastWinSockError() ).c_str(), this );
+            LOG_SOCKET ( this, "socket failed: %s", getLastWinSockError() );
             fd = 0;
             continue;
         }
@@ -78,7 +79,7 @@ void Socket::init()
         // FIONBIO sets non-blocking socket operation
         if ( ioctlsocket ( fd, FIONBIO, &yes ) != 0 )
         {
-            LOG_SOCKET ( ( "ioctlsocket failed: " + getLastWinSockError() ).c_str(), this );
+            LOG_SOCKET ( this, "ioctlsocket failed: %s", getLastWinSockError() );
             closesocket ( fd );
             fd = 0;
             throw "something"; // TODO
@@ -86,7 +87,7 @@ void Socket::init()
 
         if ( isClient() )
         {
-            if ( protocol == Protocol::TCP )
+            if ( isTCP() )
             {
                 if ( ::connect ( fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
                 {
@@ -96,7 +97,7 @@ void Socket::init()
                     if ( error == WSAEWOULDBLOCK )
                         break;
 
-                    LOG_SOCKET ( ( "connect failed: " + getWindowsErrorAsString ( error ) ).c_str(), this );
+                    LOG_SOCKET ( this, "connect failed: %s", getWindowsErrorAsString ( error ) );
                     closesocket ( fd );
                     fd = 0;
                     continue;
@@ -106,7 +107,7 @@ void Socket::init()
             {
                 if ( ::bind ( fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
                 {
-                    LOG_SOCKET ( ( "bind failed: " + getLastWinSockError() ).c_str(), this );
+                    LOG_SOCKET ( this, "bind failed: %s", getLastWinSockError() );
                     closesocket ( fd );
                     fd = 0;
                     continue;
@@ -121,7 +122,7 @@ void Socket::init()
             // SO_EXCLUSIVEADDRUSE only replaces if not exact match, so it is safer
             if ( setsockopt ( fd, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, &yes, 1 ) == SOCKET_ERROR )
             {
-                LOG_SOCKET ( ( "setsockopt failed: " + getLastWinSockError() ).c_str(), this );
+                LOG_SOCKET ( this, "setsockopt failed: %s", getLastWinSockError() );
                 closesocket ( fd );
                 fd = 0;
                 throw "something"; // TODO
@@ -129,15 +130,15 @@ void Socket::init()
 
             if ( ::bind ( fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
             {
-                LOG_SOCKET ( ( "bind failed: " + getLastWinSockError() ).c_str(), this );
+                LOG_SOCKET ( this, "bind failed: %s", getLastWinSockError() );
                 closesocket ( fd );
                 fd = 0;
                 continue;
             }
 
-            if ( protocol == Protocol::TCP && ( ::listen ( fd, SOMAXCONN ) == SOCKET_ERROR ) )
+            if ( isTCP() && ( ::listen ( fd, SOMAXCONN ) == SOCKET_ERROR ) )
             {
-                LOG_SOCKET ( ( "listen failed: " + getLastWinSockError() ).c_str(), this );
+                LOG_SOCKET ( this, "listen failed: %s", getLastWinSockError() );
                 closesocket ( fd );
                 fd = 0;
                 throw "something"; // TODO
@@ -149,7 +150,7 @@ void Socket::init()
 
     if ( fd == 0 )
     {
-        LOG_SOCKET ( "init failed", this );
+        LOG_SOCKET ( this, "init failed" );
         throw "something"; // TODO
     }
 
@@ -161,7 +162,7 @@ void Socket::init()
 
         if ( getsockname ( fd, ( struct sockaddr * ) &sa, &saLen ) == SOCKET_ERROR )
         {
-            LOG_SOCKET ( ( "getsockname failed: " + getLastWinSockError() ).c_str(), this );
+            LOG_SOCKET ( this, "getsockname failed: %s", getLastWinSockError() );
             closesocket ( fd );
             fd = 0;
             throw "something"; // TODO
@@ -182,22 +183,24 @@ bool Socket::send ( const char *buffer, size_t len )
     {
         int sentBytes = SOCKET_ERROR;
 
-        if ( protocol == Protocol::TCP )
+        if ( isTCP() )
         {
-            LOG_SOCKET ( TO_C_STR ( "send ( [ %u bytes ] ); from", len ), this );
+            LOG_SOCKET ( this, "send ( [ %u bytes ] )", len );
             sentBytes = ::send ( fd, buffer, len, 0 );
         }
         else
         {
-            LOG_SOCKET ( TO_C_STR ( ( "sendto ( [ %u bytes ], '" + address.str() + "' ); from" ).c_str(), len ), this );
+            LOG_SOCKET ( this, "sendto ( [ %u bytes ], '%s' )", len, address );
             sentBytes = ::sendto ( fd, buffer, len, 0,
                                    address.getAddrInfo()->ai_addr, address.getAddrInfo()->ai_addrlen );
         }
 
         if ( sentBytes == SOCKET_ERROR )
         {
-            LOG_SOCKET ( ( ( protocol == Protocol::TCP ? "send failed: " : "sendto failed: " )
-                           + getLastWinSockError() ).c_str(), this );
+            if ( isTCP() )
+                LOG_SOCKET ( this, "send failed: %s", getLastWinSockError() );
+            else
+                LOG_SOCKET ( this, "sendto failed: %s", getLastWinSockError() );
             disconnect();
             return false;
         }
@@ -212,24 +215,24 @@ bool Socket::send ( const char *buffer, size_t len, const IpAddrPort& address )
 {
     if ( fd == 0 || isDisconnected() )
     {
-        LOG_SOCKET ( "Cannot send over disconnected socket", this );
+        LOG_SOCKET ( this, "Cannot send over disconnected socket" );
         return false;
     }
 
-    assert ( protocol == Protocol::UDP );
+    assert ( isUDP() == true );
     assert ( fd != 0 );
 
     size_t totalBytes = 0;
 
     while ( totalBytes < len )
     {
-        LOG_SOCKET ( TO_C_STR ( ( "sendto ( [ %u bytes ], '" + address.str() + "' ); from" ).c_str(), len ), this );
+        LOG_SOCKET ( this, "sendto ( [ %u bytes ], '%s' )", len, address );
         int sentBytes = ::sendto ( fd, buffer, len, 0,
                                    address.getAddrInfo()->ai_addr, address.getAddrInfo()->ai_addrlen );
 
         if ( sentBytes == SOCKET_ERROR )
         {
-            LOG_SOCKET ( ( "sendto failed: " + getLastWinSockError() ).c_str(), this );
+            LOG_SOCKET ( this, "sendto failed: %s", getLastWinSockError() );
             return false;
         }
 
@@ -248,7 +251,7 @@ bool Socket::recv ( char *buffer, size_t& len )
 
     if ( recvBytes == SOCKET_ERROR )
     {
-        LOG_SOCKET ( ( "recvfrom failed: " + getLastWinSockError() ).c_str(), this );
+        LOG_SOCKET ( this, "recvfrom failed: %s", getLastWinSockError() );
         return false;
     }
 
@@ -258,7 +261,7 @@ bool Socket::recv ( char *buffer, size_t& len )
 
 bool Socket::recv ( char *buffer, size_t& len, IpAddrPort& address )
 {
-    assert ( protocol == Protocol::UDP );
+    assert ( isUDP() == true );
     assert ( fd != 0 );
 
     sockaddr_storage sa;
@@ -268,7 +271,7 @@ bool Socket::recv ( char *buffer, size_t& len, IpAddrPort& address )
 
     if ( recvBytes == SOCKET_ERROR )
     {
-        LOG_SOCKET ( ( "recvfrom failed: " + getLastWinSockError() ).c_str(), this );
+        LOG_SOCKET ( this, "recvfrom failed: %s", getLastWinSockError() );
         return false;
     }
 
@@ -279,15 +282,13 @@ bool Socket::recv ( char *buffer, size_t& len, IpAddrPort& address )
 
 void Socket::readEvent()
 {
-    LOG_SOCKET ( "Read from", this );
-
     char *bufferEnd = & ( readBuffer[readPos] );
     size_t bufferLen = readBuffer.size() - readPos;
 
     IpAddrPort address = getRemoteAddress();
     bool success = false;
 
-    if ( protocol == Protocol::TCP )
+    if ( isTCP() )
         success = recv ( bufferEnd, bufferLen );
     else
         success = recv ( bufferEnd, bufferLen, address );
@@ -295,8 +296,8 @@ void Socket::readEvent()
     if ( !success )
     {
         // Disconnect the socket if an error occured during read
-        LOG_SOCKET ( "Disconnected", this );
-        if ( protocol == Protocol::TCP )
+        LOG_SOCKET ( this, "disconnect due to read error" );
+        if ( isTCP() )
             disconnectEvent();
         else
             disconnect();
@@ -306,13 +307,13 @@ void Socket::readEvent()
     // Simulated packet loss
     if ( rand() % 100 < packetLoss )
     {
-        LOG ( "Discarding [ %u bytes ] from '%s'", bufferLen, address.c_str() );
+        LOG ( "Discarding [ %u bytes ] from '%s'", bufferLen, address );
         return;
     }
 
     // Increment the buffer position
     readPos += bufferLen;
-    LOG ( "Read [ %u bytes ] from '%s'", bufferLen, address.c_str() );
+    LOG ( "Read [ %u bytes ] from '%s'", bufferLen, address );
 
     // Handle zero byte packets
     if ( bufferLen == 0 )
@@ -322,7 +323,7 @@ void Socket::readEvent()
         return;
     }
 
-    LOG ( "Base64 : %s", toBase64 ( bufferEnd, bufferLen ).c_str() );
+    LOG ( "Base64 : %s", toBase64 ( bufferEnd, bufferLen ) );
 
     // Try to decode as many messages from the buffer as possible
     for ( ;; )
@@ -333,7 +334,7 @@ void Socket::readEvent()
         if ( !msg.get() )
             break;
 
-        LOG ( "Decoded [ %u bytes ] to '%s'", consumed, TO_C_STR ( msg ) );
+        LOG ( "Decoded [ %u bytes ] to '%s'", consumed, msg );
         readEvent ( msg, address );
 
         // Abort if the socket is de-allocated

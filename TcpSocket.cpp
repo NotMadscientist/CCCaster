@@ -69,7 +69,7 @@ shared_ptr<Socket> TcpSocket::accept ( Socket::Owner *owner )
 
     if ( newFd == INVALID_SOCKET )
     {
-        LOG_SOCKET ( ( "accept failed: " + getLastWinSockError() ).c_str(), this );
+        LOG_SOCKET ( this, "accept failed: %s", getLastWinSockError() );
         return 0;
     }
 
@@ -90,10 +90,10 @@ bool TcpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
 {
     string buffer = Serializable::encode ( msg );
 
-    LOG ( "Encoded '%s' to [ %u bytes ]", TO_C_STR ( msg ), buffer.size() );
+    LOG ( "Encoded '%s' to [ %u bytes ]", msg, buffer.size() );
 
     if ( !buffer.empty() )
-        LOG ( "Base64 : %s", toBase64 ( buffer ).c_str() );
+        LOG ( "Base64 : %s", toBase64 ( buffer ) );
 
     return Socket::send ( &buffer[0], buffer.size() );
 }

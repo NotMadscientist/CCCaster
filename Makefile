@@ -3,7 +3,7 @@ BINARY = cccaster.exe
 
 # Main program sources
 CPP_SRCS = $(wildcard *.cpp)
-NON_PROTOCOL_HEADERS = $(filter-out Protocol.%.h, $(wildcard *.h))
+NON_GEN_HEADERS = $(filter-out Version.h, $(filter-out Util.string.h, $(filter-out Protocol.%.h, $(wildcard *.h))))
 
 # Library sources
 GTEST_SRCS = contrib/gtest/fused-src/gtest/gtest-all.cc
@@ -36,6 +36,7 @@ LD_FLAGS += -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -limm32 -lole32 -loleau
 
 OBJECTS = $(CPP_SRCS:.cpp=.o) $(LIB_CPP_SRCS:.cc=.o) $(LIB_C_CSRCS:.c=.o)
 BUILD_TYPE = Debug
+NUM_TO_STRING_ARGS = 10
 
 all: STRIP = touch
 all: DEFINES += -D_GLIBCXX_DEBUG
@@ -47,7 +48,7 @@ release: CC_FLAGS += -Os -O2 -fno-rtti
 release: BUILD_TYPE = Release
 release: $(BINARY)
 
-$(BINARY): Version.h protocol .depend $(OBJECTS) icon.res
+$(BINARY): Version.h Util.string.h protocol .depend $(OBJECTS) icon.res
 	@echo
 	$(CXX) -o $@ $(OBJECTS) $(LD_FLAGS) icon.res
 	@echo
@@ -59,13 +60,17 @@ icon.res: icon.rc icon.ico
 	$(WINDRES) -F pe-i386 icon.rc -O coff -o $@
 
 protocol:
-	@sh make_protocol $(NON_PROTOCOL_HEADERS)
+	@./make_protocol $(NON_GEN_HEADERS)
+
+Util.string.h:
+	@./make_util_string $(NUM_TO_STRING_ARGS) > $@
 
 Version.h:
 	@date +"#define BUILD %s" > $@
 
 .depend:
-	@sh make_protocol $(NON_PROTOCOL_HEADERS)
+	@./make_protocol $(NON_GEN_HEADERS)
+	@./make_util_string $(NUM_TO_STRING_ARGS) > Util.string.h
 	@date +"#define BUILD %s" > Version.h
 	@echo "Regenerating .depend ..."
 	@$(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp > $@
@@ -74,14 +79,14 @@ Version.h:
 .PHONY: clean check trim format count Version.h protocol
 
 clean:
-	rm -f Version.h Protocol.*.h .depend *.res *.exe *.zip *.o $(OBJECTS)
+	rm -f Version.h Util.string.h Protocol.*.h .depend *.res *.exe *.zip *.o $(OBJECTS)
 
 check:
 	cppcheck --enable=all *.cpp *.h
 
 trim:
-	sed --binary --in-place 's/\\r$$//' *.cpp $(NON_PROTOCOL_HEADERS)
-	sed --in-place 's/[[:space:]]\\+$$//' *.cpp $(NON_PROTOCOL_HEADERS)
+	sed --binary --in-place 's/\\r$$//' *.cpp $(NON_GEN_HEADERS)
+	sed --in-place 's/[[:space:]]\\+$$//' *.cpp $(NON_GEN_HEADERS)
 
 format:
 	$(ASTYLE)              \
@@ -98,10 +103,10 @@ format:
     --keep-one-line-blocks      \
     --align-pointer=name        \
     --align-reference=type      \
-    *.cpp $(NON_PROTOCOL_HEADERS)
+    *.cpp $(NON_GEN_HEADERS)
 
 count:
-	wc -l *.cpp $(NON_PROTOCOL_HEADERS)
+	wc -l *.cpp $(NON_GEN_HEADERS)
 
 ifeq (,$(findstring clean, $(MAKECMDGOALS)))
 ifeq (,$(findstring check, $(MAKECMDGOALS)))

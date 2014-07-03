@@ -1,0 +1,15 @@
+#!/bin/bash
+
+echo "default: return \"\";"
+
+for (( i = 1; i <= $1; ++i )); do
+
+    echo -n "case $i: std::sprintf ( buffer, format"
+
+    for (( j = 0; j < i; ++j )); do
+        echo -n ", args[$j].c_str()"
+    done
+
+    echo " ); break;"
+
+done

@@ -12,7 +12,7 @@ using namespace std;
 string formatSerializableSequence ( const MsgPtr& msg )
 {
     assert ( msg->getBaseType() == BaseType::SerializableSequence );
-    return toString ( "%u:'%s'", msg->getAs<SerializableSequence>().getSequence(), TO_C_STR ( msg ) );
+    return toString ( "%u:'%s'", msg->getAs<SerializableSequence>().getSequence(), msg );
 }
 
 void GoBackN::timerExpired ( Timer *timer )
@@ -35,7 +35,7 @@ void GoBackN::timerExpired ( Timer *timer )
         LOG_LIST ( sendList, formatSerializableSequence );
 
         LOG ( "Sending '%s'; sequence=%u; sendSequence=%d",
-              TO_C_STR ( *sendListPos ), ( **sendListPos ).getAs<SerializableSequence>().getSequence(), sendSequence );
+              *sendListPos, ( **sendListPos ).getAs<SerializableSequence>().getSequence(), sendSequence );
         owner->sendGoBackN ( this, * ( sendListPos++ ) );
     }
 
@@ -66,7 +66,7 @@ void GoBackN::send ( SerializableSequence *message )
 
 void GoBackN::send ( const MsgPtr& msg )
 {
-    LOG ( "Adding '%s'; sendSequence=%d", TO_C_STR ( msg ), sendSequence + 1 );
+    LOG ( "Adding '%s'; sendSequence=%d", msg, sendSequence + 1 );
 
     assert ( msg->getBaseType() == BaseType::SerializableSequence );
     assert ( sendList.empty() || sendList.back()->getAs<SerializableSequence>().getSequence() == sendSequence );
@@ -100,7 +100,7 @@ void GoBackN::recv ( const MsgPtr& msg )
     if ( !msg.get() || msg->getBaseType() != BaseType::SerializableSequence )
     {
         if ( msg.get() )
-            LOG ( "Unexpected '%s'; recvSequence=%u", TO_C_STR ( msg ), recvSequence );
+            LOG ( "Unexpected '%s'; recvSequence=%u", msg, recvSequence );
         return;
     }
 
@@ -129,7 +129,7 @@ void GoBackN::recv ( const MsgPtr& msg )
         return;
     }
 
-    LOG ( "Received '%s'; sequence=%u; recvSequence=%u", TO_C_STR ( msg ), sequence, recvSequence );
+    LOG ( "Received '%s'; sequence=%u; recvSequence=%u", msg, sequence, recvSequence );
 
     ++recvSequence;
 

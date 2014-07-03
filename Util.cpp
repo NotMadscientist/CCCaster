@@ -6,22 +6,7 @@
 #include <md5.h>
 #include <windows.h>
 
-#include <cstring>
-#include <cstdarg>
-
 using namespace std;
-
-string toString ( const char *fmt, ... )
-{
-    char buffer[4096];
-
-    va_list args;
-    va_start ( args, fmt );
-    vsprintf ( buffer, fmt, args );
-    va_end ( args );
-
-    return buffer;
-}
 
 void getMD5 ( const char *bytes, size_t len, char dst[16] )
 {

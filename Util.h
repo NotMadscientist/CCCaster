@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include <string>
 #include <sstream>
 #include <cstdio>
@@ -15,19 +16,45 @@
             list += " " + TO_STRING ( val ) + ",";                      \
         if ( !LIST.empty() )                                            \
             list [ list.size() - 1 ] = ' ';                             \
-        LOG ( "this=%08x; "#LIST "=[%s]", this, list.c_str() );         \
+        LOG ( "this=%08x; "#LIST "=[%s]", this, list );                 \
     } while ( 0 )
 
 // String utilities
 template<typename T>
-inline std::string toString ( T val )
+inline std::string toString ( const T& val )
 {
     std::stringstream ss;
     ss << val;
     return ss.str();
 }
 
-std::string toString ( const char *fmt, ... );
+template<>
+inline std::string toString<std::string> ( const std::string& val ) { return val; }
+
+inline void accumulateToString ( std::vector<std::string>& args ) { return; }
+
+template<typename T, typename ... V>
+inline void accumulateToString ( std::vector<std::string>& args, const T& val, V ... vals )
+{
+    args.push_back ( toString ( val ) );
+    accumulateToString ( args, vals... );
+}
+
+template<typename T, typename ... V>
+inline std::string toString ( const char *format, const T& val, V ... vals )
+{
+    std::vector<std::string> args;
+    accumulateToString ( args, val, vals... );
+
+    char buffer[4096];
+
+    switch ( args.size() )
+    {
+#include "Util.string.h"
+    }
+
+    return buffer;
+}
 
 inline std::string toBase64 ( const std::string& bytes )
 {

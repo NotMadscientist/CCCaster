@@ -87,6 +87,8 @@ inline bool operator!= ( const IpAddrPort& a, const IpAddrPort& b )
     return ! ( a == b );
 }
 
+inline std::ostream& operator<< ( std::ostream& os, const IpAddrPort& address ) { return ( os << address.str() ); }
+
 namespace std
 {
 
