@@ -6,6 +6,9 @@
 
 #include <vector>
 
+#define PACKET_LOSS     80
+#define LONG_TIMEOUT    ( 120 * 1000 )
+
 using namespace std;
 
 TEST ( GoBackN, SendOnce )
@@ -56,15 +59,15 @@ TEST ( GoBackN, SendOnce )
             : socket ( UdpSocket::bind ( this, port ) )
             , gbn ( this ), timer ( this )
         {
-            socket->setPacketLoss ( 90 );
-            timer.start ( 1000 * 10 );
+            socket->setPacketLoss ( PACKET_LOSS );
+            timer.start ( LONG_TIMEOUT );
         }
 
         TestSocket ( const string& address, uint16_t port )
             : socket ( UdpSocket::bind ( this, IpAddrPort ( address, port ) ) )
             , address ( address, port ), gbn ( this ), timer ( this )
         {
-            socket->setPacketLoss ( 90 );
+            socket->setPacketLoss ( PACKET_LOSS );
             timer.start ( 1000 );
         }
     };
@@ -138,15 +141,15 @@ TEST ( GoBackN, SendSequential )
             : socket ( UdpSocket::bind ( this, port ) )
             , gbn ( this ), timer ( this )
         {
-            socket->setPacketLoss ( 50 );
-            timer.start ( 1000 * 30 );
+            socket->setPacketLoss ( PACKET_LOSS );
+            timer.start ( LONG_TIMEOUT );
         }
 
         TestSocket ( const string& address, uint16_t port )
             : socket ( UdpSocket::bind ( this, IpAddrPort ( address, port ) ) )
             , address ( address, port ), gbn ( this ), timer ( this )
         {
-            socket->setPacketLoss ( 50 );
+            socket->setPacketLoss ( PACKET_LOSS );
             timer.start ( 1000 );
         }
     };
@@ -218,7 +221,7 @@ TEST ( GoBackN, SendAndRecv )
                 gbn.send ( new TestMessage ( socket->isClient() ? "Client 4" : "Server 4" ) );
                 gbn.send ( new TestMessage ( socket->isClient() ? "Client 5" : "Server 5" ) );
                 sent = true;
-                timer->start ( 1000 * 120 );
+                timer->start ( LONG_TIMEOUT );
             }
             else
             {
@@ -231,7 +234,7 @@ TEST ( GoBackN, SendAndRecv )
             : socket ( UdpSocket::bind ( this, port ) )
             , gbn ( this ), timer ( this ), sent ( false )
         {
-            socket->setPacketLoss ( 50 );
+            socket->setPacketLoss ( PACKET_LOSS );
             timer.start ( 1000 );
         }
 
@@ -239,7 +242,7 @@ TEST ( GoBackN, SendAndRecv )
             : socket ( UdpSocket::bind ( this, IpAddrPort ( address, port ) ) )
             , address ( address, port ), gbn ( this ), timer ( this ), sent ( false )
         {
-            socket->setPacketLoss ( 50 );
+            socket->setPacketLoss ( PACKET_LOSS );
             timer.start ( 1000 );
         }
     };
