@@ -3,7 +3,7 @@ BINARY = cccaster.exe
 
 # Main program sources
 CPP_SRCS = $(wildcard *.cpp)
-NON_GEN_HEADERS = $(filter-out Version.h, $(filter-out Util.string.h, $(filter-out Protocol.%.h, $(wildcard *.h))))
+NON_GEN_HEADERS = $(filter-out Version.h, $(filter-out Protocol.%.h, $(wildcard *.h)))
 
 # Library sources
 GTEST_SRCS = contrib/gtest/fused-src/gtest/gtest-all.cc
@@ -36,7 +36,6 @@ LD_FLAGS += -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -limm32 -lole32 -loleau
 
 OBJECTS = $(CPP_SRCS:.cpp=.o) $(LIB_CPP_SRCS:.cc=.o) $(LIB_C_CSRCS:.c=.o)
 BUILD_TYPE = Debug
-NUM_TO_STRING_ARGS = 10
 
 all: STRIP = touch
 all: DEFINES += -D_GLIBCXX_DEBUG
@@ -48,7 +47,7 @@ release: CC_FLAGS += -Os -O2 -fno-rtti
 release: BUILD_TYPE = Release
 release: $(BINARY)
 
-$(BINARY): Version.h Util.string.h protocol .depend $(OBJECTS) icon.res
+$(BINARY): Version.h protocol .depend $(OBJECTS) icon.res
 	@echo
 	$(CXX) -o $@ $(OBJECTS) $(LD_FLAGS) icon.res
 	@echo
@@ -62,15 +61,11 @@ icon.res: icon.rc icon.ico
 protocol:
 	@./make_protocol $(NON_GEN_HEADERS)
 
-Util.string.h:
-	@./make_util_string $(NUM_TO_STRING_ARGS) > $@
-
 Version.h:
 	@date +"#define BUILD %s" > $@
 
 .depend:
 	@./make_protocol $(NON_GEN_HEADERS)
-	@./make_util_string $(NUM_TO_STRING_ARGS) > Util.string.h
 	@date +"#define BUILD %s" > Version.h
 	@echo "Regenerating .depend ..."
 	@$(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp > $@
@@ -79,7 +74,7 @@ Version.h:
 .PHONY: clean check trim format count Version.h protocol
 
 clean:
-	rm -f Version.h Util.string.h Protocol.*.h .depend *.res *.exe *.zip *.o $(OBJECTS)
+	rm -f Version.h Protocol.*.h .depend *.res *.exe *.zip *.o $(OBJECTS)
 
 check:
 	cppcheck --enable=all *.cpp *.h

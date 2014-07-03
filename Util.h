@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <type_traits>
 #include <cstdio>
 
 #define TO_C_STR(...) toString ( __VA_ARGS__ ).c_str()
@@ -19,7 +20,12 @@
         LOG ( "this=%08x; "#LIST "=[%s]", this, list );                 \
     } while ( 0 )
 
+// Convert a boolean value to a type
+template<bool> struct bool2type {};
+
 // String utilities
+void splitFormat ( const std::string& format, std::string& first, std::string& rest );
+
 template<typename T>
 inline std::string toString ( const T& val )
 {
@@ -31,29 +37,34 @@ inline std::string toString ( const T& val )
 template<>
 inline std::string toString<std::string> ( const std::string& val ) { return val; }
 
-inline void accumulateToString ( std::vector<std::string>& args ) { return; }
-
-template<typename T, typename ... V>
-inline void accumulateToString ( std::vector<std::string>& args, const T& val, V ... vals )
+template<typename T>
+void printToString ( char *buffer, const char *format, const T& val, bool2type<false> )
 {
-    args.push_back ( toString ( val ) );
-    accumulateToString ( args, vals... );
+    std::sprintf ( buffer, format, TO_C_STR ( val ) );
+}
+
+template<typename T>
+void printToString ( char *buffer, const char *format, const T& val, bool2type<true> )
+{
+    std::sprintf ( buffer, format, val );
 }
 
 template<typename T, typename ... V>
-inline std::string toString ( const char *format, const T& val, V ... vals )
+inline std::string toString ( const std::string& format, const T& val, V ... vals )
 {
-    std::vector<std::string> args;
-    accumulateToString ( args, val, vals... );
+    std::string first, rest;
+    splitFormat ( format, first, rest );
+
+    if ( first.empty() )
+        return rest;
 
     char buffer[4096];
+    printToString ( buffer, first.c_str(), val, bool2type<std::is_arithmetic<T>::value>() );
 
-    switch ( args.size() )
-    {
-#include "Util.string.h"
-    }
+    if ( rest.empty() )
+        return buffer;
 
-    return buffer;
+    return buffer + toString ( rest, vals... );
 }
 
 inline std::string toBase64 ( const std::string& bytes )

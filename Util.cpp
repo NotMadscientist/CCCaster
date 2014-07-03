@@ -6,7 +6,32 @@
 #include <md5.h>
 #include <windows.h>
 
+#include <cctype>
+
 using namespace std;
+
+void splitFormat ( const string& format, string& first, string& rest )
+{
+    size_t i;
+
+    for ( i = 0; i < format.size(); ++i )
+        if ( format[i] == '%' && ( i + 1 == format.size() || format[i + 1] != '%' ) )
+            break;
+
+    if ( i == format.size() - 1 )
+    {
+        first = "";
+        rest = format;
+        return;
+    }
+
+    for ( ++i; i < format.size(); ++i )
+        if ( ! ( format[i] == '.' || isalnum ( format[i] ) ) )
+            break;
+
+    first = format.substr ( 0, i );
+    rest = ( i < format.size() ? format.substr ( i ) : "" );
+}
 
 void getMD5 ( const char *bytes, size_t len, char dst[16] )
 {
