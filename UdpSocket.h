@@ -22,8 +22,11 @@ protected:
 
 class UdpSocket : public Socket, public GoBackN::Owner
 {
+    // Indicates this is a child UDP socket, and has a parent socket
+    const bool hasParent;
+
     // Parent socket
-    UdpSocket *parentSocket;
+    UdpSocket *parent;
 
     // GoBackN instance
     GoBackN gbn;
@@ -79,6 +82,9 @@ public:
 
     // Accept a new socket
     std::shared_ptr<Socket> accept ( Socket::Owner *owner ) override;
+
+    // Indicates this is a child UDP socket
+    inline bool isChild() const { return !hasParent; }
 
     // Send a protocol message, return false indicates disconnected
     bool send ( SerializableMessage *message, const IpAddrPort& address = IpAddrPort() ) override;
