@@ -40,15 +40,16 @@ void Socket::init()
 
     shared_ptr<addrinfo> addrInfo;
 
+    // TODO proper binding of IPv6 interfaces
     if ( isClient() && protocol == Protocol::UDP )
     {
         // For client UDP sockets, bind to any available local port
-        addrInfo = IpAddrPort().updateAddrInfo ( true );
+        addrInfo = getAddrInfo ( "", 0, true, true );
     }
     else
     {
         // Otherwise bind to the given address and port
-        addrInfo = address.updateAddrInfo ( isServer() || protocol == Protocol::UDP );
+        addrInfo = getAddrInfo ( address.addr, address.port, true, isServer() || protocol == Protocol::UDP );
     }
 
     addrinfo *res = addrInfo.get();
@@ -66,9 +67,10 @@ void Socket::init()
             continue;
         }
 
-        u_long nonBlocking = 1;
+        u_long yes = 1;
 
-        if ( ioctlsocket ( fd, FIONBIO, &nonBlocking ) != 0 )
+        // FIONBIO sets non-blocking socket operation
+        if ( ioctlsocket ( fd, FIONBIO, &yes ) != 0 )
         {
             LOG_SOCKET ( ( "ioctlsocket failed: " + getLastWinSockError() ).c_str(), this );
             closesocket ( fd );
@@ -109,8 +111,8 @@ void Socket::init()
         {
             char yes = 1;
 
-            // SO_REUSEADDR can replace existing binds
-            // SO_EXCLUSIVEADDRUSE only replaces if not exact match
+            // SO_REUSEADDR can replace existing port binds
+            // SO_EXCLUSIVEADDRUSE only replaces if not exact match, so it is safer
             if ( setsockopt ( fd, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, &yes, 1 ) == SOCKET_ERROR )
             {
                 LOG_SOCKET ( ( "setsockopt failed: " + getLastWinSockError() ).c_str(), this );
@@ -159,8 +161,7 @@ void Socket::init()
             throw "something"; // TODO
         }
 
-        // TODO IPv6
-        address.port = ntohs ( ( ( struct sockaddr_in * ) &sa )->sin_port );
+        address.port = getPortFromSockAddr ( sa );
     }
 }
 
@@ -206,16 +207,12 @@ bool Socket::send ( const char *buffer, size_t len, const IpAddrPort& address )
     assert ( protocol == Protocol::UDP );
     assert ( fd != 0 );
 
-    shared_ptr<addrinfo> res = address.updateAddrInfo();
-
-    assert ( res != 0 );
-
     size_t totalBytes = 0;
 
     while ( totalBytes < len )
     {
         LOG_SOCKET ( TO_C_STR ( ( "sendto ( [ %u bytes ], '" + address.str() + "' ); from" ).c_str(), len ), this );
-        int sentBytes = ::sendto ( fd, buffer, len, 0, res->ai_addr, res->ai_addrlen );
+        int sentBytes = ::sendto ( fd, buffer, len, 0, address.addrInfo->ai_addr, address.addrInfo->ai_addrlen );
 
         if ( sentBytes == SOCKET_ERROR )
         {
@@ -263,14 +260,8 @@ bool Socket::recv ( char *buffer, size_t& len, IpAddrPort& address )
         return false;
     }
 
-    // TODO IPv6
-    char addr[INET6_ADDRSTRLEN];
-    inet_ntop ( sa.ss_family, & ( ( ( struct sockaddr_in * ) &sa )->sin_addr ), addr, sizeof ( addr ) );
-
-    address.addr = addr;
-    address.port = ntohs ( ( ( struct sockaddr_in * ) &sa )->sin_port );
-
     len = recvBytes;
+    address = sa;
     return true;
 }
 
@@ -378,28 +369,4 @@ ostream& operator<< ( ostream& os, Socket::State state )
     }
 
     return ( os << "Unknown socket state!" );
-}
-
-const char *inet_ntop ( int af, const void *src, char *dst, size_t size )
-{
-    if ( af == AF_INET )
-    {
-        sockaddr_in in;
-        memset ( &in, 0, sizeof ( in ) );
-        in.sin_family = AF_INET;
-        memcpy ( &in.sin_addr, src, sizeof ( in_addr ) );
-        getnameinfo ( ( sockaddr * ) &in, sizeof ( sockaddr_in ), dst, size, 0, 0, NI_NUMERICHOST );
-        return dst;
-    }
-    else if ( af == AF_INET6 )
-    {
-        sockaddr_in6 in;
-        memset ( &in, 0, sizeof ( in ) );
-        in.sin6_family = AF_INET6;
-        memcpy ( &in.sin6_addr, src, sizeof ( in_addr6 ) );
-        getnameinfo ( ( sockaddr * ) &in, sizeof ( sockaddr_in6 ), dst, size, 0, 0, NI_NUMERICHOST );
-        return dst;
-    }
-
-    return 0;
 }

@@ -73,20 +73,7 @@ shared_ptr<Socket> TcpSocket::accept ( Socket::Owner *owner )
         return 0;
     }
 
-    if ( sa.ss_family != AF_INET )
-    {
-        closesocket ( newFd );
-        LOG_SOCKET ( "Only accepting IPv4 from", this );
-        return 0;
-    }
-
-    // TODO IPv6
-    char newAddr[INET6_ADDRSTRLEN];
-    inet_ntop ( sa.ss_family, & ( ( ( struct sockaddr_in * ) &sa )->sin_addr ), newAddr, sizeof ( newAddr ) );
-
-    uint16_t newPort = ntohs ( ( ( struct sockaddr_in * ) &sa )->sin_port );
-
-    return shared_ptr<Socket> ( new TcpSocket ( owner, newFd, IpAddrPort ( newAddr, newPort ) ) );
+    return shared_ptr<Socket> ( new TcpSocket ( owner, newFd, sa ) );
 }
 
 bool TcpSocket::send ( SerializableMessage *message, const IpAddrPort& address )

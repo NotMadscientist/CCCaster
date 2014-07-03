@@ -116,5 +116,3 @@ public:
 
 std::ostream& operator<< ( std::ostream& os, Socket::Protocol protocol );
 std::ostream& operator<< ( std::ostream& os, Socket::State state );
-
-const char *inet_ntop ( int af, const void *src, char *dst, size_t size );

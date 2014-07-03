@@ -7,18 +7,27 @@
 #include <memory>
 
 struct addrinfo;
+struct sockaddr_storage;
+
+std::shared_ptr<addrinfo> getAddrInfo ( const std::string& addr, uint16_t port, bool isV4, bool passive = false );
+
+std::string getAddrFromSockAddr ( const sockaddr_storage& sa );
+
+uint16_t getPortFromSockAddr ( const sockaddr_storage& sa );
+
+const char *inet_ntop ( int af, const void *src, char *dst, size_t size );
 
 struct IpAddrPort : public SerializableMessage
 {
     std::string addr;
     uint16_t port;
+    std::shared_ptr<addrinfo> addrInfo;
 
-    mutable std::shared_ptr<addrinfo> addrInfo;
+    explicit IpAddrPort ( bool isV4 = true );
+    IpAddrPort ( const std::string& addr, uint16_t port, bool isV4 = true );
+    IpAddrPort ( const sockaddr_storage& sa );
 
-    inline IpAddrPort() : port ( 0 ) {}
-
-    inline IpAddrPort ( const std::string& addr, uint16_t port )
-        : addr ( addr ), port ( port ) {}
+    std::shared_ptr<addrinfo>& updateAddrInfo ( bool isV4 = true );
 
     inline bool empty() const
     {
@@ -48,8 +57,6 @@ struct IpAddrPort : public SerializableMessage
         std::sprintf ( buffer, "%s:%u", addr.c_str(), port );
         return buffer;
     }
-
-    std::shared_ptr<addrinfo>& updateAddrInfo ( bool passive = false ) const;
 
     MsgType getMsgType() const override;
 
