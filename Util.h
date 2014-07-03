@@ -23,9 +23,10 @@
 // Convert a boolean value to a type
 template<bool> struct bool2type {};
 
-// String utilities
+// Split a format string into first parameter and rest of string
 void splitFormat ( const std::string& format, std::string& first, std::string& rest );
 
+// String formatting functions
 template<typename T>
 inline std::string toString ( const T& val )
 {
@@ -67,6 +68,7 @@ inline std::string toString ( const std::string& format, const T& val, V ... val
     return buffer + toString ( rest, vals... );
 }
 
+// Format bytes as a base 64 string
 inline std::string toBase64 ( const std::string& bytes )
 {
     if ( bytes.empty() )
