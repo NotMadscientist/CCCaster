@@ -20,10 +20,7 @@ void UdpSocket::sendGoBackN ( GoBackN *gbn, const MsgPtr& msg )
     assert ( gbn == &this->gbn );
     assert ( getRemoteAddress().empty() == false );
 
-    if ( parentSocket == 0 )
-        sendDirect ( msg, getRemoteAddress() );
-    else
-        parentSocket->sendDirect ( msg, getRemoteAddress() );
+    sendDirect ( msg, getRemoteAddress() );
 }
 
 void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
@@ -245,15 +242,15 @@ bool UdpSocket::send ( SerializableSequence *message, const IpAddrPort& address 
 
 bool UdpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
 {
+    if ( getKeepAlive() == 0 || !msg.get() )
+        return sendDirect ( msg, address );
+
     switch ( msg->getBaseType() )
     {
         case BaseType::SerializableMessage:
             return sendDirect ( msg, address );
 
         case BaseType::SerializableSequence:
-            if ( getKeepAlive() == 0 )
-                return sendDirect ( msg, address );
-
             gbn.send ( msg );
             return true;
 

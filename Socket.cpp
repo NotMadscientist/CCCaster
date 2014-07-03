@@ -210,6 +210,12 @@ bool Socket::send ( const char *buffer, size_t len )
 
 bool Socket::send ( const char *buffer, size_t len, const IpAddrPort& address )
 {
+    if ( fd == 0 || isDisconnected() )
+    {
+        LOG_SOCKET ( "Cannot send over disconnected socket", this );
+        return false;
+    }
+
     assert ( protocol == Protocol::UDP );
     assert ( fd != 0 );
 
@@ -335,7 +341,7 @@ void Socket::readEvent()
             break;
 
         // Abort if socket is disconnected
-        if ( state == State::Disconnected )
+        if ( isDisconnected() )
             break;
 
         assert ( consumed <= readPos );
