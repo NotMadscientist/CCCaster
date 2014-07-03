@@ -6,7 +6,7 @@
 
 using namespace std;
 
-#define PACKET_LOSS     80
+#define PACKET_LOSS     50
 #define LONG_TIMEOUT    ( 120 * 1000 )
 
 TEST_CONNECT                ( UdpSocket, PACKET_LOSS, LONG_TIMEOUT, LONG_TIMEOUT )

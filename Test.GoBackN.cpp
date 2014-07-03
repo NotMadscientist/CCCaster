@@ -6,7 +6,7 @@
 
 #include <vector>
 
-#define PACKET_LOSS     80
+#define PACKET_LOSS     50
 #define LONG_TIMEOUT    ( 120 * 1000 )
 
 using namespace std;
