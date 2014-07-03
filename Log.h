@@ -10,7 +10,7 @@
 class Log
 {
     static char buffer[256];
-    static Mutex mutex;
+//     static Mutex mutex;
     static FILE *fd;
 
 public:
