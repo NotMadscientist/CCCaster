@@ -30,7 +30,7 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
 
     LOG_SOCKET ( ( "Got '" + toString ( msg ) + "' from" ).c_str(), this );
 
-    if ( isChild() )
+    if ( !isChild() )
     {
         switch ( msg->getMsgType() )
         {
@@ -53,7 +53,7 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
     }
     else
     {
-        assert ( parent->acceptedSockets.find ( getRemoteAddress() ) != parent->acceptedSockets.end() );
+        assert ( parent->childSockets.find ( getRemoteAddress() ) != parent->childSockets.end() );
 
         switch ( msg->getMsgType() )
         {
@@ -61,13 +61,13 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
                 switch ( msg->getAs<UdpConnect>().connectType )
                 {
                     case UdpConnect::ConnectType::Request:
-                        parent->acceptedSockets[getRemoteAddress()]->send (
+                        parent->childSockets[getRemoteAddress()]->send (
                             new UdpConnect ( UdpConnect::ConnectType::Reply ) );
                         break;
 
                     case UdpConnect::ConnectType::Final:
                         LOG_SOCKET ( "Accept from server", parent );
-                        parent->acceptedSocket = parent->acceptedSockets[getRemoteAddress()];
+                        parent->acceptedSocket = parent->childSockets[getRemoteAddress()];
                         if ( parent->owner )
                             parent->owner->acceptEvent ( parent );
                         break;
@@ -99,6 +99,8 @@ void UdpSocket::timeoutGoBackN ( GoBackN *gbn )
 
 void UdpSocket::readEvent ( const MsgPtr& msg, const IpAddrPort& address )
 {
+    assert ( isChild() == false );
+
     if ( getKeepAlive() == 0 )
     {
         if ( owner )
@@ -118,18 +120,19 @@ void UdpSocket::gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address 
 {
     UdpSocket *socket;
 
-    auto it = acceptedSockets.find ( address );
-    if ( it != acceptedSockets.end() )
+    auto it = childSockets.find ( address );
+    if ( it != childSockets.end() )
     {
+        // Get the existing child socket
         assert ( typeid ( *it->second ) == typeid ( UdpSocket ) );
         socket = static_cast<UdpSocket *> ( it->second.get() );
     }
     else if ( msg.get() && msg->getMsgType() == MsgType::UdpConnect
               && msg->getAs<UdpConnect>().connectType == UdpConnect::ConnectType::Request )
     {
-        // Only a connect request is allowed to open a new accepted socket
+        // Only a connect request is allowed to open a new child socket
         socket = new UdpSocket ( this, address );
-        acceptedSockets.insert ( make_pair ( address, shared_ptr<Socket> ( socket ) ) );
+        childSockets.insert ( make_pair ( address, shared_ptr<Socket> ( socket ) ) );
     }
     else
     {
@@ -177,26 +180,23 @@ UdpSocket::~UdpSocket()
 void UdpSocket::disconnect()
 {
     if ( !isChild() )
-    {
         EventManager::get().removeSocket ( this );
-        Socket::disconnect();
-    }
 
-    state = State::Disconnected;
-
+    Socket::disconnect();
     gbn.reset();
     gbn.setKeepAlive ( 0 );
 
-    for ( auto& kv : acceptedSockets )
+    // Detach child sockets first
+    for ( auto& kv : childSockets )
     {
         assert ( typeid ( *kv.second ) == typeid ( UdpSocket ) );
-        assert ( static_cast<UdpSocket *> ( kv.second.get() )->parent == this );
         static_cast<UdpSocket *> ( kv.second.get() )->parent = 0;
     }
 
+    // Check and remove child from parent
     if ( parent != 0 )
     {
-        parent->acceptedSockets.erase ( getRemoteAddress() );
+        parent->childSockets.erase ( getRemoteAddress() );
         parent = 0;
     }
 }
@@ -265,21 +265,18 @@ bool UdpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
 
 bool UdpSocket::sendDirect ( const MsgPtr& msg, const IpAddrPort& address )
 {
-    if ( !isDisconnected() )
-    {
-        string buffer = Serializable::encode ( msg );
+    string buffer = Serializable::encode ( msg );
 
-        LOG ( "Encoded '%s' to [ %u bytes ]", TO_C_STR ( msg ), buffer.size() );
+    LOG ( "Encoded '%s' to [ %u bytes ]", TO_C_STR ( msg ), buffer.size() );
 
-        if ( !buffer.empty() )
-            LOG ( "Base64 : %s", toBase64 ( buffer ).c_str() );
+    if ( !buffer.empty() )
+        LOG ( "Base64 : %s", toBase64 ( buffer ).c_str() );
 
-        if ( isChild() )
-            return Socket::send ( &buffer[0], buffer.size(), address.empty() ? this->address : address );
+    if ( !isChild() )
+        return Socket::send ( &buffer[0], buffer.size(), address.empty() ? this->address : address );
 
-        if ( parent )
-            return parent->Socket::send ( &buffer[0], buffer.size(), address.empty() ? this->address : address );
-    }
+    if ( parent )
+        return parent->Socket::send ( &buffer[0], buffer.size(), address.empty() ? this->address : address );
 
     LOG_SOCKET ( "Cannot send over disconnected socket", this );
     return false;

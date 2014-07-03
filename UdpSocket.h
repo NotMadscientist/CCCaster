@@ -22,7 +22,7 @@ protected:
 
 class UdpSocket : public Socket, public GoBackN::Owner
 {
-    // Indicates this is a child UDP socket, and has a parent socket
+    // Indicates this is a child socket, and has a parent socket
     const bool hasParent;
 
     // Parent socket
@@ -31,8 +31,8 @@ class UdpSocket : public Socket, public GoBackN::Owner
     // GoBackN instance
     GoBackN gbn;
 
-    // Accepted sockets
-    std::unordered_map<IpAddrPort, std::shared_ptr<Socket>> acceptedSockets;
+    // Child sockets
+    std::unordered_map<IpAddrPort, std::shared_ptr<Socket>> childSockets;
 
     // Currently accepted socket
     std::shared_ptr<Socket> acceptedSocket;
@@ -83,8 +83,8 @@ public:
     // Accept a new socket
     std::shared_ptr<Socket> accept ( Socket::Owner *owner ) override;
 
-    // Indicates this is a child UDP socket
-    inline bool isChild() const { return !hasParent; }
+    // Indicates this is a child socket
+    inline bool isChild() const { return hasParent; }
 
     // Send a protocol message, return false indicates disconnected
     bool send ( SerializableMessage *message, const IpAddrPort& address = IpAddrPort() ) override;
