@@ -1682,7 +1682,7 @@ GTEST_DEFINE_bool_(
 
 GTEST_DEFINE_bool_(
     catch_exceptions,
-    internal::BoolFromGTestEnv("catch_exceptions", true),
+    internal::BoolFromGTestEnv("catch_exceptions", false),
     "True iff " GTEST_NAME_
     " should catch exceptions and treat them as test failures.");
 
@@ -1743,7 +1743,7 @@ GTEST_DEFINE_bool_(
 
 GTEST_DEFINE_bool_(
     shuffle,
-    internal::BoolFromGTestEnv("shuffle", false),
+    internal::BoolFromGTestEnv("shuffle", true),
     "True iff " GTEST_NAME_
     " should randomize tests' order on every run.");
 
