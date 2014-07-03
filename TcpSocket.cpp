@@ -91,7 +91,9 @@ bool TcpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
     string buffer = Serializable::encode ( msg );
 
     LOG ( "Encoded '%s' to [ %u bytes ]", TO_C_STR ( msg ), buffer.size() );
-    LOG ( "Base64 : %s", toBase64 ( buffer ).c_str() );
+
+    if ( !buffer.empty() )
+        LOG ( "Base64 : %s", toBase64 ( buffer ).c_str() );
 
     return Socket::send ( &buffer[0], buffer.size() );
 }

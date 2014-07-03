@@ -18,12 +18,13 @@ WINDRES = $(PREFIX)windres
 STRIP = $(PREFIX)strip
 ZIP = zip
 MSBUILD = C:/Windows/Microsoft.NET/Framework/v4.0.30319/MSBuild.exe
-ASTYLE = contrib/astyle
 
 ifeq ($(OS),Windows_NT)
     CHMOD_X_BINARY = icacls $(BINARY) /grant Everyone:F
+    ASTYLE = contrib/astyle.exe
 else
     CHMOD_X_BINARY = chmod +x $(BINARY)
+    ASTYLE = contrib/astyle
 endif
 
 # Build flags

@@ -6,16 +6,16 @@
 
 using namespace std;
 
-#define PACKET_LOSS     90
+#define PACKET_LOSS     80
 #define KEEP_ALIVE      ( 60 * 1000 )
 
 TEST_CONNECT                ( UdpSocket, PACKET_LOSS, KEEP_ALIVE, 60 * 1000 )
 
 TEST_TIMEOUT                ( UdpSocket, 0, 1000, 1000 )
 
-TEST_DISCONNECT_CLIENT      ( UdpSocket, 0, 1000, 3000 )
+TEST_DISCONNECT_CLIENT      ( UdpSocket, 0, 1000, 10000 )
 
-TEST_DISCONNECT_ACCEPTED    ( UdpSocket, 0, 1000, 5000 )
+TEST_DISCONNECT_ACCEPTED    ( UdpSocket, 0, 1000, 10000 )
 
 TEST_SEND                   ( UdpSocket, PACKET_LOSS, KEEP_ALIVE, 120 * 1000 )
 

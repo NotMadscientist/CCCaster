@@ -67,8 +67,10 @@ void EventManager::eventLoop()
     }
 
     activeTimers.clear();
+    allocatedTimers.clear();
 
     activeSockets.clear();
+    allocatedSockets.clear();
 }
 
 void EventManager::checkSockets()
@@ -93,6 +95,9 @@ void EventManager::checkSockets()
         LOG ( "Removed socket %08x", *it ); // Don't log any extra data cus already dealloc'd
         activeSockets.erase ( it++ );
     }
+
+    if ( activeSockets.empty() )
+        return;
 
     fd_set readFds, writeFds;
     FD_ZERO ( &readFds );
