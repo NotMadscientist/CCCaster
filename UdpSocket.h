@@ -22,11 +22,8 @@ protected:
 
 class UdpSocket : public Socket, public GoBackN::Owner
 {
-//     // Parent socket
-//     UdpSocket *parentSocket;
-//
-//     // Proxied socket owner
-//     Socket::Owner *proxiedOwner;
+    // Parent socket
+    UdpSocket *parentSocket;
 
     // GoBackN instance
     GoBackN gbn;
@@ -42,9 +39,11 @@ class UdpSocket : public Socket, public GoBackN::Owner
     void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override;
     void timeoutGoBackN ( GoBackN *gbn ) override;
 
-//     // Socket read callbacks
-//     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override;
-//     void gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address );
+    // GoBackN recv convenience function
+    void gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address );
+
+    // Send a protocol message directly, not over GoBackN
+    bool sendDirect ( const MsgPtr& msg, const IpAddrPort& address );
 
     // Construct a server socket
     UdpSocket ( Socket::Owner *owner, uint16_t port, uint64_t keepAlive );
@@ -52,13 +51,13 @@ class UdpSocket : public Socket, public GoBackN::Owner
     // Construct a client socket
     UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, uint64_t keepAlive );
 
-//     // Construct an accepted client socket
-//     UdpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address, uint64_t keepAlive );
+    // Construct a child socket
+    UdpSocket ( UdpSocket *parent, const IpAddrPort& address );
 
 protected:
 
     // Socket read event callback
-    virtual void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) override;
+    void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) override;
 
 public:
 

@@ -87,7 +87,8 @@ public:
 
     // Socket state query functions
     inline virtual State getState() const { return state; }
-    inline virtual bool isConnected() const { return isClient() && ( fd != 0 ) && ( state == State::Connected ); }
+    inline virtual bool isConnected() const { return isClient() && ( state == State::Connected ); }
+    inline virtual bool isDisconnected() const { return ( state == State::Disconnected ); }
     inline virtual bool isClient() const { return !address.addr.empty(); }
     inline virtual bool isServer() const { return address.addr.empty(); }
     inline virtual const IpAddrPort& getRemoteAddress() const { if ( isServer() ) return NullAddress; return address; }

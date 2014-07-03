@@ -7,20 +7,26 @@
 #include <ws2tcpip.h>
 
 #include <cassert>
+#include <unordered_set>
 
 #define READ_BUFFER_SIZE ( 1024 * 4096 )
 
 using namespace std;
 
+static unordered_set<Socket *> allocatedSockets;
+
 Socket::Socket ( const IpAddrPort& address, Protocol protocol )
     : address ( address ), protocol ( protocol ), owner ( 0 ), state ( State::Disconnected ), fd ( 0 )
     , readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 ), packetLoss ( 0 )
 {
+    allocatedSockets.insert ( this );
 }
 
 Socket::~Socket()
 {
     disconnect();
+
+    allocatedSockets.erase ( this );
 }
 
 void Socket::disconnect()
@@ -168,7 +174,6 @@ void Socket::init()
 bool Socket::send ( const char *buffer, size_t len )
 {
     assert ( isClient() == true );
-    assert ( isConnected() == true );
     assert ( fd != 0 );
 
     size_t totalBytes = 0;
@@ -229,7 +234,6 @@ bool Socket::send ( const char *buffer, size_t len, const IpAddrPort& address )
 bool Socket::recv ( char *buffer, size_t& len )
 {
     assert ( isClient() == true );
-    assert ( isConnected() == true );
     assert ( fd != 0 );
 
     int recvBytes = ::recv ( fd, buffer, len, 0 );
@@ -324,10 +328,13 @@ void Socket::readEvent()
         LOG ( "Decoded [ %u bytes ] to '%s'", consumed, TO_C_STR ( msg ) );
         readEvent ( msg, address );
 
-        // TODO handle this case
-//         // Abort if the socket is no longer alive
-//         if ( allocatedSockets.find ( socket ) == allocatedSockets.end() )
-//             break;
+        // Abort if the socket is de-allocated
+        if ( allocatedSockets.find ( this ) == allocatedSockets.end() )
+            break;
+
+        // Abort if socket is disconnected
+        if ( state == State::Disconnected )
+            break;
 
         assert ( consumed <= readPos );
 

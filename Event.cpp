@@ -100,7 +100,7 @@ void EventManager::checkSockets()
 
     for ( Socket *socket : activeSockets )
     {
-        if ( socket->state == Socket::State::Connecting )
+        if ( socket->state == Socket::State::Connecting && socket->protocol == Socket::Protocol::TCP )
             FD_SET ( socket->fd, &writeFds );
         else
             FD_SET ( socket->fd, &readFds );
@@ -126,7 +126,7 @@ void EventManager::checkSockets()
         if ( allocatedSockets.find ( socket ) == allocatedSockets.end() )
             continue;
 
-        if ( socket->state == Socket::State::Connecting )
+        if ( socket->state == Socket::State::Connecting && socket->protocol == Socket::Protocol::TCP )
         {
             if ( !FD_ISSET ( socket->fd, &writeFds ) )
                 continue;

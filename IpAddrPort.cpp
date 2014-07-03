@@ -74,7 +74,7 @@ const char *inet_ntop ( int af, const void *src, char *dst, size_t size )
 }
 
 IpAddrPort::IpAddrPort ( bool isV4 )
-    : port ( 0 ), addrInfo ( getAddrInfo( "", 0, isV4 ) ) {}
+    : port ( 0 ), addrInfo ( getAddrInfo ( "", 0, isV4 ) ) {}
 
 IpAddrPort::IpAddrPort ( const string& addr, uint16_t port, bool isV4 )
     : addr ( addr ), port ( port ), addrInfo ( getAddrInfo ( addr, port, isV4 ) ) {}

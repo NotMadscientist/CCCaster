@@ -107,8 +107,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             EXPECT_FALSE ( client.socket->isConnected() );                                                          \
     }
 
-#define TEST_CLIENT_DISCONNECT(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                        \
-    TEST ( T, ClientDisconnect ) {                                                                                  \
+#define TEST_DISCONNECT_CLIENT(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                        \
+    TEST ( T, DisconnectClient ) {                                                                                  \
         static int done = 0;                                                                                        \
         done = 0;                                                                                                   \
         struct TestSocket : public BaseTestSocket<T, KEEP_ALIVE, TIMEOUT> {                                         \
@@ -143,8 +143,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             EXPECT_FALSE ( client.socket->isConnected() );                                                          \
     }
 
-#define TEST_SERVER_DISCONNECT(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                        \
-    TEST ( T, ServerDisconnect ) {                                                                                  \
+#define TEST_DISCONNECT_ACCEPTED(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                      \
+    TEST ( T, DisconnectAccepted ) {                                                                                \
         static int done = 0;                                                                                        \
         done = 0;                                                                                                   \
         struct TestSocket : public BaseTestSocket<T, KEEP_ALIVE, TIMEOUT> {                                         \
