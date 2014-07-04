@@ -16,3 +16,5 @@ Version.h
 Protocol.*.h
 deploy
 tmp
+gmon.out
+profile.txt

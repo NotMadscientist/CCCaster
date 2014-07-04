@@ -8,18 +8,6 @@
 
 #define TO_C_STR(...) toString ( __VA_ARGS__ ).c_str()
 
-#define LOG_LIST(LIST, TO_STRING)                                       \
-    do {                                                                \
-        if ( !Log::isEnabled )                                          \
-            break;                                                      \
-        string list;                                                    \
-        for ( const auto& val : LIST )                                  \
-            list += " " + TO_STRING ( val ) + ",";                      \
-        if ( !LIST.empty() )                                            \
-            list [ list.size() - 1 ] = ' ';                             \
-        LOG ( "this=%08x; "#LIST "=[%s]", this, list );                 \
-    } while ( 0 )
-
 // Convert a boolean value to a type
 template<bool> struct bool2type {};
 

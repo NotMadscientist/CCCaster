@@ -47,6 +47,12 @@ release: CC_FLAGS += -Os -O2 -fno-rtti
 release: BUILD_TYPE = Release
 release: $(BINARY)
 
+profile: STRIP = touch
+profile: DEFINES += -DNDEBUG -DRELEASE
+profile: CC_FLAGS += -Os -O2 -fno-rtti -pg
+profile: LD_FLAGS += -pg -lgmon
+profile: $(BINARY)
+
 $(BINARY): Version.h protocol .depend $(OBJECTS) icon.res
 	@echo
 	$(CXX) -o $@ $(OBJECTS) $(LD_FLAGS) icon.res
