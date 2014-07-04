@@ -10,8 +10,11 @@
 class Log
 {
     static char buffer[256];
-//     static Mutex mutex;
     static FILE *fd;
+
+#ifdef LOG_MUTEXED
+    static Mutex mutex;
+#endif
 
 public:
 

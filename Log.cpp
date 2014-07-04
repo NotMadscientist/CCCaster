@@ -4,9 +4,11 @@ using namespace std;
 
 char Log::buffer[256];
 
-// Mutex Log::mutex;
-
 FILE *Log::fd = 0;
+
+#ifdef LOG_MUTEXED
+Mutex Log::mutex;
+#endif
 
 bool Log::isEnabled = false;
 
@@ -46,7 +48,9 @@ void Log::log ( const char *file, int line, const char *func, const char *messag
     time ( &t );
     tm *ts = gmtime ( &t );
 
-//     LOCK ( mutex );
+#ifdef LOG_MUTEXED
+    LOCK ( mutex );
+#endif
 
     strftime ( buffer, sizeof ( buffer ), "%H:%M:%S", ts );
 
@@ -59,7 +63,10 @@ void Log::log ( const char *file, int line, const char *func, const char *messag
 
 void Log::close()
 {
-//     LOCK ( mutex );
+#ifdef LOG_MUTEXED
+    LOCK ( mutex );
+#endif
+
     fclose ( fd );
     fd = 0;
     isEnabled = false;
@@ -67,6 +74,9 @@ void Log::close()
 
 void Log::flush()
 {
-//     LOCK ( mutex );
+#ifdef LOG_MUTEXED
+    LOCK ( mutex );
+#endif
+
     fflush ( fd );
 }
