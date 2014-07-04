@@ -91,6 +91,7 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         EXPECT_TRUE ( client.socket.get() );                                                                        \
         if ( client.socket.get() )                                                                                  \
             EXPECT_TRUE ( client.socket->isConnected() );                                                           \
+        EXPECT_EQ ( 2, done );                                                                                      \
     }
 
 #define TEST_TIMEOUT(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                                  \
@@ -141,6 +142,7 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         EXPECT_TRUE ( client.socket.get() );                                                                        \
         if ( client.socket.get() )                                                                                  \
             EXPECT_FALSE ( client.socket->isConnected() );                                                          \
+        EXPECT_EQ ( 2, done );                                                                                      \
     }
 
 #define TEST_DISCONNECT_ACCEPTED(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                      \
@@ -180,6 +182,7 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         EXPECT_TRUE ( client.socket.get() );                                                                        \
         if ( client.socket.get() )                                                                                  \
             EXPECT_FALSE ( client.socket->isConnected() );                                                          \
+        EXPECT_EQ ( 2, done );                                                                                      \
     }
 
 #define TEST_SEND(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                                     \
@@ -222,17 +225,18 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             EXPECT_TRUE ( server.accepted->isConnected() );                                                         \
         EXPECT_TRUE ( server.msg.get() );                                                                           \
         if ( server.msg.get() ) {                                                                                   \
-            EXPECT_EQ ( server.msg->getMsgType(), MsgType::TestMessage );                                           \
-            EXPECT_EQ ( server.msg->getAs<TestMessage>().str, "Hello server!" );                                    \
+            EXPECT_EQ ( MsgType::TestMessage, server.msg->getMsgType() );                                           \
+            EXPECT_EQ ( "Hello server!", server.msg->getAs<TestMessage>().str );                                    \
         }                                                                                                           \
         EXPECT_TRUE ( client.socket.get() );                                                                        \
         if ( client.socket.get() )                                                                                  \
             EXPECT_TRUE ( client.socket->isConnected() );                                                           \
         EXPECT_TRUE ( client.msg.get() );                                                                           \
         if ( client.msg.get() ) {                                                                                   \
-            EXPECT_EQ ( client.msg->getMsgType(), MsgType::TestMessage );                                           \
-            EXPECT_EQ ( client.msg->getAs<TestMessage>().str, "Hello client!" );                                    \
+            EXPECT_EQ ( MsgType::TestMessage, client.msg->getMsgType() );                                           \
+            EXPECT_EQ ( "Hello client!", client.msg->getAs<TestMessage>().str );                                    \
         }                                                                                                           \
+        EXPECT_EQ ( 2, done );                                                                                      \
     }
 
 #define TEST_SEND_WITHOUT_SERVER(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                      \
@@ -274,17 +278,18 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             EXPECT_TRUE ( server.accepted->isConnected() );                                                         \
         EXPECT_TRUE ( server.msg.get() );                                                                           \
         if ( server.msg.get() ) {                                                                                   \
-            EXPECT_EQ ( server.msg->getMsgType(), MsgType::TestMessage );                                           \
-            EXPECT_EQ ( server.msg->getAs<TestMessage>().str, "Hello server!" );                                    \
+            EXPECT_EQ ( MsgType::TestMessage, server.msg->getMsgType() );                                           \
+            EXPECT_EQ ( "Hello server!", server.msg->getAs<TestMessage>().str );                                    \
         }                                                                                                           \
         EXPECT_TRUE ( client.socket.get() );                                                                        \
         if ( client.socket.get() )                                                                                  \
             EXPECT_TRUE ( client.socket->isConnected() );                                                           \
         EXPECT_TRUE ( client.msg.get() );                                                                           \
         if ( client.msg.get() ) {                                                                                   \
-            EXPECT_EQ ( client.msg->getMsgType(), MsgType::TestMessage );                                           \
-            EXPECT_EQ ( client.msg->getAs<TestMessage>().str, "Hello client!" );                                    \
+            EXPECT_EQ ( MsgType::TestMessage, client.msg->getMsgType() );                                           \
+            EXPECT_EQ ( "Hello client!", client.msg->getAs<TestMessage>().str );                                    \
         }                                                                                                           \
+        EXPECT_EQ ( 2, done );                                                                                      \
     }
 
 #define TEST_SEND_PARTIAL(T)                                                                                        \
@@ -321,8 +326,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             EXPECT_TRUE ( server.accepted->isConnected() );                                                         \
         EXPECT_TRUE ( server.msg.get() );                                                                           \
         if ( server.msg.get() ) {                                                                                   \
-            EXPECT_EQ ( server.msg->getMsgType(), MsgType::TestMessage );                                           \
-            EXPECT_EQ ( server.msg->getAs<TestMessage>().str, "Hello server!" );                                    \
+            EXPECT_EQ ( MsgType::TestMessage, server.msg->getMsgType() );                                           \
+            EXPECT_EQ ( "Hello server!", server.msg->getAs<TestMessage>().str );                                    \
         }                                                                                                           \
         EXPECT_TRUE ( client.socket.get() );                                                                        \
         if ( client.socket.get() )                                                                                  \

@@ -88,8 +88,8 @@ TEST ( UdpSocket, SendConnectionLess )
 
     if ( server.msg.get() )
     {
-        EXPECT_EQ ( server.msg->getMsgType(), MsgType::TestMessage );
-        EXPECT_EQ ( server.msg->getAs<TestMessage>().str, "Hello server!" );
+        EXPECT_EQ ( MsgType::TestMessage, server.msg->getMsgType() );
+        EXPECT_EQ ( "Hello server!", server.msg->getAs<TestMessage>().str );
     }
 
     EXPECT_TRUE ( client.socket.get() );
@@ -100,7 +100,7 @@ TEST ( UdpSocket, SendConnectionLess )
 
     if ( client.msg.get() )
     {
-        EXPECT_EQ ( client.msg->getMsgType(), MsgType::TestMessage );
-        EXPECT_EQ ( client.msg->getAs<TestMessage>().str, "Hello client!" );
+        EXPECT_EQ ( MsgType::TestMessage, client.msg->getMsgType() );
+        EXPECT_EQ ( "Hello client!", client.msg->getAs<TestMessage>().str );
     }
 }

@@ -81,8 +81,8 @@ TEST ( GoBackN, SendOnce )
 
     if ( server.msg.get() )
     {
-        EXPECT_EQ ( server.msg->getMsgType(), MsgType::TestMessage );
-        EXPECT_EQ ( server.msg->getAs<TestMessage>().str, "Hello server!" );
+        EXPECT_EQ ( MsgType::TestMessage, server.msg->getMsgType() );
+        EXPECT_EQ ( "Hello server!", server.msg->getAs<TestMessage>().str );
     }
 }
 
@@ -159,13 +159,13 @@ TEST ( GoBackN, SendSequential )
 
     EventManager::get().start();
 
-    EXPECT_EQ ( server.msgs.size(), 5 );
+    EXPECT_EQ ( 5, server.msgs.size() );
 
     for ( size_t i = 0; i < server.msgs.size(); ++i )
     {
         LOG ( "Server got '%s'", server.msgs[i]->getAs<TestMessage>().str );
-        EXPECT_EQ ( server.msgs[i]->getMsgType(), MsgType::TestMessage );
-        EXPECT_EQ ( server.msgs[i]->getAs<TestMessage>().str, toString ( "Message %u", i + 1 ) );
+        EXPECT_EQ ( MsgType::TestMessage, server.msgs[i]->getMsgType() );
+        EXPECT_EQ ( toString ( "Message %u", i + 1 ), server.msgs[i]->getAs<TestMessage>().str );
     }
 }
 
@@ -252,23 +252,25 @@ TEST ( GoBackN, SendAndRecv )
 
     EventManager::get().start();
 
-    EXPECT_EQ ( server.msgs.size(), 5 );
+    EXPECT_EQ ( 5, server.msgs.size() );
 
     for ( size_t i = 0; i < server.msgs.size(); ++i )
     {
         LOG ( "Server got '%s'", server.msgs[i]->getAs<TestMessage>().str );
-        EXPECT_EQ ( MsgType::TestMessage,            server.msgs[i]->getMsgType() );
+        EXPECT_EQ ( MsgType::TestMessage, server.msgs[i]->getMsgType() );
         EXPECT_EQ ( toString ( "Client %u", i + 1 ), server.msgs[i]->getAs<TestMessage>().str );
     }
 
-    EXPECT_EQ ( client.msgs.size(), 5 );
+    EXPECT_EQ ( 5, client.msgs.size() );
 
     for ( size_t i = 0; i < client.msgs.size(); ++i )
     {
         LOG ( "Client got '%s'", client.msgs[i]->getAs<TestMessage>().str );
-        EXPECT_EQ ( MsgType::TestMessage,            client.msgs[i]->getMsgType() );
+        EXPECT_EQ ( MsgType::TestMessage, client.msgs[i]->getMsgType() );
         EXPECT_EQ ( toString ( "Server %u", i + 1 ), client.msgs[i]->getAs<TestMessage>().str );
     }
+
+    EXPECT_EQ ( 2, done );
 }
 
 TEST ( GoBackN, Timeout )
@@ -360,4 +362,5 @@ TEST ( GoBackN, Timeout )
     EXPECT_TRUE ( client.socket.get() );
     EXPECT_TRUE ( server.properTimeout );
     EXPECT_TRUE ( client.properTimeout );
+    EXPECT_EQ ( 2, done );
 }
