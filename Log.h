@@ -9,24 +9,40 @@
 
 class Log
 {
-    static char buffer[256];
-    static FILE *fd;
+    // Log file
+    FILE *fd;
 
+    // Char buffer
+    char buffer[4096];
+
+    // Flag to indicate if initialized
+    bool initialized;
+
+    // Optionally mutexed logging
 #ifdef LOG_MUTEXED
-    static Mutex mutex;
+    Mutex mutex;
 #endif
 
 public:
 
-    static bool isEnabled;
+    // Basic constructor
+    inline Log() : fd ( 0 ) , initialized ( false ) {}
 
-    static void open ( const std::string& name = "", bool prependPidToName = false );
-    static void log ( const char *file, int line, const char *func, const char *message );
-    static void close();
-    static void flush();
+    // Initialize / deinitialize logging
+    void initialize ( const std::string& name = "", bool prependPidToName = false );
+    void deinitialize();
+
+    // Flush to file
+    void flush();
+
+    // Log a message with file, line, and function
+    void log ( const char *file, int line, const char *func, const char *message );
+
+    // Get the singleton instance
+    static Log& get();
 };
 
-#ifdef RELEASE
+#ifdef NO_LOGGING
 
 #define LOG(...)
 #define LOG_LIST(...)
@@ -35,15 +51,12 @@ public:
 
 #define LOG(FORMAT, ...)                                                                                    \
     do {                                                                                                    \
-        if ( !Log::isEnabled ) break;                                                                       \
-        Log::log ( __FILE__, __LINE__, __PRETTY_FUNCTION__, TO_C_STR ( FORMAT, ## __VA_ARGS__ ) );          \
+        Log::get().log ( __FILE__, __LINE__, __PRETTY_FUNCTION__, TO_C_STR ( FORMAT, ## __VA_ARGS__ ) );    \
     } while ( 0 )
 
 #define LOG_LIST(LIST, TO_STRING)                                       \
     do {                                                                \
-        if ( !Log::isEnabled )                                          \
-            break;                                                      \
-        string list;                                                    \
+        std::string list;                                               \
         for ( const auto& val : LIST )                                  \
             list += " " + TO_STRING ( val ) + ",";                      \
         if ( !LIST.empty() )                                            \

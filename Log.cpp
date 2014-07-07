@@ -2,22 +2,12 @@
 
 using namespace std;
 
-char Log::buffer[256];
-
-FILE *Log::fd = 0;
-
-#ifdef LOG_MUTEXED
-Mutex Log::mutex;
-#endif
-
-bool Log::isEnabled = false;
-
-void Log::open ( const string& name, bool prependPidToName )
+void Log::initialize ( const string& name, bool prependPidToName )
 {
-    if ( isEnabled )
+    if ( initialized )
         return;
 
-    isEnabled = true;
+    initialized = true;
 
     if ( name.empty() )
     {
@@ -34,9 +24,32 @@ void Log::open ( const string& name, bool prependPidToName )
         time ( &t );
         uint32_t id = _getpid() * t;
 
-        fprintf ( fd, "ID %08x", id );
+        fprintf ( fd, "ID %08x\n", id );
         fflush ( fd );
     }
+}
+
+void Log::deinitialize()
+{
+    if ( !initialized )
+        return;
+
+#ifdef LOG_MUTEXED
+    LOCK ( mutex );
+#endif
+
+    fclose ( fd );
+    fd = 0;
+    initialized = false;
+}
+
+void Log::flush()
+{
+#ifdef LOG_MUTEXED
+    LOCK ( mutex );
+#endif
+
+    fflush ( fd );
 }
 
 void Log::log ( const char *file, int line, const char *func, const char *message )
@@ -61,22 +74,8 @@ void Log::log ( const char *file, int line, const char *func, const char *messag
     fflush ( fd );
 }
 
-void Log::close()
+Log& Log::get()
 {
-#ifdef LOG_MUTEXED
-    LOCK ( mutex );
-#endif
-
-    fclose ( fd );
-    fd = 0;
-    isEnabled = false;
-}
-
-void Log::flush()
-{
-#ifdef LOG_MUTEXED
-    LOCK ( mutex );
-#endif
-
-    fflush ( fd );
+    static Log log;
+    return log;
 }

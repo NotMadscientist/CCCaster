@@ -41,7 +41,7 @@ class EventManager
     bool running;
 
     // Flag to indicate the event manager is initialized
-    static bool initialized;
+    bool initialized;
 
     // Check and expire timers
     void checkTimers();
@@ -84,17 +84,12 @@ public:
     // Stop the event manager and release background threads
     void release();
 
-    // Indicates if the event manager is running
-    inline bool isRunning() const { return running; }
-
     // Get the current time in milliseconds
     inline uint64_t getNow() const { return now; }
 
-    // Indicates if the event manager is initialized
-    inline static bool isInitialized() { return initialized; }
-
-    // Initialize the event manager
-    static void initialize();
+    // Initialize / deinitialize the event manager
+    void initialize();
+    void deinitialize();
 
     // Get the singleton instance
     static EventManager& get();

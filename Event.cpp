@@ -11,8 +11,6 @@
 
 using namespace std;
 
-bool EventManager::initialized = false;
-
 void EventManager::eventLoop()
 {
     // Seed the RNG in this thread because Windows has per-thread RNG
@@ -274,7 +272,7 @@ void EventManager::addThread ( const shared_ptr<Thread>& thread )
 }
 
 
-EventManager::EventManager() : now ( 0 ), running ( false )
+EventManager::EventManager() : now ( 0 ), running ( false ), initialized ( false )
 {
 }
 
@@ -297,6 +295,15 @@ void EventManager::initialize()
     }
 
     initialized = true;
+}
+
+void EventManager::deinitialize()
+{
+    if ( !initialized )
+        return;
+
+    WSACleanup();
+    initialized = false;
 }
 
 void EventManager::start()
