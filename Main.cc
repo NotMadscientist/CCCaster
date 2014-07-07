@@ -2,20 +2,19 @@
 #include "Event.h"
 #include "Test.h"
 
-#include <cstdlib>
-#include <ctime>
-
 using namespace std;
 
 int main ( int argc, char *argv[] )
 {
-    Log::open();
+    Log::get().initialize();
 
-    EventManager::initialize();
+    EventManager::get().initialize();
 
     int result = RunAllTests ( argc, argv );
 
-    Log::close();
+    EventManager::get().deinitialize();
+
+    Log::get().deinitialize();
 
     return result;
 }

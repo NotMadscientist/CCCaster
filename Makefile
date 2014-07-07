@@ -1,5 +1,7 @@
-# Main program
+# Main programs
 BINARY = cccaster.exe
+DLL = cccaster.dll
+LAUNCHER = launcher.exe
 
 # Main program sources
 CPP_SRCS = $(wildcard *.cpp)
@@ -20,19 +22,19 @@ ZIP = zip
 MSBUILD = C:/Windows/Microsoft.NET/Framework/v4.0.30319/MSBuild.exe
 
 ifeq ($(OS),Windows_NT)
-    CHMOD_X_BINARY = icacls $(BINARY) /grant Everyone:F
+    CHMOD_X = icacls $@ /grant Everyone:F
     ASTYLE = contrib/astyle.exe
 else
-    CHMOD_X_BINARY = chmod +x $(BINARY)
+    CHMOD_X = chmod +x $@
     ASTYLE = contrib/astyle
 endif
 
 # Build flags
-DEFINES =
+DEFINES = -DWIN32_LEAN_AND_MEAN
 INCLUDES = -Icontrib -Icontrib/cereal/include -Icontrib/gtest/include
 CC_FLAGS = -m32 -s $(INCLUDES) $(DEFINES)
-LD_FLAGS = -m32 -static -lws2_32 -lmingw32 -lwinmm -lwinpthread
-LD_FLAGS += -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid
+LD_FLAGS = -m32 -static -lws2_32 -lwinmm -lwinpthread -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -limm32
+LD_FLAGS += -lole32 -loleaut32 -lshell32 -lversion -luuid
 
 OBJECTS = $(CPP_SRCS:.cpp=.o) $(LIB_CPP_SRCS:.cc=.o) $(LIB_C_CSRCS:.c=.o)
 BUILD_TYPE = Debug
@@ -40,25 +42,39 @@ BUILD_TYPE = Debug
 all: STRIP = touch
 all: DEFINES += -D_GLIBCXX_DEBUG
 all: CC_FLAGS += -ggdb3 -O0 -fno-inline
-all: $(BINARY)
+all: $(BINARY) $(DLL) $(LAUNCHER)
 
 release: DEFINES += -DNDEBUG -DRELEASE
 release: CC_FLAGS += -Os -O2 -fno-rtti
 release: BUILD_TYPE = Release
-release: $(BINARY)
+release: $(BINARY) $(DLL) $(LAUNCHER)
 
 profile: STRIP = touch
 profile: DEFINES += -DNDEBUG -DRELEASE
 profile: CC_FLAGS += -Os -O2 -fno-rtti -pg
 profile: LD_FLAGS += -pg -lgmon
-profile: $(BINARY)
+profile: $(BINARY) $(DLL) $(LAUNCHER)
 
 $(BINARY): Version.h protocol .depend $(OBJECTS) icon.res
 	@echo
-	$(CXX) -o $@ $(OBJECTS) $(LD_FLAGS) icon.res
+	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 Main.cc $(OBJECTS) $(LD_FLAGS) icon.res
 	@echo
 	$(STRIP) $@
-	$(CHMOD_X_BINARY)
+	$(CHMOD_X)
+
+$(DLL): Version.h protocol .depend $(OBJECTS)
+	@echo
+	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 DllMain.cc $(OBJECTS) -shared $(LD_FLAGS)
+	@echo
+	$(STRIP) $@
+	$(CHMOD_X)
+
+$(LAUNCHER): DllLauncher.cc
+	@echo
+	$(CXX) -o $@ $^ -m32 -s -Os -O2 -Wall -static -mwindows
+	@echo
+	$(STRIP) $@
+	$(CHMOD_X)
 
 icon.res: icon.rc icon.ico
 	@echo
@@ -80,7 +96,7 @@ Version.h:
 .PHONY: clean check trim format count Version.h protocol
 
 clean:
-	rm -f Version.h Protocol.*.h .depend *.res *.exe *.zip *.o $(OBJECTS)
+	rm -f Version.h Protocol.*.h .depend *.res *.exe *.dll *.zip *.o $(OBJECTS)
 
 check:
 	cppcheck --enable=all *.cpp *.h
@@ -104,10 +120,10 @@ format:
     --keep-one-line-blocks      \
     --align-pointer=name        \
     --align-reference=type      \
-    *.cpp $(NON_GEN_HEADERS)
+    *.cpp *.cc $(NON_GEN_HEADERS)
 
 count:
-	wc -l *.cpp $(NON_GEN_HEADERS)
+	wc -l *.cpp *.cc $(NON_GEN_HEADERS)
 
 ifeq (,$(findstring clean, $(MAKECMDGOALS)))
 ifeq (,$(findstring check, $(MAKECMDGOALS)))

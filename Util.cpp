@@ -4,7 +4,7 @@
 #define MINIZ_NO_ZLIB_COMPATIBLE_NAMES
 #include <miniz.h>
 #include <md5.h>
-#include <windows.h>
+#include <winsock2.h>
 
 #include <cctype>
 
