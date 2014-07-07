@@ -80,20 +80,23 @@ icon.res: icon.rc icon.ico
 	@echo
 	$(WINDRES) -F pe-i386 icon.rc -O coff -o $@
 
+depend:
+	$(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp *.cc > .depend
+
+.depend:
+	@./make_protocol $(NON_GEN_HEADERS)
+	@date +"#define BUILD %s" > Version.h
+	@echo "Regenerating .depend ..."
+	@$(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp *.cc > $@
+	@echo
+
 protocol:
 	@./make_protocol $(NON_GEN_HEADERS)
 
 Version.h:
 	@date +"#define BUILD %s" > $@
 
-.depend:
-	@./make_protocol $(NON_GEN_HEADERS)
-	@date +"#define BUILD %s" > Version.h
-	@echo "Regenerating .depend ..."
-	@$(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp > $@
-	@echo
-
-.PHONY: clean check trim format count Version.h protocol
+.PHONY: clean check trim format count depend protocol Version.h
 
 clean:
 	rm -f Version.h Protocol.*.h .depend *.res *.exe *.dll *.zip *.o $(OBJECTS)

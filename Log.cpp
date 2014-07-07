@@ -1,4 +1,5 @@
 #include "Log.h"
+#include "Version.h"
 
 using namespace std;
 
@@ -27,6 +28,9 @@ void Log::initialize ( const string& name, bool prependPidToName )
         fprintf ( fd, "ID %08x\n", id );
         fflush ( fd );
     }
+
+    fprintf ( fd, "BUILD %08x\n", BUILD );
+    fflush ( fd );
 }
 
 void Log::deinitialize()
