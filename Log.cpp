@@ -20,16 +20,10 @@ void Log::initialize ( const string& name, bool prependPidToName )
             fd = fopen ( ( toString ( "log%08d", _getpid() ) + name ).c_str(), "w" );
         else
             fd = fopen ( name.c_str(), "w" );
-
-        time_t t;
-        time ( &t );
-        uint32_t id = _getpid() * t;
-
-        fprintf ( fd, "ID %08x\n", id );
-        fflush ( fd );
     }
 
-    fprintf ( fd, "BUILD %08x\n", BUILD );
+    fprintf ( fd, "COMMIT_ID %s\n", COMMIT_ID );
+    fprintf ( fd, "BUILD_TIME %s\n", BUILD_TIME );
     fflush ( fd );
 }
 

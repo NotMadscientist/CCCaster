@@ -85,7 +85,7 @@ depend:
 
 .depend:
 	@./make_protocol $(NON_GEN_HEADERS)
-	@date +"#define BUILD %s" > Version.h
+	@printf "#define COMMIT_ID \"`git rev-parse HEAD`\"\n#define BUILD_TIME \"`date`\"\n" > Version.h
 	@echo "Regenerating .depend ..."
 	@$(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp *.cc > $@
 	@echo
@@ -94,7 +94,7 @@ protocol:
 	@./make_protocol $(NON_GEN_HEADERS)
 
 Version.h:
-	@date +"#define BUILD %s" > $@
+	@printf "#define COMMIT_ID \"`git rev-parse HEAD`\"\n#define BUILD_TIME \"`date`\"\n" > $@
 
 .PHONY: clean check trim format count depend protocol Version.h
 
