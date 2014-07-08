@@ -7,6 +7,7 @@
 #include <winsock2.h>
 
 #include <cctype>
+#include <iostream>
 
 using namespace std;
 
@@ -85,17 +86,20 @@ size_t compressBound ( size_t srcLen )
     return mz_compressBound ( srcLen );
 }
 
-string getWindowsErrorAsString ( int error )
+static string getWindowsErrorAsString ( int error )
 {
     string str;
     char *errorString = 0;
     FormatMessage ( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
                     0, error, 0, ( LPSTR ) &errorString, 0, 0 );
-    str = toString ( "[%d] '", error ) + ( errorString ? trim ( errorString ) : "(null)" ) + "'";
+    str = ( errorString ? trim ( errorString ) : "(null)" );
     LocalFree ( errorString );
     return str;
 }
 
-string getLastWindowsError() { return getWindowsErrorAsString ( GetLastError() ); }
+WindowsError::WindowsError ( int code ) : code ( code ), msg ( getWindowsErrorAsString ( code ) ) {}
 
-string getLastWinSockError() { return getWindowsErrorAsString ( WSAGetLastError() ); }
+ostream& operator<< ( ostream& os, const WindowsError& error )
+{
+    return ( os << "[" << error.code << "] '" << error.msg << "'" );
+}

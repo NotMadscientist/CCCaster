@@ -119,8 +119,9 @@ void EventManager::checkSockets()
 
     if ( count == SOCKET_ERROR )
     {
-        LOG ( "select failed: %s", getLastWinSockError() );
-        throw "something"; // TODO
+        WindowsError err = WSAGetLastError();
+        LOG ( "select failed: %s", err );
+        throw err;
     }
 
     if ( count == 0 )
@@ -155,8 +156,9 @@ void EventManager::checkSockets()
 
                 if ( ioctlsocket ( socket->fd, FIONREAD, &numBytes ) != 0 )
                 {
-                    LOG ( "ioctlsocket failed: %s", getLastWinSockError() );
-                    throw "something"; // TODO
+                    WindowsError err = WSAGetLastError();
+                    LOG ( "ioctlsocket failed: %s", err );
+                    throw err;
                 }
 
                 if ( socket->isTCP() && numBytes == 0 )
@@ -292,8 +294,9 @@ void EventManager::initialize()
 
     if ( error != NO_ERROR )
     {
-        LOG ( "WSAStartup failed: %s", getWindowsErrorAsString ( error ) );
-        throw "something"; // TODO
+        WindowsError err = error;
+        LOG ( "WSAStartup failed: %s", err );
+        throw err;
     }
 
     initialized = true;

@@ -22,8 +22,9 @@ shared_ptr<addrinfo> getAddrInfo ( const string& addr, uint16_t port, bool isV4,
 
     if ( error != 0 )
     {
-        LOG ( "getaddrinfo failed: %s", getWindowsErrorAsString ( error ) );
-        throw "something"; // TODO
+        WindowsError err = error;
+        LOG ( "getaddrinfo failed: %s", err );
+        throw err;
     }
 
     return shared_ptr<addrinfo> ( addrRes, freeaddrinfo );

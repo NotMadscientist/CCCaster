@@ -108,11 +108,14 @@ size_t compress ( const char *src, size_t srcLen, char *dst, size_t dstLen, int 
 size_t uncompress ( const char *src, size_t srcLen, char *dst, size_t dstLen );
 size_t compressBound ( size_t srcLen );
 
-// Convert the Windows error to a formatted string
-std::string getWindowsErrorAsString ( int error );
+// Windows error type
+struct WindowsError
+{
+    int code;
+    std::string msg;
 
-// Get the last Windows API error as a formatted string
-std::string getLastWindowsError();
+    inline WindowsError() : code ( 0 ) {}
+    WindowsError ( int code );
+};
 
-// Get the last Windows socket error as a formatted string
-std::string getLastWinSockError();
+std::ostream& operator<< ( std::ostream& os, const WindowsError& error );

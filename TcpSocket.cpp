@@ -69,7 +69,7 @@ shared_ptr<Socket> TcpSocket::accept ( Socket::Owner *owner )
 
     if ( newFd == INVALID_SOCKET )
     {
-        LOG_SOCKET ( this, "accept failed: %s", getLastWinSockError() );
+        LOG_SOCKET ( this, "accept failed: %s", WindowsError ( WSAGetLastError() ) );
         return 0;
     }
 
