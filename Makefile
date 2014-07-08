@@ -2,6 +2,7 @@
 BINARY = cccaster.exe
 DLL = cccaster.dll
 LAUNCHER = launcher.exe
+FOLDER = cccaster/
 
 # Main program sources
 CPP_SRCS = $(wildcard *.cpp)
@@ -30,7 +31,7 @@ else
 endif
 
 # Build flags
-DEFINES = -DWIN32_LEAN_AND_MEAN
+DEFINES = -DWIN32_LEAN_AND_MEAN -DBINARY='"$(BINARY)"' -DFOLDER='"$(FOLDER)"'
 INCLUDES = -Icontrib -Icontrib/cereal/include -Icontrib/gtest/include
 CC_FLAGS = -m32 -s $(INCLUDES) $(DEFINES)
 LD_FLAGS = -m32 -static -lws2_32 -lwinmm -lwinpthread -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -limm32

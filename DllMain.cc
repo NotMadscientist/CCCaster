@@ -4,6 +4,8 @@
 
 #include <windows.h>
 
+#define LOG_FILE FOLDER "dll.log"
+
 using namespace std;
 
 extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
@@ -11,7 +13,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
     switch ( reason )
     {
         case DLL_PROCESS_ATTACH:
-            Log::get().initialize ( "dll.log" );
+            Log::get().initialize ( LOG_FILE );
             EventManager::get().initialize();
             LOG ( "DLL_PROCESS_ATTACH" );
             break;
