@@ -22,20 +22,14 @@ struct TestMessage : public SerializableSequence
 
     TestMessage ( const std::string& str ) : str ( str ) {}
 
-    MsgType getMsgType() const override;
-
-protected:
-
-    void serialize ( cereal::BinaryOutputArchive& ar ) const override { ar ( str ); }
-
-    void deserialize ( cereal::BinaryInputArchive& ar ) override { ar ( str ); }
+    PROTOCOL_BOILERPLATE ( str )
 };
 
 
 template<typename T, uint64_t keepAlive, uint64_t timeout>
 struct BaseTestSocket : public Socket::Owner, public Timer::Owner
 {
-    shared_ptr<Socket> socket, accepted;
+    SocketPtr socket, accepted;
     Timer timer;
 
     BaseTestSocket ( uint16_t port )

@@ -132,7 +132,7 @@ void UdpSocket::gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address 
     {
         // Only a connect request is allowed to open a new child socket
         socket = new UdpSocket ( this, address );
-        childSockets.insert ( make_pair ( address, shared_ptr<Socket> ( socket ) ) );
+        childSockets.insert ( make_pair ( address, SocketPtr ( socket ) ) );
     }
     else
     {
@@ -198,34 +198,34 @@ void UdpSocket::disconnect()
     }
 }
 
-shared_ptr<Socket> UdpSocket::listen ( Socket::Owner *owner, uint16_t port )
+SocketPtr UdpSocket::listen ( Socket::Owner *owner, uint16_t port )
 {
-    return shared_ptr<Socket> ( new UdpSocket ( owner, port, DEFAULT_KEEP_ALIVE ) );
+    return SocketPtr ( new UdpSocket ( owner, port, DEFAULT_KEEP_ALIVE ) );
 }
 
-shared_ptr<Socket> UdpSocket::connect ( Socket::Owner *owner, const IpAddrPort& address )
+SocketPtr UdpSocket::connect ( Socket::Owner *owner, const IpAddrPort& address )
 {
-    return shared_ptr<Socket> ( new UdpSocket ( owner, address, DEFAULT_KEEP_ALIVE ) );
+    return SocketPtr ( new UdpSocket ( owner, address, DEFAULT_KEEP_ALIVE ) );
 }
 
-shared_ptr<Socket> UdpSocket::bind ( Socket::Owner *owner, uint16_t port )
+SocketPtr UdpSocket::bind ( Socket::Owner *owner, uint16_t port )
 {
-    return shared_ptr<Socket> ( new UdpSocket ( owner, port, 0 ) );
+    return SocketPtr ( new UdpSocket ( owner, port, 0 ) );
 }
 
-shared_ptr<Socket> UdpSocket::bind ( Socket::Owner *owner, const IpAddrPort& address )
+SocketPtr UdpSocket::bind ( Socket::Owner *owner, const IpAddrPort& address )
 {
-    return shared_ptr<Socket> ( new UdpSocket ( owner, address, 0 ) );
+    return SocketPtr ( new UdpSocket ( owner, address, 0 ) );
 }
 
-shared_ptr<Socket> UdpSocket::accept ( Socket::Owner *owner )
+SocketPtr UdpSocket::accept ( Socket::Owner *owner )
 {
     if ( !acceptedSocket.get() )
         return 0;
 
     acceptedSocket->owner = owner;
 
-    shared_ptr<Socket> ret;
+    SocketPtr ret;
     acceptedSocket.swap ( ret );
     return ret;
 }

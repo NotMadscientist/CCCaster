@@ -8,16 +8,9 @@ struct UdpConnect : public SerializableSequence
     enum class ConnectType : uint8_t { Request, Reply, Final } connectType;
 
     UdpConnect() {}
-
     UdpConnect ( ConnectType connectType ) : connectType ( connectType ) {}
 
-    MsgType getMsgType() const override;
-
-protected:
-
-    void serialize ( cereal::BinaryOutputArchive& ar ) const override { ar ( connectType ); }
-
-    void deserialize ( cereal::BinaryInputArchive& ar ) override { ar ( connectType ); }
+    PROTOCOL_BOILERPLATE ( connectType )
 };
 
 class UdpSocket : public Socket, public GoBackN::Owner
@@ -32,10 +25,10 @@ class UdpSocket : public Socket, public GoBackN::Owner
     GoBackN gbn;
 
     // Child sockets
-    std::unordered_map<IpAddrPort, std::shared_ptr<Socket>> childSockets;
+    std::unordered_map<IpAddrPort, SocketPtr> childSockets;
 
     // Currently accepted socket
-    std::shared_ptr<Socket> acceptedSocket;
+    SocketPtr acceptedSocket;
 
     // GoBackN callbacks
     void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override;
@@ -65,14 +58,14 @@ protected:
 public:
 
     // Listen for connections on the given port
-    static std::shared_ptr<Socket> listen ( Socket::Owner *owner, uint16_t port );
+    static SocketPtr listen ( Socket::Owner *owner, uint16_t port );
 
     // Connect to the given address and port
-    static std::shared_ptr<Socket> connect ( Socket::Owner *owner, const IpAddrPort& address );
+    static SocketPtr connect ( Socket::Owner *owner, const IpAddrPort& address );
 
     // Create connection-less sockets
-    static std::shared_ptr<Socket> bind ( Socket::Owner *owner, uint16_t port );
-    static std::shared_ptr<Socket> bind ( Socket::Owner *owner, const IpAddrPort& address );
+    static SocketPtr bind ( Socket::Owner *owner, uint16_t port );
+    static SocketPtr bind ( Socket::Owner *owner, const IpAddrPort& address );
 
     // Destructor
     ~UdpSocket() override;
@@ -81,7 +74,7 @@ public:
     void disconnect() override;
 
     // Accept a new socket
-    std::shared_ptr<Socket> accept ( Socket::Owner *owner ) override;
+    SocketPtr accept ( Socket::Owner *owner ) override;
 
     // Indicates this is a child socket
     inline bool isChild() const { return hasParent; }

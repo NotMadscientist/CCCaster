@@ -9,6 +9,14 @@
     LOG ( "%s socket=%08x; fd=%08x; state=%s; address='%s'; " FORMAT,                                           \
           SOCKET->protocol, SOCKET, SOCKET->fd, SOCKET->state, SOCKET->address, ## __VA_ARGS__ )
 
+// Forward declarations
+struct _WSAPROTOCOL_INFOA;
+typedef struct _WSAPROTOCOL_INFOA WSAPROTOCOL_INFO;
+struct Socket;
+struct SocketShareData;
+
+typedef std::shared_ptr<Socket> SocketPtr;
+
 // Generic socket base class
 struct Socket
 {
@@ -105,7 +113,10 @@ public:
     bool recv ( char *buffer, size_t& len, IpAddrPort& address );
 
     // Accept a new socket
-    virtual std::shared_ptr<Socket> accept ( Owner *owner ) = 0;
+    virtual SocketPtr accept ( Owner *owner ) = 0;
+
+    // Get data needed to share this socket in another process
+    virtual MsgPtr share ( int processId ) const;
 
     // Send a protocol message, return false indicates disconnected
     virtual bool send ( SerializableMessage *message, const IpAddrPort& address = IpAddrPort() ) = 0;
@@ -116,6 +127,24 @@ public:
     inline void setPacketLoss ( uint8_t percentage ) { packetLoss = percentage; }
 
     friend class EventManager;
+};
+
+// Contains data for sharing a socket across processes
+struct SocketShareData : public SerializableMessage
+{
+    IpAddrPort address;
+    Socket::Protocol protocol;
+    std::shared_ptr<WSAPROTOCOL_INFO> info;
+
+    SocketShareData() {}
+    SocketShareData ( const IpAddrPort& address,
+                      Socket::Protocol protocol,
+                      const std::shared_ptr<WSAPROTOCOL_INFO>& info )
+        : address ( address ), protocol ( protocol ), info ( info ) {}
+
+    MsgType getMsgType() const override;
+    void save ( cereal::BinaryOutputArchive& ar ) const override;
+    void load ( cereal::BinaryInputArchive& ar ) override;
 };
 
 std::ostream& operator<< ( std::ostream& os, Socket::Protocol protocol );

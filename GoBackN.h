@@ -12,12 +12,8 @@ struct AckSequence : public SerializableSequence
     AckSequence ( uint32_t sequence ) : SerializableSequence ( sequence ) {}
 
     MsgType getMsgType() const override;
-
-protected:
-
-    void serialize ( cereal::BinaryOutputArchive& ar ) const override {}
-
-    void deserialize ( cereal::BinaryInputArchive& ar ) override {}
+    void save ( cereal::BinaryOutputArchive& ar ) const override {}
+    void load ( cereal::BinaryInputArchive& ar ) override {}
 };
 
 class GoBackN : public Timer::Owner

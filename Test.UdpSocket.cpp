@@ -26,7 +26,7 @@ TEST ( UdpSocket, SendConnectionLess )
 {
     struct TestSocket : public Socket::Owner, public Timer::Owner
     {
-        shared_ptr<Socket> socket;
+        SocketPtr socket;
         Timer timer;
         MsgPtr msg;
         bool sent;

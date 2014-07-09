@@ -62,13 +62,7 @@ struct IpAddrPort : public SerializableMessage
         return buffer;
     }
 
-    MsgType getMsgType() const override;
-
-protected:
-
-    void serialize ( cereal::BinaryOutputArchive& ar ) const override { ar ( addr, port ); }
-
-    void deserialize ( cereal::BinaryInputArchive& ar ) override { ar ( addr, port ); }
+    PROTOCOL_BOILERPLATE ( addr, port )
 
 private:
 

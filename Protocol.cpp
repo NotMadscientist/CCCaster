@@ -30,8 +30,8 @@ string Serializable::encode ( const MsgPtr& msg )
     BinaryOutputArchive archive ( ss );
 
     // Encode msg data
-    msg->serializeBase ( archive );
-    msg->serialize ( archive );
+    msg->saveBase ( archive );
+    msg->save ( archive );
 
     // Update MD5
     if ( msg->md5empty )
@@ -84,8 +84,8 @@ MsgPtr Serializable::decode ( const char *bytes, size_t len, size_t& consumed )
         }
 
         // Decode msg data
-        msg->deserializeBase ( archive );
-        msg->deserialize ( archive );
+        msg->loadBase ( archive );
+        msg->load ( archive );
 
         // Decode MD5 at end of msg data
         archive ( msg->md5 );

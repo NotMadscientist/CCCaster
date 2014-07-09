@@ -15,7 +15,7 @@ TEST ( GoBackN, SendOnce )
 {
     struct TestSocket : public GoBackN::Owner, public Socket::Owner, public Timer::Owner
     {
-        shared_ptr<Socket> socket;
+        SocketPtr socket;
         IpAddrPort address;
         GoBackN gbn;
         Timer timer;
@@ -90,7 +90,7 @@ TEST ( GoBackN, SendSequential )
 {
     struct TestSocket : public GoBackN::Owner, public Socket::Owner, public Timer::Owner
     {
-        shared_ptr<Socket> socket;
+        SocketPtr socket;
         IpAddrPort address;
         GoBackN gbn;
         Timer timer;
@@ -176,7 +176,7 @@ TEST ( GoBackN, SendAndRecv )
 
     struct TestSocket : public GoBackN::Owner, public Socket::Owner, public Timer::Owner
     {
-        shared_ptr<Socket> socket;
+        SocketPtr socket;
         IpAddrPort address;
         GoBackN gbn;
         Timer timer;
@@ -280,7 +280,7 @@ TEST ( GoBackN, Timeout )
 
     struct TestSocket : public GoBackN::Owner, public Socket::Owner, public Timer::Owner
     {
-        shared_ptr<Socket> socket;
+        SocketPtr socket;
         IpAddrPort address;
         GoBackN gbn;
         Timer timer;

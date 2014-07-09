@@ -47,17 +47,17 @@ void TcpSocket::disconnect()
     Socket::disconnect();
 }
 
-shared_ptr<Socket> TcpSocket::listen ( Socket::Owner *owner, uint16_t port )
+SocketPtr TcpSocket::listen ( Socket::Owner *owner, uint16_t port )
 {
-    return shared_ptr<Socket> ( new TcpSocket ( owner, port ) );
+    return SocketPtr ( new TcpSocket ( owner, port ) );
 }
 
-shared_ptr<Socket> TcpSocket::connect ( Socket::Owner *owner, const IpAddrPort& address )
+SocketPtr TcpSocket::connect ( Socket::Owner *owner, const IpAddrPort& address )
 {
-    return shared_ptr<Socket> ( new TcpSocket ( owner, address ) );
+    return SocketPtr ( new TcpSocket ( owner, address ) );
 }
 
-shared_ptr<Socket> TcpSocket::accept ( Socket::Owner *owner )
+SocketPtr TcpSocket::accept ( Socket::Owner *owner )
 {
     if ( !isServer() )
         return 0;
@@ -73,7 +73,7 @@ shared_ptr<Socket> TcpSocket::accept ( Socket::Owner *owner )
         return 0;
     }
 
-    return shared_ptr<Socket> ( new TcpSocket ( owner, newFd, sa ) );
+    return SocketPtr ( new TcpSocket ( owner, newFd, sa ) );
 }
 
 bool TcpSocket::send ( SerializableMessage *message, const IpAddrPort& address )

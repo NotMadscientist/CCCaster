@@ -181,6 +181,19 @@ void Socket::init()
     }
 }
 
+MsgPtr Socket::share ( int processId ) const
+{
+    shared_ptr<WSAPROTOCOL_INFO> info ( new WSAPROTOCOL_INFO() );
+
+    if ( WSADuplicateSocket ( fd, processId, info.get() ) )
+    {
+        LOG_SOCKET ( this, "WSADuplicateSocket failed: %s", WindowsError ( WSAGetLastError() ) );
+        return 0;
+    }
+
+    return MsgPtr ( new SocketShareData ( address, protocol, info ) );
+}
+
 bool Socket::send ( const char *buffer, size_t len )
 {
     assert ( isClient() == true );
@@ -395,4 +408,62 @@ ostream& operator<< ( ostream& os, Socket::State state )
     }
 
     return ( os << "Unknown socket state!" );
+}
+
+void SocketShareData::save ( cereal::BinaryOutputArchive& ar ) const
+{
+    ar ( address, protocol,
+         info->dwServiceFlags1,
+         info->dwServiceFlags2,
+         info->dwServiceFlags3,
+         info->dwServiceFlags4,
+         info->dwProviderFlags,
+         info->ProviderId.Data1,
+         info->ProviderId.Data2,
+         info->ProviderId.Data3,
+         info->ProviderId.Data4,
+         info->dwCatalogEntryId,
+         info->ProtocolChain.ChainLen,
+         info->ProtocolChain.ChainEntries,
+         info->iVersion,
+         info->iAddressFamily,
+         info->iMaxSockAddr,
+         info->iMinSockAddr,
+         info->iSocketType,
+         info->iProtocol,
+         info->iProtocolMaxOffset,
+         info->iNetworkByteOrder,
+         info->iSecurityScheme,
+         info->dwMessageSize,
+         info->dwProviderReserved,
+         info->szProtocol );
+}
+
+void SocketShareData::load ( cereal::BinaryInputArchive& ar )
+{
+    ar ( address, protocol,
+         info->dwServiceFlags1,
+         info->dwServiceFlags2,
+         info->dwServiceFlags3,
+         info->dwServiceFlags4,
+         info->dwProviderFlags,
+         info->ProviderId.Data1,
+         info->ProviderId.Data2,
+         info->ProviderId.Data3,
+         info->ProviderId.Data4,
+         info->dwCatalogEntryId,
+         info->ProtocolChain.ChainLen,
+         info->ProtocolChain.ChainEntries,
+         info->iVersion,
+         info->iAddressFamily,
+         info->iMaxSockAddr,
+         info->iMinSockAddr,
+         info->iSocketType,
+         info->iProtocol,
+         info->iProtocolMaxOffset,
+         info->iNetworkByteOrder,
+         info->iSecurityScheme,
+         info->dwMessageSize,
+         info->dwProviderReserved,
+         info->szProtocol );
 }

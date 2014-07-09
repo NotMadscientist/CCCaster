@@ -6,6 +6,11 @@
 #include <memory>
 #include <iostream>
 
+#define PROTOCOL_BOILERPLATE(...)                                                                           \
+    MsgType getMsgType() const override;                                                                    \
+    void save ( cereal::BinaryOutputArchive& ar ) const override { ar ( __VA_ARGS__ ); }                    \
+    void load ( cereal::BinaryInputArchive& ar ) override { ar ( __VA_ARGS__ ); }                           \
+
 // Increase size as needed
 enum class MsgType : uint8_t
 {
@@ -20,65 +25,76 @@ typedef std::shared_ptr<Serializable> MsgPtr;
 
 const MsgPtr NullMsg;
 
+// Abstract base class for all serializable messages
 struct Serializable
 {
+    // Flag to indicate compression level
     mutable uint8_t compressionLevel;
 
+    // Basic constructor and destructor
     Serializable();
     inline virtual ~Serializable() {}
 
+    // Get message and base types
     virtual MsgType getMsgType() const = 0;
     virtual BaseType getBaseType() const = 0;
 
+    // Serialize to and deserialize from a binary archive
+    virtual void save ( cereal::BinaryOutputArchive& ar ) const = 0;
+    virtual void load ( cereal::BinaryInputArchive& ar ) = 0;
+
+    // Cast this to another another type
     template<typename T> T& getAs() { return *static_cast<T *> ( this ); }
     template<typename T> const T& getAs() const { return *static_cast<const T *> ( this ); }
 
+    // Invalidate and any cached data
     inline void invalidate() const { md5empty = true; }
 
+    // Encode and decode messages
     static std::string encode ( Serializable *message );
     static std::string encode ( const MsgPtr& msg );
     static MsgPtr decode ( const char *bytes, size_t len, size_t& consumed );
 
-protected:
-
-    virtual void serialize ( cereal::BinaryOutputArchive& ar ) const = 0;
-    virtual void deserialize ( cereal::BinaryInputArchive& ar ) = 0;
-
 private:
 
+    // Cached MD5 data
     mutable char md5[16];
     mutable bool md5empty;
 
-    inline virtual void serializeBase ( cereal::BinaryOutputArchive& ar ) const {};
-    inline virtual void deserializeBase ( cereal::BinaryInputArchive& ar ) {};
+    // Serialize and deserialize the base type
+    inline virtual void saveBase ( cereal::BinaryOutputArchive& ar ) const {};
+    inline virtual void loadBase ( cereal::BinaryInputArchive& ar ) {};
 
     friend struct SerializableMessage;
     friend struct SerializableSequence;
 };
 
+// Represents a regular message
 struct SerializableMessage : public Serializable
 {
     BaseType getBaseType() const override { return BaseType::SerializableMessage; }
 };
 
+// Represents a sequential message
 struct SerializableSequence : public Serializable
 {
-public:
-
+    // Basic constructors
     SerializableSequence() : sequence ( 0 ) {}
     SerializableSequence ( uint32_t sequence ) : sequence ( sequence ) {}
 
     BaseType getBaseType() const override { return BaseType::SerializableSequence; }
 
+    // Get and set the message sequence
     inline uint32_t getSequence() const { return sequence; }
     inline void setSequence ( uint32_t sequence ) const { invalidate(); this->sequence = sequence; }
 
 private:
 
+    // Message sequence number
     mutable uint32_t sequence;
 
-    void serializeBase ( cereal::BinaryOutputArchive& ar ) const override { ar ( sequence ); };
-    void deserializeBase ( cereal::BinaryInputArchive& ar ) override { ar ( sequence ); };
+    void saveBase ( cereal::BinaryOutputArchive& ar ) const override { ar ( sequence ); };
+    void loadBase ( cereal::BinaryInputArchive& ar ) override { ar ( sequence ); };
 };
 
 std::ostream& operator<< ( std::ostream& os, const MsgPtr& msg );

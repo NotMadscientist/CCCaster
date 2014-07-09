@@ -75,7 +75,6 @@ extern "C" void callback()
     }
 }
 
-
 extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
 {
     switch ( reason )

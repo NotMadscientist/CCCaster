@@ -24,10 +24,10 @@ protected:
 public:
 
     // Listen for connections on the given port
-    static std::shared_ptr<Socket> listen ( Socket::Owner *owner, uint16_t port );
+    static SocketPtr listen ( Socket::Owner *owner, uint16_t port );
 
     // Connect to the given address and port
-    static std::shared_ptr<Socket> connect ( Socket::Owner *owner, const IpAddrPort& address );
+    static SocketPtr connect ( Socket::Owner *owner, const IpAddrPort& address );
 
     // Virtual destructor
     ~TcpSocket() override;
@@ -36,7 +36,7 @@ public:
     void disconnect() override;
 
     // Accept a new socket
-    std::shared_ptr<Socket> accept ( Socket::Owner *owner ) override;
+    SocketPtr accept ( Socket::Owner *owner ) override;
 
     // Send a protocol message, return false indicates disconnected
     bool send ( SerializableMessage *message, const IpAddrPort& address = IpAddrPort() ) override;
