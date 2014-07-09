@@ -95,6 +95,7 @@ public:
 
     // Initialize / deinitialize the event manager, should be called in the same thread as start / poll
     void initialize();
+    void initializePolling();
     void deinitialize();
 
     // Get the current time in milliseconds

@@ -8,6 +8,12 @@
 
 #define TO_C_STR(...) toString ( __VA_ARGS__ ).c_str()
 
+#define INLINE_DWORD(X)                                                         \
+    static_cast<unsigned char> ( unsigned ( X ) & 0xFF ),                       \
+    static_cast<unsigned char> ( ( unsigned ( X ) >> 8 ) & 0xFF ),              \
+    static_cast<unsigned char> ( ( unsigned ( X ) >> 16 ) & 0xFF ),             \
+    static_cast<unsigned char> ( ( unsigned ( X ) >> 24 ) & 0xFF )
+
 // Convert a boolean value to a type
 template<bool> struct bool2type {};
 
@@ -119,3 +125,15 @@ struct WindowsError
 };
 
 std::ostream& operator<< ( std::ostream& os, const WindowsError& error );
+
+// Write to a memory location in the same process
+void memwrite ( void *dst, const void *src, size_t len );
+
+// Struct for storing assembly code
+struct Asm
+{
+    void *const addr;
+    const std::vector<uint8_t> bytes;
+
+    void write() const { memwrite ( addr, &bytes[0], bytes.size() ); }
+};

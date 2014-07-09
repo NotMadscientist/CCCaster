@@ -31,7 +31,8 @@ else
 endif
 
 # Build flags
-DEFINES = -DWIN32_LEAN_AND_MEAN -DBINARY='"$(BINARY)"' -DFOLDER='"$(FOLDER)"'
+DEFINES = -DWIN32_LEAN_AND_MEAN
+DEFINES += -DBINARY='"$(BINARY)"' -DHOOK_DLL='"$(DLL)"' -DLAUNCHER='"$(LAUNCHER)"' -DFOLDER='"$(FOLDER)"'
 INCLUDES = -Icontrib -Icontrib/cereal/include -Icontrib/gtest/include
 CC_FLAGS = -m32 -s $(INCLUDES) $(DEFINES)
 LD_FLAGS = -m32 -static -lws2_32 -lwinmm -lwinpthread -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -limm32
@@ -43,20 +44,22 @@ BUILD_TYPE = Debug
 all: STRIP = touch
 all: DEFINES += -D_GLIBCXX_DEBUG
 all: CC_FLAGS += -ggdb3 -O0 -fno-inline
-all: $(BINARY) $(DLL) $(LAUNCHER)
-	@echo
-	if [ -s ./deploy ]; then ./deploy; fi;
+all: deploy
 
 release: DEFINES += -DNDEBUG -DRELEASE
 release: CC_FLAGS += -Os -O2 -fno-rtti
 release: BUILD_TYPE = Release
-release: $(BINARY) $(DLL) $(LAUNCHER)
+release: deploy
 
 profile: STRIP = touch
 profile: DEFINES += -DNDEBUG -DRELEASE
 profile: CC_FLAGS += -Os -O2 -fno-rtti -pg
 profile: LD_FLAGS += -pg -lgmon
-profile: $(BINARY) $(DLL) $(LAUNCHER)
+profile: deploy
+
+deploy: $(BINARY) $(DLL) $(LAUNCHER)
+	@echo
+	if [ -s ./deploy ]; then ./deploy; fi;
 
 $(BINARY): Version.h protocol .depend $(OBJECTS) icon.res
 	@echo

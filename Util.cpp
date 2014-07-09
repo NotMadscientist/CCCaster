@@ -103,3 +103,11 @@ ostream& operator<< ( ostream& os, const WindowsError& error )
 {
     return ( os << "[" << error.code << "] '" << error.msg << "'" );
 }
+
+void memwrite ( void *dst, const void *src, size_t len )
+{
+    DWORD old;
+    VirtualProtect ( dst, 5, PAGE_READWRITE, &old );
+    memcpy ( dst, src, len );
+    VirtualProtect ( dst, 5, old, 0 );
+}

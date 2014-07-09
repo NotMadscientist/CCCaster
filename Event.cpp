@@ -365,6 +365,13 @@ void EventManager::initialize()
     initialized = true;
 }
 
+void EventManager::initializePolling()
+{
+    initialize();
+
+    running = true;
+}
+
 void EventManager::deinitialize()
 {
     if ( !initialized )
