@@ -7,13 +7,13 @@
 #include <memory>
 
 struct addrinfo;
-struct sockaddr_storage;
+struct sockaddr;
 
 std::shared_ptr<addrinfo> getAddrInfo ( const std::string& addr, uint16_t port, bool isV4, bool passive = false );
 
-std::string getAddrFromSockAddr ( const sockaddr_storage& sa );
+std::string getAddrFromSockAddr ( const sockaddr *sa );
 
-uint16_t getPortFromSockAddr ( const sockaddr_storage& sa );
+uint16_t getPortFromSockAddr ( const sockaddr *sa );
 
 const char *inet_ntop ( int af, const void *src, char *dst, size_t size );
 
@@ -29,7 +29,7 @@ struct IpAddrPort : public SerializableMessage
     inline IpAddrPort ( const std::string& addr, uint16_t port, bool isV4 = true )
         : addr ( addr ), port ( port ), isV4 ( isV4 ) {}
 
-    IpAddrPort ( const sockaddr_storage& sa );
+    IpAddrPort ( const sockaddr *sa );
 
     const std::shared_ptr<addrinfo>& getAddrInfo() const;
 

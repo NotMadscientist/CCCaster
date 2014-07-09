@@ -62,10 +62,10 @@ SocketPtr TcpSocket::accept ( Socket::Owner *owner )
     if ( !isServer() )
         return 0;
 
-    sockaddr_storage sa;
-    int saLen = sizeof ( sa );
+    sockaddr_storage sas;
+    int saLen = sizeof ( sas );
 
-    int newFd = ::accept ( fd, ( struct sockaddr * ) &sa, &saLen );
+    int newFd = ::accept ( fd, ( sockaddr * ) &sas, &saLen );
 
     if ( newFd == INVALID_SOCKET )
     {
@@ -73,7 +73,7 @@ SocketPtr TcpSocket::accept ( Socket::Owner *owner )
         return 0;
     }
 
-    return SocketPtr ( new TcpSocket ( owner, newFd, sa ) );
+    return SocketPtr ( new TcpSocket ( owner, newFd, ( sockaddr * ) &sas ) );
 }
 
 bool TcpSocket::send ( SerializableMessage *message, const IpAddrPort& address )

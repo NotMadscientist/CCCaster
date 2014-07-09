@@ -131,7 +131,7 @@ void UdpSocket::gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address 
               && msg->getAs<UdpConnect>().connectType == UdpConnect::ConnectType::Request )
     {
         // Only a connect request is allowed to open a new child socket
-        socket = new UdpSocket ( this, address );
+        socket = new UdpSocket ( ChildSocket, this, address );
         childSockets.insert ( make_pair ( address, SocketPtr ( socket ) ) );
     }
     else
@@ -163,7 +163,7 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, uint64_t
         send ( new UdpConnect ( UdpConnect::ConnectType::Request ) );
 }
 
-UdpSocket::UdpSocket ( UdpSocket *parent, const IpAddrPort& address )
+UdpSocket::UdpSocket ( ChildSocketEnum, UdpSocket *parent, const IpAddrPort& address )
     : Socket ( address, Protocol::UDP ), hasParent ( true ), parent ( parent ), gbn ( this, parent->getKeepAlive() )
 {
     this->state = State::Connected;

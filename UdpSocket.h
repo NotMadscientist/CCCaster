@@ -15,6 +15,9 @@ struct UdpConnect : public SerializableSequence
 
 class UdpSocket : public Socket, public GoBackN::Owner
 {
+    // Enum type for child sockets
+    enum ChildSocketEnum { ChildSocket };
+
     // Indicates this is a child socket, and has a parent socket
     const bool hasParent;
 
@@ -48,7 +51,7 @@ class UdpSocket : public Socket, public GoBackN::Owner
     UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, uint64_t keepAlive );
 
     // Construct a child socket
-    UdpSocket ( UdpSocket *parent, const IpAddrPort& address );
+    UdpSocket ( ChildSocketEnum, UdpSocket *parent, const IpAddrPort& address );
 
 protected:
 

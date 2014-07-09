@@ -30,24 +30,24 @@ shared_ptr<addrinfo> getAddrInfo ( const string& addr, uint16_t port, bool isV4,
     return shared_ptr<addrinfo> ( addrRes, freeaddrinfo );
 }
 
-string getAddrFromSockAddr ( const sockaddr_storage& sa )
+string getAddrFromSockAddr ( const sockaddr *sa )
 {
     char addr[INET6_ADDRSTRLEN];
 
-    if ( sa.ss_family == AF_INET )
-        inet_ntop ( sa.ss_family, & ( ( ( sockaddr_in * ) &sa )->sin_addr ), addr, sizeof ( addr ) );
+    if ( sa->sa_family == AF_INET )
+        inet_ntop ( sa->sa_family, & ( ( ( sockaddr_in * ) sa )->sin_addr ), addr, sizeof ( addr ) );
     else
-        inet_ntop ( sa.ss_family, & ( ( ( sockaddr_in6 * ) &sa )->sin6_addr ), addr, sizeof ( addr ) );
+        inet_ntop ( sa->sa_family, & ( ( ( sockaddr_in6 * ) sa )->sin6_addr ), addr, sizeof ( addr ) );
 
     return addr;
 }
 
-uint16_t getPortFromSockAddr ( const sockaddr_storage& sa )
+uint16_t getPortFromSockAddr ( const sockaddr *sa )
 {
-    if ( sa.ss_family == AF_INET )
-        return ntohs ( ( ( sockaddr_in * ) &sa )->sin_port );
+    if ( sa->sa_family == AF_INET )
+        return ntohs ( ( ( sockaddr_in * ) sa )->sin_port );
     else
-        return ntohs ( ( ( sockaddr_in6 * ) &sa )->sin6_port );
+        return ntohs ( ( ( sockaddr_in6 * ) sa )->sin6_port );
 }
 
 const char *inet_ntop ( int af, const void *src, char *dst, size_t size )
@@ -74,8 +74,8 @@ const char *inet_ntop ( int af, const void *src, char *dst, size_t size )
     return 0;
 }
 
-IpAddrPort::IpAddrPort ( const sockaddr_storage& sa )
-    : addr ( getAddrFromSockAddr ( sa ) ), port ( getPortFromSockAddr ( sa ) ), isV4 ( sa.ss_family == AF_INET ) {}
+IpAddrPort::IpAddrPort ( const sockaddr *sa )
+    : addr ( getAddrFromSockAddr ( sa ) ), port ( getPortFromSockAddr ( sa ) ), isV4 ( sa->sa_family == AF_INET ) {}
 
 const shared_ptr<addrinfo>& IpAddrPort::getAddrInfo() const
 {

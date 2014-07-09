@@ -96,7 +96,7 @@ void Socket::init()
                 {
                     int error = WSAGetLastError();
 
-                    // Non-blocking connect
+                    // Sucessful non-blocking connect
                     if ( error == WSAEWOULDBLOCK )
                         break;
 
@@ -117,6 +117,9 @@ void Socket::init()
                     fd = 0;
                     continue;
                 }
+
+                // Successful bind
+                break;
             }
         }
         else
@@ -152,6 +155,7 @@ void Socket::init()
                 throw err;
             }
 
+            // Sucessful bind
             break;
         }
     }
@@ -162,13 +166,35 @@ void Socket::init()
         throw err;
     }
 
+    // Update the address to resolve hostname
+    if ( !address.empty() )
+    {
+        if ( isTCP() && res )
+        {
+            address.addr = getAddrFromSockAddr ( res->ai_addr );
+        }
+        else
+        {
+            addrInfo = getAddrInfo ( address.addr, address.port, true );
+
+            for ( res = addrInfo.get(); res; res = res->ai_next )
+            {
+                if ( !res )
+                    continue;
+
+                address.addr = getAddrFromSockAddr ( res->ai_addr );
+                break;
+            }
+        }
+    }
+
     // Update the local port if bound to any available port
     if ( address.port == 0 )
     {
-        sockaddr_storage sa;
-        int saLen = sizeof ( sa );
+        sockaddr_storage sas;
+        int saLen = sizeof ( sas );
 
-        if ( getsockname ( fd, ( struct sockaddr * ) &sa, &saLen ) == SOCKET_ERROR )
+        if ( getsockname ( fd, ( sockaddr * ) &sas, &saLen ) == SOCKET_ERROR )
         {
             err = WSAGetLastError();
             LOG_SOCKET ( this, "getsockname failed: %s", err );
@@ -177,7 +203,7 @@ void Socket::init()
             throw err;
         }
 
-        address.port = getPortFromSockAddr ( sa );
+        address.port = getPortFromSockAddr ( ( sockaddr * ) &sas );
     }
 }
 
@@ -287,10 +313,10 @@ bool Socket::recv ( char *buffer, size_t& len, IpAddrPort& address )
     assert ( isUDP() == true );
     assert ( fd != 0 );
 
-    sockaddr_storage sa;
-    int saLen = sizeof ( sa );
+    sockaddr_storage sas;
+    int saLen = sizeof ( sas );
 
-    int recvBytes = ::recvfrom ( fd, buffer, len, 0, ( struct sockaddr * ) &sa, &saLen );
+    int recvBytes = ::recvfrom ( fd, buffer, len, 0, ( sockaddr * ) &sas, &saLen );
 
     if ( recvBytes == SOCKET_ERROR )
     {
@@ -299,7 +325,7 @@ bool Socket::recv ( char *buffer, size_t& len, IpAddrPort& address )
     }
 
     len = recvBytes;
-    address = sa;
+    address = ( sockaddr * ) &sas;
     return true;
 }
 
