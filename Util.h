@@ -126,8 +126,8 @@ struct WindowsError
 
 std::ostream& operator<< ( std::ostream& os, const WindowsError& error );
 
-// Write to a memory location in the same process
-void memwrite ( void *dst, const void *src, size_t len );
+// Write to a memory location in the same process, returns 0 on success
+int memwrite ( void *dst, const void *src, size_t len );
 
 // Struct for storing assembly code
 struct Asm
@@ -135,5 +135,5 @@ struct Asm
     void *const addr;
     const std::vector<uint8_t> bytes;
 
-    void write() const { memwrite ( addr, &bytes[0], bytes.size() ); }
+    WindowsError write() const { return WindowsError ( memwrite ( addr, &bytes[0], bytes.size() ) ); }
 };

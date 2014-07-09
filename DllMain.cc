@@ -114,13 +114,31 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
                 }
             };
 
+            WindowsError err;
+
             LOG ( "Writing hooks" );
-            hookCallback1.write();
-            hookCallback2.write();
+
+            if ( ( err = hookCallback1.write() ).code )
+            {
+                LOG ( "hookCallback1 failed: %s", err );
+                break;
+            }
+
+            if ( ( err = hookCallback2.write() ).code )
+            {
+                LOG ( "hookCallback2 failed: %s", err );
+                break;
+            }
 
             // Write the jump location last, because the other blocks of code need to be in place first
             LOG ( "Writing loop start jump" );
-            loopStartJump.write();
+
+            if ( ( err = loopStartJump.write() ).code )
+            {
+                LOG ( "loopStartJump failed: %s", err );
+                break;
+            }
+
             break;
         }
 

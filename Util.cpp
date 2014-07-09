@@ -104,10 +104,17 @@ ostream& operator<< ( ostream& os, const WindowsError& error )
     return ( os << "[" << error.code << "] '" << error.msg << "'" );
 }
 
-void memwrite ( void *dst, const void *src, size_t len )
+int memwrite ( void *dst, const void *src, size_t len )
 {
-    DWORD old;
-    VirtualProtect ( dst, 5, PAGE_READWRITE, &old );
+    DWORD old, tmp;
+
+    if ( !VirtualProtect ( dst, len, PAGE_READWRITE, &old ) )
+        return GetLastError();
+
     memcpy ( dst, src, len );
-    VirtualProtect ( dst, 5, old, 0 );
+
+    if ( !VirtualProtect ( dst, len, old, &tmp ) )
+        return GetLastError();
+
+    return 0;
 }
