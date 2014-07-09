@@ -15,33 +15,14 @@ using namespace std;
 
 void EventManager::eventLoop()
 {
-    // Seed the RNG in this thread because Windows has per-thread RNG
-    srand ( time ( 0 ) );
-
-    // Initialize timer in this thread because it is thread dependent
-    bool useHiRes = true;
-    LARGE_INTEGER ticksPerSecond, ticks;
-    {
-        // Make sure we are using a single core on a dual core machine, otherwise timings will be off.
-        DWORD_PTR oldMask = SetThreadAffinityMask ( GetCurrentThread(), 1 );
-
-        // Check if the hi-res timer is supported
-        if ( !QueryPerformanceFrequency ( &ticksPerSecond ) )
-        {
-            LOG ( "Hi-res timer not supported" );
-            useHiRes = false;
-            SetThreadAffinityMask ( GetCurrentThread(), oldMask );
-        }
-    }
-
-    if ( useHiRes )
+    if ( useHiResTimer )
     {
         while ( running )
         {
             Sleep ( 1 );
 
-            QueryPerformanceCounter ( &ticks );
-            now = 1000 * ticks.QuadPart / ticksPerSecond.QuadPart;
+            QueryPerformanceCounter ( ( LARGE_INTEGER * ) &ticks );
+            now = 1000L * ticks / ticksPerSecond;
 
             checkTimers();
 
@@ -276,7 +257,7 @@ void EventManager::addThread ( const shared_ptr<Thread>& thread )
 }
 
 
-EventManager::EventManager() : now ( 0 ), running ( false ), initialized ( false )
+EventManager::EventManager() : useHiResTimer ( true ), now ( 0 ), running ( false ), initialized ( false )
 {
 }
 
@@ -284,37 +265,8 @@ EventManager::~EventManager()
 {
 }
 
-void EventManager::initialize()
-{
-    if ( initialized )
-        return;
-
-    WSADATA wsaData;
-    int error = WSAStartup ( MAKEWORD ( 2, 2 ), &wsaData );
-
-    if ( error != NO_ERROR )
-    {
-        WindowsError err = error;
-        LOG ( "WSAStartup failed: %s", err );
-        throw err;
-    }
-
-    initialized = true;
-}
-
-void EventManager::deinitialize()
-{
-    if ( !initialized )
-        return;
-
-    WSACleanup();
-    initialized = false;
-}
-
 void EventManager::start()
 {
-    assert ( initialized == true );
-
     running = true;
 
     LOG ( "Starting event loop" );
@@ -342,6 +294,85 @@ void EventManager::release()
     LOG ( "Releasing everything" );
 
     reaperThread.release();
+}
+
+bool EventManager::poll()
+{
+    if ( useHiResTimer )
+    {
+        QueryPerformanceCounter ( ( LARGE_INTEGER * ) &ticks );
+        now = 1000L * ticks / ticksPerSecond;
+
+        checkTimers();
+
+        checkSockets();
+    }
+    else
+    {
+        timeBeginPeriod ( 1 );
+
+        now = timeGetTime();
+
+        checkTimers();
+
+        checkSockets();
+
+        timeEndPeriod ( 1 );
+    }
+
+    if ( running )
+        return true;
+
+    activeTimers.clear();
+    allocatedTimers.clear();
+
+    activeSockets.clear();
+    allocatedSockets.clear();
+
+    return false;
+}
+
+void EventManager::initialize()
+{
+    if ( initialized )
+        return;
+
+    // Initialize WinSock
+    WSADATA wsaData;
+    int error = WSAStartup ( MAKEWORD ( 2, 2 ), &wsaData );
+
+    if ( error != NO_ERROR )
+    {
+        WindowsError err = error;
+        LOG ( "WSAStartup failed: %s", err );
+        throw err;
+    }
+
+    // Seed the RNG in this thread because Windows has per-thread RNG
+    srand ( time ( 0 ) );
+
+    // Make sure we are using a single core on a dual core machine, otherwise timings will be off.
+    DWORD_PTR oldMask = SetThreadAffinityMask ( GetCurrentThread(), 1 );
+
+    // Check if the hi-res timer is supported
+    if ( !QueryPerformanceFrequency ( ( LARGE_INTEGER * ) &ticksPerSecond ) )
+    {
+        LOG ( "Hi-res timer not supported" );
+        useHiResTimer = false;
+        SetThreadAffinityMask ( GetCurrentThread(), oldMask );
+    }
+
+    initialized = true;
+}
+
+void EventManager::deinitialize()
+{
+    if ( !initialized )
+        return;
+
+    WSACleanup();
+
+    initialized = false;
 }
 
 EventManager& EventManager::get()

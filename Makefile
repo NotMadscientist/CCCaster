@@ -44,6 +44,8 @@ all: STRIP = touch
 all: DEFINES += -D_GLIBCXX_DEBUG
 all: CC_FLAGS += -ggdb3 -O0 -fno-inline
 all: $(BINARY) $(DLL) $(LAUNCHER)
+	@echo
+	if [ -s ./deploy ]; then ./deploy; fi;
 
 release: DEFINES += -DNDEBUG -DRELEASE
 release: CC_FLAGS += -Os -O2 -fno-rtti

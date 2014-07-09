@@ -34,11 +34,17 @@ class EventManager
     // Sets of active and allocated socket instances
     std::unordered_set<Socket *> activeSockets, allocatedSockets;
 
+    // Indicates if the hi-res timer should be used
+    bool useHiResTimer;
+
+    // Hi-res timer variables
+    uint64_t ticksPerSecond, ticks;
+
     // The current time in milliseconds
     uint64_t now;
 
     // Flag to indicate the event loop is running
-    bool running;
+    volatile bool running;
 
     // Flag to indicate the event manager is initialized
     bool initialized;
@@ -75,7 +81,7 @@ public:
     // Add a thread to be joined on the reaper thread
     void addThread ( const std::shared_ptr<Thread>& thread );
 
-    // Start the event manager
+    // Start the event manager, blocks until stop is called
     void start();
 
     // Stop the event manager
@@ -84,12 +90,15 @@ public:
     // Stop the event manager and release background threads
     void release();
 
-    // Get the current time in milliseconds
-    inline uint64_t getNow() const { return now; }
+    // Poll for events instead of start / stop, returns false on exit
+    bool poll();
 
-    // Initialize / deinitialize the event manager
+    // Initialize / deinitialize the event manager, should be called in the same thread as start / poll
     void initialize();
     void deinitialize();
+
+    // Get the current time in milliseconds
+    inline uint64_t getNow() const { return now; }
 
     // Get the singleton instance
     static EventManager& get();
