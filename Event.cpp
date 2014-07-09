@@ -298,6 +298,9 @@ void EventManager::release()
 
 bool EventManager::poll()
 {
+    if ( !running )
+        return false;
+
     if ( useHiResTimer )
     {
         QueryPerformanceCounter ( ( LARGE_INTEGER * ) &ticks );

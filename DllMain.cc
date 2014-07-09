@@ -10,9 +10,9 @@
 
 #define LOG_FILE FOLDER "dll.log"
 
-#define HOOK_CALL1_ADDR     ( ( char * ) 0x40D032 )
-#define LOOP_START_ADDR     ( ( char * ) 0x40D330 )
-#define HOOK_CALL2_ADDR     ( ( char * ) 0x40D411 )
+#define HOOK_CALL1_ADDR ( ( char * ) 0x40D032 )
+#define LOOP_START_ADDR ( ( char * ) 0x40D330 )
+#define HOOK_CALL2_ADDR ( ( char * ) 0x40D411 )
 
 using namespace std;
 
@@ -33,24 +33,48 @@ struct EventHandler : public Timer::Owner
     }
 };
 
-static bool initialized = false;
+static enum State { UNINITIALIZED, POLLING, STOPPING, DEINITIALIZED } state = UNINITIALIZED;
 
 static shared_ptr<EventHandler> eventHandler;
 
 extern "C" void callback()
 {
-    if ( !initialized )
+    try
     {
-        EventManager::get().initializePolling();
-        eventHandler.reset ( new EventHandler() );
-        initialized = true;
+        // Initialize the EventManager once
+        if ( state == UNINITIALIZED )
+        {
+            EventManager::get().initializePolling();
+            eventHandler.reset ( new EventHandler() );
+            state = POLLING;
+        }
+
+        if ( state != POLLING )
+            return;
+
+        // Poll for events
+        if ( !EventManager::get().poll() )
+            state = STOPPING;
+    }
+    catch ( const WindowsError& err )
+    {
+        LOG ( "WindowsError: %s", err );
+        state = STOPPING;
+    }
+    catch ( ... )
+    {
+        LOG ( "Unknown exception!" );
+        state = STOPPING;
     }
 
-    if ( !EventManager::get().poll() )
+    if ( state == STOPPING )
     {
+        EventManager::get().stop();
         EventManager::get().deinitialize();
+        state = DEINITIALIZED;
     }
 }
+
 
 extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
 {
@@ -61,7 +85,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
             Log::get().initialize ( LOG_FILE );
             LOG ( "DLL_PROCESS_ATTACH" );
 
-            Asm hookCallback1
+            Asm hookCallback1 =
             {
                 HOOK_CALL1_ADDR,
                 {
@@ -70,7 +94,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
                 }
             };
 
-            Asm loopStartJump
+            Asm loopStartJump =
             {
                 LOOP_START_ADDR,
                 {
@@ -79,7 +103,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
                 }
             };
 
-            Asm hookCallback2
+            Asm hookCallback2 =
             {
                 HOOK_CALL2_ADDR,
                 {
@@ -90,14 +114,19 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
                 }
             };
 
+            LOG ( "Writing hooks" );
             hookCallback1.write();
             hookCallback2.write();
+
+            // Write the jump location last, because the other blocks of code need to be in place first
+            LOG ( "Writing loop start jump" );
             loopStartJump.write();
             break;
         }
 
         case DLL_PROCESS_DETACH:
             LOG ( "DLL_PROCESS_DETACH" );
+            EventManager::get().release();
             Log::get().deinitialize();
             break;
     }
