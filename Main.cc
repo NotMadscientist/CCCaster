@@ -1,8 +1,14 @@
 #include "Log.h"
 #include "Event.h"
+#include "TcpSocket.h"
+#include "UdpSocket.h"
+#include "Timer.h"
 #include "Test.h"
 
 #include <optionparser.h>
+#include <windows.h>
+
+#include <cassert>
 
 #define LOG_FILE "debug.log"
 
@@ -11,23 +17,111 @@ using namespace option;
 
 enum optionIndex { UNKNOWN, HELP, TEST, PLUS };
 
-static const Descriptor options[] =
+struct Main : public Socket::Owner, public Timer::Owner
 {
-    { UNKNOWN, 0, "", "", Arg::None, "Usage: " BINARY " [options]\n\nOptions:" },
-    { HELP,    0, "h", "help", Arg::None, "  --help, -h    Print usage and exit." },
-    { TEST,    0, "t", "test", Arg::None, "  --test, -t    Run unit tests and exit." },
-    { PLUS,    0, "p", "plus", Arg::None, "  --plus, -p    Increment count." },
+    HANDLE pipe;
+    SocketPtr ipcSocket;
+    Timer timer;
+
+    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
     {
-        UNKNOWN, 0, "",  "", Arg::None,
-        "\nExamples:\n"
-        "  " BINARY " --unknown -- --this_is_no_option\n"
-        "  " BINARY " -unk --plus -ppp file1 file2\n"
-    },
-    { 0, 0, 0, 0, 0, 0 }
+        assert ( socket == ipcSocket.get() );
+
+        LOG ( "Got %s from '%s'", msg, address );
+    }
+
+    void timerExpired ( Timer *timer )
+    {
+        assert ( timer == &this->timer );
+    }
+
+    Main() : pipe ( 0 ), timer ( this )
+    {
+        LOG ( "Opening pipe" );
+
+        pipe = CreateNamedPipe (
+                   NAMED_PIPE,                                          // name of the pipe
+                   PIPE_ACCESS_DUPLEX,                                  // 2-way pipe
+                   PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,     // byte stream + blocking
+                   1,                                                   // only allow 1 instance of this pipe
+                   1024,                                                // outbound buffer size
+                   1024,                                                // inbound buffer size
+                   0,                                                   // use default wait time
+                   0 );                                                 // use default security attributes
+
+        if ( pipe == INVALID_HANDLE_VALUE )
+        {
+            WindowsError err = GetLastError();
+            LOG ( "CreateNamedPipe failed: %s", err );
+            throw err;
+        }
+
+        LOG ( "Starting " MBAA_EXE );
+
+        // system ( "start \"\" " LAUNCHER " " MBAA_EXE " " HOOK_DLL );
+        system ( "./" LAUNCHER " " MBAA_EXE " " HOOK_DLL " &" );
+
+        LOG ( "Connecting pipe" );
+
+        if ( !ConnectNamedPipe ( pipe, 0 ) )
+        {
+            int error = GetLastError();
+
+            if ( error != ERROR_PIPE_CONNECTED )
+            {
+                WindowsError err = error;
+                LOG ( "ConnectNamedPipe failed: %s", err );
+                throw err;
+            }
+        }
+
+        LOG ( "Pipe connected" );
+
+        IpAddrPort ipcHost ( "127.0.0.1", 0 );
+        DWORD bytes;
+
+        if ( !ReadFile ( pipe, &ipcHost.port, sizeof ( ipcHost.port ), &bytes, 0 ) )
+        {
+            WindowsError err = GetLastError();
+            LOG ( "ReadFile failed: %s", err );
+            throw err;
+        }
+
+        if ( bytes != sizeof ( ipcHost.port ) )
+        {
+            LOG ( "ReadFile read %d bytes, expected %d", bytes, sizeof ( ipcHost.port ) );
+            throw "something"; // TODO
+        }
+
+        LOG ( "ipcHost='%s'", ipcHost );
+
+        ipcSocket = UdpSocket::bind ( this, ipcHost );
+    }
+
+    ~Main()
+    {
+        if ( pipe )
+            CloseHandle ( pipe );
+    }
 };
 
 int main ( int argc, char *argv[] )
 {
+    static const Descriptor options[] =
+    {
+        { UNKNOWN, 0, "", "", Arg::None, "Usage: " BINARY " [options]\n\nOptions:" },
+        { HELP,    0, "h", "help", Arg::None, "  --help, -h    Print usage and exit." },
+        { TEST,    0, "t", "test", Arg::None, "  --test, -t    Run unit tests and exit." },
+        { PLUS,    0, "p", "plus", Arg::None, "  --plus, -p    Increment count." },
+        {
+            UNKNOWN, 0, "",  "", Arg::None,
+            "\nExamples:\n"
+            "  " BINARY " --unknown -- --this_is_no_option\n"
+            "  " BINARY " -unk --plus -ppp file1 file2\n"
+        },
+        { 0, 0, 0, 0, 0, 0 }
+    };
+
     // skip program name argv[0] if present
     argc -= ( argc > 0 );
     argv += ( argc > 0 );
@@ -39,7 +133,7 @@ int main ( int argc, char *argv[] )
     if ( parser.error() )
         return -1;
 
-    if ( opt[HELP] || argc == 0 )
+    if ( opt[HELP] )
     {
         printUsage ( cout, options );
         return 0;
@@ -49,7 +143,9 @@ int main ( int argc, char *argv[] )
     {
         Log::get().initialize();
         EventManager::get().initialize();
+
         int result = RunAllTests ( argc, argv );
+
         EventManager::get().deinitialize();
         Log::get().deinitialize();
         return result;
@@ -61,5 +157,16 @@ int main ( int argc, char *argv[] )
     for ( int i = 0; i < parser.nonOptionsCount(); ++i )
         cout << "Non-option #" << i << ": " << parser.nonOption ( i ) << endl;
 
+    Log::get().initialize();
+    EventManager::get().initialize();
+
+    shared_ptr<Main> main ( new Main() );
+    EventManager::get().start();
+
+    // SocketPtr socket = UdpSocket::connect ( 0, IpAddrPort ( "google.com", 80 ) );
+    // LOG ( "%s", socket->address );
+
+    EventManager::get().deinitialize();
+    Log::get().deinitialize();
     return 0;
 }

@@ -46,8 +46,9 @@ class EventManager
     // Flag to indicate the event loop is running
     volatile bool running;
 
-    // Flag to indicate the event manager is initialized
-    bool initialized;
+    // Flags to indicate the event manager is initialized
+    bool initializedSockets;
+    bool initializedTimers;
 
     // Check and expire timers
     void checkTimers();
@@ -95,6 +96,8 @@ public:
 
     // Initialize / deinitialize the event manager, should be called in the same thread as start / poll
     void initialize();
+    void initializeSockets();
+    void initializeTimers();
     void initializePolling();
     void deinitialize();
 

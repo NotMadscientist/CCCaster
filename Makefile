@@ -3,6 +3,7 @@ BINARY = cccaster.exe
 DLL = cccaster.dll
 LAUNCHER = launcher.exe
 FOLDER = cccaster/
+MBAA_EXE = MBAA.exe
 
 # Main program sources
 CPP_SRCS = $(wildcard *.cpp)
@@ -31,7 +32,7 @@ else
 endif
 
 # Build flags
-DEFINES = -DWIN32_LEAN_AND_MEAN
+DEFINES = -DWIN32_LEAN_AND_MEAN -DNAMED_PIPE='"\\\\.\\pipe\\cccaster_pipe"' -DMBAA_EXE='"$(MBAA_EXE)"'
 DEFINES += -DBINARY='"$(BINARY)"' -DHOOK_DLL='"$(DLL)"' -DLAUNCHER='"$(LAUNCHER)"' -DFOLDER='"$(FOLDER)"'
 INCLUDES = -Icontrib -Icontrib/cereal/include -Icontrib/gtest/include
 CC_FLAGS = -m32 -s $(INCLUDES) $(DEFINES)

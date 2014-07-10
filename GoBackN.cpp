@@ -112,7 +112,7 @@ void GoBackN::recv ( const MsgPtr& msg )
         if ( sequence > ackSequence )
             ackSequence = sequence;
 
-        LOG ( "Got 'AckSequence'; sequence=%u; sendSequence=%u", sequence, sendSequence );
+        LOG ( "Got AckSequence; sequence=%u; sendSequence=%u", sequence, sendSequence );
 
         // Remove messages from sendList with sequence <= the ACKed sequence
         while ( !sendList.empty() && sendList.front()->getAs<SerializableSequence>().getSequence() <= sequence )

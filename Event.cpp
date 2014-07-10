@@ -257,7 +257,8 @@ void EventManager::addThread ( const shared_ptr<Thread>& thread )
 }
 
 
-EventManager::EventManager() : useHiResTimer ( true ), now ( 0 ), running ( false ), initialized ( false )
+EventManager::EventManager()
+    : useHiResTimer ( true ), now ( 0 ), running ( false ), initializedSockets ( false ), initializedTimers ( false )
 {
 }
 
@@ -337,7 +338,13 @@ bool EventManager::poll()
 
 void EventManager::initialize()
 {
-    if ( initialized )
+    initializeSockets();
+    initializeTimers();
+}
+
+void EventManager::initializeSockets()
+{
+    if ( initializedSockets )
         return;
 
     // Initialize WinSock
@@ -350,6 +357,14 @@ void EventManager::initialize()
         LOG ( "WSAStartup failed: %s", err );
         throw err;
     }
+
+    initializedSockets = true;
+}
+
+void EventManager::initializeTimers()
+{
+    if ( initializedTimers )
+        return;
 
     // Seed the RNG in this thread because Windows has per-thread RNG
     srand ( time ( 0 ) );
@@ -365,7 +380,7 @@ void EventManager::initialize()
         SetThreadAffinityMask ( GetCurrentThread(), oldMask );
     }
 
-    initialized = true;
+    initializedTimers = true;
 }
 
 void EventManager::initializePolling()
@@ -377,12 +392,13 @@ void EventManager::initializePolling()
 
 void EventManager::deinitialize()
 {
-    if ( !initialized )
-        return;
+    if ( initializedSockets )
+    {
+        WSACleanup();
+        initializedSockets = false;
+    }
 
-    WSACleanup();
-
-    initialized = false;
+    initializedTimers = false;
 }
 
 EventManager& EventManager::get()

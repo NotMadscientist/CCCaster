@@ -9,7 +9,7 @@
 #define PROTOCOL_BOILERPLATE(...)                                                                           \
     MsgType getMsgType() const override;                                                                    \
     void save ( cereal::BinaryOutputArchive& ar ) const override { ar ( __VA_ARGS__ ); }                    \
-    void load ( cereal::BinaryInputArchive& ar ) override { ar ( __VA_ARGS__ ); }                           \
+    void load ( cereal::BinaryInputArchive& ar ) override { ar ( __VA_ARGS__ ); }
 
 // Increase size as needed
 enum class MsgType : uint8_t

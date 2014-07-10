@@ -1,12 +1,14 @@
 #include "Log.h"
 #include "Util.h"
 #include "Event.h"
+#include "UdpSocket.h"
 #include "Timer.h"
 
 #include <windows.h>
 
 #include <vector>
 #include <memory>
+#include <cassert>
 
 #define LOG_FILE FOLDER "dll.log"
 
@@ -16,26 +18,72 @@
 
 using namespace std;
 
-struct EventHandler : public Timer::Owner
+struct Main : public Socket::Owner, public Timer::Owner
 {
+    HANDLE pipe;
+    SocketPtr ipcSocket;
     Timer timer;
+
+    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
+    {
+        assert ( socket == ipcSocket.get() );
+
+        LOG ( "Got %s from '%s'", msg, address );
+    }
 
     void timerExpired ( Timer *timer ) override
     {
-        LOG ( "tick" );
-
-        timer->start ( 1000 );
+        assert ( timer == &this->timer );
     }
 
-    EventHandler() : timer ( this )
+    Main() : pipe ( 0 ), ipcSocket ( UdpSocket::bind ( this, 0 ) ), timer ( this )
     {
-        timer.start ( 1000 );
+        LOG ( "Connecting pipe" );
+
+        pipe = CreateFile (
+                   NAMED_PIPE,                              // name of the pipe
+                   GENERIC_READ | GENERIC_WRITE,            // 2-way pipe
+                   FILE_SHARE_READ | FILE_SHARE_WRITE,      // R/W sharing mode
+                   0,                                       // default security
+                   OPEN_EXISTING,                           // open existing pipe
+                   FILE_ATTRIBUTE_NORMAL,                   // default attributes
+                   0 );                                     // no template file
+
+        if ( pipe == INVALID_HANDLE_VALUE )
+        {
+            WindowsError err = GetLastError();
+            LOG ( "CreateFile failed: %s", err );
+            throw err;
+        }
+
+        LOG ( "Pipe connected" );
+
+        DWORD bytes;
+
+        if ( !WriteFile ( pipe, & ( ipcSocket->address.port ), sizeof ( ipcSocket->address.port ), &bytes, 0 ) )
+        {
+            WindowsError err = GetLastError();
+            LOG ( "WriteFile failed: %s", err );
+            throw err;
+        }
+
+        if ( bytes != sizeof ( ipcSocket->address.port ) )
+        {
+            LOG ( "WriteFile wrote %d bytes, expected %d", bytes, sizeof ( ipcSocket->address.port ) );
+            throw "something"; // TODO
+        }
+    }
+
+    ~Main()
+    {
+        if ( pipe )
+            CloseHandle ( pipe );
     }
 };
 
 static enum State { UNINITIALIZED, POLLING, STOPPING, DEINITIALIZED } state = UNINITIALIZED;
 
-static shared_ptr<EventHandler> eventHandler;
+static shared_ptr<Main> main;
 
 extern "C" void callback()
 {
@@ -44,8 +92,8 @@ extern "C" void callback()
         // Initialize the EventManager once
         if ( state == UNINITIALIZED )
         {
+            EventManager::get().initializeTimers();
             EventManager::get().initializePolling();
-            eventHandler.reset ( new EventHandler() );
             state = POLLING;
         }
 
@@ -83,6 +131,10 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
         {
             Log::get().initialize ( LOG_FILE );
             LOG ( "DLL_PROCESS_ATTACH" );
+
+            EventManager::get().initializeSockets();
+
+            main.reset ( new Main() );
 
             Asm hookCallback1 =
             {
