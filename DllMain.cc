@@ -106,7 +106,6 @@ extern "C" void callback()
     }
     catch ( const WindowsError& err )
     {
-        LOG ( "WindowsError: %s", err );
         state = STOPPING;
     }
     catch ( ... )
@@ -120,6 +119,7 @@ extern "C" void callback()
         EventManager::get().stop();
         EventManager::get().deinitialize();
         state = DEINITIALIZED;
+        exit ( 0 );
     }
 }
 
@@ -128,70 +128,78 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
     switch ( reason )
     {
         case DLL_PROCESS_ATTACH:
-        {
             Log::get().initialize ( LOG_FILE );
             LOG ( "DLL_PROCESS_ATTACH" );
-
-            EventManager::get().initializeSockets();
-
-            main.reset ( new Main() );
-
-            Asm hookCallback1 =
+            try
             {
-                HOOK_CALL1_ADDR,
+                EventManager::get().initializeSockets();
+
+                main.reset ( new Main() );
+
+                Asm hookCallback1 =
                 {
-                    0xE8, INLINE_DWORD ( ( ( char * ) &callback ) - HOOK_CALL1_ADDR - 5 ),  // call callback
-                    0xE9, INLINE_DWORD ( HOOK_CALL2_ADDR - HOOK_CALL1_ADDR - 10 )           // jmp HOOK_CALL2_ADDR
-                }
-            };
+                    HOOK_CALL1_ADDR,
+                    {
+                        0xE8, INLINE_DWORD ( ( ( char * ) &callback ) - HOOK_CALL1_ADDR - 5 ),  // call callback
+                        0xE9, INLINE_DWORD ( HOOK_CALL2_ADDR - HOOK_CALL1_ADDR - 10 )           // jmp HOOK_CALL2_ADDR
+                    }
+                };
 
-            Asm loopStartJump =
-            {
-                LOOP_START_ADDR,
+                Asm loopStartJump =
                 {
-                    0xE9, INLINE_DWORD ( HOOK_CALL1_ADDR - LOOP_START_ADDR - 5 ),           // jmp HOOK_CALL1_ADDR
-                    0x90                                                                    // nop
-                }
-            };
+                    LOOP_START_ADDR,
+                    {
+                        0xE9, INLINE_DWORD ( HOOK_CALL1_ADDR - LOOP_START_ADDR - 5 ),           // jmp HOOK_CALL1_ADDR
+                        0x90                                                                    // nop
+                    }
+                };
 
-            Asm hookCallback2 =
-            {
-                HOOK_CALL2_ADDR,
+                Asm hookCallback2 =
                 {
-                    0x6A, 0x01,                                                             // push 01
-                    0x6A, 0x00,                                                             // push 00
-                    0x6A, 0x00,                                                             // push 00
-                    0xE9, INLINE_DWORD ( LOOP_START_ADDR - HOOK_CALL2_ADDR - 5 )            // jmp LOOP_START_ADDR+6
+                    HOOK_CALL2_ADDR,
+                    {
+                        0x6A, 0x01,                                                             // push 01
+                        0x6A, 0x00,                                                             // push 00
+                        0x6A, 0x00,                                                             // push 00
+                        0xE9, INLINE_DWORD ( LOOP_START_ADDR - HOOK_CALL2_ADDR - 5 )            // jmp LOOP_START_ADDR+6
+                    }
+                };
+
+                WindowsError err;
+
+                LOG ( "Writing hooks" );
+
+                if ( ( err = hookCallback1.write() ).code )
+                {
+                    LOG ( "hookCallback1 failed: %s", err );
+                    exit ( 0 );
                 }
-            };
 
-            WindowsError err;
+                if ( ( err = hookCallback2.write() ).code )
+                {
+                    LOG ( "hookCallback2 failed: %s", err );
+                    exit ( 0 );
+                }
 
-            LOG ( "Writing hooks" );
+                // Write the jump location last, because the other blocks of code need to be in place first
+                LOG ( "Writing loop start jump" );
 
-            if ( ( err = hookCallback1.write() ).code )
-            {
-                LOG ( "hookCallback1 failed: %s", err );
-                break;
+                if ( ( err = loopStartJump.write() ).code )
+                {
+                    LOG ( "loopStartJump failed: %s", err );
+                    exit ( 0 );
+                }
             }
-
-            if ( ( err = hookCallback2.write() ).code )
+            catch ( const WindowsError& err )
             {
-                LOG ( "hookCallback2 failed: %s", err );
-                break;
+                exit ( 0 );
             }
-
-            // Write the jump location last, because the other blocks of code need to be in place first
-            LOG ( "Writing loop start jump" );
-
-            if ( ( err = loopStartJump.write() ).code )
+            catch ( ... )
             {
-                LOG ( "loopStartJump failed: %s", err );
-                break;
+                LOG ( "Unknown exception!" );
+                exit ( 0 );
             }
-
             break;
-        }
 
         case DLL_PROCESS_DETACH:
             LOG ( "DLL_PROCESS_DETACH" );

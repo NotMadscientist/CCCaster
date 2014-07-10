@@ -58,7 +58,7 @@ struct Main : public Socket::Owner, public Timer::Owner
 
         LOG ( "Starting " MBAA_EXE );
 
-        // system ( "start \"\" " LAUNCHER " " MBAA_EXE " " HOOK_DLL );
+        system ( "start \"\" " LAUNCHER " " MBAA_EXE " " HOOK_DLL );
         system ( "./" LAUNCHER " " MBAA_EXE " " HOOK_DLL " &" );
 
         LOG ( "Connecting pipe" );
