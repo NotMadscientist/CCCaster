@@ -172,10 +172,13 @@ UdpSocket::UdpSocket ( ChildSocketEnum, UdpSocket *parent, const IpAddrPort& add
 UdpSocket::UdpSocket ( Socket::Owner *owner, const SocketShareData& data )
     : Socket ( data.address, Protocol::UDP ), hasParent ( false ), parent ( 0 ), gbn ( this, 0 )
 {
-    this->owner = owner;
-    this->state = State::Connected;
-
     assert ( data.protocol == Protocol::UDP );
+
+    this->owner = owner;
+    this->state = data.state;
+    this->readBuffer = data.readBuffer;
+    this->readPos = data.readPos;
+
     assert ( data.info->iSocketType == SOCK_DGRAM );
     assert ( data.info->iProtocol == IPPROTO_UDP );
 
@@ -297,7 +300,7 @@ bool UdpSocket::sendDirect ( const MsgPtr& msg, const IpAddrPort& address )
 
     LOG ( "Encoded '%s' to [ %u bytes ]", msg, buffer.size() );
 
-    if ( !buffer.empty() )
+    if ( !buffer.empty() && buffer.size() <= 256 )
         LOG ( "Base64 : %s", toBase64 ( buffer ) );
 
     if ( !isChild() )

@@ -134,13 +134,23 @@ struct SocketShareData : public SerializableMessage
 {
     IpAddrPort address;
     Socket::Protocol protocol;
+    Socket::State state;
+    std::string readBuffer;
+    size_t readPos;
     std::shared_ptr<WSAPROTOCOL_INFO> info;
 
     SocketShareData() {}
     SocketShareData ( const IpAddrPort& address,
                       Socket::Protocol protocol,
+                      Socket::State state,
+                      const std::string& readBuffer,
+                      size_t readPos,
                       const std::shared_ptr<WSAPROTOCOL_INFO>& info )
-        : address ( address ), protocol ( protocol ), info ( info ) {}
+        : address ( address ), protocol ( protocol ), state ( state )
+        , readBuffer ( readBuffer ), readPos ( readPos ), info ( info ) {}
+
+    inline bool isTCP() const { return ( protocol == Socket::Protocol::TCP ); }
+    inline bool isUDP() const { return ( protocol == Socket::Protocol::UDP ); }
 
     MsgType getMsgType() const override;
     void save ( cereal::BinaryOutputArchive& ar ) const override;

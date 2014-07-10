@@ -25,6 +25,18 @@ struct Main : public Socket::Owner, public Timer::Owner
     SocketPtr ipcSocket, sharedSocket;
     Timer timer;
 
+    // void acceptEvent ( Socket *serverSocket ) { serverSocket->accept ( this ).reset(); }
+
+    void connectEvent ( Socket *socket )
+    {
+        LOG ( "Socket %08x connected", socket );
+    }
+
+    void disconnectEvent ( Socket *socket )
+    {
+        LOG ( "Socket %08x disconnected", socket );
+    }
+
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
     {
         LOG ( "Got %s from '%s'; socket=%08x", msg, address, socket );
@@ -34,7 +46,10 @@ struct Main : public Socket::Owner, public Timer::Owner
 
         if ( msg->getMsgType() == MsgType::SocketShareData )
         {
-            sharedSocket = TcpSocket::shared ( this, msg->getAs<SocketShareData>() );
+            if ( msg->getAs<SocketShareData>().isTCP() )
+                sharedSocket = TcpSocket::shared ( this, msg->getAs<SocketShareData>() );
+            else
+                sharedSocket = UdpSocket::shared ( this, msg->getAs<SocketShareData>() );
 
             // MsgPtr msg ( new IpAddrPort ( sharedSocket->getRemoteAddress() ) );
             // sharedSocket->send ( msg );

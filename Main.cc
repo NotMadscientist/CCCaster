@@ -114,8 +114,9 @@ struct Main : public Socket::Owner, public Timer::Owner
         LOG ( "processId=%08x", processId );
 
         tcpSocket = TcpSocket::connect ( this, IpAddrPort ( "google.com", 80 ) );
-
         ipcSocket->send ( tcpSocket->share ( processId ) );
+
+        // ipcSocket->send ( ipcSocket->share ( processId ) );
     }
 
     ~Main()

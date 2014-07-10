@@ -38,10 +38,13 @@ TcpSocket::TcpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address )
 
 TcpSocket::TcpSocket ( Socket::Owner *owner, const SocketShareData& data ) : Socket ( data.address, Protocol::TCP )
 {
-    this->owner = owner;
-    this->state = State::Connected;
-
     assert ( data.protocol == Protocol::TCP );
+
+    this->owner = owner;
+    this->state = data.state;
+    this->readBuffer = data.readBuffer;
+    this->readPos = data.readPos;
+
     assert ( data.info->iSocketType == SOCK_STREAM );
     assert ( data.info->iProtocol == IPPROTO_TCP );
 
@@ -114,7 +117,7 @@ bool TcpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
 
     LOG ( "Encoded '%s' to [ %u bytes ]", msg, buffer.size() );
 
-    if ( !buffer.empty() )
+    if ( !buffer.empty() && buffer.size() < 256 )
         LOG ( "Base64 : %s", toBase64 ( buffer ) );
 
     return Socket::send ( &buffer[0], buffer.size() );

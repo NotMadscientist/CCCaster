@@ -7,10 +7,12 @@
 using namespace std;
 using namespace cereal;
 
+// Default constructor with compression level
+Serializable::Serializable() : compressionLevel ( 9 ), md5empty ( true ) {}
+
+// Encode or decode with compression
 string encodeStageTwo ( const MsgPtr& msg, const string& msgData );
 bool decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, MsgType& type, string& msgData );
-
-Serializable::Serializable() : compressionLevel ( 9 ), md5empty ( true ) {}
 
 string Serializable::encode ( Serializable *message )
 {
@@ -43,6 +45,7 @@ string Serializable::encode ( const MsgPtr& msg )
     // Encode MD5 at end of msg data
     archive ( msg->md5 );
 
+    // Compress
     return encodeStageTwo ( msg, ss.str() );
 }
 
@@ -59,6 +62,7 @@ MsgPtr Serializable::decode ( const char *bytes, size_t len, size_t& consumed )
     MsgType type;
     string data;
 
+    // Decompress
     if ( !decodeStageTwo ( bytes, len, consumed, type, data ) )
     {
         consumed = 0;
@@ -110,6 +114,7 @@ string encodeStageTwo ( const MsgPtr& msg, const string& msgData )
     ostringstream ss ( stringstream::binary );
     BinaryOutputArchive archive ( ss );
 
+    // Encode msg type first without compression
     archive ( msg->getMsgType() );
 
     // Compress msg data if needed
@@ -150,6 +155,7 @@ bool decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, MsgType& 
 
     try
     {
+        // Decode msg type first before decompression
         archive ( type );
         archive ( compressionLevel );
 
@@ -180,35 +186,13 @@ bool decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, MsgType& 
         msgData = buffer;
     }
 
+    // Check for unread bytes
     string remaining;
     getline ( ss, remaining );
 
     assert ( len >= remaining.size() );
     consumed = len - remaining.size();
     return true;
-}
-
-ostream& operator<< ( ostream& os, const MsgPtr& msg )
-{
-    if ( !msg.get() )
-        return ( os << "NullMsg" );
-    else if ( msg->getMsgType() == MsgType::UdpConnect )
-        switch ( msg->getAs<UdpConnect>().connectType )
-        {
-            case UdpConnect::ConnectType::Request:
-                return ( os << "UdpConnect::Request" );
-
-            case UdpConnect::ConnectType::Reply:
-                return ( os << "UdpConnect::Reply" );
-
-            case UdpConnect::ConnectType::Final:
-                return ( os << "UdpConnect::Final" );
-
-            default:
-                return ( os << "Unknown type!" );
-        }
-    else
-        return ( os << msg->getMsgType() );
 }
 
 ostream& operator<< ( ostream& os, MsgType type )
@@ -233,4 +217,27 @@ ostream& operator<< ( ostream& os, BaseType type )
     }
 
     return ( os << "Unknown type!" );
+}
+
+ostream& operator<< ( ostream& os, const MsgPtr& msg )
+{
+    if ( !msg.get() )
+        return ( os << "NullMsg" );
+    else if ( msg->getMsgType() == MsgType::UdpConnect )
+        switch ( msg->getAs<UdpConnect>().connectType )
+        {
+            case UdpConnect::ConnectType::Request:
+                return ( os << "UdpConnect::Request" );
+
+            case UdpConnect::ConnectType::Reply:
+                return ( os << "UdpConnect::Reply" );
+
+            case UdpConnect::ConnectType::Final:
+                return ( os << "UdpConnect::Final" );
+
+            default:
+                return ( os << "Unknown type!" );
+        }
+    else
+        return ( os << msg->getMsgType() );
 }

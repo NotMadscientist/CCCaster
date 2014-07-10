@@ -218,8 +218,20 @@ MsgPtr Socket::share ( int processId )
         return 0;
     }
 
+    // Workaround for Wine, because apparently these aren't set
+    if ( isTCP() )
+    {
+        info->iSocketType = SOCK_STREAM;
+        info->iProtocol = IPPROTO_TCP;
+    }
+    else
+    {
+        info->iSocketType = SOCK_DGRAM;
+        info->iProtocol = IPPROTO_UDP;
+    }
+
     EventManager::get().removeSocket ( this );
-    return MsgPtr ( new SocketShareData ( address, protocol, info ) );
+    return MsgPtr ( new SocketShareData ( address, protocol, state, readBuffer, readPos, info ) );
 }
 
 bool Socket::send ( const char *buffer, size_t len )
@@ -374,7 +386,8 @@ void Socket::readEvent()
         return;
     }
 
-    LOG ( "Base64 : %s", toBase64 ( bufferEnd, bufferLen ) );
+    if ( bufferLen <= 256 )
+        LOG ( "Base64 : %s", toBase64 ( bufferEnd, bufferLen ) );
 
     // Try to decode as many messages from the buffer as possible
     for ( ;; )
@@ -440,7 +453,7 @@ ostream& operator<< ( ostream& os, Socket::State state )
 
 void SocketShareData::save ( cereal::BinaryOutputArchive& ar ) const
 {
-    ar ( address, protocol,
+    ar ( address, protocol, state, readBuffer, readPos,
          info->dwServiceFlags1,
          info->dwServiceFlags2,
          info->dwServiceFlags3,
@@ -471,7 +484,7 @@ void SocketShareData::load ( cereal::BinaryInputArchive& ar )
 {
     info.reset ( new WSAPROTOCOL_INFO() );
 
-    ar ( address, protocol,
+    ar ( address, protocol, state, readBuffer, readPos,
          info->dwServiceFlags1,
          info->dwServiceFlags2,
          info->dwServiceFlags3,

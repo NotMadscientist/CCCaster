@@ -97,6 +97,6 @@ private:
     void loadBase ( cereal::BinaryInputArchive& ar ) override { ar ( sequence ); };
 };
 
-std::ostream& operator<< ( std::ostream& os, const MsgPtr& msg );
 std::ostream& operator<< ( std::ostream& os, MsgType type );
 std::ostream& operator<< ( std::ostream& os, BaseType type );
+std::ostream& operator<< ( std::ostream& os, const MsgPtr& msg );
