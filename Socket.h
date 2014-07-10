@@ -104,11 +104,11 @@ public:
     inline virtual bool isServer() const { return address.addr.empty(); }
     inline virtual const IpAddrPort& getRemoteAddress() const { if ( isServer() ) return NullAddress; return address; }
 
-    // Send raw bytes directly, return false indicates disconnected
+    // Send raw bytes directly, a return value of false indicates socket is disconnected
     bool send ( const char *buffer, size_t len );
     bool send ( const char *buffer, size_t len, const IpAddrPort& address );
 
-    // Read raw bytes directly, return false indicates disconnected
+    // Read raw bytes directly, a return value of false indicates socket is disconnected
     bool recv ( char *buffer, size_t& len );
     bool recv ( char *buffer, size_t& len, IpAddrPort& address );
 
@@ -116,7 +116,7 @@ public:
     virtual SocketPtr accept ( Owner *owner ) = 0;
 
     // Get data needed to share this socket in another process
-    virtual MsgPtr share ( int processId ) const;
+    virtual MsgPtr share ( int processId );
 
     // Send a protocol message, return false indicates disconnected
     virtual bool send ( SerializableMessage *message, const IpAddrPort& address = IpAddrPort() ) = 0;

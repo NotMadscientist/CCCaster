@@ -169,6 +169,29 @@ UdpSocket::UdpSocket ( ChildSocketEnum, UdpSocket *parent, const IpAddrPort& add
     this->state = State::Connected;
 }
 
+UdpSocket::UdpSocket ( Socket::Owner *owner, const SocketShareData& data )
+    : Socket ( data.address, Protocol::UDP ), hasParent ( false ), parent ( 0 ), gbn ( this, 0 )
+{
+    this->owner = owner;
+    this->state = State::Connected;
+
+    assert ( data.protocol == Protocol::UDP );
+    assert ( data.info->iSocketType == SOCK_DGRAM );
+    assert ( data.info->iProtocol == IPPROTO_UDP );
+
+    this->fd = WSASocket ( data.info->iAddressFamily, SOCK_DGRAM, IPPROTO_UDP, data.info.get(), 0, 0 );
+
+    if ( this->fd == INVALID_SOCKET )
+    {
+        WindowsError err = WSAGetLastError();
+        LOG_SOCKET ( this, "WSASocket failed %s", err );
+        this->fd = 0;
+        throw err;
+    }
+
+    EventManager::get().addSocket ( this );
+}
+
 UdpSocket::~UdpSocket()
 {
     disconnect();
@@ -216,6 +239,14 @@ SocketPtr UdpSocket::bind ( Socket::Owner *owner, uint16_t port )
 SocketPtr UdpSocket::bind ( Socket::Owner *owner, const IpAddrPort& address )
 {
     return SocketPtr ( new UdpSocket ( owner, address, 0 ) );
+}
+
+SocketPtr UdpSocket::shared ( Socket::Owner *owner, const SocketShareData& data )
+{
+    if ( data.protocol != Protocol::UDP )
+        return 0;
+
+    return SocketPtr ( new UdpSocket ( owner, data ) );
 }
 
 SocketPtr UdpSocket::accept ( Socket::Owner *owner )

@@ -20,7 +20,7 @@ enum optionIndex { UNKNOWN, HELP, TEST, PLUS };
 struct Main : public Socket::Owner, public Timer::Owner
 {
     HANDLE pipe;
-    SocketPtr ipcSocket;
+    SocketPtr ipcSocket, tcpSocket;
     Timer timer;
 
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
@@ -77,8 +77,9 @@ struct Main : public Socket::Owner, public Timer::Owner
 
         LOG ( "Pipe connected" );
 
-        IpAddrPort ipcHost ( "127.0.0.1", 0 );
         DWORD bytes;
+        int processId = 0;
+        IpAddrPort ipcHost ( "127.0.0.1", 0 );
 
         if ( !ReadFile ( pipe, &ipcHost.port, sizeof ( ipcHost.port ), &bytes, 0 ) )
         {
@@ -96,6 +97,25 @@ struct Main : public Socket::Owner, public Timer::Owner
         LOG ( "ipcHost='%s'", ipcHost );
 
         ipcSocket = UdpSocket::bind ( this, ipcHost );
+
+        if ( !ReadFile ( pipe, &processId, sizeof ( processId ), &bytes, 0 ) )
+        {
+            WindowsError err = GetLastError();
+            LOG ( "ReadFile failed: %s", err );
+            throw err;
+        }
+
+        if ( bytes != sizeof ( processId ) )
+        {
+            LOG ( "ReadFile read %d bytes, expected %d", bytes, sizeof ( processId ) );
+            throw "something"; // TODO
+        }
+
+        LOG ( "processId=%08x", processId );
+
+        tcpSocket = TcpSocket::connect ( this, IpAddrPort ( "google.com", 80 ) );
+
+        ipcSocket->send ( tcpSocket->share ( processId ) );
     }
 
     ~Main()

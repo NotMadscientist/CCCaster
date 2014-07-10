@@ -31,8 +31,30 @@ TcpSocket::TcpSocket ( Socket::Owner *owner, const IpAddrPort& address ) : Socke
 TcpSocket::TcpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address ) : Socket ( address, Protocol::TCP )
 {
     this->owner = owner;
-    this->fd = fd;
     this->state = State::Connected;
+    this->fd = fd;
+    EventManager::get().addSocket ( this );
+}
+
+TcpSocket::TcpSocket ( Socket::Owner *owner, const SocketShareData& data ) : Socket ( data.address, Protocol::TCP )
+{
+    this->owner = owner;
+    this->state = State::Connected;
+
+    assert ( data.protocol == Protocol::TCP );
+    assert ( data.info->iSocketType == SOCK_STREAM );
+    assert ( data.info->iProtocol == IPPROTO_TCP );
+
+    this->fd = WSASocket ( data.info->iAddressFamily, SOCK_STREAM, IPPROTO_TCP, data.info.get(), 0, 0 );
+
+    if ( this->fd == INVALID_SOCKET )
+    {
+        WindowsError err = WSAGetLastError();
+        LOG_SOCKET ( this, "WSASocket failed %s", err );
+        this->fd = 0;
+        throw err;
+    }
+
     EventManager::get().addSocket ( this );
 }
 
@@ -96,6 +118,14 @@ bool TcpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
         LOG ( "Base64 : %s", toBase64 ( buffer ) );
 
     return Socket::send ( &buffer[0], buffer.size() );
+}
+
+SocketPtr TcpSocket::shared ( Socket::Owner *owner, const SocketShareData& data )
+{
+    if ( data.protocol != Protocol::TCP )
+        return 0;
+
+    return SocketPtr ( new TcpSocket ( owner, data ) );
 }
 
 void TcpSocket::acceptEvent()

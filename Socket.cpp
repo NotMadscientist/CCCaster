@@ -1,6 +1,7 @@
 #include "Socket.h"
 #include "Log.h"
 #include "Util.h"
+#include "Event.h"
 
 #include <winsock2.h>
 #include <windows.h>
@@ -207,7 +208,7 @@ void Socket::init()
     }
 }
 
-MsgPtr Socket::share ( int processId ) const
+MsgPtr Socket::share ( int processId )
 {
     shared_ptr<WSAPROTOCOL_INFO> info ( new WSAPROTOCOL_INFO() );
 
@@ -217,6 +218,7 @@ MsgPtr Socket::share ( int processId ) const
         return 0;
     }
 
+    EventManager::get().removeSocket ( this );
     return MsgPtr ( new SocketShareData ( address, protocol, info ) );
 }
 
@@ -467,6 +469,8 @@ void SocketShareData::save ( cereal::BinaryOutputArchive& ar ) const
 
 void SocketShareData::load ( cereal::BinaryInputArchive& ar )
 {
+    info.reset ( new WSAPROTOCOL_INFO() );
+
     ar ( address, protocol,
          info->dwServiceFlags1,
          info->dwServiceFlags2,

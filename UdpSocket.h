@@ -53,6 +53,9 @@ class UdpSocket : public Socket, public GoBackN::Owner
     // Construct a child socket
     UdpSocket ( ChildSocketEnum, UdpSocket *parent, const IpAddrPort& address );
 
+    // Construct a socket from share data
+    UdpSocket ( Socket::Owner *owner, const SocketShareData& data );
+
 protected:
 
     // Socket read event callback
@@ -69,6 +72,9 @@ public:
     // Create connection-less sockets
     static SocketPtr bind ( Socket::Owner *owner, uint16_t port );
     static SocketPtr bind ( Socket::Owner *owner, const IpAddrPort& address );
+
+    // Create a socket from share data
+    static SocketPtr shared ( Socket::Owner *owner, const SocketShareData& data );
 
     // Destructor
     ~UdpSocket() override;

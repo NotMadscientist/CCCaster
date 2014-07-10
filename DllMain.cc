@@ -1,6 +1,7 @@
 #include "Log.h"
 #include "Util.h"
 #include "Event.h"
+#include "TcpSocket.h"
 #include "UdpSocket.h"
 #include "Timer.h"
 
@@ -21,14 +22,23 @@ using namespace std;
 struct Main : public Socket::Owner, public Timer::Owner
 {
     HANDLE pipe;
-    SocketPtr ipcSocket;
+    SocketPtr ipcSocket, sharedSocket;
     Timer timer;
 
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
     {
-        assert ( socket == ipcSocket.get() );
+        LOG ( "Got %s from '%s'; socket=%08x", msg, address, socket );
 
-        LOG ( "Got %s from '%s'", msg, address );
+        if ( !msg.get() )
+            return;
+
+        if ( msg->getMsgType() == MsgType::SocketShareData )
+        {
+            sharedSocket = TcpSocket::shared ( this, msg->getAs<SocketShareData>() );
+
+            // MsgPtr msg ( new IpAddrPort ( sharedSocket->getRemoteAddress() ) );
+            // sharedSocket->send ( msg );
+        }
     }
 
     void timerExpired ( Timer *timer ) override
@@ -70,6 +80,21 @@ struct Main : public Socket::Owner, public Timer::Owner
         if ( bytes != sizeof ( ipcSocket->address.port ) )
         {
             LOG ( "WriteFile wrote %d bytes, expected %d", bytes, sizeof ( ipcSocket->address.port ) );
+            throw "something"; // TODO
+        }
+
+        int processId = GetCurrentProcessId();
+
+        if ( !WriteFile ( pipe, &processId, sizeof ( processId ), &bytes, 0 ) )
+        {
+            WindowsError err = GetLastError();
+            LOG ( "WriteFile failed: %s", err );
+            throw err;
+        }
+
+        if ( bytes != sizeof ( processId ) )
+        {
+            LOG ( "WriteFile wrote %d bytes, expected %d", bytes, sizeof ( processId ) );
             throw "something"; // TODO
         }
     }
