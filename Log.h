@@ -42,7 +42,7 @@ public:
     static Log& get();
 };
 
-#ifdef NO_LOGGING
+#ifndef ENABLE_LOGGING
 
 #define LOG(...)
 #define LOG_LIST(...)

@@ -15,7 +15,8 @@ NON_GEN_HEADERS = $(filter-out Version.h, $(filter-out Protocol.%.h, $(wildcard 
 
 # Library sources
 GTEST_SRCS = contrib/gtest/fused-src/gtest/gtest-all.cc
-LIB_CPP_SRCS = $(GTEST_SRCS)
+JLIB_SRCS = $(wildcard contrib/JLib/*.cc)
+LIB_CPP_SRCS = $(GTEST_SRCS) $(JLIB_SRCS)
 LIB_C_CSRCS = $(wildcard contrib/*.c)
 
 # Tool chain
@@ -43,6 +44,10 @@ INCLUDES = -Icontrib -Icontrib/cereal/include -Icontrib/gtest/include
 CC_FLAGS = -m32 $(INCLUDES) $(DEFINES)
 LD_FLAGS = -m32 -static -lws2_32 -lwinmm -lwinpthread -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -limm32
 LD_FLAGS += -lole32 -loleaut32 -lshell32 -lversion -luuid
+
+# Build options
+DEFINES += -DENABLE_LOGGING
+# DEFINES += -DJLIB_MUTEXED
 
 OBJECTS = $(CPP_SRCS:.cpp=.o) $(LIB_CPP_SRCS:.cc=.o) $(LIB_C_CSRCS:.c=.o)
 
