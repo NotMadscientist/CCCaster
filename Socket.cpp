@@ -12,6 +12,18 @@
 
 #define READ_BUFFER_SIZE ( 1024 * 4096 )
 
+#define SET_BLOCKING_MODE(VALUE)                                            \
+    do {                                                                    \
+        u_long flag = VALUE;                                                \
+        if ( ioctlsocket ( fd, FIONBIO, &flag ) != 0 ) {                    \
+            err = WSAGetLastError();                                        \
+            LOG_SOCKET ( this, "ioctlsocket failed: %s", err );             \
+            closesocket ( fd );                                             \
+            fd = 0;                                                         \
+            throw err;                                                      \
+        }                                                                   \
+    } while ( 0 )
+
 using namespace std;
 
 static unordered_set<Socket *> allocatedSockets;
@@ -77,29 +89,22 @@ void Socket::init()
             continue;
         }
 
-        u_long yes = 1;
-
-        // FIONBIO sets non-blocking socket operation
-        if ( ioctlsocket ( fd, FIONBIO, &yes ) != 0 )
-        {
-            err = WSAGetLastError();
-            LOG_SOCKET ( this, "ioctlsocket failed: %s", err );
-            closesocket ( fd );
-            fd = 0;
-            throw err;
-        }
-
         if ( isClient() )
         {
             if ( isTCP() )
             {
+                SET_BLOCKING_MODE ( 1 );
+
                 if ( ::connect ( fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
                 {
                     int error = WSAGetLastError();
 
                     // Sucessful non-blocking connect
-                    if ( error == WSAEWOULDBLOCK )
+                    if ( error == WSAEWOULDBLOCK || error == WSAEINVAL )
+                    {
+                        SET_BLOCKING_MODE ( 0 );
                         break;
+                    }
 
                     err = error;
                     LOG_SOCKET ( this, "connect failed: %s", err );
