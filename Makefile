@@ -25,7 +25,6 @@ CXX = $(PREFIX)g++
 WINDRES = $(PREFIX)windres
 STRIP = $(PREFIX)strip
 ZIP = zip
-MSBUILD = C:/Windows/Microsoft.NET/Framework/v4.0.30319/MSBuild.exe
 
 ifeq ($(OS),Windows_NT)
     CHMOD_X = icacls $@ /grant Everyone:F
