@@ -40,7 +40,7 @@ endif
 DEFINES = -DWIN32_LEAN_AND_MEAN -DNAMED_PIPE='"\\\\.\\pipe\\cccaster_pipe"' -DMBAA_EXE='"$(MBAA_EXE)"'
 DEFINES += -DBINARY='"$(BINARY)"' -DHOOK_DLL='"$(DLL)"' -DLAUNCHER='"$(LAUNCHER)"' -DFOLDER='"$(FOLDER)/"'
 INCLUDES = -Icontrib -Icontrib/cereal/include -Icontrib/gtest/include
-CC_FLAGS = -m32 -s $(INCLUDES) $(DEFINES)
+CC_FLAGS = -m32 $(INCLUDES) $(DEFINES)
 LD_FLAGS = -m32 -static -lws2_32 -lwinmm -lwinpthread -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -limm32
 LD_FLAGS += -lole32 -loleaut32 -lshell32 -lversion -luuid
 
@@ -52,12 +52,12 @@ all: CC_FLAGS += -ggdb3 -O0 -fno-inline
 all: $(ARCHIVE)
 
 release: DEFINES += -DNDEBUG -DRELEASE
-release: CC_FLAGS += -Os -O2 -fno-rtti
+release: CC_FLAGS += -s -Os -O2 -fno-rtti
 release: $(ARCHIVE)
 
 profile: STRIP = touch
 profile: DEFINES += -DNDEBUG -DRELEASE
-profile: CC_FLAGS += -Os -O2 -fno-rtti -pg
+profile: CC_FLAGS += -O2 -fno-rtti -pg
 profile: LD_FLAGS += -pg -lgmon
 profile: $(ARCHIVE)
 
