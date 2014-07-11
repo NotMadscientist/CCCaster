@@ -45,7 +45,6 @@ LD_FLAGS = -m32 -static -lws2_32 -lwinmm -lwinpthread -ldinput8 -ldxguid -ldxerr
 LD_FLAGS += -lole32 -loleaut32 -lshell32 -lversion -luuid
 
 OBJECTS = $(CPP_SRCS:.cpp=.o) $(LIB_CPP_SRCS:.cc=.o) $(LIB_C_CSRCS:.c=.o)
-BUILD_TYPE = Debug
 
 all: STRIP = touch
 all: DEFINES += -D_GLIBCXX_DEBUG
@@ -54,7 +53,6 @@ all: $(ARCHIVE)
 
 release: DEFINES += -DNDEBUG -DRELEASE
 release: CC_FLAGS += -Os -O2 -fno-rtti
-release: BUILD_TYPE = Release
 release: $(ARCHIVE)
 
 profile: STRIP = touch
