@@ -1,8 +1,12 @@
+VERSION = 3.0
+NAME = cccaster
+
 # Main programs
-BINARY = cccaster.exe
-DLL = cccaster.dll
-LAUNCHER = launcher.exe
-FOLDER = cccaster/
+ARCHIVE = $(NAME).v$(VERSION).zip
+BINARY = $(NAME).v$(VERSION).exe
+FOLDER = $(NAME)
+DLL = $(FOLDER)/hook.dll
+LAUNCHER = $(FOLDER)/launcher.exe
 MBAA_EXE = MBAA.exe
 
 # Main program sources
@@ -25,15 +29,17 @@ MSBUILD = C:/Windows/Microsoft.NET/Framework/v4.0.30319/MSBuild.exe
 
 ifeq ($(OS),Windows_NT)
     CHMOD_X = icacls $@ /grant Everyone:F
+    GRANT = icacls $@ /grant Everyone:F
     ASTYLE = contrib/astyle.exe
 else
     CHMOD_X = chmod +x $@
+    GRANT =
     ASTYLE = contrib/astyle
 endif
 
 # Build flags
 DEFINES = -DWIN32_LEAN_AND_MEAN -DNAMED_PIPE='"\\\\.\\pipe\\cccaster_pipe"' -DMBAA_EXE='"$(MBAA_EXE)"'
-DEFINES += -DBINARY='"$(BINARY)"' -DHOOK_DLL='"$(DLL)"' -DLAUNCHER='"$(LAUNCHER)"' -DFOLDER='"$(FOLDER)"'
+DEFINES += -DBINARY='"$(BINARY)"' -DHOOK_DLL='"$(DLL)"' -DLAUNCHER='"$(LAUNCHER)"' -DFOLDER='"$(FOLDER)/"'
 INCLUDES = -Icontrib -Icontrib/cereal/include -Icontrib/gtest/include
 CC_FLAGS = -m32 -s $(INCLUDES) $(DEFINES)
 LD_FLAGS = -m32 -static -lws2_32 -lwinmm -lwinpthread -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -limm32
@@ -45,22 +51,28 @@ BUILD_TYPE = Debug
 all: STRIP = touch
 all: DEFINES += -D_GLIBCXX_DEBUG
 all: CC_FLAGS += -ggdb3 -O0 -fno-inline
-all: deploy
+all: $(ARCHIVE)
 
 release: DEFINES += -DNDEBUG -DRELEASE
 release: CC_FLAGS += -Os -O2 -fno-rtti
 release: BUILD_TYPE = Release
-release: deploy
+release: $(ARCHIVE)
 
 profile: STRIP = touch
 profile: DEFINES += -DNDEBUG -DRELEASE
 profile: CC_FLAGS += -Os -O2 -fno-rtti -pg
 profile: LD_FLAGS += -pg -lgmon
-profile: deploy
+profile: $(ARCHIVE)
 
-deploy: $(BINARY) $(DLL) $(LAUNCHER)
+$(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
+	@echo
+	$(ZIP) $(NAME).v$(VERSION).zip $^
+	$(GRANT)
 	@echo
 	if [ -s ./deploy ]; then ./deploy; fi;
+
+$(FOLDER):
+	@mkdir $(FOLDER)
 
 $(BINARY): Version.h protocol .depend $(OBJECTS) icon.res
 	@echo
@@ -69,16 +81,16 @@ $(BINARY): Version.h protocol .depend $(OBJECTS) icon.res
 	$(STRIP) $@
 	$(CHMOD_X)
 
-$(DLL): Version.h protocol .depend $(OBJECTS)
+$(DLL): Version.h protocol .depend $(OBJECTS) $(FOLDER)
 	@echo
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 DllMain.cc $(OBJECTS) -shared $(LD_FLAGS)
 	@echo
 	$(STRIP) $@
-	$(CHMOD_X)
+	$(GRANT)
 
-$(LAUNCHER): DllLauncher.cc
+$(LAUNCHER): DllLauncher.cc $(FOLDER)
 	@echo
-	$(CXX) -o $@ $^ -m32 -s -Os -O2 -Wall -static -mwindows
+	$(CXX) -o $@ DllLauncher.cc -m32 -s -Os -O2 -Wall -static -mwindows
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
@@ -91,8 +103,11 @@ depend:
 	$(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp *.cc > .depend
 
 .depend:
+	@echo "Regenerating Version.h ..."
+	@printf "#define COMMIT_ID \"`git rev-parse HEAD`\"\n\
+	#define BUILD_TIME \"`date`\"\n\
+	#define VERSION \"$(VERSION)\"" > Version.h
 	@./make_protocol $(NON_GEN_HEADERS)
-	@printf "#define COMMIT_ID \"`git rev-parse HEAD`\"\n#define BUILD_TIME \"`date`\"\n" > Version.h
 	@echo "Regenerating .depend ..."
 	@$(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp *.cc > $@
 	@echo
@@ -101,12 +116,16 @@ protocol:
 	@./make_protocol $(NON_GEN_HEADERS)
 
 Version.h:
-	@printf "#define COMMIT_ID \"`git rev-parse HEAD`\"\n#define BUILD_TIME \"`date`\"\n" > $@
+	@echo "Regenerating Version.h ..."
+	@printf "#define COMMIT_ID \"`git rev-parse HEAD`\"\n\
+	#define BUILD_TIME \"`date`\"\n\
+	#define VERSION \"$(VERSION)\"" > Version.h
 
-.PHONY: clean check trim format count depend protocol Version.h
+.PHONY: clean check trim format count depend protocol deploy Version.h
 
 clean:
 	rm -f Version.h Protocol.*.h .depend *.res *.exe *.dll *.zip *.o $(OBJECTS)
+	rm -rf $(FOLDER)
 
 check:
 	cppcheck --enable=all *.cpp *.h

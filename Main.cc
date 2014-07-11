@@ -10,7 +10,7 @@
 
 #include <cassert>
 
-#define LOG_FILE "debug.log"
+#define LOG_FILE FOLDER "debug.log"
 
 using namespace std;
 using namespace option;
