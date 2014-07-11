@@ -24,6 +24,7 @@ void Log::initialize ( const string& name, bool prependPidToName )
 
     fprintf ( fd, "COMMIT_ID %s\n", COMMIT_ID );
     fprintf ( fd, "BUILD_TIME %s\n", BUILD_TIME );
+    fprintf ( fd, "VERSION %s\n", VERSION );
     fflush ( fd );
 }
 
