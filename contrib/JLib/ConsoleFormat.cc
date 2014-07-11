@@ -22,6 +22,7 @@
 // along with JLib.  If not, see <http://www.gnu.org/licenses/>.
 #include "ConsoleFormat.h"
 #include <cstdlib>
+using namespace std;
 
 ConsoleFormat::ConsoleFormat()
 	:m_color(ConsoleFormat::BLACK)
@@ -38,7 +39,7 @@ ConsoleFormat::ConsoleFormat(unsigned char bits)
 {
 }
 
-ConsoleFormat::ConsoleFormat(string bits)
+ConsoleFormat::ConsoleFormat(const string& bits)
 	:m_color(0)
 {
 	if(bits.length())

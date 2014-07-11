@@ -22,7 +22,7 @@
 // along with JLib.  If not, see <http://www.gnu.org/licenses/>.
 #include "ConsoleMenu.h"
 #include "ConsoleCore.h"
-
+using namespace std;
 
 ConsoleMenu::ConsoleMenu(COORD origin, ConsoleFormat format
     , ConsoleFormat selectionFormat)
@@ -90,7 +90,7 @@ void ConsoleMenu::Append(ConsoleMenuItem item)
     m_items.push_back(item);
 }
 
-void ConsoleMenu::Append(string text, DWORD value)
+void ConsoleMenu::Append(const string& text, DWORD value)
 {
     if(text.length() > m_longestItem)
         m_longestItem = text.length();
@@ -488,7 +488,7 @@ BOOL ScrollingMenu::SelectedItem(int position)
 
 ////////////////////////////////
 
-WindowedMenu::WindowedMenu (COORD origin, unsigned maxToShow, string title
+WindowedMenu::WindowedMenu (COORD origin, unsigned maxToShow, const string& title
         , ConsoleFormat format
         , ConsoleFormat selectionFormat
         , ConsoleFormat windowColor
@@ -511,7 +511,7 @@ WindowedMenu::WindowedMenu(const WindowedMenu & rhs)
     ,m_fill(rhs.m_fill)
 {
 }
-string WindowedMenu ::Title() const
+const string& WindowedMenu ::Title() const
 {
     return m_title;
 }

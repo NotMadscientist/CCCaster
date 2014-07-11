@@ -21,6 +21,7 @@
 // You should have received a copy of the GNU General Public License
 // along with JLib.  If not, see <http://www.gnu.org/licenses/>.
 #include "ConsoleMenuItem.h"
+using namespace std;
 
 ConsoleMenuItem::ConsoleMenuItem()
 	:m_data(MenuItemPair("",0))
@@ -31,12 +32,12 @@ ConsoleMenuItem::ConsoleMenuItem(const ConsoleMenuItem& rhs)
 {
 }
 
-ConsoleMenuItem::ConsoleMenuItem(string text)
+ConsoleMenuItem::ConsoleMenuItem(const string& text)
 	:m_data(MenuItemPair(text,0))
 {
 }
 
-ConsoleMenuItem::ConsoleMenuItem(string text, DWORD value)
+ConsoleMenuItem::ConsoleMenuItem(const string& text, DWORD value)
 	:m_data(MenuItemPair(text,value))
 {
 }
@@ -45,7 +46,7 @@ string ConsoleMenuItem::Text() const
 {
 	return m_data.first;
 }
-string ConsoleMenuItem::Text(string text)
+string ConsoleMenuItem::Text(const std::string& text)
 {
 	string old = m_data.first;
 	m_data.first = text;

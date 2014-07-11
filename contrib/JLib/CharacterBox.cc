@@ -22,7 +22,7 @@
 // along with JLib.  If not, see <http://www.gnu.org/licenses/>.
 #include "CharacterBox.h"
 #include "ConsoleCore.h"
-
+using namespace std;
 
 CharacterBox::CharacterBox()
 	:m_fill('*')
@@ -258,7 +258,7 @@ CharacterWindow::CharacterWindow(const CharacterWindow& rhs)
 	,m_title(rhs.m_title)
 {}
 CharacterWindow::CharacterWindow(COORD upperLeft, COORD lowerRight
-		,string title
+		,const string& title
 		,ConsoleFormat border, ConsoleFormat client
 		,char fill)
 		:CharacterBox(upperLeft, lowerRight, border, client, fill)
@@ -266,11 +266,11 @@ CharacterWindow::CharacterWindow(COORD upperLeft, COORD lowerRight
 {
 }
 
-string CharacterWindow::Title() const
+const string& CharacterWindow::Title() const
 {
 	return m_title;
 }
-void CharacterWindow::Title(string title)
+void CharacterWindow::Title(const string& title)
 {
 	m_title = title;
 }

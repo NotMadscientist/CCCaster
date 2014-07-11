@@ -191,7 +191,7 @@ public:
 	//	Notes:
 	//		This function invokes the parents creation method which
 	//		also causes Normalize to be called.
-	CharacterWindow(COORD upperLeft, COORD lowerRight, string title
+	CharacterWindow(COORD upperLeft, COORD lowerRight, const std::string& title
 		,ConsoleFormat border = ConsoleFormat::SYSTEM
 		,ConsoleFormat client = ConsoleFormat::BLACK
 		,char fill = '*');
@@ -199,13 +199,13 @@ public:
 	//		Title
 	//	Get the title of the window.
 	//	Returns: the title.
-	string Title() const;
+	const std::string& Title() const;
 
 	//		Title
 	//	Sets the title of the window.
 	//	Arguments:
 	//		string title:	The title text.
-	void Title(string title);
+	void Title(const std::string& title);
 
 	//		Draw
 	//	Draws the window.
@@ -213,6 +213,6 @@ public:
 	//		Creates two CharacterBoxes, draws them, and then draws the title.
 	virtual void Draw() const;
 private:
-	string m_title;
+	std::string m_title;
 };
 #endif

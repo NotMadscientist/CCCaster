@@ -241,25 +241,25 @@ COORD ConsoleCore::CursorPosition(SHORT x, SHORT y)
     return old;
 }
 
-void ConsoleCore::Printn(DWORD number, BOOL endLine, ConsoleFormat* color, SHORT x, SHORT y)
+void ConsoleCore::Printn(int number, BOOL endLine, ConsoleFormat* color, SHORT x, SHORT y)
 {
     char numberAsText[256];
-    snprintf(numberAsText, sizeof(numberAsText), "%d", (int)number);
+    snprintf(numberAsText, sizeof(numberAsText), "%d", number);
     Prints(numberAsText,endLine,color,x,y);
 }
-void ConsoleCore::Printd(DOUBLE number, int characterLength, BOOL endLine, ConsoleFormat* color, SHORT x, SHORT y)
+void ConsoleCore::Printd(double number, int characterLength, BOOL endLine, ConsoleFormat* color, SHORT x, SHORT y)
 {
     char numberAsText[256];
     snprintf(numberAsText, sizeof(numberAsText), "%f", number);
     Prints(numberAsText,endLine,color,x,y);
 }
 
-void ConsoleCore::Prints(string text, BOOL endLine, const ConsoleFormat* color, SHORT x, SHORT y)
+void ConsoleCore::Prints(const string& text, BOOL endLine, const ConsoleFormat* color, SHORT x, SHORT y)
 {
     _Prints(text, endLine, color, x, y);
 }
 
-void ConsoleCore::_Prints(string text, BOOL endLine, const ConsoleFormat* color, SHORT x, SHORT y)
+void ConsoleCore::_Prints(const string& text, BOOL endLine, const ConsoleFormat* color, SHORT x, SHORT y)
 {
 #ifdef JLIB_MUTEXED
     pthread_mutex_lock(&mutex);

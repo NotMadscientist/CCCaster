@@ -22,8 +22,8 @@
 // along with JLib.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef _PRAGMA_ONCE_CONSOLEFORMAT_H_
 #define _PRAGMA_ONCE_CONSOLEFORMAT_H_
-#include <bitset>
-using namespace std;
+
+#include <string>
 
 //		ConsoleFormat
 //	Contains a bitset of 8 bits that represents the coloring used
@@ -112,7 +112,7 @@ public:
 	//	Notes:
 	//		This method uses the unsecure version of atoi.
 	//		Expect problems if you pass a string that atoi cannot handle...
-	ConsoleFormat(string bits);
+	ConsoleFormat(const std::string& bits);
 
 	//		Set
 	//	Sets a bit

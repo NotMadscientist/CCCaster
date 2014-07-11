@@ -22,10 +22,10 @@
 // along with JLib.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef _PRAGMA_ONCE_CONSOLEITEM_H_
 #define _PRAGMA_ONCE_CONSOLEITEM_H_
-#include <Windows.h>
+#include <windows.h>
 #include <string>
 #include <utility>
-using namespace std;
+
 //		ConsoleMenuItem
 //	This represents an item in a menu.  Menu items have a text label
 // and a userdefined value.  The user defined value is of type DWORD
@@ -48,25 +48,25 @@ public:
 	//	Creates a menu item with 0 as the user defined value.
 	//	Arguments:
 	//		string text:	the menu item label.
-	ConsoleMenuItem(string text);
+	ConsoleMenuItem(const std::string& text);
 
 	//		ConsoleMenuItem
 	//	Creates a menu item.
 	//	Arguments:
 	//		string text:	the menu item label.
 	//		DWORD value:	a user defined value.
-	ConsoleMenuItem(string text, DWORD value);
+	ConsoleMenuItem(const std::string& text, DWORD value);
 
 	//		Text
 	//	Gets the text of the item.
 	//	Returns: the text of the item.
-	string Text() const;
+	std::string Text() const;
 
 	//		Text
 	//	Sets the text of the item.
 	//	Arguments:
 	//		string text:	the label.
-	string Text(string text);
+	std::string Text(const std::string& text);
 
 	//		Value
 	//	Gets the user defined value of the item.
@@ -88,7 +88,7 @@ public:
 	ConsoleMenuItem& operator=(const ConsoleMenuItem& rhs);
 
 private:
-	typedef pair<string,DWORD> MenuItemPair;
+	typedef std::pair<std::string, DWORD> MenuItemPair;
 	MenuItemPair m_data;
 };
 

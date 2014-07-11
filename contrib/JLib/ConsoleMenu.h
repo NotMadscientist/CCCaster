@@ -22,12 +22,11 @@
 // along with JLib.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef _PRAGMA_ONCE_CONSOLEMENU_H_
 #define _PRAGMA_ONCE_CONSOLEMENU_H_
-#include <Windows.h>
+#include <windows.h>
 #include "ConsoleFormat.h"
 #include "ConsoleMenuItem.h"
 #include "CharacterBox.h"
 #include <list>
-using namespace std;
 
 //      ConsoleMenu
 //  A ConsoleMenu is a collection of items.  Menus can draw themselves
@@ -43,9 +42,9 @@ using namespace std;
 class ConsoleMenu
 {
 public:
-    typedef list<ConsoleMenuItem> MenuItems;
-    typedef list<ConsoleMenuItem>::iterator Iterator;
-    typedef list<ConsoleMenuItem>::const_iterator ConstIterator;
+    typedef std::list<ConsoleMenuItem> MenuItems;
+    typedef std::list<ConsoleMenuItem>::iterator Iterator;
+    typedef std::list<ConsoleMenuItem>::const_iterator ConstIterator;
 
     //      ConsoleMenu
     //  Creates a menu.
@@ -119,7 +118,7 @@ public:
     //      DWORD value:    the user defined value for the item.
     //  Note:
     //      This method invalidates all iterators for this menu.
-    void Append(string text, DWORD value);
+    void Append(const std::string& text, DWORD value);
 
     //      InsertAfter
     //  Inserts an item into the menu after a specific location.
@@ -197,7 +196,7 @@ public:
     //  Notes:
     //      You should always check the return value of Show before
     //  calling this method.  Otherwise the behavior is undefined.
-    string SelectedText() const;
+    std::string SelectedText() const;
 
     //      SelectedValue
     //  After calling Show, this will return the user defined value of the selected item.
@@ -363,7 +362,7 @@ public:
     //  it will be marked as scrollable.
     //  If the maxToShow is equal to or less than the number of items in the menu
     //  then the behavior of Show is undefined.
-    WindowedMenu (COORD origin, unsigned maxToShow, string title
+    WindowedMenu (COORD origin, unsigned maxToShow, const std::string& title
         , ConsoleFormat format = ConsoleFormat::SYSTEM
         , ConsoleFormat selectionFormat = ~ConsoleFormat::SYSTEM
         , ConsoleFormat windowColor = ConsoleFormat::SYSTEM
@@ -379,13 +378,13 @@ public:
     //      Title
     //  Gets the title
     //  Returns: the title.
-    string Title() const;
+    const std::string& Title() const;
 
     //      Title
     //  Sets the title
     //  Arguments:
     //      const string title: The window title.
-    void Title(const string & title);
+    void Title(const std::string& title);
 
     //      Scrollable
     //  Gets whether the menu is displayed with the scrolling style.
@@ -453,7 +452,7 @@ public:
     virtual unsigned LongestItem() const;
 private:
     DWORD ShowNoScroll();
-    string m_title;
+    std::string m_title;
     BOOL m_scrollable;
     ConsoleFormat m_windowColor
         ,m_clientColor;

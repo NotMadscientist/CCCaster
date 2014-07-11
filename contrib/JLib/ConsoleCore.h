@@ -26,7 +26,6 @@
 #include <string>
 #include <conio.h>
 #include <vector>
-using namespace std;
 
 #include "ConsoleDefinitions.h"
 #include "ConsoleCore.h"
@@ -111,7 +110,7 @@ public:
 	//		Printn
 	//	Writes a number to the screen and updates the cursor position.
 	//	Arguments:
-	//		DWORD number:	The value to write.
+	//		int number:	The value to write.
 	//		BOOL endline:	Whether to move the cursor down and all the way left after writing.
 	//		ConsoleFormat* color:	The color to use.
 	//		SHORT x:	Column to write to.
@@ -119,12 +118,12 @@ public:
 	//	Notes:
 	//		If color is NULL, the default color is used.
 	//		If x or y are -1 the current x and/or y value is used.
-	void Printn(DWORD number, BOOL endLine = FALSE, ConsoleFormat* color = NULL, SHORT x = -1, SHORT y = -1);
+	void Printn(int number, BOOL endLine = FALSE, ConsoleFormat* color = NULL, SHORT x = -1, SHORT y = -1);
 
 	//		Printd
 	//	Writes a double to the screen.
 	//	Arguments:
-	//		DOUBLE number:	The value to write.
+	//		double number:	The value to write.
 	//		int characterLength:	The length of the output.
 	//		BOOL endline:	Whether to move the cursor down and all the way left after writing.
 	//		ConsoleFormat* color:	The color to use.
@@ -135,7 +134,7 @@ public:
 	//		If character length is shorter than what it would take to display the entire double
 	//		then the value will be displayed in scientific notation. i.e 9e-004 (or 0.0009).
 	//		If x or y are -1 the current x and/or y value is used.
-	void Printd(DOUBLE number, int characterLength, BOOL endLine = FALSE, ConsoleFormat* color = NULL, SHORT x = -1, SHORT y = -1);
+	void Printd(double number, int characterLength, BOOL endLine = FALSE, ConsoleFormat* color = NULL, SHORT x = -1, SHORT y = -1);
 
 	//		Prints
 	//	Writes a string to the screen and updates the cursor position.
@@ -153,7 +152,7 @@ public:
 	//		All text after a color code will be written to the screen in that color until another color
 	//		code is encountered.
 	//		Color codes supersede the current default color but do not modify it.
-	void Prints(string text, BOOL endLine = FALSE, const ConsoleFormat* color = NULL, SHORT x = -1, SHORT y = -1);
+	void Prints(const std::string& text, BOOL endLine = FALSE, const ConsoleFormat* color = NULL, SHORT x = -1, SHORT y = -1);
 
 	//		EndLine
 	//	Moves the cursor down 1 row and all the way to the left.
@@ -191,7 +190,7 @@ public:
 	//	Notes:
 	//		maxLength should be 1 less than the maximum capacity of
 	//	buffer.
-	bool ScanString(COORD origin, string& buffer, UINT width);
+	bool ScanString(COORD origin, std::string& buffer, UINT width);
 
 	//		ScanDouble
 	//	Reads input as a double from the keyboard
@@ -232,11 +231,11 @@ private:
 	//		const ConsoleFormat* color:	The color to use.
 	//		SHORT x:	The column to write to.
 	//		SHORT y:	The row to write to.
-	void _Prints(string text, BOOL endLine, const ConsoleFormat* color, SHORT x, SHORT y);
+	void _Prints(const std::string& text, BOOL endLine, const ConsoleFormat* color, SHORT x, SHORT y);
 
 	static ConsoleCore* m_theOnlyInstance;
 
-	vector<CHAR_INFO> m_screenBuffer;	// For saving/loading the screen
+	std::vector<CHAR_INFO> m_screenBuffer;			// For saving/loading the screen
 	HANDLE m_consoleHandle;							// Handle to STD_OUT
 	CONSOLE_SCREEN_BUFFER_INFO m_csbi;				// Used for clearing the screen.
 	COORD m_cursorPosition;							// Where the cursor is.

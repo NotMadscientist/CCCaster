@@ -28,23 +28,22 @@
 #include <iostream>
 #include <algorithm>
 #include <iterator>
-using namespace std;
 
-typedef pair<string, unsigned> PhraseColorPair;
+typedef std::pair<std::string, unsigned> PhraseColorPair;
 
-vector<unsigned> FindCodeLocations(string text);
-bool ThreeDigitSequence(string::iterator start, string::iterator end);
+std::vector<unsigned> FindCodeLocations(std::string text);
+bool ThreeDigitSequence(std::string::iterator start, std::string::iterator end);
 
 // A function object used with for_each to extract locations
 // of color codes and phrases in a string.
-template <class Arg1 = string>
+template <class Arg1 = std::string>
 struct CodeFinder
 {
-	typedef pair<Arg1, Arg1> CodePhrasePair;
-	typedef vector< CodePhrasePair > CodePhraseVector;
-	typedef vector<unsigned> LocationVector;
-	typedef pair<Arg1,LocationVector> PhraseLocationPair;
-	typedef vector< PhraseLocationPair  > PhraseLocationVector;
+	typedef std::pair<Arg1, Arg1> CodePhrasePair;
+	typedef std::vector<CodePhrasePair> CodePhraseVector;
+	typedef std::vector<unsigned> LocationVector;
+	typedef std::pair<Arg1, LocationVector> PhraseLocationPair;
+	typedef std::vector<PhraseLocationPair> PhraseLocationVector;
 
 	PhraseLocationVector m_phrasesAndLocations;
 
@@ -58,15 +57,13 @@ struct CodeFinder
 	{
 		typename PhraseLocationVector::iterator it = m_phrasesAndLocations.begin()
 			, end = m_phrasesAndLocations.end();
-		for(;it != end; ++it)
+		for( ; it != end; ++it )
 		{
-			cout << "Text: " << it->first << endl;
-			cout << "Codes Origins: ";
+			std::cout << "Text: " << it->first << std::endl;
+			std::cout << "Codes Origins: ";
 
-			copy(it->second.begin()
-			,it->second.end()
-			,ostream_iterator<unsigned>(cout," "));
-			cout << endl;
+			std::copy(it->second.begin(), it->second.end(), std::ostream_iterator<unsigned>(std::cout, " "));
+			std::cout << std::endl;
 		}
 	}
 };
