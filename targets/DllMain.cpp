@@ -134,8 +134,9 @@ extern "C" void callback()
     {
         if ( state == UNINITIALIZED )
         {
-            // Timers must be initialized in the main thread
+            // Joystick and timer must be initialized in the main thread
             TimerManager::get().initialize();
+            JoystickManager::get().initialize();
             EventManager::get().startPolling();
             state = POLLING;
         }
@@ -160,8 +161,8 @@ extern "C" void callback()
     if ( state == STOPPING )
     {
         EventManager::get().stop();
-        TimerManager::get().deinitialize();
         JoystickManager::get().deinitialize();
+        TimerManager::get().deinitialize();
         SocketManager::get().deinitialize();
         state = DEINITIALIZED;
         exit ( 0 );
@@ -178,7 +179,6 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
             try
             {
                 SocketManager::get().initialize();
-                JoystickManager::get().initialize();
 
                 main.reset ( new Main() );
 
