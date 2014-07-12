@@ -9,15 +9,23 @@ DLL = $(FOLDER)/hook.dll
 LAUNCHER = $(FOLDER)/launcher.exe
 MBAA_EXE = MBAA.exe
 
-# Main program sources
-CPP_SRCS = $(wildcard *.cpp)
-NON_GEN_HEADERS = $(filter-out Version.h, $(filter-out Protocol.%.h, $(wildcard *.h)))
-
 # Library sources
-GTEST_SRCS = contrib/gtest/fused-src/gtest/gtest-all.cc
-JLIB_SRCS = $(wildcard contrib/JLib/*.cc)
-LIB_CPP_SRCS = $(GTEST_SRCS) $(JLIB_SRCS)
-LIB_C_CSRCS = $(wildcard contrib/*.c)
+GTEST_CC_SRCS = contrib/gtest/fused-src/gtest/gtest-all.cc
+JLIB_CC_SRCS = $(wildcard contrib/JLib/*.cc)
+CONTRIB_CC_SRCS = $(GTEST_CC_SRCS) $(JLIB_CC_SRCS)
+CONTRIB_C_CSRCS = $(wildcard contrib/*.c)
+
+# Main program sources
+MAIN_CPP_SRCS = targets/Main.cpp $(wildcard *.cpp) $(wildcard tests/*.cpp)
+DLL_CPP_SRCS = targets/DllMain.cpp $(wildcard *.cpp)
+LAUNCHER_CPP_SRCS = targets/Launcher.cpp
+
+NON_GEN_SRCS = *.cpp targets/*.cpp tests/*.cpp
+NON_GEN_HEADERS = $(filter-out Version.h, $(filter-out Protocol.%.h, $(wildcard tests/*.h *.h)))
+
+# Main program objects
+MAIN_OBJECTS = $(MAIN_CPP_SRCS:.cpp=.o) $(CONTRIB_CC_SRCS:.cc=.o) $(CONTRIB_C_CSRCS:.c=.o)
+DLL_OBJECTS = $(DLL_CPP_SRCS:.cpp=.o) $(CONTRIB_C_CSRCS:.c=.o)
 
 # Tool chain
 PREFIX = i686-w64-mingw32-
@@ -40,7 +48,8 @@ endif
 # Build flags
 DEFINES = -DWIN32_LEAN_AND_MEAN -DNAMED_PIPE='"\\\\.\\pipe\\cccaster_pipe"' -DMBAA_EXE='"$(MBAA_EXE)"'
 DEFINES += -DBINARY='"$(BINARY)"' -DHOOK_DLL='"$(DLL)"' -DLAUNCHER='"$(LAUNCHER)"' -DFOLDER='"$(FOLDER)/"'
-INCLUDES = -Icontrib -Icontrib/cereal/include -Icontrib/gtest/include -Icontrib/SDL2
+INCLUDES = -I$(CURDIR) -I$(CURDIR)/Tests -I$(CURDIR)/contrib -I$(CURDIR)/contrib/cereal/include
+INCLUDES += -I$(CURDIR)/contrib/gtest/include -I$(CURDIR)/contrib/SDL2
 CC_FLAGS = -m32 $(INCLUDES) $(DEFINES)
 LD_FLAGS = -m32 -static -Lcontrib/SDL2 -lSDL2 -lSDL2main -lws2_32 -lwinmm -lwinpthread -ldinput8 -ldxguid -ldxerr8
 LD_FLAGS += -luser32 -lgdi32 -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid
@@ -48,8 +57,6 @@ LD_FLAGS += -luser32 -lgdi32 -limm32 -lole32 -loleaut32 -lshell32 -lversion -luu
 # Build options
 DEFINES += -DENABLE_LOGGING
 # DEFINES += -DJLIB_MUTEXED
-
-OBJECTS = $(CPP_SRCS:.cpp=.o) $(LIB_CPP_SRCS:.cc=.o) $(LIB_C_CSRCS:.c=.o)
 
 all: STRIP = touch
 all: DEFINES += -D_GLIBCXX_DEBUG
@@ -76,23 +83,23 @@ $(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
 $(FOLDER):
 	@mkdir $(FOLDER)
 
-$(BINARY): Version.h protocol .depend $(OBJECTS) icon.res
+$(BINARY): Version.h protocol .depend $(MAIN_OBJECTS) icon.res
 	@echo
-	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 Main.cc $(OBJECTS) $(LD_FLAGS) icon.res
+	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(MAIN_OBJECTS) icon.res $(LD_FLAGS)
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
 
-$(DLL): Version.h protocol .depend $(OBJECTS) $(FOLDER)
+$(DLL): Version.h protocol .depend $(DLL_OBJECTS) $(FOLDER)
 	@echo
-	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 DllMain.cc $(OBJECTS) -shared $(LD_FLAGS)
+	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(DLL_OBJECTS) -shared $(LD_FLAGS)
 	@echo
 	$(STRIP) $@
 	$(GRANT)
 
-$(LAUNCHER): DllLauncher.cc $(FOLDER)
+$(LAUNCHER): $(LAUNCHER_CPP_SRCS) $(FOLDER)
 	@echo
-	$(CXX) -o $@ DllLauncher.cc -m32 -s -Os -O2 -Wall -static -mwindows
+	$(CXX) -o $@ $(LAUNCHER_CPP_SRCS) -m32 -s -Os -O2 -Wall -static -mwindows
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
@@ -102,7 +109,7 @@ icon.res: icon.rc icon.ico
 	$(WINDRES) -F pe-i386 icon.rc -O coff -o $@
 
 depend:
-	$(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp *.cc > .depend
+	$(CXX) $(CC_FLAGS) -std=c++11 -MM $(NON_GEN_SRCS) > .depend
 
 .depend:
 	@echo "Regenerating Version.h ..."
@@ -111,7 +118,7 @@ depend:
 	#define VERSION \"$(VERSION)\"" > Version.h
 	@./make_protocol $(NON_GEN_HEADERS)
 	@echo "Regenerating .depend ..."
-	@$(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp *.cc > $@
+	@$(CXX) $(CC_FLAGS) -std=c++11 -MM $(NON_GEN_SRCS) > $@
 	@echo
 
 protocol:
@@ -126,15 +133,16 @@ Version.h:
 .PHONY: clean check trim format count depend protocol deploy Version.h
 
 clean:
-	rm -f Version.h Protocol.*.h .depend *.res *.exe *.dll *.zip *.o $(OBJECTS)
+	rm -f Version.h Protocol.*.h .depend *.res *.exe *.dll *.zip *.o targets/*.o tests/*.o
+	rm -f $(MAIN_OBJECTS) $(DLL_OBJECTS)
 	rm -rf $(FOLDER)
 
 check:
-	cppcheck --enable=all *.cpp *.h
+	cppcheck --enable=all $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
 
 trim:
-	sed --binary --in-place 's/\\r$$//' *.cpp $(NON_GEN_HEADERS)
-	sed --in-place 's/[[:space:]]\\+$$//' *.cpp $(NON_GEN_HEADERS)
+	sed --binary --in-place 's/\\r$$//' $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
+	sed --in-place 's/[[:space:]]\\+$$//' $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
 
 format:
 	$(ASTYLE)              \
@@ -151,10 +159,10 @@ format:
     --keep-one-line-blocks      \
     --align-pointer=name        \
     --align-reference=type      \
-    *.cpp *.cc $(NON_GEN_HEADERS)
+    $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
 
 count:
-	wc -l *.cpp *.cc $(NON_GEN_HEADERS)
+	wc -l $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
 
 ifeq (,$(findstring clean, $(MAKECMDGOALS)))
 ifeq (,$(findstring check, $(MAKECMDGOALS)))
