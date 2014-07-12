@@ -58,9 +58,9 @@ bool EventManager::poll()
 
     LOG ( "Finished polling" );
 
-    TimerManager::get().clear();
-    SocketManager::get().clear();
     JoystickManager::get().clear();
+    SocketManager::get().clear();
+    TimerManager::get().clear();
 
     LOG ( "Joining reaper thread" );
 
@@ -81,9 +81,9 @@ void EventManager::start()
 
     LOG ( "Finished event loop" );
 
-    TimerManager::get().clear();
-    SocketManager::get().clear();
     JoystickManager::get().clear();
+    SocketManager::get().clear();
+    TimerManager::get().clear();
 
     LOG ( "Joining reaper thread" );
 
@@ -124,9 +124,9 @@ void EventManager::initializePolling()
 
 void EventManager::deinitialize()
 {
-    TimerManager::get().deinitialize();
-    SocketManager::get().deinitialize();
     JoystickManager::get().deinitialize();
+    SocketManager::get().deinitialize();
+    TimerManager::get().deinitialize();
 }
 
 EventManager& EventManager::get()
