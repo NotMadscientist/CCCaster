@@ -2,15 +2,13 @@
 
 #include "Thread.h"
 #include "Util.h"
-#include "IpAddrPort.h"
 #include "BlockingQueue.h"
 
 #include <memory>
 #include <unordered_set>
-#include <unordered_map>
 
-class Socket;
 class Timer;
+class Socket;
 
 class EventManager
 {
