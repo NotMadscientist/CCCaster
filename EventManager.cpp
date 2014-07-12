@@ -71,6 +71,13 @@ bool EventManager::poll()
     return false;
 }
 
+void EventManager::startPolling()
+{
+    running = true;
+
+    LOG ( "Starting polling" );
+}
+
 void EventManager::start()
 {
     running = true;
@@ -106,27 +113,6 @@ void EventManager::release()
     LOG ( "Releasing everything" );
 
     reaperThread.release();
-}
-
-void EventManager::initialize()
-{
-    TimerManager::get().initialize();
-    SocketManager::get().initialize();
-    JoystickManager::get().initialize();
-}
-
-void EventManager::initializePolling()
-{
-    initialize();
-
-    running = true;
-}
-
-void EventManager::deinitialize()
-{
-    JoystickManager::get().deinitialize();
-    SocketManager::get().deinitialize();
-    TimerManager::get().deinitialize();
 }
 
 EventManager& EventManager::get()

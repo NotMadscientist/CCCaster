@@ -3,6 +3,7 @@
 #include "EventManager.h"
 #include "TimerManager.h"
 #include "SocketManager.h"
+#include "JoystickManager.h"
 #include "TcpSocket.h"
 #include "UdpSocket.h"
 #include "Timer.h"
@@ -131,11 +132,11 @@ extern "C" void callback()
 {
     try
     {
-        // Initialize the EventManager the first time
         if ( state == UNINITIALIZED )
         {
+            // Timers must be initialized in the main thread
             TimerManager::get().initialize();
-            EventManager::get().initializePolling();
+            EventManager::get().startPolling();
             state = POLLING;
         }
 
@@ -159,7 +160,9 @@ extern "C" void callback()
     if ( state == STOPPING )
     {
         EventManager::get().stop();
-        EventManager::get().deinitialize();
+        TimerManager::get().deinitialize();
+        JoystickManager::get().deinitialize();
+        SocketManager::get().deinitialize();
         state = DEINITIALIZED;
         exit ( 0 );
     }
@@ -175,6 +178,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
             try
             {
                 SocketManager::get().initialize();
+                JoystickManager::get().initialize();
 
                 main.reset ( new Main() );
 

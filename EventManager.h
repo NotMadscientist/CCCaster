@@ -41,6 +41,9 @@ public:
     // Add a thread to be joined on the reaper thread
     void addThread ( const std::shared_ptr<Thread>& thread );
 
+    // Start the event manager for polling, doesn't block
+    void startPolling();
+
     // Poll for events instead of start / stop, returns false on exit
     bool poll();
 
@@ -52,11 +55,6 @@ public:
 
     // Stop the event manager and release background threads
     void release();
-
-    // Initialize / deinitialize the event manager, should be called in the same thread as start / poll
-    void initialize();
-    void deinitialize();
-    void initializePolling();
 
     // Get the singleton instance
     static EventManager& get();

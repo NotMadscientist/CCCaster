@@ -9,6 +9,9 @@ using namespace std;
 
 void TimerManager::update()
 {
+    if ( !initialized )
+        return;
+
     if ( useHiResTimer )
     {
         QueryPerformanceCounter ( ( LARGE_INTEGER * ) &ticks );
@@ -22,6 +25,9 @@ void TimerManager::update()
 
 void TimerManager::check()
 {
+    if ( !initialized )
+        return;
+
     for ( Timer *timer : allocatedTimers )
     {
         if ( activeTimers.find ( timer ) != activeTimers.end() )

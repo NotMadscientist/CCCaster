@@ -11,6 +11,9 @@ using namespace std;
 
 void SocketManager::check()
 {
+    if ( !initialized )
+        return;
+
     for ( Socket *socket : allocatedSockets )
     {
         if ( activeSockets.find ( socket ) != activeSockets.end() )

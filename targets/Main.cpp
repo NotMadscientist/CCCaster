@@ -1,5 +1,8 @@
 #include "Log.h"
 #include "EventManager.h"
+#include "TimerManager.h"
+#include "SocketManager.h"
+#include "JoystickManager.h"
 #include "TcpSocket.h"
 #include "UdpSocket.h"
 #include "Timer.h"
@@ -163,11 +166,15 @@ int main ( int argc, char *argv[] )
     if ( opt[TEST] )
     {
         Log::get().initialize();
-        EventManager::get().initialize();
+        TimerManager::get().initialize();
+        SocketManager::get().initialize();
+        JoystickManager::get().initialize();
 
         int result = RunAllTests ( argc, argv );
 
-        EventManager::get().deinitialize();
+        JoystickManager::get().deinitialize();
+        SocketManager::get().deinitialize();
+        TimerManager::get().deinitialize();
         Log::get().deinitialize();
         return result;
     }
@@ -179,7 +186,9 @@ int main ( int argc, char *argv[] )
         cout << "Non-option #" << i << ": " << parser.nonOption ( i ) << endl;
 
     Log::get().initialize();
-    EventManager::get().initialize();
+    TimerManager::get().initialize();
+    SocketManager::get().initialize();
+    JoystickManager::get().initialize();
 
     shared_ptr<Main> main ( new Main() );
     EventManager::get().start();
@@ -187,7 +196,9 @@ int main ( int argc, char *argv[] )
     // SocketPtr socket = UdpSocket::connect ( 0, IpAddrPort ( "google.com", 80 ) );
     // LOG ( "%s", socket->address );
 
-    EventManager::get().deinitialize();
+    JoystickManager::get().deinitialize();
+    SocketManager::get().deinitialize();
+    TimerManager::get().deinitialize();
     Log::get().deinitialize();
     return 0;
 }

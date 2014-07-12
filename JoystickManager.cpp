@@ -7,7 +7,12 @@ using namespace std;
 
 void JoystickManager::check()
 {
+    if ( !initialized )
+        return;
+
     SDL_JoystickUpdate();
+
+    // LOG ( "%d joysticks", SDL_NumJoysticks() );
 }
 
 void JoystickManager::clear()

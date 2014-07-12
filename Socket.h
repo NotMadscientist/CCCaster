@@ -141,7 +141,7 @@ struct SocketShareData : public SerializableMessage
     size_t readPos;
     std::shared_ptr<WSAPROTOCOL_INFO> info;
 
-    SocketShareData() {}
+    SocketShareData() : readPos ( 0 ) {}
     SocketShareData ( const IpAddrPort& address,
                       Socket::Protocol protocol,
                       Socket::State state,
