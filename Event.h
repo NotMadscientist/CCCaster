@@ -49,17 +49,21 @@ class EventManager
     // Flags to indicate the event manager is initialized
     bool initializedSockets;
     bool initializedTimers;
+    bool initializedJoysticks;
 
-    // Check and expire timers
+    // Update time
+    void updateTime();
+
+    // Check and update events
+    void checkEvents();
     void checkTimers();
-
-    // Check and update sockets
     void checkSockets();
+    void checkJoysticks();
 
     // Main event loop
     void eventLoop();
 
-    // Private constructor, etc...
+    // Private constructor, etc. for singleon class
     EventManager();
     ~EventManager();
     EventManager ( const EventManager& );
@@ -67,20 +71,24 @@ class EventManager
 
 public:
 
-    // Add a timer instance
+    // Add / remove / clear timer instances
     void addTimer ( Timer *timer );
-
-    // Remove a timer instance
     void removeTimer ( Timer *timer );
+    void clearTimers();
 
-    // Add a socket instance
+    // Add / remove / clear socket instances
     void addSocket ( Socket *socket );
-
-    // Remove a socket instance
     void removeSocket ( Socket *socket );
+    void clearSockets();
+
+    // Clear all joystick instances
+    void clearJoysticks();
 
     // Add a thread to be joined on the reaper thread
     void addThread ( const std::shared_ptr<Thread>& thread );
+
+    // Poll for events instead of start / stop, returns false on exit
+    bool poll();
 
     // Start the event manager, blocks until stop is called
     void start();
@@ -91,15 +99,18 @@ public:
     // Stop the event manager and release background threads
     void release();
 
-    // Poll for events instead of start / stop, returns false on exit
-    bool poll();
-
     // Initialize / deinitialize the event manager, should be called in the same thread as start / poll
     void initialize();
-    void initializeSockets();
-    void initializeTimers();
-    void initializePolling();
     void deinitialize();
+    void initializePolling();
+
+    // Initialize / deinitialize specific subsystems, only timer is thread dependent
+    void initializeTimers();
+    void initializeSockets();
+    void initializeJoysticks();
+    void deinitializeTimers();
+    void deinitializeSockets();
+    void deinitializeJoysticks();
 
     // Get the current time in milliseconds
     inline uint64_t getNow() const { return now; }

@@ -40,10 +40,10 @@ endif
 # Build flags
 DEFINES = -DWIN32_LEAN_AND_MEAN -DNAMED_PIPE='"\\\\.\\pipe\\cccaster_pipe"' -DMBAA_EXE='"$(MBAA_EXE)"'
 DEFINES += -DBINARY='"$(BINARY)"' -DHOOK_DLL='"$(DLL)"' -DLAUNCHER='"$(LAUNCHER)"' -DFOLDER='"$(FOLDER)/"'
-INCLUDES = -Icontrib -Icontrib/cereal/include -Icontrib/gtest/include
+INCLUDES = -Icontrib -Icontrib/cereal/include -Icontrib/gtest/include -Icontrib/SDL2
 CC_FLAGS = -m32 $(INCLUDES) $(DEFINES)
-LD_FLAGS = -m32 -static -lws2_32 -lwinmm -lwinpthread -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -limm32
-LD_FLAGS += -lole32 -loleaut32 -lshell32 -lversion -luuid
+LD_FLAGS = -m32 -static -Lcontrib/SDL2 -lSDL2 -lSDL2main -lws2_32 -lwinmm -lwinpthread -ldinput8 -ldxguid -ldxerr8
+LD_FLAGS += -luser32 -lgdi32 -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid
 
 # Build options
 DEFINES += -DENABLE_LOGGING
