@@ -1,4 +1,4 @@
-#include "Event.h"
+#include "SocketManager.h"
 #include "TcpSocket.h"
 #include "Log.h"
 #include "Util.h"
@@ -17,7 +17,7 @@ TcpSocket::TcpSocket ( Socket::Owner *owner, uint16_t port ) : Socket ( IpAddrPo
     this->owner = owner;
     this->state = State::Listening;
     Socket::init();
-    EventManager::get().addSocket ( this );
+    SocketManager::get().add ( this );
 }
 
 TcpSocket::TcpSocket ( Socket::Owner *owner, const IpAddrPort& address ) : Socket ( address, Protocol::TCP )
@@ -25,7 +25,7 @@ TcpSocket::TcpSocket ( Socket::Owner *owner, const IpAddrPort& address ) : Socke
     this->owner = owner;
     this->state = State::Connecting;
     Socket::init();
-    EventManager::get().addSocket ( this );
+    SocketManager::get().add ( this );
 }
 
 TcpSocket::TcpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address ) : Socket ( address, Protocol::TCP )
@@ -33,7 +33,7 @@ TcpSocket::TcpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address )
     this->owner = owner;
     this->state = State::Connected;
     this->fd = fd;
-    EventManager::get().addSocket ( this );
+    SocketManager::get().add ( this );
 }
 
 TcpSocket::TcpSocket ( Socket::Owner *owner, const SocketShareData& data ) : Socket ( data.address, Protocol::TCP )
@@ -58,7 +58,7 @@ TcpSocket::TcpSocket ( Socket::Owner *owner, const SocketShareData& data ) : Soc
         throw err;
     }
 
-    EventManager::get().addSocket ( this );
+    SocketManager::get().add ( this );
 }
 
 TcpSocket::~TcpSocket()
@@ -68,7 +68,7 @@ TcpSocket::~TcpSocket()
 
 void TcpSocket::disconnect()
 {
-    EventManager::get().removeSocket ( this );
+    SocketManager::get().remove ( this );
     Socket::disconnect();
 }
 

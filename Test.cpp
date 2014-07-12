@@ -1,6 +1,3 @@
-#include "Log.h"
-#include "Event.h"
-
 #include <gtest/gtest.h>
 
 using namespace std;

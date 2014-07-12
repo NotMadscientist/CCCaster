@@ -30,5 +30,5 @@ public:
 
     inline bool isStarted() const { return ( delay > 0 || expiry > 0 ); }
 
-    friend class EventManager;
+    friend class TimerManager;
 };

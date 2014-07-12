@@ -12,14 +12,16 @@
 // Forward declarations
 struct _WSAPROTOCOL_INFOA;
 typedef struct _WSAPROTOCOL_INFOA WSAPROTOCOL_INFO;
-struct Socket;
+class Socket;
 struct SocketShareData;
 
 typedef std::shared_ptr<Socket> SocketPtr;
 
 // Generic socket base class
-struct Socket
+class Socket
 {
+public:
+
     // Socket owner interface
     struct Owner
     {
@@ -126,7 +128,7 @@ public:
     // Set the packet loss for testing purposes
     inline void setPacketLoss ( uint8_t percentage ) { packetLoss = percentage; }
 
-    friend class EventManager;
+    friend class SocketManager;
 };
 
 // Contains data for sharing a socket across processes

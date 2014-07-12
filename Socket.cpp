@@ -1,7 +1,7 @@
+#include "SocketManager.h"
 #include "Socket.h"
 #include "Log.h"
 #include "Util.h"
-#include "Event.h"
 
 #include <winsock2.h>
 #include <windows.h>
@@ -26,20 +26,15 @@
 
 using namespace std;
 
-static unordered_set<Socket *> allocatedSockets;
-
 Socket::Socket ( const IpAddrPort& address, Protocol protocol )
     : address ( address ), protocol ( protocol ), owner ( 0 ), state ( State::Disconnected ), fd ( 0 )
     , readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 ), packetLoss ( 0 )
 {
-    allocatedSockets.insert ( this );
 }
 
 Socket::~Socket()
 {
     disconnect();
-
-    allocatedSockets.erase ( this );
 }
 
 void Socket::disconnect()
@@ -235,7 +230,7 @@ MsgPtr Socket::share ( int processId )
         info->iProtocol = IPPROTO_UDP;
     }
 
-    EventManager::get().removeSocket ( this );
+    SocketManager::get().remove ( this );
     return MsgPtr ( new SocketShareData ( address, protocol, state, readBuffer, readPos, info ) );
 }
 
@@ -407,7 +402,7 @@ void Socket::readEvent()
         readEvent ( msg, address );
 
         // Abort if the socket is de-allocated
-        if ( allocatedSockets.find ( this ) == allocatedSockets.end() )
+        if ( !SocketManager::get().isAllocated ( this ) )
             break;
 
         // Abort if socket is disconnected

@@ -1,4 +1,4 @@
-#include "Event.h"
+#include "TimerManager.h"
 #include "Timer.h"
 #include "Log.h"
 
@@ -7,7 +7,7 @@
 
 using namespace std;
 
-void EventManager::updateTime()
+void TimerManager::update()
 {
     if ( useHiResTimer )
     {
@@ -20,7 +20,7 @@ void EventManager::updateTime()
     }
 }
 
-void EventManager::checkTimers()
+void TimerManager::check()
 {
     for ( Timer *timer : allocatedTimers )
     {
@@ -39,7 +39,7 @@ void EventManager::checkTimers()
             continue;
         }
 
-        LOG ( "Removed timer %08x", *it ); // Don't log any extra data cus already deleted
+        LOG ( "Removed timer %08x", *it ); // Don't log any extra data cus already de-allocated
         activeTimers.erase ( it++ );
     }
 
@@ -65,28 +65,30 @@ void EventManager::checkTimers()
     }
 }
 
-void EventManager::addTimer ( Timer *timer )
+void TimerManager::add ( Timer *timer )
 {
     LOG ( "Adding timer %s; delay='%llu ms'", timer, timer->delay );
     allocatedTimers.insert ( timer );
 }
 
-void EventManager::removeTimer ( Timer *timer )
+void TimerManager::remove ( Timer *timer )
 {
     LOG ( "Removing timer %08x", timer );
     allocatedTimers.erase ( timer );
 }
 
-void EventManager::clearTimers()
+void TimerManager::clear()
 {
-    LOG ( "clearTimers" );
+    LOG ( "Clearing timers" );
     activeTimers.clear();
     allocatedTimers.clear();
 }
 
-void EventManager::initializeTimers()
+TimerManager::TimerManager() : initialized ( false ) {}
+
+void TimerManager::initialize()
 {
-    if ( initializedTimers )
+    if ( initialized )
         return;
 
     // Seed the RNG in this thread because Windows has per-thread RNG
@@ -103,10 +105,16 @@ void EventManager::initializeTimers()
         SetThreadAffinityMask ( GetCurrentThread(), oldMask );
     }
 
-    initializedTimers = true;
+    initialized = true;
 }
 
-void EventManager::deinitializeTimers()
+void TimerManager::deinitialize()
 {
-    initializedTimers = false;
+    initialized = false;
+}
+
+TimerManager& TimerManager::get()
+{
+    static TimerManager tm;
+    return tm;
 }

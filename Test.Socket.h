@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Log.h"
-#include "Event.h"
+#include "EventManager.h"
 #include "Socket.h"
 #include "Timer.h"
 #include "Protocol.h"

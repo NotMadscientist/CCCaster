@@ -1,4 +1,4 @@
-#include "Event.h"
+#include "SocketManager.h"
 #include "Socket.h"
 #include "Log.h"
 
@@ -9,7 +9,7 @@
 
 using namespace std;
 
-void EventManager::checkSockets()
+void SocketManager::check()
 {
     for ( Socket *socket : allocatedSockets )
     {
@@ -112,28 +112,30 @@ void EventManager::checkSockets()
     }
 }
 
-void EventManager::addSocket ( Socket *socket )
+void SocketManager::add ( Socket *socket )
 {
-    LOG_SOCKET ( socket, "addSocket" );
+    LOG_SOCKET ( socket, "Added socket" );
     allocatedSockets.insert ( socket );
 }
 
-void EventManager::removeSocket ( Socket *socket )
+void SocketManager::remove ( Socket *socket )
 {
-    LOG_SOCKET ( socket, "removeSocket" );
+    LOG_SOCKET ( socket, "Removing socket" );
     allocatedSockets.erase ( socket );
 }
 
-void EventManager::clearSockets()
+void SocketManager::clear()
 {
-    LOG ( "clearSockets" );
+    LOG ( "Clearing sockets" );
     activeSockets.clear();
     allocatedSockets.clear();
 }
 
-void EventManager::initializeSockets()
+SocketManager::SocketManager() : initialized ( false ) {}
+
+void SocketManager::initialize()
 {
-    if ( initializedSockets )
+    if ( initialized )
         return;
 
     // Initialize WinSock
@@ -147,14 +149,20 @@ void EventManager::initializeSockets()
         throw err;
     }
 
-    initializedSockets = true;
+    initialized = true;
 }
 
-void EventManager::deinitializeSockets()
+void SocketManager::deinitialize()
 {
-    if ( !initializedSockets )
+    if ( !initialized )
         return;
 
     WSACleanup();
-    initializedSockets = false;
+    initialized = false;
+}
+
+SocketManager& SocketManager::get()
+{
+    static SocketManager sm;
+    return sm;
 }

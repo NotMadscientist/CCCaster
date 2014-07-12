@@ -1,4 +1,7 @@
-#include "Event.h"
+#include "EventManager.h"
+#include "TimerManager.h"
+#include "SocketManager.h"
+#include "JoystickManager.h"
 #include "Log.h"
 
 #include <winsock2.h>
@@ -9,15 +12,15 @@ using namespace std;
 
 void EventManager::checkEvents()
 {
-    updateTime();
-    checkTimers();
-    checkSockets();
-    checkJoysticks();
+    TimerManager::get().update();
+    TimerManager::get().check();
+    SocketManager::get().check();
+    JoystickManager::get().check();
 }
 
 void EventManager::eventLoop()
 {
-    if ( useHiResTimer )
+    if ( TimerManager::get().isHiRes() )
     {
         while ( running )
         {
@@ -39,13 +42,7 @@ void EventManager::eventLoop()
     }
 }
 
-EventManager::EventManager()
-    : useHiResTimer ( true ), now ( 0 ), running ( false )
-    , initializedSockets ( false ), initializedTimers ( false ), initializedJoysticks ( false )
-{
-}
-
-EventManager::~EventManager()
+EventManager::EventManager() : running ( false )
 {
 }
 
@@ -61,9 +58,9 @@ bool EventManager::poll()
 
     LOG ( "Finished polling" );
 
-    clearTimers();
-    clearSockets();
-    clearJoysticks();
+    TimerManager::get().clear();
+    SocketManager::get().clear();
+    JoystickManager::get().clear();
 
     LOG ( "Joining reaper thread" );
 
@@ -84,9 +81,9 @@ void EventManager::start()
 
     LOG ( "Finished event loop" );
 
-    clearTimers();
-    clearSockets();
-    clearJoysticks();
+    TimerManager::get().clear();
+    SocketManager::get().clear();
+    JoystickManager::get().clear();
 
     LOG ( "Joining reaper thread" );
 
@@ -113,9 +110,9 @@ void EventManager::release()
 
 void EventManager::initialize()
 {
-    initializeTimers();
-    initializeSockets();
-    initializeJoysticks();
+    TimerManager::get().initialize();
+    SocketManager::get().initialize();
+    JoystickManager::get().initialize();
 }
 
 void EventManager::initializePolling()
@@ -127,13 +124,43 @@ void EventManager::initializePolling()
 
 void EventManager::deinitialize()
 {
-    deinitializeTimers();
-    deinitializeSockets();
-    deinitializeJoysticks();
+    TimerManager::get().deinitialize();
+    SocketManager::get().deinitialize();
+    JoystickManager::get().deinitialize();
 }
 
 EventManager& EventManager::get()
 {
     static EventManager em;
     return em;
+}
+
+void EventManager::ReaperThread::run()
+{
+    for ( ;; )
+    {
+        shared_ptr<Thread> thread = zombieThreads.pop();
+
+        LOG ( "Joining %08x", thread.get() );
+
+        if ( thread )
+            thread->join();
+        else
+            return;
+
+        LOG ( "Joined %08x", thread.get() );
+    }
+}
+
+void EventManager::ReaperThread::join()
+{
+    zombieThreads.push ( shared_ptr<Thread>() );
+    Thread::join();
+    zombieThreads.clear();
+}
+
+void EventManager::addThread ( const shared_ptr<Thread>& thread )
+{
+    reaperThread.start();
+    reaperThread.zombieThreads.push ( thread );
 }

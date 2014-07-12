@@ -1,16 +1,16 @@
-#include "Event.h"
+#include "TimerManager.h"
 #include "Timer.h"
-#include "Util.h"
 
 using namespace std;
 
 Timer::Timer ( Owner *owner ) : owner ( owner ), delay ( 0 ), expiry ( 0 )
 {
+    TimerManager::get().add ( this );
 }
 
 Timer::~Timer()
 {
-    EventManager::get().removeTimer ( this );
+    TimerManager::get().remove ( this );
 }
 
 void Timer::start ( uint64_t delay )
@@ -19,13 +19,9 @@ void Timer::start ( uint64_t delay )
         return;
 
     this->delay = delay;
-
-    EventManager::get().addTimer ( this );
 }
 
 void Timer::stop()
 {
     delay = expiry = 0;
-
-    EventManager::get().removeTimer ( this );
 }

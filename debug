@@ -1,4 +1,4 @@
 #!/bin/sh
 
-gdb --command=gdb_cmds.txt --args ./cccaster $@
+gdb --command=gdb_cmds.txt --args ./cccaster*.exe $@
 

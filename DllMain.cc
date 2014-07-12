@@ -1,6 +1,8 @@
 #include "Log.h"
 #include "Util.h"
-#include "Event.h"
+#include "EventManager.h"
+#include "TimerManager.h"
+#include "SocketManager.h"
 #include "TcpSocket.h"
 #include "UdpSocket.h"
 #include "Timer.h"
@@ -129,10 +131,10 @@ extern "C" void callback()
 {
     try
     {
-        // Initialize the EventManager once
+        // Initialize the EventManager the first time
         if ( state == UNINITIALIZED )
         {
-            EventManager::get().initializeTimers();
+            TimerManager::get().initialize();
             EventManager::get().initializePolling();
             state = POLLING;
         }
@@ -172,7 +174,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
             LOG ( "DLL_PROCESS_ATTACH" );
             try
             {
-                EventManager::get().initializeSockets();
+                SocketManager::get().initialize();
 
                 main.reset ( new Main() );
 
