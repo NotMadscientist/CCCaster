@@ -248,6 +248,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
             break;
 
         case DLL_PROCESS_DETACH:
+            main.reset();
             LOG ( "DLL_PROCESS_DETACH" );
             EventManager::get().release();
             Log::get().deinitialize();

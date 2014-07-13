@@ -10,5 +10,5 @@
 contrib/astyle binary
 
 # Text files
-*.txt text eol=crlf
-*.CT text eol=crlf
+*.txt text
+*.CT text

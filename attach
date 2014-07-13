@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# trap ctrl-c and call ctrl_c()
+trap ctrl_c INT
+
+function ctrl_c() {
+    killall gdbserver.exe
+    rm -f tmp*
+}
+
+ps -W | grep MBAA.exe | sed -r 's/^\s+([0-9]+).+$/\1/' | xargs gdbserver > tmp 2>&1 --attach '127.0.0.1:0' &
+
+sleep 1
+
+grep 'Listening on port' tmp | sed -r 's/^[^0-9]+([0-9]+).*$/target remote 127.0.0.1:\1/' > tmp2
+
+cat tmp2 gdb_dll.txt > tmp3
+
+gdb --command=tmp3
+
+killall gdbserver.exe
+rm -f tmp*
