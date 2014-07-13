@@ -25,7 +25,7 @@ using namespace std;
 struct Main : public Socket::Owner, public Timer::Owner
 {
     HANDLE pipe;
-    SocketPtr ipcSocket, sharedSocket;
+    SocketPtr ipcSocket;
     Timer timer;
 
     // void acceptEvent ( Socket *serverSocket ) { serverSocket->accept ( this ).reset(); }
@@ -44,19 +44,16 @@ struct Main : public Socket::Owner, public Timer::Owner
     {
         LOG ( "Got %s from '%s'; socket=%08x", msg, address, socket );
 
-        if ( !msg.get() )
-            return;
+        // if ( msg->getMsgType() == MsgType::SocketShareData )
+        // {
+        //     if ( msg->getAs<SocketShareData>().isTCP() )
+        //         sharedSocket = TcpSocket::shared ( this, msg->getAs<SocketShareData>() );
+        //     else
+        //         sharedSocket = UdpSocket::shared ( this, msg->getAs<SocketShareData>() );
 
-        if ( msg->getMsgType() == MsgType::SocketShareData )
-        {
-            if ( msg->getAs<SocketShareData>().isTCP() )
-                sharedSocket = TcpSocket::shared ( this, msg->getAs<SocketShareData>() );
-            else
-                sharedSocket = UdpSocket::shared ( this, msg->getAs<SocketShareData>() );
-
-            // MsgPtr msg ( new IpAddrPort ( sharedSocket->getRemoteAddress() ) );
-            // sharedSocket->send ( msg );
-        }
+        //     MsgPtr msg ( new IpAddrPort ( sharedSocket->getRemoteAddress() ) );
+        //     ipcSocket->send ( msg, address );
+        // }
     }
 
     void timerExpired ( Timer *timer ) override

@@ -23,13 +23,11 @@ enum optionIndex { UNKNOWN, HELP, TEST, PLUS };
 struct Main : public Socket::Owner, public Timer::Owner
 {
     HANDLE pipe;
-    SocketPtr ipcSocket, tcpSocket;
+    SocketPtr ipcSocket;
     Timer timer;
 
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
     {
-        assert ( socket == ipcSocket.get() );
-
         LOG ( "Got %s from '%s'", msg, address );
     }
 
@@ -116,8 +114,8 @@ struct Main : public Socket::Owner, public Timer::Owner
 
         LOG ( "processId=%08x", processId );
 
-        tcpSocket = TcpSocket::connect ( this, IpAddrPort ( "google.com", 80 ) );
-        ipcSocket->send ( tcpSocket->share ( processId ) );
+        // tcpSocket = TcpSocket::connect ( this, IpAddrPort ( "google.com", 80 ) );
+        // ipcSocket->send ( tcpSocket->share ( processId ) );
 
         // ipcSocket->send ( ipcSocket->share ( processId ) );
     }
@@ -185,7 +183,7 @@ int main ( int argc, char *argv[] )
     for ( int i = 0; i < parser.nonOptionsCount(); ++i )
         cout << "Non-option #" << i << ": " << parser.nonOption ( i ) << endl;
 
-    Log::get().initialize();
+    Log::get().initialize ( LOG_FILE );
     TimerManager::get().initialize();
     SocketManager::get().initialize();
     JoystickManager::get().initialize();
