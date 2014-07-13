@@ -83,14 +83,14 @@ $(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
 $(FOLDER):
 	@mkdir $(FOLDER)
 
-$(BINARY): Version.h protocol .depend $(MAIN_OBJECTS) icon.res
+$(BINARY): protocol $(MAIN_OBJECTS) icon.res
 	@echo
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(MAIN_OBJECTS) icon.res $(LD_FLAGS)
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
 
-$(DLL): Version.h protocol .depend $(DLL_OBJECTS) $(FOLDER)
+$(DLL): protocol $(DLL_OBJECTS) $(FOLDER)
 	@echo
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(DLL_OBJECTS) -shared $(LD_FLAGS)
 	@echo
@@ -108,16 +108,8 @@ icon.res: icon.rc icon.ico
 	@echo
 	$(WINDRES) -F pe-i386 icon.rc -O coff -o $@
 
-depend:
-	$(CXX) $(CC_FLAGS) -std=c++11 -MM $(NON_GEN_SRCS) > .depend
-
-.depend:
-	@echo "Regenerating Version.h ..."
-	@printf "#define COMMIT_ID \"`git rev-parse HEAD`\"\n\
-	#define BUILD_TIME \"`date`\"\n\
-	#define VERSION \"$(VERSION)\"" > Version.h
-	@./make_protocol $(NON_GEN_HEADERS)
-	@echo "Regenerating .depend ..."
+.depend: $(NON_GEN_SRCS)
+	@echo "Regenerating .depend"
 	@$(CXX) $(CC_FLAGS) -std=c++11 -MM $(NON_GEN_SRCS) > $@
 	@echo
 
@@ -125,12 +117,14 @@ protocol:
 	@./make_protocol $(NON_GEN_HEADERS)
 
 Version.h:
-	@echo "Regenerating Version.h ..."
+	@echo "Regenerating Version.h"
 	@printf "#define COMMIT_ID \"`git rev-parse HEAD`\"\n\
 	#define BUILD_TIME \"`date`\"\n\
-	#define VERSION \"$(VERSION)\"" > Version.h
+	#define VERSION \"$(VERSION)\"" > $@
 
-.PHONY: clean check trim format count depend protocol deploy Version.h
+autogen: protocol Version.h
+
+.PHONY: clean check trim format count deploy autogen protocol Version.h
 
 clean:
 	rm -f Version.h Protocol.*.h .depend *.res *.exe *.dll *.zip *.o targets/*.o tests/*.o
@@ -169,7 +163,11 @@ ifeq (,$(findstring check, $(MAKECMDGOALS)))
 ifeq (,$(findstring trim, $(MAKECMDGOALS)))
 ifeq (,$(findstring format, $(MAKECMDGOALS)))
 ifeq (,$(findstring count, $(MAKECMDGOALS)))
+ifeq (,$(findstring deploy, $(MAKECMDGOALS)))
+ifeq (,$(findstring autogen, $(MAKECMDGOALS)))
 -include .depend
+endif
+endif
 endif
 endif
 endif
