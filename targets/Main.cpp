@@ -189,13 +189,13 @@ int main ( int argc, char *argv[] )
     TimerManager::get().initialize();
     SocketManager::get().initialize();
     JoystickManager::get().initialize();
+    {
+        shared_ptr<Main> main ( new Main() );
+        EventManager::get().start();
 
-    shared_ptr<Main> main ( new Main() );
-    EventManager::get().start();
-
-    // SocketPtr socket = UdpSocket::connect ( 0, IpAddrPort ( "google.com", 80 ) );
-    // LOG ( "%s", socket->address );
-
+        // SocketPtr socket = UdpSocket::connect ( 0, IpAddrPort ( "google.com", 80 ) );
+        // LOG ( "%s", socket->address );
+    }
     JoystickManager::get().deinitialize();
     SocketManager::get().deinitialize();
     TimerManager::get().deinitialize();
