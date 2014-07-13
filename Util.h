@@ -75,14 +75,14 @@ inline std::string toBase64 ( const std::string& bytes )
     return str.substr ( 0, str.size() - 1 );
 }
 
-inline std::string toBase64 ( const char *bytes, size_t len )
+inline std::string toBase64 ( const void *bytes, size_t len )
 {
     if ( len == 0 )
         return "";
 
     std::string str;
     for ( size_t i = 0; i < len; ++i )
-        str += toString ( "%02x ", ( unsigned char ) bytes[i] );
+        str += toString ( "%02x ", static_cast<const unsigned char *> ( bytes ) [i] );
 
     return str.substr ( 0, str.size() - 1 );
 }
@@ -137,3 +137,16 @@ struct Asm
 
     WindowsError write() const { return WindowsError ( memwrite ( addr, &bytes[0], bytes.size() ) ); }
 };
+
+// Hash util
+namespace std
+{
+
+template<class T>
+inline void hash_combine ( size_t& seed, const T& v )
+{
+    hash<T> hasher;
+    seed ^= hasher ( v ) + 0x9e3779b9 + ( seed << 6 ) + ( seed >> 2 );
+}
+
+}

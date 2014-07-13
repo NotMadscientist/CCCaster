@@ -1,22 +1,23 @@
 #pragma once
 
 #include "Protocol.h"
+#include "Util.h"
 
 #include <cereal/types/string.hpp>
 
 #include <memory>
+#include <algorithm>
 
 struct addrinfo;
 struct sockaddr;
 
+// IP address utility functions
 std::shared_ptr<addrinfo> getAddrInfo ( const std::string& addr, uint16_t port, bool isV4, bool passive = false );
-
 std::string getAddrFromSockAddr ( const sockaddr *sa );
-
 uint16_t getPortFromSockAddr ( const sockaddr *sa );
-
 const char *inet_ntop ( int af, const void *src, char *dst, size_t size );
 
+// IP address with port
 struct IpAddrPort : public SerializableMessage
 {
     std::string addr;
@@ -71,27 +72,9 @@ private:
 
 const IpAddrPort NullAddress;
 
-inline bool operator== ( const IpAddrPort& a, const IpAddrPort& b )
-{
-    return ( a.addr == b.addr && a.port == b.port );
-}
-
-inline bool operator!= ( const IpAddrPort& a, const IpAddrPort& b )
-{
-    return ! ( a == b );
-}
-
-inline std::ostream& operator<< ( std::ostream& os, const IpAddrPort& address ) { return ( os << address.str() ); }
-
+// Hash function
 namespace std
 {
-
-template<class T>
-inline void hash_combine ( size_t& seed, const T& v )
-{
-    hash<T> hasher;
-    seed ^= hasher ( v ) + 0x9e3779b9 + ( seed << 6 ) + ( seed >> 2 );
-}
 
 template<> struct hash<IpAddrPort>
 {
@@ -105,3 +88,22 @@ template<> struct hash<IpAddrPort>
 };
 
 }
+
+// Comparison operators
+inline bool operator< ( const IpAddrPort& a, const IpAddrPort& b )
+{
+    return ( a.addr < b.addr && a.port < b.port );
+}
+
+inline bool operator== ( const IpAddrPort& a, const IpAddrPort& b )
+{
+    return ( a.addr == b.addr && a.port == b.port );
+}
+
+inline bool operator!= ( const IpAddrPort& a, const IpAddrPort& b )
+{
+    return ! ( a == b );
+}
+
+// Stream operator
+inline std::ostream& operator<< ( std::ostream& os, const IpAddrPort& a ) { return ( os << a.str() ); }

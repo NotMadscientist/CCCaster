@@ -12,7 +12,8 @@ using namespace std;
 
 void EventManager::checkEvents()
 {
-    TimerManager::get().update();
+    TimerManager::get().updateCurrentTime();
+
     TimerManager::get().check();
     SocketManager::get().check();
     ControllerManager::get().check();

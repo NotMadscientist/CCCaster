@@ -20,7 +20,7 @@ using namespace option;
 
 enum optionIndex { UNKNOWN, HELP, TEST, PLUS };
 
-struct Main : public Socket::Owner, public Timer::Owner
+struct Main : public Socket::Owner, public Timer::Owner, public ControllerManager::Owner
 {
     HANDLE pipe;
     SocketPtr ipcSocket;
@@ -38,6 +38,11 @@ struct Main : public Socket::Owner, public Timer::Owner
 
     Main() : pipe ( 0 ), timer ( this )
     {
+        Log::get().initialize ( LOG_FILE );
+        TimerManager::get().initialize();
+        SocketManager::get().initialize();
+        ControllerManager::get().initialize ( this );
+
         LOG ( "Opening pipe" );
 
         pipe = CreateNamedPipe (
@@ -124,6 +129,11 @@ struct Main : public Socket::Owner, public Timer::Owner
     {
         if ( pipe )
             CloseHandle ( pipe );
+
+        ControllerManager::get().deinitialize();
+        SocketManager::get().deinitialize();
+        TimerManager::get().deinitialize();
+        Log::get().deinitialize();
     }
 };
 
@@ -166,7 +176,7 @@ int main ( int argc, char *argv[] )
         Log::get().initialize();
         TimerManager::get().initialize();
         SocketManager::get().initialize();
-        ControllerManager::get().initialize();
+        ControllerManager::get().initialize ( 0 );
 
         int result = RunAllTests ( argc, argv );
 
@@ -183,20 +193,7 @@ int main ( int argc, char *argv[] )
     for ( int i = 0; i < parser.nonOptionsCount(); ++i )
         cout << "Non-option #" << i << ": " << parser.nonOption ( i ) << endl;
 
-    Log::get().initialize ( LOG_FILE );
-    TimerManager::get().initialize();
-    SocketManager::get().initialize();
-    ControllerManager::get().initialize();
-    {
-        shared_ptr<Main> main ( new Main() );
-        EventManager::get().start();
-
-        // SocketPtr socket = UdpSocket::connect ( 0, IpAddrPort ( "google.com", 80 ) );
-        // LOG ( "%s", socket->address );
-    }
-    ControllerManager::get().deinitialize();
-    SocketManager::get().deinitialize();
-    TimerManager::get().deinitialize();
-    Log::get().deinitialize();
+    Main main;
+    EventManager::get().start();
     return 0;
 }

@@ -22,7 +22,7 @@
 
 using namespace std;
 
-struct Main : public Socket::Owner, public Timer::Owner
+struct Main : public Socket::Owner, public Timer::Owner, public ControllerManager::Owner
 {
     HANDLE pipe;
     SocketPtr ipcSocket;
@@ -133,7 +133,7 @@ extern "C" void callback()
         {
             // Joystick and timer must be initialized in the main thread
             TimerManager::get().initialize();
-            ControllerManager::get().initialize();
+            ControllerManager::get().initialize ( main.get() );
             EventManager::get().startPolling();
             state = POLLING;
         }

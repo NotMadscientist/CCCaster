@@ -5,24 +5,52 @@
 
 using namespace std;
 
+void ControllerManager::updateControllers()
+{
+    SDL_JoystickUpdate();
+}
+
 void ControllerManager::check()
 {
     if ( !initialized )
         return;
 
-    SDL_JoystickUpdate();
+    updateControllers();
+
+    for ( const auto& kv : allocatedControllers )
+    {
+        if ( activeControllers.find ( kv.first ) != activeControllers.end() )
+            continue;
+
+        LOG ( "Added controller %s", kv.first );
+        activeControllers[kv.first] = kv.second.get();
+    }
+
+    for ( auto it = activeControllers.begin(); it != activeControllers.end(); )
+    {
+        if ( allocatedControllers.find ( it->first ) != allocatedControllers.end() )
+        {
+            ++it;
+            continue;
+        }
+
+        LOG ( "Removed controller %s", it->first ); // Don't log any extra data cus already de-allocated
+        activeControllers.erase ( it++ );
+    }
 
     // LOG ( "%d joysticks", SDL_NumJoysticks() );
 }
 
 void ControllerManager::clear()
 {
-    LOG ( "Clearing joysticks" );
+    LOG ( "Clearing controllers" );
+    activeControllers.clear();
+    allocatedControllers.clear();
 }
 
 ControllerManager::ControllerManager() : initialized ( false ) {}
 
-void ControllerManager::initialize()
+void ControllerManager::initialize ( Owner *owner )
 {
     if ( initialized )
         return;
@@ -37,16 +65,19 @@ void ControllerManager::initialize()
     if ( SDL_Init ( SDL_INIT_JOYSTICK ) < 0 )
     {
         LOG ( "SDL_Init failed: '%s'", SDL_GetError() );
-        throw "something";
+        throw "something"; // TODO
     }
 
     // Initialize SDL joystick
     if ( SDL_JoystickEventState ( SDL_QUERY ) < 0 )
     {
         LOG ( "SDL_JoystickEventState failed: '%s'", SDL_GetError() );
-        throw "something";
+        throw "something"; // TODO
     }
 
+    updateControllers();
+
+    this->owner = owner;
     initialized = true;
 }
 
