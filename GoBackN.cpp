@@ -1,6 +1,6 @@
 #include "GoBackN.h"
 #include "Log.h"
-#include "Util.h"
+#include "Utilities.h"
 
 #include <string>
 #include <cassert>
