@@ -3,7 +3,7 @@
 #include "EventManager.h"
 #include "TimerManager.h"
 #include "SocketManager.h"
-#include "JoystickManager.h"
+#include "ControllerManager.h"
 #include "TcpSocket.h"
 #include "UdpSocket.h"
 #include "Timer.h"
@@ -133,7 +133,7 @@ extern "C" void callback()
         {
             // Joystick and timer must be initialized in the main thread
             TimerManager::get().initialize();
-            JoystickManager::get().initialize();
+            ControllerManager::get().initialize();
             EventManager::get().startPolling();
             state = POLLING;
         }
@@ -158,7 +158,7 @@ extern "C" void callback()
     if ( state == STOPPING )
     {
         EventManager::get().stop();
-        JoystickManager::get().deinitialize();
+        ControllerManager::get().deinitialize();
         TimerManager::get().deinitialize();
         SocketManager::get().deinitialize();
         state = DEINITIALIZED;

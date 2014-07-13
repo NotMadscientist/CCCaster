@@ -2,7 +2,7 @@
 #include "EventManager.h"
 #include "TimerManager.h"
 #include "SocketManager.h"
-#include "JoystickManager.h"
+#include "ControllerManager.h"
 #include "TcpSocket.h"
 #include "UdpSocket.h"
 #include "Timer.h"
@@ -166,11 +166,11 @@ int main ( int argc, char *argv[] )
         Log::get().initialize();
         TimerManager::get().initialize();
         SocketManager::get().initialize();
-        JoystickManager::get().initialize();
+        ControllerManager::get().initialize();
 
         int result = RunAllTests ( argc, argv );
 
-        JoystickManager::get().deinitialize();
+        ControllerManager::get().deinitialize();
         SocketManager::get().deinitialize();
         TimerManager::get().deinitialize();
         Log::get().deinitialize();
@@ -186,7 +186,7 @@ int main ( int argc, char *argv[] )
     Log::get().initialize ( LOG_FILE );
     TimerManager::get().initialize();
     SocketManager::get().initialize();
-    JoystickManager::get().initialize();
+    ControllerManager::get().initialize();
     {
         shared_ptr<Main> main ( new Main() );
         EventManager::get().start();
@@ -194,7 +194,7 @@ int main ( int argc, char *argv[] )
         // SocketPtr socket = UdpSocket::connect ( 0, IpAddrPort ( "google.com", 80 ) );
         // LOG ( "%s", socket->address );
     }
-    JoystickManager::get().deinitialize();
+    ControllerManager::get().deinitialize();
     SocketManager::get().deinitialize();
     TimerManager::get().deinitialize();
     Log::get().deinitialize();

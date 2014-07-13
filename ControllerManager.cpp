@@ -1,11 +1,11 @@
-#include "JoystickManager.h"
+#include "ControllerManager.h"
 #include "Log.h"
 
 #include <SDL.h>
 
 using namespace std;
 
-void JoystickManager::check()
+void ControllerManager::check()
 {
     if ( !initialized )
         return;
@@ -15,14 +15,14 @@ void JoystickManager::check()
     // LOG ( "%d joysticks", SDL_NumJoysticks() );
 }
 
-void JoystickManager::clear()
+void ControllerManager::clear()
 {
     LOG ( "Clearing joysticks" );
 }
 
-JoystickManager::JoystickManager() : initialized ( false ) {}
+ControllerManager::ControllerManager() : initialized ( false ) {}
 
-void JoystickManager::initialize()
+void ControllerManager::initialize()
 {
     if ( initialized )
         return;
@@ -50,7 +50,7 @@ void JoystickManager::initialize()
     initialized = true;
 }
 
-void JoystickManager::deinitialize()
+void ControllerManager::deinitialize()
 {
     if ( !initialized )
         return;
@@ -59,8 +59,8 @@ void JoystickManager::deinitialize()
     initialized = false;
 }
 
-JoystickManager& JoystickManager::get()
+ControllerManager& ControllerManager::get()
 {
-    static JoystickManager jm;
+    static ControllerManager jm;
     return jm;
 }

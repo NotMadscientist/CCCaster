@@ -1,7 +1,7 @@
 #include "EventManager.h"
 #include "TimerManager.h"
 #include "SocketManager.h"
-#include "JoystickManager.h"
+#include "ControllerManager.h"
 #include "Log.h"
 
 #include <winsock2.h>
@@ -15,7 +15,7 @@ void EventManager::checkEvents()
     TimerManager::get().update();
     TimerManager::get().check();
     SocketManager::get().check();
-    JoystickManager::get().check();
+    ControllerManager::get().check();
 }
 
 void EventManager::eventLoop()
@@ -58,7 +58,7 @@ bool EventManager::poll()
 
     LOG ( "Finished polling" );
 
-    JoystickManager::get().clear();
+    ControllerManager::get().clear();
     SocketManager::get().clear();
     TimerManager::get().clear();
 
@@ -88,7 +88,7 @@ void EventManager::start()
 
     LOG ( "Finished event loop" );
 
-    JoystickManager::get().clear();
+    ControllerManager::get().clear();
     SocketManager::get().clear();
     TimerManager::get().clear();
 

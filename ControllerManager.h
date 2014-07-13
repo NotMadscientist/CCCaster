@@ -2,15 +2,15 @@
 
 #include <unordered_set>
 
-class JoystickManager
+class ControllerManager
 {
     // Flag to inidicate if initialized
     bool initialized;
 
     // Private constructor, etc. for singleton class
-    JoystickManager();
-    JoystickManager ( const JoystickManager& );
-    const JoystickManager& operator= ( const JoystickManager& );
+    ControllerManager();
+    ControllerManager ( const ControllerManager& );
+    const ControllerManager& operator= ( const ControllerManager& );
 
 public:
 
@@ -25,5 +25,5 @@ public:
     void deinitialize();
 
     // Get the singleton instance
-    static JoystickManager& get();
+    static ControllerManager& get();
 };
