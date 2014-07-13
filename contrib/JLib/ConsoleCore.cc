@@ -70,10 +70,11 @@ ConsoleCore::ConsoleCore()
     m_currentFormat.Color(ConsoleFormat::SYSTEM);
 
     GetConsoleScreenBufferInfo(m_consoleHandle,&m_csbi);
-    // Get the screen handle and screen buffer info
-    ClearScreen();
-    SaveScreen();
-    // Set the saved screen to blank.
+
+    // // Get the screen handle and screen buffer info
+    // ClearScreen();
+    // SaveScreen();
+    // // Set the saved screen to blank.
 }
 
 ConsoleCore::~ConsoleCore()
