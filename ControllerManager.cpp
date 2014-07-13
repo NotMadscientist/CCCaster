@@ -42,6 +42,7 @@ void ControllerManager::check()
 
                 LOG_CONTROLLER ( controller, "SDL_JOYAXISMOTION" );
 
+                controller->joystickEvent ( e.jaxis );
                 break;
             }
 
@@ -53,6 +54,7 @@ void ControllerManager::check()
 
                 LOG_CONTROLLER ( controller, "SDL_JOYHATMOTION" );
 
+                controller->joystickEvent ( e.jhat );
                 break;
             }
 
@@ -64,6 +66,7 @@ void ControllerManager::check()
 
                 LOG_CONTROLLER ( controller, "SDL_JOYBUTTONDOWN" );
 
+                controller->joystickEvent ( e.jbutton );
                 break;
             }
 
@@ -75,6 +78,7 @@ void ControllerManager::check()
 
                 LOG_CONTROLLER ( controller, "SDL_JOYBUTTONUP" );
 
+                controller->joystickEvent ( e.jbutton );
                 break;
             }
 
@@ -88,8 +92,13 @@ void ControllerManager::check()
                 LOG_CONTROLLER ( controller, "SDL_JOYDEVICEADDED" );
 
                 joysticks[id] = shared_ptr<Controller> ( controller );
+
                 if ( owner )
                     owner->attachedJoystick ( controller );
+
+                LOG ( "Controller::guidBitset :%s", Controller::guidBitset.empty() ? " (empty)" : "" );
+                for ( const auto& kv : Controller::guidBitset )
+                    LOG ( "'%s' -> %08x", kv.first, kv.second );
                 break;
             }
 
@@ -103,7 +112,13 @@ void ControllerManager::check()
 
                 if ( owner )
                     owner->detachedJoystick ( controller );
+
+                SDL_JoystickClose ( controller->stick );
                 joysticks.erase ( id );
+
+                LOG ( "Controller::guidBitset :%s", Controller::guidBitset.empty() ? " (empty)" : "" );
+                for ( const auto& kv : Controller::guidBitset )
+                    LOG ( "'%s' -> %08x", kv.first, kv.second );
                 break;
             }
 

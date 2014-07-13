@@ -6,16 +6,35 @@
 #include <cstring>
 #include <iostream>
 
+// Basic guid type
+struct Guid
+{
+    uint8_t guid[16];
+};
+
 // Guid with an extra index property
 struct IndexedGuid
 {
-    uint8_t guid[16];
-    uint32_t index;
+    Guid guid;
+    uint8_t index;
 };
 
 // Hash function
 namespace std
 {
+
+template<> struct hash<Guid>
+{
+    inline size_t operator() ( const Guid& a ) const
+    {
+        size_t seed = 0;
+
+        for ( size_t i = 0; i < sizeof ( a.guid ); ++i )
+            hash_combine ( seed, a.guid[i] );
+
+        return seed;
+    }
+};
 
 template<> struct hash<IndexedGuid>
 {
@@ -23,8 +42,8 @@ template<> struct hash<IndexedGuid>
     {
         size_t seed = 0;
 
-        for ( size_t i = 0; i < sizeof ( a.guid ); ++i )
-            hash_combine ( seed, a.guid[i] );
+        for ( size_t i = 0; i < sizeof ( a.guid.guid ); ++i )
+            hash_combine ( seed, a.guid.guid[i] );
 
         hash_combine ( seed, a.index );
 
@@ -35,6 +54,9 @@ template<> struct hash<IndexedGuid>
 }
 
 // Comparison operators
+inline bool operator< ( const Guid& a, const Guid& b ) { return ( memcmp ( &a, &b, sizeof ( a ) ) < 0 ); }
+inline bool operator== ( const Guid& a, const Guid& b ) { return ( !memcmp ( &a, &b, sizeof ( a ) ) ); }
+inline bool operator!= ( const Guid& a, const Guid& b ) { return ! ( a == b ); }
 inline bool operator< ( const IndexedGuid& a, const IndexedGuid& b ) { return ( memcmp ( &a, &b, sizeof ( a ) ) < 0 ); }
 inline bool operator== ( const IndexedGuid& a, const IndexedGuid& b ) { return ( !memcmp ( &a, &b, sizeof ( a ) ) ); }
 inline bool operator!= ( const IndexedGuid& a, const IndexedGuid& b ) { return ! ( a == b ); }
@@ -44,18 +66,23 @@ inline std::istream& operator>> ( std::istream& is, IndexedGuid& a )
 {
     uint32_t tmp;
 
-    for ( size_t i = 0; i < sizeof ( a.guid ); ++i )
+    for ( size_t i = 0; i < sizeof ( a.guid.guid ); ++i )
     {
         if ( ! ( is >> std::hex >> tmp ) )
             break;
         else
-            a.guid[i] = ( uint8_t ) tmp;
+            a.guid.guid[i] = ( uint8_t ) tmp;
     }
 
     return ( is >> std::dec >> a.index );
 }
 
+inline std::ostream& operator<< ( std::ostream& os, const Guid& a )
+{
+    return ( os << toBase64 ( a.guid, sizeof ( a.guid ) ) );
+}
+
 inline std::ostream& operator<< ( std::ostream& os, const IndexedGuid& a )
 {
-    return ( os << toBase64 ( a.guid, sizeof ( a.guid ) ) << ' ' << a.index );
+    return ( os << toBase64 ( a.guid.guid, sizeof ( a.guid.guid ) ) << ' ' << ( uint32_t ) a.index );
 }

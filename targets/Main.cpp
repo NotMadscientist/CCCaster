@@ -18,7 +18,7 @@
 using namespace std;
 using namespace option;
 
-enum optionIndex { UNKNOWN, HELP, TEST, PLUS };
+enum optionIndex { UNKNOWN, HELP, TEST, STDOUT, PLUS };
 
 struct Main : public Socket::Owner, public Timer::Owner, public ControllerManager::Owner
 {
@@ -36,12 +36,18 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
         assert ( timer == &this->timer );
     }
 
-    Main() : pipe ( 0 ), timer ( this )
+    Main ( Option opt[] ) : pipe ( 0 ), timer ( this )
     {
-        Log::get().initialize ( LOG_FILE );
+        if ( opt[STDOUT] )
+            Log::get().initialize();
+        else
+            Log::get().initialize ( LOG_FILE );
         TimerManager::get().initialize();
         SocketManager::get().initialize();
         ControllerManager::get().initialize ( this );
+
+        if ( opt[STDOUT] )
+            return;
 
         LOG ( "Opening pipe" );
 
@@ -136,10 +142,11 @@ int main ( int argc, char *argv[] )
 {
     static const Descriptor options[] =
     {
-        { UNKNOWN, 0, "", "", Arg::None, "Usage: " BINARY " [options]\n\nOptions:" },
-        { HELP,    0, "h", "help", Arg::None, "  --help, -h    Print usage and exit." },
-        { TEST,    0, "t", "test", Arg::None, "  --test, -t    Run unit tests and exit." },
-        { PLUS,    0, "p", "plus", Arg::None, "  --plus, -p    Increment count." },
+        { UNKNOWN, 0,  "",        "", Arg::None, "Usage: " BINARY " [options]\n\nOptions:" },
+        { HELP,    0, "h",    "help", Arg::None, "  --help, -h    Print usage and exit." },
+        { TEST,    0,  "",    "test", Arg::None, "  --test        Run unit tests and exit." },
+        { STDOUT,  0,  "",  "stdout", Arg::None, "  --stdout      Output logs to stdout." },
+        { PLUS,    0, "p",    "plus", Arg::None, "  --plus, -p    Increment count." },
         {
             UNKNOWN, 0, "",  "", Arg::None,
             "\nExamples:\n"
@@ -188,7 +195,7 @@ int main ( int argc, char *argv[] )
     for ( int i = 0; i < parser.nonOptionsCount(); ++i )
         cout << "Non-option #" << i << ": " << parser.nonOption ( i ) << endl;
 
-    Main main;
+    Main main ( opt );
     EventManager::get().start();
     return 0;
 }
