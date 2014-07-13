@@ -1,5 +1,5 @@
 #include "Utilities.h"
-#include "Log.h"
+#include "Logger.h"
 
 #define MINIZ_NO_ZLIB_COMPATIBLE_NAMES
 #include <miniz.h>

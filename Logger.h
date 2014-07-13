@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <ctime>
 
-class Log
+class Logger
 {
     // Log file
     FILE *fd;
@@ -19,14 +19,14 @@ class Log
     bool initialized;
 
     // Optionally mutexed logging
-#ifdef LOG_MUTEXED
+#ifdef LOGGER_MUTEXED
     Mutex mutex;
 #endif
 
 public:
 
     // Basic constructor
-    inline Log() : fd ( 0 ) , initialized ( false ) {}
+    inline Logger() : fd ( 0 ) , initialized ( false ) {}
 
     // Initialize / deinitialize logging
     void initialize ( const std::string& name = "", bool prependPidToName = false );
@@ -39,7 +39,7 @@ public:
     void log ( const char *file, int line, const char *func, const char *message );
 
     // Get the singleton instance
-    static Log& get();
+    static Logger& get();
 };
 
 #ifndef ENABLE_LOGGING
@@ -51,7 +51,7 @@ public:
 
 #define LOG(FORMAT, ...)                                                                                    \
     do {                                                                                                    \
-        Log::get().log ( __FILE__, __LINE__, __PRETTY_FUNCTION__, TO_C_STR ( FORMAT, ## __VA_ARGS__ ) );    \
+        Logger::get().log ( __FILE__, __LINE__, __PRETTY_FUNCTION__, TO_C_STR ( FORMAT, ## __VA_ARGS__ ) ); \
     } while ( 0 )
 
 #define LOG_LIST(LIST, TO_STRING)                                                                           \

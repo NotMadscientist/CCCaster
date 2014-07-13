@@ -56,6 +56,7 @@ LD_FLAGS += -luser32 -lgdi32 -limm32 -lole32 -loleaut32 -lshell32 -lversion -luu
 
 # Build options
 DEFINES += -DENABLE_LOGGING
+# DEFINES += -DLOGGER_MUTEXED
 # DEFINES += -DJLIB_MUTEXED
 
 all: STRIP = touch

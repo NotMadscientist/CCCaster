@@ -1,4 +1,4 @@
-#include "Log.h"
+#include "Logger.h"
 #include "EventManager.h"
 #include "TimerManager.h"
 #include "SocketManager.h"
@@ -39,9 +39,9 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
     Main ( Option opt[] ) : pipe ( 0 ), timer ( this )
     {
         if ( opt[STDOUT] )
-            Log::get().initialize();
+            Logger::get().initialize();
         else
-            Log::get().initialize ( LOG_FILE );
+            Logger::get().initialize ( LOG_FILE );
         TimerManager::get().initialize();
         SocketManager::get().initialize();
         ControllerManager::get().initialize ( this );
@@ -134,7 +134,7 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
         ControllerManager::get().deinitialize();
         SocketManager::get().deinitialize();
         TimerManager::get().deinitialize();
-        Log::get().deinitialize();
+        Logger::get().deinitialize();
     }
 };
 
@@ -175,7 +175,7 @@ int main ( int argc, char *argv[] )
 
     if ( opt[TEST] )
     {
-        Log::get().initialize();
+        Logger::get().initialize();
         TimerManager::get().initialize();
         SocketManager::get().initialize();
         ControllerManager::get().initialize ( 0 );
@@ -185,7 +185,7 @@ int main ( int argc, char *argv[] )
         ControllerManager::get().deinitialize();
         SocketManager::get().deinitialize();
         TimerManager::get().deinitialize();
-        Log::get().deinitialize();
+        Logger::get().deinitialize();
         return result;
     }
 

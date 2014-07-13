@@ -1,4 +1,4 @@
-#include "Log.h"
+#include "Logger.h"
 #include "Utilities.h"
 #include "EventManager.h"
 #include "TimerManager.h"
@@ -171,7 +171,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
     switch ( reason )
     {
         case DLL_PROCESS_ATTACH:
-            Log::get().initialize ( LOG_FILE );
+            Logger::get().initialize ( LOG_FILE );
             LOG ( "DLL_PROCESS_ATTACH" );
             try
             {
@@ -248,7 +248,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
             main.reset();
             LOG ( "DLL_PROCESS_DETACH" );
             EventManager::get().release();
-            Log::get().deinitialize();
+            Logger::get().deinitialize();
             break;
     }
 

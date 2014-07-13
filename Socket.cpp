@@ -1,6 +1,6 @@
 #include "SocketManager.h"
 #include "Socket.h"
-#include "Log.h"
+#include "Logger.h"
 #include "Utilities.h"
 
 #include <winsock2.h>

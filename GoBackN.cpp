@@ -1,5 +1,5 @@
 #include "GoBackN.h"
-#include "Log.h"
+#include "Logger.h"
 #include "Utilities.h"
 
 #include <string>

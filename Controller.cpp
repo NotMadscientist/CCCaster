@@ -1,5 +1,5 @@
 #include "Controller.h"
-#include "Log.h"
+#include "Logger.h"
 
 #include <SDL.h>
 

@@ -1,9 +1,9 @@
-#include "Log.h"
+#include "Logger.h"
 #include "Version.h"
 
 using namespace std;
 
-void Log::initialize ( const string& name, bool prependPidToName )
+void Logger::initialize ( const string& name, bool prependPidToName )
 {
     if ( initialized )
         return;
@@ -28,12 +28,12 @@ void Log::initialize ( const string& name, bool prependPidToName )
     fflush ( fd );
 }
 
-void Log::deinitialize()
+void Logger::deinitialize()
 {
     if ( !initialized )
         return;
 
-#ifdef LOG_MUTEXED
+#ifdef LOGGER_MUTEXED
     LOCK ( mutex );
 #endif
 
@@ -42,16 +42,16 @@ void Log::deinitialize()
     initialized = false;
 }
 
-void Log::flush()
+void Logger::flush()
 {
-#ifdef LOG_MUTEXED
+#ifdef LOGGER_MUTEXED
     LOCK ( mutex );
 #endif
 
     fflush ( fd );
 }
 
-void Log::log ( const char *file, int line, const char *func, const char *message )
+void Logger::log ( const char *file, int line, const char *func, const char *message )
 {
     if ( !fd )
         return;
@@ -60,7 +60,7 @@ void Log::log ( const char *file, int line, const char *func, const char *messag
     time ( &t );
     tm *ts = gmtime ( &t );
 
-#ifdef LOG_MUTEXED
+#ifdef LOGGER_MUTEXED
     LOCK ( mutex );
 #endif
 
@@ -73,8 +73,8 @@ void Log::log ( const char *file, int line, const char *func, const char *messag
     fflush ( fd );
 }
 
-Log& Log::get()
+Logger& Logger::get()
 {
-    static Log log;
-    return log;
+    static Logger logger;
+    return logger;
 }
