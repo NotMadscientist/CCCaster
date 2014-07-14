@@ -48,7 +48,7 @@ endif
 # Build flags
 DEFINES = -DWIN32_LEAN_AND_MEAN -DNAMED_PIPE='"\\\\.\\pipe\\cccaster_pipe"' -DMBAA_EXE='"$(MBAA_EXE)"'
 DEFINES += -DBINARY='"$(BINARY)"' -DHOOK_DLL='"$(DLL)"' -DLAUNCHER='"$(LAUNCHER)"' -DFOLDER='"$(FOLDER)/"'
-INCLUDES = -I$(CURDIR) -I$(CURDIR)/Tests -I$(CURDIR)/contrib -I$(CURDIR)/contrib/cereal/include
+INCLUDES = -I$(CURDIR) -I$(CURDIR)/tests -I$(CURDIR)/contrib -I$(CURDIR)/contrib/cereal/include
 INCLUDES += -I$(CURDIR)/contrib/gtest/include -I$(CURDIR)/contrib/SDL2
 CC_FLAGS = -m32 $(INCLUDES) $(DEFINES)
 LD_FLAGS = -m32 -static -Lcontrib/SDL2 -lSDL2 -lSDL2main -lws2_32 -lwinmm -lwinpthread -ldinput8 -ldxguid -ldxerr8
