@@ -81,9 +81,9 @@ void ControllerManager::check()
 
             case SDL_JOYDEVICEADDED:
             {
-                SDL_Joystick *stick = SDL_JoystickOpen ( events[i].jdevice.which );
-                SDL_JoystickID id = SDL_JoystickInstanceID ( stick );
-                Controller *controller = new Controller ( stick );
+                SDL_Joystick *joystick = SDL_JoystickOpen ( events[i].jdevice.which );
+                SDL_JoystickID id = SDL_JoystickInstanceID ( joystick );
+                Controller *controller = new Controller ( joystick );
                 assert ( controller != 0 );
 
                 LOG_CONTROLLER ( controller, "id=%d; SDL_JOYDEVICEADDED", id );
