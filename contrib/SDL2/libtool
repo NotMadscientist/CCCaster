@@ -357,14 +357,14 @@ old_archive_from_new_cmds=""
 old_archive_from_expsyms_cmds=""
 
 # Commands used to build a shared archive.
-archive_cmds="\$CC -shared \$libobjs \$deplibs \$compiler_flags -o \$output_objdir/\$soname \${wl}--enable-auto-image-base -Xlinker --out-implib -Xlinker \$lib"
+archive_cmds="i686-w64-mingw32-gcc -shared \$libobjs \$deplibs \$compiler_flags -o \$output_objdir/\$soname \${wl}--enable-auto-image-base -Xlinker --out-implib -Xlinker \$lib"
 archive_expsym_cmds="if test \\\"x\\\`\$SED 1q \$export_symbols\\\`\\\" = xEXPORTS; then
 	  cp \$export_symbols \$output_objdir/\$soname.def;
 	else
 	  echo EXPORTS > \$output_objdir/\$soname.def;
 	  cat \$export_symbols >> \$output_objdir/\$soname.def;
 	fi~
-	\$CC -shared \$output_objdir/\$soname.def \$libobjs \$deplibs \$compiler_flags -o \$output_objdir/\$soname \${wl}--enable-auto-image-base -Xlinker --out-implib -Xlinker \$lib"
+	i686-w64-mingw32-gcc -shared \$output_objdir/\$soname.def \$libobjs \$deplibs \$compiler_flags -o \$output_objdir/\$soname \${wl}--enable-auto-image-base -Xlinker --out-implib -Xlinker \$lib"
 
 # Commands used to build a loadable module if different from building
 # a shared archive.

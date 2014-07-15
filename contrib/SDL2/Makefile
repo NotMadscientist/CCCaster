@@ -16,7 +16,7 @@ distdir = SDL2-2.0.3
 distfile = $(distdir).tar.gz
 
 PREFIX  = i686-w64-mingw32-
-SHELL	= /bin/sh
+SHELL	= /bin/bash
 CC      = $(PREFIX)gcc
 INCLUDE = -I./include
 CFLAGS  = -g -O3
