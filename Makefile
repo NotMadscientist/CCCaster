@@ -135,13 +135,13 @@ autogen: protocol Version.h
 # contrib/SDL2/build/.libs/libSDL2.a: sdl
 
 sdl:
-	make --jobs=16 --directory contrib/SDL2 CFLAGS="-ggdb3 -O0 -fno-inline"
+	make --jobs --directory contrib/SDL2 CFLAGS="-m32 -ggdb3 -O0 -fno-inline"
 
 sdl_release:
-	make --jobs=16 --directory contrib/SDL2 CFLAGS="-s -Os -O3"
+	make --jobs --directory contrib/SDL2 CFLAGS="-m32 -s -Os -O3"
 
 sdl_profile:
-	make --jobs=16 --directory contrib/SDL2 CFLAGS="-O3 -fno-rtti -pg"
+	make --jobs --directory contrib/SDL2 CFLAGS="-m32 -O3 -fno-rtti -pg"
 
 sdl_clean:
 	make --directory contrib/SDL2 clean
