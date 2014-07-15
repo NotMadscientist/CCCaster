@@ -33,13 +33,13 @@ template<>
 inline std::string toString<std::string> ( const std::string& val ) { return val; }
 
 template<typename T>
-void printToString ( char *buffer, const char *format, const T& val, bool2type<false> )
+void printToString ( char *buffer, const char *format, const T& val, bool2type<false> ) // non-integer types
 {
     std::sprintf ( buffer, format, TO_C_STR ( val ) );
 }
 
 template<typename T>
-void printToString ( char *buffer, const char *format, const T& val, bool2type<true> )
+void printToString ( char *buffer, const char *format, const T& val, bool2type<true> ) // integer types
 {
     std::sprintf ( buffer, format, val );
 }
@@ -54,7 +54,8 @@ inline std::string toString ( const std::string& format, const T& val, V ... val
         return rest;
 
     char buffer[4096];
-    printToString ( buffer, first.c_str(), val, bool2type<std::is_arithmetic<T>::value>() );
+    printToString ( buffer, first.c_str(), val,
+                    bool2type<std::is_arithmetic<T>::value || std::is_pointer<T>::value>() );
 
     if ( rest.empty() )
         return buffer;
