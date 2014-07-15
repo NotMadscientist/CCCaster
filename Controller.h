@@ -5,8 +5,8 @@
 #include <unordered_map>
 
 #define LOG_CONTROLLER(CONTROLLER, FORMAT, ...)                                                                 \
-    LOG ( "controller=%08x; state=%08x; " FORMAT,                                                               \
-          CONTROLLER, CONTROLLER->state, ## __VA_ARGS__ )
+    LOG ( "controller=%08x; joystick=%08x; state=%08x; " FORMAT,                                                \
+          CONTROLLER, CONTROLLER->joystick, CONTROLLER->state, ## __VA_ARGS__ )
 
 // Forward declarations
 struct _SDL_Joystick;
@@ -21,7 +21,7 @@ class Controller
     enum KeyboardEnum { Keyboard };
 
     // SDL joystick pointer, 0 for keyboard
-    SDL_Joystick *stick;
+    SDL_Joystick *joystick;
 
     // Controller unique identifier
     IndexedGuid guid;
@@ -39,7 +39,7 @@ class Controller
 
     // Construct a keyboard or joystick controller
     Controller ( KeyboardEnum );
-    Controller ( SDL_Joystick *stick );
+    Controller ( SDL_Joystick *joystick );
 
 public:
 

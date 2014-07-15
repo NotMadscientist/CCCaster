@@ -5,6 +5,8 @@
 
 #include <cassert>
 
+#define MAX_EVENT_QUEUE 64
+
 using namespace std;
 
 void ControllerManager::check()
@@ -15,83 +17,78 @@ void ControllerManager::check()
     // TODO update keyboard controller
 
     SDL_PumpEvents();
-    SDL_Event e;
+    SDL_Event events[MAX_EVENT_QUEUE];
 
-    for ( ;; )
+    int count = SDL_PeepEvents ( events, sizeof ( events ), SDL_GETEVENT, SDL_JOYAXISMOTION, SDL_JOYDEVICEREMOVED );
+
+    if ( count < 0 )
     {
-        int ret = SDL_PeepEvents ( &e, 1, SDL_GETEVENT, SDL_JOYAXISMOTION, SDL_JOYDEVICEREMOVED );
+        LOG ( "SDL_PeepEvents failed: '%s'", SDL_GetError() );
+        throw "something"; // TODO
+    }
 
-        if ( ret < 0 )
-        {
-            LOG ( "SDL_PeepEvents failed: '%s'", SDL_GetError() );
-            throw "something"; // TODO
-        }
-
-        if ( ret == 0 )
-            break;
-
-        assert ( ret == 1 );
-
-        switch ( e.type )
+    for ( int i = 0; i < count; ++i )
+    {
+        switch ( events[i].type )
         {
             case SDL_JOYAXISMOTION:
             {
-                SDL_JoystickID id = e.jaxis.which;
+                SDL_JoystickID id = events[i].jaxis.which;
                 Controller *controller = joysticks[id].get();
                 assert ( controller != 0 );
 
                 LOG_CONTROLLER ( controller, "id=%d; SDL_JOYAXISMOTION", id );
 
-                controller->joystickEvent ( e.jaxis );
+                controller->joystickEvent ( events[i].jaxis );
                 break;
             }
 
             case SDL_JOYHATMOTION:
             {
-                SDL_JoystickID id = e.jhat.which;
+                SDL_JoystickID id = events[i].jhat.which;
                 Controller *controller = joysticks[id].get();
                 assert ( controller != 0 );
 
                 LOG_CONTROLLER ( controller, "id=%d; SDL_JOYHATMOTION", id );
 
-                controller->joystickEvent ( e.jhat );
+                controller->joystickEvent ( events[i].jhat );
                 break;
             }
 
             case SDL_JOYBUTTONDOWN:
             {
-                SDL_JoystickID id = e.jbutton.which;
+                SDL_JoystickID id = events[i].jbutton.which;
                 Controller *controller = joysticks[id].get();
                 assert ( controller != 0 );
 
                 LOG_CONTROLLER ( controller, "id=%d; SDL_JOYBUTTONDOWN", id );
 
-                controller->joystickEvent ( e.jbutton );
+                controller->joystickEvent ( events[i].jbutton );
                 break;
             }
 
             case SDL_JOYBUTTONUP:
             {
-                SDL_JoystickID id = e.jbutton.which;
+                SDL_JoystickID id = events[i].jbutton.which;
                 Controller *controller = joysticks[id].get();
                 assert ( controller != 0 );
 
                 LOG_CONTROLLER ( controller, "id=%d; SDL_JOYBUTTONUP", id );
 
-                controller->joystickEvent ( e.jbutton );
+                controller->joystickEvent ( events[i].jbutton );
                 break;
             }
 
             case SDL_JOYDEVICEADDED:
             {
-                SDL_Joystick *stick = SDL_JoystickOpen ( e.jdevice.which );
+                SDL_Joystick *stick = SDL_JoystickOpen ( events[i].jdevice.which );
                 SDL_JoystickID id = SDL_JoystickInstanceID ( stick );
                 Controller *controller = new Controller ( stick );
                 assert ( controller != 0 );
 
                 LOG_CONTROLLER ( controller, "id=%d; SDL_JOYDEVICEADDED", id );
 
-                joysticks[id] = shared_ptr<Controller> ( controller );
+                joysticks[id].reset ( controller );
 
                 if ( owner )
                     owner->attachedJoystick ( controller );
@@ -108,7 +105,7 @@ void ControllerManager::check()
 
             case SDL_JOYDEVICEREMOVED:
             {
-                SDL_JoystickID id = e.jdevice.which;
+                SDL_JoystickID id = events[i].jdevice.which;
                 Controller *controller = joysticks[id].get();
                 assert ( controller != 0 );
 
@@ -117,7 +114,7 @@ void ControllerManager::check()
                 if ( owner )
                     owner->detachedJoystick ( controller );
 
-                SDL_JoystickClose ( controller->stick );
+                SDL_JoystickClose ( controller->joystick );
                 joysticks.erase ( id );
 
                 LOG ( "joysticks :%s", joysticks.empty() ? " (empty)" : "" );
@@ -131,7 +128,7 @@ void ControllerManager::check()
             }
 
             default:
-                LOG ( "Unknown event type (%d)", e.type );
+                LOG ( "Unknown event type (%d)", events[i].type );
                 break;
         }
     }

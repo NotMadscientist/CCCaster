@@ -19,14 +19,14 @@ void Controller::joystickEvent ( const SDL_JoyButtonEvent& event )
 {
 }
 
-Controller::Controller ( KeyboardEnum ) : stick ( 0 ), state ( 0 )
+Controller::Controller ( KeyboardEnum ) : joystick ( 0 ), state ( 0 )
 {
     memset ( &guid, 0, sizeof ( guid ) );
 }
 
-Controller::Controller ( SDL_Joystick *stick ) : stick ( stick ), state ( 0 )
+Controller::Controller ( SDL_Joystick *joystick ) : joystick ( joystick ), state ( 0 )
 {
-    SDL_JoystickGUID guid = SDL_JoystickGetGUID ( stick );
+    SDL_JoystickGUID guid = SDL_JoystickGetGUID ( joystick );
     memcpy ( &this->guid.guid, guid.data, sizeof ( guid.data ) );
 
     auto it = guidBitset.find ( this->guid.guid );
