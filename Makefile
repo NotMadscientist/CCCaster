@@ -13,7 +13,7 @@ MBAA_EXE = MBAA.exe
 GTEST_CC_SRCS = contrib/gtest/fused-src/gtest/gtest-all.cc
 JLIB_CC_SRCS = $(wildcard contrib/JLib/*.cc)
 CONTRIB_CC_SRCS = $(GTEST_CC_SRCS) $(JLIB_CC_SRCS)
-CONTRIB_C_CSRCS = $(wildcard contrib/*.c)
+CONTRIB_C_SRCS = $(wildcard contrib/*.c)
 
 # Main program sources
 MAIN_CPP_SRCS = targets/Main.cpp $(wildcard *.cpp) $(wildcard tests/*.cpp)
@@ -24,8 +24,8 @@ NON_GEN_SRCS = *.cpp targets/*.cpp tests/*.cpp
 NON_GEN_HEADERS = $(filter-out Version.h, $(filter-out Protocol.%.h, $(wildcard tests/*.h *.h)))
 
 # Main program objects
-MAIN_OBJECTS = $(MAIN_CPP_SRCS:.cpp=.o) $(CONTRIB_CC_SRCS:.cc=.o) $(CONTRIB_C_CSRCS:.c=.o)
-DLL_OBJECTS = $(DLL_CPP_SRCS:.cpp=.o) $(CONTRIB_C_CSRCS:.c=.o)
+MAIN_OBJECTS = $(MAIN_CPP_SRCS:.cpp=.o) $(CONTRIB_CC_SRCS:.cc=.o) $(CONTRIB_C_SRCS:.c=.o)
+DLL_OBJECTS = $(DLL_CPP_SRCS:.cpp=.o) $(CONTRIB_C_SRCS:.c=.o)
 
 # Tool chain
 PREFIX = i686-w64-mingw32-
@@ -109,7 +109,15 @@ icon.res: icon.rc icon.ico
 	@echo
 	$(WINDRES) -F pe-i386 icon.rc -O coff -o $@
 
+define make_version
+@printf "#define COMMIT_ID \"`git rev-parse HEAD`\"\n\
+#define BUILD_TIME \"`date`\"\n\
+#define VERSION \"$(VERSION)\"" > Version.h
+endef
+
 .depend: $(NON_GEN_SRCS)
+	$(make_version)
+	@./make_protocol $(NON_GEN_HEADERS)
 	@echo "Regenerating .depend"
 	@$(CXX) $(CC_FLAGS) -std=c++11 -MM $(NON_GEN_SRCS) > $@
 
@@ -117,10 +125,7 @@ protocol:
 	@./make_protocol $(NON_GEN_HEADERS)
 
 Version.h:
-	@echo "Regenerating Version.h"
-	@printf "#define COMMIT_ID \"`git rev-parse HEAD`\"\n\
-	#define BUILD_TIME \"`date`\"\n\
-	#define VERSION \"$(VERSION)\"" > $@
+	$(make_version)
 
 autogen: protocol Version.h
 
