@@ -112,7 +112,6 @@ icon.res: icon.rc icon.ico
 .depend: $(NON_GEN_SRCS)
 	@echo "Regenerating .depend"
 	@$(CXX) $(CC_FLAGS) -std=c++11 -MM $(NON_GEN_SRCS) > $@
-	@echo
 
 protocol:
 	@./make_protocol $(NON_GEN_HEADERS)
