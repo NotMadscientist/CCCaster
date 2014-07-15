@@ -49,9 +49,12 @@ endif
 DEFINES = -DWIN32_LEAN_AND_MEAN -DNAMED_PIPE='"\\\\.\\pipe\\cccaster_pipe"' -DMBAA_EXE='"$(MBAA_EXE)"'
 DEFINES += -DBINARY='"$(BINARY)"' -DHOOK_DLL='"$(DLL)"' -DLAUNCHER='"$(LAUNCHER)"' -DFOLDER='"$(FOLDER)/"'
 INCLUDES = -I$(CURDIR) -I$(CURDIR)/tests -I$(CURDIR)/contrib -I$(CURDIR)/contrib/cereal/include
-INCLUDES += -I$(CURDIR)/contrib/gtest/include -I$(CURDIR)/contrib/SDL2
+INCLUDES += -I$(CURDIR)/contrib/gtest/include -I$(CURDIR)/contrib/SDL2/include
 CC_FLAGS = -m32 $(INCLUDES) $(DEFINES)
-LD_FLAGS = -m32 -static -Lcontrib/SDL2 -lSDL2 -lSDL2main -lws2_32 -lwinmm -lwinpthread -ldinput8 -ldxguid -ldxerr8
+
+# Linker flags
+LD_FLAGS = -m32 -static -L$(CURDIR)/contrib/SDL2/build -L$(CURDIR)/contrib/SDL2/build/.libs
+LD_FLAGS += -lSDL2 -lSDL2main -lws2_32 -lwinmm -lwinpthread -ldinput8 -ldxguid -ldxerr8
 LD_FLAGS += -luser32 -lgdi32 -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid
 
 # Build options
@@ -84,14 +87,14 @@ $(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
 $(FOLDER):
 	@mkdir $(FOLDER)
 
-$(BINARY): protocol $(MAIN_OBJECTS) icon.res
+$(BINARY): sdl protocol $(MAIN_OBJECTS) icon.res
 	@echo
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(MAIN_OBJECTS) icon.res $(LD_FLAGS)
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
 
-$(DLL): protocol $(DLL_OBJECTS) $(FOLDER)
+$(DLL): sdl protocol $(DLL_OBJECTS) $(FOLDER)
 	@echo
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(DLL_OBJECTS) -shared $(LD_FLAGS)
 	@echo
@@ -129,7 +132,19 @@ Version.h:
 
 autogen: protocol Version.h
 
-.PHONY: clean check trim format count deploy autogen protocol Version.h
+# contrib/SDL2/build/.libs/libSDL2.a: sdl
+
+sdl:
+	make --jobs=16 --directory contrib/SDL2 CFLAGS="-ggdb3 -O0 -fno-inline"
+
+sdl_release:
+	make --jobs=16 --directory contrib/SDL2 CFLAGS="-s -Os -O3"
+
+sdl_profile:
+	make --jobs=16 --directory contrib/SDL2 CFLAGS="-O3 -fno-rtti -pg"
+
+sdl_clean:
+	make --directory contrib/SDL2 clean
 
 clean:
 	rm -f Version.h Protocol.*.h .depend *.res *.exe *.dll *.zip *.o targets/*.o tests/*.o
@@ -163,6 +178,8 @@ format:
 count:
 	wc -l $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
 
+.PHONY: clean check trim format count deploy autogen protocol sdl sdl_release sdl_profile sdl_clean Version.h
+
 ifeq (,$(findstring clean, $(MAKECMDGOALS)))
 ifeq (,$(findstring check, $(MAKECMDGOALS)))
 ifeq (,$(findstring trim, $(MAKECMDGOALS)))
@@ -170,7 +187,9 @@ ifeq (,$(findstring format, $(MAKECMDGOALS)))
 ifeq (,$(findstring count, $(MAKECMDGOALS)))
 ifeq (,$(findstring deploy, $(MAKECMDGOALS)))
 ifeq (,$(findstring autogen, $(MAKECMDGOALS)))
+ifeq (,$(findstring sdl, $(MAKECMDGOALS)))
 -include .depend
+endif
 endif
 endif
 endif

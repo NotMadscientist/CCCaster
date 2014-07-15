@@ -1,15 +1,40 @@
 
-To install SDL for native development:
-    make native
+To compile and install SDL:
 
-To install SDL for cross-compiling development:
-    make cross
+    1.  Windows with Visual Studio:
+        * Read VisualC.html
 
-Look at the example programs in ./test, and check out online documentation:
-    http://wiki.libsdl.org/
+        Windows with gcc, either native or cross-compiling:
+        * Read the FAQ at http://wiki.libsdl.org/moin.fcg/FAQWindows
+        * Run './configure; make; make install'
 
-Join the SDL developer mailing list if you want to join the community:
-    http://www.libsdl.org/mailing-list.php
+        Mac OS X with Xcode:
+        * Read README-macosx.txt
+
+        Mac OS X from the command line:
+        * Run './configure; make; make install'
+
+        Linux and other UNIX systems:
+        * Run './configure; make; make install'
+
+        Android:
+        * Read README-android.txt
+
+        iOS:
+        * Read README-ios.txt
+
+        Using Cmake:
+        * Read README-cmake.txt
+
+    2.  Look at the example programs in ./test, and check out the online
+        documentation at http://wiki.libsdl.org/
+
+    3.  Join the SDL developer mailing list by sending E-mail to
+    	sdl-request@libsdl.org
+        and put "subscribe" in the subject of the message.
+
+        Or alternatively you can use the web interface:
+            http://www.libsdl.org/mailing-list.php
 
 That's it!
 Sam Lantinga <slouken@libsdl.org>
