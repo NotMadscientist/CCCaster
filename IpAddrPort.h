@@ -59,7 +59,7 @@ struct IpAddrPort : public SerializableMessage
         if ( empty() )
             return "";
         static char buffer[256];
-        std::sprintf ( buffer, "%s:%u", addr.c_str(), port );
+        std::snprintf ( buffer, sizeof ( buffer ), "%s:%u", addr.c_str(), port );
         return buffer;
     }
 
