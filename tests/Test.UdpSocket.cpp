@@ -75,6 +75,9 @@ TEST ( UdpSocket, SendConnectionLess )
         }
     };
 
+    TimerManager::get().initialize();
+    SocketManager::get().initialize();
+
     TestSocket server ( 0 );
     TestSocket client ( "127.0.0.1", server.socket->address.port );
 
@@ -103,4 +106,7 @@ TEST ( UdpSocket, SendConnectionLess )
         EXPECT_EQ ( MsgType::TestMessage, client.msg->getMsgType() );
         EXPECT_EQ ( "Hello client!", client.msg->getAs<TestMessage>().str );
     }
+
+    SocketManager::get().deinitialize();
+    TimerManager::get().deinitialize();
 }

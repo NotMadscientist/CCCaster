@@ -72,6 +72,9 @@ TEST ( GoBackN, SendOnce )
         }
     };
 
+    TimerManager::get().initialize();
+    SocketManager::get().initialize();
+
     TestSocket server ( 0 );
     TestSocket client ( "127.0.0.1", server.socket->address.port );
 
@@ -84,6 +87,9 @@ TEST ( GoBackN, SendOnce )
         EXPECT_EQ ( MsgType::TestMessage, server.msg->getMsgType() );
         EXPECT_EQ ( "Hello server!", server.msg->getAs<TestMessage>().str );
     }
+
+    SocketManager::get().deinitialize();
+    TimerManager::get().deinitialize();
 }
 
 TEST ( GoBackN, SendSequential )
@@ -154,6 +160,9 @@ TEST ( GoBackN, SendSequential )
         }
     };
 
+    TimerManager::get().initialize();
+    SocketManager::get().initialize();
+
     TestSocket server ( 0 );
     TestSocket client ( "127.0.0.1", server.socket->address.port );
 
@@ -167,6 +176,9 @@ TEST ( GoBackN, SendSequential )
         EXPECT_EQ ( MsgType::TestMessage, server.msgs[i]->getMsgType() );
         EXPECT_EQ ( toString ( "Message %u", i + 1 ), server.msgs[i]->getAs<TestMessage>().str );
     }
+
+    SocketManager::get().deinitialize();
+    TimerManager::get().deinitialize();
 }
 
 TEST ( GoBackN, SendAndRecv )
@@ -247,6 +259,9 @@ TEST ( GoBackN, SendAndRecv )
         }
     };
 
+    TimerManager::get().initialize();
+    SocketManager::get().initialize();
+
     TestSocket server ( 0 );
     TestSocket client ( "127.0.0.1", server.socket->address.port );
 
@@ -271,6 +286,9 @@ TEST ( GoBackN, SendAndRecv )
     }
 
     EXPECT_EQ ( 2, done );
+
+    SocketManager::get().deinitialize();
+    TimerManager::get().deinitialize();
 }
 
 TEST ( GoBackN, Timeout )
@@ -353,6 +371,9 @@ TEST ( GoBackN, Timeout )
         }
     };
 
+    TimerManager::get().initialize();
+    SocketManager::get().initialize();
+
     TestSocket server ( 0 );
     TestSocket client ( "127.0.0.1", server.socket->address.port );
 
@@ -363,4 +384,7 @@ TEST ( GoBackN, Timeout )
     EXPECT_TRUE ( server.properTimeout );
     EXPECT_TRUE ( client.properTimeout );
     EXPECT_EQ ( 2, done );
+
+    SocketManager::get().deinitialize();
+    TimerManager::get().deinitialize();
 }

@@ -176,15 +176,7 @@ int main ( int argc, char *argv[] )
     if ( opt[TEST] )
     {
         Logger::get().initialize();
-        TimerManager::get().initialize();
-        SocketManager::get().initialize();
-        ControllerManager::get().initialize ( 0 );
-
         int result = RunAllTests ( argc, argv );
-
-        ControllerManager::get().deinitialize();
-        SocketManager::get().deinitialize();
-        TimerManager::get().deinitialize();
         Logger::get().deinitialize();
         return result;
     }

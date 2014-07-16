@@ -2,7 +2,9 @@
 
 #include "Logger.h"
 #include "EventManager.h"
+#include "SocketManager.h"
 #include "Socket.h"
+#include "TimerManager.h"
 #include "Timer.h"
 #include "Protocol.h"
 
@@ -73,6 +75,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             TestSocket ( const string& address, uint16_t port ) : BaseTestSocket ( address, port )                  \
             { socket->setPacketLoss ( LOSS ); }                                                                     \
         };                                                                                                          \
+        TimerManager::get().initialize();                                                                           \
+        SocketManager::get().initialize();                                                                          \
         TestSocket server ( 0 );                                                                                    \
         TestSocket client ( "127.0.0.1", server.socket->address.port );                                             \
         EventManager::get().start();                                                                                \
@@ -86,6 +90,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         if ( client.socket.get() )                                                                                  \
             EXPECT_TRUE ( client.socket->isConnected() );                                                           \
         EXPECT_EQ ( 2, done );                                                                                      \
+        SocketManager::get().deinitialize();                                                                        \
+        TimerManager::get().deinitialize();                                                                         \
     }
 
 #define TEST_TIMEOUT(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                                  \
@@ -95,11 +101,15 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             TestSocket ( const string& address, uint16_t port ) : BaseTestSocket ( address, port )                  \
             { socket->setPacketLoss ( LOSS ); }                                                                     \
         };                                                                                                          \
+        TimerManager::get().initialize();                                                                           \
+        SocketManager::get().initialize();                                                                          \
         TestSocket client ( "127.0.0.1", 39393 );                                                                   \
         EventManager::get().start();                                                                                \
         EXPECT_TRUE ( client.socket.get() );                                                                        \
         if ( client.socket.get() )                                                                                  \
             EXPECT_FALSE ( client.socket->isConnected() );                                                          \
+        SocketManager::get().deinitialize();                                                                        \
+        TimerManager::get().deinitialize();                                                                         \
     }
 
 #define TEST_DISCONNECT_CLIENT(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                        \
@@ -124,6 +134,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             TestSocket ( const string& address, uint16_t port ) : BaseTestSocket ( address, port )                  \
             { socket->setPacketLoss ( LOSS ); }                                                                     \
         };                                                                                                          \
+        TimerManager::get().initialize();                                                                           \
+        SocketManager::get().initialize();                                                                          \
         TestSocket server ( 0 );                                                                                    \
         TestSocket client ( "127.0.0.1", server.socket->address.port );                                             \
         EventManager::get().start();                                                                                \
@@ -137,6 +149,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         if ( client.socket.get() )                                                                                  \
             EXPECT_FALSE ( client.socket->isConnected() );                                                          \
         EXPECT_EQ ( 2, done );                                                                                      \
+        SocketManager::get().deinitialize();                                                                        \
+        TimerManager::get().deinitialize();                                                                         \
     }
 
 #define TEST_DISCONNECT_ACCEPTED(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                      \
@@ -164,6 +178,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             TestSocket ( const string& address, uint16_t port ) : BaseTestSocket ( address, port )                  \
             { socket->setPacketLoss ( LOSS ); }                                                                     \
         };                                                                                                          \
+        TimerManager::get().initialize();                                                                           \
+        SocketManager::get().initialize();                                                                          \
         TestSocket server ( 0 );                                                                                    \
         TestSocket client ( "127.0.0.1", server.socket->address.port );                                             \
         EventManager::get().start();                                                                                \
@@ -177,6 +193,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         if ( client.socket.get() )                                                                                  \
             EXPECT_FALSE ( client.socket->isConnected() );                                                          \
         EXPECT_EQ ( 2, done );                                                                                      \
+        SocketManager::get().deinitialize();                                                                        \
+        TimerManager::get().deinitialize();                                                                         \
     }
 
 #define TEST_SEND(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                                     \
@@ -208,6 +226,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             TestSocket ( const string& address, uint16_t port ) : BaseTestSocket ( address, port )                  \
             { socket->setPacketLoss ( LOSS ); }                                                                     \
         };                                                                                                          \
+        TimerManager::get().initialize();                                                                           \
+        SocketManager::get().initialize();                                                                          \
         TestSocket server ( 0 );                                                                                    \
         TestSocket client ( "127.0.0.1", server.socket->address.port );                                             \
         EventManager::get().start();                                                                                \
@@ -231,6 +251,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             EXPECT_EQ ( "Hello client!", client.msg->getAs<TestMessage>().str );                                    \
         }                                                                                                           \
         EXPECT_EQ ( 2, done );                                                                                      \
+        SocketManager::get().deinitialize();                                                                        \
+        TimerManager::get().deinitialize();                                                                         \
     }
 
 #define TEST_SEND_WITHOUT_SERVER(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                      \
@@ -263,6 +285,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             TestSocket ( const string& address, uint16_t port ) : BaseTestSocket ( address, port )                  \
             { socket->setPacketLoss ( LOSS ); }                                                                     \
         };                                                                                                          \
+        TimerManager::get().initialize();                                                                           \
+        SocketManager::get().initialize();                                                                          \
         TestSocket server ( 0 );                                                                                    \
         TestSocket client ( "127.0.0.1", server.socket->address.port );                                             \
         EventManager::get().start();                                                                                \
@@ -284,6 +308,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             EXPECT_EQ ( "Hello client!", client.msg->getAs<TestMessage>().str );                                    \
         }                                                                                                           \
         EXPECT_EQ ( 2, done );                                                                                      \
+        SocketManager::get().deinitialize();                                                                        \
+        TimerManager::get().deinitialize();                                                                         \
     }
 
 #define TEST_SEND_PARTIAL(T)                                                                                        \
@@ -309,6 +335,8 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             TestSocket ( const string& address, uint16_t port ) : BaseTestSocket ( address, port ),                 \
                 buffer ( Serializable::encode ( new TestMessage ( "Hello server!" ) ) ) {}                          \
         };                                                                                                          \
+        TimerManager::get().initialize();                                                                           \
+        SocketManager::get().initialize();                                                                          \
         TestSocket server ( 0 );                                                                                    \
         TestSocket client ( "127.0.0.1", server.socket->address.port );                                             \
         EventManager::get().start();                                                                                \
@@ -327,4 +355,6 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         if ( client.socket.get() )                                                                                  \
             EXPECT_TRUE ( client.socket->isConnected() );                                                           \
         EXPECT_FALSE ( client.msg.get() );                                                                          \
+        SocketManager::get().deinitialize();                                                                        \
+        TimerManager::get().deinitialize();                                                                         \
     }
