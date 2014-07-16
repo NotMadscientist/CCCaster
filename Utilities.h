@@ -55,7 +55,7 @@ inline std::string toString ( const std::string& format, const T& val, V ... val
 
     char buffer[4096];
     printToString ( buffer, sizeof ( buffer ), first.c_str(), val,
-                    bool2type<std::is_arithmetic<T>::value || std::is_pointer<T>::value>() );
+                    bool2type < std::is_arithmetic<T>::value || std::is_pointer<T>::value > () );
 
     if ( rest.empty() )
         return buffer;

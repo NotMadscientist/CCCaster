@@ -144,7 +144,7 @@ int main ( int argc, char *argv[] )
     {
         { UNKNOWN, 0,  "",        "", Arg::None, "Usage: " BINARY " [options]\n\nOptions:" },
         { HELP,    0, "h",    "help", Arg::None, "  --help, -h    Print usage and exit." },
-        { TEST,    0,  "",    "test", Arg::None, "  --test        Run unit tests and exit." },
+        { TEST,    0,  "",   "gtest", Arg::None, "  --gtest       Run unit tests and exit." },
         { STDOUT,  0,  "",  "stdout", Arg::None, "  --stdout      Output logs to stdout." },
         { PLUS,    0, "p",    "plus", Arg::None, "  --plus, -p    Increment count." },
         {
