@@ -1,9 +1,12 @@
 #include "SocketManager.h"
 #include "Socket.h"
+#include "TimerManager.h"
 #include "Logger.h"
 
 #include <winsock2.h>
 #include <windows.h>
+
+#include <cassert>
 
 using namespace std;
 
@@ -63,6 +66,9 @@ void SocketManager::check ( uint64_t timeout )
 
     if ( count == 0 )
         return;
+
+    assert ( TimerManager::get().isInitialized() == true );
+    TimerManager::get().updateCurrentTime();
 
     for ( Socket *socket : activeSockets )
     {

@@ -30,6 +30,7 @@ public:
     // Initialize / deinitialize socket manager
     void initialize();
     void deinitialize();
+    inline bool isInitialized() const { return initialized; }
 
     // Check if a socket is still allocated
     inline bool isAllocated ( Socket *socket ) const

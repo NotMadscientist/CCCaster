@@ -20,6 +20,8 @@
 #define LOOP_START_ADDR ( ( char * ) 0x40D330 )
 #define HOOK_CALL2_ADDR ( ( char * ) 0x40D411 )
 
+#define FRAME_INTERVAL  ( 1000 / 60 )
+
 using namespace std;
 
 struct Main : public Socket::Owner, public Timer::Owner, public ControllerManager::Owner
@@ -27,6 +29,7 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
     HANDLE pipe;
     SocketPtr ipcSocket;
     Timer timer;
+    bool timerFlag;
 
     // void acceptEvent ( Socket *serverSocket ) { serverSocket->accept ( this ).reset(); }
 
@@ -59,9 +62,11 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
     void timerExpired ( Timer *timer ) override
     {
         assert ( timer == &this->timer );
+
+        timerFlag = true;
     }
 
-    Main() : pipe ( 0 ), ipcSocket ( UdpSocket::bind ( this, 0 ) ), timer ( this )
+    Main() : pipe ( 0 ), ipcSocket ( UdpSocket::bind ( this, 0 ) ), timer ( this ), timerFlag ( false )
     {
         LOG ( "Connecting pipe" );
 
@@ -141,9 +146,18 @@ extern "C" void callback()
         if ( state != POLLING )
             return;
 
+        main->timerFlag = false;
+        main->timer.start ( FRAME_INTERVAL );
+
         // Poll for events
-        if ( !EventManager::get().poll() )
-            state = STOPPING;
+        while ( !main->timerFlag )
+        {
+            if ( !EventManager::get().poll() )
+            {
+                state = STOPPING;
+                break;
+            }
+        }
     }
     catch ( const WindowsError& err )
     {

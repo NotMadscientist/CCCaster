@@ -44,6 +44,7 @@ public:
     // Initialize / deinitialize controller manager
     void initialize ( Owner *owner );
     void deinitialize();
+    inline bool isInitialized() const { return initialized; }
 
     // Get the singleton instance
     static ControllerManager& get();

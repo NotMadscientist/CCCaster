@@ -49,6 +49,7 @@ void TimerManager::check()
         activeTimers.erase ( it++ );
     }
 
+    updateCurrentTime();
     nextExpiry = UINT64_MAX;
 
     for ( Timer *timer : activeTimers )

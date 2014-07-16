@@ -45,6 +45,7 @@ public:
     // Initialize / deinitialize timer manager
     void initialize();
     void deinitialize();
+    inline bool isInitialized() const { return initialized; }
 
     // Indicates if using the hi-res timer
     inline bool isHiRes() const { return useHiResTimer; }

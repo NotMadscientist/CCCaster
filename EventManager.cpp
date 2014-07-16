@@ -14,7 +14,6 @@ using namespace std;
 
 void EventManager::checkEvents()
 {
-    TimerManager::get().updateCurrentTime();
     TimerManager::get().check();
 
     uint64_t timeout = DEFAULT_TIMEOUT_MILLISECONDS;
@@ -22,6 +21,9 @@ void EventManager::checkEvents()
         timeout = TimerManager::get().getNextExpiry() - TimerManager::get().getNow();
 
     SocketManager::get().check ( timeout );
+
+    if ( TimerManager::get().getNextExpiry() != UINT64_MAX )
+        TimerManager::get().check();
 
     ControllerManager::get().check();
 }
