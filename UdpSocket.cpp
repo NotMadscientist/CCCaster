@@ -11,7 +11,7 @@
 #include <cassert>
 #include <typeinfo>
 
-#define DEFAULT_KEEP_ALIVE 2000
+#define DEFAULT_KEEP_ALIVE 1000
 
 using namespace std;
 
