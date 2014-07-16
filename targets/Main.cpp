@@ -138,6 +138,19 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
     }
 };
 
+static void signalHandler ( int signum )
+{
+    LOG ( "Interupt signal %d received", signum );
+    EventManager::get().release();
+}
+
+static BOOL WINAPI consoleCtrl ( DWORD ctrl )
+{
+    LOG ( "Console ctrl %d received", ctrl );
+    EventManager::get().release();
+    return TRUE;
+}
+
 int main ( int argc, char *argv[] )
 {
     static const Descriptor options[] =
@@ -172,6 +185,11 @@ int main ( int argc, char *argv[] )
         printUsage ( cout, options );
         return 0;
     }
+
+    signal ( SIGABRT, signalHandler );
+    signal ( SIGINT, signalHandler );
+    signal ( SIGTERM, signalHandler );
+    SetConsoleCtrlHandler ( consoleCtrl, TRUE );
 
     if ( opt[TEST] )
     {

@@ -27,7 +27,6 @@ struct TestMessage : public SerializableSequence
     PROTOCOL_BOILERPLATE ( str )
 };
 
-
 template<typename T, uint64_t keepAlive, uint64_t timeout>
 struct BaseTestSocket : public Socket::Owner, public Timer::Owner
 {
