@@ -18,7 +18,7 @@
 using namespace std;
 using namespace option;
 
-enum optionIndex { UNKNOWN, HELP, TEST, STDOUT, PLUS };
+enum optionIndex { UNKNOWN, HELP, GTEST, STDOUT, PLUS };
 
 struct Main : public Socket::Owner, public Timer::Owner, public ControllerManager::Owner
 {
@@ -157,7 +157,7 @@ int main ( int argc, char *argv[] )
     {
         { UNKNOWN, 0,  "",        "", Arg::None, "Usage: " BINARY " [options]\n\nOptions:" },
         { HELP,    0, "h",    "help", Arg::None, "  --help, -h    Print usage and exit." },
-        { TEST,    0,  "",   "gtest", Arg::None, "  --gtest       Run unit tests and exit." },
+        { GTEST,   0,  "",   "gtest", Arg::None, "  --gtest       Run unit tests and exit." },
         { STDOUT,  0,  "",  "stdout", Arg::None, "  --stdout      Output logs to stdout." },
         { PLUS,    0, "p",    "plus", Arg::None, "  --plus, -p    Increment count." },
         {
@@ -191,7 +191,7 @@ int main ( int argc, char *argv[] )
     signal ( SIGTERM, signalHandler );
     SetConsoleCtrlHandler ( consoleCtrl, TRUE );
 
-    if ( opt[TEST] )
+    if ( opt[GTEST] )
     {
         Logger::get().initialize();
         int result = RunAllTests ( argc, argv );
