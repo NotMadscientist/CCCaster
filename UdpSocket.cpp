@@ -139,7 +139,7 @@ SocketPtr UdpSocket::accept ( Socket::Owner *owner )
 
 bool UdpSocket::send ( SerializableMessage *message, const IpAddrPort& address )
 {
-    return sendDirect ( MsgPtr ( message ), address );
+    return sendRaw ( MsgPtr ( message ), address );
 }
 
 bool UdpSocket::send ( SerializableSequence *message, const IpAddrPort& address )
@@ -150,15 +150,15 @@ bool UdpSocket::send ( SerializableSequence *message, const IpAddrPort& address 
 bool UdpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
 {
     if ( getKeepAlive() == 0 || !msg.get() )
-        return sendDirect ( msg, address );
+        return sendRaw ( msg, address );
 
     switch ( msg->getBaseType() )
     {
         case BaseType::SerializableMessage:
-            return sendDirect ( msg, address );
+            return sendRaw ( msg, address );
 
         case BaseType::SerializableSequence:
-            gbn.send ( msg );
+            gbn.sendGoBackN ( msg );
             return true;
 
         default:
@@ -167,7 +167,7 @@ bool UdpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
     }
 }
 
-bool UdpSocket::sendDirect ( const MsgPtr& msg, const IpAddrPort& address )
+bool UdpSocket::sendRaw ( const MsgPtr& msg, const IpAddrPort& address )
 {
     string buffer = Serializable::encode ( msg );
 
@@ -186,12 +186,12 @@ bool UdpSocket::sendDirect ( const MsgPtr& msg, const IpAddrPort& address )
     return false;
 }
 
-void UdpSocket::sendGoBackN ( GoBackN *gbn, const MsgPtr& msg )
+void UdpSocket::sendRaw ( GoBackN *gbn, const MsgPtr& msg )
 {
     assert ( gbn == &this->gbn );
     assert ( getRemoteAddress().empty() == false );
 
-    sendDirect ( msg, getRemoteAddress() );
+    sendRaw ( msg, getRemoteAddress() );
 }
 
 void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
@@ -279,7 +279,7 @@ void UdpSocket::readEvent ( const MsgPtr& msg, const IpAddrPort& address )
     }
     else if ( isClient() )
     {
-        gbn.recv ( msg );
+        gbn.recvRaw ( msg );
     }
     else
     {
@@ -310,5 +310,5 @@ void UdpSocket::gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address 
         return;
     }
 
-    socket->gbn.recv ( msg );
+    socket->gbn.recvRaw ( msg );
 }

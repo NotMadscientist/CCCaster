@@ -21,7 +21,7 @@ TEST ( GoBackN, SendOnce )
         Timer timer;
         MsgPtr msg;
 
-        void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override
+        void sendRaw ( GoBackN *gbn, const MsgPtr& msg ) override
         {
             socket->send ( msg, address );
         }
@@ -39,14 +39,14 @@ TEST ( GoBackN, SendOnce )
             if ( this->address.empty() )
                 this->address = address;
 
-            gbn.recv ( msg );
+            gbn.recvRaw ( msg );
         }
 
         void timerExpired ( Timer *timer ) override
         {
             if ( socket->isClient() )
             {
-                gbn.send ( MsgPtr ( new TestMessage ( "Hello server!" ) ) );
+                gbn.sendGoBackN ( MsgPtr ( new TestMessage ( "Hello server!" ) ) );
             }
             else
             {
@@ -102,7 +102,7 @@ TEST ( GoBackN, SendSequential )
         Timer timer;
         vector<MsgPtr> msgs;
 
-        void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override
+        void sendRaw ( GoBackN *gbn, const MsgPtr& msg ) override
         {
             socket->send ( msg, address );
         }
@@ -123,18 +123,18 @@ TEST ( GoBackN, SendSequential )
             if ( this->address.empty() )
                 this->address = address;
 
-            gbn.recv ( msg );
+            gbn.recvRaw ( msg );
         }
 
         void timerExpired ( Timer *timer ) override
         {
             if ( socket->isClient() )
             {
-                gbn.send ( new TestMessage ( "Message 1" ) );
-                gbn.send ( new TestMessage ( "Message 2" ) );
-                gbn.send ( new TestMessage ( "Message 3" ) );
-                gbn.send ( new TestMessage ( "Message 4" ) );
-                gbn.send ( new TestMessage ( "Message 5" ) );
+                gbn.sendGoBackN ( new TestMessage ( "Message 1" ) );
+                gbn.sendGoBackN ( new TestMessage ( "Message 2" ) );
+                gbn.sendGoBackN ( new TestMessage ( "Message 3" ) );
+                gbn.sendGoBackN ( new TestMessage ( "Message 4" ) );
+                gbn.sendGoBackN ( new TestMessage ( "Message 5" ) );
             }
             else
             {
@@ -195,7 +195,7 @@ TEST ( GoBackN, SendAndRecv )
         vector<MsgPtr> msgs;
         bool sent;
 
-        void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override
+        void sendRaw ( GoBackN *gbn, const MsgPtr& msg ) override
         {
             if ( !address.empty() )
                 socket->send ( msg, address );
@@ -220,18 +220,18 @@ TEST ( GoBackN, SendAndRecv )
             if ( this->address.empty() )
                 this->address = address;
 
-            gbn.recv ( msg );
+            gbn.recvRaw ( msg );
         }
 
         void timerExpired ( Timer *timer ) override
         {
             if ( !sent )
             {
-                gbn.send ( new TestMessage ( socket->isClient() ? "Client 1" : "Server 1" ) );
-                gbn.send ( new TestMessage ( socket->isClient() ? "Client 2" : "Server 2" ) );
-                gbn.send ( new TestMessage ( socket->isClient() ? "Client 3" : "Server 3" ) );
-                gbn.send ( new TestMessage ( socket->isClient() ? "Client 4" : "Server 4" ) );
-                gbn.send ( new TestMessage ( socket->isClient() ? "Client 5" : "Server 5" ) );
+                gbn.sendGoBackN ( new TestMessage ( socket->isClient() ? "Client 1" : "Server 1" ) );
+                gbn.sendGoBackN ( new TestMessage ( socket->isClient() ? "Client 2" : "Server 2" ) );
+                gbn.sendGoBackN ( new TestMessage ( socket->isClient() ? "Client 3" : "Server 3" ) );
+                gbn.sendGoBackN ( new TestMessage ( socket->isClient() ? "Client 4" : "Server 4" ) );
+                gbn.sendGoBackN ( new TestMessage ( socket->isClient() ? "Client 5" : "Server 5" ) );
                 sent = true;
                 timer->start ( LONG_TIMEOUT );
             }
@@ -305,7 +305,7 @@ TEST ( GoBackN, Timeout )
         bool properTimeout;
         int stage;
 
-        void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override
+        void sendRaw ( GoBackN *gbn, const MsgPtr& msg ) override
         {
             socket->send ( msg, address );
         }
@@ -331,7 +331,7 @@ TEST ( GoBackN, Timeout )
             if ( this->address.empty() )
                 this->address = address;
 
-            gbn.recv ( msg );
+            gbn.recvRaw ( msg );
         }
 
         void timerExpired ( Timer *timer ) override
@@ -339,7 +339,7 @@ TEST ( GoBackN, Timeout )
             if ( stage == 0 )
             {
                 if ( socket->isClient() )
-                    gbn.send ( MsgPtr ( new TestMessage ( "Hello server!" ) ) );
+                    gbn.sendGoBackN ( MsgPtr ( new TestMessage ( "Hello server!" ) ) );
                 timer->start ( 1000 );
             }
             else if ( stage == 1 )

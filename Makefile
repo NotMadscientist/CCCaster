@@ -78,7 +78,6 @@ profile: LD_FLAGS += -pg -lgmon
 profile: $(ARCHIVE)
 
 $(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
-	@echo
 	$(ZIP) $(NAME).v$(VERSION).zip $^
 	$(GRANT)
 	@echo
@@ -88,28 +87,24 @@ $(FOLDER):
 	@mkdir $(FOLDER)
 
 $(BINARY): sdl protocol $(MAIN_OBJECTS) icon.res
-	@echo
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(MAIN_OBJECTS) icon.res $(LD_FLAGS)
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
 
 $(DLL): sdl protocol $(DLL_OBJECTS) $(FOLDER)
-	@echo
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(DLL_OBJECTS) -shared $(LD_FLAGS)
 	@echo
 	$(STRIP) $@
 	$(GRANT)
 
 $(LAUNCHER): $(LAUNCHER_CPP_SRCS) $(FOLDER)
-	@echo
 	$(CXX) -o $@ $(LAUNCHER_CPP_SRCS) -m32 -s -Os -O2 -Wall -static -mwindows
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
 
 icon.res: icon.rc icon.ico
-	@echo
 	$(WINDRES) -F pe-i386 icon.rc -O coff -o $@
 
 define make_version

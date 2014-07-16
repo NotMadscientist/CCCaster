@@ -25,7 +25,7 @@ void GoBackN::timerExpired ( Timer *timer )
     }
     else if ( sendList.empty() && keepAlive )
     {
-        owner->sendGoBackN ( this, NullMsg );
+        owner->sendRaw ( this, NullMsg );
     }
     else
     {
@@ -36,7 +36,7 @@ void GoBackN::timerExpired ( Timer *timer )
 
         LOG ( "Sending '%s'; sequence=%u; sendSequence=%d",
               *sendListPos, ( **sendListPos ).getAs<SerializableSequence>().getSequence(), sendSequence );
-        owner->sendGoBackN ( this, * ( sendListPos++ ) );
+        owner->sendRaw ( this, * ( sendListPos++ ) );
     }
 
     if ( keepAlive )
@@ -58,13 +58,13 @@ void GoBackN::timerExpired ( Timer *timer )
     sendTimer.start ( SEND_INTERVAL );
 }
 
-void GoBackN::send ( SerializableSequence *message )
+void GoBackN::sendGoBackN ( SerializableSequence *message )
 {
     MsgPtr msg ( message );
-    send ( msg );
+    sendGoBackN ( msg );
 }
 
-void GoBackN::send ( const MsgPtr& msg )
+void GoBackN::sendGoBackN ( const MsgPtr& msg )
 {
     LOG ( "Adding '%s'; sendSequence=%d", msg, sendSequence + 1 );
 
@@ -74,7 +74,7 @@ void GoBackN::send ( const MsgPtr& msg )
 
     msg->getAs<SerializableSequence>().setSequence ( ++sendSequence );
 
-    owner->sendGoBackN ( this, msg );
+    owner->sendRaw ( this, msg );
 
     sendList.push_back ( msg );
 
@@ -84,7 +84,7 @@ void GoBackN::send ( const MsgPtr& msg )
         sendTimer.start ( SEND_INTERVAL );
 }
 
-void GoBackN::recv ( const MsgPtr& msg )
+void GoBackN::recvRaw ( const MsgPtr& msg )
 {
     assert ( owner != 0 );
 
@@ -125,7 +125,7 @@ void GoBackN::recv ( const MsgPtr& msg )
 
     if ( sequence != recvSequence + 1 )
     {
-        owner->sendGoBackN ( this, MsgPtr ( new AckSequence ( recvSequence ) ) );
+        owner->sendRaw ( this, MsgPtr ( new AckSequence ( recvSequence ) ) );
         return;
     }
 
@@ -133,7 +133,7 @@ void GoBackN::recv ( const MsgPtr& msg )
 
     ++recvSequence;
 
-    owner->sendGoBackN ( this, MsgPtr ( new AckSequence ( recvSequence ) ) );
+    owner->sendRaw ( this, MsgPtr ( new AckSequence ( recvSequence ) ) );
 
     if ( keepAlive && !sendTimer.isStarted() )
         sendTimer.start ( SEND_INTERVAL );

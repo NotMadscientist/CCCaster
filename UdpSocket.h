@@ -34,7 +34,7 @@ class UdpSocket : public Socket, public GoBackN::Owner
     SocketPtr acceptedSocket;
 
     // GoBackN callbacks
-    void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override;
+    void sendRaw ( GoBackN *gbn, const MsgPtr& msg ) override;
     void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override;
     void timeoutGoBackN ( GoBackN *gbn ) override;
 
@@ -42,7 +42,7 @@ class UdpSocket : public Socket, public GoBackN::Owner
     void gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address );
 
     // Send a protocol message directly, not over GoBackN
-    bool sendDirect ( const MsgPtr& msg, const IpAddrPort& address );
+    bool sendRaw ( const MsgPtr& msg, const IpAddrPort& address );
 
     // Construct a server socket
     UdpSocket ( Socket::Owner *owner, uint16_t port, uint64_t keepAlive );

@@ -23,7 +23,7 @@ public:
     struct Owner
     {
         // Send a message via raw socket
-        virtual void sendGoBackN ( GoBackN *gbn, const MsgPtr& msg ) = 0;
+        virtual void sendRaw ( GoBackN *gbn, const MsgPtr& msg ) = 0;
 
         // Receive a message from GoBackN
         virtual void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) = 0;
@@ -63,11 +63,11 @@ public:
     GoBackN ( Owner *owner, uint64_t timeout = 0 );
 
     // Send a message via GoBackN
-    void send ( SerializableSequence *message );
-    void send ( const MsgPtr& msg );
+    void sendGoBackN ( SerializableSequence *message );
+    void sendGoBackN ( const MsgPtr& msg );
 
     // Receive a message from the raw socket
-    void recv ( const MsgPtr& msg );
+    void recvRaw ( const MsgPtr& msg );
 
     // Get/set the timeout for keep alive packets, 0 to disable
     inline uint64_t getKeepAlive() const { return keepAlive; }
