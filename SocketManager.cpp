@@ -5,11 +5,9 @@
 #include <winsock2.h>
 #include <windows.h>
 
-#define SELECT_TIMEOUT_MICROSECONDS 100
-
 using namespace std;
 
-void SocketManager::check()
+void SocketManager::check ( uint64_t timeout )
 {
     if ( !initialized )
         return;
@@ -50,11 +48,11 @@ void SocketManager::check()
             FD_SET ( socket->fd, &readFds );
     }
 
-    timeval timeout;
-    timeout.tv_sec = SELECT_TIMEOUT_MICROSECONDS / ( 1000 * 1000 );
-    timeout.tv_usec = SELECT_TIMEOUT_MICROSECONDS % ( 1000 * 1000 );
+    timeval tv;
+    tv.tv_sec = timeout / 1000UL;
+    tv.tv_usec = ( timeout * 1000UL ) % 1000000UL;
 
-    int count = select ( 0, &readFds, &writeFds, 0, &timeout );
+    int count = select ( 0, &readFds, &writeFds, 0, &tv );
 
     if ( count == SOCKET_ERROR )
     {

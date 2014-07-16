@@ -49,6 +49,8 @@ void TimerManager::check()
         activeTimers.erase ( it++ );
     }
 
+    nextExpiry = UINT64_MAX;
+
     for ( Timer *timer : activeTimers )
     {
         if ( allocatedTimers.find ( timer ) == allocatedTimers.end() )
@@ -60,6 +62,9 @@ void TimerManager::check()
 
             timer->expiry = now + timer->delay;
             timer->delay = 0;
+
+            if ( timer->expiry < nextExpiry )
+                nextExpiry = timer->expiry;
         }
         else if ( timer->expiry > 0 && now >= timer->expiry )
         {
@@ -90,7 +95,13 @@ void TimerManager::clear()
     allocatedTimers.clear();
 }
 
-TimerManager::TimerManager() : initialized ( false ) {}
+TimerManager::TimerManager()
+    : useHiResTimer ( true )
+    , ticksPerSecond ( 0 )
+    , ticks ( 0 )
+    , now ( 0 )
+    , nextExpiry ( UINT64_MAX )
+    , initialized ( false ) {}
 
 void TimerManager::initialize()
 {

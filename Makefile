@@ -136,12 +136,15 @@ autogen: protocol Version.h
 
 sdl:
 	make --jobs --directory contrib/SDL2 CFLAGS="-m32 -ggdb3 -O0 -fno-inline"
+	@echo
 
 sdl_release:
 	make --jobs --directory contrib/SDL2 CFLAGS="-m32 -s -Os -O3"
+	@echo
 
 sdl_profile:
 	make --jobs --directory contrib/SDL2 CFLAGS="-m32 -O3 -fno-rtti -pg"
+	@echo
 
 sdl_clean:
 	make --directory contrib/SDL2 clean

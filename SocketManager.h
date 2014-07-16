@@ -20,7 +20,7 @@ class SocketManager
 public:
 
     // Check for socket events
-    void check();
+    void check ( uint64_t timeout );
 
     // Add / remove / clear socket instances
     void add ( Socket *socket );

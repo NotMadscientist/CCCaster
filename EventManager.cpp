@@ -8,14 +8,21 @@
 #include <windows.h>
 #include <mmsystem.h>
 
+#define DEFAULT_TIMEOUT_MILLISECONDS 1000
+
 using namespace std;
 
 void EventManager::checkEvents()
 {
     TimerManager::get().updateCurrentTime();
-
     TimerManager::get().check();
-    SocketManager::get().check();
+
+    uint64_t timeout = DEFAULT_TIMEOUT_MILLISECONDS;
+    if ( TimerManager::get().getNextExpiry() != UINT64_MAX )
+        timeout = TimerManager::get().getNextExpiry() - TimerManager::get().getNow();
+
+    SocketManager::get().check ( timeout );
+
     ControllerManager::get().check();
 }
 

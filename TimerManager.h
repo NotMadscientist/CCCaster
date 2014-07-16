@@ -18,6 +18,9 @@ class TimerManager
     // The current time in milliseconds
     uint64_t now;
 
+    // The next time when a timer will expire
+    uint64_t nextExpiry;
+
     // Flag to inidicate if initialized
     bool initialized;
 
@@ -48,6 +51,9 @@ public:
 
     // Get the current time in milliseconds
     inline uint64_t getNow() const { return now; }
+
+    // Get the next time when a timer will expire
+    inline uint64_t getNextExpiry() const { return nextExpiry; }
 
     // Get the singleton instance
     static TimerManager& get();
