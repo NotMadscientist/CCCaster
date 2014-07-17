@@ -129,6 +129,10 @@ void TimerManager::initialize()
 
 void TimerManager::deinitialize()
 {
+    if ( !initialized )
+        return;
+
+    TimerManager::get().clear();
     initialized = false;
 }
 

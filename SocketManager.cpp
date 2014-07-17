@@ -161,6 +161,7 @@ void SocketManager::deinitialize()
     if ( !initialized )
         return;
 
+    SocketManager::get().clear();
     WSACleanup();
     initialized = false;
 }

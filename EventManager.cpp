@@ -64,10 +64,6 @@ bool EventManager::poll ( uint64_t timeout )
 
     LOG ( "Finished polling" );
 
-    ControllerManager::get().clear();
-    SocketManager::get().clear();
-    TimerManager::get().clear();
-
     LOG ( "Joining reaper thread" );
 
     reaperThread.join();
@@ -93,10 +89,6 @@ void EventManager::start()
     eventLoop();
 
     LOG ( "Finished event loop" );
-
-    ControllerManager::get().clear();
-    SocketManager::get().clear();
-    TimerManager::get().clear();
 
     LOG ( "Joining reaper thread" );
 

@@ -169,6 +169,7 @@ void ControllerManager::deinitialize()
     if ( !initialized )
         return;
 
+    ControllerManager::get().clear();
     SDL_Quit();
     initialized = false;
 }
