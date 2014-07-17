@@ -19,14 +19,23 @@
 
 #define FRAME_INTERVAL  ( 1000 / 60 )
 
+#define WRITE_ASM_HACK(ASM_HACK)                                \
+    do {                                                        \
+        WindowsError err;                                       \
+        if ( ( err = ASM_HACK.write() ).code != 0 ) {           \
+            LOG ( "%s failed: %s", #ASM_HACK, err );            \
+            exit ( 0 );                                         \
+        }                                                       \
+    } while ( 0 )
+
 using namespace std;
+using namespace AsmHacks;
 
 struct Main : public Socket::Owner, public Timer::Owner, public ControllerManager::Owner
 {
     HANDLE pipe;
     SocketPtr ipcSocket;
     Timer timer;
-    bool timerFlag;
 
     // void acceptEvent ( Socket *serverSocket ) { serverSocket->accept ( this ).reset(); }
 
@@ -61,11 +70,9 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
     void timerExpired ( Timer *timer ) override
     {
         assert ( timer == &this->timer );
-
-        timerFlag = true;
     }
 
-    Main() : pipe ( 0 ), ipcSocket ( UdpSocket::bind ( this, 0 ) ), timer ( this ), timerFlag ( false )
+    Main() : pipe ( 0 ), ipcSocket ( UdpSocket::bind ( this, 0 ) ), timer ( this )
     {
         LOG ( "Connecting pipe" );
 
@@ -133,30 +140,32 @@ extern "C" void callback()
 {
     try
     {
-        if ( state == UNINITIALIZED )
+        do
         {
-            // Joystick and timer must be initialized in the main thread
-            TimerManager::get().initialize();
-            ControllerManager::get().initialize ( main.get() );
-            EventManager::get().startPolling();
-            state = POLLING;
+            if ( state == UNINITIALIZED )
+            {
+                // Joystick and timer must be initialized in the main thread
+                TimerManager::get().initialize();
+                ControllerManager::get().initialize ( main.get() );
+                EventManager::get().startPolling();
+
+                // Asm hacks that must written after the game starts
+                WRITE_ASM_HACK ( disableFpsLimit );
+
+                state = POLLING;
+            }
+
+            if ( state != POLLING )
+                break;
+
+            // Poll for events
+            if ( !EventManager::get().poll ( FRAME_INTERVAL ) )
+            {
+                state = STOPPING;
+                break;
+            }
         }
-
-        if ( state != POLLING )
-            return;
-
-        // main->timerFlag = false;
-        // main->timer.start ( FRAME_INTERVAL );
-
-        // // Poll for events
-        // while ( !main->timerFlag )
-        // {
-        //     if ( !EventManager::get().poll() )
-        //     {
-        //         state = STOPPING;
-        //         break;
-        //     }
-        // }
+        while ( 0 );
     }
     catch ( const WindowsError& err )
     {
@@ -192,22 +201,12 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
 
                 main.reset ( new Main() );
 
-                WindowsError err;
-
-#define WRITE_ASM_HACK(ASM_HACK)                                \
-    do {                                                        \
-        if ( ( err = ASM_HACK.write() ).code != 0 ) {           \
-            LOG ( "%s failed: %s", #ASM_HACK, err );            \
-            exit ( 0 );                                         \
-        }                                                       \
-    } while ( 0 )
-
                 static const Asm hookCallback1 =
                 {
-                    HOOK_CALL1_ADDR,
+                    MM_HOOK_CALL1_ADDR,
                     {
-                        0xE8, INLINE_DWORD ( ( ( char * ) &callback ) - HOOK_CALL1_ADDR - 5 ),  // call callback
-                        0xE9, INLINE_DWORD ( HOOK_CALL2_ADDR - HOOK_CALL1_ADDR - 10 )           // jmp HOOK_CALL2_ADDR
+                        0xE8, INLINE_DWORD ( ( ( char * ) &callback ) - MM_HOOK_CALL1_ADDR - 5 ), // call callback
+                        0xE9, INLINE_DWORD ( MM_HOOK_CALL2_ADDR - MM_HOOK_CALL1_ADDR - 10 ) // jmp MM_HOOK_CALL2_ADDR
                     }
                 };
 
@@ -218,6 +217,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
                 for ( void *const addr : disabledStageAddrs )
                 {
                     Asm enableStage = { addr, INLINE_DWORD_FF };
+                    WindowsError err;
 
                     if ( ( err = enableStage.write() ).code )
                     {

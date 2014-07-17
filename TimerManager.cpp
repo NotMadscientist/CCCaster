@@ -7,7 +7,7 @@
 
 using namespace std;
 
-void TimerManager::updateCurrentTime()
+void TimerManager::updateNow()
 {
     if ( !initialized )
         return;
@@ -49,7 +49,7 @@ void TimerManager::check()
         activeTimers.erase ( it++ );
     }
 
-    updateCurrentTime();
+    updateNow();
     nextExpiry = UINT64_MAX;
 
     for ( Timer *timer : activeTimers )

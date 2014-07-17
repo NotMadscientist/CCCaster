@@ -68,7 +68,7 @@ void SocketManager::check ( uint64_t timeout )
         return;
 
     assert ( TimerManager::get().isInitialized() == true );
-    TimerManager::get().updateCurrentTime();
+    TimerManager::get().updateNow();
 
     for ( Socket *socket : activeSockets )
     {

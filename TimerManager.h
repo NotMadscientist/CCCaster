@@ -32,7 +32,7 @@ class TimerManager
 public:
 
     // Update current time
-    void updateCurrentTime();
+    void updateNow();
 
     // Check for timer events
     void check();
