@@ -7,6 +7,7 @@
 #include "TcpSocket.h"
 #include "UdpSocket.h"
 #include "Timer.h"
+#include "AsmHacks.h"
 
 #include <windows.h>
 
@@ -15,10 +16,6 @@
 #include <cassert>
 
 #define LOG_FILE FOLDER "dll.log"
-
-#define HOOK_CALL1_ADDR ( ( char * ) 0x40D032 )
-#define LOOP_START_ADDR ( ( char * ) 0x40D330 )
-#define HOOK_CALL2_ADDR ( ( char * ) 0x40D411 )
 
 #define FRAME_INTERVAL  ( 1000 / 60 )
 
@@ -57,6 +54,8 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
         //     MsgPtr msg ( new IpAddrPort ( sharedSocket->getRemoteAddress() ) );
         //     ipcSocket->send ( msg, address );
         // }
+
+        // assert ( false );
     }
 
     void timerExpired ( Timer *timer ) override
@@ -146,18 +145,18 @@ extern "C" void callback()
         if ( state != POLLING )
             return;
 
-        main->timerFlag = false;
-        main->timer.start ( FRAME_INTERVAL );
+        // main->timerFlag = false;
+        // main->timer.start ( FRAME_INTERVAL );
 
-        // Poll for events
-        while ( !main->timerFlag )
-        {
-            if ( !EventManager::get().poll() )
-            {
-                state = STOPPING;
-                break;
-            }
-        }
+        // // Poll for events
+        // while ( !main->timerFlag )
+        // {
+        //     if ( !EventManager::get().poll() )
+        //     {
+        //         state = STOPPING;
+        //         break;
+        //     }
+        // }
     }
     catch ( const WindowsError& err )
     {
@@ -193,7 +192,17 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
 
                 main.reset ( new Main() );
 
-                Asm hookCallback1 =
+                WindowsError err;
+
+#define WRITE_ASM_HACK(ASM_HACK)                                \
+    do {                                                        \
+        if ( ( err = ASM_HACK.write() ).code != 0 ) {           \
+            LOG ( "%s failed: %s", #ASM_HACK, err );            \
+            exit ( 0 );                                         \
+        }                                                       \
+    } while ( 0 )
+
+                static const Asm hookCallback1 =
                 {
                     HOOK_CALL1_ADDR,
                     {
@@ -202,50 +211,23 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
                     }
                 };
 
-                Asm loopStartJump =
+                WRITE_ASM_HACK ( hookCallback1 );
+                WRITE_ASM_HACK ( hookCallback2 );
+                WRITE_ASM_HACK ( loopStartJump ); // Write the jump location last, due to dependencies on the above
+
+                for ( void *const addr : disabledStageAddrs )
                 {
-                    LOOP_START_ADDR,
+                    Asm enableStage = { addr, INLINE_DWORD_FF };
+
+                    if ( ( err = enableStage.write() ).code )
                     {
-                        0xE9, INLINE_DWORD ( HOOK_CALL1_ADDR - LOOP_START_ADDR - 5 ),           // jmp HOOK_CALL1_ADDR
-                        0x90                                                                    // nop
+                        LOG ( "enableStage { %08x } failed: %s", addr, err );
+                        exit ( 0 );
                     }
-                };
-
-                Asm hookCallback2 =
-                {
-                    HOOK_CALL2_ADDR,
-                    {
-                        0x6A, 0x01,                                                             // push 01
-                        0x6A, 0x00,                                                             // push 00
-                        0x6A, 0x00,                                                             // push 00
-                        0xE9, INLINE_DWORD ( LOOP_START_ADDR - HOOK_CALL2_ADDR - 5 )            // jmp LOOP_START_ADDR+6
-                    }
-                };
-
-                WindowsError err;
-
-                LOG ( "Writing hooks" );
-
-                if ( ( err = hookCallback1.write() ).code )
-                {
-                    LOG ( "hookCallback1 failed: %s", err );
-                    exit ( 0 );
                 }
 
-                if ( ( err = hookCallback2.write() ).code )
-                {
-                    LOG ( "hookCallback2 failed: %s", err );
-                    exit ( 0 );
-                }
-
-                // Write the jump location last, because the other blocks of code need to be in place first
-                LOG ( "Writing loop start jump" );
-
-                if ( ( err = loopStartJump.write() ).code )
-                {
-                    LOG ( "loopStartJump failed: %s", err );
-                    exit ( 0 );
-                }
+                WRITE_ASM_HACK ( fixRyougiStageMusic1 );
+                WRITE_ASM_HACK ( fixRyougiStageMusic2 );
             }
             catch ( const WindowsError& err )
             {

@@ -46,8 +46,8 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
         SocketManager::get().initialize();
         ControllerManager::get().initialize ( this );
 
-        if ( opt[STDOUT] )
-            return;
+        // if ( opt[STDOUT] )
+        //     return;
 
         LOG ( "Opening pipe" );
 
@@ -169,7 +169,7 @@ int main ( int argc, char *argv[] )
         { 0, 0, 0, 0, 0, 0 }
     };
 
-    // skip program name argv[0] if present
+    // Skip program name argv[0] if present, because optionparser doesn't like it
     argc -= ( argc > 0 );
     argv += ( argc > 0 );
 
