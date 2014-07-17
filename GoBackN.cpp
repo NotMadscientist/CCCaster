@@ -5,9 +5,11 @@
 #include <string>
 #include <cassert>
 
+using namespace std;
+
+
 #define SEND_INTERVAL 100
 
-using namespace std;
 
 string formatSerializableSequence ( const MsgPtr& msg )
 {

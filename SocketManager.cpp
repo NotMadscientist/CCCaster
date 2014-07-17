@@ -10,6 +10,7 @@
 
 using namespace std;
 
+
 void SocketManager::check ( uint64_t timeout )
 {
     if ( !initialized )

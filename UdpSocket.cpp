@@ -11,9 +11,11 @@
 #include <cassert>
 #include <typeinfo>
 
+using namespace std;
+
+
 #define DEFAULT_KEEP_ALIVE 1000
 
-using namespace std;
 
 UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, uint64_t keepAlive  )
     : Socket ( IpAddrPort ( "", port ), Protocol::UDP ), hasParent ( false ), parent ( 0 ), gbn ( this, keepAlive )

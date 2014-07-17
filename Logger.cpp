@@ -3,6 +3,7 @@
 
 using namespace std;
 
+
 void Logger::initialize ( const string& name, bool prependPidToName )
 {
     if ( initialized )

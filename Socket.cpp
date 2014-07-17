@@ -10,6 +10,9 @@
 #include <cassert>
 #include <unordered_set>
 
+using namespace std;
+
+
 #define READ_BUFFER_SIZE ( 1024 * 4096 )
 
 #define SET_BLOCKING_MODE(VALUE)                                            \
@@ -24,7 +27,6 @@
         }                                                                   \
     } while ( 0 )
 
-using namespace std;
 
 Socket::Socket ( const IpAddrPort& address, Protocol protocol )
     : address ( address ), protocol ( protocol ), owner ( 0 ), state ( State::Disconnected ), fd ( 0 )

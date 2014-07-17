@@ -8,6 +8,7 @@
 
 using namespace std;
 
+
 shared_ptr<addrinfo> getAddrInfo ( const string& addr, uint16_t port, bool isV4, bool passive )
 {
     addrinfo addrConf, *addrRes = 0;

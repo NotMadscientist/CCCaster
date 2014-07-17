@@ -6,10 +6,12 @@
 
 #include <vector>
 
+using namespace std;
+
+
 #define PACKET_LOSS     50
 #define LONG_TIMEOUT    ( 120 * 1000 )
 
-using namespace std;
 
 TEST ( GoBackN, SendOnce )
 {

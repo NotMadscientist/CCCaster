@@ -5,9 +5,11 @@
 
 #include <cassert>
 
+using namespace std;
+
+
 #define MAX_EVENT_QUEUE 64
 
-using namespace std;
 
 void ControllerManager::check()
 {

@@ -13,12 +13,14 @@
 
 #include <cassert>
 
-#define LOG_FILE FOLDER "debug.log"
-
 using namespace std;
 using namespace option;
 
+
+#define LOG_FILE FOLDER "debug.log"
+
 enum optionIndex { UNKNOWN, HELP, GTEST, STDOUT, PLUS };
+
 
 struct Main : public Socket::Owner, public Timer::Owner, public ControllerManager::Owner
 {

@@ -7,12 +7,14 @@
 using namespace std;
 using namespace cereal;
 
-// Default constructor with compression level
-Serializable::Serializable() : compressionLevel ( 9 ), md5empty ( true ) {}
 
 // Encode or decode with compression
 string encodeStageTwo ( const MsgPtr& msg, const string& msgData );
 bool decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, MsgType& type, string& msgData );
+
+
+// Default constructor with compression level
+Serializable::Serializable() : compressionLevel ( 9 ), md5empty ( true ) {}
 
 string Serializable::encode ( Serializable *message )
 {

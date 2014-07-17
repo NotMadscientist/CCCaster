@@ -7,6 +7,7 @@
 
 using namespace std;
 
+
 void TimerManager::updateNow()
 {
     if ( !initialized )

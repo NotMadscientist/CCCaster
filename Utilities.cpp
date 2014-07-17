@@ -11,6 +11,7 @@
 
 using namespace std;
 
+
 void splitFormat ( const string& format, string& first, string& rest )
 {
     size_t i;

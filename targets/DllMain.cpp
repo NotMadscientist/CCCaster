@@ -16,6 +16,10 @@
 #include <memory>
 #include <cassert>
 
+using namespace std;
+using namespace AsmHacks;
+
+
 #define LOG_FILE FOLDER "dll.log"
 
 #define FRAME_INTERVAL  ( 1000 / 60 )
@@ -34,17 +38,15 @@
     p ## FUNC_NAME o ## FUNC_NAME = 0;                                          \
     RETURN_TYPE WINAPI m ## FUNC_NAME ( __VA_ARGS__ )
 
-using namespace std;
-using namespace AsmHacks;
+static bool hookWindowsCalls();
+static void unhookWindowsCalls();
+
 
 HOOK_FUNC ( BOOL, QueryPerformanceFrequency, LARGE_INTEGER *lpFrequency  )
 {
     lpFrequency->QuadPart = 1;
     return TRUE;
 }
-
-static bool hookWindowsCalls();
-static void unhookWindowsCalls();
 
 struct Main : public Socket::Owner, public Timer::Owner, public ControllerManager::Owner
 {

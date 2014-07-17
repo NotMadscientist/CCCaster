@@ -5,6 +5,7 @@
 
 using namespace std;
 
+
 bool hookDLL ( const string& dll_path, const PROCESS_INFORMATION *pi )
 {
     HMODULE hKernel32 = GetModuleHandle ( "Kernel32" );

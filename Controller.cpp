@@ -5,7 +5,9 @@
 
 using namespace std;
 
+
 unordered_map<Guid, uint32_t> Controller::guidBitset;
+
 
 void Controller::joystickEvent ( const SDL_JoyAxisEvent& event )
 {

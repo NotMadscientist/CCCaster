@@ -12,6 +12,7 @@
 
 using namespace std;
 
+
 TcpSocket::TcpSocket ( Socket::Owner *owner, uint16_t port ) : Socket ( IpAddrPort ( "", port ), Protocol::TCP )
 {
     this->owner = owner;

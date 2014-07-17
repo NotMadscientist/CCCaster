@@ -8,9 +8,11 @@
 #include <windows.h>
 #include <mmsystem.h>
 
+using namespace std;
+
+
 #define DEFAULT_TIMEOUT_MILLISECONDS 1000
 
-using namespace std;
 
 void EventManager::checkEvents ( uint64_t timeout )
 {
