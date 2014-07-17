@@ -33,41 +33,11 @@ using namespace std;
 using namespace AsmHacks;
 
 typedef BOOL ( WINAPI *pQueryPerformanceFrequency ) ( LARGE_INTEGER *lpFrequency );
-
-BOOL WINAPI mQueryPerformanceFrequency ( LARGE_INTEGER *lpFrequency )
-{
-    lpFrequency->QuadPart = 1;
-    return TRUE;
-}
-
+BOOL WINAPI mQueryPerformanceFrequency ( LARGE_INTEGER *lpFrequency );
 pQueryPerformanceFrequency oQueryPerformanceFrequency = 0;
 
-bool hookWindowsCalls()
-{
-    if ( MH_Initialize() != MH_OK )
-    {
-        LOG ( "MH_Initialize failed" );
-    }
-    else
-    {
-        if ( MH_CreateHook ( ( void * ) &QueryPerformanceFrequency, ( void * ) &mQueryPerformanceFrequency,
-                             ( void ** ) &oQueryPerformanceFrequency ) != MH_OK )
-            LOG ( "MH_CreateHook for QueryPerformanceFrequency failed" );
-        else if ( MH_EnableHook ( ( void * ) &QueryPerformanceFrequency ) != MH_OK )
-            LOG ( "MH_EnableHook for QueryPerformanceFrequency failed" );
-        else
-            return true;
-    }
-
-    return false;
-}
-
-void unhookWindowsCalls()
-{
-    MH_DisableHook ( ( void * ) &QueryPerformanceFrequency );
-    MH_RemoveHook ( ( void * ) &QueryPerformanceFrequency );
-    MH_Uninitialize();
-}
+static bool hookWindowsCalls();
+static void unhookWindowsCalls();
 
 struct Main : public Socket::Owner, public Timer::Owner, public ControllerManager::Owner
 {
@@ -266,6 +236,10 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
                 WRITE_ASM_HACK ( fixRyougiStageMusic1 );
                 WRITE_ASM_HACK ( fixRyougiStageMusic2 );
 
+                // uint64_t perfFreq;
+                // QueryPerformanceFrequency ( ( LARGE_INTEGER * ) &perfFreq );
+                // LOG ( "perfFreq=%llu", perfFreq );
+
                 if ( !hookWindowsCalls() )
                     exit ( 0 );
             }
@@ -289,5 +263,38 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
             break;
     }
 
+    return TRUE;
+}
+
+static bool hookWindowsCalls()
+{
+    if ( MH_Initialize() != MH_OK )
+    {
+        LOG ( "MH_Initialize failed" );
+    }
+    else
+    {
+        if ( MH_CreateHook ( ( void * ) &QueryPerformanceFrequency, ( void * ) &mQueryPerformanceFrequency,
+                             ( void ** ) &oQueryPerformanceFrequency ) != MH_OK )
+            LOG ( "MH_CreateHook for QueryPerformanceFrequency failed" );
+        else if ( MH_EnableHook ( ( void * ) &QueryPerformanceFrequency ) != MH_OK )
+            LOG ( "MH_EnableHook for QueryPerformanceFrequency failed" );
+        else
+            return true;
+    }
+
+    return false;
+}
+
+static void unhookWindowsCalls()
+{
+    MH_DisableHook ( ( void * ) &QueryPerformanceFrequency );
+    MH_RemoveHook ( ( void * ) &QueryPerformanceFrequency );
+    MH_Uninitialize();
+}
+
+BOOL WINAPI mQueryPerformanceFrequency ( LARGE_INTEGER *lpFrequency )
+{
+    lpFrequency->QuadPart = 1;
     return TRUE;
 }
