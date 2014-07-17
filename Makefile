@@ -86,13 +86,13 @@ $(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
 $(FOLDER):
 	@mkdir $(FOLDER)
 
-$(BINARY): sdl protocol $(MAIN_OBJECTS) icon.res
+$(BINARY): sdl $(MAIN_OBJECTS) icon.res
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(MAIN_OBJECTS) icon.res $(LD_FLAGS)
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
 
-$(DLL): sdl protocol $(DLL_OBJECTS) $(FOLDER)
+$(DLL): sdl $(DLL_OBJECTS) $(FOLDER)
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(DLL_OBJECTS) -shared $(LD_FLAGS)
 	@echo
 	$(STRIP) $@
@@ -113,13 +113,13 @@ define make_version
 #define VERSION \"$(VERSION)\"" > Version.h
 endef
 
-.depend: $(NON_GEN_SRCS)
+.depend: $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
 	$(make_version)
 	@./make_protocol $(NON_GEN_HEADERS)
 	@echo "Regenerating .depend"
 	@$(CXX) $(CC_FLAGS) -std=c++11 -MM $(NON_GEN_SRCS) > $@
 
-protocol:
+protocol: $(NON_GEN_HEADERS)
 	@./make_protocol $(NON_GEN_HEADERS)
 
 Version.h:
