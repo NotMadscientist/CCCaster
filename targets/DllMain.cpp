@@ -20,21 +20,28 @@
 
 #define FRAME_INTERVAL  ( 1000 / 60 )
 
-#define WRITE_ASM_HACK(ASM_HACK)                                \
-    do {                                                        \
-        WindowsException err;                                   \
-        if ( ( err = ASM_HACK.write() ).code != 0 ) {           \
-            LOG ( "%s; %s failed", err, #ASM_HACK );            \
-            exit ( 0 );                                         \
-        }                                                       \
+#define WRITE_ASM_HACK(ASM_HACK)                                                \
+    do {                                                                        \
+        WindowsException err;                                                   \
+        if ( ( err = ASM_HACK.write() ).code != 0 ) {                           \
+            LOG ( "%s; %s failed", err, #ASM_HACK );                            \
+            exit ( 0 );                                                         \
+        }                                                                       \
     } while ( 0 )
+
+#define HOOK_FUNC(RETURN_TYPE, FUNC_NAME, ...)                                  \
+    typedef RETURN_TYPE ( WINAPI *p ## FUNC_NAME ) ( __VA_ARGS__ );             \
+    p ## FUNC_NAME o ## FUNC_NAME = 0;                                          \
+    RETURN_TYPE WINAPI m ## FUNC_NAME ( __VA_ARGS__ )
 
 using namespace std;
 using namespace AsmHacks;
 
-typedef BOOL ( WINAPI *pQueryPerformanceFrequency ) ( LARGE_INTEGER *lpFrequency );
-BOOL WINAPI mQueryPerformanceFrequency ( LARGE_INTEGER *lpFrequency );
-pQueryPerformanceFrequency oQueryPerformanceFrequency = 0;
+HOOK_FUNC ( BOOL, QueryPerformanceFrequency, LARGE_INTEGER *lpFrequency  )
+{
+    lpFrequency->QuadPart = 1;
+    return TRUE;
+}
 
 static bool hookWindowsCalls();
 static void unhookWindowsCalls();
@@ -291,10 +298,4 @@ static void unhookWindowsCalls()
     MH_DisableHook ( ( void * ) &QueryPerformanceFrequency );
     MH_RemoveHook ( ( void * ) &QueryPerformanceFrequency );
     MH_Uninitialize();
-}
-
-BOOL WINAPI mQueryPerformanceFrequency ( LARGE_INTEGER *lpFrequency )
-{
-    lpFrequency->QuadPart = 1;
-    return TRUE;
 }
