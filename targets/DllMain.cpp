@@ -10,6 +10,7 @@
 #include "AsmHacks.h"
 
 #include <windows.h>
+#include <MinHook.h>
 
 #include <vector>
 #include <memory>
@@ -30,6 +31,43 @@
 
 using namespace std;
 using namespace AsmHacks;
+
+typedef BOOL ( WINAPI *pQueryPerformanceFrequency ) ( LARGE_INTEGER *lpFrequency );
+
+BOOL WINAPI mQueryPerformanceFrequency ( LARGE_INTEGER *lpFrequency )
+{
+    lpFrequency->QuadPart = 1;
+    return TRUE;
+}
+
+pQueryPerformanceFrequency oQueryPerformanceFrequency = 0;
+
+bool hookWindowsCalls()
+{
+    if ( MH_Initialize() != MH_OK )
+    {
+        LOG ( "MH_Initialize failed" );
+    }
+    else
+    {
+        if ( MH_CreateHook ( ( void * ) &QueryPerformanceFrequency, ( void * ) &mQueryPerformanceFrequency,
+                             ( void ** ) &oQueryPerformanceFrequency ) != MH_OK )
+            LOG ( "MH_CreateHook for QueryPerformanceFrequency failed" );
+        else if ( MH_EnableHook ( ( void * ) &QueryPerformanceFrequency ) != MH_OK )
+            LOG ( "MH_EnableHook for QueryPerformanceFrequency failed" );
+        else
+            return true;
+    }
+
+    return false;
+}
+
+void unhookWindowsCalls()
+{
+    MH_DisableHook ( ( void * ) &QueryPerformanceFrequency );
+    MH_RemoveHook ( ( void * ) &QueryPerformanceFrequency );
+    MH_Uninitialize();
+}
 
 struct Main : public Socket::Owner, public Timer::Owner, public ControllerManager::Owner
 {
@@ -227,6 +265,9 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
 
                 WRITE_ASM_HACK ( fixRyougiStageMusic1 );
                 WRITE_ASM_HACK ( fixRyougiStageMusic2 );
+
+                if ( !hookWindowsCalls() )
+                    exit ( 0 );
             }
             catch ( const WindowsException& err )
             {
@@ -240,6 +281,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
             break;
 
         case DLL_PROCESS_DETACH:
+            unhookWindowsCalls();
             main.reset();
             LOG ( "DLL_PROCESS_DETACH" );
             EventManager::get().release();

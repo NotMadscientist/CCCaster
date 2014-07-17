@@ -12,6 +12,8 @@ MBAA_EXE = MBAA.exe
 # Library sources
 GTEST_CC_SRCS = contrib/gtest/fused-src/gtest/gtest-all.cc
 JLIB_CC_SRCS = $(wildcard contrib/JLib/*.cc)
+MINHOOK_CC_SRCS = $(wildcard contrib/minhook/src/*.cc)
+MINHOOK_C_SRCS = $(wildcard contrib/minhook/src/hde32/*.c)
 CONTRIB_CC_SRCS = $(GTEST_CC_SRCS) $(JLIB_CC_SRCS)
 CONTRIB_C_SRCS = $(wildcard contrib/*.c)
 
@@ -25,7 +27,7 @@ NON_GEN_HEADERS = $(filter-out Version.h, $(filter-out Protocol.%.h, $(wildcard 
 
 # Main program objects
 MAIN_OBJECTS = $(MAIN_CPP_SRCS:.cpp=.o) $(CONTRIB_CC_SRCS:.cc=.o) $(CONTRIB_C_SRCS:.c=.o)
-DLL_OBJECTS = $(DLL_CPP_SRCS:.cpp=.o) $(CONTRIB_C_SRCS:.c=.o)
+DLL_OBJECTS = $(DLL_CPP_SRCS:.cpp=.o) $(MINHOOK_CC_SRCS:.cc=.o) $(MINHOOK_C_SRCS:.c=.o) $(CONTRIB_C_SRCS:.c=.o)
 
 # Tool chain
 PREFIX = i686-w64-mingw32-
@@ -46,10 +48,10 @@ else
 endif
 
 # Build flags
-DEFINES = -DWIN32_LEAN_AND_MEAN -DNAMED_PIPE='"\\\\.\\pipe\\cccaster_pipe"' -DMBAA_EXE='"$(MBAA_EXE)"'
+DEFINES = -DWIN32_LEAN_AND_MEAN -D_M_IX86 -DNAMED_PIPE='"\\\\.\\pipe\\cccaster_pipe"' -DMBAA_EXE='"$(MBAA_EXE)"'
 DEFINES += -DBINARY='"$(BINARY)"' -DHOOK_DLL='"$(DLL)"' -DLAUNCHER='"$(LAUNCHER)"' -DFOLDER='"$(FOLDER)/"'
 INCLUDES = -I$(CURDIR) -I$(CURDIR)/tests -I$(CURDIR)/contrib -I$(CURDIR)/contrib/cereal/include
-INCLUDES += -I$(CURDIR)/contrib/gtest/include -I$(CURDIR)/contrib/SDL2/include
+INCLUDES += -I$(CURDIR)/contrib/gtest/include -I$(CURDIR)/contrib/SDL2/include -I$(CURDIR)/contrib/minhook/include
 CC_FLAGS = -m32 $(INCLUDES) $(DEFINES)
 
 # Linker flags
