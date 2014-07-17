@@ -66,7 +66,7 @@ size_t compress ( const char *src, size_t srcLen, char *dst, size_t dstLen, int 
     if ( rc == MZ_OK )
         return len;
 
-    LOG ( "zlib error: [%d] %s", rc, mz_error ( rc ) );
+    LOG ( "[%d] %s; zlib error", rc, mz_error ( rc ) );
     return 0;
 }
 
@@ -77,7 +77,7 @@ size_t uncompress ( const char *src, size_t srcLen, char *dst, size_t dstLen )
     if ( rc == MZ_OK )
         return len;
 
-    LOG ( "zlib error: [%d] %s", rc, mz_error ( rc ) );
+    LOG ( "[%d] %s; zlib error", rc, mz_error ( rc ) );
     return 0;
 }
 
@@ -86,7 +86,7 @@ size_t compressBound ( size_t srcLen )
     return mz_compressBound ( srcLen );
 }
 
-static string getWindowsErrorAsString ( int error )
+static string getWindowsExceptionAsString ( int error )
 {
     string str;
     char *errorString = 0;
@@ -97,9 +97,14 @@ static string getWindowsErrorAsString ( int error )
     return str;
 }
 
-WindowsError::WindowsError ( int code ) : code ( code ), msg ( getWindowsErrorAsString ( code ) ) {}
+WindowsException::WindowsException ( int code ) : Exception ( getWindowsExceptionAsString ( code ) ), code ( code ) {}
 
-ostream& operator<< ( ostream& os, const WindowsError& error )
+ostream& operator<< ( ostream& os, const Exception& error )
+{
+    return ( os << error.msg );
+}
+
+ostream& operator<< ( ostream& os, const WindowsException& error )
 {
     return ( os << "[" << error.code << "] '" << error.msg << "'" );
 }

@@ -17,7 +17,7 @@
         u_long flag = VALUE;                                                \
         if ( ioctlsocket ( fd, FIONBIO, &flag ) != 0 ) {                    \
             err = WSAGetLastError();                                        \
-            LOG_SOCKET ( this, "ioctlsocket failed: %s", err );             \
+            LOG_SOCKET ( this, "%s; ioctlsocket failed", err );             \
             closesocket ( fd );                                             \
             fd = 0;                                                         \
             throw err;                                                      \
@@ -52,7 +52,7 @@ void Socket::init()
 {
     assert ( fd == 0 );
 
-    WindowsError err;
+    WindowsException err;
     shared_ptr<addrinfo> addrInfo;
 
     // TODO proper binding of IPv6 interfaces
@@ -79,7 +79,7 @@ void Socket::init()
         if ( fd == INVALID_SOCKET )
         {
             err = WSAGetLastError();
-            LOG_SOCKET ( this, "socket failed: %s", err );
+            LOG_SOCKET ( this, "%s; socket failed", err );
             fd = 0;
             continue;
         }
@@ -102,7 +102,7 @@ void Socket::init()
                     }
 
                     err = error;
-                    LOG_SOCKET ( this, "connect failed: %s", err );
+                    LOG_SOCKET ( this, "%s; connect failed", err );
                     closesocket ( fd );
                     fd = 0;
                     continue;
@@ -113,7 +113,7 @@ void Socket::init()
                 if ( ::bind ( fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
                 {
                     err = WSAGetLastError();
-                    LOG_SOCKET ( this, "bind failed: %s", err );
+                    LOG_SOCKET ( this, "%s; bind failed", err );
                     closesocket ( fd );
                     fd = 0;
                     continue;
@@ -132,7 +132,7 @@ void Socket::init()
             if ( setsockopt ( fd, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, &yes, 1 ) == SOCKET_ERROR )
             {
                 err = WSAGetLastError();
-                LOG_SOCKET ( this, "setsockopt failed: %s", err );
+                LOG_SOCKET ( this, "%s; setsockopt failed", err );
                 closesocket ( fd );
                 fd = 0;
                 throw err;
@@ -141,7 +141,7 @@ void Socket::init()
             if ( ::bind ( fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
             {
                 err = WSAGetLastError();
-                LOG_SOCKET ( this, "bind failed: %s", err );
+                LOG_SOCKET ( this, "%s; bind failed", err );
                 closesocket ( fd );
                 fd = 0;
                 continue;
@@ -150,7 +150,7 @@ void Socket::init()
             if ( isTCP() && ( ::listen ( fd, SOMAXCONN ) == SOCKET_ERROR ) )
             {
                 err = WSAGetLastError();
-                LOG_SOCKET ( this, "listen failed: %s", err );
+                LOG_SOCKET ( this, "%s; listen failed", err );
                 closesocket ( fd );
                 fd = 0;
                 throw err;
@@ -163,7 +163,7 @@ void Socket::init()
 
     if ( fd == 0 )
     {
-        LOG_SOCKET ( this, "init failed, last error: %s", err );
+        LOG_SOCKET ( this, "%s; init failed", err );
         throw err;
     }
 
@@ -198,7 +198,7 @@ void Socket::init()
         if ( getsockname ( fd, ( sockaddr * ) &sas, &saLen ) == SOCKET_ERROR )
         {
             err = WSAGetLastError();
-            LOG_SOCKET ( this, "getsockname failed: %s", err );
+            LOG_SOCKET ( this, "%s; getsockname failed", err );
             closesocket ( fd );
             fd = 0;
             throw err;
@@ -214,7 +214,7 @@ MsgPtr Socket::share ( int processId )
 
     if ( WSADuplicateSocket ( fd, processId, info.get() ) )
     {
-        LOG_SOCKET ( this, "WSADuplicateSocket failed: %s", WindowsError ( WSAGetLastError() ) );
+        LOG_SOCKET ( this, "%s; WSADuplicateSocket failed", WindowsException ( WSAGetLastError() ) );
         return 0;
     }
 
@@ -259,11 +259,11 @@ bool Socket::send ( const char *buffer, size_t len )
 
         if ( sentBytes == SOCKET_ERROR )
         {
-            WindowsError err = WSAGetLastError();
+            WindowsException err = WSAGetLastError();
             if ( isTCP() )
-                LOG_SOCKET ( this, "send failed: %s", err );
+                LOG_SOCKET ( this, "%s; send failed", err );
             else
-                LOG_SOCKET ( this, "sendto failed: %s", err );
+                LOG_SOCKET ( this, "%s; sendto failed", err );
             disconnect();
             return false;
         }
@@ -295,7 +295,7 @@ bool Socket::send ( const char *buffer, size_t len, const IpAddrPort& address )
 
         if ( sentBytes == SOCKET_ERROR )
         {
-            LOG_SOCKET ( this, "sendto failed: %s", WindowsError ( WSAGetLastError() ) );
+            LOG_SOCKET ( this, "%s; sendto failed", WindowsException ( WSAGetLastError() ) );
             return false;
         }
 
@@ -314,7 +314,7 @@ bool Socket::recv ( char *buffer, size_t& len )
 
     if ( recvBytes == SOCKET_ERROR )
     {
-        LOG_SOCKET ( this, "recvfrom failed: %s", WindowsError ( WSAGetLastError() ) );
+        LOG_SOCKET ( this, "%s; recvfrom failed", WindowsException ( WSAGetLastError() ) );
         return false;
     }
 
@@ -334,7 +334,7 @@ bool Socket::recv ( char *buffer, size_t& len, IpAddrPort& address )
 
     if ( recvBytes == SOCKET_ERROR )
     {
-        LOG_SOCKET ( this, "recvfrom failed: %s", WindowsError ( WSAGetLastError() ) );
+        LOG_SOCKET ( this, "%s; recvfrom failed", WindowsException ( WSAGetLastError() ) );
         return false;
     }
 

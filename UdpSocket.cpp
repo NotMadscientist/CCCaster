@@ -59,8 +59,8 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const SocketShareData& data )
 
     if ( this->fd == INVALID_SOCKET )
     {
-        WindowsError err = WSAGetLastError();
-        LOG_SOCKET ( this, "WSASocket failed %s", err );
+        WindowsException err = WSAGetLastError();
+        LOG_SOCKET ( this, "%s; WSASocket failed", err );
         this->fd = 0;
         throw err;
     }

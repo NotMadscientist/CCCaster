@@ -69,7 +69,7 @@ void Logger::log ( const char *file, int line, const char *func, const char *mes
     string shortFunc ( func );
     shortFunc = shortFunc.substr ( 0, shortFunc.find ( '(' ) );
 
-    fprintf ( fd, "%s:%s:%d: %s : %s\n", buffer, file, line, shortFunc.c_str(), message );
+    fprintf ( fd, "%s:%s:%3d: %s : %s\n", buffer, file, line, shortFunc.c_str(), message );
     fflush ( fd );
 }
 

@@ -23,8 +23,8 @@ void ControllerManager::check()
 
     if ( count < 0 )
     {
-        LOG ( "SDL_PeepEvents failed: '%s'", SDL_GetError() );
-        throw "something"; // TODO
+        Exception err = toString ( "SDL_PeepEvents failed: '%s'", SDL_GetError() );
+        LOG_AND_THROW ( err, "" );
     }
 
     for ( int i = 0; i < count; ++i )
@@ -156,8 +156,8 @@ void ControllerManager::initialize ( Owner *owner )
     // Initialize SDL joystick
     if ( SDL_Init ( SDL_INIT_JOYSTICK ) < 0 )
     {
-        LOG ( "SDL_Init(SDL_INIT_JOYSTICK) failed: '%s'", SDL_GetError() );
-        throw "something"; // TODO
+        Exception err = toString ( "SDL_Init(SDL_INIT_JOYSTICK) failed: '%s'", SDL_GetError() );
+        LOG_AND_THROW ( err, "" );
     }
 
     this->owner = owner;

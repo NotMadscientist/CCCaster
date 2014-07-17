@@ -21,9 +21,9 @@
 
 #define WRITE_ASM_HACK(ASM_HACK)                                \
     do {                                                        \
-        WindowsError err;                                       \
+        WindowsException err;                                   \
         if ( ( err = ASM_HACK.write() ).code != 0 ) {           \
-            LOG ( "%s failed: %s", #ASM_HACK, err );            \
+            LOG ( "%s; %s failed", err, #ASM_HACK );            \
             exit ( 0 );                                         \
         }                                                       \
     } while ( 0 )
@@ -87,9 +87,8 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
 
         if ( pipe == INVALID_HANDLE_VALUE )
         {
-            WindowsError err = GetLastError();
-            LOG ( "CreateFile failed: %s", err );
-            throw err;
+            WindowsException err = GetLastError();
+            LOG_AND_THROW ( err, "; CreateFile failed" );
         }
 
         LOG ( "Pipe connected" );
@@ -98,30 +97,30 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
 
         if ( !WriteFile ( pipe, & ( ipcSocket->address.port ), sizeof ( ipcSocket->address.port ), &bytes, 0 ) )
         {
-            WindowsError err = GetLastError();
-            LOG ( "WriteFile failed: %s", err );
-            throw err;
+            WindowsException err = GetLastError();
+            LOG_AND_THROW ( err, "; WriteFile failed" );
         }
 
         if ( bytes != sizeof ( ipcSocket->address.port ) )
         {
-            LOG ( "WriteFile wrote %d bytes, expected %d", bytes, sizeof ( ipcSocket->address.port ) );
-            throw "something"; // TODO
+            Exception err = toString ( "WriteFile wrote %d bytes, expected %d",
+                                       bytes, sizeof ( ipcSocket->address.port ) );
+            LOG_AND_THROW ( err, "" );
         }
 
         int processId = GetCurrentProcessId();
 
         if ( !WriteFile ( pipe, &processId, sizeof ( processId ), &bytes, 0 ) )
         {
-            WindowsError err = GetLastError();
-            LOG ( "WriteFile failed: %s", err );
-            throw err;
+            WindowsException err = GetLastError();
+            LOG_AND_THROW ( err, "; WriteFile failed" );
         }
 
         if ( bytes != sizeof ( processId ) )
         {
-            LOG ( "WriteFile wrote %d bytes, expected %d", bytes, sizeof ( processId ) );
-            throw "something"; // TODO
+            Exception err = toString ( "WriteFile wrote %d bytes, expected %d",
+                                       bytes, sizeof ( ipcSocket->address.port ) );
+            LOG_AND_THROW ( err, "" );
         }
     }
 
@@ -167,7 +166,7 @@ extern "C" void callback()
         }
         while ( 0 );
     }
-    catch ( const WindowsError& err )
+    catch ( const WindowsException& err )
     {
         state = STOPPING;
     }
@@ -217,11 +216,11 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
                 for ( void *const addr : disabledStageAddrs )
                 {
                     Asm enableStage = { addr, INLINE_DWORD_FF };
-                    WindowsError err;
+                    WindowsException err;
 
                     if ( ( err = enableStage.write() ).code )
                     {
-                        LOG ( "enableStage { %08x } failed: %s", addr, err );
+                        LOG ( "%s; enableStage { %08x } failed", err, addr );
                         exit ( 0 );
                     }
                 }
@@ -229,7 +228,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
                 WRITE_ASM_HACK ( fixRyougiStageMusic1 );
                 WRITE_ASM_HACK ( fixRyougiStageMusic2 );
             }
-            catch ( const WindowsError& err )
+            catch ( const WindowsException& err )
             {
                 exit ( 0 );
             }

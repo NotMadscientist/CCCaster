@@ -115,17 +115,32 @@ size_t compress ( const char *src, size_t srcLen, char *dst, size_t dstLen, int 
 size_t uncompress ( const char *src, size_t srcLen, char *dst, size_t dstLen );
 size_t compressBound ( size_t srcLen );
 
-// Windows error type
-struct WindowsError
+// General exception type
+struct Exception
 {
-    int code;
     std::string msg;
 
-    inline WindowsError() : code ( 0 ) {}
-    WindowsError ( int code );
+    inline Exception() {}
+    inline Exception ( const std::string& msg ) : msg ( msg ) {}
 };
 
-std::ostream& operator<< ( std::ostream& os, const WindowsError& error );
+// Windows exception type
+struct WindowsException : public Exception
+{
+    int code;
+
+    inline WindowsException() : code ( 0 ) {}
+    WindowsException ( int code );
+};
+
+std::ostream& operator<< ( std::ostream& os, const Exception& exception );
+std::ostream& operator<< ( std::ostream& os, const WindowsException& error );
+
+#define LOG_AND_THROW(EXCEPTION, FORMAT, ...)                               \
+    do {                                                                    \
+        LOG ( "%s; " FORMAT, EXCEPTION, ## __VA_ARGS__ );                   \
+        throw EXCEPTION;                                                    \
+    } while ( 0 )
 
 // Write to a memory location in the same process, returns 0 on success
 int memwrite ( void *dst, const void *src, size_t len );
@@ -136,7 +151,7 @@ struct Asm
     void *const addr;
     const std::vector<uint8_t> bytes;
 
-    WindowsError write() const { return WindowsError ( memwrite ( addr, &bytes[0], bytes.size() ) ); }
+    WindowsException write() const { return WindowsException ( memwrite ( addr, &bytes[0], bytes.size() ) ); }
 };
 
 // Hash util
@@ -150,4 +165,4 @@ inline void hash_combine ( size_t& seed, const T& v )
     seed ^= hasher ( v ) + 0x9e3779b9 + ( seed << 6 ) + ( seed >> 2 );
 }
 
-}
+} // namespace std

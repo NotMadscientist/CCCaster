@@ -51,7 +51,7 @@ template<> struct hash<IndexedGuid>
     }
 };
 
-}
+} // namespace std
 
 // Comparison operators
 inline bool operator< ( const Guid& a, const Guid& b ) { return ( memcmp ( &a, &b, sizeof ( a ) ) < 0 ); }

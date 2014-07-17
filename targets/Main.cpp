@@ -46,9 +46,6 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
         SocketManager::get().initialize();
         ControllerManager::get().initialize ( this );
 
-        // if ( opt[STDOUT] )
-        //     return;
-
         LOG ( "Opening pipe" );
 
         pipe = CreateNamedPipe (
@@ -63,9 +60,8 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
 
         if ( pipe == INVALID_HANDLE_VALUE )
         {
-            WindowsError err = GetLastError();
-            LOG ( "CreateNamedPipe failed: %s", err );
-            throw err;
+            WindowsException err = GetLastError();
+            LOG_AND_THROW ( err, "; CreateNamedPipe failed" );
         }
 
         LOG ( "Starting " MBAA_EXE );
@@ -81,9 +77,8 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
 
             if ( error != ERROR_PIPE_CONNECTED )
             {
-                WindowsError err = error;
-                LOG ( "ConnectNamedPipe failed: %s", err );
-                throw err;
+                WindowsException err = GetLastError();
+                LOG_AND_THROW ( err, "; ConnectNamedPipe failed" );
             }
         }
 
@@ -95,15 +90,14 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
 
         if ( !ReadFile ( pipe, &ipcHost.port, sizeof ( ipcHost.port ), &bytes, 0 ) )
         {
-            WindowsError err = GetLastError();
-            LOG ( "ReadFile failed: %s", err );
-            throw err;
+            WindowsException err = GetLastError();
+            LOG_AND_THROW ( err, "; ReadFile failed" );
         }
 
         if ( bytes != sizeof ( ipcHost.port ) )
         {
-            LOG ( "ReadFile read %d bytes, expected %d", bytes, sizeof ( ipcHost.port ) );
-            throw "something"; // TODO
+            Exception err = toString ( "ReadFile read %d bytes, expected %d", bytes, sizeof ( ipcHost.port ) );
+            LOG_AND_THROW ( err, "" );
         }
 
         LOG ( "ipcHost='%s'", ipcHost );
@@ -112,15 +106,14 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
 
         if ( !ReadFile ( pipe, &processId, sizeof ( processId ), &bytes, 0 ) )
         {
-            WindowsError err = GetLastError();
-            LOG ( "ReadFile failed: %s", err );
-            throw err;
+            WindowsException err = GetLastError();
+            LOG_AND_THROW ( err, "; ReadFile failed" );
         }
 
         if ( bytes != sizeof ( processId ) )
         {
-            LOG ( "ReadFile read %d bytes, expected %d", bytes, sizeof ( processId ) );
-            throw "something"; // TODO
+            Exception err = toString ( "ReadFile read %d bytes, expected %d", bytes, sizeof ( processId ) );
+            LOG_AND_THROW ( err, "" );
         }
 
         LOG ( "processId=%08x", processId );

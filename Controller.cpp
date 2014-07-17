@@ -48,8 +48,8 @@ Controller::Controller ( SDL_Joystick *joystick ) : joystick ( joystick ), state
             }
         }
 
-        LOG ( "Too many duplicate guids for: '%s'", this->guid.guid );
-        throw "something"; // TODO
+        Exception err = toString ( "Too many duplicate guids for: '%s'", this->guid.guid );
+        LOG_AND_THROW ( err, "" );
     }
 }
 

@@ -52,8 +52,8 @@ TcpSocket::TcpSocket ( Socket::Owner *owner, const SocketShareData& data ) : Soc
 
     if ( this->fd == INVALID_SOCKET )
     {
-        WindowsError err = WSAGetLastError();
-        LOG_SOCKET ( this, "WSASocket failed %s", err );
+        WindowsException err = WSAGetLastError();
+        LOG_SOCKET ( this, "%s; WSASocket failed", err );
         this->fd = 0;
         throw err;
     }
@@ -94,7 +94,7 @@ SocketPtr TcpSocket::accept ( Socket::Owner *owner )
 
     if ( newFd == INVALID_SOCKET )
     {
-        LOG_SOCKET ( this, "accept failed: %s", WindowsError ( WSAGetLastError() ) );
+        LOG_SOCKET ( this, "%s; accept failed", WindowsException ( WSAGetLastError() ) );
         return 0;
     }
 

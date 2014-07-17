@@ -87,7 +87,7 @@ template<> struct hash<IpAddrPort>
     }
 };
 
-}
+} // namespace std
 
 // Comparison operators
 inline bool operator< ( const IpAddrPort& a, const IpAddrPort& b )
