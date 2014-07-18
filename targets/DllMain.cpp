@@ -7,6 +7,7 @@
 #include "TcpSocket.h"
 #include "UdpSocket.h"
 #include "Timer.h"
+#include "Thread.h"
 #include "AsmHacks.h"
 
 #include <windows.h>
@@ -22,7 +23,7 @@ using namespace AsmHacks;
 
 #define LOG_FILE FOLDER "dll.log"
 
-#define FRAME_INTERVAL  ( 1000 / 60 )
+#define FRAME_INTERVAL ( 1000 / 60 )
 
 #define WRITE_ASM_HACK(ASM_HACK)                                                \
     do {                                                                        \
@@ -38,8 +39,11 @@ using namespace AsmHacks;
     p ## FUNC_NAME o ## FUNC_NAME = 0;                                          \
     RETURN_TYPE WINAPI m ## FUNC_NAME ( __VA_ARGS__ )
 
+static volatile bool hookedWindowsCalls = false;
 static bool hookWindowsCalls();
 static void unhookWindowsCalls();
+static void deinitialize();
+static Mutex deinitMutex;
 
 
 HOOK_FUNC ( BOOL, QueryPerformanceFrequency, LARGE_INTEGER *lpFrequency  )
@@ -156,32 +160,38 @@ extern "C" void callback()
 {
     try
     {
-        do
+        if ( state == UNINITIALIZED )
         {
-            if ( state == UNINITIALIZED )
-            {
-                // Joystick and timer must be initialized in the main thread
-                TimerManager::get().initialize();
-                ControllerManager::get().initialize ( main.get() );
-                EventManager::get().startPolling();
+            // Joystick and timer must be initialized in the main thread
+            TimerManager::get().initialize();
+            ControllerManager::get().initialize ( main.get() );
+            EventManager::get().startPolling();
 
-                // Asm hacks that must written after the game starts
-                WRITE_ASM_HACK ( disableFpsLimit );
+            // Asm hacks that must written after the game starts
+            WRITE_ASM_HACK ( disableFpsLimit );
 
-                state = POLLING;
-            }
+            state = POLLING;
+        }
 
-            if ( state != POLLING )
-                break;
+        if ( state != POLLING )
+            return;
 
-            // Poll for events
-            if ( !EventManager::get().poll ( FRAME_INTERVAL ) )
+        TimerManager::get().updateNow();
+        uint64_t now = TimerManager::get().getNow();
+        uint64_t end = now + FRAME_INTERVAL;
+
+        // Poll for events
+        while ( now < end )
+        {
+            if ( !EventManager::get().poll ( end - now ) )
             {
                 state = STOPPING;
                 break;
             }
+
+            TimerManager::get().updateNow();
+            now = TimerManager::get().getNow();
         }
-        while ( 0 );
     }
     catch ( const WindowsException& err )
     {
@@ -195,11 +205,7 @@ extern "C" void callback()
 
     if ( state == STOPPING )
     {
-        EventManager::get().stop();
-        ControllerManager::get().deinitialize();
-        TimerManager::get().deinitialize();
-        SocketManager::get().deinitialize();
-        state = DEINITIALIZED;
+        deinitialize();
         exit ( 0 );
     }
 }
@@ -264,40 +270,66 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
             break;
 
         case DLL_PROCESS_DETACH:
-            unhookWindowsCalls();
-            main.reset();
             LOG ( "DLL_PROCESS_DETACH" );
-            EventManager::get().release();
-            Logger::get().deinitialize();
+            deinitialize();
             break;
     }
 
     return TRUE;
 }
 
+static void deinitialize()
+{
+    LOCK ( deinitMutex );
+
+    if ( state == DEINITIALIZED )
+        return;
+
+    main.reset();
+    unhookWindowsCalls();
+    EventManager::get().release();
+    ControllerManager::get().deinitialize();
+    TimerManager::get().deinitialize();
+    SocketManager::get().deinitialize();
+    Logger::get().deinitialize();
+    state = DEINITIALIZED;
+}
+
 static bool hookWindowsCalls()
 {
+    if ( hookedWindowsCalls )
+        return true;
+
     if ( MH_Initialize() != MH_OK )
     {
         LOG ( "MH_Initialize failed" );
-    }
-    else
-    {
-        if ( MH_CreateHook ( ( void * ) &QueryPerformanceFrequency, ( void * ) &mQueryPerformanceFrequency,
-                             ( void ** ) &oQueryPerformanceFrequency ) != MH_OK )
-            LOG ( "MH_CreateHook for QueryPerformanceFrequency failed" );
-        else if ( MH_EnableHook ( ( void * ) &QueryPerformanceFrequency ) != MH_OK )
-            LOG ( "MH_EnableHook for QueryPerformanceFrequency failed" );
-        else
-            return true;
+        return false;
     }
 
-    return false;
+    if ( MH_CreateHook ( ( void * ) &QueryPerformanceFrequency, ( void * ) &mQueryPerformanceFrequency,
+                         ( void ** ) &oQueryPerformanceFrequency ) != MH_OK )
+    {
+        LOG ( "MH_CreateHook for QueryPerformanceFrequency failed" );
+        return false;
+    }
+
+    if ( MH_EnableHook ( ( void * ) &QueryPerformanceFrequency ) != MH_OK )
+    {
+        LOG ( "MH_EnableHook for QueryPerformanceFrequency failed" );
+        return false;
+    }
+
+    hookedWindowsCalls = true;
+    return true;
 }
 
 static void unhookWindowsCalls()
 {
+    if ( !hookedWindowsCalls )
+        return;
+
     MH_DisableHook ( ( void * ) &QueryPerformanceFrequency );
     MH_RemoveHook ( ( void * ) &QueryPerformanceFrequency );
     MH_Uninitialize();
+    hookedWindowsCalls = false;
 }
