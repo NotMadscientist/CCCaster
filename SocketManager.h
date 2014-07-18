@@ -9,6 +9,9 @@ class SocketManager
     // Sets of active and allocated socket instances
     std::unordered_set<Socket *> activeSockets, allocatedSockets;
 
+    // Flag to indicate the set of allocated sockets has changed
+    bool changed;
+
     // Flag to inidicate if initialized
     bool initialized;
 

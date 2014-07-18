@@ -21,6 +21,9 @@ class TimerManager
     // The next time when a timer will expire
     uint64_t nextExpiry;
 
+    // Flag to indicate the set of allocated timers has changed
+    bool changed;
+
     // Flag to inidicate if initialized
     bool initialized;
 

@@ -29,29 +29,38 @@ void TimerManager::check()
     if ( !initialized )
         return;
 
-    for ( Timer *timer : allocatedTimers )
+    if ( changed )
     {
-        if ( activeTimers.find ( timer ) != activeTimers.end() )
-            continue;
-
-        LOG ( "Added timer %08x; delay='%llu ms'", timer, timer->delay );
-        activeTimers.insert ( timer );
-    }
-
-    for ( auto it = activeTimers.begin(); it != activeTimers.end(); )
-    {
-        if ( allocatedTimers.find ( *it ) != allocatedTimers.end() )
+        for ( Timer *timer : allocatedTimers )
         {
-            ++it;
-            continue;
+            if ( activeTimers.find ( timer ) != activeTimers.end() )
+                continue;
+
+            LOG ( "Added timer %08x; delay='%llu ms'", timer, timer->delay );
+            activeTimers.insert ( timer );
         }
 
-        LOG ( "Removed timer %08x", *it ); // Don't log any extra data cus already de-allocated
-        activeTimers.erase ( it++ );
+        for ( auto it = activeTimers.begin(); it != activeTimers.end(); )
+        {
+            if ( allocatedTimers.find ( *it ) != allocatedTimers.end() )
+            {
+                ++it;
+                continue;
+            }
+
+            LOG ( "Removed timer %08x", *it ); // Don't log any extra data cus already de-allocated
+            activeTimers.erase ( it++ );
+        }
+
+        changed = false;
     }
 
-    updateNow();
     nextExpiry = UINT64_MAX;
+
+    if ( activeTimers.empty() )
+        return;
+
+    updateNow();
 
     for ( Timer *timer : activeTimers )
     {
@@ -83,12 +92,14 @@ void TimerManager::add ( Timer *timer )
 {
     LOG ( "Adding timer %08x; delay='%llu ms'", timer, timer->delay );
     allocatedTimers.insert ( timer );
+    changed = true;
 }
 
 void TimerManager::remove ( Timer *timer )
 {
     LOG ( "Removing timer %08x", timer );
     allocatedTimers.erase ( timer );
+    changed = true;
 }
 
 void TimerManager::clear()
@@ -96,6 +107,7 @@ void TimerManager::clear()
     LOG ( "Clearing timers" );
     activeTimers.clear();
     allocatedTimers.clear();
+    changed = true;
 }
 
 TimerManager::TimerManager()
@@ -104,6 +116,7 @@ TimerManager::TimerManager()
     , ticks ( 0 )
     , now ( 0 )
     , nextExpiry ( UINT64_MAX )
+    , changed ( false )
     , initialized ( false ) {}
 
 void TimerManager::initialize()

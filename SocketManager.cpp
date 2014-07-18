@@ -16,25 +16,30 @@ void SocketManager::check ( uint64_t timeout )
     if ( !initialized )
         return;
 
-    for ( Socket *socket : allocatedSockets )
+    if ( changed )
     {
-        if ( activeSockets.find ( socket ) != activeSockets.end() )
-            continue;
-
-        LOG_SOCKET ( socket, "added" );
-        activeSockets.insert ( socket );
-    }
-
-    for ( auto it = activeSockets.begin(); it != activeSockets.end(); )
-    {
-        if ( allocatedSockets.find ( *it ) != allocatedSockets.end() )
+        for ( Socket *socket : allocatedSockets )
         {
-            ++it;
-            continue;
+            if ( activeSockets.find ( socket ) != activeSockets.end() )
+                continue;
+
+            LOG_SOCKET ( socket, "added" );
+            activeSockets.insert ( socket );
         }
 
-        LOG ( "socket %08x removed", *it ); // Don't log any extra data cus already deleted
-        activeSockets.erase ( it++ );
+        for ( auto it = activeSockets.begin(); it != activeSockets.end(); )
+        {
+            if ( allocatedSockets.find ( *it ) != allocatedSockets.end() )
+            {
+                ++it;
+                continue;
+            }
+
+            LOG ( "socket %08x removed", *it ); // Don't log any extra data cus already deleted
+            activeSockets.erase ( it++ );
+        }
+
+        changed = false;
     }
 
     if ( activeSockets.empty() )
@@ -122,12 +127,14 @@ void SocketManager::add ( Socket *socket )
 {
     LOG_SOCKET ( socket, "Added socket" );
     allocatedSockets.insert ( socket );
+    changed = true;
 }
 
 void SocketManager::remove ( Socket *socket )
 {
     LOG_SOCKET ( socket, "Removing socket" );
     allocatedSockets.erase ( socket );
+    changed = true;
 }
 
 void SocketManager::clear()
@@ -135,9 +142,10 @@ void SocketManager::clear()
     LOG ( "Clearing sockets" );
     activeSockets.clear();
     allocatedSockets.clear();
+    changed = true;
 }
 
-SocketManager::SocketManager() : initialized ( false ) {}
+SocketManager::SocketManager() : changed ( false ), initialized ( false ) {}
 
 void SocketManager::initialize()
 {
