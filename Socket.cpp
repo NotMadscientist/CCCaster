@@ -397,19 +397,20 @@ void Socket::readEvent()
         size_t consumed = 0;
         MsgPtr msg = Serializable::decode ( &readBuffer[0], readPos, consumed );
 
+        // Abort if a message could not be decoded
         if ( !msg.get() )
-            break;
+            return;
 
         LOG ( "Decoded [ %u bytes ] to '%s'", consumed, msg );
         readEvent ( msg, address );
 
         // Abort if the socket is de-allocated
         if ( !SocketManager::get().isAllocated ( this ) )
-            break;
+            return;
 
         // Abort if socket is disconnected
         if ( isDisconnected() )
-            break;
+            return;
 
         assert ( consumed <= readPos );
 
