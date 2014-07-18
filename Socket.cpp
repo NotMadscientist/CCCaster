@@ -9,6 +9,7 @@
 
 #include <cassert>
 #include <unordered_set>
+#include <algorithm>
 
 using namespace std;
 
@@ -388,8 +389,7 @@ void Socket::readEvent()
         return;
     }
 
-    if ( bufferLen <= 256 )
-        LOG ( "Base64 : %s", toBase64 ( bufferEnd, bufferLen ) );
+    LOG ( "Base64 : %s", toBase64 ( bufferEnd, min ( 256u, bufferLen ) ) );
 
     // Try to decode as many messages from the buffer as possible
     for ( ;; )

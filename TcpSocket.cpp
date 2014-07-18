@@ -9,6 +9,7 @@
 #include <ws2tcpip.h>
 
 #include <cassert>
+#include <algorithm>
 
 using namespace std;
 
@@ -118,8 +119,8 @@ bool TcpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
 
     LOG ( "Encoded '%s' to [ %u bytes ]", msg, buffer.size() );
 
-    if ( !buffer.empty() && buffer.size() < 256 )
-        LOG ( "Base64 : %s", toBase64 ( buffer ) );
+    if ( !buffer.empty() )
+        LOG ( "Base64 : %s", toBase64 ( &buffer[0], min ( 256u, buffer.size() ) ) );
 
     return Socket::send ( &buffer[0], buffer.size() );
 }

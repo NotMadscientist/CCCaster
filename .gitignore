@@ -17,4 +17,4 @@ Protocol.*.h
 deploy
 tmp
 gmon.out
-profile.txt
+profile*.txt
