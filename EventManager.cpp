@@ -8,6 +8,8 @@
 #include <windows.h>
 #include <mmsystem.h>
 
+#include <cassert>
+
 using namespace std;
 
 
@@ -20,6 +22,8 @@ void EventManager::checkEvents ( uint64_t timeout )
 
     if ( TimerManager::get().getNextExpiry() != UINT64_MAX )
         timeout = TimerManager::get().getNextExpiry() - TimerManager::get().getNow();
+
+    assert ( timeout > 0 );
 
     SocketManager::get().check ( timeout );
 
@@ -59,7 +63,22 @@ bool EventManager::poll ( uint64_t timeout )
     if ( !running )
         return false;
 
-    checkEvents ( timeout );
+    assert ( timeout > 0 );
+
+    TimerManager::get().updateNow();
+    uint64_t now = TimerManager::get().getNow();
+    uint64_t end = now + timeout;
+
+    while ( now < end )
+    {
+        checkEvents ( end - now );
+
+        if ( !running )
+            break;
+
+        TimerManager::get().updateNow();
+        now = TimerManager::get().getNow();
+    }
 
     if ( running )
         return true;

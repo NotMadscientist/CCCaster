@@ -176,21 +176,11 @@ extern "C" void callback()
         if ( state != POLLING )
             return;
 
-        TimerManager::get().updateNow();
-        uint64_t now = TimerManager::get().getNow();
-        uint64_t end = now + FRAME_INTERVAL;
-
         // Poll for events
-        while ( now < end )
+        if ( !EventManager::get().poll ( FRAME_INTERVAL ) )
         {
-            if ( !EventManager::get().poll ( end - now ) )
-            {
-                state = STOPPING;
-                break;
-            }
-
-            TimerManager::get().updateNow();
-            now = TimerManager::get().getNow();
+            state = STOPPING;
+            return;
         }
     }
     catch ( const WindowsException& err )
