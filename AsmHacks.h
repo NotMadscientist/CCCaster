@@ -3,10 +3,33 @@
 #include "Utilities.h"
 #include "Constants.h"
 
+#define INLINE_DWORD(X)                                                         \
+    static_cast<unsigned char> ( unsigned ( X ) & 0xFF ),                       \
+    static_cast<unsigned char> ( ( unsigned ( X ) >> 8 ) & 0xFF ),              \
+    static_cast<unsigned char> ( ( unsigned ( X ) >> 16 ) & 0xFF ),             \
+    static_cast<unsigned char> ( ( unsigned ( X ) >> 24 ) & 0xFF )
+
 #define INLINE_DWORD_FF { 0xFF, 0x00, 0x00, 0x00 }
+
+#define HOOK_WINDOWS_FUNC(RETURN_TYPE, FUNC_NAME, ...)                          \
+    typedef RETURN_TYPE ( WINAPI *p ## FUNC_NAME ) ( __VA_ARGS__ );             \
+    p ## FUNC_NAME o ## FUNC_NAME = 0;                                          \
+    RETURN_TYPE WINAPI m ## FUNC_NAME ( __VA_ARGS__ )
+
+// Write to a memory location in the same process, returns 0 on success
+int memwrite ( void *dst, const void *src, size_t len );
 
 namespace AsmHacks
 {
+
+// Struct for storing assembly code
+struct Asm
+{
+    void *const addr;
+    const std::vector<uint8_t> bytes;
+
+    int write() const;
+};
 
 static const Asm loopStartJump =
 {
@@ -56,7 +79,7 @@ static void *const disabledStageAddrs[] =
 };
 
 static const Asm fixRyougiStageMusic1 = { ( void * ) 0x7695F6, { 0x35, 0x00, 0x00, 0x00 } };
-const Asm fixRyougiStageMusic2 = { ( void * ) 0x7695EC, { 0xAA, 0xCC, 0x1E, 0x40 } };
+static const Asm fixRyougiStageMusic2 = { ( void * ) 0x7695EC, { 0xAA, 0xCC, 0x1E, 0x40 } };
 
 static const Asm disableFpsLimit = { CC_PERF_FREQ_ADDR, { INLINE_DWORD ( 1 ), INLINE_DWORD ( 0 ) } };
 

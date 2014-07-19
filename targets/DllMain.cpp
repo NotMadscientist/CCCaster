@@ -36,19 +36,8 @@ using namespace AsmHacks;
         }                                                                       \
     } while ( 0 )
 
-#define HOOK_FUNC(RETURN_TYPE, FUNC_NAME, ...)                                  \
-    typedef RETURN_TYPE ( WINAPI *p ## FUNC_NAME ) ( __VA_ARGS__ );             \
-    p ## FUNC_NAME o ## FUNC_NAME = 0;                                          \
-    RETURN_TYPE WINAPI m ## FUNC_NAME ( __VA_ARGS__ )
-
 static void deinitialize();
 
-
-HOOK_FUNC ( BOOL, QueryPerformanceFrequency, LARGE_INTEGER *lpFrequency  )
-{
-    lpFrequency->QuadPart = 1;
-    return TRUE;
-}
 
 struct Main : public Socket::Owner, public Timer::Owner, public ControllerManager::Owner
 {

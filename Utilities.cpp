@@ -36,6 +36,45 @@ void splitFormat ( const string& format, string& first, string& rest )
     rest = ( i < format.size() ? format.substr ( i ) : "" );
 }
 
+string toBase64 ( const string& bytes )
+{
+    if ( bytes.empty() )
+        return "";
+
+    string str;
+    for ( char c : bytes )
+        str += toString ( "%02x ", ( unsigned char ) c );
+
+    return str.substr ( 0, str.size() - 1 );
+}
+
+string toBase64 ( const void *bytes, size_t len )
+{
+    if ( len == 0 )
+        return "";
+
+    string str;
+    for ( size_t i = 0; i < len; ++i )
+        str += toString ( "%02x ", static_cast<const unsigned char *> ( bytes ) [i] );
+
+    return str.substr ( 0, str.size() - 1 );
+}
+
+string trim ( string str, const string& ws )
+{
+    // trim trailing spaces
+    size_t endpos = str.find_last_not_of ( ws );
+    if ( string::npos != endpos )
+        str = str.substr ( 0, endpos + 1 );
+
+    // trim leading spaces
+    size_t startpos = str.find_first_not_of ( ws );
+    if ( string::npos != startpos )
+        str = str.substr ( startpos );
+
+    return str;
+}
+
 void getMD5 ( const char *bytes, size_t len, char dst[16] )
 {
     MD5_CTX md5;
@@ -109,21 +148,6 @@ ostream& operator<< ( ostream& os, const Exception& error )
 ostream& operator<< ( ostream& os, const WindowsException& error )
 {
     return ( os << "[" << error.code << "] '" << error.msg << "'" );
-}
-
-int memwrite ( void *dst, const void *src, size_t len )
-{
-    DWORD old, tmp;
-
-    if ( !VirtualProtect ( dst, len, PAGE_READWRITE, &old ) )
-        return GetLastError();
-
-    memcpy ( dst, src, len );
-
-    if ( !VirtualProtect ( dst, len, old, &tmp ) )
-        return GetLastError();
-
-    return 0;
 }
 
 void *enumFindWindow ( const string& title )
