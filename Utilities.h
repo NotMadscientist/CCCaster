@@ -6,7 +6,9 @@
 #include <type_traits>
 #include <cstdio>
 
+
 #define TO_C_STR(...) toString ( __VA_ARGS__ ).c_str()
+
 
 namespace std
 {
@@ -21,8 +23,10 @@ inline void hash_combine ( size_t& seed, const T& v )
 
 } // namespace std
 
+
 // Convert a boolean value to a type
 template<bool> struct bool2type {};
+
 
 // Split a format string into first parameter and rest of string
 void splitFormat ( const std::string& format, std::string& first, std::string& rest );
@@ -33,6 +37,7 @@ std::string toBase64 ( const void *bytes, size_t len );
 
 // String trim
 std::string trim ( std::string str, const std::string& ws = " \t\r\n" );
+
 
 // String formatting functions
 template<typename T>
@@ -77,16 +82,19 @@ inline std::string toString ( const std::string& format, const T& val, V ... val
     return buffer + toString ( rest, vals... );
 }
 
+
 // MD5 calculation
 void getMD5 ( const char *bytes, size_t len, char dst[16] );
 void getMD5 ( const std::string& str, char dst[16] );
 bool checkMD5 ( const char *bytes, size_t len, const char md5[16] );
 bool checkMD5 ( const std::string& str, const char md5[16] );
 
+
 // zlib compression
 size_t compress ( const char *src, size_t srcLen, char *dst, size_t dstLen, int level = 9 );
 size_t uncompress ( const char *src, size_t srcLen, char *dst, size_t dstLen );
 size_t compressBound ( size_t srcLen );
+
 
 // General exception type
 struct Exception
@@ -97,6 +105,7 @@ struct Exception
     inline Exception ( const std::string& msg ) : msg ( msg ) {}
 };
 
+
 // Windows exception type
 struct WindowsException : public Exception
 {
@@ -106,9 +115,11 @@ struct WindowsException : public Exception
     WindowsException ( int code );
 };
 
+
 // Stream operators
 std::ostream& operator<< ( std::ostream& os, const Exception& exception );
 std::ostream& operator<< ( std::ostream& os, const WindowsException& error );
+
 
 // Find the first window handle with the given title (NOT thread safe)
 void *enumFindWindow ( const std::string& title );

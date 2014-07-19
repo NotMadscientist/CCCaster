@@ -6,10 +6,12 @@
 #include <memory>
 #include <iostream>
 
+
 #define PROTOCOL_BOILERPLATE(...)                                                                           \
     MsgType getMsgType() const override;                                                                    \
     void save ( cereal::BinaryOutputArchive& ar ) const override { ar ( __VA_ARGS__ ); }                    \
     void load ( cereal::BinaryInputArchive& ar ) override { ar ( __VA_ARGS__ ); }
+
 
 // Increase size as needed
 enum class MsgType : uint8_t
@@ -24,6 +26,7 @@ struct Serializable;
 typedef std::shared_ptr<Serializable> MsgPtr;
 
 const MsgPtr NullMsg;
+
 
 // Abstract base class for all serializable messages
 struct Serializable
@@ -69,11 +72,13 @@ private:
     friend struct SerializableSequence;
 };
 
+
 // Represents a regular message
 struct SerializableMessage : public Serializable
 {
     BaseType getBaseType() const override { return BaseType::SerializableMessage; }
 };
+
 
 // Represents a sequential message
 struct SerializableSequence : public Serializable
@@ -97,6 +102,8 @@ private:
     void loadBase ( cereal::BinaryInputArchive& ar ) override { ar ( sequence ); };
 };
 
+
+// Stream operators
 std::ostream& operator<< ( std::ostream& os, MsgType type );
 std::ostream& operator<< ( std::ostream& os, BaseType type );
 std::ostream& operator<< ( std::ostream& os, const MsgPtr& msg );

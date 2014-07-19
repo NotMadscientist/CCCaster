@@ -3,6 +3,7 @@
 #include "Socket.h"
 #include "GoBackN.h"
 
+
 struct UdpConnect : public SerializableSequence
 {
     enum class ConnectType : uint8_t { Request, Reply, Final } connectType;
@@ -12,6 +13,7 @@ struct UdpConnect : public SerializableSequence
 
     PROTOCOL_BOILERPLATE ( connectType )
 };
+
 
 class UdpSocket : public Socket, public GoBackN::Owner
 {

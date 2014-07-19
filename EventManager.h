@@ -5,6 +5,7 @@
 
 #include <memory>
 
+
 class EventManager
 {
     // Thread to join zombie thread

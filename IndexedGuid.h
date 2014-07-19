@@ -6,11 +6,13 @@
 #include <cstring>
 #include <iostream>
 
+
 // Basic guid type
 struct Guid
 {
     uint8_t guid[16];
 };
+
 
 // Guid with an extra index property
 struct IndexedGuid
@@ -18,6 +20,7 @@ struct IndexedGuid
     Guid guid;
     uint8_t index;
 };
+
 
 // Hash function
 namespace std
@@ -36,6 +39,7 @@ template<> struct hash<Guid>
     }
 };
 
+
 template<> struct hash<IndexedGuid>
 {
     inline size_t operator() ( const IndexedGuid& a ) const
@@ -53,6 +57,7 @@ template<> struct hash<IndexedGuid>
 
 } // namespace std
 
+
 // Comparison operators
 inline bool operator< ( const Guid& a, const Guid& b ) { return ( memcmp ( &a, &b, sizeof ( a ) ) < 0 ); }
 inline bool operator== ( const Guid& a, const Guid& b ) { return ( !memcmp ( &a, &b, sizeof ( a ) ) ); }
@@ -60,6 +65,7 @@ inline bool operator!= ( const Guid& a, const Guid& b ) { return ! ( a == b ); }
 inline bool operator< ( const IndexedGuid& a, const IndexedGuid& b ) { return ( memcmp ( &a, &b, sizeof ( a ) ) < 0 ); }
 inline bool operator== ( const IndexedGuid& a, const IndexedGuid& b ) { return ( !memcmp ( &a, &b, sizeof ( a ) ) ); }
 inline bool operator!= ( const IndexedGuid& a, const IndexedGuid& b ) { return ! ( a == b ); }
+
 
 // Stream operators
 inline std::istream& operator>> ( std::istream& is, IndexedGuid& a )

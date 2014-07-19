@@ -5,6 +5,7 @@
 #include <list>
 #include <unordered_set>
 
+
 template<typename T> class BlockingQueue
 {
     std::list<T> queue;
@@ -78,6 +79,7 @@ public:
         queue.clear();
     }
 };
+
 
 template<typename T> class BlockingSetQueue
 {
@@ -171,6 +173,7 @@ public:
         queue.clear();
     }
 };
+
 
 template<typename T, size_t N> class StaticBlockingQueue
 {

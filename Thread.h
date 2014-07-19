@@ -5,6 +5,7 @@
 
 #include <unordered_set>
 
+
 inline timespec gettimeoffset ( long milliseconds )
 {
     timeval tv;
@@ -16,6 +17,7 @@ inline timespec gettimeoffset ( long milliseconds )
 
     return ts;
 }
+
 
 class Mutex
 {
@@ -49,6 +51,7 @@ public:
     friend class CondVar;
 };
 
+
 class Lock
 {
     Mutex& mutex;
@@ -66,7 +69,9 @@ public:
     }
 };
 
+
 #define LOCK(MUTEX) Lock lock ## MUTEX ( MUTEX )
+
 
 class CondVar
 {
@@ -106,6 +111,7 @@ public:
     }
 };
 
+
 class Thread
 {
     mutable Mutex mutex;
@@ -137,9 +143,9 @@ public:
     virtual void run() = 0;
 };
 
+
 #define THREAD(NAME, CONTEXT)                                   \
-    class NAME : public Thread                                  \
-    {                                                           \
+    class NAME : public Thread {                                \
         CONTEXT& context;                                       \
     public:                                                     \
         NAME ( CONTEXT& context ) : context ( context ) {}      \

@@ -5,6 +5,7 @@
 
 #include <list>
 
+
 struct AckSequence : public SerializableSequence
 {
     AckSequence() {}
@@ -15,6 +16,7 @@ struct AckSequence : public SerializableSequence
     void save ( cereal::BinaryOutputArchive& ar ) const override {}
     void load ( cereal::BinaryInputArchive& ar ) override {}
 };
+
 
 class GoBackN : public Timer::Owner
 {

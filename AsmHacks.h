@@ -3,6 +3,7 @@
 #include "Utilities.h"
 #include "Constants.h"
 
+
 #define INLINE_DWORD(X)                                                         \
     static_cast<unsigned char> ( unsigned ( X ) & 0xFF ),                       \
     static_cast<unsigned char> ( ( unsigned ( X ) >> 8 ) & 0xFF ),              \
@@ -16,8 +17,10 @@
     p ## FUNC_NAME o ## FUNC_NAME = 0;                                          \
     RETURN_TYPE WINAPI m ## FUNC_NAME ( __VA_ARGS__ )
 
+
 // Write to a memory location in the same process, returns 0 on success
 int memwrite ( void *dst, const void *src, size_t len );
+
 
 namespace AsmHacks
 {

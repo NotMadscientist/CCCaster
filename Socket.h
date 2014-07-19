@@ -5,9 +5,11 @@
 #include <vector>
 #include <memory>
 
+
 #define LOG_SOCKET(SOCKET, FORMAT, ...)                                                                         \
     LOG ( "%s socket=%08x; fd=%08x; state=%s; address='%s'; " FORMAT,                                           \
           SOCKET->protocol, SOCKET, SOCKET->fd, SOCKET->state, SOCKET->address, ## __VA_ARGS__ )
+
 
 // Forward declarations
 struct _WSAPROTOCOL_INFOA;
@@ -16,6 +18,7 @@ class Socket;
 struct SocketShareData;
 
 typedef std::shared_ptr<Socket> SocketPtr;
+
 
 // Generic socket base class
 class Socket
@@ -131,6 +134,7 @@ public:
     friend class SocketManager;
 };
 
+
 // Contains data for sharing a socket across processes
 struct SocketShareData : public SerializableMessage
 {
@@ -159,5 +163,7 @@ struct SocketShareData : public SerializableMessage
     void load ( cereal::BinaryInputArchive& ar ) override;
 };
 
+
+// Stream operators
 std::ostream& operator<< ( std::ostream& os, Socket::Protocol protocol );
 std::ostream& operator<< ( std::ostream& os, Socket::State state );

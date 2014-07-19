@@ -17,6 +17,7 @@ string formatSerializableSequence ( const MsgPtr& msg )
     return toString ( "%u:'%s'", msg->getAs<SerializableSequence>().getSequence(), msg );
 }
 
+
 void GoBackN::timerExpired ( Timer *timer )
 {
     assert ( timer == &sendTimer );

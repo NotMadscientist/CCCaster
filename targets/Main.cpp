@@ -19,6 +19,7 @@ using namespace option;
 
 #define LOG_FILE FOLDER "debug.log"
 
+
 enum optionIndex { UNKNOWN, HELP, GTEST, STDOUT, PLUS };
 
 

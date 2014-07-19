@@ -16,6 +16,7 @@
 
 using namespace std;
 
+
 struct TestMessage : public SerializableSequence
 {
     std::string str;
@@ -26,6 +27,7 @@ struct TestMessage : public SerializableSequence
 
     PROTOCOL_BOILERPLATE ( str )
 };
+
 
 template<typename T, uint64_t keepAlive, uint64_t timeout>
 struct BaseTestSocket : public Socket::Owner, public Timer::Owner
@@ -45,6 +47,7 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         timer.start ( timeout );
     }
 };
+
 
 #define TEST_CONNECT(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                                  \
     TEST ( T, Connect ) {                                                                                           \

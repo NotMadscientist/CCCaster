@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <ctime>
 
+
 class Logger
 {
     // Log file
@@ -42,6 +43,7 @@ public:
     static Logger& get();
 };
 
+
 #ifndef ENABLE_LOGGING
 
 #define LOG(...)
@@ -64,7 +66,8 @@ public:
         LOG ( "this=%08x; "#LIST "=[%s]", this, list );                                                             \
     } while ( 0 )
 
-#endif
+#endif // ENABLE_LOGGING
+
 
 #define LOG_AND_THROW(EXCEPTION, FORMAT, ...)                                                                       \
     do {                                                                                                            \

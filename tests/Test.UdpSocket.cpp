@@ -24,6 +24,7 @@ TEST_SEND                   ( UdpSocket, PACKET_LOSS, LONG_TIMEOUT, LONG_TIMEOUT
 // This test doesn't make sense since there is only one UDP socket
 // TEST_SEND_WITHOUT_SERVER    ( UdpSocket, Udp, PACKET_LOSS, LONG_TIMEOUT, LONG_TIMEOUT )
 
+
 TEST ( UdpSocket, SendConnectionLess )
 {
     struct TestSocket : public Socket::Owner, public Timer::Owner

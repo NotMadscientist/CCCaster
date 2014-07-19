@@ -36,6 +36,7 @@ using namespace AsmHacks;
         }                                                                       \
     } while ( 0 )
 
+
 static void deinitialize();
 
 

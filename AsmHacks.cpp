@@ -2,6 +2,7 @@
 
 #include <windows.h>
 
+
 int memwrite ( void *dst, const void *src, size_t len )
 {
     DWORD old, tmp;
