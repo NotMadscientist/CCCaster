@@ -57,8 +57,7 @@ CC_FLAGS = -m32 $(INCLUDES) $(DEFINES)
 
 # Linker flags
 LD_FLAGS = -m32 -static -L$(CURDIR)/contrib/SDL2/build -L$(CURDIR)/contrib/SDL2/build/.libs
-LD_FLAGS += -lSDL2 -lSDL2main -lws2_32 -lwinmm -lwinpthread -ldinput8 -ldxguid -ldxerr8
-LD_FLAGS += -luser32 -lgdi32 -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid
+LD_FLAGS += -lSDL2 -lSDL2main -lws2_32 -lwinmm -lwinpthread -ldinput8 -lgdi32 -limm32 -lole32 -loleaut32 -lversion
 
 # Build options
 DEFINES += -DENABLE_LOGGING
