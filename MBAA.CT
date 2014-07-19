@@ -656,6 +656,13 @@
       <VariableType>4 Bytes</VariableType>
       <Address>00766008</Address>
     </CheatEntry>
+    <CheatEntry>
+      <ID>226</ID>
+      <Description>"Screen width"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0054D048</Address>
+    </CheatEntry>
   </CheatEntries>
   <CheatCodes>
     <CodeEntry>

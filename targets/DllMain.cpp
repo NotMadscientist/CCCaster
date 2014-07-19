@@ -9,8 +9,10 @@
 #include "Timer.h"
 #include "Thread.h"
 #include "AsmHacks.h"
+#include "D3DHook.h"
 
 #include <windows.h>
+#include <d3dx9.h>
 #include <MinHook.h>
 
 #include <vector>
@@ -39,11 +41,7 @@ using namespace AsmHacks;
     p ## FUNC_NAME o ## FUNC_NAME = 0;                                          \
     RETURN_TYPE WINAPI m ## FUNC_NAME ( __VA_ARGS__ )
 
-static volatile bool hookedWindowsCalls = false;
-static bool hookWindowsCalls();
-static void unhookWindowsCalls();
 static void deinitialize();
-static Mutex deinitMutex;
 
 
 HOOK_FUNC ( BOOL, QueryPerformanceFrequency, LARGE_INTEGER *lpFrequency  )
@@ -156,6 +154,8 @@ static enum State { UNINITIALIZED, POLLING, STOPPING, DEINITIALIZED } state = UN
 
 static shared_ptr<Main> main;
 
+static Mutex deinitMutex;
+
 extern "C" void callback()
 {
     try
@@ -169,6 +169,16 @@ extern "C" void callback()
 
             // Asm hacks that must written after the game starts
             WRITE_ASM_HACK ( disableFpsLimit );
+
+            // Hook DirectX
+            void *hwnd;
+            string err;
+            if ( ( hwnd = enumFindWindow ( CC_TITLE ) ) == 0 )
+                LOG ( "Couldn't find window" );
+            else if ( ! ( err = InitDirectX ( hwnd ) ).empty() )
+                LOG ( "InitDirectX failed: %s", err );
+            else if ( ! ( err = HookDirectX() ).empty() )
+                LOG ( "HookDirectX failed: %s", err );
 
             state = POLLING;
         }
@@ -240,13 +250,6 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
 
                 WRITE_ASM_HACK ( fixRyougiStageMusic1 );
                 WRITE_ASM_HACK ( fixRyougiStageMusic2 );
-
-                // uint64_t perfFreq;
-                // QueryPerformanceFrequency ( ( LARGE_INTEGER * ) &perfFreq );
-                // LOG ( "perfFreq=%llu", perfFreq );
-
-                if ( !hookWindowsCalls() )
-                    exit ( 0 );
             }
             catch ( const WindowsException& err )
             {
@@ -276,7 +279,6 @@ static void deinitialize()
         return;
 
     main.reset();
-    unhookWindowsCalls();
     EventManager::get().release();
     ControllerManager::get().deinitialize();
     TimerManager::get().deinitialize();
@@ -285,41 +287,61 @@ static void deinitialize()
     state = DEINITIALIZED;
 }
 
-static bool hookWindowsCalls()
+static ID3DXFont *font = 0;
+
+void PresentFrameBegin ( IDirect3DDevice9 *device )
 {
-    if ( hookedWindowsCalls )
-        return true;
-
-    if ( MH_Initialize() != MH_OK )
+    if ( !font )
     {
-        LOG ( "MH_Initialize failed" );
-        return false;
+        D3DXCreateFont (
+            device,
+            24,                             // height
+            0,                              // width
+            FW_NORMAL,                      // weight
+            1,                              // # of mipmap levels
+            FALSE,                          // italic
+            DEFAULT_CHARSET,                // charset
+            OUT_DEFAULT_PRECIS,             // output precision
+            ANTIALIASED_QUALITY,            // quality
+            DEFAULT_PITCH | FF_DONTCARE,    // pitch and family
+            "Courier New",                  // typeface name
+            &font );
     }
 
-    if ( MH_CreateHook ( ( void * ) &QueryPerformanceFrequency, ( void * ) &mQueryPerformanceFrequency,
-                         ( void ** ) &oQueryPerformanceFrequency ) != MH_OK )
-    {
-        LOG ( "MH_CreateHook for QueryPerformanceFrequency failed" );
-        return false;
-    }
+    D3DVIEWPORT9 viewport;
+    device->GetViewport ( &viewport );
 
-    if ( MH_EnableHook ( ( void * ) &QueryPerformanceFrequency ) != MH_OK )
+    // This should be the only viewport with the same width as the main viewport
+    if ( viewport.Width == * ( uint32_t * ) CC_SCREEN_WIDTH_ADDR )
     {
-        LOG ( "MH_EnableHook for QueryPerformanceFrequency failed" );
-        return false;
-    }
+        const long centerX = ( long ) viewport.Width / 2;
+        const long centerY = ( long ) viewport.Height / 2;
 
-    hookedWindowsCalls = true;
-    return true;
+        RECT rect;
+        rect.left    = centerX - 200;
+        rect.right   = centerX + 200;
+        rect.top     = 0;
+        rect.bottom  = 20;
+
+        font->DrawText (
+            0,                              // Text as a ID3DXSprite object
+            "Lorem ipsum dolor sit amet",   // Text as a C-string
+            -1,                             // Number of letters, -1 for null-terminated
+            &rect,                          // Text bounding RECT
+            DT_CENTER,                      // Text formatting
+            D3DCOLOR_XRGB ( 0, 255, 0 ) );  // Text color
+    }
 }
 
-static void unhookWindowsCalls()
+void PresentFrameEnd ( IDirect3DDevice9 *device )
 {
-    if ( !hookedWindowsCalls )
-        return;
+}
 
-    MH_DisableHook ( ( void * ) &QueryPerformanceFrequency );
-    MH_RemoveHook ( ( void * ) &QueryPerformanceFrequency );
-    MH_Uninitialize();
-    hookedWindowsCalls = false;
+void InvalidateDeviceObjects()
+{
+    if ( font )
+    {
+        font->OnLostDevice();
+        font = 0;
+    }
 }

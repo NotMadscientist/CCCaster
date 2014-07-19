@@ -166,3 +166,6 @@ inline void hash_combine ( size_t& seed, const T& v )
 }
 
 } // namespace std
+
+// Find the first window handle with the given title (NOT thread safe)
+void *enumFindWindow ( const std::string& title );

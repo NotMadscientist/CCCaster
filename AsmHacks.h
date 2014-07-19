@@ -1,14 +1,7 @@
 #pragma once
 
 #include "Utilities.h"
-
-// Game constants and addresses are prefixed CC
-#define CC_LOOP_START_ADDR  ( ( char * ) 0x40D330 ) // Start of the main event loop
-#define CC_PERF_FREQ_ADDR   ( ( char * ) 0x774A80 ) // Value of QueryPerformanceFrequency for game FPS
-
-// Asm hack are prefix MM (for modified memory), they should be written to safe locations
-#define MM_HOOK_CALL1_ADDR  ( ( char * ) 0x40D032 )
-#define MM_HOOK_CALL2_ADDR  ( ( char * ) 0x40D411 )
+#include "Constants.h"
 
 #define INLINE_DWORD_FF { 0xFF, 0x00, 0x00, 0x00 }
 

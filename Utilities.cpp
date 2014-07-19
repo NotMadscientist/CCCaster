@@ -5,6 +5,7 @@
 #include <miniz.h>
 #include <md5.h>
 #include <winsock2.h>
+#include <windows.h>
 
 #include <cctype>
 #include <iostream>
@@ -123,4 +124,37 @@ int memwrite ( void *dst, const void *src, size_t len )
         return GetLastError();
 
     return 0;
+}
+
+void *enumFindWindow ( const string& title )
+{
+    static string tmpTitle;
+    static HWND tmpHwnd;
+
+    struct _
+    {
+        static BOOL CALLBACK enumWindowsProc ( HWND hwnd, LPARAM lParam )
+        {
+            if ( hwnd == 0 )
+                return true;
+
+            char buffer[4096];
+            GetWindowText ( hwnd, buffer, sizeof ( buffer ) );
+
+            string name = buffer;
+            while ( !name.empty() && name.back() == ' ' )
+                name.pop_back();
+            while ( !name.empty() && name[0] == ' ' )
+                name = name.substr ( 1 );
+
+            if ( tmpTitle == name )
+                tmpHwnd = hwnd;
+            return true;
+        }
+    };
+
+    tmpTitle = title;
+    tmpHwnd = 0;
+    EnumWindows ( _::enumWindowsProc, 0 );
+    return tmpHwnd;
 }
