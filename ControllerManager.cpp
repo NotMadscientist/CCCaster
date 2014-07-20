@@ -39,8 +39,9 @@ void ControllerManager::check()
                 Controller *controller = joysticks[id].get();
                 assert ( controller != 0 );
 
+                // LOG_CONTROLLER ( controller, "id=%d; SDL_JOYAXISMOTION", id );
+
                 controller->joystickEvent ( events[i].jaxis );
-                LOG_CONTROLLER ( controller, "id=%d; SDL_JOYAXISMOTION", id );
                 break;
             }
 
@@ -50,8 +51,9 @@ void ControllerManager::check()
                 Controller *controller = joysticks[id].get();
                 assert ( controller != 0 );
 
+                // LOG_CONTROLLER ( controller, "id=%d; SDL_JOYHATMOTION", id );
+
                 controller->joystickEvent ( events[i].jhat );
-                LOG_CONTROLLER ( controller, "id=%d; SDL_JOYHATMOTION", id );
                 break;
             }
 
@@ -61,8 +63,9 @@ void ControllerManager::check()
                 Controller *controller = joysticks[id].get();
                 assert ( controller != 0 );
 
+                // LOG_CONTROLLER ( controller, "id=%d; SDL_JOYBUTTONDOWN", id );
+
                 controller->joystickEvent ( events[i].jbutton );
-                LOG_CONTROLLER ( controller, "id=%d; SDL_JOYBUTTONDOWN", id );
                 break;
             }
 
@@ -72,8 +75,9 @@ void ControllerManager::check()
                 Controller *controller = joysticks[id].get();
                 assert ( controller != 0 );
 
+                // LOG_CONTROLLER ( controller, "id=%d; SDL_JOYBUTTONUP", id );
+
                 controller->joystickEvent ( events[i].jbutton );
-                LOG_CONTROLLER ( controller, "id=%d; SDL_JOYBUTTONUP", id );
                 break;
             }
 
@@ -91,13 +95,13 @@ void ControllerManager::check()
                 if ( owner )
                     owner->attachedJoystick ( controller );
 
-                LOG ( "joysticks :%s", joysticks.empty() ? " (empty)" : "" );
-                for ( const auto& kv : joysticks )
-                    LOG ( "%d -> %08x", kv.first, kv.second.get() );
+                // LOG ( "joysticks :%s", joysticks.empty() ? " (empty)" : "" );
+                // for ( const auto& kv : joysticks )
+                //     LOG ( "%d -> %08x", kv.first, kv.second.get() );
 
-                LOG ( "Controller::guidBitset :%s", Controller::guidBitset.empty() ? " (empty)" : "" );
-                for ( const auto& kv : Controller::guidBitset )
-                    LOG ( "'%s' -> %08x", kv.first, kv.second );
+                // LOG ( "Controller::guidBitset :%s", Controller::guidBitset.empty() ? " (empty)" : "" );
+                // for ( const auto& kv : Controller::guidBitset )
+                //     LOG ( "'%s' -> %08x", kv.first, kv.second );
                 break;
             }
 
@@ -115,13 +119,13 @@ void ControllerManager::check()
                 SDL_JoystickClose ( controller->joystick );
                 joysticks.erase ( id );
 
-                LOG ( "joysticks :%s", joysticks.empty() ? " (empty)" : "" );
-                for ( const auto& kv : joysticks )
-                    LOG ( "%d -> %08x", kv.first, kv.second.get() );
+                // LOG ( "joysticks :%s", joysticks.empty() ? " (empty)" : "" );
+                // for ( const auto& kv : joysticks )
+                //     LOG ( "%d -> %08x", kv.first, kv.second.get() );
 
-                LOG ( "Controller::guidBitset :%s", Controller::guidBitset.empty() ? " (empty)" : "" );
-                for ( const auto& kv : Controller::guidBitset )
-                    LOG ( "'%s' -> %08x", kv.first, kv.second );
+                // LOG ( "Controller::guidBitset :%s", Controller::guidBitset.empty() ? " (empty)" : "" );
+                // for ( const auto& kv : Controller::guidBitset )
+                //     LOG ( "'%s' -> %08x", kv.first, kv.second );
                 break;
             }
 

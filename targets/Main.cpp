@@ -23,18 +23,37 @@ using namespace option;
 enum optionIndex { UNKNOWN, HELP, GTEST, STDOUT, PLUS };
 
 
-struct Main : public Socket::Owner, public Timer::Owner, public ControllerManager::Owner
+struct Main : public Socket::Owner, public Timer::Owner, public ControllerManager::Owner, public Controller::Owner
 {
     HANDLE pipe;
     SocketPtr ipcSocket;
     Timer timer;
+    Controller *controller;
 
-    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
+    void doneMapping ( Controller *controller, uint32_t key ) override
+    {
+        assert ( controller == this->controller );
+    }
+
+    void attachedJoystick ( Controller *controller ) override
+    {
+        this->controller = controller;
+
+        controller->startMapping ( this, 0x10 );
+    }
+
+    void detachedJoystick ( Controller *controller ) override
+    {
+        if ( this->controller == controller )
+            this->controller = 0;
+    }
+
+    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
     {
         LOG ( "Got %s from '%s'", msg, address );
     }
 
-    void timerExpired ( Timer *timer )
+    void timerExpired ( Timer *timer ) override
     {
         assert ( timer == &this->timer );
     }
@@ -120,6 +139,8 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
         }
 
         LOG ( "processId=%08x", processId );
+
+        // controller = ControllerManager::get().getKeyboard();
     }
 
     ~Main()

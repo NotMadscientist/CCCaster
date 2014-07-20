@@ -12,8 +12,8 @@ public:
 
     struct Owner
     {
-        inline void attachedJoystick ( Controller *controller ) {}
-        inline void detachedJoystick ( Controller *controller ) {}
+        inline virtual void attachedJoystick ( Controller *controller ) {}
+        inline virtual void detachedJoystick ( Controller *controller ) {}
     };
 
     Owner *owner;
@@ -41,6 +41,9 @@ public:
 
     // Clear controllers
     void clear();
+
+    // Get the keyboard controller
+    inline Controller *getKeyboard() { return &keyboard; };
 
     // Initialize / deinitialize controller manager
     void initialize ( Owner *owner );

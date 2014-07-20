@@ -46,19 +46,19 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
     SocketPtr ipcSocket;
     Timer timer;
 
-    // void acceptEvent ( Socket *serverSocket ) { serverSocket->accept ( this ).reset(); }
+    // void acceptEvent ( Socket *serverSocket ) override { serverSocket->accept ( this ).reset(); }
 
-    void connectEvent ( Socket *socket )
+    void connectEvent ( Socket *socket ) override
     {
         LOG ( "Socket %08x connected", socket );
     }
 
-    void disconnectEvent ( Socket *socket )
+    void disconnectEvent ( Socket *socket ) override
     {
         LOG ( "Socket %08x disconnected", socket );
     }
 
-    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
+    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
     {
         LOG ( "Got %s from '%s'; socket=%08x", msg, address, socket );
 
