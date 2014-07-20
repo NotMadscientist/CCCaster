@@ -15,12 +15,15 @@ using namespace std;
 #define EVENT_JOY_HAT       2
 #define EVENT_JOY_BUTTON    3
 
+#define AXIS_CENTERED       0
 #define AXIS_POSITIVE       1
 #define AXIS_NEGATIVE       2
 
 
 void Controller::joystickEvent ( const SDL_JoyAxisEvent& event )
 {
+    uint32_t *values = mappings[EVENT_JOY_AXIS][event.axis];
+
     uint8_t value = 0;
     if ( abs ( event.value ) > deadzones[event.axis] )
         value = ( event.value > 0 ? AXIS_POSITIVE : AXIS_NEGATIVE );
@@ -33,11 +36,9 @@ void Controller::joystickEvent ( const SDL_JoyAxisEvent& event )
         if ( value == 0 && isActive )
         {
             // Done mapping if the axis returned to 0
-            mappings[EVENT_JOY_AXIS][event.axis][activeAxes[AXIS_POSITIVE] ? AXIS_POSITIVE : AXIS_NEGATIVE] = keyToMap;
+            values[activeAxes[AXIS_POSITIVE] ? AXIS_POSITIVE : AXIS_NEGATIVE] = keyToMap;
 
-            mappings[EVENT_JOY_AXIS][event.axis][0] =
-                ( mappings[EVENT_JOY_AXIS][event.axis][AXIS_POSITIVE]
-                  | mappings[EVENT_JOY_AXIS][event.axis][AXIS_NEGATIVE] );
+            values[AXIS_CENTERED] = ( values[AXIS_POSITIVE] | values[AXIS_NEGATIVE] );
 
             LOG_CONTROLLER ( this, "Mapped axis%d %s to %08x",
                              event.axis, ( activeAxes[AXIS_POSITIVE] ? "+" : "-" ), keyToMap );
@@ -55,15 +56,10 @@ void Controller::joystickEvent ( const SDL_JoyAxisEvent& event )
         return;
     }
 
-    uint32_t key = mappings[EVENT_JOY_AXIS][event.axis][value];
+    state &= ~values[AXIS_CENTERED];
 
-    if ( key != 0 )
-    {
-        if ( value == 0 )
-            state &= ~key;
-        else
-            state |= key;
-    }
+    if ( value != AXIS_CENTERED )
+        state |= values[value];
 
     LOG_CONTROLLER ( this, "axis=%d; value=%s; EVENT_JOY_AXIS",
                      event.axis, ( value == 0 ? "0" : ( value == AXIS_POSITIVE ? "+" : "-" ) ) );
@@ -91,74 +87,62 @@ static int ConvertHatToNumPad ( int hat )
 
 void Controller::joystickEvent ( const SDL_JoyHatEvent& event )
 {
-    uint8_t vert = event.value & ( SDL_HAT_LEFT | SDL_HAT_RIGHT );
-    uint8_t hori = event.value & ( SDL_HAT_UP | SDL_HAT_DOWN );
+    uint32_t *values = mappings[EVENT_JOY_HAT][event.hat];
 
-    // if ( keyToMap != 0 )
-    // {
-    //     uint32_t *activeValues = activeMappings[EVENT_JOY_HAT][event.hat];
-    //     uint8_t activeValue = 0;
-    //     for ( int i = 0; i < 16; ++i )
-    //     {
-    //         if ( activeValues[i] )
-    //         {
-    //             activeValue = i;
-    //             break;
-    //         }
-    //     }
-
-    //     if ( event.value == SDL_HAT_CENTERED && activeValue )
-    //     {
-    //         // Done mapping if the hat is centered
-    //         mappings[EVENT_JOY_HAT][event.hat][activeValue] = activeValues[activeValue];
-
-    //         mappings[EVENT_JOY_HAT][event.hat][SDL_HAT_CENTERED] = 0;
-    //         for ( int i = 0; i < 16; ++i )
-    //             mappings[EVENT_JOY_HAT][event.hat][SDL_HAT_CENTERED] |= mappings[EVENT_JOY_HAT][event.hat][i];
-
-    //         LOG_CONTROLLER ( this, "Mapped hat%d %d to %08x",
-    //                          event.hat, ConvertHatToNumPad ( activeValue ), keyToMap );
-
-    //         if ( owner != 0 )
-    //             owner->doneMapping ( this, keyToMap );
-    //         cancelMapping();
-    //     }
-
-    //     // Otherwise ignore already active mappings
-    //     if ( activeValue )
-    //         return;
-
-    //     activeValues[event.value] = keyToMap;
-    //     return;
-    // }
-
-    uint32_t key1 = mappings[EVENT_JOY_HAT][event.hat][vert];
-
-    if ( key1 != 0 )
+    if ( keyToMap != 0 )
     {
-        if ( vert == SDL_HAT_CENTERED )
-            state &= ~key1;
-        else
-            state |= key1;
+        uint32_t *activeValues = activeMappings[EVENT_JOY_HAT][event.hat];
+
+        uint8_t activeValue = 0;
+
+        if ( activeValues[SDL_HAT_UP] )
+            activeValue = SDL_HAT_UP;
+        else if ( activeValues[SDL_HAT_RIGHT] )
+            activeValue = SDL_HAT_RIGHT;
+        else if ( activeValues[SDL_HAT_DOWN] )
+            activeValue = SDL_HAT_DOWN;
+        else if ( activeValues[SDL_HAT_LEFT] )
+            activeValue = SDL_HAT_LEFT;
+
+        if ( event.value == SDL_HAT_CENTERED && activeValue )
+        {
+            // Done mapping if the hat is centered
+            values[activeValue] = activeValues[activeValue];
+
+            values[SDL_HAT_CENTERED] = 0;
+            values[SDL_HAT_CENTERED] |= values[SDL_HAT_UP];
+            values[SDL_HAT_CENTERED] |= values[SDL_HAT_RIGHT];
+            values[SDL_HAT_CENTERED] |= values[SDL_HAT_DOWN];
+            values[SDL_HAT_CENTERED] |= values[SDL_HAT_LEFT];
+
+            LOG_CONTROLLER ( this, "Mapped hat%d %d to %08x",
+                             event.hat, ConvertHatToNumPad ( activeValue ), keyToMap );
+
+            if ( owner != 0 )
+                owner->doneMapping ( this, keyToMap );
+            cancelMapping();
+        }
+
+        // Otherwise ignore already active mappings
+        if ( activeValue )
+            return;
+
+        activeValues[event.value] = keyToMap;
+        return;
     }
 
-    uint32_t key2 = mappings[EVENT_JOY_HAT][event.hat][hori];
+    state &= ~values[SDL_HAT_CENTERED];
 
-    if ( key2 != 0 )
-    {
-        if ( hori == SDL_HAT_CENTERED )
-            state &= ~key2;
-        else
-            state |= key2;
-    }
+    if ( event.value & SDL_HAT_UP )    state |= values[SDL_HAT_UP];
+    if ( event.value & SDL_HAT_RIGHT ) state |= values[SDL_HAT_RIGHT];
+    if ( event.value & SDL_HAT_DOWN )  state |= values[SDL_HAT_DOWN];
+    if ( event.value & SDL_HAT_LEFT )  state |= values[SDL_HAT_LEFT];
 
     LOG_CONTROLLER ( this, "hat=%d; value=%d; EVENT_JOY_HAT", event.hat, ConvertHatToNumPad ( event.value ) );
 }
 
 void Controller::joystickEvent ( const SDL_JoyButtonEvent& event )
 {
-    uint32_t key = mappings[EVENT_JOY_BUTTON][event.button][event.state];
-
     if ( keyToMap != 0 )
     {
         uint32_t *activeStates = activeMappings[EVENT_JOY_BUTTON][event.button];
@@ -184,6 +168,8 @@ void Controller::joystickEvent ( const SDL_JoyButtonEvent& event )
         activeStates[event.state] = keyToMap;
         return;
     }
+
+    uint32_t key = mappings[EVENT_JOY_BUTTON][event.button][event.state];
 
     if ( key == 0 )
         return;
