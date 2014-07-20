@@ -66,7 +66,7 @@ void SocketManager::check ( uint64_t timeout )
     if ( count == SOCKET_ERROR )
     {
         WindowsException err = WSAGetLastError();
-        LOG_AND_THROW ( err, "; select failed" );
+        LOG_AND_THROW ( err, "select failed" );
     }
 
     if ( count == 0 )

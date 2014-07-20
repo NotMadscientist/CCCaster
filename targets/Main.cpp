@@ -64,7 +64,7 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
         if ( pipe == INVALID_HANDLE_VALUE )
         {
             WindowsException err = GetLastError();
-            LOG_AND_THROW ( err, "; CreateNamedPipe failed" );
+            LOG_AND_THROW ( err, "CreateNamedPipe failed" );
         }
 
         LOG ( "Starting " MBAA_EXE );
@@ -81,7 +81,7 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
             if ( error != ERROR_PIPE_CONNECTED )
             {
                 WindowsException err = GetLastError();
-                LOG_AND_THROW ( err, "; ConnectNamedPipe failed" );
+                LOG_AND_THROW ( err, "ConnectNamedPipe failed" );
             }
         }
 
@@ -94,7 +94,7 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
         if ( !ReadFile ( pipe, &ipcHost.port, sizeof ( ipcHost.port ), &bytes, 0 ) )
         {
             WindowsException err = GetLastError();
-            LOG_AND_THROW ( err, "; ReadFile failed" );
+            LOG_AND_THROW ( err, "ReadFile failed" );
         }
 
         if ( bytes != sizeof ( ipcHost.port ) )
@@ -110,7 +110,7 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
         if ( !ReadFile ( pipe, &processId, sizeof ( processId ), &bytes, 0 ) )
         {
             WindowsException err = GetLastError();
-            LOG_AND_THROW ( err, "; ReadFile failed" );
+            LOG_AND_THROW ( err, "ReadFile failed" );
         }
 
         if ( bytes != sizeof ( processId ) )

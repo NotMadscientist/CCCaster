@@ -26,7 +26,7 @@ void ControllerManager::check()
     if ( count < 0 )
     {
         Exception err = toString ( "SDL error: '%s'", SDL_GetError() );
-        LOG_AND_THROW ( err, "; SDL_PeepEvents failed" );
+        LOG_AND_THROW ( err, "SDL_PeepEvents failed" );
     }
 
     for ( int i = 0; i < count; ++i )
@@ -155,7 +155,7 @@ void ControllerManager::initialize ( Owner *owner )
     if ( SDL_Init ( SDL_INIT_JOYSTICK ) < 0 )
     {
         Exception err = toString ( "SDL error: '%s'", SDL_GetError() );
-        LOG_AND_THROW ( err, "; SDL_Init(SDL_INIT_JOYSTICK) failed" );
+        LOG_AND_THROW ( err, "SDL_Init(SDL_INIT_JOYSTICK) failed" );
     }
 
     this->owner = owner;

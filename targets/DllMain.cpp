@@ -97,7 +97,7 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
         if ( pipe == INVALID_HANDLE_VALUE )
         {
             WindowsException err = GetLastError();
-            LOG_AND_THROW ( err, "; CreateFile failed" );
+            LOG_AND_THROW ( err, "CreateFile failed" );
         }
 
         LOG ( "Pipe connected" );
@@ -107,7 +107,7 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
         if ( !WriteFile ( pipe, & ( ipcSocket->address.port ), sizeof ( ipcSocket->address.port ), &bytes, 0 ) )
         {
             WindowsException err = GetLastError();
-            LOG_AND_THROW ( err, "; WriteFile failed" );
+            LOG_AND_THROW ( err, "WriteFile failed" );
         }
 
         if ( bytes != sizeof ( ipcSocket->address.port ) )
@@ -122,7 +122,7 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
         if ( !WriteFile ( pipe, &processId, sizeof ( processId ), &bytes, 0 ) )
         {
             WindowsException err = GetLastError();
-            LOG_AND_THROW ( err, "; WriteFile failed" );
+            LOG_AND_THROW ( err, "WriteFile failed" );
         }
 
         if ( bytes != sizeof ( processId ) )
