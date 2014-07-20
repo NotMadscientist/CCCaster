@@ -30,18 +30,24 @@ void Controller::joystickEvent ( const SDL_JoyAxisEvent& event )
 
     if ( keyToMap != 0 )
     {
-        uint32_t *activeAxes = activeMappings[EVENT_JOY_AXIS][event.axis];
-        bool isActive = ( activeAxes[AXIS_POSITIVE] || activeAxes[AXIS_NEGATIVE] );
+        uint32_t *activeValues = activeMappings[EVENT_JOY_AXIS][event.axis];
 
-        if ( value == 0 && isActive )
+        uint8_t activeValue = 0;
+
+        if ( activeValues[AXIS_POSITIVE] )
+            activeValue = AXIS_POSITIVE;
+        else if ( activeValues[AXIS_NEGATIVE] )
+            activeValue = AXIS_NEGATIVE;
+
+        if ( value == 0 && activeValue )
         {
             // Done mapping if the axis returned to 0
-            values[activeAxes[AXIS_POSITIVE] ? AXIS_POSITIVE : AXIS_NEGATIVE] = keyToMap;
+            values[activeValue] = keyToMap;
 
             values[AXIS_CENTERED] = ( values[AXIS_POSITIVE] | values[AXIS_NEGATIVE] );
 
             LOG_CONTROLLER ( this, "Mapped axis%d %s to %08x",
-                             event.axis, ( activeAxes[AXIS_POSITIVE] ? "+" : "-" ), keyToMap );
+                             event.axis, ( activeValue == AXIS_POSITIVE ? "+" : "-" ), keyToMap );
 
             if ( owner != 0 )
                 owner->doneMapping ( this, keyToMap );
@@ -49,10 +55,10 @@ void Controller::joystickEvent ( const SDL_JoyAxisEvent& event )
         }
 
         // Otherwise ignore already active mappings
-        if ( isActive )
+        if ( activeValue )
             return;
 
-        activeAxes[value] = keyToMap;
+        activeValues[value] = keyToMap;
         return;
     }
 
@@ -133,10 +139,15 @@ void Controller::joystickEvent ( const SDL_JoyHatEvent& event )
 
     state &= ~values[SDL_HAT_CENTERED];
 
-    if ( event.value & SDL_HAT_UP )    state |= values[SDL_HAT_UP];
-    if ( event.value & SDL_HAT_RIGHT ) state |= values[SDL_HAT_RIGHT];
-    if ( event.value & SDL_HAT_DOWN )  state |= values[SDL_HAT_DOWN];
-    if ( event.value & SDL_HAT_LEFT )  state |= values[SDL_HAT_LEFT];
+    if ( event.value & SDL_HAT_UP )
+        state |= values[SDL_HAT_UP];
+    else if ( event.value & SDL_HAT_DOWN )
+        state |= values[SDL_HAT_DOWN];
+
+    if ( event.value & SDL_HAT_LEFT )
+        state |= values[SDL_HAT_LEFT];
+    else if ( event.value & SDL_HAT_RIGHT )
+        state |= values[SDL_HAT_RIGHT];
 
     LOG_CONTROLLER ( this, "hat=%d; value=%d; EVENT_JOY_HAT", event.hat, ConvertHatToNumPad ( event.value ) );
 }
