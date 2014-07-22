@@ -191,7 +191,7 @@ extern "C" void callback()
                 void *hwnd;
                 string err;
                 if ( ( hwnd = enumFindWindow ( CC_TITLE ) ) == 0 )
-                    LOG ( "Couldn't find window" );
+                    LOG ( "Couldn't find window '%s'", CC_TITLE );
                 else if ( ! ( err = InitDirectX ( hwnd ) ).empty() )
                     LOG ( "InitDirectX failed: %s", err );
                 else if ( ! ( err = HookDirectX() ).empty() )
