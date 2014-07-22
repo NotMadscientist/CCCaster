@@ -189,7 +189,7 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
 
         openGame();
 
-        timer.start ( 5000 );
+        // timer.start ( 5000 );
     }
 
     ~Main()
