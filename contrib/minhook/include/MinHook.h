@@ -89,7 +89,7 @@ extern "C" {
 	//   pTarget    [in]  A pointer to the target function, which will be overridden by the detour function.
 	//   pDetour    [in]  A pointer to the detour function, which will override the target function.
 	//   ppOriginal [out] A pointer to the trampoline function, which will be used to call the original target function.
-	MH_STATUS WINAPI MH_CreateHook(void* pTarget, void* const pDetour, void** ppOriginal);
+	MH_STATUS WINAPI MH_CreateHook(void* pTarget, void* const pDetour, void** ppOriginal = 0);
 
 	// Removes the already created hook.
 	// Parameters:

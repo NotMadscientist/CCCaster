@@ -276,7 +276,8 @@ namespace MinHook
 			pHook = &(*i);
 		}
 
-		*ppOriginal = pHook->pTrampoline;
+		if ( ppOriginal )
+			*ppOriginal = pHook->pTrampoline;
 
 		return MH_OK;
 	}
