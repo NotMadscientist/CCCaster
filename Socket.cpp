@@ -239,6 +239,12 @@ MsgPtr Socket::share ( int processId )
 
 bool Socket::send ( const char *buffer, size_t len )
 {
+    if ( fd == 0 || isDisconnected() )
+    {
+        LOG_SOCKET ( this, "Cannot send over disconnected socket" );
+        return false;
+    }
+
     assert ( isClient() == true );
     assert ( fd != 0 );
 
