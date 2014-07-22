@@ -8,13 +8,9 @@
 
 struct AckSequence : public SerializableSequence
 {
-    AckSequence() {}
-
-    AckSequence ( uint32_t sequence ) : SerializableSequence ( sequence ) {}
-
+    inline AckSequence() {}
+    inline AckSequence ( uint32_t sequence ) : SerializableSequence ( sequence ) {}
     MsgType getMsgType() const override;
-    void save ( cereal::BinaryOutputArchive& ar ) const override {}
-    void load ( cereal::BinaryInputArchive& ar ) override {}
 };
 
 

@@ -35,7 +35,7 @@ void SocketManager::check ( uint64_t timeout )
                 continue;
             }
 
-            LOG ( "socket %08x removed", *it ); // Don't log any extra data cus already deleted
+            LOG ( "socket=%08x removed", *it ); // Don't log any extra data cus already deleted
             activeSockets.erase ( it++ );
         }
 

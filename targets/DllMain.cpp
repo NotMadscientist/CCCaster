@@ -10,6 +10,7 @@
 #include "Thread.h"
 #include "AsmHacks.h"
 #include "D3DHook.h"
+#include "Messages.h"
 
 #include <windows.h>
 #include <d3dx9.h>
@@ -46,7 +47,11 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
     SocketPtr ipcSocket;
     Timer timer;
 
-    // void acceptEvent ( Socket *serverSocket ) override { serverSocket->accept ( this ).reset(); }
+    void acceptEvent ( Socket *serverSocket ) override
+    {
+        if ( serverSocket == ipcSocket.get() )
+            ipcSocket = serverSocket->accept ( this );
+    }
 
     void connectEvent ( Socket *socket ) override
     {
@@ -61,6 +66,16 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
     {
         LOG ( "Got %s from '%s'; socket=%08x", msg, address, socket );
+
+        switch ( msg->getMsgType() )
+        {
+            case MsgType::ExitGame:
+                EventManager::get().stop();
+                break;
+
+            default:
+                break;
+        }
 
         // if ( msg->getMsgType() == MsgType::SocketShareData )
         // {
@@ -81,7 +96,7 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
         assert ( timer == &this->timer );
     }
 
-    Main() : pipe ( 0 ), ipcSocket ( UdpSocket::bind ( this, 0 ) ), timer ( this )
+    Main() : pipe ( 0 ), ipcSocket ( TcpSocket::listen ( this, 0 ) ), timer ( this )
     {
         LOG ( "Connecting pipe" );
 
@@ -137,6 +152,13 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
     {
         if ( pipe )
             CloseHandle ( pipe );
+
+        if ( ipcSocket )
+        {
+            if ( ipcSocket->isClient() )
+                ipcSocket->send ( new ExitGame() );
+            ipcSocket.reset();
+        }
     }
 };
 
@@ -148,40 +170,47 @@ static Mutex deinitMutex;
 
 extern "C" void callback()
 {
+    if ( state == DEINITIALIZED )
+        return;
+
     try
     {
-        if ( state == UNINITIALIZED )
+        do
         {
-            // Joystick and timer must be initialized in the main thread
-            TimerManager::get().initialize();
-            ControllerManager::get().initialize ( main.get() );
-            EventManager::get().startPolling();
+            if ( state == UNINITIALIZED )
+            {
+                // Joystick and timer must be initialized in the main thread
+                TimerManager::get().initialize();
+                ControllerManager::get().initialize ( main.get() );
+                EventManager::get().startPolling();
 
-            // Asm hacks that must written after the game starts
-            WRITE_ASM_HACK ( disableFpsLimit );
+                // Asm hacks that must written after the game starts
+                WRITE_ASM_HACK ( disableFpsLimit );
 
-            // Hook DirectX
-            void *hwnd;
-            string err;
-            if ( ( hwnd = enumFindWindow ( CC_TITLE ) ) == 0 )
-                LOG ( "Couldn't find window" );
-            else if ( ! ( err = InitDirectX ( hwnd ) ).empty() )
-                LOG ( "InitDirectX failed: %s", err );
-            else if ( ! ( err = HookDirectX() ).empty() )
-                LOG ( "HookDirectX failed: %s", err );
+                // Hook DirectX
+                void *hwnd;
+                string err;
+                if ( ( hwnd = enumFindWindow ( CC_TITLE ) ) == 0 )
+                    LOG ( "Couldn't find window" );
+                else if ( ! ( err = InitDirectX ( hwnd ) ).empty() )
+                    LOG ( "InitDirectX failed: %s", err );
+                else if ( ! ( err = HookDirectX() ).empty() )
+                    LOG ( "HookDirectX failed: %s", err );
 
-            state = POLLING;
+                state = POLLING;
+            }
+
+            if ( state != POLLING )
+                break;
+
+            // Poll for events
+            if ( !EventManager::get().poll ( FRAME_INTERVAL ) )
+            {
+                state = STOPPING;
+                break;
+            }
         }
-
-        if ( state != POLLING )
-            return;
-
-        // Poll for events
-        if ( !EventManager::get().poll ( FRAME_INTERVAL ) )
-        {
-            state = STOPPING;
-            return;
-        }
+        while ( 0 );
     }
     catch ( const WindowsException& err )
     {
@@ -195,10 +224,21 @@ extern "C" void callback()
 
     if ( state == STOPPING )
     {
+        LOG ( "Exiting" );
+        ControllerManager::get().deinitialize(); // Joystick must be deinitialized on the same thread
         deinitialize();
         exit ( 0 );
     }
 }
+
+static const Asm hookCallback1 =
+{
+    MM_HOOK_CALL1_ADDR,
+    {
+        0xE8, INLINE_DWORD ( ( ( char * ) &callback ) - MM_HOOK_CALL1_ADDR - 5 ), // call callback
+        0xE9, INLINE_DWORD ( MM_HOOK_CALL2_ADDR - MM_HOOK_CALL1_ADDR - 10 ) // jmp MM_HOOK_CALL2_ADDR
+    }
+};
 
 extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
 {
@@ -207,20 +247,12 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
         case DLL_PROCESS_ATTACH:
             Logger::get().initialize ( LOG_FILE );
             LOG ( "DLL_PROCESS_ATTACH" );
+
             try
             {
                 SocketManager::get().initialize();
 
                 main.reset ( new Main() );
-
-                static const Asm hookCallback1 =
-                {
-                    MM_HOOK_CALL1_ADDR,
-                    {
-                        0xE8, INLINE_DWORD ( ( ( char * ) &callback ) - MM_HOOK_CALL1_ADDR - 5 ), // call callback
-                        0xE9, INLINE_DWORD ( MM_HOOK_CALL2_ADDR - MM_HOOK_CALL1_ADDR - 10 ) // jmp MM_HOOK_CALL2_ADDR
-                    }
-                };
 
                 WRITE_ASM_HACK ( hookCallback1 );
                 WRITE_ASM_HACK ( hookCallback2 );
@@ -250,6 +282,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
                 LOG ( "Unknown exception!" );
                 exit ( 0 );
             }
+
             break;
 
         case DLL_PROCESS_DETACH:
@@ -269,11 +302,17 @@ static void deinitialize()
         return;
 
     main.reset();
+
     EventManager::get().release();
-    ControllerManager::get().deinitialize();
     TimerManager::get().deinitialize();
     SocketManager::get().deinitialize();
+    // Joystick must be deinitialized on the same thread it was initialized
     Logger::get().deinitialize();
+
+    loopStartJump.revert();
+    hookCallback2.revert();
+    hookCallback1.revert();
+
     state = DEINITIALIZED;
 }
 

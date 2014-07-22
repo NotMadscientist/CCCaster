@@ -23,7 +23,14 @@ namespace AsmHacks
 
 int Asm::write() const
 {
+    backup.resize ( bytes.size() );
+    memcpy ( &backup[0], addr, backup.size() );
     return memwrite ( addr, &bytes[0], bytes.size() );
+}
+
+int Asm::revert() const
+{
+    return memwrite ( addr, &backup[0], backup.size() );
 }
 
 } // namespace AsmHacks

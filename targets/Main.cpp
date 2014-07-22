@@ -7,6 +7,7 @@
 #include "UdpSocket.h"
 #include "Timer.h"
 #include "Test.h"
+#include "Messages.h"
 
 #include <optionparser.h>
 #include <windows.h>
@@ -48,6 +49,24 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
             this->controller = 0;
     }
 
+    void acceptEvent ( Socket *serverSocket ) override
+    {
+        serverSocket->accept ( this ).reset();
+    }
+
+    void connectEvent ( Socket *socket ) override
+    {
+    }
+
+    void disconnectEvent ( Socket *socket ) override
+    {
+        if ( socket == ipcSocket.get() )
+        {
+            ipcSocket.reset();
+            EventManager::get().stop();
+        }
+    }
+
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
     {
         LOG ( "Got %s from '%s'", msg, address );
@@ -56,18 +75,13 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
     void timerExpired ( Timer *timer ) override
     {
         assert ( timer == &this->timer );
+
+        exitGame();
+        EventManager::get().stop();
     }
 
-    Main ( Option opt[] ) : pipe ( 0 ), timer ( this )
+    void openGame()
     {
-        if ( opt[STDOUT] )
-            Logger::get().initialize();
-        else
-            Logger::get().initialize ( LOG_FILE );
-        TimerManager::get().initialize();
-        SocketManager::get().initialize();
-        ControllerManager::get().initialize ( this );
-
         LOG ( "Opening pipe" );
 
         pipe = CreateNamedPipe (
@@ -124,7 +138,7 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
 
         LOG ( "ipcHost='%s'", ipcHost );
 
-        ipcSocket = UdpSocket::bind ( this, ipcHost );
+        ipcSocket = TcpSocket::connect ( this, ipcHost );
 
         if ( !ReadFile ( pipe, &processId, sizeof ( processId ), &bytes, 0 ) )
         {
@@ -139,14 +153,41 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
         }
 
         LOG ( "processId=%08x", processId );
+    }
 
-        // controller = ControllerManager::get().getKeyboard();
+    void exitGame()
+    {
+        if ( ipcSocket )
+        {
+            ipcSocket->send ( new ExitGame() );
+            ipcSocket.reset();
+        }
+
+        if ( pipe )
+        {
+            CloseHandle ( pipe );
+            pipe = 0;
+        }
+    }
+
+    Main ( Option opt[] ) : pipe ( 0 ), timer ( this )
+    {
+        if ( opt[STDOUT] )
+            Logger::get().initialize();
+        else
+            Logger::get().initialize ( LOG_FILE );
+        TimerManager::get().initialize();
+        SocketManager::get().initialize();
+        ControllerManager::get().initialize ( this );
+
+        openGame();
+
+        timer.start ( 5000 );
     }
 
     ~Main()
     {
-        if ( pipe )
-            CloseHandle ( pipe );
+        exitGame();
 
         ControllerManager::get().deinitialize();
         SocketManager::get().deinitialize();

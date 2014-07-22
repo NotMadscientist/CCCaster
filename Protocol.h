@@ -43,8 +43,8 @@ struct Serializable
     virtual BaseType getBaseType() const = 0;
 
     // Serialize to and deserialize from a binary archive
-    virtual void save ( cereal::BinaryOutputArchive& ar ) const = 0;
-    virtual void load ( cereal::BinaryInputArchive& ar ) = 0;
+    inline virtual void save ( cereal::BinaryOutputArchive& ar ) const {};
+    inline virtual void load ( cereal::BinaryInputArchive& ar ) {};
 
     // Cast this to another another type
     template<typename T> T& getAs() { return *static_cast<T *> ( this ); }

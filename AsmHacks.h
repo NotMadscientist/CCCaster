@@ -30,8 +30,10 @@ struct Asm
 {
     void *const addr;
     const std::vector<uint8_t> bytes;
+    mutable std::vector<uint8_t> backup;
 
     int write() const;
+    int revert() const;
 };
 
 static const Asm loopStartJump =
