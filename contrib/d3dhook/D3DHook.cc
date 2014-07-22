@@ -277,6 +277,23 @@ string HookDirectX()
     if ( !m_Hook_Reset.InstallHook ( ( void * ) s_D3D9_Reset, ( void * ) DX9_Reset ) )
         return "m_Hook_Reset failed";
 
+    // MH_STATUS status;
+
+    // if ( ( status = MH_Initialize() ) != MH_OK )
+    //     return "MH_Initialize failed: " + MH_StatusString ( status );
+
+    // if ( ( status = MH_CreateHook ( ( void * ) s_D3D9_Present, ( void * ) DX9_Present ) ) != MH_OK )
+    //     return "MH_CreateHook for Present failed: " + MH_StatusString ( status );
+
+    // if ( ( status = MH_CreateHook ( ( void * ) s_D3D9_Reset, ( void * ) DX9_Reset ) ) != MH_OK )
+    //     return "MH_CreateHook for Reset failed " + MH_StatusString ( status );
+
+    // if ( ( status = MH_EnableHook ( ( void * ) s_D3D9_Present ) ) != MH_OK )
+    //     return "MH_EnableHook for Present failed " + MH_StatusString ( status );
+
+    // if ( ( status = MH_EnableHook ( ( void * ) s_D3D9_Reset ) ) != MH_OK )
+    //     return "MH_EnableHook for Reset failed " + MH_StatusString ( status );
+
     return "";
 }
 
@@ -295,6 +312,12 @@ void UnhookDirectX()
     // restore IDirect3D9Device methods
     m_Hook_Present.RemoveHook ( ( void * ) s_D3D9_Present );
     m_Hook_Reset.RemoveHook ( ( void * ) s_D3D9_Reset );
+
+    // MH_DisableHook ( ( void * ) s_D3D9_Reset );
+    // MH_DisableHook ( ( void * ) s_D3D9_Present );
+    // MH_RemoveHook ( ( void * ) s_D3D9_Reset );
+    // MH_RemoveHook ( ( void * ) s_D3D9_Present );
+    // MH_Uninitialize();
 
     InvalidateDeviceObjects();
 }

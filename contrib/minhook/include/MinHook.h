@@ -30,6 +30,8 @@
 
 #include <windows.h>
 
+#include <string>
+
 // MinHook Error Codes.
 typedef enum MH_STATUS
 {
@@ -70,6 +72,49 @@ typedef enum MH_STATUS
 	MH_ERROR_MEMORY_PROTECT
 }
 MH_STATUS;
+
+inline std::string MH_StatusString ( MH_STATUS status )
+{
+	switch ( status )
+	{
+		default:
+		case MH_UNKNOWN:
+			return "[MH_UNKNOWN] Unknown error. Should not be returned.";
+
+		case MH_OK:
+			return "[MH_OK] Successful.";
+
+		case MH_ERROR_ALREADY_INITIALIZED:
+			return "[MH_ERROR_ALREADY_INITIALIZED] MinHook is already initialized.";
+
+		case MH_ERROR_NOT_INITIALIZED:
+			return "[MH_ERROR_NOT_INITIALIZED] MinHook is not initialized yet, or already uninitialized.";
+
+		case MH_ERROR_ALREADY_CREATED:
+			return "[MH_ERROR_ALREADY_CREATED] The hook for the specified target function is already created.";
+
+		case MH_ERROR_NOT_CREATED:
+			return "[MH_ERROR_NOT_CREATED] The hook for the specified target function is not created yet.";
+
+		case MH_ERROR_ENABLED:
+			return "[MH_ERROR_ENABLED] The hook for the specified target function is already enabled.";
+
+		case MH_ERROR_DISABLED:
+			return "[MH_ERROR_DISABLED] The hook for the specified target function is not enabled yet: or already disabled.";
+
+		case MH_ERROR_NOT_EXECUTABLE:
+			return "[MH_ERROR_NOT_EXECUTABLE] The specified pointer is invalid. It points the address of non-allocated and/or non-executable region.";
+
+		case MH_ERROR_UNSUPPORTED_FUNCTION:
+			return "[MH_ERROR_UNSUPPORTED_FUNCTION] The specified target function cannot be hooked.";
+
+		case MH_ERROR_MEMORY_ALLOC:
+			return "[MH_ERROR_MEMORY_ALLOC] Failed to allocate memory.";
+
+		case MH_ERROR_MEMORY_PROTECT:
+			return "[MH_ERROR_MEMORY_PROTECT] Failed to change the memory protection.";
+	}
+}
 
 // Can be passed as a parameter to MH_EnableHook, MH_DisableHook, MH_QueueEnableHook or MH_QueueDisableHook.
 #define MH_ALL_HOOKS NULL
