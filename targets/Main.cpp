@@ -3,6 +3,7 @@
 #include "TimerManager.h"
 #include "SocketManager.h"
 #include "ControllerManager.h"
+#include "GameManager.h"
 #include "TcpSocket.h"
 #include "UdpSocket.h"
 #include "Timer.h"
@@ -21,14 +22,17 @@ using namespace option;
 
 #define LOG_FILE FOLDER "debug.log"
 
-
 enum optionIndex { UNKNOWN, HELP, GTEST, STDOUT, PLUS };
 
 
-struct Main : public Socket::Owner, public Timer::Owner, public ControllerManager::Owner, public Controller::Owner
+struct Main
+        : public Socket::Owner
+        , public Timer::Owner
+        , public ControllerManager::Owner
+        , public Controller::Owner
+        , public GameManager::Owner
 {
-    HANDLE pipe;
-    SocketPtr ipcSocket;
+    GameManager gm;
     Timer timer;
     Controller *controller;
 
@@ -50,24 +54,6 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
             this->controller = 0;
     }
 
-    void acceptEvent ( Socket *serverSocket ) override
-    {
-        serverSocket->accept ( this ).reset();
-    }
-
-    void connectEvent ( Socket *socket ) override
-    {
-    }
-
-    void disconnectEvent ( Socket *socket ) override
-    {
-        if ( socket == ipcSocket.get() )
-        {
-            ipcSocket.reset();
-            EventManager::get().stop();
-        }
-    }
-
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
     {
         LOG ( "Got %s from '%s'", msg, address );
@@ -77,111 +63,23 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
     {
         assert ( timer == &this->timer );
 
-        exitGame();
+        gm.closeGame();
         EventManager::get().stop();
     }
 
-    void openGame()
+    void gameOpened() override
     {
-        LOG ( "Opening pipe" );
-
-        pipe = CreateNamedPipe (
-                   NAMED_PIPE,                                          // name of the pipe
-                   PIPE_ACCESS_DUPLEX,                                  // 2-way pipe
-                   PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,     // byte stream + blocking
-                   1,                                                   // only allow 1 instance of this pipe
-                   1024,                                                // outbound buffer size
-                   1024,                                                // inbound buffer size
-                   0,                                                   // use default wait time
-                   0 );                                                 // use default security attributes
-
-        if ( pipe == INVALID_HANDLE_VALUE )
-        {
-            WindowsException err = GetLastError();
-            LOG_AND_THROW ( err, "CreateNamedPipe failed" );
-        }
-
-        LOG ( "Starting " MBAA_EXE );
-
-        if ( detectWine() )
-            system ( "./" LAUNCHER " " MBAA_EXE " " HOOK_DLL " &" );
-        else
-            system ( "start \"\" " LAUNCHER " " MBAA_EXE " " HOOK_DLL );
-
-        LOG ( "Connecting pipe" );
-
-        if ( !ConnectNamedPipe ( pipe, 0 ) )
-        {
-            int error = GetLastError();
-
-            if ( error != ERROR_PIPE_CONNECTED )
-            {
-                WindowsException err = GetLastError();
-                LOG_AND_THROW ( err, "ConnectNamedPipe failed" );
-            }
-        }
-
-        LOG ( "Pipe connected" );
-
-        DWORD bytes;
-        int processId = 0;
-        IpAddrPort ipcHost ( "127.0.0.1", 0 );
-
-        if ( !ReadFile ( pipe, &ipcHost.port, sizeof ( ipcHost.port ), &bytes, 0 ) )
-        {
-            WindowsException err = GetLastError();
-            LOG_AND_THROW ( err, "ReadFile failed" );
-        }
-
-        if ( bytes != sizeof ( ipcHost.port ) )
-        {
-            Exception err = toString ( "ReadFile read %d bytes, expected %d", bytes, sizeof ( ipcHost.port ) );
-            LOG_AND_THROW ( err, "" );
-        }
-
-        LOG ( "ipcHost='%s'", ipcHost );
-
-        ipcSocket = TcpSocket::connect ( this, ipcHost );
-
-        if ( !ReadFile ( pipe, &processId, sizeof ( processId ), &bytes, 0 ) )
-        {
-            WindowsException err = GetLastError();
-            LOG_AND_THROW ( err, "ReadFile failed" );
-        }
-
-        if ( bytes != sizeof ( processId ) )
-        {
-            Exception err = toString ( "ReadFile read %d bytes, expected %d", bytes, sizeof ( processId ) );
-            LOG_AND_THROW ( err, "" );
-        }
-
-        LOG ( "processId=%08x", processId );
+        LOG ( "Game opened" );
     }
 
-    void exitGame()
+    void gameClosed() override
     {
-        if ( ipcSocket )
-        {
-            ipcSocket->send ( new ExitGame() );
-            ipcSocket.reset();
-        }
+        LOG ( "Game closed" );
 
-        if ( pipe )
-        {
-            CloseHandle ( pipe );
-            pipe = 0;
-        }
-
-        // Find and close any lingering windows
-        void *hwnd = 0;
-        for ( const string& window : { CC_TITLE, CC_STARTUP_TITLE_EN, CC_STARTUP_TITLE_JP } )
-        {
-            if ( ( hwnd = enumFindWindow ( window ) ) )
-                PostMessage ( ( HWND ) hwnd, WM_CLOSE, 0, 0 );
-        }
+        EventManager::get().stop();
     }
 
-    Main ( Option opt[] ) : pipe ( 0 ), timer ( this )
+    Main ( Option opt[] ) : gm ( this ), timer ( this )
     {
         if ( opt[STDOUT] )
             Logger::get().initialize();
@@ -191,14 +89,14 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
         SocketManager::get().initialize();
         ControllerManager::get().initialize ( this );
 
-        openGame();
+        gm.openGame();
 
         // timer.start ( 5000 );
     }
 
     ~Main()
     {
-        exitGame();
+        gm.closeGame();
 
         ControllerManager::get().deinitialize();
         SocketManager::get().deinitialize();

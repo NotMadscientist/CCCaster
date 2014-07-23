@@ -153,12 +153,7 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
         if ( pipe )
             CloseHandle ( pipe );
 
-        if ( ipcSocket )
-        {
-            if ( ipcSocket->isClient() )
-                ipcSocket->send ( new ExitGame() );
-            ipcSocket.reset();
-        }
+        ipcSocket.reset();
     }
 };
 
