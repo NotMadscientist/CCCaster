@@ -123,3 +123,6 @@ std::ostream& operator<< ( std::ostream& os, const WindowsException& error );
 
 // Find the first window handle with the given title (NOT thread safe)
 void *enumFindWindow ( const std::string& title );
+
+// Detect if we're running on Wine
+bool detectWine();

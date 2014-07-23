@@ -103,8 +103,10 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
 
         LOG ( "Starting " MBAA_EXE );
 
-        system ( "start \"\" " LAUNCHER " " MBAA_EXE " " HOOK_DLL );
-        system ( "./" LAUNCHER " " MBAA_EXE " " HOOK_DLL " &" );
+        if ( detectWine() )
+            system ( "./" LAUNCHER " " MBAA_EXE " " HOOK_DLL " &" );
+        else
+            system ( "start \"\" " LAUNCHER " " MBAA_EXE " " HOOK_DLL );
 
         LOG ( "Connecting pipe" );
 
@@ -173,8 +175,10 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
         // Find and close any lingering windows
         void *hwnd = 0;
         for ( const string& window : { CC_TITLE, CC_STARTUP_TITLE_EN, CC_STARTUP_TITLE_JP } )
+        {
             if ( ( hwnd = enumFindWindow ( window ) ) )
                 PostMessage ( ( HWND ) hwnd, WM_CLOSE, 0, 0 );
+        }
     }
 
     Main ( Option opt[] ) : pipe ( 0 ), timer ( this )

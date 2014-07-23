@@ -168,6 +168,8 @@ static shared_ptr<Main> main;
 
 static Mutex deinitMutex;
 
+static uint64_t frameInterval = FRAME_INTERVAL;
+
 extern "C" void callback()
 {
     if ( state == DEINITIALIZED )
@@ -184,18 +186,26 @@ extern "C" void callback()
                 ControllerManager::get().initialize ( main.get() );
                 EventManager::get().startPolling();
 
-                // Asm hacks that must written after the game starts
-                WRITE_ASM_HACK ( disableFpsLimit );
+                if ( detectWine() )
+                {
+                    // Temporary work around for Wine FPS limit issue
+                    frameInterval = 5;
+                }
+                else
+                {
+                    // Asm hacks that must written after the game starts
+                    WRITE_ASM_HACK ( disableFpsLimit );
 
-                // Hook DirectX
-                void *hwnd;
-                string err;
-                if ( ( hwnd = enumFindWindow ( CC_TITLE ) ) == 0 )
-                    LOG ( "Couldn't find window '%s'", CC_TITLE );
-                else if ( ! ( err = InitDirectX ( hwnd ) ).empty() )
-                    LOG ( "InitDirectX failed: %s", err );
-                else if ( ! ( err = HookDirectX() ).empty() )
-                    LOG ( "HookDirectX failed: %s", err );
+                    // Hook DirectX
+                    void *hwnd;
+                    string err;
+                    if ( ( hwnd = enumFindWindow ( CC_TITLE ) ) == 0 )
+                        LOG ( "Couldn't find window '%s'", CC_TITLE );
+                    else if ( ! ( err = InitDirectX ( hwnd ) ).empty() )
+                        LOG ( "InitDirectX failed: %s", err );
+                    else if ( ! ( err = HookDirectX() ).empty() )
+                        LOG ( "HookDirectX failed: %s", err );
+                }
 
                 state = POLLING;
             }
@@ -204,7 +214,7 @@ extern "C" void callback()
                 break;
 
             // Poll for events
-            if ( !EventManager::get().poll ( FRAME_INTERVAL ) )
+            if ( !EventManager::get().poll ( frameInterval ) )
             {
                 state = STOPPING;
                 break;

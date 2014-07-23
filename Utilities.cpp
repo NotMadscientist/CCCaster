@@ -182,3 +182,11 @@ void *enumFindWindow ( const string& title )
     EnumWindows ( _::enumWindowsProc, 0 );
     return tmpHwnd;
 }
+
+bool detectWine()
+{
+    HMODULE hntdll = GetModuleHandle ( "ntdll.dll" );
+    if ( !hntdll )
+        return false;
+    return ( GetProcAddress ( hntdll, "wine_get_version" ) != 0 );
+}
