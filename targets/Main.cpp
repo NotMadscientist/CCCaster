@@ -15,6 +15,7 @@
 #include <windows.h>
 
 #include <cassert>
+#include <exception>
 
 using namespace std;
 using namespace option;
@@ -23,6 +24,8 @@ using namespace option;
 #define LOG_FILE FOLDER "debug.log"
 
 enum optionIndex { UNKNOWN, HELP, GTEST, STDOUT, PLUS };
+
+static IpAddrPort mainAddrPort;
 
 
 struct Main
@@ -35,6 +38,7 @@ struct Main
     GameManager gm;
     Timer timer;
     Controller *controller;
+    SocketPtr ctrlSocket, dataSocket;
 
     void doneMapping ( Controller *controller, uint32_t key ) override
     {
@@ -87,9 +91,22 @@ struct Main
             Logger::get().initialize ( LOG_FILE );
         TimerManager::get().initialize();
         SocketManager::get().initialize();
-        ControllerManager::get().initialize ( this );
 
-        gm.openGame();
+
+        if ( mainAddrPort.addr.empty() )
+        {
+            ctrlSocket = TcpSocket::listen ( this, mainAddrPort.port );
+            dataSocket = UdpSocket::bind ( this, mainAddrPort.port );
+        }
+        else
+        {
+            ctrlSocket = TcpSocket::connect ( this, mainAddrPort );
+            dataSocket = UdpSocket::bind ( this, mainAddrPort );
+        }
+
+        // ControllerManager::get().initialize ( this );
+
+        // gm.openGame();
 
         // timer.start ( 5000 );
     }
@@ -167,12 +184,31 @@ int main ( int argc, char *argv[] )
     }
 
     for ( Option *it = opt[UNKNOWN]; it; it = it->next() )
-        cout << "Unknown option: " << it->name << endl;
+        PRINT ( "Unknown option: '%s'", it->name );
 
-    for ( int i = 0; i < parser.nonOptionsCount(); ++i )
-        cout << "Non-option #" << i << ": " << parser.nonOption ( i ) << endl;
+    for ( int i = 2; i < parser.nonOptionsCount(); ++i )
+        PRINT ( "Non-option (%d): '%s'", i, parser.nonOption ( i ) );
 
-    Main main ( opt );
-    EventManager::get().start();
+    try
+    {
+        if ( parser.nonOptionsCount() == 1 )
+            mainAddrPort = string ( parser.nonOption ( 0 ) );
+        else if ( parser.nonOptionsCount() == 2 )
+            mainAddrPort = string ( parser.nonOption ( 0 ) ) + parser.nonOption ( 1 );
+
+        PRINT ( "Using: '%s'", mainAddrPort );
+
+        Main main ( opt );
+        EventManager::get().start();
+    }
+    catch ( const WindowsException& err )
+    {
+        PRINT ( "Error: %s", err );
+    }
+    catch ( const Exception& err )
+    {
+        PRINT ( "Error: %s", err );
+    }
+
     return 0;
 }

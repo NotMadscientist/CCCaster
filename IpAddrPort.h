@@ -30,6 +30,8 @@ struct IpAddrPort : public SerializableMessage
     inline IpAddrPort ( const std::string& addr, uint16_t port, bool isV4 = true )
         : addr ( addr ), port ( port ), isV4 ( isV4 ) {}
 
+    IpAddrPort ( const std::string& addrPort );
+
     IpAddrPort ( const sockaddr *sa );
 
     const std::shared_ptr<addrinfo>& getAddrInfo() const;

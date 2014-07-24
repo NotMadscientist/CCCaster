@@ -125,9 +125,9 @@ void GameManager::closeGame()
     }
 
     // Find and close any lingering windows
-    void *hwnd = 0;
     for ( const string& window : { CC_TITLE, CC_STARTUP_TITLE_EN, CC_STARTUP_TITLE_JP } )
     {
+        void *hwnd;
         if ( ( hwnd = enumFindWindow ( window ) ) )
             PostMessage ( ( HWND ) hwnd, WM_CLOSE, 0, 0 );
     }

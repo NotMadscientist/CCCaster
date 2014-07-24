@@ -5,9 +5,12 @@
 #include <sstream>
 #include <type_traits>
 #include <cstdio>
+#include <iostream>
 
 
 #define TO_C_STR(...) toString ( __VA_ARGS__ ).c_str()
+
+#define PRINT(...) do { std::cout << toString ( __VA_ARGS__ ) << std::endl; } while ( 0 )
 
 
 namespace std

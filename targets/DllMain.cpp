@@ -219,11 +219,17 @@ extern "C" void callback()
     }
     catch ( const WindowsException& err )
     {
+        LOG ( "Stopping due to WindowsException: %s", err );
+        state = STOPPING;
+    }
+    catch ( const Exception& err )
+    {
+        LOG ( "Stopping due to Exception: %s", err );
         state = STOPPING;
     }
     catch ( ... )
     {
-        LOG ( "Unknown exception!" );
+        LOG ( "Stopping due to unknown exception!" );
         state = STOPPING;
     }
 
@@ -280,11 +286,17 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
             }
             catch ( const WindowsException& err )
             {
+                LOG ( "Aborting due to WindowsException: %s", err );
+                exit ( 0 );
+            }
+            catch ( const Exception& err )
+            {
+                LOG ( "Aborting due to Exception: %s", err );
                 exit ( 0 );
             }
             catch ( ... )
             {
-                LOG ( "Unknown exception!" );
+                LOG ( "Aborting due to unknown exception!" );
                 exit ( 0 );
             }
 
