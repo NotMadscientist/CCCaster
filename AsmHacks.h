@@ -3,6 +3,8 @@
 #include "Utilities.h"
 #include "Constants.h"
 
+#include <vector>
+
 
 #define INLINE_DWORD(X)                                                         \
     static_cast<unsigned char> ( unsigned ( X ) & 0xFF ),                       \
@@ -11,6 +13,10 @@
     static_cast<unsigned char> ( ( unsigned ( X ) >> 24 ) & 0xFF )
 
 #define INLINE_DWORD_FF { 0xFF, 0x00, 0x00, 0x00 }
+
+#define INLINE_NOP_TWO_TIMES { 0x90, 0x90 }
+
+#define INLINE_NOP_THREE_TIMES { 0x90, 0x90, 0x90 }
 
 #define HOOK_WINDOWS_FUNC(RETURN_TYPE, FUNC_NAME, ...)                          \
     typedef RETURN_TYPE ( WINAPI *p ## FUNC_NAME ) ( __VA_ARGS__ );             \
@@ -57,35 +63,57 @@ static const Asm hookCallback2 =
 };
 
 // Write a DWORD 0xFF to each
-static void *const disabledStageAddrs[] =
+static const std::vector<Asm> enableDisabledStages =
 {
-    ( void * ) 0x54CEBC,
-    ( void * ) 0x54CEC0,
-    ( void * ) 0x54CEC4,
-    ( void * ) 0x54CFA8,
-    ( void * ) 0x54CFAC,
-    ( void * ) 0x54CFB0,
-    ( void * ) 0x54CF68,
-    ( void * ) 0x54CF6C,
-    ( void * ) 0x54CF70,
-    ( void * ) 0x54CF74,
-    ( void * ) 0x54CF78,
-    ( void * ) 0x54CF7C,
-    ( void * ) 0x54CF80,
-    ( void * ) 0x54CF84,
-    ( void * ) 0x54CF88,
-    ( void * ) 0x54CF8C,
-    ( void * ) 0x54CF90,
-    ( void * ) 0x54CF94,
-    ( void * ) 0x54CF98,
-    ( void * ) 0x54CF9C,
-    ( void * ) 0x54CFA0,
-    ( void * ) 0x54CFA4
+    { ( void * ) 0x54CEBC, INLINE_DWORD_FF },
+    { ( void * ) 0x54CEC0, INLINE_DWORD_FF },
+    { ( void * ) 0x54CEC4, INLINE_DWORD_FF },
+    { ( void * ) 0x54CFA8, INLINE_DWORD_FF },
+    { ( void * ) 0x54CFAC, INLINE_DWORD_FF },
+    { ( void * ) 0x54CFB0, INLINE_DWORD_FF },
+    { ( void * ) 0x54CF68, INLINE_DWORD_FF },
+    { ( void * ) 0x54CF6C, INLINE_DWORD_FF },
+    { ( void * ) 0x54CF70, INLINE_DWORD_FF },
+    { ( void * ) 0x54CF74, INLINE_DWORD_FF },
+    { ( void * ) 0x54CF78, INLINE_DWORD_FF },
+    { ( void * ) 0x54CF7C, INLINE_DWORD_FF },
+    { ( void * ) 0x54CF80, INLINE_DWORD_FF },
+    { ( void * ) 0x54CF84, INLINE_DWORD_FF },
+    { ( void * ) 0x54CF88, INLINE_DWORD_FF },
+    { ( void * ) 0x54CF8C, INLINE_DWORD_FF },
+    { ( void * ) 0x54CF90, INLINE_DWORD_FF },
+    { ( void * ) 0x54CF94, INLINE_DWORD_FF },
+    { ( void * ) 0x54CF98, INLINE_DWORD_FF },
+    { ( void * ) 0x54CF9C, INLINE_DWORD_FF },
+    { ( void * ) 0x54CFA0, INLINE_DWORD_FF },
+    { ( void * ) 0x54CFA4, INLINE_DWORD_FF }
 };
 
 static const Asm fixRyougiStageMusic1 = { ( void * ) 0x7695F6, { 0x35, 0x00, 0x00, 0x00 } };
 static const Asm fixRyougiStageMusic2 = { ( void * ) 0x7695EC, { 0xAA, 0xCC, 0x1E, 0x40 } };
 
 static const Asm disableFpsLimit = { CC_PERF_FREQ_ADDR, { INLINE_DWORD ( 1 ), INLINE_DWORD ( 0 ) } };
+
+static const std::vector<Asm> hijackControls =
+{
+    // Disable joystick controls
+    { ( void * ) 0x41F098, INLINE_NOP_TWO_TIMES   },
+    { ( void * ) 0x41F0A0, INLINE_NOP_THREE_TIMES },
+    { ( void * ) 0x4A024E, INLINE_NOP_TWO_TIMES   },
+    { ( void * ) 0x4A027F, INLINE_NOP_THREE_TIMES },
+    { ( void * ) 0x4A0291, INLINE_NOP_THREE_TIMES },
+    { ( void * ) 0x4A02A2, INLINE_NOP_THREE_TIMES },
+    { ( void * ) 0x4A02B4, INLINE_NOP_THREE_TIMES },
+    { ( void * ) 0x4A02E9, INLINE_NOP_TWO_TIMES   },
+    { ( void * ) 0x4A02F2, INLINE_NOP_THREE_TIMES },
+
+    // Zero all keyboard keys
+    {
+        ( void * ) 0x54D2C0, {
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        }
+    }
+};
 
 } // namespace AsmHacks

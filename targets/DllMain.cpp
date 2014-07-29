@@ -28,23 +28,39 @@ using namespace AsmHacks;
 
 #define FRAME_INTERVAL ( 1000 / 60 )
 
-#define WRITE_ASM_HACK(ASM_HACK)                                                \
-    do {                                                                        \
-        WindowsException err;                                                   \
-        if ( ( err = ASM_HACK.write() ).code != 0 ) {                           \
-            LOG ( "%s; %s failed", err, #ASM_HACK );                            \
-            exit ( 0 );                                                         \
-        }                                                                       \
+#define WRITE_ASM_HACK(ASM_HACK)                                                                \
+    do {                                                                                        \
+        WindowsException err;                                                                   \
+        if ( ( err = ASM_HACK.write() ).code != 0 ) {                                           \
+            LOG ( "%s; %s failed; addr=%08x", err, #ASM_HACK, ASM_HACK.addr );                  \
+            exit ( 0 );                                                                         \
+        }                                                                                       \
     } while ( 0 )
 
 
+struct Main;
+static void initializePreHacks();
+static void initializePostHacks();
 static void deinitialize();
+
+
+// Current application state
+static enum State { UNINITIALIZED, POLLING, STOPPING, DEINITIALIZED } state = UNINITIALIZED;
+
+// Main application instance
+static shared_ptr<Main> main;
+
+// Mutex for deinitialization
+static Mutex deinitMutex;
+
+// Number of milliseconds to poll during each frame
+static uint64_t frameInterval = FRAME_INTERVAL;
 
 
 struct Main : public Socket::Owner, public Timer::Owner, public ControllerManager::Owner
 {
     HANDLE pipe;
-    SocketPtr ipcSocket;
+    SocketPtr ipcSocket, ctrlSocket, dataSocket;
     Timer timer;
 
     void acceptEvent ( Socket *serverSocket ) override
@@ -157,13 +173,6 @@ struct Main : public Socket::Owner, public Timer::Owner, public ControllerManage
     }
 };
 
-static enum State { UNINITIALIZED, POLLING, STOPPING, DEINITIALIZED } state = UNINITIALIZED;
-
-static shared_ptr<Main> main;
-
-static Mutex deinitMutex;
-
-static uint64_t frameInterval = FRAME_INTERVAL;
 
 extern "C" void callback()
 {
@@ -176,32 +185,13 @@ extern "C" void callback()
         {
             if ( state == UNINITIALIZED )
             {
+                initializePostHacks();
+
                 // Joystick and timer must be initialized in the main thread
                 TimerManager::get().initialize();
                 ControllerManager::get().initialize ( main.get() );
+
                 EventManager::get().startPolling();
-
-                if ( detectWine() )
-                {
-                    // Temporary work around for Wine FPS limit issue
-                    frameInterval = 5;
-                }
-                else
-                {
-                    // Asm hacks that must written after the game starts
-                    WRITE_ASM_HACK ( disableFpsLimit );
-
-                    // Hook DirectX
-                    void *hwnd;
-                    string err;
-                    if ( ( hwnd = enumFindWindow ( CC_TITLE ) ) == 0 )
-                        LOG ( "Couldn't find window '%s'", CC_TITLE );
-                    else if ( ! ( err = InitDirectX ( hwnd ) ).empty() )
-                        LOG ( "InitDirectX failed: %s", err );
-                    else if ( ! ( err = HookDirectX() ).empty() )
-                        LOG ( "HookDirectX failed: %s", err );
-                }
-
                 state = POLLING;
             }
 
@@ -236,20 +226,13 @@ extern "C" void callback()
     if ( state == STOPPING )
     {
         LOG ( "Exiting" );
-        ControllerManager::get().deinitialize(); // Joystick must be deinitialized on the same thread
+
+        // Joystick must be deinitialized on the same thread
+        ControllerManager::get().deinitialize();
         deinitialize();
         exit ( 0 );
     }
 }
-
-static const Asm hookCallback1 =
-{
-    MM_HOOK_CALL1_ADDR,
-    {
-        0xE8, INLINE_DWORD ( ( ( char * ) &callback ) - MM_HOOK_CALL1_ADDR - 5 ),   // call callback
-        0xE9, INLINE_DWORD ( MM_HOOK_CALL2_ADDR - MM_HOOK_CALL1_ADDR - 10 )         // jmp MM_HOOK_CALL2_ADDR
-    }
-};
 
 extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
 {
@@ -262,27 +245,9 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
             try
             {
                 SocketManager::get().initialize();
+                initializePreHacks();
 
                 main.reset ( new Main() );
-
-                WRITE_ASM_HACK ( hookCallback1 );
-                WRITE_ASM_HACK ( hookCallback2 );
-                WRITE_ASM_HACK ( loopStartJump ); // Write the jump location last, due to dependencies on the above
-
-                for ( void *const addr : disabledStageAddrs )
-                {
-                    Asm enableStage = { addr, INLINE_DWORD_FF };
-                    WindowsException err;
-
-                    if ( ( err = enableStage.write() ).code )
-                    {
-                        LOG ( "%s; enableStage { %08x } failed", err, addr );
-                        exit ( 0 );
-                    }
-                }
-
-                WRITE_ASM_HACK ( fixRyougiStageMusic1 );
-                WRITE_ASM_HACK ( fixRyougiStageMusic2 );
             }
             catch ( const WindowsException& err )
             {
@@ -309,6 +274,55 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
     }
 
     return TRUE;
+}
+
+// Must be in this file because it needs the address to the callback function
+static const Asm hookCallback1 =
+{
+    MM_HOOK_CALL1_ADDR,
+    {
+        0xE8, INLINE_DWORD ( ( ( char * ) &callback ) - MM_HOOK_CALL1_ADDR - 5 ),   // call callback
+        0xE9, INLINE_DWORD ( MM_HOOK_CALL2_ADDR - MM_HOOK_CALL1_ADDR - 10 )         // jmp MM_HOOK_CALL2_ADDR
+    }
+};
+
+static void initializePreHacks()
+{
+    WRITE_ASM_HACK ( hookCallback1 );
+    WRITE_ASM_HACK ( hookCallback2 );
+    WRITE_ASM_HACK ( loopStartJump ); // Write the jump location last, due to dependencies on the above
+
+    for ( const Asm& hack : enableDisabledStages )
+        WRITE_ASM_HACK ( hack );
+
+    WRITE_ASM_HACK ( fixRyougiStageMusic1 );
+    WRITE_ASM_HACK ( fixRyougiStageMusic2 );
+
+    for ( const Asm& hack : hijackControls )
+        WRITE_ASM_HACK ( hack );
+}
+
+static void initializePostHacks()
+{
+    if ( detectWine() )
+    {
+        // TODO this is a temporary work around for Wine FPS limit issue
+        frameInterval = 5;
+    }
+    else
+    {
+        WRITE_ASM_HACK ( disableFpsLimit );
+
+        // Hook DirectX
+        void *hwnd;
+        string err;
+        if ( ( hwnd = enumFindWindow ( CC_TITLE ) ) == 0 )
+            LOG ( "Couldn't find window '%s'", CC_TITLE );
+        else if ( ! ( err = InitDirectX ( hwnd ) ).empty() )
+            LOG ( "InitDirectX failed: %s", err );
+        else if ( ! ( err = HookDirectX() ).empty() )
+            LOG ( "HookDirectX failed: %s", err );
+    }
 }
 
 static void deinitialize()

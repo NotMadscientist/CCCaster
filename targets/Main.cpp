@@ -23,8 +23,10 @@ using namespace option;
 
 #define LOG_FILE FOLDER "debug.log"
 
+// List of command line options
 enum optionIndex { UNKNOWN, HELP, GTEST, STDOUT, PLUS };
 
+// Main connection address and port
 static IpAddrPort mainAddrPort;
 
 
@@ -48,8 +50,6 @@ struct Main
     void attachedJoystick ( Controller *controller ) override
     {
         this->controller = controller;
-
-        controller->startMapping ( this, 0x10 );
     }
 
     void detachedJoystick ( Controller *controller ) override
@@ -93,20 +93,20 @@ struct Main
         SocketManager::get().initialize();
 
 
-        if ( mainAddrPort.addr.empty() )
-        {
-            ctrlSocket = TcpSocket::listen ( this, mainAddrPort.port );
-            dataSocket = UdpSocket::bind ( this, mainAddrPort.port );
-        }
-        else
-        {
-            ctrlSocket = TcpSocket::connect ( this, mainAddrPort );
-            dataSocket = UdpSocket::bind ( this, mainAddrPort );
-        }
+        // if ( mainAddrPort.addr.empty() )
+        // {
+        //     ctrlSocket = TcpSocket::listen ( this, mainAddrPort.port );
+        //     dataSocket = UdpSocket::bind ( this, mainAddrPort.port );
+        // }
+        // else
+        // {
+        //     ctrlSocket = TcpSocket::connect ( this, mainAddrPort );
+        //     dataSocket = UdpSocket::bind ( this, mainAddrPort );
+        // }
 
         // ControllerManager::get().initialize ( this );
 
-        // gm.openGame();
+        gm.openGame();
 
         // timer.start ( 5000 );
     }
