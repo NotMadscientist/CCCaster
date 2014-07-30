@@ -95,7 +95,9 @@ void initializePreHacks()
 {
     WRITE_ASM_HACK ( hookCallback1 );
     WRITE_ASM_HACK ( hookCallback2 );
-    WRITE_ASM_HACK ( loopStartJump ); // Write the jump location last, due to dependencies on the above
+
+    // Write the jump location after, due to dependencies on the callback hook code
+    WRITE_ASM_HACK ( loopStartJump );
 
     for ( const Asm& hack : enableDisabledStages )
         WRITE_ASM_HACK ( hack );

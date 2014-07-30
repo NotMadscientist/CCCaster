@@ -44,16 +44,11 @@ void GameManager::disconnectEvent ( Socket *socket )
 
 void GameManager::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
 {
-    switch ( msg->getMsgType() )
-    {
-        case MsgType::ExitGame:
-            if ( owner )
-                owner->ipcDisconnectEvent();
-            break;
+    assert ( socket == ipcSocket.get() );
+    assert ( address.addr == "127.0.0.1" );
 
-        default:
-            break;
-    }
+    if ( owner )
+        owner->ipcReadEvent ( msg );
 }
 
 void GameManager::openGame()
@@ -134,9 +129,6 @@ void GameManager::openGame()
 
 void GameManager::closeGame()
 {
-    if ( ipcSocket )
-        ipcSocket->send ( new ExitGame() );
-
     disconnectPipe();
 
     // Find and close any lingering windows

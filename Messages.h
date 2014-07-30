@@ -10,12 +10,6 @@
 #define NUM_INPUTS 30
 
 
-struct ExitGame : public SerializableMessage
-{
-    inline ExitGame() {}
-    MsgType getMsgType() const override;
-};
-
 struct InputData : public SerializableMessage
 {
     // The frame index, this starts at 0 when a new transition index starts.
