@@ -9,8 +9,14 @@ public:
 
     struct Owner
     {
-        inline virtual void gameOpened() {}
-        inline virtual void gameClosed() {}
+        // IPC connected event
+        inline virtual void ipcConnectEvent() {}
+
+        // IPC disconnected event
+        inline virtual void ipcDisconnectEvent() {}
+
+        // IPC read event
+        inline virtual void ipcReadEvent ( const MsgPtr& msg ) {}
     };
 
     Owner *owner;
@@ -27,16 +33,24 @@ private:
     SocketPtr ipcSocket;
 
     // IPC socket callbacks
-    void connectEvent ( Socket *socket );
-    void disconnectEvent ( Socket *socket );
-    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address );
+    void acceptEvent ( Socket *socket ) override;
+    void connectEvent ( Socket *socket ) override;
+    void disconnectEvent ( Socket *socket ) override;
+    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override;
 
 public:
 
     // Basic constructor
     inline GameManager ( Owner *owner ) : owner ( owner ), pipe ( 0 ), processId ( 0 ) {}
 
-    // Open / close the game
+    // Open / close the game from the EXE side
     void openGame();
     void closeGame();
+
+    // Connect / disconnect the IPC pipe and socket from the DLL side
+    void connectPipe();
+    void disconnectPipe();
+
+    // Indicates if the IPC pipe and socket are connected
+    inline bool isConnected() const { return ( pipe && ipcSocket && ipcSocket->isClient() ); }
 };

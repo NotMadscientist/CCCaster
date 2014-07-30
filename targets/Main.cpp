@@ -23,6 +23,7 @@ using namespace option;
 
 #define LOG_FILE FOLDER "debug.log"
 
+
 // List of command line options
 enum optionIndex { UNKNOWN, HELP, GTEST, STDOUT, PLUS };
 
@@ -71,16 +72,20 @@ struct Main
         EventManager::get().stop();
     }
 
-    void gameOpened() override
+    void ipcConnectEvent() override
     {
-        LOG ( "Game opened" );
+        LOG ( "IPC connected" );
     }
 
-    void gameClosed() override
+    void ipcDisconnectEvent() override
     {
-        LOG ( "Game closed" );
+        LOG ( "IPC disconnected" );
 
         EventManager::get().stop();
+    }
+
+    void ipcReadEvent ( const MsgPtr& msg ) override
+    {
     }
 
     Main ( Option opt[] ) : gm ( this ), timer ( this )
@@ -91,7 +96,6 @@ struct Main
             Logger::get().initialize ( LOG_FILE );
         TimerManager::get().initialize();
         SocketManager::get().initialize();
-
 
         // if ( mainAddrPort.addr.empty() )
         // {

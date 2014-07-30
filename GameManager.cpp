@@ -12,12 +12,24 @@
 using namespace std;
 
 
+void GameManager::acceptEvent ( Socket *serverSocket )
+{
+    if ( serverSocket == ipcSocket.get() )
+    {
+        ipcSocket = serverSocket->accept ( this );
+        assert ( ipcSocket->address.addr == "127.0.0.1" );
+
+        if ( owner )
+            owner->ipcConnectEvent();
+    }
+}
+
 void GameManager::connectEvent ( Socket *socket )
 {
     assert ( socket == ipcSocket.get() );
 
     if ( owner )
-        owner->gameOpened();
+        owner->ipcConnectEvent();
 }
 
 void GameManager::disconnectEvent ( Socket *socket )
@@ -27,11 +39,21 @@ void GameManager::disconnectEvent ( Socket *socket )
     ipcSocket.reset();
 
     if ( owner )
-        owner->gameClosed();
+        owner->ipcDisconnectEvent();
 }
 
 void GameManager::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
 {
+    switch ( msg->getMsgType() )
+    {
+        case MsgType::ExitGame:
+            if ( owner )
+                owner->ipcDisconnectEvent();
+            break;
+
+        default:
+            break;
+    }
 }
 
 void GameManager::openGame()
@@ -113,16 +135,9 @@ void GameManager::openGame()
 void GameManager::closeGame()
 {
     if ( ipcSocket )
-    {
         ipcSocket->send ( new ExitGame() );
-        ipcSocket.reset();
-    }
 
-    if ( pipe )
-    {
-        CloseHandle ( ( HANDLE ) pipe );
-        pipe = 0;
-    }
+    disconnectPipe();
 
     // Find and close any lingering windows
     for ( const string& window : { CC_TITLE, CC_STARTUP_TITLE_EN, CC_STARTUP_TITLE_JP } )
@@ -133,3 +148,69 @@ void GameManager::closeGame()
     }
 }
 
+void GameManager::connectPipe()
+{
+    LOG ( "Listening on IPC socket" );
+
+    ipcSocket = TcpSocket::listen ( this, 0 );
+
+    LOG ( "Connecting pipe" );
+
+    pipe = CreateFile (
+               NAMED_PIPE,                              // name of the pipe
+               GENERIC_READ | GENERIC_WRITE,            // 2-way pipe
+               FILE_SHARE_READ | FILE_SHARE_WRITE,      // R/W sharing mode
+               0,                                       // default security
+               OPEN_EXISTING,                           // open existing pipe
+               FILE_ATTRIBUTE_NORMAL,                   // default attributes
+               0 );                                     // no template file
+
+    if ( pipe == INVALID_HANDLE_VALUE )
+    {
+        WindowsException err = GetLastError();
+        LOG_AND_THROW ( err, "CreateFile failed" );
+    }
+
+    LOG ( "Pipe connected" );
+
+    DWORD bytes;
+
+    if ( !WriteFile ( pipe, & ( ipcSocket->address.port ), sizeof ( ipcSocket->address.port ), &bytes, 0 ) )
+    {
+        WindowsException err = GetLastError();
+        LOG_AND_THROW ( err, "WriteFile failed" );
+    }
+
+    if ( bytes != sizeof ( ipcSocket->address.port ) )
+    {
+        Exception err = toString ( "WriteFile wrote %d bytes, expected %d",
+                                   bytes, sizeof ( ipcSocket->address.port ) );
+        LOG_AND_THROW ( err, "" );
+    }
+
+    processId = GetCurrentProcessId();
+
+    if ( !WriteFile ( pipe, &processId, sizeof ( processId ), &bytes, 0 ) )
+    {
+        WindowsException err = GetLastError();
+        LOG_AND_THROW ( err, "WriteFile failed" );
+    }
+
+    if ( bytes != sizeof ( processId ) )
+    {
+        Exception err = toString ( "WriteFile wrote %d bytes, expected %d",
+                                   bytes, sizeof ( ipcSocket->address.port ) );
+        LOG_AND_THROW ( err, "" );
+    }
+}
+
+void GameManager::disconnectPipe()
+{
+    ipcSocket.reset();
+
+    if ( pipe )
+    {
+        CloseHandle ( ( HANDLE ) pipe );
+        pipe = 0;
+    }
+}

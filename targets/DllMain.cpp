@@ -4,6 +4,7 @@
 #include "TimerManager.h"
 #include "SocketManager.h"
 #include "ControllerManager.h"
+#include "GameManager.h"
 #include "TcpSocket.h"
 #include "UdpSocket.h"
 #include "Timer.h"
@@ -20,6 +21,8 @@ using namespace std;
 
 
 #define LOG_FILE FOLDER "dll.log"
+
+#define IPC_CONNECT_TIMEOUT ( 1000 )
 
 #define FRAME_INTERVAL ( 1000 / 60 )
 
@@ -44,119 +47,52 @@ static Mutex deinitMutex;
 static uint64_t frameInterval = FRAME_INTERVAL;
 
 
-struct Main : public Socket::Owner, public Timer::Owner, public ControllerManager::Owner
+struct Main
+        : public Socket::Owner
+        , public Timer::Owner
+        , public ControllerManager::Owner
+        , public Controller::Owner
+        , public GameManager::Owner
 {
-    HANDLE pipe;
-    SocketPtr ipcSocket, ctrlSocket, dataSocket;
+    GameManager gm;
     Timer timer;
+    Controller *controllers[2];
+    SocketPtr ctrlSocket, dataSocket;
 
-    void acceptEvent ( Socket *serverSocket ) override
+    void ipcConnectEvent() override
     {
-        if ( serverSocket == ipcSocket.get() )
-            ipcSocket = serverSocket->accept ( this );
+        LOG ( "IPC connected" );
     }
 
-    void connectEvent ( Socket *socket ) override
+    void ipcDisconnectEvent() override
     {
-        LOG ( "Socket %08x connected", socket );
+        LOG ( "IPC disconnected" );
+
+        EventManager::get().stop();
     }
 
-    void disconnectEvent ( Socket *socket ) override
+    void ipcReadEvent ( const MsgPtr& msg ) override
     {
-        LOG ( "Socket %08x disconnected", socket );
-    }
-
-    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
-    {
-        LOG ( "Got %s from '%s'; socket=%08x", msg, address, socket );
-
-        switch ( msg->getMsgType() )
-        {
-            case MsgType::ExitGame:
-                EventManager::get().stop();
-                break;
-
-            default:
-                break;
-        }
-
-        // if ( msg->getMsgType() == MsgType::SocketShareData )
-        // {
-        //     if ( msg->getAs<SocketShareData>().isTCP() )
-        //         sharedSocket = TcpSocket::shared ( this, msg->getAs<SocketShareData>() );
-        //     else
-        //         sharedSocket = UdpSocket::shared ( this, msg->getAs<SocketShareData>() );
-
-        //     MsgPtr msg ( new IpAddrPort ( sharedSocket->getRemoteAddress() ) );
-        //     ipcSocket->send ( msg, address );
-        // }
-
-        // assert ( false );
     }
 
     void timerExpired ( Timer *timer ) override
     {
         assert ( timer == &this->timer );
+
+        if ( !gm.isConnected() )
+            EventManager::get().stop();
     }
 
-    Main() : pipe ( 0 ), ipcSocket ( TcpSocket::listen ( this, 0 ) ), timer ( this )
+    Main() : gm ( this ), timer ( this )
     {
-        LOG ( "Connecting pipe" );
+        gm.connectPipe();
 
-        pipe = CreateFile (
-                   NAMED_PIPE,                              // name of the pipe
-                   GENERIC_READ | GENERIC_WRITE,            // 2-way pipe
-                   FILE_SHARE_READ | FILE_SHARE_WRITE,      // R/W sharing mode
-                   0,                                       // default security
-                   OPEN_EXISTING,                           // open existing pipe
-                   FILE_ATTRIBUTE_NORMAL,                   // default attributes
-                   0 );                                     // no template file
-
-        if ( pipe == INVALID_HANDLE_VALUE )
-        {
-            WindowsException err = GetLastError();
-            LOG_AND_THROW ( err, "CreateFile failed" );
-        }
-
-        LOG ( "Pipe connected" );
-
-        DWORD bytes;
-
-        if ( !WriteFile ( pipe, & ( ipcSocket->address.port ), sizeof ( ipcSocket->address.port ), &bytes, 0 ) )
-        {
-            WindowsException err = GetLastError();
-            LOG_AND_THROW ( err, "WriteFile failed" );
-        }
-
-        if ( bytes != sizeof ( ipcSocket->address.port ) )
-        {
-            Exception err = toString ( "WriteFile wrote %d bytes, expected %d",
-                                       bytes, sizeof ( ipcSocket->address.port ) );
-            LOG_AND_THROW ( err, "" );
-        }
-
-        int processId = GetCurrentProcessId();
-
-        if ( !WriteFile ( pipe, &processId, sizeof ( processId ), &bytes, 0 ) )
-        {
-            WindowsException err = GetLastError();
-            LOG_AND_THROW ( err, "WriteFile failed" );
-        }
-
-        if ( bytes != sizeof ( processId ) )
-        {
-            Exception err = toString ( "WriteFile wrote %d bytes, expected %d",
-                                       bytes, sizeof ( ipcSocket->address.port ) );
-            LOG_AND_THROW ( err, "" );
-        }
+        timer.start ( IPC_CONNECT_TIMEOUT );
     }
 
     ~Main()
     {
-        if ( pipe )
-            CloseHandle ( pipe );
-
-        ipcSocket.reset();
+        gm.disconnectPipe();
     }
 };
 
