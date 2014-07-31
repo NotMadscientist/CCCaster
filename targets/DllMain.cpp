@@ -82,12 +82,16 @@ struct Main
 
     Main() : gm ( this )
     {
+        // Initialization is not done here because of threading issues
+
         gm.connectPipe();
     }
 
     ~Main()
     {
         gm.disconnectPipe();
+
+        // Deinitialization is not done here because of threading issues
     }
 };
 
@@ -111,7 +115,7 @@ extern "C" void callback()
                 EventManager::get().startPolling();
                 state = POLLING;
 
-                // TODO this is a temporary work around for Wine FPS limit issue
+                // TODO this is a temporary work around for the Wine FPS limit issue
                 if ( detectWine() )
                     frameInterval = 5;
             }
@@ -165,6 +169,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
 
             try
             {
+                // It is safe to initialize sockets here
                 SocketManager::get().initialize();
                 initializePreHacks();
 

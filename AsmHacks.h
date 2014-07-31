@@ -62,7 +62,6 @@ static const Asm hookCallback2 =
     }
 };
 
-// Write a DWORD 0xFF to each
 static const std::vector<Asm> enableDisabledStages =
 {
     { ( void * ) 0x54CEBC, INLINE_DWORD_FF },
