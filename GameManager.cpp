@@ -60,7 +60,7 @@ void GameManager::timerExpired ( Timer *timer )
 {
     assert ( timer == this->ipcConnectTimer.get() );
 
-    if ( !isConnected() )
+    if ( !ipcConnected() )
     {
         LOG ( "IPC connect timed out" );
 
@@ -229,6 +229,8 @@ void GameManager::disconnectPipe()
         pipe = 0;
     }
 }
+
+GameManager::GameManager ( Owner *owner ) : owner ( owner ), pipe ( 0 ), processId ( 0 ) {}
 
 GameManager::~GameManager()
 {

@@ -48,7 +48,7 @@ private:
 public:
 
     // Basic constructor / destructor
-    inline GameManager ( Owner *owner ) : owner ( owner ), pipe ( 0 ), processId ( 0 ) {}
+    GameManager ( Owner *owner );
     ~GameManager();
 
     // Open / close the game from the EXE side
@@ -60,5 +60,8 @@ public:
     void disconnectPipe();
 
     // Indicates if the IPC pipe and socket are connected
-    inline bool isConnected() const { return ( pipe && ipcSocket && ipcSocket->isClient() ); }
+    inline bool ipcConnected() const { return ( pipe && ipcSocket && ipcSocket->isClient() ); }
+
+    // Send a message over the IPC socket
+    inline bool ipcSend ( const MsgPtr& msg ) { if ( !ipcSocket ) return false; else return ipcSocket->send ( msg ); }
 };
