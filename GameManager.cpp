@@ -12,16 +12,19 @@
 using namespace std;
 
 
+#define IPC_CONNECT_TIMEOUT ( 1000 )
+
+
 void GameManager::acceptEvent ( Socket *serverSocket )
 {
-    if ( serverSocket == ipcSocket.get() )
-    {
-        ipcSocket = serverSocket->accept ( this );
-        assert ( ipcSocket->address.addr == "127.0.0.1" );
+    assert ( serverSocket == ipcSocket.get() );
+    assert ( serverSocket->isServer() == true );
 
-        if ( owner )
-            owner->ipcConnectEvent();
-    }
+    ipcSocket = serverSocket->accept ( this );
+    assert ( ipcSocket->address.addr == "127.0.0.1" );
+
+    if ( owner )
+        owner->ipcConnectEvent();
 }
 
 void GameManager::connectEvent ( Socket *socket )
@@ -36,7 +39,9 @@ void GameManager::disconnectEvent ( Socket *socket )
 {
     assert ( socket == ipcSocket.get() );
 
-    ipcSocket.reset();
+    disconnectPipe();
+
+    LOG ( "IPC disconnected" );
 
     if ( owner )
         owner->ipcDisconnectEvent();
@@ -49,6 +54,19 @@ void GameManager::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPor
 
     if ( owner )
         owner->ipcReadEvent ( msg );
+}
+
+void GameManager::timerExpired ( Timer *timer )
+{
+    assert ( timer == this->ipcConnectTimer.get() );
+
+    if ( !isConnected() )
+    {
+        LOG ( "IPC connect timed out" );
+
+        if ( owner )
+            owner->ipcDisconnectEvent();
+    }
 }
 
 void GameManager::openGame()
@@ -125,6 +143,9 @@ void GameManager::openGame()
     }
 
     LOG ( "processId=%08x", processId );
+
+    ipcConnectTimer.reset ( new Timer ( this ) );
+    ipcConnectTimer->start ( IPC_CONNECT_TIMEOUT );
 }
 
 void GameManager::closeGame()
@@ -198,6 +219,8 @@ void GameManager::connectPipe()
 
 void GameManager::disconnectPipe()
 {
+    ipcConnectTimer.reset();
+
     ipcSocket.reset();
 
     if ( pipe )
@@ -205,4 +228,9 @@ void GameManager::disconnectPipe()
         CloseHandle ( ( HANDLE ) pipe );
         pipe = 0;
     }
+}
+
+GameManager::~GameManager()
+{
+    disconnectPipe();
 }

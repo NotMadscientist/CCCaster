@@ -22,8 +22,6 @@ using namespace std;
 
 #define LOG_FILE FOLDER "dll.log"
 
-#define IPC_CONNECT_TIMEOUT ( 1000 )
-
 #define FRAME_INTERVAL ( 1000 / 60 )
 
 
@@ -48,26 +46,17 @@ static uint64_t frameInterval = FRAME_INTERVAL;
 
 
 struct Main
-        : public Socket::Owner
-        , public Timer::Owner
+        : public GameManager::Owner
         , public ControllerManager::Owner
         , public Controller::Owner
-        , public GameManager::Owner
+        , public Socket::Owner
 {
     GameManager gm;
-    Timer timer;
     Controller *controllers[2];
     SocketPtr ctrlSocket, dataSocket;
 
-    void ipcConnectEvent() override
-    {
-        LOG ( "IPC connected" );
-    }
-
     void ipcDisconnectEvent() override
     {
-        LOG ( "IPC disconnected" );
-
         EventManager::get().stop();
     }
 
@@ -75,19 +64,25 @@ struct Main
     {
     }
 
-    void timerExpired ( Timer *timer ) override
+    void attachedJoystick ( Controller *controller ) override
     {
-        assert ( timer == &this->timer );
-
-        if ( !gm.isConnected() )
-            EventManager::get().stop();
     }
 
-    Main() : gm ( this ), timer ( this )
+    void detachedJoystick ( Controller *controller ) override
+    {
+    }
+
+    void doneMapping ( Controller *controller, uint32_t key ) override
+    {
+    }
+
+    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
+    {
+    }
+
+    Main() : gm ( this )
     {
         gm.connectPipe();
-
-        timer.start ( IPC_CONNECT_TIMEOUT );
     }
 
     ~Main()

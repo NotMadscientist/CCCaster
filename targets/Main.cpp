@@ -32,63 +32,39 @@ static IpAddrPort mainAddrPort;
 
 
 struct Main
-        : public Socket::Owner
-        , public Timer::Owner
+        : public GameManager::Owner
         , public ControllerManager::Owner
         , public Controller::Owner
-        , public GameManager::Owner
+        , public Socket::Owner
 {
     GameManager gm;
-    Timer timer;
-    Controller *controller;
     SocketPtr ctrlSocket, dataSocket;
-
-    void doneMapping ( Controller *controller, uint32_t key ) override
-    {
-        assert ( controller == this->controller );
-    }
-
-    void attachedJoystick ( Controller *controller ) override
-    {
-        this->controller = controller;
-    }
-
-    void detachedJoystick ( Controller *controller ) override
-    {
-        if ( this->controller == controller )
-            this->controller = 0;
-    }
-
-    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
-    {
-        LOG ( "Got %s from '%s'", msg, address );
-    }
-
-    void timerExpired ( Timer *timer ) override
-    {
-        assert ( timer == &this->timer );
-
-        gm.closeGame();
-        EventManager::get().stop();
-    }
-
-    void ipcConnectEvent() override
-    {
-        LOG ( "IPC connected" );
-    }
 
     void ipcDisconnectEvent() override
     {
-        LOG ( "IPC disconnected" );
-
-        EventManager::get().stop();
     }
 
     void ipcReadEvent ( const MsgPtr& msg ) override
     {
     }
 
-    Main ( Option opt[] ) : gm ( this ), timer ( this )
+    void attachedJoystick ( Controller *controller ) override
+    {
+    }
+
+    void detachedJoystick ( Controller *controller ) override
+    {
+    }
+
+    void doneMapping ( Controller *controller, uint32_t key ) override
+    {
+    }
+
+    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
+    {
+    }
+
+    Main ( Option opt[] ) : gm ( this )
     {
         if ( opt[STDOUT] )
             Logger::get().initialize();
@@ -96,6 +72,7 @@ struct Main
             Logger::get().initialize ( LOG_FILE );
         TimerManager::get().initialize();
         SocketManager::get().initialize();
+        ControllerManager::get().initialize ( this );
 
         // if ( mainAddrPort.addr.empty() )
         // {
@@ -108,11 +85,7 @@ struct Main
         //     dataSocket = UdpSocket::bind ( this, mainAddrPort );
         // }
 
-        // ControllerManager::get().initialize ( this );
-
         gm.openGame();
-
-        // timer.start ( 5000 );
     }
 
     ~Main()

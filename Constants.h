@@ -11,7 +11,7 @@
 #define CC_SCREEN_WIDTH_ADDR        ( ( char * ) 0x54D048 ) // The width of the main viewport
 #define CC_PERF_FREQ_ADDR           ( ( char * ) 0x774A80 ) // Value of QueryPerformanceFrequency for game FPS
 
-// Asm hack are prefix MM (for modified memory), they should be written to safe locations
+// Asm hack are prefixed MM (for modified memory), they should be written to safe locations
 
 #define MM_HOOK_CALL1_ADDR          ( ( char * ) 0x40D032 )
 #define MM_HOOK_CALL2_ADDR          ( ( char * ) 0x40D411 )

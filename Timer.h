@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <memory>
 
 
 class Timer
@@ -33,3 +34,5 @@ public:
 
     friend class TimerManager;
 };
+
+typedef std::shared_ptr<Timer> TimerPtr;
