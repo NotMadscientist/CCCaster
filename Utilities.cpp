@@ -185,8 +185,19 @@ void *enumFindWindow ( const string& title )
 
 bool detectWine()
 {
+    static char isWine = -1;
+
+    if ( isWine >= 0 )
+        return isWine;
+
     HMODULE hntdll = GetModuleHandle ( "ntdll.dll" );
+
     if ( !hntdll )
-        return false;
-    return ( GetProcAddress ( hntdll, "wine_get_version" ) != 0 );
+    {
+        isWine = 0;
+        return isWine;
+    }
+
+    isWine = ( GetProcAddress ( hntdll, "wine_get_version" ) ? 1 : 0 );
+    return isWine;
 }
