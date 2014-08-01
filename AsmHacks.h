@@ -18,11 +18,6 @@
 
 #define INLINE_NOP_THREE_TIMES { 0x90, 0x90, 0x90 }
 
-#define HOOK_WINDOWS_FUNC(RETURN_TYPE, FUNC_NAME, ...)                          \
-    typedef RETURN_TYPE ( WINAPI *p ## FUNC_NAME ) ( __VA_ARGS__ );             \
-    p ## FUNC_NAME o ## FUNC_NAME = 0;                                          \
-    RETURN_TYPE WINAPI m ## FUNC_NAME ( __VA_ARGS__ )
-
 
 // Write to a memory location in the same process, returns 0 on success
 int memwrite ( void *dst, const void *src, size_t len );

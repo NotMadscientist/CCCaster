@@ -172,3 +172,30 @@ extern "C" {
 }
 #endif
 
+// Convenience macros to generate function type, pointer, and definition for Windows functions.
+//
+// Example usage:
+//
+// pQueryPerformanceCounter is the function pointer type
+//
+// oQueryPerformanceCounter is the original function
+//
+// mQueryPerformanceCounter is the hooked function
+//
+// MH_WINAPI_HOOK ( BOOL, QueryPerformanceCounter, LARGE_INTEGER *lpPerformanceCount )
+// {
+// 		return oQueryPerformanceCounter ( lpPerformanceCount );
+// }
+//
+// MH_CREATE_HOOK ( QueryPerformanceCounter );
+//
+// MH_REMOVE_HOOK ( QueryPerformanceCounter );
+
+#define MH_WINAPI_HOOK(RETURN_TYPE, FUNC_NAME, ...)                             \
+    typedef RETURN_TYPE ( WINAPI *p ## FUNC_NAME ) ( __VA_ARGS__ );             \
+    p ## FUNC_NAME o ## FUNC_NAME = 0;                                          \
+    RETURN_TYPE WINAPI m ## FUNC_NAME ( __VA_ARGS__ )
+
+#define MH_CREATE_HOOK(FUNC_NAME) MH_CreateHook ( FUNC_NAME, m ## FUNC_NAME, o ## FUNC_NAME )
+
+#define MH_REMOVE_HOOK(FUNC_NAME) MH_RemoveHook ( FUNC_NAME )

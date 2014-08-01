@@ -7,10 +7,10 @@
 #define CC_STARTUP_TITLE_EN         CC_TITLE " Startup Menu"
 #define CC_STARTUP_TITLE_JP         CC_TITLE " ‹N“®ƒƒjƒ…["
 
-#define CC_LOOP_START_ADDR          ( ( char * ) 0x40D330 ) // Start of the main event loop
-#define CC_SCREEN_WIDTH_ADDR        ( ( char * ) 0x54D048 ) // The width of the main viewport
-#define CC_WORLDTIMER_ADDR          ( ( char * ) 0x55D1D4 ) // uint32_t, always counting up
-#define CC_PERF_FREQ_ADDR           ( ( char * ) 0x774A80 ) // Value of QueryPerformanceFrequency for game FPS
+#define CC_LOOP_START_ADDR          ( ( char * ) 0x40D330 )     // Start of the main event loop
+#define CC_SCREEN_WIDTH_ADDR        ( ( uint32_t * ) 0x54D048 ) // The width of the main viewport
+#define CC_WORLD_TIMER_ADDR         ( ( uint32_t * ) 0x55D1D4 ) // Frame step timer, always counting up
+#define CC_PERF_FREQ_ADDR           ( ( uint64_t * ) 0x774A80 ) // Value of QueryPerformanceFrequency for game FPS
 
 #define CC_PTR_TO_WRITE_INPUTS_ADDR ( ( char * ) 0x76E6AC ) // Pointer to the location to write inputs
 #define CC_P1_OFFSET_DIRECTION      ( 0x18 )                // Offset to write P1 direction inputs
