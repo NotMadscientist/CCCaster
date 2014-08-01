@@ -92,6 +92,8 @@ struct Main
     {
         // Initialization is not done here because of threading issues
 
+        controllers[0] = controllers[1] = 0;
+
         procMan.connectPipe();
     }
 
