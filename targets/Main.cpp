@@ -197,3 +197,8 @@ int main ( int argc, char *argv[] )
 
     return 0;
 }
+
+// Empty definitions needed to keep the linker happy
+extern "C" void callback() {}
+uint32_t currentMenuIndex;
+uint32_t *charaSelectModePtr;

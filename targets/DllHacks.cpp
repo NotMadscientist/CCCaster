@@ -80,32 +80,18 @@ void InvalidateDeviceObjects()
     }
 }
 
-extern "C" void callback();
-
-static const Asm hookCallback1 =
-{
-    MM_HOOK_CALL1_ADDR,
-    {
-        0xE8, INLINE_DWORD ( ( ( char * ) &callback ) - MM_HOOK_CALL1_ADDR - 5 ),   // call callback
-        0xE9, INLINE_DWORD ( MM_HOOK_CALL2_ADDR - MM_HOOK_CALL1_ADDR - 10 )         // jmp MM_HOOK_CALL2_ADDR
-    }
-};
-
 void initializePreHacks()
 {
-    WRITE_ASM_HACK ( hookCallback1 );
-    WRITE_ASM_HACK ( hookCallback2 );
-
-    // Write the jump location after, due to dependencies on the callback hook code
-    WRITE_ASM_HACK ( loopStartJump );
+    for ( const Asm& hack : hookMainLoop )
+        WRITE_ASM_HACK ( hack );
 
     for ( const Asm& hack : enableDisabledStages )
         WRITE_ASM_HACK ( hack );
 
-    WRITE_ASM_HACK ( fixRyougiStageMusic1 );
-    WRITE_ASM_HACK ( fixRyougiStageMusic2 );
-
     for ( const Asm& hack : hijackControls )
+        WRITE_ASM_HACK ( hack );
+
+    for ( const Asm& hack : copyMenuVariables )
         WRITE_ASM_HACK ( hack );
 }
 
@@ -131,7 +117,6 @@ void deinitializeHacks()
 {
     UnhookDirectX();
 
-    loopStartJump.revert();
-    hookCallback2.revert();
-    hookCallback1.revert();
+    for ( int i = hookMainLoop.size() - 1; i >= 0; --i )
+        hookMainLoop[i].revert();
 }

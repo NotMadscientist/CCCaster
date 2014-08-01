@@ -45,6 +45,12 @@ static Mutex deinitMutex;
 // Number of milliseconds to poll during each frame
 static uint64_t frameInterval = FRAME_INTERVAL;
 
+// Position of the current menu's cursor
+uint32_t currentMenuIndex = 0;
+
+// Pointer to the value of the character select mode (moon, colour, etc...)
+uint32_t *charaSelectModePtr = 0;
+
 
 struct Main
         : public ProcessManager::Owner
@@ -109,6 +115,8 @@ struct Main
 extern "C" void callback()
 {
     static uint32_t worldTimer = 0;
+    static uint32_t lastMenuIndex = 0;
+    static uint32_t lastCharaSelectMode = 0;
 
     if ( state == DEINITIALIZED )
         return;
@@ -119,7 +127,7 @@ extern "C" void callback()
         {
             if ( state == UNINITIALIZED )
             {
-                worldTimer = 0;
+                worldTimer = lastMenuIndex = lastCharaSelectMode = 0;
                 initializePostHacks();
 
                 // Joystick and timer must be initialized in the main thread
@@ -138,9 +146,9 @@ extern "C" void callback()
                 break;
 
             // Don't poll for changes until a frame step happens
-            if ( worldTimer == * CC_WORLD_TIMER_ADDR )
+            if ( worldTimer == *CC_WORLD_TIMER_ADDR )
                 return;
-            worldTimer = * CC_WORLD_TIMER_ADDR;
+            worldTimer = *CC_WORLD_TIMER_ADDR;
 
             // Input testing code
             {
@@ -166,10 +174,23 @@ extern "C" void callback()
                 if ( GetKeyState ( 'T' ) & 0x80 )       buttons = CC_BUTTON_C;
                 if ( GetKeyState ( VK_SPACE ) & 0x80 )  buttons = CC_BUTTON_D;
                 if ( GetKeyState ( 'A' ) & 0x80 )       buttons = CC_BUTTON_E;
+                if ( GetKeyState ( VK_F5 ) & 0x80 )     buttons = CC_BUTTON_START;
 
                 assert ( main.get() != 0 );
 
                 main->procMan.writeGameInputs ( 1, direction, buttons );
+            }
+
+            if ( currentMenuIndex != lastMenuIndex )
+            {
+                LOG ( "currentMenuIndex=%d", currentMenuIndex );
+                lastMenuIndex = currentMenuIndex;
+            }
+
+            if ( charaSelectModePtr && *charaSelectModePtr != lastCharaSelectMode )
+            {
+                LOG ( "charaSelectMode=%d", *charaSelectModePtr );
+                lastCharaSelectMode = *charaSelectModePtr;
             }
 
             // Poll for events

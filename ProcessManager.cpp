@@ -178,6 +178,8 @@ void ProcessManager::closeGame()
 {
     disconnectPipe();
 
+    LOG ( "Closing game" );
+
     // Find and close any lingering windows
     for ( const string& window : { CC_TITLE, CC_STARTUP_TITLE_EN, CC_STARTUP_TITLE_JP } )
     {

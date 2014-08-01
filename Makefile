@@ -173,7 +173,7 @@ format:
     --keep-one-line-blocks      \
     --align-pointer=name        \
     --align-reference=type      \
-    $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
+    $(filter-out AsmHacks.h, $(NON_GEN_SRCS) $(NON_GEN_HEADERS))
 
 count:
 	wc -l $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
