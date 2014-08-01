@@ -19,10 +19,9 @@ class EventManager
         void join() override;
     };
 
-    // Single instance of the reaper thread
+    // Single instance of the reaper thread, to garbage collect finished thread
     ReaperThread reaperThread;
 
-    // Sets of active and allocated timer instanc
     // Flag to indicate the event loop is running
     volatile bool running;
 
@@ -39,22 +38,22 @@ class EventManager
 
 public:
 
-    // Add a thread to be joined on the reaper thread
+    // Add a thread to be joined on the reaper thread, aka garbage collected when it finishes
     void addThread ( const std::shared_ptr<Thread>& thread );
 
-    // Start the event manager for polling, doesn't block
+    // Start the EventManager for polling, doesn't block
     void startPolling();
 
-    // Poll for events instead of start / stop, returns false on exit
+    // Poll for events instead of start / stop, returns false if the EventManager has been stopped
     bool poll ( uint64_t timeout );
 
-    // Start the event manager, blocks until stop is called
+    // Start the EventManager, blocks until stop is called
     void start();
 
-    // Stop the event manager
+    // Stop the EventManager, can be called on a different thread
     void stop();
 
-    // Stop the event manager and release background threads
+    // Stop the EventManager and release background threads, can be called on a different thread
     void release();
 
     // Get the singleton instance

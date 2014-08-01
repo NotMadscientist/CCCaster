@@ -21,6 +21,7 @@ void ProcessManager::acceptEvent ( Socket *serverSocket )
     assert ( serverSocket->isServer() == true );
 
     ipcSocket = serverSocket->accept ( this );
+
     assert ( ipcSocket->address.addr == "127.0.0.1" );
 
     if ( owner )
@@ -122,8 +123,8 @@ void ProcessManager::openGame()
 
     if ( bytes != sizeof ( ipcHost.port ) )
     {
-        Exception err = toString ( "ReadFile read %d bytes, expected %d", bytes, sizeof ( ipcHost.port ) );
-        LOG_AND_THROW ( err, "" );
+        Exception err = toString ( "read %d bytes, expected %d", bytes, sizeof ( ipcHost.port ) );
+        LOG_AND_THROW ( err, "ReadFile failed" );
     }
 
     LOG ( "ipcHost='%s'", ipcHost );
@@ -138,8 +139,8 @@ void ProcessManager::openGame()
 
     if ( bytes != sizeof ( processId ) )
     {
-        Exception err = toString ( "ReadFile read %d bytes, expected %d", bytes, sizeof ( processId ) );
-        LOG_AND_THROW ( err, "" );
+        Exception err = toString ( "read %d bytes, expected %d", bytes, sizeof ( processId ) );
+        LOG_AND_THROW ( err, "ReadFile failed" );
     }
 
     LOG ( "processId=%08x", processId );
@@ -196,9 +197,8 @@ void ProcessManager::connectPipe()
 
     if ( bytes != sizeof ( ipcSocket->address.port ) )
     {
-        Exception err = toString ( "WriteFile wrote %d bytes, expected %d",
-                                   bytes, sizeof ( ipcSocket->address.port ) );
-        LOG_AND_THROW ( err, "" );
+        Exception err = toString ( "wrote %d bytes, expected %d", bytes, sizeof ( ipcSocket->address.port ) );
+        LOG_AND_THROW ( err, "WriteFile failed" );
     }
 
     processId = GetCurrentProcessId();
@@ -211,9 +211,8 @@ void ProcessManager::connectPipe()
 
     if ( bytes != sizeof ( processId ) )
     {
-        Exception err = toString ( "WriteFile wrote %d bytes, expected %d",
-                                   bytes, sizeof ( ipcSocket->address.port ) );
-        LOG_AND_THROW ( err, "" );
+        Exception err = toString ( "wrote %d bytes, expected %d", bytes, sizeof ( ipcSocket->address.port ) );
+        LOG_AND_THROW ( err, "WriteFile failed" );
     }
 }
 
