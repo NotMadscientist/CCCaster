@@ -67,4 +67,7 @@ public:
 
     // Get the process ID of the game
     inline int getProcessId() const { return processId; }
+
+    // Write game inputs
+    void writeGameInputs ( uint8_t player, uint16_t direction, uint16_t buttons );
 };

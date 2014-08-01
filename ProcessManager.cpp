@@ -4,6 +4,7 @@
 #include "Utilities.h"
 #include "Messages.h"
 #include "Constants.h"
+#include "AsmHacks.h"
 
 #include <windows.h>
 
@@ -14,6 +15,30 @@ using namespace std;
 
 #define IPC_CONNECT_TIMEOUT ( 1000 )
 
+
+void ProcessManager::writeGameInputs ( uint8_t player, uint16_t direction, uint16_t buttons )
+{
+    // LOG ( "player=%d; direction=%d; buttons=%04x", player, direction, buttons );
+
+    char *const baseAddr = * ( char ** ) CC_PTR_TO_WRITE_INPUTS_ADDR;
+
+    switch ( player )
+    {
+        case 1:
+            memwrite ( baseAddr + CC_P1_OFFSET_DIRECTION, &direction, sizeof ( direction ) );
+            memwrite ( baseAddr + CC_P1_OFFSET_BUTTONS, &buttons, sizeof ( buttons ) );
+            break;
+
+        case 2:
+            memwrite ( baseAddr + CC_P2_OFFSET_DIRECTION, &direction, sizeof ( direction ) );
+            memwrite ( baseAddr + CC_P2_OFFSET_BUTTONS, &buttons, sizeof ( buttons ) );
+            break;
+
+        default:
+            assert ( !"Invalid player number!" );
+            break;
+    }
+}
 
 void ProcessManager::acceptEvent ( Socket *serverSocket )
 {
