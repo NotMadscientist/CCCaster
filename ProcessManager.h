@@ -4,7 +4,7 @@
 #include "Timer.h"
 
 
-class GameManager : public Socket::Owner, public Timer::Owner
+class ProcessManager : public Socket::Owner, public Timer::Owner
 {
 public:
 
@@ -48,8 +48,8 @@ private:
 public:
 
     // Basic constructor / destructor
-    GameManager ( Owner *owner );
-    ~GameManager();
+    ProcessManager ( Owner *owner );
+    ~ProcessManager();
 
     // Open / close the game from the EXE side
     void openGame();

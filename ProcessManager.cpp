@@ -1,4 +1,4 @@
-#include "GameManager.h"
+#include "ProcessManager.h"
 #include "TcpSocket.h"
 #include "Logger.h"
 #include "Utilities.h"
@@ -15,7 +15,7 @@ using namespace std;
 #define IPC_CONNECT_TIMEOUT ( 1000 )
 
 
-void GameManager::acceptEvent ( Socket *serverSocket )
+void ProcessManager::acceptEvent ( Socket *serverSocket )
 {
     assert ( serverSocket == ipcSocket.get() );
     assert ( serverSocket->isServer() == true );
@@ -27,7 +27,7 @@ void GameManager::acceptEvent ( Socket *serverSocket )
         owner->ipcConnectEvent();
 }
 
-void GameManager::connectEvent ( Socket *socket )
+void ProcessManager::connectEvent ( Socket *socket )
 {
     assert ( socket == ipcSocket.get() );
 
@@ -35,7 +35,7 @@ void GameManager::connectEvent ( Socket *socket )
         owner->ipcConnectEvent();
 }
 
-void GameManager::disconnectEvent ( Socket *socket )
+void ProcessManager::disconnectEvent ( Socket *socket )
 {
     assert ( socket == ipcSocket.get() );
 
@@ -47,7 +47,7 @@ void GameManager::disconnectEvent ( Socket *socket )
         owner->ipcDisconnectEvent();
 }
 
-void GameManager::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
+void ProcessManager::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
 {
     assert ( socket == ipcSocket.get() );
     assert ( address.addr == "127.0.0.1" );
@@ -56,7 +56,7 @@ void GameManager::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPor
         owner->ipcReadEvent ( msg );
 }
 
-void GameManager::timerExpired ( Timer *timer )
+void ProcessManager::timerExpired ( Timer *timer )
 {
     assert ( timer == this->ipcConnectTimer.get() );
 
@@ -69,7 +69,7 @@ void GameManager::timerExpired ( Timer *timer )
     }
 }
 
-void GameManager::openGame()
+void ProcessManager::openGame()
 {
     LOG ( "Opening pipe" );
 
@@ -148,7 +148,7 @@ void GameManager::openGame()
     ipcConnectTimer->start ( IPC_CONNECT_TIMEOUT );
 }
 
-void GameManager::closeGame()
+void ProcessManager::closeGame()
 {
     disconnectPipe();
 
@@ -161,7 +161,7 @@ void GameManager::closeGame()
     }
 }
 
-void GameManager::connectPipe()
+void ProcessManager::connectPipe()
 {
     LOG ( "Listening on IPC socket" );
 
@@ -217,7 +217,7 @@ void GameManager::connectPipe()
     }
 }
 
-void GameManager::disconnectPipe()
+void ProcessManager::disconnectPipe()
 {
     ipcConnectTimer.reset();
 
@@ -230,9 +230,9 @@ void GameManager::disconnectPipe()
     }
 }
 
-GameManager::GameManager ( Owner *owner ) : owner ( owner ), pipe ( 0 ), processId ( 0 ) {}
+ProcessManager::ProcessManager ( Owner *owner ) : owner ( owner ), pipe ( 0 ), processId ( 0 ) {}
 
-GameManager::~GameManager()
+ProcessManager::~ProcessManager()
 {
     disconnectPipe();
 }

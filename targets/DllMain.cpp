@@ -4,7 +4,7 @@
 #include "TimerManager.h"
 #include "SocketManager.h"
 #include "ControllerManager.h"
-#include "GameManager.h"
+#include "ProcessManager.h"
 #include "TcpSocket.h"
 #include "UdpSocket.h"
 #include "Timer.h"
@@ -46,14 +46,16 @@ static uint64_t frameInterval = FRAME_INTERVAL;
 
 
 struct Main
-        : public GameManager::Owner
+        : public ProcessManager::Owner
         , public ControllerManager::Owner
         , public Controller::Owner
         , public Socket::Owner
 {
-    GameManager gm;
+    ProcessManager procMan;
     Controller *controllers[2];
     SocketPtr ctrlSocket, dataSocket;
+
+    // ProcessManager
 
     void ipcDisconnectEvent() override
     {
@@ -64,6 +66,8 @@ struct Main
     {
     }
 
+    // ControllerManager
+
     void attachedJoystick ( Controller *controller ) override
     {
     }
@@ -72,24 +76,28 @@ struct Main
     {
     }
 
+    // Controller
+
     void doneMapping ( Controller *controller, uint32_t key ) override
     {
     }
+
+    // Socket
 
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
     {
     }
 
-    Main() : gm ( this )
+    Main() : procMan ( this )
     {
         // Initialization is not done here because of threading issues
 
-        gm.connectPipe();
+        procMan.connectPipe();
     }
 
     ~Main()
     {
-        gm.disconnectPipe();
+        procMan.disconnectPipe();
 
         // Deinitialization is not done here because of threading issues
     }
