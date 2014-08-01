@@ -64,4 +64,7 @@ public:
 
     // Send a message over the IPC socket
     inline bool ipcSend ( const MsgPtr& msg ) { if ( !ipcSocket ) return false; else return ipcSocket->send ( msg ); }
+
+    // Get the process ID of the game
+    inline int getProcessId() const { return processId; }
 };
