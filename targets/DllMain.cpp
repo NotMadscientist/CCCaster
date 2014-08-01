@@ -10,6 +10,7 @@
 #include "Timer.h"
 #include "Thread.h"
 #include "Messages.h"
+#include "Constants.h"
 
 #include <windows.h>
 
@@ -107,6 +108,8 @@ struct Main
 
 extern "C" void callback()
 {
+    static uint32_t worldTimer = 0;
+
     if ( state == DEINITIALIZED )
         return;
 
@@ -116,6 +119,7 @@ extern "C" void callback()
         {
             if ( state == UNINITIALIZED )
             {
+                worldTimer = 0;
                 initializePostHacks();
 
                 // Joystick and timer must be initialized in the main thread
@@ -132,6 +136,11 @@ extern "C" void callback()
 
             if ( state != POLLING )
                 break;
+
+            if ( worldTimer == * ( uint32_t * ) CC_WORLDTIMER_ADDR )
+                return;
+
+            worldTimer = * ( uint32_t * ) CC_WORLDTIMER_ADDR;
 
             // Poll for events
             if ( !EventManager::get().poll ( frameInterval ) )
