@@ -3,7 +3,7 @@
   <CheatEntries>
     <CheatEntry>
       <ID>84</ID>
-      <Description>"P1 dirs"</Description>
+      <Description>"Write P1 direction"</Description>
       <ShowAsHex>1</ShowAsHex>
       <Color>80000008</Color>
       <VariableType>Byte</VariableType>
@@ -14,7 +14,7 @@
     </CheatEntry>
     <CheatEntry>
       <ID>87</ID>
-      <Description>"P1 buttons"</Description>
+      <Description>"Write P1 buttons"</Description>
       <ShowAsHex>1</ShowAsHex>
       <Color>80000008</Color>
       <VariableType>2 Bytes</VariableType>
@@ -25,7 +25,7 @@
     </CheatEntry>
     <CheatEntry>
       <ID>86</ID>
-      <Description>"P2 dirs"</Description>
+      <Description>"Write P2 direction"</Description>
       <ShowAsHex>1</ShowAsHex>
       <Color>80000008</Color>
       <VariableType>Byte</VariableType>
@@ -36,7 +36,7 @@
     </CheatEntry>
     <CheatEntry>
       <ID>85</ID>
-      <Description>"P2 buttons"</Description>
+      <Description>"Write P2 buttons"</Description>
       <ShowAsHex>1</ShowAsHex>
       <Color>80000008</Color>
       <VariableType>2 Bytes</VariableType>
