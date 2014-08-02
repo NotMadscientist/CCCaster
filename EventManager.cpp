@@ -16,7 +16,7 @@ using namespace std;
 #define DEFAULT_TIMEOUT_MILLISECONDS 1000
 
 
-void EventManager::checkEvents ( uint64_t timeout )
+void EventManager::checkEvents ( double timeout )
 {
     TimerManager::get().check();
 
@@ -58,7 +58,7 @@ EventManager::EventManager() : running ( false )
 {
 }
 
-bool EventManager::poll ( uint64_t timeout )
+bool EventManager::poll ( double timeout )
 {
     if ( !running )
         return false;
@@ -66,8 +66,8 @@ bool EventManager::poll ( uint64_t timeout )
     assert ( timeout > 0 );
 
     TimerManager::get().updateNow();
-    uint64_t now = TimerManager::get().getNow();
-    uint64_t end = now + timeout;
+    double now = TimerManager::get().getNow();
+    double end = now + timeout;
 
     while ( now < end )
     {

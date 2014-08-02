@@ -14,7 +14,7 @@ Timer::~Timer()
     TimerManager::get().remove ( this );
 }
 
-void Timer::start ( uint64_t delay )
+void Timer::start ( double delay )
 {
     if ( delay == 0 )
         return;

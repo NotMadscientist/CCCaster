@@ -26,7 +26,7 @@ class EventManager
     volatile bool running;
 
     // Check for events
-    void checkEvents ( uint64_t timeout );
+    void checkEvents ( double timeout );
 
     // Main event loop
     void eventLoop();
@@ -45,7 +45,7 @@ public:
     void startPolling();
 
     // Poll for events instead of start / stop, returns false if the EventManager has been stopped
-    bool poll ( uint64_t timeout );
+    bool poll ( double timeout );
 
     // Start the EventManager, blocks until stop is called
     void start();

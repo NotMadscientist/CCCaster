@@ -50,7 +50,10 @@ private:
     Timer sendTimer;
 
     // The timeout for keep alive packets, 0 to disable
-    uint64_t keepAlive, countDown;
+    uint64_t keepAlive;
+
+    // The countdown timer for the keep alive packets
+    uint32_t countDown;
 
     // Timer callback that sends the messages
     void timerExpired ( Timer *timer ) override;

@@ -44,6 +44,7 @@ struct Main
 
     void ipcDisconnectEvent() override
     {
+        EventManager::get().stop();
     }
 
     void ipcReadEvent ( const MsgPtr& msg ) override

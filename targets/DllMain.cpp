@@ -23,7 +23,7 @@ using namespace std;
 
 #define LOG_FILE FOLDER "dll.log"
 
-#define FRAME_INTERVAL ( 1000 / 60 )
+#define FRAME_INTERVAL ( 1000.0 / 60.0 )
 
 
 // Declarations
@@ -41,9 +41,6 @@ static shared_ptr<Main> main;
 
 // Mutex for deinitialize()
 static Mutex deinitMutex;
-
-// Number of milliseconds to poll during each frame
-static uint64_t frameInterval = FRAME_INTERVAL;
 
 // Position of the current menu's cursor
 uint32_t currentMenuIndex = 0;
@@ -114,7 +111,10 @@ struct Main
 
 extern "C" void callback()
 {
-    static uint32_t worldTimer = 0;
+    static RollingAverage<double, 256> averageFps;
+    static double lastStartTime = 0;
+    static double lastEndTime = 0;
+    static uint32_t lastWorldTimer = 0;
     static uint32_t lastMenuIndex = 0;
     static uint32_t lastCharaSelectMode = 0;
 
@@ -127,7 +127,10 @@ extern "C" void callback()
         {
             if ( state == UNINITIALIZED )
             {
-                worldTimer = lastMenuIndex = lastCharaSelectMode = 0;
+                averageFps.reset ( 60 );
+
+                lastStartTime = lastEndTime = lastWorldTimer = lastMenuIndex = lastCharaSelectMode = 0;
+
                 initializePostHacks();
 
                 // Joystick and timer must be initialized in the main thread
@@ -136,19 +139,15 @@ extern "C" void callback()
 
                 EventManager::get().startPolling();
                 state = POLLING;
-
-                // TODO this is a temporary work around for the Wine FPS limit issue
-                if ( detectWine() )
-                    frameInterval = 5;
             }
 
             if ( state != POLLING )
                 break;
 
             // Don't poll for changes until a frame step happens
-            if ( worldTimer == *CC_WORLD_TIMER_ADDR )
+            if ( lastWorldTimer == *CC_WORLD_TIMER_ADDR )
                 break;
-            worldTimer = *CC_WORLD_TIMER_ADDR;
+            lastWorldTimer = *CC_WORLD_TIMER_ADDR;
 
             // Input testing code
             {
@@ -193,12 +192,28 @@ extern "C" void callback()
                 lastCharaSelectMode = *charaSelectModePtr;
             }
 
-            // Poll for events
-            if ( !EventManager::get().poll ( frameInterval ) )
+            TimerManager::get().updateNow();
+            double now = TimerManager::get().getNow();
+
+            averageFps.set ( 1000.0 / ( now - lastStartTime ) );
+            *CC_FPS_COUNTER_ADDR = ( uint32_t ) averageFps.get();
+            lastStartTime = now;
+
+            double delta = now - lastEndTime;
+
+            if ( delta < FRAME_INTERVAL )
             {
-                state = STOPPING;
-                break;
+                // LOG ( "timeout=%.2f", FRAME_INTERVAL - delta );
+
+                if ( !EventManager::get().poll ( FRAME_INTERVAL - delta ) )
+                {
+                    state = STOPPING;
+                    break;
+                }
             }
+
+            TimerManager::get().updateNow();
+            lastEndTime = TimerManager::get().getNow();
         }
         while ( 0 );
     }
