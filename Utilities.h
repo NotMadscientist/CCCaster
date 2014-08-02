@@ -129,3 +129,49 @@ void *enumFindWindow ( const std::string& title );
 
 // Detect if we're running on Wine
 bool detectWine();
+
+template<typename T, size_t N>
+class RollingAverage
+{
+    T values[N];
+    T sum;
+    size_t index, count;
+
+public:
+
+    inline RollingAverage() : sum ( 0 ), index ( 0 ), count ( 0 ) {}
+    inline RollingAverage ( T initial ) : sum ( initial ), index ( 1 ), count ( 1 ) {}
+
+    void set ( T value )
+    {
+        sum += value;
+
+        if ( count < N )
+            ++count;
+        else
+            sum -= values[index];
+
+        values[index] = value;
+
+        index = ( index + 1 ) % N;
+    }
+
+    T get() const
+    {
+        if ( count == 0 )
+            throw Exception ( "Division by zero!" );
+
+        return sum / count;
+    }
+
+    void reset()
+    {
+        sum = index = count = 0;
+    }
+
+    void reset ( T initial )
+    {
+        sum = initial;
+        index = count = 1;
+    }
+};
