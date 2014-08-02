@@ -134,7 +134,7 @@ extern "C" void callback()
             if ( state != POLLING )
                 break;
 
-            // Don't poll for changes until a frame step happens
+            // Don't poll for events until a frame step happens
             static uint32_t lastWorldTimer = 0;
             if ( lastWorldTimer == *CC_WORLD_TIMER_ADDR )
                 break;

@@ -24,8 +24,8 @@ using namespace option;
 #define LOG_FILE FOLDER "debug.log"
 
 
-// List of command line options
-enum optionIndex { UNKNOWN, HELP, GTEST, STDOUT, PLUS };
+// Set of command line options
+enum CommandLineOptions { UNKNOWN, HELP, GTEST, STDOUT, PLUS };
 
 // Main connection address and port
 static IpAddrPort mainAddrPort;
