@@ -1,5 +1,7 @@
 #!/bin/sh
 
+INTERVAL=5
+
 # trap ctrl-c and call ctrl_c()
 trap ctrl_c INT
 
@@ -14,7 +16,7 @@ do
     check=`ps -W | grep MBAA.exe`
 
     if [ "$check" == "" ]; then
-        sleep 1
+        sleep $INTERVAL
     else
         ./attach
     fi
