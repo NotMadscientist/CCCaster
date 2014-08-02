@@ -147,7 +147,7 @@ extern "C" void callback()
 
             // Don't poll for changes until a frame step happens
             if ( worldTimer == *CC_WORLD_TIMER_ADDR )
-                return;
+                break;
             worldTimer = *CC_WORLD_TIMER_ADDR;
 
             // Input testing code
