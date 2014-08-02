@@ -46,7 +46,7 @@ uint32_t currentMenuIndex = 0;
 // Pointer to the value of the character select mode (moon, colour, etc...)
 uint32_t *charaSelectModePtr = 0;
 
-// The time to wait for each EventManager poll
+// The timeout for each call to EventManager::poll
 double pollTimeout = 8.0;
 
 
@@ -112,10 +112,6 @@ struct Main
 
 extern "C" void callback()
 {
-    static uint32_t lastWorldTimer = 0;
-    static uint32_t lastMenuIndex = 0;
-    static uint32_t lastCharaSelectMode = 0;
-
     if ( state == DEINITIALIZED )
         return;
 
@@ -125,8 +121,6 @@ extern "C" void callback()
         {
             if ( state == UNINITIALIZED )
             {
-                lastWorldTimer = lastMenuIndex = lastCharaSelectMode = 0;
-
                 initializePostHacks();
 
                 // Joystick and timer must be initialized in the main thread
@@ -141,6 +135,7 @@ extern "C" void callback()
                 break;
 
             // Don't poll for changes until a frame step happens
+            static uint32_t lastWorldTimer = 0;
             if ( lastWorldTimer == *CC_WORLD_TIMER_ADDR )
                 break;
             lastWorldTimer = *CC_WORLD_TIMER_ADDR;
@@ -175,18 +170,6 @@ extern "C" void callback()
                 assert ( main.get() != 0 );
 
                 main->procMan.writeGameInputs ( 1, direction, buttons );
-            }
-
-            if ( currentMenuIndex != lastMenuIndex )
-            {
-                LOG ( "currentMenuIndex=%d", currentMenuIndex );
-                lastMenuIndex = currentMenuIndex;
-            }
-
-            if ( charaSelectModePtr && *charaSelectModePtr != lastCharaSelectMode )
-            {
-                LOG ( "charaSelectMode=%d", *charaSelectModePtr );
-                lastCharaSelectMode = *charaSelectModePtr;
             }
 
             if ( !EventManager::get().poll ( pollTimeout ) )
