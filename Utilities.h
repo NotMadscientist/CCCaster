@@ -30,7 +30,6 @@ inline void hash_combine ( size_t& seed, const T& v )
 // Convert a boolean value to a type
 template<bool> struct bool2type {};
 
-
 // Split a format string into first parameter and rest of string
 void splitFormat ( const std::string& format, std::string& first, std::string& rest );
 
@@ -40,6 +39,9 @@ std::string toBase64 ( const void *bytes, size_t len );
 
 // String trim
 std::string trim ( std::string str, const std::string& ws = " \t\r\n" );
+
+// String split
+std::vector<std::string> split ( const std::string& str, const std::string& delim = " " );
 
 
 // String formatting functions

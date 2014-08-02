@@ -6,12 +6,7 @@
 
 struct UdpConnect : public SerializableSequence
 {
-    enum class ConnectType : uint8_t { Request, Reply, Final } connectType;
-
-    UdpConnect() {}
-    UdpConnect ( ConnectType connectType ) : connectType ( connectType ) {}
-
-    PROTOCOL_BOILERPLATE ( connectType )
+    ENUM_MESSAGE_BOILERPLATE ( UdpConnect, Request, Reply, Final )
 };
 
 

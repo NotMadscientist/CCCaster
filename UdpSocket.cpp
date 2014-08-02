@@ -36,7 +36,7 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, uint64_t
     SocketManager::get().add ( this );
 
     if ( isConnecting() )
-        send ( new UdpConnect ( UdpConnect::ConnectType::Request ) );
+        send ( new UdpConnect ( UdpConnect::Request ) );
 }
 
 UdpSocket::UdpSocket ( ChildSocketEnum, UdpSocket *parent, const IpAddrPort& address )
@@ -209,10 +209,10 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
         switch ( msg->getMsgType() )
         {
             case MsgType::UdpConnect:
-                if ( msg->getAs<UdpConnect>().connectType == UdpConnect::ConnectType::Reply )
+                if ( msg->getAs<UdpConnect>().value == UdpConnect::Reply )
                 {
                     LOG_SOCKET ( this, "connectEvent" );
-                    send ( new UdpConnect ( UdpConnect::ConnectType::Final ) );
+                    send ( new UdpConnect ( UdpConnect::Final ) );
                     state = State::Connected;
                     if ( owner )
                         owner->connectEvent ( this );
@@ -232,14 +232,13 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
         switch ( msg->getMsgType() )
         {
             case MsgType::UdpConnect:
-                switch ( msg->getAs<UdpConnect>().connectType )
+                switch ( msg->getAs<UdpConnect>().value )
                 {
-                    case UdpConnect::ConnectType::Request:
-                        parent->childSockets[getRemoteAddress()]->send (
-                            new UdpConnect ( UdpConnect::ConnectType::Reply ) );
+                    case UdpConnect::Request:
+                        parent->childSockets[getRemoteAddress()]->send ( new UdpConnect ( UdpConnect::Reply ) );
                         break;
 
-                    case UdpConnect::ConnectType::Final:
+                    case UdpConnect::Final:
                         LOG_SOCKET ( this, "acceptEvent" );
                         parent->acceptedSocket = parent->childSockets[getRemoteAddress()];
                         if ( parent->owner )
@@ -301,8 +300,9 @@ void UdpSocket::gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address 
         assert ( typeid ( *it->second ) == typeid ( UdpSocket ) );
         socket = static_cast<UdpSocket *> ( it->second.get() );
     }
-    else if ( msg.get() && msg->getMsgType() == MsgType::UdpConnect
-              && msg->getAs<UdpConnect>().connectType == UdpConnect::ConnectType::Request )
+    else if ( msg.get()
+              && msg->getMsgType() == MsgType::UdpConnect
+              && msg->getAs<UdpConnect>().value == UdpConnect::Request )
     {
         // Only a connect request is allowed to open a new child socket
         socket = new UdpSocket ( ChildSocket, this, address );

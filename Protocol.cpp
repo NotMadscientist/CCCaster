@@ -225,21 +225,6 @@ ostream& operator<< ( ostream& os, const MsgPtr& msg )
 {
     if ( !msg.get() )
         return ( os << "NullMsg" );
-    else if ( msg->getMsgType() == MsgType::UdpConnect )
-        switch ( msg->getAs<UdpConnect>().connectType )
-        {
-            case UdpConnect::ConnectType::Request:
-                return ( os << "UdpConnect::Request" );
-
-            case UdpConnect::ConnectType::Reply:
-                return ( os << "UdpConnect::Reply" );
-
-            case UdpConnect::ConnectType::Final:
-                return ( os << "UdpConnect::Final" );
-
-            default:
-                return ( os << "Unknown type!" );
-        }
     else
-        return ( os << msg->getMsgType() );
+        return ( os << msg->str() );
 }

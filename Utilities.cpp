@@ -75,6 +75,30 @@ string trim ( string str, const string& ws )
     return str;
 }
 
+vector<string> split ( const string& str, const string& delim )
+{
+    vector<std::string> result;
+
+    string copy = str;
+
+    size_t i;
+
+    for ( ;; )
+    {
+        i = copy.find_first_of ( delim );
+
+        if ( i == string::npos )
+            break;
+
+        result.push_back ( copy.substr ( 0, i ) );
+        copy = copy.substr ( i + delim.size() );
+    }
+
+    result.push_back ( copy );
+
+    return result;
+}
+
 void getMD5 ( const char *bytes, size_t len, char dst[16] )
 {
     MD5_CTX md5;

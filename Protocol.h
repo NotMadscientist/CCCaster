@@ -5,12 +5,25 @@
 #include <string>
 #include <memory>
 #include <iostream>
+#include <sstream>
 
 
 #define PROTOCOL_BOILERPLATE(...)                                                                           \
     MsgType getMsgType() const override;                                                                    \
     void save ( cereal::BinaryOutputArchive& ar ) const override { ar ( __VA_ARGS__ ); }                    \
     void load ( cereal::BinaryInputArchive& ar ) override { ar ( __VA_ARGS__ ); }
+
+#define ENUM_MESSAGE_BOILERPLATE(NAME, ...)                                                                 \
+    enum Enum : uint8_t { __VA_ARGS__ } value;                                                              \
+    inline NAME() {}                                                                                        \
+    inline NAME ( Enum value ) : value ( value ) {}                                                         \
+    std::string str() const override {                                                                      \
+        static const std::vector<std::string> list = split ( #__VA_ARGS__, ", " );                          \
+        return #NAME "::" + list[value];                                                                    \
+    }                                                                                                       \
+    MsgType getMsgType() const override;                                                                    \
+    void save ( cereal::BinaryOutputArchive& ar ) const override { ar ( value ); }                          \
+    void load ( cereal::BinaryInputArchive& ar ) override { ar ( value ); }
 
 
 // Increase size as needed
@@ -22,10 +35,15 @@ enum class MsgType : uint8_t
 enum class BaseType : uint8_t { SerializableMessage, SerializableSequence };
 
 struct Serializable;
-
 typedef std::shared_ptr<Serializable> MsgPtr;
 
 const MsgPtr NullMsg;
+
+
+// Stream operators
+std::ostream& operator<< ( std::ostream& os, MsgType type );
+std::ostream& operator<< ( std::ostream& os, BaseType type );
+std::ostream& operator<< ( std::ostream& os, const MsgPtr& msg );
 
 
 // Abstract base class for all serializable messages
@@ -52,6 +70,9 @@ struct Serializable
 
     // Invalidate and any cached data
     inline void invalidate() const { md5empty = true; }
+
+    // Return a string representation of this message, defaults to the message type
+    inline virtual std::string str() const { std::stringstream ss; ss << getMsgType(); return ss.str(); }
 
     // Encode and decode messages
     static std::string encode ( Serializable *message );
@@ -101,9 +122,3 @@ private:
     void saveBase ( cereal::BinaryOutputArchive& ar ) const override { ar ( sequence ); };
     void loadBase ( cereal::BinaryInputArchive& ar ) override { ar ( sequence ); };
 };
-
-
-// Stream operators
-std::ostream& operator<< ( std::ostream& os, MsgType type );
-std::ostream& operator<< ( std::ostream& os, BaseType type );
-std::ostream& operator<< ( std::ostream& os, const MsgPtr& msg );
