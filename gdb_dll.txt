@@ -5,4 +5,11 @@ break __assert
 break exit
 break _exit
 break __exit
+
+set $_exitcode = -999
+
 cont
+
+if $_exitcode != -999
+  quit
+end
