@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# trap ctrl-c and call ctrl_c()
+trap ctrl_c INT
+
+function ctrl_c() {
+    killall gdbserver.exe
+    rm -f tmp*
+    exit 0
+}
+
+while :
+do
+    check=`ps -W | grep MBAA.exe`
+
+    if [ "$check" == "" ]; then
+        sleep 1
+    else
+        ./attach
+    fi
+done
