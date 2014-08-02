@@ -23,8 +23,6 @@ using namespace std;
 
 #define LOG_FILE FOLDER "dll.log"
 
-#define FRAME_INTERVAL ( 1000.0 / 60.0 )
-
 
 // Declarations
 void initializePreHacks();
@@ -47,6 +45,9 @@ uint32_t currentMenuIndex = 0;
 
 // Pointer to the value of the character select mode (moon, colour, etc...)
 uint32_t *charaSelectModePtr = 0;
+
+// The time to wait for each EventManager poll
+double pollTimeout = 8.0;
 
 
 struct Main
@@ -111,9 +112,6 @@ struct Main
 
 extern "C" void callback()
 {
-    static RollingAverage<double, 256> averageFps;
-    static double lastStartTime = 0;
-    static double lastEndTime = 0;
     static uint32_t lastWorldTimer = 0;
     static uint32_t lastMenuIndex = 0;
     static uint32_t lastCharaSelectMode = 0;
@@ -127,9 +125,7 @@ extern "C" void callback()
         {
             if ( state == UNINITIALIZED )
             {
-                averageFps.reset ( 60 );
-
-                lastStartTime = lastEndTime = lastWorldTimer = lastMenuIndex = lastCharaSelectMode = 0;
+                lastWorldTimer = lastMenuIndex = lastCharaSelectMode = 0;
 
                 initializePostHacks();
 
@@ -192,28 +188,12 @@ extern "C" void callback()
                 lastCharaSelectMode = *charaSelectModePtr;
             }
 
-            TimerManager::get().updateNow();
-            double now = TimerManager::get().getNow();
-
-            averageFps.set ( 1000.0 / ( now - lastStartTime ) );
-            *CC_FPS_COUNTER_ADDR = ( uint32_t ) averageFps.get();
-            lastStartTime = now;
-
-            double delta = now - lastEndTime;
-
-            if ( delta < FRAME_INTERVAL )
+            if ( !EventManager::get().poll ( pollTimeout ) )
             {
-                // LOG ( "timeout=%.2f", FRAME_INTERVAL - delta );
-
-                if ( !EventManager::get().poll ( FRAME_INTERVAL - delta ) )
-                {
-                    state = STOPPING;
-                    break;
-                }
+                state = STOPPING;
+                break;
             }
 
-            TimerManager::get().updateNow();
-            lastEndTime = TimerManager::get().getNow();
         }
         while ( 0 );
     }

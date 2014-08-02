@@ -23,6 +23,7 @@ using namespace AsmHacks;
 static ID3DXFont *font = 0;
 
 
+// Note: this is on the SAME thread as the main thread where callback happens
 void PresentFrameBegin ( IDirect3DDevice9 *device )
 {
     if ( !font )
@@ -99,10 +100,6 @@ void initializePostHacks()
 {
     if ( detectWine() )
         return;
-
-    WRITE_ASM_HACK ( disableFpsLimit );
-
-    WRITE_ASM_HACK ( disableFpsCounter );
 
     // Hook DirectX
     void *hwnd;
