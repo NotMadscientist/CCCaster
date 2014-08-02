@@ -131,49 +131,66 @@ void *enumFindWindow ( const std::string& title );
 bool detectWine();
 
 // Template class to calculate rolling averages
-template<typename T, size_t N>
+template<typename T>
 class RollingAverage
 {
-    T values[N];
-    T sum;
+    std::vector<T> values;
+    T sum, average;
     size_t index, count;
 
 public:
 
-    inline RollingAverage() : sum ( 0 ), index ( 0 ), count ( 0 ) {}
-    inline RollingAverage ( T initial ) : sum ( initial ), index ( 1 ), count ( 1 ) { values[0] = initial; }
+    inline RollingAverage ( size_t size )
+        : values ( size ), sum ( 0 ), average ( 0 ), index ( 0 ), count ( 0 ) {}
+
+    inline RollingAverage ( size_t size, T initial )
+        : values ( size, initial ), sum ( initial ), average ( initial ), index ( 1 ), count ( 1 ) {}
 
     inline void set ( T value )
     {
         sum += value;
 
-        if ( count < N )
+        if ( count < values.size() )
             ++count;
         else
             sum -= values[index];
 
         values[index] = value;
 
-        index = ( index + 1 ) % N;
+        index = ( index + 1 ) % values.size();
+
+        average = sum / count;
     }
 
     inline T get() const
     {
-        if ( count == 0 )
-            throw Exception ( "Division by zero!" );
-
-        return sum / count;
+        return average;
     }
 
     inline void reset()
     {
-        sum = index = count = 0;
+        sum = average = index = count = 0;
     }
 
     inline void reset ( T initial )
     {
         values[0] = initial;
-        sum = initial;
+        sum = average = initial;
         index = count = 1;
     }
+
+    inline size_t size() const
+    {
+        return values.size();
+    }
 };
+
+// Clamp a value to a range
+template<typename T>
+inline void clamp ( T& value, T min, T max )
+{
+    if ( value < min )
+        value = min;
+    else if ( value > max )
+        value = max;
+}
