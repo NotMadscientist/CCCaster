@@ -663,6 +663,13 @@
       <VariableType>4 Bytes</VariableType>
       <Address>0054D048</Address>
     </CheatEntry>
+    <CheatEntry>
+      <ID>227</ID>
+      <Description>"FPS counter"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>00774A70</Address>
+    </CheatEntry>
   </CheatEntries>
   <CheatCodes>
     <CodeEntry>
@@ -2716,6 +2723,31 @@
         <Byte>90</Byte>
         <Byte>08</Byte>
         <Byte>00</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Change of mov [ecx+10],edx</Description>
+      <Address>0041FD43</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>1FD43</ModuleNameOffset>
+      <Before>
+        <Byte>08</Byte>
+        <Byte>00</Byte>
+        <Byte>D9</Byte>
+        <Byte>59</Byte>
+        <Byte>14</Byte>
+      </Before>
+      <Actual>
+        <Byte>89</Byte>
+        <Byte>51</Byte>
+        <Byte>10</Byte>
+      </Actual>
+      <After>
+        <Byte>D9</Byte>
+        <Byte>EE</Byte>
+        <Byte>C7</Byte>
+        <Byte>41</Byte>
+        <Byte>08</Byte>
       </After>
     </CodeEntry>
   </CheatCodes>

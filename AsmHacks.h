@@ -108,6 +108,9 @@ static const AsmList enableDisabledStages =
 // TODO find an alternative because this doesn't work on Wine
 static const Asm disableFpsLimit = { CC_PERF_FREQ_ADDR, { INLINE_DWORD ( 1 ), INLINE_DWORD ( 0 ) } };
 
+// Disable the code that updates the FPS counter
+static const Asm disableFpsCounter = { ( void * ) 0x41FD43, INLINE_NOP_THREE_TIMES };
+
 // Disable normal joystick and keyboard controls
 static const AsmList hijackControls =
 {

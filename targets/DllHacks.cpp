@@ -102,6 +102,8 @@ void initializePostHacks()
 
     WRITE_ASM_HACK ( disableFpsLimit );
 
+    WRITE_ASM_HACK ( disableFpsCounter );
+
     // Hook DirectX
     void *hwnd;
     string err;
