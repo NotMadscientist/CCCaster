@@ -169,7 +169,8 @@ extern "C" void callback()
                 if ( GetKeyState ( 'T' ) & 0x80 )       buttons = CC_BUTTON_C;
                 if ( GetKeyState ( VK_SPACE ) & 0x80 )  buttons = CC_BUTTON_D;
                 if ( GetKeyState ( 'A' ) & 0x80 )       buttons = CC_BUTTON_E;
-                if ( GetKeyState ( VK_F5 ) & 0x80 )     buttons = CC_BUTTON_START;
+                if ( GetKeyState ( 'D' ) & 0x80 )       buttons = CC_BUTTON_FN2;
+                if ( GetKeyState ( 'G' ) & 0x80 )       buttons = CC_BUTTON_FN1;
 
                 assert ( main.get() != 0 );
 
