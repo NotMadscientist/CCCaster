@@ -18,11 +18,11 @@
     MsgType getMsgType() const override;
 
 #define ENUM_MESSAGE_BOILERPLATE(NAME, ...)                                                                 \
-    enum Enum : uint8_t { __VA_ARGS__ } value;                                                              \
-    inline NAME() {}                                                                                        \
+    enum Enum : uint8_t { Unknown, __VA_ARGS__ } value;                                                     \
+    inline NAME() : value ( Unknown ) {}                                                                    \
     inline NAME ( Enum value ) : value ( value ) {}                                                         \
     std::string str() const override {                                                                      \
-        static const std::vector<std::string> list = split ( #__VA_ARGS__, ", " );                          \
+        static const std::vector<std::string> list = split ( "Unknown, " #__VA_ARGS__, ", " );              \
         return #NAME "::" + list[value];                                                                    \
     }                                                                                                       \
     PROTOCOL_BOILERPLATE ( value )
