@@ -18,10 +18,10 @@ class TimerManager
     uint64_t ticksPerSecond, ticks;
 
     // The current time in milliseconds
-    double now;
+    uint64_t now;
 
     // The next time when a timer will expire
-    double nextExpiry;
+    uint64_t nextExpiry;
 
     // Flag to indicate the set of allocated timers has changed
     bool changed;
@@ -56,10 +56,10 @@ public:
     inline bool isHiRes() const { return useHiResTimer; }
 
     // Get the current time in milliseconds
-    inline double getNow() const { return now; }
+    inline uint64_t getNow() const { return now; }
 
     // Get the next time when a timer will expire
-    inline double getNextExpiry() const { return nextExpiry; }
+    inline uint64_t getNextExpiry() const { return nextExpiry; }
 
     // Get the singleton instance
     static TimerManager& get();

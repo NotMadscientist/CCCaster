@@ -47,7 +47,7 @@ uint32_t currentMenuIndex = 0;
 uint32_t *charaSelectModePtr = 0;
 
 // The timeout for each call to EventManager::poll
-double pollTimeout = 8.0;
+uint64_t pollTimeout = 1;
 
 
 struct Main

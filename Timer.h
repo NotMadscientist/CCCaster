@@ -17,18 +17,18 @@ public:
 
 private:
 
-    double delay, expiry;
+    uint64_t delay, expiry;
 
 public:
 
     Timer ( Owner *owner );
     ~Timer();
 
-    void start ( double delay );
+    void start ( uint64_t delay );
 
     void stop();
 
-    inline double getDelay() const { return delay; }
+    inline uint64_t getDelay() const { return delay; }
 
     inline bool isStarted() const { return ( delay > 0 || expiry > 0 ); }
 
