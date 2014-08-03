@@ -335,7 +335,9 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
             }                                                                                                       \
             TestSocket ( uint16_t port ) : BaseTestSocket ( port ) { timer.start ( 2000 ); }                        \
             TestSocket ( const string& address, uint16_t port ) : BaseTestSocket ( address, port ),                 \
-                buffer ( Serializable::encode ( new TestMessage ( "Hello server!" ) ) ) {}                          \
+                    buffer ( Serializable::encode ( new TestMessage ( "Hello server!" ) ) ) {                       \
+                LOG ( "buffer=[ %s ]", toBase64 ( buffer ) );                                                       \
+            }                                                                                                       \
         };                                                                                                          \
         TimerManager::get().initialize();                                                                           \
         SocketManager::get().initialize();                                                                          \

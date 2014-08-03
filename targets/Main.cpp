@@ -176,7 +176,7 @@ int main ( int argc, char *argv[] )
         { STDOUT,  0,  "",  "stdout", Arg::None, "  --stdout      Output logs to stdout." },
         { PLUS,    0, "p",    "plus", Arg::None, "  --plus, -p    Increment count." },
         {
-            UNKNOWN, 0, "",  "", Arg::None,
+            UNKNOWN, 0, "", "", Arg::None,
             "\nExamples:\n"
             "  " BINARY " --unknown -- --this_is_no_option\n"
             "  " BINARY " -unk --plus -ppp file1 file2\n"

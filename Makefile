@@ -125,7 +125,10 @@ endef
 	$(make_version)
 	$(make_protocol)
 	@echo "Regenerating .depend"
-	@$(CXX) $(CC_FLAGS) -std=c++11 -MM $(NON_GEN_SRCS) > $@
+	@$(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp > $@
+	@$(CXX) $(CC_FLAGS) -std=c++11 -MM lib/*.cpp     | sed -r "s/^([A-Za-z]+\.o\: )/lib\/\1/"     >> $@
+	@$(CXX) $(CC_FLAGS) -std=c++11 -MM targets/*.cpp | sed -r "s/^([A-Za-z]+\.o\: )/targets\/\1/" >> $@
+	@$(CXX) $(CC_FLAGS) -std=c++11 -MM tests/*.cpp   | sed -r "s/^([A-Za-z]+\.o\: )/tests\/\1/"   >> $@
 
 protocol: $(NON_GEN_HEADERS)
 	$(make_protocol)
