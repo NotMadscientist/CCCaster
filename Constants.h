@@ -6,6 +6,7 @@
 #define CC_TITLE                    "MELTY BLOOD Actress Again Current Code Ver.1.07 Rev." CC_VERSION
 #define CC_STARTUP_TITLE_EN         CC_TITLE " Startup Menu"
 #define CC_STARTUP_TITLE_JP         CC_TITLE " ‹N“®ƒƒjƒ…["
+#define CC_STARTUP_BUTTON           "OK"
 
 #define CC_LOOP_START_ADDR          ( ( char * )     0x40D330 ) // Start of the main event loop
 #define CC_SCREEN_WIDTH_ADDR        ( ( uint32_t * ) 0x54D048 ) // The width of the main viewport

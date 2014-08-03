@@ -13,7 +13,11 @@
 using namespace std;
 
 
-#define IPC_CONNECT_TIMEOUT ( 1000 )
+#define GAME_START_INTERVAL ( 1000 )
+
+#define GAME_START_ATTEMPTS ( 10 )
+
+#define IPC_CONNECT_TIMEOUT ( 30000 )
 
 
 void ProcessManager::writeGameInputs ( uint8_t player, uint16_t direction, uint16_t buttons )
@@ -49,16 +53,15 @@ void ProcessManager::acceptEvent ( Socket *serverSocket )
 
     assert ( ipcSocket->address.addr == "127.0.0.1" );
 
-    if ( owner )
-        owner->ipcConnectEvent();
+    ipcSocket->send ( new IpcConnected() );
 }
 
 void ProcessManager::connectEvent ( Socket *socket )
 {
     assert ( socket == ipcSocket.get() );
+    assert ( ipcSocket->address.addr == "127.0.0.1" );
 
-    if ( owner )
-        owner->ipcConnectEvent();
+    ipcSocket->send ( new IpcConnected() );
 }
 
 void ProcessManager::disconnectEvent ( Socket *socket )
@@ -78,16 +81,63 @@ void ProcessManager::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddr
     assert ( socket == ipcSocket.get() );
     assert ( address.addr == "127.0.0.1" );
 
-    if ( owner )
-        owner->ipcReadEvent ( msg );
+    if ( msg && msg->getMsgType() == MsgType::IpcConnected )
+    {
+        assert ( connected == false );
+
+        connected = true;
+
+        if ( !owner )
+            owner->ipcConnectEvent();
+        return;
+    }
+
+    owner->ipcReadEvent ( msg );
 }
 
 void ProcessManager::timerExpired ( Timer *timer )
 {
-    assert ( timer == this->ipcConnectTimer.get() );
+    if ( timer == gameStartTimer.get() )
+    {
+        if ( gameStartCount >= GAME_START_ATTEMPTS )
+        {
+            disconnectPipe();
+
+            LOG ( "Failed to start game" );
+
+            if ( owner )
+                owner->ipcDisconnectEvent();
+        }
+
+        gameStartTimer->start ( GAME_START_INTERVAL );
+        ++gameStartCount;
+
+        LOG ( "Trying to start game (%d)", gameStartCount );
+
+        void *hwnd = 0;
+        if ( ! ( hwnd = enumFindWindow ( CC_STARTUP_TITLE_EN ) )
+                && ! ( hwnd = enumFindWindow ( CC_STARTUP_TITLE_JP ) ) )
+            return;
+
+        if ( ! ( hwnd = FindWindowEx ( ( HWND ) hwnd, 0, 0, CC_STARTUP_BUTTON ) ) )
+            return;
+
+        gameStartTimer.reset();
+
+        SetActiveWindow ( ( HWND ) hwnd );
+        SendMessage ( ( HWND ) hwnd, BM_CLICK, 0, 0 );
+
+        ipcConnectTimer.reset ( new Timer ( this ) );
+        ipcConnectTimer->start ( IPC_CONNECT_TIMEOUT );
+        return;
+    }
+
+    assert ( timer == ipcConnectTimer.get() );
 
     if ( !ipcConnected() )
     {
+        disconnectPipe();
+
         LOG ( "IPC connect timed out" );
 
         if ( owner )
@@ -115,7 +165,7 @@ void ProcessManager::openGame()
         LOG_AND_THROW ( err, "CreateNamedPipe failed" );
     }
 
-    LOG ( "Starting " MBAA_EXE );
+    LOG ( "Running " MBAA_EXE );
 
     if ( detectWine() )
         system ( "./" LAUNCHER " " MBAA_EXE " " HOOK_DLL " &" );
@@ -170,8 +220,10 @@ void ProcessManager::openGame()
 
     LOG ( "processId=%08x", processId );
 
-    ipcConnectTimer.reset ( new Timer ( this ) );
-    ipcConnectTimer->start ( IPC_CONNECT_TIMEOUT );
+
+    gameStartTimer.reset ( new Timer ( this ) );
+    gameStartTimer->start ( GAME_START_INTERVAL );
+    gameStartCount = 0;
 }
 
 void ProcessManager::closeGame()
@@ -246,7 +298,7 @@ void ProcessManager::connectPipe()
 void ProcessManager::disconnectPipe()
 {
     ipcConnectTimer.reset();
-
+    gameStartTimer.reset();
     ipcSocket.reset();
 
     if ( pipe )
@@ -254,9 +306,12 @@ void ProcessManager::disconnectPipe()
         CloseHandle ( ( HANDLE ) pipe );
         pipe = 0;
     }
+
+    connected = false;
 }
 
-ProcessManager::ProcessManager ( Owner *owner ) : owner ( owner ), pipe ( 0 ), processId ( 0 ) {}
+ProcessManager::ProcessManager ( Owner *owner )
+    : owner ( owner ), pipe ( 0 ), processId ( 0 ), gameStartCount ( 0 ), connected ( false ) {}
 
 ProcessManager::~ProcessManager()
 {

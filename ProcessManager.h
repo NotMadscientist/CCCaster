@@ -4,6 +4,12 @@
 #include "Timer.h"
 
 
+struct IpcConnected : public SerializableMessage
+{
+    EMPTY_MESSAGE_BOILERPLATE ( IpcConnected )
+};
+
+
 class ProcessManager : public Socket::Owner, public Timer::Owner
 {
 public:
@@ -33,8 +39,17 @@ private:
     // IPC socket
     SocketPtr ipcSocket;
 
+    // Game start timer
+    TimerPtr gameStartTimer;
+
+    // Number of attempts to start the game
+    int gameStartCount;
+
     // IPC connect timer
     TimerPtr ipcConnectTimer;
+
+    // IPC connected flag
+    bool connected;
 
     // IPC socket callbacks
     void acceptEvent ( Socket *socket ) override;
@@ -60,9 +75,10 @@ public:
     void disconnectPipe();
 
     // Indicates if the IPC pipe and socket are connected
-    inline bool ipcConnected() const { return ( pipe && ipcSocket && ipcSocket->isClient() ); }
+    inline bool ipcConnected() const { return ( pipe && ipcSocket && ipcSocket->isClient() && connected ); }
 
     // Send a message over the IPC socket
+    inline bool ipcSend ( Serializable *msg ) { return ipcSend ( MsgPtr ( msg ) ); }
     inline bool ipcSend ( const MsgPtr& msg ) { if ( !ipcSocket ) return false; else return ipcSocket->send ( msg ); }
 
     // Get the process ID of the game

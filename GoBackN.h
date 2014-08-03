@@ -8,9 +8,8 @@
 
 struct AckSequence : public SerializableSequence
 {
-    inline AckSequence() {}
     inline AckSequence ( uint32_t sequence ) : SerializableSequence ( sequence ) {}
-    MsgType getMsgType() const override;
+    EMPTY_MESSAGE_BOILERPLATE ( AckSequence )
 };
 
 
