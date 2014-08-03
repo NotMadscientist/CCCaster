@@ -8,12 +8,43 @@ using namespace std;
 using namespace cereal;
 
 
-// Encode or decode with compression
+/* Message binary structure:
+
+Compressed:
+
+    1 byte  message type
+    1 byte  compression level
+    4 byte  uncompressed size
+    4 byte  compressed data size
+    ...     compressed data
+            ========================
+            ...     raw data
+            16 byte MD5 checksum
+            ========================
+
+Not compressed:
+
+    1 byte  message type
+    1 byte  compression level
+    ========================
+    ...     raw data
+    16 byte MD5 checksum
+    ========================
+
+*/
+
+
+// Encode with compression
 string encodeStageTwo ( const MsgPtr& msg, const string& msgData );
-bool decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, MsgType& type, string& msgData );
+
+// Result of the decode
+enum DecodeResult { Failed = 0, NotCompressed, Compressed };
+
+// Decode with compression. Must manually update the value of consumed if the data was not compressed.
+DecodeResult decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, MsgType& type, string& msgData );
 
 
-// Default constructor with compression level
+// Default constructor with compression level 9
 Serializable::Serializable() : compressionLevel ( 9 ), md5empty ( true ) {}
 
 string Serializable::encode ( Serializable *message )
@@ -63,9 +94,10 @@ MsgPtr Serializable::decode ( const char *bytes, size_t len, size_t& consumed )
 
     MsgType type;
     string data;
+    DecodeResult result;
 
     // Decompress
-    if ( !decodeStageTwo ( bytes, len, consumed, type, data ) )
+    if ( ! ( result = decodeStageTwo ( bytes, len, consumed, type, data ) ) )
     {
         consumed = 0;
         return NullMsg;
@@ -108,6 +140,17 @@ MsgPtr Serializable::decode ( const char *bytes, size_t len, size_t& consumed )
         return NullMsg;
     }
 
+    // decodeStageTwo does not update the value of consumed if the data was not compressed
+    if ( result == NotCompressed )
+    {
+        // Check for unread bytes
+        string remaining;
+        getline ( ss, remaining );
+
+        assert ( len >= remaining.size() );
+        consumed = ( len - remaining.size() );
+    }
+
     return msg;
 }
 
@@ -126,28 +169,27 @@ string encodeStageTwo ( const MsgPtr& msg, const string& msgData )
         size_t size = compress ( &msgData[0], msgData.size(), &buffer[0], buffer.size(), msg->compressionLevel );
         buffer.resize ( size );
 
-        // Only use compressed msg data if actually smaller
-        if ( buffer.size() < msgData.size() )
+        // Only use compressed msg data if actually smaller after the overhead
+#ifndef FORCE_COMPRESSION
+        if ( sizeof ( msgData.size() ) + sizeof ( buffer.size() ) + buffer.size() < msgData.size() )
+#endif
         {
             archive ( msg->compressionLevel );
-            archive ( msgData.size() );
-            archive ( buffer );
+            archive ( msgData.size() );         // uncompressed size
+            archive ( buffer );                 // compressed size + compressed data
             return ss.str();
         }
-        else
-        {
-            // Otherwise update compression level
-            msg->compressionLevel = 0;
-        }
+
+        // Otherwise update compression level so we don't try to compress this again
+        msg->compressionLevel = 0;
     }
 
-    // Uncompressed data does not include uncompressedSize
+    // uncompressed data does not include uncompressedSize or any other sizes
     archive ( msg->compressionLevel );
-    archive ( msgData );
-    return ss.str();
+    return ss.str() + msgData;
 }
 
-bool decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, MsgType& type, string& msgData )
+DecodeResult decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, MsgType& type, string& msgData )
 {
     istringstream ss ( string ( bytes, len ), stringstream::binary );
     BinaryInputArchive archive ( ss );
@@ -161,17 +203,22 @@ bool decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, MsgType& 
         archive ( type );
         archive ( compressionLevel );
 
-        // Only compressed data include uncompressedSize
+        // Only compressed data includes uncompressedSize + a compressed data buffer
         if ( compressionLevel )
-            archive ( uncompressedSize );
-
-        archive ( msgData );
+        {
+            archive ( uncompressedSize );       // uncompressed size
+            archive ( msgData );                // compressed size + compressed data
+        }
     }
     catch ( ... )
     {
         consumed = 0;
-        return false;
+        return Failed;
     }
+
+    // Get remaining bytes
+    string remaining;
+    getline ( ss, remaining );
 
     // Decompress msg data if needed
     if ( compressionLevel )
@@ -182,19 +229,19 @@ bool decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, MsgType& 
         if ( size != uncompressedSize )
         {
             consumed = 0;
-            return false;
+            return Failed;
         }
 
+        // Check for unread bytes
+        assert ( len >= remaining.size() );
+        consumed = len - remaining.size();
+
         msgData = buffer;
+        return Compressed;
     }
 
-    // Check for unread bytes
-    string remaining;
-    getline ( ss, remaining );
-
-    assert ( len >= remaining.size() );
-    consumed = len - remaining.size();
-    return true;
+    msgData = remaining;
+    return NotCompressed;
 }
 
 ostream& operator<< ( ostream& os, MsgType type )
