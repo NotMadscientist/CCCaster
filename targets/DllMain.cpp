@@ -52,13 +52,15 @@ uint64_t pollTimeout = 1;
 
 struct Main
         : public ProcessManager::Owner
+        , public Socket::Owner
         , public ControllerManager::Owner
         , public Controller::Owner
-        , public Socket::Owner
 {
+    ClientType::Enum clientType;
     ProcessManager procMan;
+    SocketPtr serverSocket, ctrlSocket, dataSocket;
+
     Controller *controllers[2];
-    SocketPtr ctrlSocket, dataSocket;
 
     // ProcessManager
 
@@ -69,6 +71,51 @@ struct Main
 
     void ipcReadEvent ( const MsgPtr& msg ) override
     {
+        if ( !msg.get() )
+            return;
+
+        switch ( msg->getMsgType() )
+        {
+            case MsgType::ClientType:
+                if ( clientType != ClientType::Unknown )
+                {
+                    LOG ( "Unexpected '%s'", msg );
+                    break;
+                }
+
+                clientType = msg->getAs<ClientType>().value;
+                LOG ( "ClientType is %s", clientType == ClientType::Host ? "Host" : "Client" );
+                break;
+
+            case MsgType::SocketShareData:
+            {
+                if ( clientType == ClientType::Unknown )
+                {
+                    LOG ( "Unexpected '%s'", msg );
+                    break;
+                }
+
+                SocketPtr socket;
+                if ( msg->getAs<SocketShareData>().isTCP() )
+                    socket = TcpSocket::shared ( this, msg->getAs<SocketShareData>() );
+                else
+                    socket = UdpSocket::shared ( this, msg->getAs<SocketShareData>() );
+
+                if ( !ctrlSocket )
+                    ctrlSocket = socket;
+                else if ( !dataSocket )
+                    dataSocket = socket;
+                else if ( !serverSocket && clientType == ClientType::Host )
+                    serverSocket = socket;
+                else
+                    LOG ( "Unexpected '%s'", msg );
+                break;
+            }
+
+            default:
+                LOG ( "Unexpected '%s'", msg );
+                break;
+        }
     }
 
     // ControllerManager
@@ -89,11 +136,24 @@ struct Main
 
     // Socket
 
+    void acceptEvent ( Socket *serverSocket ) override
+    {
+    }
+
+    void connectEvent ( Socket *socket ) override
+    {
+    }
+
+    void disconnectEvent ( Socket *socket ) override
+    {
+        EventManager::get().stop();
+    }
+
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
     {
     }
 
-    Main() : procMan ( this )
+    Main() : clientType ( ClientType::Unknown ), procMan ( this )
     {
         // Initialization is not done here because of threading issues
 

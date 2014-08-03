@@ -10,6 +10,12 @@
 #define NUM_INPUTS 30
 
 
+struct ClientType : public SerializableMessage
+{
+    ENUM_MESSAGE_BOILERPLATE ( ClientType, Host, Client );
+};
+
+
 struct InputData : public SerializableMessage
 {
     // The frame index, this starts at 0 when a new transition index starts.

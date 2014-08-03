@@ -33,14 +33,32 @@ static IpAddrPort mainAddrPort;
 
 struct Main
         : public ProcessManager::Owner
+        , public Socket::Owner
         , public ControllerManager::Owner
         , public Controller::Owner
-        , public Socket::Owner
 {
+    ClientType::Enum clientType;
     ProcessManager procMan;
-    SocketPtr ctrlSocket, dataSocket;
+    SocketPtr serverSocket, ctrlSocket, dataSocket;
 
     // ProcessManager
+
+    void ipcConnectEvent() override
+    {
+        procMan.ipcSend ( new ClientType ( clientType ) );
+
+        assert ( ctrlSocket.get() != 0 );
+        assert ( dataSocket.get() != 0 );
+
+        procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
+        procMan.ipcSend ( dataSocket->share ( procMan.getProcessId() ) );
+
+        if ( clientType == ClientType::Host )
+        {
+            assert ( serverSocket.get() != 0 );
+            procMan.ipcSend ( serverSocket->share ( procMan.getProcessId() ) );
+        }
+    }
 
     void ipcDisconnectEvent() override
     {
@@ -69,11 +87,32 @@ struct Main
 
     // Socket
 
+    void acceptEvent ( Socket *serverSocket ) override
+    {
+        assert ( serverSocket == this->serverSocket.get() );
+
+        ctrlSocket = serverSocket->accept ( this );
+
+        procMan.openGame();
+    }
+
+    void connectEvent ( Socket *socket ) override
+    {
+        assert ( socket == this->ctrlSocket.get() );
+
+        procMan.openGame();
+    }
+
+    void disconnectEvent ( Socket *socket ) override
+    {
+        EventManager::get().stop();
+    }
+
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
     {
     }
 
-    Main ( Option opt[] ) : procMan ( this )
+    Main ( Option opt[] ) : clientType ( ClientType::Unknown ), procMan ( this )
     {
         if ( opt[STDOUT] )
             Logger::get().initialize();
@@ -83,18 +122,20 @@ struct Main
         SocketManager::get().initialize();
         ControllerManager::get().initialize ( this );
 
-        // if ( mainAddrPort.addr.empty() )
-        // {
-        //     ctrlSocket = TcpSocket::listen ( this, mainAddrPort.port );
-        //     dataSocket = UdpSocket::bind ( this, mainAddrPort.port );
-        // }
-        // else
-        // {
-        //     ctrlSocket = TcpSocket::connect ( this, mainAddrPort );
-        //     dataSocket = UdpSocket::bind ( this, mainAddrPort );
-        // }
+        if ( mainAddrPort.addr.empty() )
+        {
+            clientType = ClientType::Host;
+            serverSocket = TcpSocket::listen ( this, mainAddrPort.port );
+            dataSocket = UdpSocket::bind ( this, mainAddrPort.port );
+        }
+        else
+        {
+            clientType = ClientType::Client;
+            ctrlSocket = TcpSocket::connect ( this, mainAddrPort );
+            dataSocket = UdpSocket::bind ( this, mainAddrPort );
+        }
 
-        procMan.openGame();
+        // procMan.openGame();
     }
 
     ~Main()
