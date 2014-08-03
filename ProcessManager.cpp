@@ -17,7 +17,7 @@ using namespace std;
 
 #define GAME_START_ATTEMPTS ( 10 )
 
-#define IPC_CONNECT_TIMEOUT ( 30000 )
+#define IPC_CONNECT_TIMEOUT ( 10000 )
 
 
 void ProcessManager::writeGameInputs ( uint8_t player, uint16_t direction, uint16_t buttons )
@@ -123,10 +123,10 @@ void ProcessManager::timerExpired ( Timer *timer )
         if ( ! ( hwnd = FindWindowEx ( ( HWND ) hwnd, 0, 0, CC_STARTUP_BUTTON ) ) )
             return;
 
-        gameStartTimer.reset();
+        if ( !PostMessage ( ( HWND ) hwnd, BM_CLICK, 0, 0 ) )
+            return;
 
-        SetActiveWindow ( ( HWND ) hwnd );
-        SendMessage ( ( HWND ) hwnd, BM_CLICK, 0, 0 );
+        gameStartTimer.reset();
 
         ipcConnectTimer.reset ( new Timer ( this ) );
         ipcConnectTimer->start ( IPC_CONNECT_TIMEOUT );
