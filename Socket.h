@@ -86,6 +86,9 @@ protected:
 
 public:
 
+    // Create a socket from share data
+    static SocketPtr shared ( Socket::Owner *owner, const SocketShareData& data );
+
     // Basic constructors
     Socket ( const IpAddrPort& address, Protocol protocol );
 

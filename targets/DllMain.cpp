@@ -88,29 +88,21 @@ struct Main
                 break;
 
             case MsgType::SocketShareData:
-            {
                 if ( clientType == ClientType::Unknown )
                 {
                     LOG ( "Unexpected '%s'", msg );
                     break;
                 }
 
-                SocketPtr socket;
-                if ( msg->getAs<SocketShareData>().isTCP() )
-                    socket = TcpSocket::shared ( this, msg->getAs<SocketShareData>() );
-                else
-                    socket = UdpSocket::shared ( this, msg->getAs<SocketShareData>() );
-
                 if ( !ctrlSocket )
-                    ctrlSocket = socket;
+                    ctrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
                 else if ( !dataSocket )
-                    dataSocket = socket;
+                    dataSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
                 else if ( !serverSocket && clientType == ClientType::Host )
-                    serverSocket = socket;
+                    serverSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
                 else
                     LOG ( "Unexpected '%s'", msg );
                 break;
-            }
 
             default:
                 LOG ( "Unexpected '%s'", msg );
@@ -153,6 +145,8 @@ struct Main
     {
     }
 
+    // Constructor
+
     Main() : clientType ( ClientType::Unknown ), procMan ( this )
     {
         // Initialization is not done here because of threading issues
@@ -161,6 +155,8 @@ struct Main
 
         procMan.connectPipe();
     }
+
+    // Destructor
 
     ~Main()
     {

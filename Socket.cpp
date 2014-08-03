@@ -1,5 +1,7 @@
 #include "SocketManager.h"
 #include "Socket.h"
+#include "TcpSocket.h"
+#include "UdpSocket.h"
 #include "Logger.h"
 #include "Utilities.h"
 
@@ -518,4 +520,12 @@ void SocketShareData::load ( cereal::BinaryInputArchive& ar )
          info->dwMessageSize,
          info->dwProviderReserved,
          info->szProtocol );
+}
+
+SocketPtr Socket::shared ( Socket::Owner *owner, const SocketShareData& data )
+{
+    if ( data.isTCP() )
+        return TcpSocket::shared ( owner, data );
+    else
+        return UdpSocket::shared ( owner, data );
 }

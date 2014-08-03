@@ -112,6 +112,8 @@ struct Main
     {
     }
 
+    // Constructor
+
     Main ( Option opt[] ) : clientType ( ClientType::Unknown ), procMan ( this )
     {
         if ( opt[STDOUT] )
@@ -137,6 +139,8 @@ struct Main
 
         // procMan.openGame();
     }
+
+    // Destructor
 
     ~Main()
     {
