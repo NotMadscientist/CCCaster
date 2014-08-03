@@ -16,7 +16,7 @@ void TimerManager::updateNow()
     if ( useHiResTimer )
     {
         QueryPerformanceCounter ( ( LARGE_INTEGER * ) &ticks );
-        now = 1000.0 * ticks / ticksPerSecond;
+        now = 1000 * ticks / ticksPerSecond;
     }
     else
     {

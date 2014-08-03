@@ -57,6 +57,8 @@ void SocketManager::check ( uint64_t timeout )
             FD_SET ( socket->fd, &readFds );
     }
 
+    assert ( timeout > 0 );
+
     timeval tv;
     tv.tv_sec = timeout / 1000UL;
     tv.tv_usec = ( timeout * 1000UL ) % 1000000UL;
