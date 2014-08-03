@@ -87,7 +87,7 @@ void ProcessManager::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddr
 
         connected = true;
 
-        if ( !owner )
+        if ( owner )
             owner->ipcConnectEvent();
         return;
     }
@@ -107,6 +107,7 @@ void ProcessManager::timerExpired ( Timer *timer )
 
             if ( owner )
                 owner->ipcDisconnectEvent();
+            return;
         }
 
         gameStartTimer->start ( GAME_START_INTERVAL );
@@ -219,7 +220,6 @@ void ProcessManager::openGame()
     }
 
     LOG ( "processId=%08x", processId );
-
 
     gameStartTimer.reset ( new Timer ( this ) );
     gameStartTimer->start ( GAME_START_INTERVAL );

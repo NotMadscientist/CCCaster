@@ -171,7 +171,7 @@ void Socket::init()
     }
 
     // Update the address to resolve hostname
-    if ( !address.empty() )
+    if ( !address.empty() && state != State::Listening )
     {
         if ( isTCP() && res )
         {
