@@ -19,6 +19,6 @@ do
     if [ "$check" == "" ]; then
         sleep $INTERVAL
     else
-        ./attach
+        scripts/attach
     fi
 done
