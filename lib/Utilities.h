@@ -132,6 +132,7 @@ void *enumFindWindow ( const std::string& title );
 // Detect if we're running on Wine
 bool detectWine();
 
+
 // Template class to calculate rolling averages
 template<typename T>
 class RollingAverage
@@ -186,6 +187,7 @@ public:
         return values.size();
     }
 };
+
 
 // Clamp a value to a range
 template<typename T>

@@ -13,6 +13,8 @@
 using namespace std;
 
 
+// String utilities
+
 void splitFormat ( const string& format, string& first, string& rest )
 {
     size_t i;
@@ -99,6 +101,9 @@ vector<string> split ( const string& str, const string& delim )
     return result;
 }
 
+
+// Hashing and compression
+
 void getMD5 ( const char *bytes, size_t len, char dst[16] )
 {
     MD5_CTX md5;
@@ -151,6 +156,9 @@ size_t compressBound ( size_t srcLen )
     return mz_compressBound ( srcLen );
 }
 
+
+// Exception utilities
+
 static string getWindowsExceptionAsString ( int error )
 {
     string str;
@@ -173,6 +181,9 @@ ostream& operator<< ( ostream& os, const WindowsException& error )
 {
     return ( os << "[" << error.code << "] '" << error.msg << "'" );
 }
+
+
+// Windows utilities
 
 void *enumFindWindow ( const string& title )
 {

@@ -18,12 +18,14 @@ CONTRIB_CC_SRCS = $(GTEST_CC_SRCS) $(JLIB_CC_SRCS)
 CONTRIB_C_SRCS = $(wildcard contrib/*.c)
 
 # Main program sources
-MAIN_CPP_SRCS = targets/Main.cpp $(wildcard *.cpp) $(wildcard tests/*.cpp)
-DLL_CPP_SRCS = $(wildcard targets/Dll*.cpp) $(wildcard *.cpp)
+BASE_CPP_SRCS = $(wildcard *.cpp) $(wildcard lib/*.cpp)
+MAIN_CPP_SRCS = targets/Main.cpp $(wildcard tests/*.cpp) $(BASE_CPP_SRCS)
+DLL_CPP_SRCS = $(wildcard targets/Dll*.cpp) $(BASE_CPP_SRCS)
 LAUNCHER_CPP_SRCS = targets/Launcher.cpp
 
-NON_GEN_SRCS = *.cpp targets/*.cpp tests/*.cpp
-NON_GEN_HEADERS = $(filter-out Version.h, $(filter-out Protocol.%.h, $(wildcard tests/*.h *.h)))
+NON_GEN_SRCS = *.cpp lib/*.cpp targets/*.cpp tests/*.cpp
+NON_GEN_HEADERS = $(filter-out lib/Version.h, $(filter-out lib/Protocol.%.h, $(wildcard lib/*.h tests/*.h *.h)))
+AUTOGEN_HEADERS = lib/Version.h lib/Protocol.*.h
 
 # Main program objects
 MAIN_OBJECTS = $(MAIN_CPP_SRCS:.cpp=.o) $(CONTRIB_CC_SRCS:.cc=.o) $(CONTRIB_C_SRCS:.c=.o)
@@ -50,7 +52,7 @@ endif
 # Build flags
 DEFINES = -DWIN32_LEAN_AND_MEAN -D_M_IX86 -DNAMED_PIPE='"\\\\.\\pipe\\cccaster_pipe"' -DMBAA_EXE='"$(MBAA_EXE)"'
 DEFINES += -DBINARY='"$(BINARY)"' -DHOOK_DLL='"$(DLL)"' -DLAUNCHER='"$(LAUNCHER)"' -DFOLDER='"$(FOLDER)/"'
-INCLUDES = -I$(CURDIR) -I$(CURDIR)/tests -I$(CURDIR)/contrib -I$(CURDIR)/contrib/cereal/include
+INCLUDES = -I$(CURDIR) -I$(CURDIR)/lib -I$(CURDIR)/tests -I$(CURDIR)/contrib -I$(CURDIR)/contrib/cereal/include
 INCLUDES += -I$(CURDIR)/contrib/gtest/include -I$(CURDIR)/contrib/SDL2/include
 INCLUDES += -I$(CURDIR)/contrib/minhook/include -I$(CURDIR)/contrib/d3dhook
 CC_FLAGS = -m32 $(INCLUDES) $(DEFINES)
@@ -83,7 +85,7 @@ $(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
 	$(ZIP) $(NAME).v$(VERSION).zip $^
 	$(GRANT)
 	@echo
-	if [ -s ./deploy ]; then ./deploy; fi;
+	if [ -s scripts/deploy ]; then scripts/deploy; fi;
 
 $(FOLDER):
 	@mkdir $(FOLDER)
@@ -112,24 +114,26 @@ icon.res: icon.rc icon.ico
 define make_version
 @printf "#define COMMIT_ID \"`git rev-parse HEAD`\"\n\
 #define BUILD_TIME \"`date`\"\n\
-#define VERSION \"$(VERSION)\"" > Version.h
+#define VERSION \"$(VERSION)\"" > lib/Version.h
+endef
+
+define make_protocol
+@scripts/make_protocol $(NON_GEN_HEADERS)
 endef
 
 .depend: $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
 	$(make_version)
-	@./make_protocol $(NON_GEN_HEADERS)
+	$(make_protocol)
 	@echo "Regenerating .depend"
 	@$(CXX) $(CC_FLAGS) -std=c++11 -MM $(NON_GEN_SRCS) > $@
 
 protocol: $(NON_GEN_HEADERS)
-	@./make_protocol $(NON_GEN_HEADERS)
+	$(make_protocol)
 
-Version.h:
+version:
 	$(make_version)
 
-autogen: protocol Version.h
-
-# contrib/SDL2/build/.libs/libSDL2.a: sdl
+autogen: protocol version
 
 sdl:
 	make --jobs --directory contrib/SDL2 CFLAGS="-m32 -ggdb3 -O0 -fno-inline"
@@ -147,7 +151,7 @@ sdl_clean:
 	make --directory contrib/SDL2 clean
 
 clean:
-	rm -f Version.h Protocol.*.h .depend *.res *.exe *.dll *.zip *.o targets/*.o tests/*.o
+	rm -f $(AUTOGEN_HEADERS) .depend *.res *.exe *.dll *.zip *.o lib/*.o targets/*.o tests/*.o
 	rm -f $(MAIN_OBJECTS) $(DLL_OBJECTS)
 	rm -rf $(FOLDER)
 
@@ -178,7 +182,7 @@ format:
 count:
 	wc -l $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
 
-.PHONY: clean check trim format count deploy autogen protocol sdl sdl_release sdl_profile sdl_clean Version.h
+.PHONY: clean check trim format count deploy autogen protocol version sdl sdl_release sdl_profile sdl_clean
 
 ifeq (,$(findstring clean, $(MAKECMDGOALS)))
 ifeq (,$(findstring check, $(MAKECMDGOALS)))
@@ -187,8 +191,12 @@ ifeq (,$(findstring format, $(MAKECMDGOALS)))
 ifeq (,$(findstring count, $(MAKECMDGOALS)))
 ifeq (,$(findstring deploy, $(MAKECMDGOALS)))
 ifeq (,$(findstring autogen, $(MAKECMDGOALS)))
+ifeq (,$(findstring version, $(MAKECMDGOALS)))
+ifeq (,$(findstring protocol, $(MAKECMDGOALS)))
 ifeq (,$(findstring sdl, $(MAKECMDGOALS)))
 -include .depend
+endif
+endif
 endif
 endif
 endif
