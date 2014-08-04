@@ -1,4 +1,6 @@
 set breakpoint pending on
+set confirm off
+
 break assert
 break _assert
 break __assert
