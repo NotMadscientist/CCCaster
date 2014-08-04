@@ -36,7 +36,7 @@ void TimerManager::check()
             if ( activeTimers.find ( timer ) != activeTimers.end() )
                 continue;
 
-            LOG ( "Added timer %08x; delay='%.2f ms'", timer, timer->delay );
+            LOG ( "Added timer %08x; delay='%llu ms'", timer, timer->delay );
             activeTimers.insert ( timer );
         }
 
@@ -77,7 +77,7 @@ void TimerManager::check()
 
         if ( timer->delay > 0 )
         {
-            LOG ( "Started timer %08x; delay='%.2f ms'", timer, timer->delay );
+            LOG ( "Started timer %08x; delay='%llu ms'", timer, timer->delay );
 
             timer->expiry = now + timer->delay;
             timer->delay = 0;
@@ -90,7 +90,7 @@ void TimerManager::check()
 
 void TimerManager::add ( Timer *timer )
 {
-    LOG ( "Adding timer %08x; delay='%.2f ms'", timer, timer->delay );
+    LOG ( "Adding timer %08x; delay='%llu ms'", timer, timer->delay );
     allocatedTimers.insert ( timer );
     changed = true;
 }
@@ -110,14 +110,7 @@ void TimerManager::clear()
     changed = true;
 }
 
-TimerManager::TimerManager()
-    : useHiResTimer ( true )
-    , ticksPerSecond ( 0 )
-    , ticks ( 0 )
-    , now ( 0 )
-    , nextExpiry ( UINT64_MAX )
-    , changed ( false )
-    , initialized ( false ) {}
+TimerManager::TimerManager() : useHiResTimer ( true ) {}
 
 void TimerManager::initialize()
 {

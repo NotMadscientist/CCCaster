@@ -18,8 +18,8 @@ using namespace std;
 #define DEFAULT_KEEP_ALIVE 1000
 
 
-UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, uint64_t keepAlive  )
-    : Socket ( IpAddrPort ( "", port ), Protocol::UDP ), hasParent ( false ), parent ( 0 ), gbn ( this, keepAlive )
+UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, uint64_t keepAlive )
+    : Socket ( IpAddrPort ( "", port ), Protocol::UDP ), gbn ( this, keepAlive )
 {
     this->owner = owner;
     this->state = State::Listening;
@@ -28,7 +28,7 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, uint64_t keepAlive  
 }
 
 UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, uint64_t keepAlive )
-    : Socket ( address, Protocol::UDP ), hasParent ( false ), parent ( 0 ), gbn ( this, keepAlive )
+    : Socket ( address, Protocol::UDP ), gbn ( this, keepAlive )
 {
     this->owner = owner;
     this->state = ( keepAlive ? State::Connecting : State::Connected );
@@ -46,7 +46,7 @@ UdpSocket::UdpSocket ( ChildSocketEnum, UdpSocket *parent, const IpAddrPort& add
 }
 
 UdpSocket::UdpSocket ( Socket::Owner *owner, const SocketShareData& data )
-    : Socket ( data.address, Protocol::UDP ), hasParent ( false ), parent ( 0 ), gbn ( this, 0 )
+    : Socket ( data.address, Protocol::UDP ), gbn ( this, 0 )
 {
     assert ( data.protocol == Protocol::UDP );
 
@@ -211,9 +211,9 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
             case MsgType::UdpConnect:
                 if ( msg->getAs<UdpConnect>().value == UdpConnect::Reply )
                 {
-                    LOG_SOCKET ( this, "connectEvent" );
-                    send ( new UdpConnect ( UdpConnect::Final ) );
                     state = State::Connected;
+                    send ( new UdpConnect ( UdpConnect::Final ) );
+                    LOG_SOCKET ( this, "connectEvent" );
                     if ( owner )
                         owner->connectEvent ( this );
                 }

@@ -26,15 +26,15 @@ public:
         inline virtual void ipcReadEvent ( const MsgPtr& msg ) {}
     };
 
-    Owner *owner;
+    Owner *owner = 0;
 
 private:
 
     // Named pipe
-    void *pipe;
+    void *pipe = 0;
 
     // Process ID
-    int processId;
+    int processId = 0;
 
     // IPC socket
     SocketPtr ipcSocket;
@@ -43,13 +43,13 @@ private:
     TimerPtr gameStartTimer;
 
     // Number of attempts to start the game
-    int gameStartCount;
+    int gameStartCount = 0;
 
     // IPC connect timer
     TimerPtr ipcConnectTimer;
 
     // IPC connected flag
-    bool connected;
+    bool connected = false;
 
     // IPC socket callbacks
     void acceptEvent ( Socket *socket ) override;
@@ -84,6 +84,11 @@ public:
     // Get the process ID of the game
     inline int getProcessId() const { return processId; }
 
-    // Write game inputs
-    void writeGameInputs ( uint8_t player, uint16_t direction, uint16_t buttons );
+    // Write game input
+    void writeGameInput ( uint8_t player, uint16_t direction, uint16_t buttons );
+
+    inline void writeGameInput ( uint8_t player, uint16_t input )
+    {
+        writeGameInput ( player, input & 0x000F, input & 0xFFF0 );
+    }
 };

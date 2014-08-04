@@ -20,11 +20,11 @@ using namespace std;
 #define IPC_CONNECT_TIMEOUT ( 10000 )
 
 
-void ProcessManager::writeGameInputs ( uint8_t player, uint16_t direction, uint16_t buttons )
+void ProcessManager::writeGameInput ( uint8_t player, uint16_t direction, uint16_t buttons )
 {
     // LOG ( "player=%d; direction=%d; buttons=%04x", player, direction, buttons );
 
-    char *const baseAddr = * ( char ** ) CC_PTR_TO_WRITE_INPUTS_ADDR;
+    char *const baseAddr = * ( char ** ) CC_PTR_TO_WRITE_INPUT_ADDR;
 
     switch ( player )
     {
@@ -310,8 +310,7 @@ void ProcessManager::disconnectPipe()
     connected = false;
 }
 
-ProcessManager::ProcessManager ( Owner *owner )
-    : owner ( owner ), pipe ( 0 ), processId ( 0 ), gameStartCount ( 0 ), connected ( false ) {}
+ProcessManager::ProcessManager ( Owner *owner ) : owner ( owner ) {}
 
 ProcessManager::~ProcessManager()
 {

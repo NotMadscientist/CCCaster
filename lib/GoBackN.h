@@ -29,15 +29,15 @@ public:
         inline virtual void timeoutGoBackN ( GoBackN *gbn ) {};
     };
 
-    Owner *owner;
+    Owner *owner = 0;
 
 private:
 
     // Last sent and received sequences
-    uint32_t sendSequence, recvSequence;
+    uint32_t sendSequence = 0, recvSequence = 0;
 
     // Last ACKed sequence
-    uint32_t ackSequence;
+    uint32_t ackSequence = 0;
 
     // Current list of messages to repeatedly send
     std::list<MsgPtr> sendList;
@@ -49,10 +49,10 @@ private:
     Timer sendTimer;
 
     // The timeout for keep alive packets, 0 to disable
-    uint64_t keepAlive;
+    uint64_t keepAlive = 0;
 
     // The countdown timer for the keep alive packets
-    uint32_t countDown;
+    uint32_t countDown = 0;
 
     // Timer callback that sends the messages
     void timerExpired ( Timer *timer ) override;

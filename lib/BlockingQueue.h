@@ -178,13 +178,11 @@ public:
 template<typename T, size_t N> class StaticBlockingQueue
 {
     T elements[N];
-    size_t count, head, tail;
+    size_t count = 0, head = 0, tail = 0;
     mutable Mutex mutex;
     mutable CondVar cond;
 
 public:
-
-    StaticBlockingQueue() : count ( 0 ), head ( 0 ), tail ( 0 ) {}
 
     void push ( const T& t )
     {

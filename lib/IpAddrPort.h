@@ -21,17 +21,13 @@ const char *inet_ntop ( int af, const void *src, char *dst, size_t size );
 struct IpAddrPort : public SerializableMessage
 {
     std::string addr;
-    uint16_t port;
-    bool isV4;
+    uint16_t port = 0;
+    bool isV4 = true;
 
-    inline explicit IpAddrPort ( bool isV4 = true )
-        : port ( 0 ), isV4 ( isV4 ) {}
-
-    inline IpAddrPort ( const std::string& addr, uint16_t port, bool isV4 = true )
-        : addr ( addr ), port ( port ), isV4 ( isV4 ) {}
+    inline IpAddrPort() {}
+    inline IpAddrPort ( const std::string& addr, uint16_t port ) : addr ( addr ), port ( port ) {}
 
     IpAddrPort ( const std::string& addrPort );
-
     IpAddrPort ( const sockaddr *sa );
 
     const std::shared_ptr<addrinfo>& getAddrInfo() const;

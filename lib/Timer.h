@@ -13,11 +13,11 @@ public:
         virtual void timerExpired ( Timer *timer ) = 0;
     };
 
-    Owner *owner;
+    Owner *owner = 0;
 
 private:
 
-    uint64_t delay, expiry;
+    uint64_t delay = 0, expiry = 0;
 
 public:
 

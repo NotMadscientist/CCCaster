@@ -16,11 +16,11 @@
 
 #define CC_MAX_MENU_INDEX           ( 20 )
 
-#define CC_PTR_TO_WRITE_INPUTS_ADDR ( ( char * ) 0x76E6AC ) // Pointer to the location to write inputs
-#define CC_P1_OFFSET_DIRECTION      ( 0x18 )                // Offset to write P1 direction inputs
-#define CC_P1_OFFSET_BUTTONS        ( 0x24 )                // Offset to write P1 button inputs
-#define CC_P2_OFFSET_DIRECTION      ( 0x2C )                // Offset to write P2 direction inputs
-#define CC_P2_OFFSET_BUTTONS        ( 0x38 )                // Offset to write P2 button inputs
+#define CC_PTR_TO_WRITE_INPUT_ADDR  ( ( char * ) 0x76E6AC ) // Pointer to the location to write game input
+#define CC_P1_OFFSET_DIRECTION      ( 0x18 )                // Offset to write P1 direction input
+#define CC_P1_OFFSET_BUTTONS        ( 0x24 )                // Offset to write P1 buttons input
+#define CC_P2_OFFSET_DIRECTION      ( 0x2C )                // Offset to write P2 direction input
+#define CC_P2_OFFSET_BUTTONS        ( 0x38 )                // Offset to write P2 buttons input
 
 // Directions are just written in numpad format, EXCEPT neutral is 0
 

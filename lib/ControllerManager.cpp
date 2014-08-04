@@ -142,7 +142,7 @@ void ControllerManager::clear()
     joysticks.clear();
 }
 
-ControllerManager::ControllerManager() : keyboard ( Controller::Keyboard ), initialized ( false ) {}
+ControllerManager::ControllerManager() : keyboard ( Controller::Keyboard ) {}
 
 void ControllerManager::initialize ( Owner *owner )
 {

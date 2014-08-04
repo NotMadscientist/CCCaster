@@ -114,9 +114,9 @@ struct Exception
 // Windows exception type
 struct WindowsException : public Exception
 {
-    int code;
+    int code = 0;
 
-    inline WindowsException() : code ( 0 ) {}
+    inline WindowsException() {}
     WindowsException ( int code );
 };
 
@@ -138,13 +138,12 @@ template<typename T>
 class RollingAverage
 {
     std::vector<T> values;
-    T sum, average;
-    size_t index, count;
+    T sum = 0, average = 0;
+    size_t index = 0, count = 0;
 
 public:
 
-    inline RollingAverage ( size_t size )
-        : values ( size ), sum ( 0 ), average ( 0 ), index ( 0 ), count ( 0 ) {}
+    inline RollingAverage ( size_t size ) : values ( size ) {}
 
     inline RollingAverage ( size_t size, T initial )
         : values ( size, initial ), sum ( initial ), average ( initial ), index ( 1 ), count ( 1 ) {}

@@ -39,7 +39,7 @@ public:
         inline virtual void doneMapping ( Controller *controller, uint32_t key ) {}
     };
 
-    Owner *owner;
+    Owner *owner = 0;
 
 private:
 
@@ -50,13 +50,13 @@ private:
     struct Mapping { const uint8_t type, index, value; const uint32_t state; };
 
     // SDL joystick pointer, 0 for keyboard
-    SDL_Joystick *joystick;
+    SDL_Joystick *joystick = 0;
 
     // Controller unique identifier
     IndexedGuid guid;
 
     // Controller state
-    uint32_t state;
+    uint32_t state = 0;
 
     // Controller mappings
     uint32_t mappings[4][256][16];
@@ -65,7 +65,7 @@ private:
     uint16_t deadzones[256];
 
     // The current key to map to an event
-    uint32_t keyToMap;
+    uint32_t keyToMap = 0;
 
     // The currently active mappings for the above key
     uint32_t activeMappings[4][256][16];

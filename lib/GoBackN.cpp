@@ -161,7 +161,7 @@ void GoBackN::reset()
 }
 
 GoBackN::GoBackN ( Owner *owner, uint64_t timeout )
-    : owner ( owner ), sendSequence ( 0 ), recvSequence ( 0 ), ackSequence ( 0 )
-    , sendListPos ( sendList.end() ), sendTimer ( this ), keepAlive ( timeout ), countDown ( timeout / SEND_INTERVAL )
+    : owner ( owner ), sendListPos ( sendList.end() ), sendTimer ( this )
+    , keepAlive ( timeout ), countDown ( timeout / SEND_INTERVAL )
 {
 }

@@ -18,7 +18,7 @@ struct Guid
 struct IndexedGuid
 {
     Guid guid;
-    uint8_t index;
+    uint8_t index = 0;
 };
 
 

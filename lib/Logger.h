@@ -11,13 +11,13 @@
 class Logger
 {
     // Log file
-    FILE *fd;
+    FILE *fd = 0;
 
     // Char buffer
     char buffer[4096];
 
     // Flag to indicate if initialized
-    bool initialized;
+    bool initialized = false;
 
     // Optionally mutexed logging
 #ifdef LOGGER_MUTEXED
@@ -27,7 +27,7 @@ class Logger
 public:
 
     // Basic constructor
-    inline Logger() : fd ( 0 ), initialized ( false ) {}
+    inline Logger() {}
 
     // Initialize / deinitialize logging
     void initialize ( const std::string& name = "", bool prependPidToName = false );

@@ -115,13 +115,13 @@ public:
 class Thread
 {
     mutable Mutex mutex;
-    bool running;
+    bool running = false;
     pthread_t thread;
     static void *func ( void *ptr );
 
 public:
 
-    inline Thread() : running ( false ) {}
+    inline Thread() {}
     inline virtual ~Thread() { join(); }
 
     virtual void start();

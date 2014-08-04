@@ -16,7 +16,7 @@ public:
         inline virtual void detachedJoystick ( Controller *controller ) {}
     };
 
-    Owner *owner;
+    Owner *owner = 0;
 
 private:
 
@@ -27,7 +27,7 @@ private:
     std::unordered_map<int, std::shared_ptr<Controller>> joysticks;
 
     // Flag to inidicate if initialized
-    bool initialized;
+    bool initialized = false;
 
     // Private constructor, etc. for singleton class
     ControllerManager();

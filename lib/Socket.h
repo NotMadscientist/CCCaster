@@ -56,22 +56,22 @@ public:
     const Protocol protocol;
 
     // Socket owner
-    Owner *owner;
+    Owner *owner = 0;
 
 protected:
 
     // Connection state
-    State state;
+    State state = State::Disconnected;
 
     // Underlying socket fd
-    int fd;
+    int fd = 0;
 
     // Socket read buffer and position
     std::string readBuffer;
-    size_t readPos;
+    size_t readPos = 0;
 
     // Packet loss percentage for testing purposes
-    uint8_t packetLoss;
+    uint8_t packetLoss = 0;
 
     // TCP event callbacks
     virtual void acceptEvent() {};

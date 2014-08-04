@@ -193,14 +193,14 @@ void Controller::joystickEvent ( const SDL_JoyButtonEvent& event )
     LOG_CONTROLLER ( this, "button=%d; value=%d; EVENT_JOY_BUTTON", event.button, ( event.state == SDL_PRESSED ) );
 }
 
-Controller::Controller ( KeyboardEnum ) : joystick ( 0 ), state ( 0 ), keyToMap ( 0 )
+Controller::Controller ( KeyboardEnum )
 {
     memset ( &guid, 0, sizeof ( guid ) );
 
     clearMapping();
 }
 
-Controller::Controller ( SDL_Joystick *joystick ) : joystick ( joystick ), state ( 0 ), keyToMap ( 0 )
+Controller::Controller ( SDL_Joystick *joystick ) : joystick ( joystick )
 {
     SDL_JoystickGUID guid = SDL_JoystickGetGUID ( joystick );
     memcpy ( &this->guid.guid, guid.data, sizeof ( guid.data ) );

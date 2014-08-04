@@ -15,19 +15,19 @@ class TimerManager
     bool useHiResTimer;
 
     // Hi-res timer variables
-    uint64_t ticksPerSecond, ticks;
+    uint64_t ticksPerSecond = 0, ticks = 0;
 
     // The current time in milliseconds
-    uint64_t now;
+    uint64_t now = 0;
 
     // The next time when a timer will expire
-    uint64_t nextExpiry;
+    uint64_t nextExpiry = 0;
 
     // Flag to indicate the set of allocated timers has changed
-    bool changed;
+    bool changed = false;
 
     // Flag to inidicate if initialized
-    bool initialized;
+    bool initialized = false;
 
     // Private constructor, etc. for singleton class
     TimerManager();

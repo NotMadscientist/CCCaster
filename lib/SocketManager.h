@@ -12,10 +12,10 @@ class SocketManager
     std::unordered_set<Socket *> activeSockets, allocatedSockets;
 
     // Flag to indicate the set of allocated sockets has changed
-    bool changed;
+    bool changed = false;
 
     // Flag to inidicate if initialized
-    bool initialized;
+    bool initialized = false;
 
     // Private constructor, etc. for singleton class
     SocketManager();

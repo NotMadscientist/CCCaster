@@ -44,8 +44,8 @@ enum DecodeResult { Failed = 0, NotCompressed, Compressed };
 DecodeResult decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, MsgType& type, string& msgData );
 
 
-// Default constructor with compression level 9
-Serializable::Serializable() : compressionLevel ( 9 ), md5empty ( true ) {}
+// Basic constructor with default compression level
+Serializable::Serializable() : compressionLevel ( 9 ) {}
 
 string Serializable::encode ( Serializable *message )
 {

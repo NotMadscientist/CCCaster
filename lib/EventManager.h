@@ -23,7 +23,7 @@ class EventManager
     ReaperThread reaperThread;
 
     // Flag to indicate the event loop is running
-    volatile bool running;
+    volatile bool running = false;
 
     // Check for events
     void checkEvents ( uint64_t timeout );

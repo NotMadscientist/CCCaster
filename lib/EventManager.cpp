@@ -54,9 +54,7 @@ void EventManager::eventLoop()
     }
 }
 
-EventManager::EventManager() : running ( false )
-{
-}
+EventManager::EventManager() {}
 
 bool EventManager::poll ( uint64_t timeout )
 {

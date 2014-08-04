@@ -16,10 +16,10 @@ class UdpSocket : public Socket, public GoBackN::Owner
     enum ChildSocketEnum { ChildSocket };
 
     // Indicates this is a child socket, and has a parent socket
-    const bool hasParent;
+    const bool hasParent = false;
 
     // Parent socket
-    UdpSocket *parent;
+    UdpSocket *parent = 0;
 
     // GoBackN instance
     GoBackN gbn;

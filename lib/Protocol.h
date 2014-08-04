@@ -20,14 +20,16 @@
     MsgType getMsgType() const override;
 
 #define ENUM_MESSAGE_BOILERPLATE(NAME, ...)                                                                 \
-    enum Enum : uint8_t { Unknown, __VA_ARGS__ } value;                                                     \
-    inline NAME() : value ( Unknown ) {}                                                                    \
+    enum Enum : uint8_t { Unknown, __VA_ARGS__ } value = Unknown;                                           \
+    inline NAME() {}                                                                                        \
     inline NAME ( Enum value ) : value ( value ) {}                                                         \
     inline std::string str() const override {                                                               \
         static const std::vector<std::string> list = split ( "Unknown, " #__VA_ARGS__, ", " );              \
         return #NAME "::" + list[value];                                                                    \
     }                                                                                                       \
     PROTOCOL_BOILERPLATE ( value )
+
+#define REF_PTR(VALUE) MsgPtr ( &VALUE, ignoreMsgPtr )
 
 
 // Increase size as needed
@@ -41,6 +43,8 @@ enum class BaseType : uint8_t { SerializableMessage, SerializableSequence };
 struct Serializable;
 typedef std::shared_ptr<Serializable> MsgPtr;
 
+inline void ignoreMsgPtr ( Serializable * ) {}
+
 const MsgPtr NullMsg;
 
 
@@ -53,9 +57,6 @@ std::ostream& operator<< ( std::ostream& os, const MsgPtr& msg );
 // Abstract base class for all serializable messages
 struct Serializable
 {
-    // Flag to indicate compression level
-    mutable uint8_t compressionLevel;
-
     // Basic constructor and destructor
     Serializable();
     inline virtual ~Serializable() {}
@@ -83,11 +84,14 @@ struct Serializable
     static std::string encode ( const MsgPtr& msg );
     static MsgPtr decode ( const char *bytes, size_t len, size_t& consumed );
 
+    // Flag to indicate compression level
+    mutable uint8_t compressionLevel;
+
 private:
 
     // Cached MD5 data
     mutable char md5[16];
-    mutable bool md5empty;
+    mutable bool md5empty = true;
 
     // Serialize and deserialize the base type
     inline virtual void saveBase ( cereal::BinaryOutputArchive& ar ) const {};
@@ -109,7 +113,7 @@ struct SerializableMessage : public Serializable
 struct SerializableSequence : public Serializable
 {
     // Basic constructors
-    inline SerializableSequence() : sequence ( 0 ) {}
+    inline SerializableSequence() {}
     inline SerializableSequence ( uint32_t sequence ) : sequence ( sequence ) {}
 
     inline BaseType getBaseType() const override { return BaseType::SerializableSequence; }
@@ -121,7 +125,7 @@ struct SerializableSequence : public Serializable
 private:
 
     // Message sequence number
-    mutable uint32_t sequence;
+    mutable uint32_t sequence = 0;
 
     inline void saveBase ( cereal::BinaryOutputArchive& ar ) const override { ar ( sequence ); };
     inline void loadBase ( cereal::BinaryInputArchive& ar ) override { ar ( sequence ); };

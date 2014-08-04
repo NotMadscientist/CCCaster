@@ -32,8 +32,7 @@ using namespace std;
 
 
 Socket::Socket ( const IpAddrPort& address, Protocol protocol )
-    : address ( address ), protocol ( protocol ), owner ( 0 ), state ( State::Disconnected ), fd ( 0 )
-    , readBuffer ( READ_BUFFER_SIZE, ( char ) 0 ), readPos ( 0 ), packetLoss ( 0 )
+    : address ( address ), protocol ( protocol ), readBuffer ( READ_BUFFER_SIZE, ( char ) 0 )
 {
 }
 
@@ -252,7 +251,7 @@ bool Socket::send ( const char *buffer, size_t len )
 
     size_t totalBytes = 0;
 
-    while ( totalBytes < len )
+    while ( totalBytes < len || len == 0 )
     {
         int sentBytes = SOCKET_ERROR;
 
@@ -279,6 +278,9 @@ bool Socket::send ( const char *buffer, size_t len )
             return false;
         }
 
+        if ( len == 0 )
+            break;
+
         totalBytes += sentBytes;
     }
 
@@ -298,7 +300,7 @@ bool Socket::send ( const char *buffer, size_t len, const IpAddrPort& address )
 
     size_t totalBytes = 0;
 
-    while ( totalBytes < len )
+    while ( totalBytes < len || len == 0 )
     {
         LOG_SOCKET ( this, "sendto ( [ %u bytes ], '%s' )", len, address );
         int sentBytes = ::sendto ( fd, buffer, len, 0,
@@ -309,6 +311,9 @@ bool Socket::send ( const char *buffer, size_t len, const IpAddrPort& address )
             LOG_SOCKET ( this, "%s; sendto failed", WindowsException ( WSAGetLastError() ) );
             return false;
         }
+
+        if ( len == 0 )
+            break;
 
         totalBytes += sentBytes;
     }

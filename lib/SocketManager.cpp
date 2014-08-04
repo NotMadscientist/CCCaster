@@ -147,7 +147,7 @@ void SocketManager::clear()
     changed = true;
 }
 
-SocketManager::SocketManager() : changed ( false ), initialized ( false ) {}
+SocketManager::SocketManager() {}
 
 void SocketManager::initialize()
 {
