@@ -36,10 +36,12 @@ struct Main
         , public Socket::Owner
         , public ControllerManager::Owner
         , public Controller::Owner
+        , public Timer::Owner
 {
     ClientType::Enum clientType;
     ProcessManager procMan;
     SocketPtr serverSocket, ctrlSocket, dataSocket;
+    TimerPtr timer;
 
     // ProcessManager
 
@@ -112,6 +114,16 @@ struct Main
     {
     }
 
+    // Timer
+
+    void timerExpired ( Timer *timer ) override
+    {
+    }
+
+    // State query methods
+
+    bool isHost() const { return ( clientType == ClientType::Host ); }
+
     // Constructor
 
     Main ( Option opt[] ) : clientType ( ClientType::Unknown ), procMan ( this )
@@ -136,8 +148,6 @@ struct Main
             ctrlSocket = TcpSocket::connect ( this, mainAddrPort );
             dataSocket = UdpSocket::bind ( this, mainAddrPort );
         }
-
-        // procMan.openGame();
     }
 
     // Destructor

@@ -55,12 +55,12 @@ struct Main
         , public Socket::Owner
         , public ControllerManager::Owner
         , public Controller::Owner
+        , public Timer::Owner
 {
     ClientType::Enum clientType;
     ProcessManager procMan;
     SocketPtr serverSocket, ctrlSocket, dataSocket;
-
-    Controller *controllers[2];
+    TimerPtr timer;
 
     // ProcessManager
 
@@ -84,7 +84,7 @@ struct Main
                 }
 
                 clientType = msg->getAs<ClientType>().value;
-                LOG ( "ClientType is %s", clientType == ClientType::Host ? "Host" : "Client" );
+                LOG ( "ClientType is %s", isHost() ? "Host" : "Client" );
                 break;
 
             case MsgType::SocketShareData:
@@ -98,7 +98,7 @@ struct Main
                     ctrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
                 else if ( !dataSocket )
                     dataSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
-                else if ( !serverSocket && clientType == ClientType::Host )
+                else if ( !serverSocket && isHost() )
                     serverSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
                 else
                     LOG ( "Unexpected '%s'", msg );
@@ -145,13 +145,21 @@ struct Main
     {
     }
 
+    // Timer
+
+    void timerExpired ( Timer *timer ) override
+    {
+    }
+
+    // State query methods
+
+    bool isHost() const { return ( clientType == ClientType::Host ); }
+
     // Constructor
 
     Main() : clientType ( ClientType::Unknown ), procMan ( this )
     {
         // Initialization is not done here because of threading issues
-
-        controllers[0] = controllers[1] = 0;
 
         procMan.connectPipe();
     }
@@ -233,7 +241,6 @@ extern "C" void callback()
                 state = STOPPING;
                 break;
             }
-
         }
         while ( 0 );
     }

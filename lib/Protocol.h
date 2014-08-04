@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Utilities.h"
+
 #include <cereal/archives/binary.hpp>
 
 #include <string>
@@ -10,8 +12,8 @@
 
 #define PROTOCOL_BOILERPLATE(...)                                                                           \
     MsgType getMsgType() const override;                                                                    \
-    void save ( cereal::BinaryOutputArchive& ar ) const override { ar ( __VA_ARGS__ ); }                    \
-    void load ( cereal::BinaryInputArchive& ar ) override { ar ( __VA_ARGS__ ); }
+    inline void save ( cereal::BinaryOutputArchive& ar ) const override { ar ( __VA_ARGS__ ); }             \
+    inline void load ( cereal::BinaryInputArchive& ar ) override { ar ( __VA_ARGS__ ); }
 
 #define EMPTY_MESSAGE_BOILERPLATE(NAME)                                                                     \
     inline NAME() {}                                                                                        \
@@ -21,7 +23,7 @@
     enum Enum : uint8_t { Unknown, __VA_ARGS__ } value;                                                     \
     inline NAME() : value ( Unknown ) {}                                                                    \
     inline NAME ( Enum value ) : value ( value ) {}                                                         \
-    std::string str() const override {                                                                      \
+    inline std::string str() const override {                                                               \
         static const std::vector<std::string> list = split ( "Unknown, " #__VA_ARGS__, ", " );              \
         return #NAME "::" + list[value];                                                                    \
     }                                                                                                       \
@@ -67,10 +69,10 @@ struct Serializable
     inline virtual void load ( cereal::BinaryInputArchive& ar ) {};
 
     // Cast this to another another type
-    template<typename T> T& getAs() { return *static_cast<T *> ( this ); }
-    template<typename T> const T& getAs() const { return *static_cast<const T *> ( this ); }
+    template<typename T> inline T& getAs() { return *static_cast<T *> ( this ); }
+    template<typename T> inline const T& getAs() const { return *static_cast<const T *> ( this ); }
 
-    // Invalidate and any cached data
+    // Invalidate any cached data
     inline void invalidate() const { md5empty = true; }
 
     // Return a string representation of this message, defaults to the message type
@@ -99,7 +101,7 @@ private:
 // Represents a regular message
 struct SerializableMessage : public Serializable
 {
-    BaseType getBaseType() const override { return BaseType::SerializableMessage; }
+    inline BaseType getBaseType() const override { return BaseType::SerializableMessage; }
 };
 
 
@@ -107,10 +109,10 @@ struct SerializableMessage : public Serializable
 struct SerializableSequence : public Serializable
 {
     // Basic constructors
-    SerializableSequence() : sequence ( 0 ) {}
-    SerializableSequence ( uint32_t sequence ) : sequence ( sequence ) {}
+    inline SerializableSequence() : sequence ( 0 ) {}
+    inline SerializableSequence ( uint32_t sequence ) : sequence ( sequence ) {}
 
-    BaseType getBaseType() const override { return BaseType::SerializableSequence; }
+    inline BaseType getBaseType() const override { return BaseType::SerializableSequence; }
 
     // Get and set the message sequence
     inline uint32_t getSequence() const { return sequence; }
@@ -121,6 +123,6 @@ private:
     // Message sequence number
     mutable uint32_t sequence;
 
-    void saveBase ( cereal::BinaryOutputArchive& ar ) const override { ar ( sequence ); };
-    void loadBase ( cereal::BinaryInputArchive& ar ) override { ar ( sequence ); };
+    inline void saveBase ( cereal::BinaryOutputArchive& ar ) const override { ar ( sequence ); };
+    inline void loadBase ( cereal::BinaryInputArchive& ar ) override { ar ( sequence ); };
 };
