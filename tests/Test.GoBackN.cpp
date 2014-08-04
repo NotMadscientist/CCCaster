@@ -48,7 +48,7 @@ TEST ( GoBackN, SendOnce )
         {
             if ( socket->isClient() )
             {
-                gbn.sendGoBackN ( MsgPtr ( new TestMessage ( "Hello server!" ) ) );
+                gbn.sendGoBackN ( new TestMessage ( "Hello server!" ) );
             }
             else
             {
@@ -341,7 +341,7 @@ TEST ( GoBackN, Timeout )
             if ( stage == 0 )
             {
                 if ( socket->isClient() )
-                    gbn.sendGoBackN ( MsgPtr ( new TestMessage ( "Hello server!" ) ) );
+                    gbn.sendGoBackN ( new TestMessage ( "Hello server!" ) );
                 timer->start ( 1000 );
             }
             else if ( stage == 1 )
