@@ -126,7 +126,7 @@ public:
     // Get data needed to share this socket in another process
     virtual MsgPtr share ( int processId );
 
-    // Send a protocol message, return false indicates disconnected
+    // Send a protocol message, returning false indicates the socket is disconnected
     virtual bool send ( SerializableMessage *message, const IpAddrPort& address = IpAddrPort() ) = 0;
     virtual bool send ( SerializableSequence *message, const IpAddrPort& address = IpAddrPort() ) = 0;
     virtual bool send ( const MsgPtr& msg, const IpAddrPort& address = IpAddrPort() ) = 0;
