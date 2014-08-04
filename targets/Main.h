@@ -9,6 +9,7 @@
 #include "Controller.h"
 #include "TimerManager.h"
 #include "Timer.h"
+#include "IpAddrPort.h"
 #include "Messages.h"
 
 
@@ -19,12 +20,25 @@ struct CommonMain
         , public Controller::Owner
         , public Timer::Owner
 {
-    ClientType::Enum clientType;
+    IpAddrPort address;
+
+    ClientType::Enum clientType = ClientType::Unknown;
+
     ProcessManager procMan;
-    SocketPtr serverSocket, ctrlSocket, dataSocket;
+
+    SocketPtr serverCtrlSocket, ctrlSocket;
+
+    SocketPtr serverDataSocket, dataSocket;
+
     TimerPtr timer;
 
-    inline CommonMain() : clientType ( ClientType::Unknown ), procMan ( this ) {}
+    inline CommonMain() : procMan ( this ) {}
+
+    inline CommonMain ( const IpAddrPort& address )
+        : address ( address )
+        , clientType ( address.addr.empty() ? ClientType::Host : ClientType::Client )
+        , procMan ( this ) {}
 
     inline bool isHost() const { return ( clientType == ClientType::Host ); }
+    inline bool isClient() const { return ( clientType == ClientType::Client ); }
 };

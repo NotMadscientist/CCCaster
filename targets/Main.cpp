@@ -19,9 +19,6 @@ using namespace option;
 // Set of command line options
 enum CommandLineOptions { UNKNOWN, HELP, GTEST, STDOUT, PLUS };
 
-// Main connection address and port
-static IpAddrPort mainAddrPort;
-
 
 struct Main : public CommonMain
 {
@@ -29,18 +26,16 @@ struct Main : public CommonMain
 
     void ipcConnectEvent() override
     {
+        procMan.ipcSend ( REF_PTR ( address ) );
         procMan.ipcSend ( new ClientType ( clientType ) );
 
         assert ( ctrlSocket.get() != 0 );
-        assert ( dataSocket.get() != 0 );
-
         procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
-        procMan.ipcSend ( dataSocket->share ( procMan.getProcessId() ) );
 
         if ( isHost() )
         {
-            assert ( serverSocket.get() != 0 );
-            procMan.ipcSend ( serverSocket->share ( procMan.getProcessId() ) );
+            assert ( serverCtrlSocket.get() != 0 );
+            procMan.ipcSend ( serverCtrlSocket->share ( procMan.getProcessId() ) );
         }
     }
 
@@ -73,16 +68,16 @@ struct Main : public CommonMain
 
     void acceptEvent ( Socket *serverSocket ) override
     {
-        assert ( serverSocket == this->serverSocket.get() );
+        assert ( serverSocket == serverCtrlSocket.get() );
 
-        ctrlSocket = serverSocket->accept ( this );
+        ctrlSocket = serverCtrlSocket->accept ( this );
 
         procMan.openGame();
     }
 
     void connectEvent ( Socket *socket ) override
     {
-        assert ( socket == this->ctrlSocket.get() );
+        assert ( socket == ctrlSocket.get() );
 
         procMan.openGame();
     }
@@ -104,7 +99,7 @@ struct Main : public CommonMain
 
     // Constructor
 
-    Main ( Option opt[] )
+    Main ( Option opt[], const IpAddrPort& address ) : CommonMain ( address )
     {
         if ( opt[STDOUT] )
             Logger::get().initialize();
@@ -114,18 +109,10 @@ struct Main : public CommonMain
         SocketManager::get().initialize();
         ControllerManager::get().initialize ( this );
 
-        if ( mainAddrPort.addr.empty() )
-        {
-            clientType = ClientType::Host;
-            serverSocket = TcpSocket::listen ( this, mainAddrPort.port );
-            dataSocket = UdpSocket::bind ( this, mainAddrPort.port );
-        }
+        if ( isHost() )
+            serverCtrlSocket = TcpSocket::listen ( this, address.port );
         else
-        {
-            clientType = ClientType::Client;
-            ctrlSocket = TcpSocket::connect ( this, mainAddrPort );
-            dataSocket = UdpSocket::bind ( this, mainAddrPort );
-        }
+            ctrlSocket = TcpSocket::connect ( this, address );
     }
 
     // Destructor
@@ -210,14 +197,15 @@ int main ( int argc, char *argv[] )
 
     try
     {
+        IpAddrPort address;
         if ( parser.nonOptionsCount() == 1 )
-            mainAddrPort = string ( parser.nonOption ( 0 ) );
+            address = string ( parser.nonOption ( 0 ) );
         else if ( parser.nonOptionsCount() == 2 )
-            mainAddrPort = string ( parser.nonOption ( 0 ) ) + parser.nonOption ( 1 );
+            address = string ( parser.nonOption ( 0 ) ) + parser.nonOption ( 1 );
 
-        PRINT ( "Using: '%s'", mainAddrPort );
+        PRINT ( "Using: '%s'", address );
 
-        Main main ( opt );
+        Main main ( opt, address );
         EventManager::get().start();
     }
     catch ( const WindowsException& err )
