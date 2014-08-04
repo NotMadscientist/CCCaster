@@ -1,14 +1,6 @@
+#include "Main.h"
 #include "Logger.h"
-#include "EventManager.h"
-#include "TimerManager.h"
-#include "SocketManager.h"
-#include "ControllerManager.h"
-#include "ProcessManager.h"
-#include "TcpSocket.h"
-#include "UdpSocket.h"
-#include "Timer.h"
 #include "Test.h"
-#include "Messages.h"
 #include "Constants.h"
 
 #include <optionparser.h>
@@ -31,18 +23,8 @@ enum CommandLineOptions { UNKNOWN, HELP, GTEST, STDOUT, PLUS };
 static IpAddrPort mainAddrPort;
 
 
-struct Main
-        : public ProcessManager::Owner
-        , public Socket::Owner
-        , public ControllerManager::Owner
-        , public Controller::Owner
-        , public Timer::Owner
+struct Main : public CommonMain
 {
-    ClientType::Enum clientType;
-    ProcessManager procMan;
-    SocketPtr serverSocket, ctrlSocket, dataSocket;
-    TimerPtr timer;
-
     // ProcessManager
 
     void ipcConnectEvent() override
@@ -55,7 +37,7 @@ struct Main
         procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
         procMan.ipcSend ( dataSocket->share ( procMan.getProcessId() ) );
 
-        if ( clientType == ClientType::Host )
+        if ( isHost() )
         {
             assert ( serverSocket.get() != 0 );
             procMan.ipcSend ( serverSocket->share ( procMan.getProcessId() ) );
@@ -120,13 +102,9 @@ struct Main
     {
     }
 
-    // State query methods
-
-    bool isHost() const { return ( clientType == ClientType::Host ); }
-
     // Constructor
 
-    Main ( Option opt[] ) : clientType ( ClientType::Unknown ), procMan ( this )
+    Main ( Option opt[] )
     {
         if ( opt[STDOUT] )
             Logger::get().initialize();

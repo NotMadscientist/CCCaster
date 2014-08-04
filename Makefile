@@ -24,7 +24,8 @@ DLL_CPP_SRCS = $(wildcard targets/Dll*.cpp) $(BASE_CPP_SRCS)
 LAUNCHER_CPP_SRCS = targets/Launcher.cpp
 
 NON_GEN_SRCS = *.cpp lib/*.cpp targets/*.cpp tests/*.cpp
-NON_GEN_HEADERS = $(filter-out lib/Version.h, $(filter-out lib/Protocol.%.h, $(wildcard lib/*.h tests/*.h *.h)))
+NON_GEN_HEADERS = $(filter-out lib/Version.h, $(filter-out lib/Protocol.%.h, \
+	$(wildcard lib/*.h tests/*.h targets/*.h *.h)))
 AUTOGEN_HEADERS = lib/Version.h lib/Protocol.*.h
 
 # Main program objects

@@ -1,15 +1,7 @@
+#include "Main.h"
 #include "Logger.h"
 #include "Utilities.h"
-#include "EventManager.h"
-#include "TimerManager.h"
-#include "SocketManager.h"
-#include "ControllerManager.h"
-#include "ProcessManager.h"
-#include "TcpSocket.h"
-#include "UdpSocket.h"
-#include "Timer.h"
 #include "Thread.h"
-#include "Messages.h"
 #include "Constants.h"
 
 #include <windows.h>
@@ -50,18 +42,8 @@ uint32_t *charaSelectModePtr = 0;
 uint64_t pollTimeout = 1;
 
 
-struct Main
-        : public ProcessManager::Owner
-        , public Socket::Owner
-        , public ControllerManager::Owner
-        , public Controller::Owner
-        , public Timer::Owner
+struct Main : public CommonMain
 {
-    ClientType::Enum clientType;
-    ProcessManager procMan;
-    SocketPtr serverSocket, ctrlSocket, dataSocket;
-    TimerPtr timer;
-
     // ProcessManager
 
     void ipcDisconnectEvent() override
@@ -151,13 +133,9 @@ struct Main
     {
     }
 
-    // State query methods
-
-    bool isHost() const { return ( clientType == ClientType::Host ); }
-
     // Constructor
 
-    Main() : clientType ( ClientType::Unknown ), procMan ( this )
+    Main()
     {
         // Initialization is not done here because of threading issues
 
