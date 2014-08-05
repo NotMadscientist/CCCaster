@@ -8,6 +8,10 @@
 using namespace std;
 using namespace cereal;
 
+// Useful options for debugging and testing
+// #define LOG_DECODE
+// #define FORCE_COMPRESSION
+
 
 /* Message binary structure:
 
@@ -114,22 +118,16 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
     istringstream ss ( data, stringstream::binary );
     BinaryInputArchive archive ( ss );
 
-    // Check MD5 at end of msg data
-    if ( data.size() < 16 || !checkMD5 ( &data[0], data.size() - 16, &data [ data.size() - 16 ] ) )
-    {
-#ifdef LOG_DECODE
-        LOG ( "MD5 checksum failed" );
-#endif
-        consumed = 0;
-        return NullMsg;
-    }
-
     try
     {
         // Construct the correct message type
         switch ( type )
         {
 #include "Protocol.decode.h"
+
+            default:
+                consumed = 0;
+                return NullMsg;
         }
 
         // Decode msg data
@@ -164,6 +162,14 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
 
         assert ( len >= remaining.size() );
         consumed = ( len - remaining.size() );
+    }
+
+    if ( !checkMD5 ( &data[0], data.size() - sizeof ( msg->md5 ), msg->md5 ) )
+    {
+#ifdef LOG_DECODE
+        LOG ( "MD5 checksum failed" );
+#endif
+        return NullMsg;
     }
 
     return msg;
@@ -264,6 +270,9 @@ ostream& operator<< ( ostream& os, MsgType type )
     switch ( type )
     {
 #include "Protocol.strings.h"
+
+        default:
+            break;
     }
 
     return ( os << "Unknown type!" );
@@ -278,6 +287,9 @@ ostream& operator<< ( ostream& os, BaseType type )
 
         case BaseType::SerializableSequence:
             return ( os << "SerializableSequence" );
+
+        default:
+            break;
     }
 
     return ( os << "Unknown type!" );

@@ -7,19 +7,20 @@
 using namespace std;
 
 
-#define PACKET_LOSS     50
+#define PACKET_LOSS     25
+#define CHECK_SUM_FAIL  25
 #define LONG_TIMEOUT    ( 120 * 1000 )
 
 
-TEST_CONNECT                ( UdpSocket, PACKET_LOSS, LONG_TIMEOUT, LONG_TIMEOUT )
+TEST_CONNECT                ( UdpSocket, PACKET_LOSS, CHECK_SUM_FAIL, LONG_TIMEOUT, LONG_TIMEOUT )
 
-TEST_TIMEOUT                ( UdpSocket, 0, 1000, 1000 )
+TEST_TIMEOUT                ( UdpSocket, 0, 0, 1000, 1000 )
 
-TEST_DISCONNECT_CLIENT      ( UdpSocket, 0, 1000, LONG_TIMEOUT )
+TEST_DISCONNECT_CLIENT      ( UdpSocket, 0, 0, 1000, LONG_TIMEOUT )
 
-TEST_DISCONNECT_ACCEPTED    ( UdpSocket, 0, 1000, LONG_TIMEOUT )
+TEST_DISCONNECT_ACCEPTED    ( UdpSocket, 0, 0, 1000, LONG_TIMEOUT )
 
-TEST_SEND                   ( UdpSocket, PACKET_LOSS, LONG_TIMEOUT, LONG_TIMEOUT )
+TEST_SEND                   ( UdpSocket, PACKET_LOSS, CHECK_SUM_FAIL, LONG_TIMEOUT, LONG_TIMEOUT )
 
 // This test doesn't make sense since there is only one UDP socket
 // TEST_SEND_WITHOUT_SERVER    ( UdpSocket, Udp, PACKET_LOSS, LONG_TIMEOUT, LONG_TIMEOUT )

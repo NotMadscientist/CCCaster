@@ -73,6 +73,9 @@ protected:
     // Packet loss percentage for testing purposes
     uint8_t packetLoss = 0;
 
+    // Check sum fail percentage for testing purposes
+    uint8_t checkSumFail = 0;
+
     // TCP event callbacks
     virtual void acceptEvent() {};
     virtual void connectEvent() {};
@@ -133,6 +136,9 @@ public:
 
     // Set the packet loss for testing purposes
     inline void setPacketLoss ( uint8_t percentage ) { packetLoss = percentage; }
+
+    // Set the check sum fail percentage for testing purposes
+    inline void setCheckSumFail ( uint8_t percentage ) { checkSumFail = percentage; }
 
     friend class SocketManager;
 };

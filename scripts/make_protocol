@@ -14,7 +14,9 @@ if [ $? -ne 0 ]; then
 
     grep --extended-regexp "^[a-z]+ [A-Za-z]+ : public Serializable[A-Z]" "$@" | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1: return ( os << "\1" );/' > $DIR/Protocol.strings.h
 
-    grep --extended-regexp "^[a-z]+ [A-Za-z]+ : public Serializable[A-Z]" "$@" | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/\1,/' > $DIR/Protocol.enum.h
+    echo 'FirstType = 0,' > $DIR/Protocol.enum.h
+    grep --extended-regexp "^[a-z]+ [A-Za-z]+ : public Serializable[A-Z]" "$@" | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/\1,/' >> $DIR/Protocol.enum.h
+    echo 'LastType' >> $DIR/Protocol.enum.h
 
     grep --extended-regexp "^[a-z]+ [A-Za-z]+ : public Serializable[A-Z]" "$@" | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1: msg.reset ( new \1() ); break;/' > $DIR/Protocol.decode.h
 fi

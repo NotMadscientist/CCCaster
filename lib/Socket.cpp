@@ -383,16 +383,18 @@ void Socket::readEvent()
         return;
     }
 
+#ifndef RELEASE
     // Simulated packet loss
     if ( rand() % 100 < packetLoss )
     {
         LOG ( "Discarding [ %u bytes ] from '%s'", bufferLen, address );
         return;
     }
+#endif
 
     // Increment the buffer position
     readPos += bufferLen;
-    LOG ( "Read [ %u bytes ] from '%s'; %u bytes in buffer", bufferLen, address, readPos );
+    LOG ( "Read [ %u bytes ] from '%s'; %u bytes remaining in buffer", bufferLen, address, readPos );
 
     // Handle zero byte packets
     if ( bufferLen == 0 )
@@ -404,19 +406,33 @@ void Socket::readEvent()
 
     LOG ( "Base64 : %s", toBase64 ( bufferEnd, min ( 256u, bufferLen ) ) );
 
+    if ( readPos >= sizeof ( MsgType ) && ! ::Protocol::checkMsgType ( * ( MsgType * ) &readBuffer[0] ) )
+    {
+        LOG ( "Clearing invalid buffer!" );
+        readBuffer.clear();
+        readPos = 0;
+        return;
+    }
+
     // Try to decode as many messages from the buffer as possible
     for ( ;; )
     {
-        size_t consumed = 0;
+        size_t consumed;
         MsgPtr msg = ::Protocol::decode ( &readBuffer[0], readPos, consumed );
+
+        if ( consumed )
+        {
+            // Erase the consumed bytes (shifting the array)
+            assert ( consumed <= readPos );
+            readBuffer.erase ( 0, consumed );
+            readPos -= consumed;
+        }
 
         // Abort if a message could not be decoded
         if ( !msg.get() )
             return;
 
-        assert ( consumed <= readPos );
-
-        LOG ( "Decoded [ %u bytes ] to '%s'; %u bytes in buffer", consumed, msg, readPos - consumed );
+        LOG ( "Decoded [ %u bytes ] to '%s'; %u bytes remaining in buffer", consumed, msg, readPos );
         readEvent ( msg, address );
 
         // Abort if the socket is de-allocated
@@ -426,10 +442,6 @@ void Socket::readEvent()
         // Abort if socket is disconnected
         if ( isDisconnected() )
             return;
-
-        // Erase the consumed bytes (shifting the array)
-        readBuffer.erase ( 0, consumed );
-        readPos -= consumed;
     }
 }
 

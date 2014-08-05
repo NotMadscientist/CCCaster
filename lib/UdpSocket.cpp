@@ -172,6 +172,17 @@ bool UdpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
 
 bool UdpSocket::sendRaw ( const MsgPtr& msg, const IpAddrPort& address )
 {
+#ifndef RELEASE
+    // Simulate failed checksum
+    if ( rand() % 100 < checkSumFail && msg )
+    {
+        LOG ( "Munging checksum for '%s'", msg );
+        for ( char& byte : msg->md5 )
+            byte = ( rand() % 0x100 );
+        msg->md5empty = false;
+    }
+#endif
+
     string buffer = ::Protocol::encode ( msg );
 
     LOG ( "Encoded '%s' to [ %u bytes ]", msg, buffer.size() );

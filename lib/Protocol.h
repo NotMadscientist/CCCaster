@@ -55,12 +55,20 @@ std::ostream& operator<< ( std::ostream& os, BaseType type );
 std::ostream& operator<< ( std::ostream& os, const MsgPtr& msg );
 
 
-// Encode and decode messages
 struct Protocol
 {
+    // Encode a message to a series of bytes
     static std::string encode ( Serializable *message );
     static std::string encode ( const MsgPtr& msg );
+
+    // Decode a series of bytes into a message, consumed indicates the number of bytes read.
+    // This returns null if the message failed to decode, NOTE consumed will still be updated.
     static MsgPtr decode ( const char *bytes, size_t len, size_t& consumed );
+
+    inline static bool checkMsgType ( MsgType msgType )
+    {
+        return ( msgType > MsgType::FirstType && msgType < MsgType::LastType );
+    }
 };
 
 // Abstract base class for all serializable messages
@@ -104,6 +112,11 @@ private:
     friend struct Protocol;
     friend struct SerializableMessage;
     friend struct SerializableSequence;
+
+#ifndef RELEASE
+    // Allow UdpSocket access to munge the checksum for testing purposes
+    friend class UdpSocket;
+#endif
 };
 
 

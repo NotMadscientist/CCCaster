@@ -49,7 +49,7 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
 };
 
 
-#define TEST_CONNECT(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                                  \
+#define TEST_CONNECT(T, LOSS, FAIL, KEEP_ALIVE, TIMEOUT)                                                            \
     TEST ( T, Connect ) {                                                                                           \
         static int done = 0;                                                                                        \
         done = 0;                                                                                                   \
@@ -73,9 +73,10 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
                 LOG ( "Stopping because of timeout" );                                                              \
                 EventManager::get().stop();                                                                         \
             }                                                                                                       \
-            TestSocket ( uint16_t port ) : BaseTestSocket ( port ) { socket->setPacketLoss ( LOSS ); }              \
+            TestSocket ( uint16_t port ) : BaseTestSocket ( port )                                                  \
+            { socket->setPacketLoss ( LOSS ); socket->setCheckSumFail ( FAIL ); }                                   \
             TestSocket ( const string& address, uint16_t port ) : BaseTestSocket ( address, port )                  \
-            { socket->setPacketLoss ( LOSS ); }                                                                     \
+            { socket->setPacketLoss ( LOSS ); socket->setCheckSumFail ( FAIL ); }                                   \
         };                                                                                                          \
         TimerManager::get().initialize();                                                                           \
         SocketManager::get().initialize();                                                                          \
@@ -96,12 +97,12 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         TimerManager::get().deinitialize();                                                                         \
     }
 
-#define TEST_TIMEOUT(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                                  \
+#define TEST_TIMEOUT(T, LOSS, FAIL, KEEP_ALIVE, TIMEOUT)                                                            \
     TEST ( T, Timeout ) {                                                                                           \
         struct TestSocket : public BaseTestSocket<T, KEEP_ALIVE, TIMEOUT> {                                         \
             void timerExpired ( Timer *timer ) override { EventManager::get().stop(); }                             \
             TestSocket ( const string& address, uint16_t port ) : BaseTestSocket ( address, port )                  \
-            { socket->setPacketLoss ( LOSS ); }                                                                     \
+            { socket->setPacketLoss ( LOSS ); socket->setCheckSumFail ( FAIL ); }                                   \
         };                                                                                                          \
         TimerManager::get().initialize();                                                                           \
         SocketManager::get().initialize();                                                                          \
@@ -114,7 +115,7 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         TimerManager::get().deinitialize();                                                                         \
     }
 
-#define TEST_DISCONNECT_CLIENT(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                        \
+#define TEST_DISCONNECT_CLIENT(T, LOSS, FAIL, KEEP_ALIVE, TIMEOUT)                                                  \
     TEST ( T, DisconnectClient ) {                                                                                  \
         static int done = 0;                                                                                        \
         done = 0;                                                                                                   \
@@ -132,9 +133,10 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
                 LOG ( "Stopping because of timeout" );                                                              \
                 EventManager::get().stop();                                                                         \
             }                                                                                                       \
-            TestSocket ( uint16_t port ) : BaseTestSocket ( port ) { socket->setPacketLoss ( LOSS ); }              \
+            TestSocket ( uint16_t port ) : BaseTestSocket ( port )                                                  \
+            { socket->setPacketLoss ( LOSS ); socket->setCheckSumFail ( FAIL ); }                                   \
             TestSocket ( const string& address, uint16_t port ) : BaseTestSocket ( address, port )                  \
-            { socket->setPacketLoss ( LOSS ); }                                                                     \
+            { socket->setPacketLoss ( LOSS ); socket->setCheckSumFail ( FAIL ); }                                   \
         };                                                                                                          \
         TimerManager::get().initialize();                                                                           \
         SocketManager::get().initialize();                                                                          \
@@ -155,7 +157,7 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         TimerManager::get().deinitialize();                                                                         \
     }
 
-#define TEST_DISCONNECT_ACCEPTED(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                      \
+#define TEST_DISCONNECT_ACCEPTED(T, LOSS, FAIL, KEEP_ALIVE, TIMEOUT)                                                \
     TEST ( T, DisconnectAccepted ) {                                                                                \
         static int done = 0;                                                                                        \
         done = 0;                                                                                                   \
@@ -176,9 +178,10 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
                 LOG ( "Stopping because of timeout" );                                                              \
                 EventManager::get().stop();                                                                         \
             }                                                                                                       \
-            TestSocket ( uint16_t port ) : BaseTestSocket ( port ) { socket->setPacketLoss ( LOSS ); }              \
+            TestSocket ( uint16_t port ) : BaseTestSocket ( port )                                                  \
+            { socket->setPacketLoss ( LOSS ); socket->setCheckSumFail ( FAIL ); }                                   \
             TestSocket ( const string& address, uint16_t port ) : BaseTestSocket ( address, port )                  \
-            { socket->setPacketLoss ( LOSS ); }                                                                     \
+            { socket->setPacketLoss ( LOSS ); socket->setCheckSumFail ( FAIL ); }                                   \
         };                                                                                                          \
         TimerManager::get().initialize();                                                                           \
         SocketManager::get().initialize();                                                                          \
@@ -199,7 +202,7 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         TimerManager::get().deinitialize();                                                                         \
     }
 
-#define TEST_SEND(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                                     \
+#define TEST_SEND(T, LOSS, FAIL, KEEP_ALIVE, TIMEOUT)                                                               \
     TEST ( T, Send ) {                                                                                              \
         static int done = 0;                                                                                        \
         done = 0;                                                                                                   \
@@ -224,9 +227,10 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
                 LOG ( "Stopping because of timeout" );                                                              \
                 EventManager::get().stop();                                                                         \
             }                                                                                                       \
-            TestSocket ( uint16_t port ) : BaseTestSocket ( port ) { socket->setPacketLoss ( LOSS ); }              \
+            TestSocket ( uint16_t port ) : BaseTestSocket ( port )                                                  \
+            { socket->setPacketLoss ( LOSS ); socket->setCheckSumFail ( FAIL ); }                                   \
             TestSocket ( const string& address, uint16_t port ) : BaseTestSocket ( address, port )                  \
-            { socket->setPacketLoss ( LOSS ); }                                                                     \
+            { socket->setPacketLoss ( LOSS ); socket->setCheckSumFail ( FAIL ); }                                   \
         };                                                                                                          \
         TimerManager::get().initialize();                                                                           \
         SocketManager::get().initialize();                                                                          \
@@ -257,7 +261,7 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         TimerManager::get().deinitialize();                                                                         \
     }
 
-#define TEST_SEND_WITHOUT_SERVER(T, LOSS, KEEP_ALIVE, TIMEOUT)                                                      \
+#define TEST_SEND_WITHOUT_SERVER(T, LOSS, FAIL, KEEP_ALIVE, TIMEOUT)                                                \
     TEST ( T, SendWithoutServer ) {                                                                                 \
         static int done = 0;                                                                                        \
         done = 0;                                                                                                   \
@@ -283,9 +287,10 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
                 LOG ( "Stopping because of timeout" );                                                              \
                 EventManager::get().stop();                                                                         \
             }                                                                                                       \
-            TestSocket ( uint16_t port ) : BaseTestSocket ( port ) { socket->setPacketLoss ( LOSS ); }              \
+            TestSocket ( uint16_t port ) : BaseTestSocket ( port )                                                  \
+            { socket->setPacketLoss ( LOSS ); socket->setCheckSumFail ( FAIL ); }                                   \
             TestSocket ( const string& address, uint16_t port ) : BaseTestSocket ( address, port )                  \
-            { socket->setPacketLoss ( LOSS ); }                                                                     \
+            { socket->setPacketLoss ( LOSS ); socket->setCheckSumFail ( FAIL ); }                                   \
         };                                                                                                          \
         TimerManager::get().initialize();                                                                           \
         SocketManager::get().initialize();                                                                          \
