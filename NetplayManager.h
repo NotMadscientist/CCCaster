@@ -20,4 +20,6 @@ public:
     void setInputs ( uint8_t player, const PlayerInputs& playerInputs );
 
     uint16_t getDelayedInput ( uint8_t player, uint32_t frame, uint16_t index );
+
+    uint32_t getEndFrame ( uint8_t player );
 };

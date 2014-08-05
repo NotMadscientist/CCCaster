@@ -28,6 +28,7 @@ struct PlayerInputs : public SerializableMessage
 
     inline uint32_t getStartFrame() const { return ( frame + 1 < NUM_INPUTS ) ? 0 : frame + 1 - NUM_INPUTS; }
     inline uint32_t getEndFrame() const { return frame + 1; }
+    inline size_t size() const { return getEndFrame() - getStartFrame(); }
 
     inline PlayerInputs() {}
     inline PlayerInputs ( uint32_t frame, uint16_t index ) : frame ( frame ), index ( index ) {}

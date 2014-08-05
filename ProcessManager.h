@@ -4,6 +4,11 @@
 #include "Timer.h"
 
 
+#define COMBINE_INPUT(DIRECTION, BUTTONS)   ( ( DIRECTION ) | ( ( BUTTONS ) << 4 ) )
+
+#define INLINE_INPUT(INPUT)                 ( ( INPUT ) & 0x000F ), ( ( ( INPUT ) & 0xFFF0 ) >> 4 )
+
+
 struct IpcConnected : public SerializableMessage
 {
     EMPTY_MESSAGE_BOILERPLATE ( IpcConnected )
@@ -89,6 +94,6 @@ public:
 
     inline void writeGameInput ( uint8_t player, uint16_t input )
     {
-        writeGameInput ( player, input & 0x000F, input & 0xFFF0 );
+        writeGameInput ( player, INLINE_INPUT ( input ) );
     }
 };

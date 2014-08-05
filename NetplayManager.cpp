@@ -64,7 +64,7 @@ void NetplayManager::setInputs ( uint8_t player, const PlayerInputs& playerInput
     assert ( playerInputs.getStartFrame() < inputs[player - 1].size() );
     assert ( playerInputs.getEndFrame() <= inputs[player - 1].size() );
 
-    copy ( playerInputs.inputs.begin(), playerInputs.inputs.end(),
+    copy ( playerInputs.inputs.begin(), playerInputs.inputs.begin() + playerInputs.size(),
            inputs[player - 1].begin() + playerInputs.getStartFrame() );
 }
 
@@ -79,4 +79,11 @@ uint16_t NetplayManager::getDelayedInput ( uint8_t player, uint32_t frame, uint1
         return 0;
 
     return inputs[player - 1][frame - delay];
+}
+
+uint32_t NetplayManager::getEndFrame ( uint8_t player )
+{
+    assert ( player == 1 || player == 2 );
+
+    return inputs[player - 1].size();
 }

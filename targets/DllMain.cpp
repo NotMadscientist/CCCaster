@@ -152,6 +152,7 @@ struct Main : public CommonMain
         if ( serverSocket == serverDataSocket.get() )
         {
             dataSocket = serverDataSocket->accept ( this );
+            // TODO keep alive with input sending
             static_cast<UdpSocket *> ( dataSocket.get() )->setKeepAlive ( 0 );
             static_cast<UdpSocket *> ( dataSocket.get() )->resetGbnState();
             return;
@@ -166,6 +167,7 @@ struct Main : public CommonMain
     {
         if ( socket == dataSocket.get() )
         {
+            // TODO keep alive with input sending
             static_cast<UdpSocket *> ( dataSocket.get() )->setKeepAlive ( 0 );
             static_cast<UdpSocket *> ( dataSocket.get() )->resetGbnState();
             return;
@@ -184,9 +186,9 @@ struct Main : public CommonMain
 
         switch ( msg->getMsgType() )
         {
-            // case MsgType::PlayerInputs:
-            //     netMan.setInputs ( remotePlayer, msg->getAs<PlayerInputs>() );
-            //     break;
+            case MsgType::PlayerInputs:
+                netMan.setInputs ( remotePlayer, msg->getAs<PlayerInputs>() );
+                break;
 
             default:
                 LOG ( "Unexpected '%s'", msg );
@@ -245,22 +247,33 @@ struct Main : public CommonMain
             if ( GetKeyState ( 'A' ) & 0x80 )       buttons = CC_BUTTON_E;
             if ( GetKeyState ( 'D' ) & 0x80 )       buttons = CC_BUTTON_FN2;
             if ( GetKeyState ( 'G' ) & 0x80 )       buttons = CC_BUTTON_FN1;
+            if ( GetKeyState ( VK_F5 ) & 0x80 )     buttons = CC_BUTTON_START;
 
-            input = ( direction | buttons );
+            input = COMBINE_INPUT ( direction, buttons );
         }
 
         netMan.setInput ( localPlayer, frame, index, input );
 
-        if ( dataSocket && && dataSocket.setKeepAlive() == 0 && dataSocket->isConnected() )
+        // TODO use a proper state variable instead of these conditions
+        bool checkInputs = ( dataSocket
+                && ( static_cast<UdpSocket *> ( dataSocket.get() )->getKeepAlive() == 0 )
+                && dataSocket->isConnected() );
+
+        if ( checkInputs )
             dataSocket->send ( netMan.getInputs ( localPlayer, frame, index ) );
 
-        // TODO loop to wait for more inputs if necessary
-
-        if ( !EventManager::get().poll ( pollTimeout ) )
+        do
         {
-            state = STOPPING;
-            return;
+            if ( !EventManager::get().poll ( pollTimeout ) )
+            {
+                state = STOPPING;
+                return;
+            }
+
+            if ( !checkInputs )
+                break;
         }
+        while ( netMan.getEndFrame ( remotePlayer ) + netMan.delay < frame + 1 );
 
         procMan.writeGameInput ( localPlayer, netMan.getDelayedInput ( localPlayer, frame, index ) );
         procMan.writeGameInput ( remotePlayer, netMan.getDelayedInput ( remotePlayer, frame, index ) );
@@ -274,7 +287,7 @@ struct Main : public CommonMain
 
         procMan.connectPipe();
 
-        netMan.delay = 2;
+        netMan.delay = 4;
     }
 
     // Destructor
