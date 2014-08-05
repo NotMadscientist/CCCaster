@@ -32,6 +32,7 @@ struct CommonMain
 
     TimerPtr timer;
 
+
     inline CommonMain() : procMan ( this ) {}
 
     inline CommonMain ( const IpAddrPort& address )

@@ -32,29 +32,30 @@
 #define REF_PTR(VALUE) MsgPtr ( &VALUE, ignoreMsgPtr )
 
 
-// Increase size as needed
+// Top level message type, auto-generated
 enum class MsgType : uint8_t
 {
 #include "Protocol.enum.h"
 };
 
-// Common declarations
-enum class BaseType : uint8_t { SerializableMessage, SerializableSequence };
+// Base message type
+ENUM ( BaseType, SerializableMessage, SerializableSequence );
 
+// Common declarations
 struct Serializable;
 typedef std::shared_ptr<Serializable> MsgPtr;
-
-inline void ignoreMsgPtr ( Serializable * ) {}
-
-const MsgPtr NullMsg;
-
-
-// Stream operators
 std::ostream& operator<< ( std::ostream& os, MsgType type );
-std::ostream& operator<< ( std::ostream& os, BaseType type );
 std::ostream& operator<< ( std::ostream& os, const MsgPtr& msg );
 
 
+// Function that does nothing to a message pointer
+inline void ignoreMsgPtr ( Serializable * ) {}
+
+// Null message pointer
+const MsgPtr NullMsg;
+
+
+// Contains protocol methods
 struct Protocol
 {
     // Encode a message to a series of bytes
@@ -71,6 +72,7 @@ struct Protocol
     }
 };
 
+
 // Abstract base class for all serializable messages
 struct Serializable
 {
@@ -80,7 +82,7 @@ struct Serializable
 
     // Get message and base types
     virtual MsgType getMsgType() const = 0;
-    virtual BaseType getBaseType() const = 0;
+    virtual const BaseType& getBaseType() const = 0;
 
     // Serialize to and deserialize from a binary archive
     inline virtual void save ( cereal::BinaryOutputArchive& ar ) const {};
@@ -123,7 +125,11 @@ private:
 // Represents a regular message
 struct SerializableMessage : public Serializable
 {
-    inline BaseType getBaseType() const override { return BaseType::SerializableMessage; }
+    inline const BaseType& getBaseType() const override
+    {
+        static const BaseType baseType = BaseType::SerializableMessage;
+        return baseType;
+    }
 };
 
 
@@ -134,7 +140,11 @@ struct SerializableSequence : public Serializable
     inline SerializableSequence() {}
     inline SerializableSequence ( uint32_t sequence ) : sequence ( sequence ) {}
 
-    inline BaseType getBaseType() const override { return BaseType::SerializableSequence; }
+    inline const BaseType& getBaseType() const override
+    {
+        static const BaseType baseType = BaseType::SerializableSequence;
+        return baseType;
+    }
 
     // Get and set the message sequence
     inline uint32_t getSequence() const { return sequence; }

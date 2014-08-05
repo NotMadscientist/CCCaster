@@ -24,7 +24,7 @@ void deinitializeHacks();
 static void deinitialize();
 
 // Main application state
-static enum State { UNINITIALIZED, POLLING, STOPPING, DEINITIALIZED } state = UNINITIALIZED;
+static ENUM ( State, Uninitialized, Polling, Stopping, Deinitialized ) state = State::Uninitialized;
 
 // Main application instance
 struct Main;
@@ -62,6 +62,7 @@ struct Main : public CommonMain
 
     // The current transition index
     uint16_t index = 0;
+
 
     // ProcessManager
 
@@ -206,7 +207,7 @@ struct Main : public CommonMain
 
     void callback()
     {
-        if ( state != POLLING )
+        if ( state != State::Polling )
             return;
 
         // Don't poll for events until a frame step happens
@@ -266,7 +267,7 @@ struct Main : public CommonMain
         {
             if ( !EventManager::get().poll ( pollTimeout ) )
             {
-                state = STOPPING;
+                state = State::Stopping;
                 return;
             }
 
@@ -302,12 +303,12 @@ struct Main : public CommonMain
 
 extern "C" void callback()
 {
-    if ( state == DEINITIALIZED )
+    if ( state == State::Deinitialized )
         return;
 
     try
     {
-        if ( state == UNINITIALIZED )
+        if ( state == State::Uninitialized )
         {
             initializePostHacks();
 
@@ -316,7 +317,7 @@ extern "C" void callback()
             ControllerManager::get().initialize ( main.get() );
 
             EventManager::get().startPolling();
-            state = POLLING;
+            state = State::Polling;
         }
 
         assert ( main.get() != 0 );
@@ -326,20 +327,20 @@ extern "C" void callback()
     catch ( const WindowsException& err )
     {
         LOG ( "Stopping due to WindowsException: %s", err );
-        state = STOPPING;
+        state = State::Stopping;
     }
     catch ( const Exception& err )
     {
         LOG ( "Stopping due to Exception: %s", err );
-        state = STOPPING;
+        state = State::Stopping;
     }
     catch ( ... )
     {
         LOG ( "Stopping due to unknown exception!" );
-        state = STOPPING;
+        state = State::Stopping;
     }
 
-    if ( state == STOPPING )
+    if ( state == State::Stopping )
     {
         LOG ( "Exiting" );
 
@@ -397,7 +398,7 @@ static void deinitialize()
 {
     LOCK ( deinitMutex );
 
-    if ( state == DEINITIALIZED )
+    if ( state == State::Deinitialized )
         return;
 
     main.reset();
@@ -410,5 +411,5 @@ static void deinitialize()
 
     deinitializeHacks();
 
-    state = DEINITIALIZED;
+    state = State::Deinitialized;
 }

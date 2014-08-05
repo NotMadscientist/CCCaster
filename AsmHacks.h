@@ -29,7 +29,7 @@ extern "C" void callback();
 extern uint32_t currentMenuIndex;
 
 // Pointer to the value of the character select mode (character, moon, colour, etc...)
-enum CharacterSelectMode { ModeCharacter = 0, ModeMoon = 1, ModeColour = 2 };
+ENUM ( CharacterSelectMode, ModeCharacter = 0, ModeMoon = 1, ModeColour = 2 );
 extern uint32_t *charaSelectModePtr;
 
 

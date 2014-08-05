@@ -212,32 +212,6 @@ void Socket::init()
     }
 }
 
-MsgPtr Socket::share ( int processId )
-{
-    shared_ptr<WSAPROTOCOL_INFO> info ( new WSAPROTOCOL_INFO() );
-
-    if ( WSADuplicateSocket ( fd, processId, info.get() ) )
-    {
-        LOG_SOCKET ( this, "%s; WSADuplicateSocket failed", WindowsException ( WSAGetLastError() ) );
-        return 0;
-    }
-
-    // Workaround for Wine, because apparently these aren't set
-    if ( isTCP() )
-    {
-        info->iSocketType = SOCK_STREAM;
-        info->iProtocol = IPPROTO_TCP;
-    }
-    else
-    {
-        info->iSocketType = SOCK_DGRAM;
-        info->iProtocol = IPPROTO_UDP;
-    }
-
-    SocketManager::get().remove ( this );
-    return MsgPtr ( new SocketShareData ( address, protocol, state, readBuffer, readPos, info ) );
-}
-
 bool Socket::send ( const char *buffer, size_t len )
 {
     if ( fd == 0 || isDisconnected() )
@@ -445,38 +419,30 @@ void Socket::readEvent()
     }
 }
 
-ostream& operator<< ( ostream& os, Socket::Protocol protocol )
+MsgPtr Socket::share ( int processId )
 {
-    switch ( protocol )
-    {
-        case Socket::Protocol::TCP:
-            return ( os << "TCP" );
+    shared_ptr<WSAPROTOCOL_INFO> info ( new WSAPROTOCOL_INFO() );
 
-        case Socket::Protocol::UDP:
-            return ( os << "UDP" );
+    if ( WSADuplicateSocket ( fd, processId, info.get() ) )
+    {
+        LOG_SOCKET ( this, "%s; WSADuplicateSocket failed", WindowsException ( WSAGetLastError() ) );
+        return 0;
     }
 
-    return ( os << "Unknown socket protocol!" );
-}
-
-ostream& operator<< ( ostream& os, Socket::State state )
-{
-    switch ( state )
+    // Workaround for Wine, because apparently these aren't set
+    if ( isTCP() )
     {
-        case Socket::State::Listening:
-            return ( os << "Listening" );
-
-        case Socket::State::Connecting:
-            return ( os << "Connecting" );
-
-        case Socket::State::Connected:
-            return ( os << "Connected" );
-
-        case Socket::State::Disconnected:
-            return ( os << "Disconnected" );
+        info->iSocketType = SOCK_STREAM;
+        info->iProtocol = IPPROTO_TCP;
+    }
+    else
+    {
+        info->iSocketType = SOCK_DGRAM;
+        info->iProtocol = IPPROTO_UDP;
     }
 
-    return ( os << "Unknown socket state!" );
+    SocketManager::get().remove ( this );
+    return MsgPtr ( new SocketShareData ( address, protocol, state, readBuffer, readPos, info ) );
 }
 
 void SocketShareData::save ( cereal::BinaryOutputArchive& ar ) const

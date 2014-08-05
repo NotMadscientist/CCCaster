@@ -42,10 +42,10 @@ public:
     };
 
     // Socket protocol
-    enum class Protocol : uint8_t { TCP, UDP };
+    ENUM ( Protocol, TCP, UDP );
 
     // Connection state
-    enum class State : uint8_t { Listening, Connecting, Connected, Disconnected };
+    ENUM ( State, Listening, Connecting, Connected, Disconnected );
 
     // Socket address
     // For server sockets, only the port should be set to the locally bound port
@@ -126,7 +126,7 @@ public:
     // Accept a new socket
     virtual SocketPtr accept ( Owner *owner ) = 0;
 
-    // Get data needed to share this socket in another process
+    // Get the data needed to share this socket with another process
     virtual MsgPtr share ( int processId );
 
     // Send a protocol message, returning false indicates the socket is disconnected
@@ -151,16 +151,17 @@ struct SocketShareData : public SerializableMessage
     Socket::Protocol protocol;
     Socket::State state;
     std::string readBuffer;
-    size_t readPos;
+    size_t readPos = 0;
     std::shared_ptr<WSAPROTOCOL_INFO> info;
 
-    SocketShareData() : readPos ( 0 ) {}
-    SocketShareData ( const IpAddrPort& address,
-                      Socket::Protocol protocol,
-                      Socket::State state,
-                      const std::string& readBuffer,
-                      size_t readPos,
-                      const std::shared_ptr<WSAPROTOCOL_INFO>& info )
+    inline SocketShareData() {}
+
+    inline SocketShareData ( const IpAddrPort& address,
+                             Socket::Protocol protocol,
+                             Socket::State state,
+                             const std::string& readBuffer,
+                             size_t readPos,
+                             const std::shared_ptr<WSAPROTOCOL_INFO>& info )
         : address ( address ), protocol ( protocol ), state ( state )
         , readBuffer ( readBuffer ), readPos ( readPos ), info ( info ) {}
 
@@ -171,8 +172,3 @@ struct SocketShareData : public SerializableMessage
     void save ( cereal::BinaryOutputArchive& ar ) const override;
     void load ( cereal::BinaryInputArchive& ar ) override;
 };
-
-
-// Stream operators
-std::ostream& operator<< ( std::ostream& os, Socket::Protocol protocol );
-std::ostream& operator<< ( std::ostream& os, Socket::State state );

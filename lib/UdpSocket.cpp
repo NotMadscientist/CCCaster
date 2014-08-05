@@ -155,7 +155,7 @@ bool UdpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
     if ( getKeepAlive() == 0 || !msg.get() )
         return sendRaw ( msg, address );
 
-    switch ( msg->getBaseType() )
+    switch ( msg->getBaseType().value )
     {
         case BaseType::SerializableMessage:
             return sendRaw ( msg, address );

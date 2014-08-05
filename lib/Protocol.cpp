@@ -47,7 +47,7 @@ Serializable::Serializable() : compressionLevel ( 9 ) {}
 string encodeStageTwo ( const MsgPtr& msg, const string& msgData );
 
 // Result of the decode
-enum DecodeResult { Failed = 0, NotCompressed, Compressed };
+ENUM ( DecodeResult, Failed, NotCompressed, Compressed );
 
 // Decode with compression. Must manually update the value of consumed if the data was not compressed.
 DecodeResult decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, MsgType& type, string& msgData );
@@ -99,20 +99,21 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
 
     MsgType type;
     string data;
-    DecodeResult result;
 
     // Decompress
-    if ( ! ( result = decodeStageTwo ( bytes, len, consumed, type, data ) ) )
-    {
+    DecodeResult result = decodeStageTwo ( bytes, len, consumed, type, data );
+
 #ifdef LOG_DECODE
-        LOG ( "decodeStageTwo: result=Failed" );
+    LOG ( "decodeStageTwo: result=%s", result );
 #endif
+
+    if ( result == DecodeResult::Failed )
+    {
         consumed = 0;
         return NullMsg;
     }
 
 #ifdef LOG_DECODE
-    LOG ( "decodeStageTwo: result=%s", ( result == Compressed ) ? "Compressed" : "NotCompressed" );
     if ( data.size() <= 256 )
         LOG ( "decodeStageTwo: data=[ %s ]", toBase64 ( data ) );
 #endif
@@ -155,7 +156,7 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
     }
 
     // decodeStageTwo does not update the value of consumed if the data was not compressed
-    if ( result == NotCompressed )
+    if ( result == DecodeResult::NotCompressed )
     {
         // Check for unread bytes
         size_t remaining = ss.rdbuf()->in_avail();
@@ -233,7 +234,7 @@ DecodeResult decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, M
     catch ( ... )
     {
         consumed = 0;
-        return Failed;
+        return DecodeResult::Failed;
     }
 
     // Get remaining bytes
@@ -249,19 +250,19 @@ DecodeResult decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, M
         if ( size != uncompressedSize )
         {
             consumed = 0;
-            return Failed;
+            return DecodeResult::Failed;
         }
 
         // Update consumed bytes
         consumed = len - remaining;
         msgData = buffer;
-        return Compressed;
+        return DecodeResult::Compressed;
     }
 
     // Get remaining bytes
     msgData.resize ( remaining );
     ss.rdbuf()->sgetn ( &msgData[0], remaining );
-    return NotCompressed;
+    return DecodeResult::NotCompressed;
 }
 
 ostream& operator<< ( ostream& os, MsgType type )
@@ -269,23 +270,6 @@ ostream& operator<< ( ostream& os, MsgType type )
     switch ( type )
     {
 #include "Protocol.strings.h"
-
-        default:
-            break;
-    }
-
-    return ( os << "Unknown type!" );
-}
-
-ostream& operator<< ( ostream& os, BaseType type )
-{
-    switch ( type )
-    {
-        case BaseType::SerializableMessage:
-            return ( os << "SerializableMessage" );
-
-        case BaseType::SerializableSequence:
-            return ( os << "SerializableSequence" );
 
         default:
             break;
