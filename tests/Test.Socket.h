@@ -4,6 +4,7 @@
 #include "EventManager.h"
 #include "SocketManager.h"
 #include "Socket.h"
+#include "UdpSocket.h"
 #include "TimerManager.h"
 #include "Timer.h"
 #include "Protocol.h"
@@ -39,12 +40,16 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         : socket ( T::listen ( this, port ) ), timer ( this )
     {
         timer.start ( timeout );
+        if ( keepAlive )
+            ( ( UdpSocket * ) socket.get() )->setKeepAlive ( keepAlive );
     }
 
     BaseTestSocket ( const string& address, uint16_t port )
         : socket ( T::connect ( this, IpAddrPort ( address, port ) ) ), timer ( this )
     {
         timer.start ( timeout );
+        if ( keepAlive )
+            ( ( UdpSocket * ) socket.get() )->setKeepAlive ( keepAlive );
     }
 };
 
