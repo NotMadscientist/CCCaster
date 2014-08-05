@@ -113,6 +113,8 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
 
 #ifdef LOG_DECODE
     LOG ( "decodeStageTwo: result=%s", ( result == Compressed ) ? "Compressed" : "NotCompressed" );
+    if ( data.size() <= 256 )
+        LOG ( "decodeStageTwo: data=[ %s ]", toBase64 ( data ) );
 #endif
 
     istringstream ss ( data, stringstream::binary );
@@ -138,11 +140,10 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
         archive ( msg->md5 );
         msg->md5empty = false;
     }
-    catch ( ... )
+    catch ( const cereal::Exception& err )
     {
 #ifdef LOG_DECODE
-        // TODO log the exception
-        LOG ( "invalid binary format for type=%s", type );
+        LOG ( "type=%s; cereal::Exception: '%s'", type, err.what() );
 #endif
         msg.reset();
     }
@@ -157,11 +158,9 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
     if ( result == NotCompressed )
     {
         // Check for unread bytes
-        string remaining;
-        getline ( ss, remaining );
-
-        assert ( len >= remaining.size() );
-        consumed = ( len - remaining.size() );
+        size_t remaining = ss.rdbuf()->in_avail();
+        assert ( len >= remaining );
+        consumed = ( len - remaining );
     }
 
     if ( !checkMD5 ( &data[0], data.size() - sizeof ( msg->md5 ), msg->md5 ) )
@@ -238,8 +237,8 @@ DecodeResult decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, M
     }
 
     // Get remaining bytes
-    string remaining;
-    getline ( ss, remaining );
+    size_t remaining = ss.rdbuf()->in_avail();
+    assert ( len >= remaining );
 
     // Decompress msg data if needed
     if ( compressionLevel )
@@ -253,15 +252,15 @@ DecodeResult decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, M
             return Failed;
         }
 
-        // Check for unread bytes
-        assert ( len >= remaining.size() );
-        consumed = len - remaining.size();
-
+        // Update consumed bytes
+        consumed = len - remaining;
         msgData = buffer;
         return Compressed;
     }
 
-    msgData = remaining;
+    // Get remaining bytes
+    msgData.resize ( remaining );
+    ss.rdbuf()->sgetn ( &msgData[0], remaining );
     return NotCompressed;
 }
 

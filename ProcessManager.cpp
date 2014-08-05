@@ -24,6 +24,10 @@ void ProcessManager::writeGameInput ( uint8_t player, uint16_t direction, uint16
 {
     // LOG ( "player=%d; direction=%d; buttons=%04x", player, direction, buttons );
 
+    assert ( direction >= 0 );
+    assert ( direction <= 9 );
+    assert ( direction != 5 );
+
     char *const baseAddr = * ( char ** ) CC_PTR_TO_WRITE_INPUT_ADDR;
 
     switch ( player )

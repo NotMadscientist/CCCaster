@@ -55,8 +55,8 @@ void NetplayManager::setInputs ( uint8_t player, const PlayerInputs& playerInput
 {
     assert ( player == 1 || player == 2 );
 
-    if ( playerInputs.frame >= inputs[player - 1].size() )
-        inputs[player - 1].resize ( playerInputs.frame + 1, 0 );
+    if ( playerInputs.getEndFrame() > inputs[player - 1].size() )
+        inputs[player - 1].resize ( playerInputs.getEndFrame(), 0 );
 
     assert ( playerInputs.getEndFrame() > playerInputs.getStartFrame() );
     assert ( playerInputs.getEndFrame() - playerInputs.getStartFrame() <= NUM_INPUTS );

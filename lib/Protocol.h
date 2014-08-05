@@ -65,9 +65,9 @@ struct Protocol
     // This returns null if the message failed to decode, NOTE consumed will still be updated.
     static MsgPtr decode ( const char *bytes, size_t len, size_t& consumed );
 
-    inline static bool checkMsgType ( MsgType msgType )
+    inline static bool checkMsgType ( MsgType type )
     {
-        return ( msgType > MsgType::FirstType && msgType < MsgType::LastType );
+        return ( type > MsgType::FirstType && type < MsgType::LastType );
     }
 };
 
