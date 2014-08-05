@@ -1,6 +1,7 @@
 #include "Protocol.h"
 #include "Protocol.types.h"
 #include "Utilities.h"
+#include "Logger.h"
 
 #include <cassert>
 
@@ -34,6 +35,10 @@ Not compressed:
 */
 
 
+// Basic constructor with default compression level
+Serializable::Serializable() : compressionLevel ( 9 ) {}
+
+
 // Encode with compression
 string encodeStageTwo ( const MsgPtr& msg, const string& msgData );
 
@@ -43,11 +48,7 @@ enum DecodeResult { Failed = 0, NotCompressed, Compressed };
 // Decode with compression. Must manually update the value of consumed if the data was not compressed.
 DecodeResult decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, MsgType& type, string& msgData );
 
-
-// Basic constructor with default compression level
-Serializable::Serializable() : compressionLevel ( 9 ) {}
-
-string Serializable::encode ( Serializable *message )
+string Protocol::encode ( Serializable *message )
 {
     if ( !message )
         return "";
@@ -56,7 +57,7 @@ string Serializable::encode ( Serializable *message )
     return encode ( msg );
 }
 
-string Serializable::encode ( const MsgPtr& msg )
+string Protocol::encode ( const MsgPtr& msg )
 {
     if ( !msg.get() )
         return "";
@@ -82,7 +83,7 @@ string Serializable::encode ( const MsgPtr& msg )
     return encodeStageTwo ( msg, ss.str() );
 }
 
-MsgPtr Serializable::decode ( const char *bytes, size_t len, size_t& consumed )
+MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
 {
     MsgPtr msg;
 
@@ -99,9 +100,16 @@ MsgPtr Serializable::decode ( const char *bytes, size_t len, size_t& consumed )
     // Decompress
     if ( ! ( result = decodeStageTwo ( bytes, len, consumed, type, data ) ) )
     {
+#ifdef LOG_DECODE
+        LOG ( "decodeStageTwo: result=Failed" );
+#endif
         consumed = 0;
         return NullMsg;
     }
+
+#ifdef LOG_DECODE
+    LOG ( "decodeStageTwo: result=%s", ( result == Compressed ) ? "Compressed" : "NotCompressed" );
+#endif
 
     istringstream ss ( data, stringstream::binary );
     BinaryInputArchive archive ( ss );
@@ -109,6 +117,9 @@ MsgPtr Serializable::decode ( const char *bytes, size_t len, size_t& consumed )
     // Check MD5 at end of msg data
     if ( data.size() < 16 || !checkMD5 ( &data[0], data.size() - 16, &data [ data.size() - 16 ] ) )
     {
+#ifdef LOG_DECODE
+        LOG ( "MD5 checksum failed" );
+#endif
         consumed = 0;
         return NullMsg;
     }
@@ -131,6 +142,10 @@ MsgPtr Serializable::decode ( const char *bytes, size_t len, size_t& consumed )
     }
     catch ( ... )
     {
+#ifdef LOG_DECODE
+        // TODO log the exception
+        LOG ( "invalid binary format for type=%s", type );
+#endif
         msg.reset();
     }
 

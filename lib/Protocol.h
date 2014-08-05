@@ -38,6 +38,7 @@ enum class MsgType : uint8_t
 #include "Protocol.enum.h"
 };
 
+// Common declarations
 enum class BaseType : uint8_t { SerializableMessage, SerializableSequence };
 
 struct Serializable;
@@ -53,6 +54,14 @@ std::ostream& operator<< ( std::ostream& os, MsgType type );
 std::ostream& operator<< ( std::ostream& os, BaseType type );
 std::ostream& operator<< ( std::ostream& os, const MsgPtr& msg );
 
+
+// Encode and decode messages
+struct Protocol
+{
+    static std::string encode ( Serializable *message );
+    static std::string encode ( const MsgPtr& msg );
+    static MsgPtr decode ( const char *bytes, size_t len, size_t& consumed );
+};
 
 // Abstract base class for all serializable messages
 struct Serializable
@@ -79,11 +88,6 @@ struct Serializable
     // Return a string representation of this message, defaults to the message type
     inline virtual std::string str() const { std::stringstream ss; ss << getMsgType(); return ss.str(); }
 
-    // Encode and decode messages
-    static std::string encode ( Serializable *message );
-    static std::string encode ( const MsgPtr& msg );
-    static MsgPtr decode ( const char *bytes, size_t len, size_t& consumed );
-
     // Flag to indicate compression level
     mutable uint8_t compressionLevel;
 
@@ -97,6 +101,7 @@ private:
     inline virtual void saveBase ( cereal::BinaryOutputArchive& ar ) const {};
     inline virtual void loadBase ( cereal::BinaryInputArchive& ar ) {};
 
+    friend struct Protocol;
     friend struct SerializableMessage;
     friend struct SerializableSequence;
 };

@@ -392,7 +392,7 @@ void Socket::readEvent()
 
     // Increment the buffer position
     readPos += bufferLen;
-    LOG ( "Read [ %u bytes ] from '%s'", bufferLen, address );
+    LOG ( "Read [ %u bytes ] from '%s'; %u bytes in buffer", bufferLen, address, readPos );
 
     // Handle zero byte packets
     if ( bufferLen == 0 )
@@ -408,13 +408,15 @@ void Socket::readEvent()
     for ( ;; )
     {
         size_t consumed = 0;
-        MsgPtr msg = Serializable::decode ( &readBuffer[0], readPos, consumed );
+        MsgPtr msg = ::Protocol::decode ( &readBuffer[0], readPos, consumed );
 
         // Abort if a message could not be decoded
         if ( !msg.get() )
             return;
 
-        LOG ( "Decoded [ %u bytes ] to '%s'", consumed, msg );
+        assert ( consumed <= readPos );
+
+        LOG ( "Decoded [ %u bytes ] to '%s'; %u bytes in buffer", consumed, msg, readPos - consumed );
         readEvent ( msg, address );
 
         // Abort if the socket is de-allocated
@@ -424,8 +426,6 @@ void Socket::readEvent()
         // Abort if socket is disconnected
         if ( isDisconnected() )
             return;
-
-        assert ( consumed <= readPos );
 
         // Erase the consumed bytes (shifting the array)
         readBuffer.erase ( 0, consumed );

@@ -115,7 +115,7 @@ bool TcpSocket::send ( SerializableSequence *message, const IpAddrPort& address 
 
 bool TcpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
 {
-    string buffer = Serializable::encode ( msg );
+    string buffer = ::Protocol::encode ( msg );
 
     LOG ( "Encoded '%s' to [ %u bytes ]", msg, buffer.size() );
 

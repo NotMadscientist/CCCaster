@@ -35,7 +35,7 @@ class UdpSocket : public Socket, public GoBackN::Owner
     void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override;
     void timeoutGoBackN ( GoBackN *gbn ) override;
 
-    // GoBackN recv convenience function
+    // GoBackN recv into the correctly addressed socket
     void gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address );
 
     // Send a protocol message directly, not over GoBackN

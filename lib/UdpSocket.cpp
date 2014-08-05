@@ -172,7 +172,7 @@ bool UdpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
 
 bool UdpSocket::sendRaw ( const MsgPtr& msg, const IpAddrPort& address )
 {
-    string buffer = Serializable::encode ( msg );
+    string buffer = ::Protocol::encode ( msg );
 
     LOG ( "Encoded '%s' to [ %u bytes ]", msg, buffer.size() );
 
@@ -275,18 +275,16 @@ void UdpSocket::timeoutGoBackN ( GoBackN *gbn )
 
 void UdpSocket::readEvent ( const MsgPtr& msg, const IpAddrPort& address )
 {
-    assert ( isChild() == false );
-
-    if ( getKeepAlive() == 0 )
+    if ( getKeepAlive() == 0 ) // Recv directly if not in GoBackN mode
     {
         if ( owner )
             owner->readEvent ( this, msg, address );
     }
-    else if ( isClient() )
+    else if ( isClient() ) // Client sockets recv into the GoBackN instance
     {
         gbn.recvRaw ( msg );
     }
-    else
+    else if ( !isChild() ) // Server sockets recv into the correctly addressed socket
     {
         gbnRecvAddressed ( msg, address );
     }
@@ -320,13 +318,5 @@ void UdpSocket::gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address 
 
     assert ( socket != 0 );
 
-    if ( socket->getKeepAlive() == 0 )
-    {
-        if ( socket->owner )
-            socket->owner->readEvent ( this, msg, address );
-    }
-    else
-    {
-        socket->gbn.recvRaw ( msg );
-    }
+    socket->readEvent ( msg, address );
 }
