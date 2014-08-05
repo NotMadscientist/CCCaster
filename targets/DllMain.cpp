@@ -152,6 +152,8 @@ struct Main : public CommonMain
         if ( serverSocket == serverDataSocket.get() )
         {
             dataSocket = serverDataSocket->accept ( this );
+            static_cast<UdpSocket *> ( dataSocket.get() )->setKeepAlive ( 0 );
+            static_cast<UdpSocket *> ( dataSocket.get() )->resetGbnState();
             return;
         }
 
@@ -162,6 +164,12 @@ struct Main : public CommonMain
 
     void connectEvent ( Socket *socket ) override
     {
+        if ( socket == dataSocket.get() )
+        {
+            static_cast<UdpSocket *> ( dataSocket.get() )->setKeepAlive ( 0 );
+            static_cast<UdpSocket *> ( dataSocket.get() )->resetGbnState();
+            return;
+        }
     }
 
     void disconnectEvent ( Socket *socket ) override
@@ -243,8 +251,8 @@ struct Main : public CommonMain
 
         netMan.setInput ( localPlayer, frame, index, input );
 
-        // if ( dataSocket && dataSocket->isConnected() )
-        //     dataSocket->send ( netMan.getInputs ( localPlayer, frame, index ) );
+        if ( dataSocket && && dataSocket.setKeepAlive() == 0 && dataSocket->isConnected() )
+            dataSocket->send ( netMan.getInputs ( localPlayer, frame, index ) );
 
         // TODO loop to wait for more inputs if necessary
 

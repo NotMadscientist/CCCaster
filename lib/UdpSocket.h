@@ -93,4 +93,7 @@ public:
     // Get/set the timeout for keep alive packets, 0 to disable
     inline uint64_t getKeepAlive() const { return gbn.getKeepAlive(); };
     inline void setKeepAlive ( uint64_t timeout ) { gbn.setKeepAlive ( timeout ); };
+
+    // Reset the state of the GoBackN instance
+    inline void resetGbnState() { gbn.reset(); }
 };

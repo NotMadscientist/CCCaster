@@ -264,8 +264,11 @@ void UdpSocket::timeoutGoBackN ( GoBackN *gbn )
     assert ( getRemoteAddress().empty() == false );
 
     LOG_SOCKET ( this, "disconnectEvent" );
+
     Socket::Owner *owner = this->owner;
+
     disconnect();
+
     if ( owner )
         owner->disconnectEvent ( this );
 }
@@ -310,8 +313,20 @@ void UdpSocket::gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address 
     }
     else
     {
+        LOG_SOCKET ( this, "Unexpected '%s' from '%s'", msg, address );
+        LOG_SOCKET ( this, "Ignoring because no child socket for '%s'", address );
         return;
     }
 
-    socket->gbn.recvRaw ( msg );
+    assert ( socket != 0 );
+
+    if ( socket->getKeepAlive() == 0 )
+    {
+        if ( socket->owner )
+            socket->owner->readEvent ( this, msg, address );
+    }
+    else
+    {
+        socket->gbn.recvRaw ( msg );
+    }
 }

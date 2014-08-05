@@ -158,6 +158,8 @@ void GoBackN::reset()
     sendList.clear();
     sendListPos = sendList.end();
     sendTimer.stop();
+
+    LOG ( "reset GoBackN state" );
 }
 
 GoBackN::GoBackN ( Owner *owner, uint64_t timeout )
