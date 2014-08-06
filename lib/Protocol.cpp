@@ -69,8 +69,10 @@ string Protocol::encode ( const MsgPtr& msg )
     ostringstream ss ( stringstream::binary );
     BinaryOutputArchive archive ( ss );
 
-    // Encode msg data
+    // Encode base message data
     msg->saveBase ( archive );
+
+    // Encode actual message data
     msg->save ( archive );
 
     // Update MD5
@@ -80,10 +82,10 @@ string Protocol::encode ( const MsgPtr& msg )
         msg->md5empty = false;
     }
 
-    // Encode MD5 at end of msg data
+    // Encode MD5 at end of message data
     archive ( msg->md5 );
 
-    // Compress
+    // Encode with compression
     return encodeStageTwo ( msg, ss.str() );
 }
 
@@ -100,7 +102,7 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
     MsgType type;
     string data;
 
-    // Decompress
+    // Decode with compression
     DecodeResult result = decodeStageTwo ( bytes, len, consumed, type, data );
 
 #ifdef LOG_DECODE
@@ -133,11 +135,13 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
                 return NullMsg;
         }
 
-        // Decode msg data
+        // Decode base message data
         msg->loadBase ( archive );
+
+        // Decode actual message data
         msg->load ( archive );
 
-        // Decode MD5 at end of msg data
+        // Decode MD5 at end of message data
         archive ( msg->md5 );
         msg->md5empty = false;
     }
@@ -180,17 +184,17 @@ string encodeStageTwo ( const MsgPtr& msg, const string& msgData )
     ostringstream ss ( stringstream::binary );
     BinaryOutputArchive archive ( ss );
 
-    // Encode msg type first without compression
+    // Encode message type first without compression
     archive ( msg->getMsgType() );
 
-    // Compress msg data if needed
+    // Compress message data if needed
     if ( msg->compressionLevel )
     {
         string buffer ( compressBound ( msgData.size() ), ( char ) 0 );
         size_t size = compress ( &msgData[0], msgData.size(), &buffer[0], buffer.size(), msg->compressionLevel );
         buffer.resize ( size );
 
-        // Only use compressed msg data if actually smaller after the overhead
+        // Only use compressed message data if actually smaller after the overhead
 #ifndef FORCE_COMPRESSION
         if ( sizeof ( msgData.size() ) + sizeof ( buffer.size() ) + buffer.size() < msgData.size() )
 #endif
@@ -220,7 +224,7 @@ DecodeResult decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, M
 
     try
     {
-        // Decode msg type first before decompression
+        // Decode message type first before decompression
         archive ( type );
         archive ( compressionLevel );
 
@@ -241,7 +245,7 @@ DecodeResult decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, M
     size_t remaining = ss.rdbuf()->in_avail();
     assert ( len >= remaining );
 
-    // Decompress msg data if needed
+    // Decompress message data if needed
     if ( compressionLevel )
     {
         string buffer ( uncompressedSize, ( char ) 0 );

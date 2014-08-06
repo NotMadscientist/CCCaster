@@ -14,23 +14,23 @@
 
 #define PRINT(...) do { std::cout << toString ( __VA_ARGS__ ) << std::endl; } while ( 0 )
 
-#define ENUM(NAME, ...)                                                                                     \
-struct NAME : public BetterEnum {                                                                           \
-    enum Enum : uint8_t { Unknown, __VA_ARGS__ } value = Unknown;                                           \
-    inline NAME() {}                                                                                        \
-    inline NAME ( Enum value ) : value ( value ) {}                                                         \
-    inline NAME& operator= ( Enum value ) { this->value = value; return *this; }                            \
-    inline std::string str() const override {                                                               \
-        static const std::vector<std::string> list = split ( "Unknown, " #__VA_ARGS__, ", " );              \
-        return #NAME "::" + list[value];                                                                    \
-    }                                                                                                       \
-    inline void save ( cereal::BinaryOutputArchive& ar ) const override { ar ( value ); }                   \
-    inline void load ( cereal::BinaryInputArchive& ar ) override { ar ( value ); }                          \
-    inline bool operator== ( const NAME& other ) const { return value == other.value; }                     \
-    inline bool operator!= ( const NAME& other ) const { return value != other.value; }                     \
-    inline bool operator== ( Enum other ) const { return value == other; }                                  \
-    inline bool operator!= ( Enum other ) const { return value != other; }                                  \
-}
+#define ENUM(NAME, ...)                                                                                         \
+    struct NAME : public BetterEnum {                                                                           \
+        enum Enum : uint8_t { Unknown, __VA_ARGS__ } value = Unknown;                                           \
+        inline NAME() {}                                                                                        \
+        inline NAME ( Enum value ) : value ( value ) {}                                                         \
+        inline NAME& operator= ( Enum value ) { this->value = value; return *this; }                            \
+        inline std::string str() const override {                                                               \
+            static const std::vector<std::string> list = split ( "Unknown, " #__VA_ARGS__, ", " );              \
+            return #NAME "::" + list[value];                                                                    \
+        }                                                                                                       \
+        inline void save ( cereal::BinaryOutputArchive& ar ) const override { ar ( value ); }                   \
+        inline void load ( cereal::BinaryInputArchive& ar ) override { ar ( value ); }                          \
+        inline bool operator== ( const NAME& other ) const { return value == other.value; }                     \
+        inline bool operator!= ( const NAME& other ) const { return value != other.value; }                     \
+        inline bool operator== ( Enum other ) const { return value == other; }                                  \
+        inline bool operator!= ( Enum other ) const { return value != other; }                                  \
+    }
 
 
 // Better enum type with autogen strings

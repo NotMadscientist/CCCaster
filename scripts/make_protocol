@@ -2,7 +2,7 @@
 
 DIR=lib
 
-grep --extended-regexp "^[a-z]+ [A-Za-z]+ : public Serializable[A-Z]" "$@" | sed -r 's/^(.+\.h):[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nMsgType \2::getMsgType() const { return MsgType::\2; }/' > $DIR/tmp
+grep --extended-regexp "public Serializable[A-Z]" "$@" | sed -r 's/^(.+\.h):[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nMsgType \2::getMsgType() const { return MsgType::\2; }/' > $DIR/tmp
 
 diff $DIR/tmp $DIR/Protocol.types.h 1> /dev/null 2>&1
 
@@ -10,15 +10,15 @@ if [ $? -ne 0 ]; then
 
     echo Regenerating protocol
 
-    grep --extended-regexp "^[a-z]+ [A-Za-z]+ : public Serializable[A-Z]" "$@" | sed -r 's/^(.+\.h):[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nMsgType \2::getMsgType() const { return MsgType::\2; }/' > $DIR/Protocol.types.h
+    grep --extended-regexp "public Serializable[A-Z]" "$@" | sed -r 's/^(.+\.h):[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nMsgType \2::getMsgType() const { return MsgType::\2; }/' > $DIR/Protocol.types.h
 
-    grep --extended-regexp "^[a-z]+ [A-Za-z]+ : public Serializable[A-Z]" "$@" | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1: return ( os << "\1" );/' > $DIR/Protocol.strings.h
+    grep --extended-regexp "public Serializable[A-Z]" "$@" | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1: return ( os << "\1" );/' > $DIR/Protocol.strings.h
 
     echo 'FirstType = 0,' > $DIR/Protocol.enum.h
-    grep --extended-regexp "^[a-z]+ [A-Za-z]+ : public Serializable[A-Z]" "$@" | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/\1,/' >> $DIR/Protocol.enum.h
+    grep --extended-regexp "public Serializable[A-Z]" "$@" | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/\1,/' >> $DIR/Protocol.enum.h
     echo 'LastType' >> $DIR/Protocol.enum.h
 
-    grep --extended-regexp "^[a-z]+ [A-Za-z]+ : public Serializable[A-Z]" "$@" | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1: msg.reset ( new \1() ); break;/' > $DIR/Protocol.decode.h
+    grep --extended-regexp "public Serializable[A-Z]" "$@" | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1: msg.reset ( new \1() ); break;/' > $DIR/Protocol.decode.h
 fi
 
 rm $DIR/tmp

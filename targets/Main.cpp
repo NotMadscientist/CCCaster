@@ -29,13 +29,30 @@ struct Main : public CommonMain
         procMan.ipcSend ( REF_PTR ( address ) );
         procMan.ipcSend ( new ClientType ( clientType ) );
 
-        assert ( ctrlSocket.get() != 0 );
-        procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
-
         if ( isHost() )
         {
+            assert ( ctrlSocket.get() != 0 );
+            assert ( dataSocket.get() != 0 );
             assert ( serverCtrlSocket.get() != 0 );
+            assert ( serverDataSocket.get() != 0 );
+
+            procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
+
+            // We don't send the dataSocket since it will be included in the serverDataSocket's SocketShareData
+
             procMan.ipcSend ( serverCtrlSocket->share ( procMan.getProcessId() ) );
+
+            assert ( serverDataSocket->getAsUDP().getChildSockets().size() == 1 );
+
+            procMan.ipcSend ( serverDataSocket->share ( procMan.getProcessId() ) );
+        }
+        else
+        {
+            assert ( ctrlSocket.get() != 0 );
+            assert ( dataSocket.get() != 0 );
+
+            procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
+            procMan.ipcSend ( dataSocket->share ( procMan.getProcessId() ) );
         }
     }
 
@@ -68,18 +85,40 @@ struct Main : public CommonMain
 
     void acceptEvent ( Socket *serverSocket ) override
     {
-        assert ( serverSocket == serverCtrlSocket.get() );
+        if ( serverSocket == serverCtrlSocket.get() )
+        {
+            ctrlSocket = serverCtrlSocket->accept ( this );
+        }
+        else if ( serverSocket == serverDataSocket.get() )
+        {
+            dataSocket = serverDataSocket->accept ( this );
+        }
+        else
+        {
+            LOG ( "Ignoring acceptEvent from serverSocket=%08x", serverSocket );
+            serverSocket->accept ( this ).reset();
+            return;
+        }
 
-        ctrlSocket = serverCtrlSocket->accept ( this );
+        if ( ctrlSocket && dataSocket )
+        {
+            assert ( ctrlSocket->isConnected() == true );
+            assert ( dataSocket->isConnected() == true );
 
-        procMan.openGame();
+            procMan.openGame();
+        }
     }
 
     void connectEvent ( Socket *socket ) override
     {
-        assert ( socket == ctrlSocket.get() );
+        assert ( ctrlSocket.get() != 0 );
+        assert ( dataSocket.get() != 0 );
+        assert ( socket == ctrlSocket.get() || socket == dataSocket.get() );
 
-        procMan.openGame();
+        if ( ctrlSocket->isConnected() && dataSocket->isConnected() )
+        {
+            procMan.openGame();
+        }
     }
 
     void disconnectEvent ( Socket *socket ) override
@@ -110,9 +149,15 @@ struct Main : public CommonMain
         ControllerManager::get().initialize ( this );
 
         if ( isHost() )
+        {
             serverCtrlSocket = TcpSocket::listen ( this, address.port );
+            serverDataSocket = UdpSocket::listen ( this, address.port );
+        }
         else
+        {
             ctrlSocket = TcpSocket::connect ( this, address );
+            dataSocket = UdpSocket::connect ( this, address );
+        }
     }
 
     // Destructor

@@ -14,7 +14,7 @@ class TcpSocket : public Socket
     // Construct an accepted client socket
     TcpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address );
 
-    // Construct a socket from share data
+    // Construct a socket from SocketShareData
     TcpSocket ( Socket::Owner *owner, const SocketShareData& data );
 
 protected:
@@ -33,7 +33,7 @@ public:
     // Connect to the given address and port
     static SocketPtr connect ( Socket::Owner *owner, const IpAddrPort& address );
 
-    // Create a socket from share data
+    // Create a socket from SocketShareData
     static SocketPtr shared ( Socket::Owner *owner, const SocketShareData& data );
 
     // Virtual destructor

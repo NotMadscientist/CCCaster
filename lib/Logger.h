@@ -69,7 +69,14 @@ public:
 #endif // ENABLE_LOGGING
 
 
-#define LOG_AND_THROW(EXCEPTION, FORMAT, ...)                                                                       \
+#define LOG_AND_THROW_STRING(FORMAT, ...)                                                                           \
+    do {                                                                                                            \
+        Exception err = toString ( FORMAT, ## __VA_ARGS__ );                                                        \
+        LOG ( FORMAT, ## __VA_ARGS__ );                                                                             \
+        throw err;                                                                                                  \
+    } while ( 0 )
+
+#define LOG_AND_THROW_ERROR(EXCEPTION, FORMAT, ...)                                                                 \
     do {                                                                                                            \
         LOG ( "%s; " FORMAT, EXCEPTION, ## __VA_ARGS__ );                                                           \
         throw EXCEPTION;                                                                                            \

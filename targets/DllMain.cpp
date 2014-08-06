@@ -99,11 +99,6 @@ struct Main : public CommonMain
                 clientType = msg->getAs<ClientType>().value;
                 LOG ( "ClientType is %s", isHost() ? "Host" : "Client" );
 
-                if ( isHost() )
-                    serverDataSocket = UdpSocket::listen ( this, address.port );
-                else
-                    dataSocket = UdpSocket::connect ( this, address );
-
                 // TODO randomize player side per session
                 localPlayer = ( isHost() ? 1 : 2 );
                 remotePlayer = ( isHost() ? 2 : 1 );
@@ -116,12 +111,41 @@ struct Main : public CommonMain
                     break;
                 }
 
-                if ( !ctrlSocket )
-                    ctrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
-                else if ( !serverCtrlSocket && isHost() )
-                    serverCtrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
+                if ( isHost() )
+                {
+                    if ( !ctrlSocket )
+                    {
+                        ctrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
+                    }
+                    else if ( !serverCtrlSocket )
+                    {
+                        serverCtrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
+                    }
+                    else if ( !serverDataSocket )
+                    {
+                        serverDataSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
+
+                        assert ( serverDataSocket->getAsUDP().getChildSockets().size() == 1 );
+
+                        dataSocket = serverDataSocket->getAsUDP().getChildSockets().begin()->second;
+                        dataSocket->owner = this;
+                    }
+                    return;
+                }
                 else
-                    LOG ( "Unexpected '%s'", msg );
+                {
+                    if ( !ctrlSocket )
+                    {
+                        ctrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
+                    }
+                    else if ( !dataSocket )
+                    {
+                        dataSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
+                    }
+                    return;
+                }
+
+                LOG ( "Unexpected '%s'", msg );
                 break;
 
             default:
@@ -150,29 +174,10 @@ struct Main : public CommonMain
 
     void acceptEvent ( Socket *serverSocket ) override
     {
-        if ( serverSocket == serverDataSocket.get() )
-        {
-            dataSocket = serverDataSocket->accept ( this );
-            // TODO keep alive with input sending
-            static_cast<UdpSocket *> ( dataSocket.get() )->setKeepAlive ( 0 );
-            static_cast<UdpSocket *> ( dataSocket.get() )->resetGbnState();
-            return;
-        }
-
-        assert ( serverSocket == serverCtrlSocket.get() );
-
-        serverSocket->accept ( this ).reset();
     }
 
     void connectEvent ( Socket *socket ) override
     {
-        if ( socket == dataSocket.get() )
-        {
-            // TODO keep alive with input sending
-            static_cast<UdpSocket *> ( dataSocket.get() )->setKeepAlive ( 0 );
-            static_cast<UdpSocket *> ( dataSocket.get() )->resetGbnState();
-            return;
-        }
     }
 
     void disconnectEvent ( Socket *socket ) override
@@ -256,9 +261,7 @@ struct Main : public CommonMain
         netMan.setInput ( localPlayer, frame, index, input );
 
         // TODO use a proper state variable instead of these conditions
-        bool checkInputs = ( dataSocket
-                && ( static_cast<UdpSocket *> ( dataSocket.get() )->getKeepAlive() == 0 )
-                && dataSocket->isConnected() );
+        bool checkInputs = ( dataSocket && dataSocket->isConnected() );
 
         if ( checkInputs )
             dataSocket->send ( netMan.getInputs ( localPlayer, frame, index ) );

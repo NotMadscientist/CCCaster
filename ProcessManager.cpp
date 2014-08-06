@@ -43,7 +43,7 @@ void ProcessManager::writeGameInput ( uint8_t player, uint16_t direction, uint16
             break;
 
         default:
-            assert ( !"Invalid player number!" );
+            LOG_AND_THROW_STRING ( "Invalid player number!" );
             break;
     }
 }
@@ -167,7 +167,7 @@ void ProcessManager::openGame()
     if ( pipe == INVALID_HANDLE_VALUE )
     {
         WindowsException err = GetLastError();
-        LOG_AND_THROW ( err, "CreateNamedPipe failed" );
+        LOG_AND_THROW_ERROR ( err, "CreateNamedPipe failed" );
     }
 
     LOG ( "Running " MBAA_EXE );
@@ -186,7 +186,7 @@ void ProcessManager::openGame()
         if ( error != ERROR_PIPE_CONNECTED )
         {
             WindowsException err = GetLastError();
-            LOG_AND_THROW ( err, "ConnectNamedPipe failed" );
+            LOG_AND_THROW_ERROR ( err, "ConnectNamedPipe failed" );
         }
     }
 
@@ -198,13 +198,13 @@ void ProcessManager::openGame()
     if ( !ReadFile ( pipe, &ipcHost.port, sizeof ( ipcHost.port ), &bytes, 0 ) )
     {
         WindowsException err = GetLastError();
-        LOG_AND_THROW ( err, "ReadFile failed" );
+        LOG_AND_THROW_ERROR ( err, "ReadFile failed" );
     }
 
     if ( bytes != sizeof ( ipcHost.port ) )
     {
         Exception err = toString ( "read %d bytes, expected %d", bytes, sizeof ( ipcHost.port ) );
-        LOG_AND_THROW ( err, "ReadFile failed" );
+        LOG_AND_THROW_ERROR ( err, "ReadFile failed" );
     }
 
     LOG ( "ipcHost='%s'", ipcHost );
@@ -214,13 +214,13 @@ void ProcessManager::openGame()
     if ( !ReadFile ( pipe, &processId, sizeof ( processId ), &bytes, 0 ) )
     {
         WindowsException err = GetLastError();
-        LOG_AND_THROW ( err, "ReadFile failed" );
+        LOG_AND_THROW_ERROR ( err, "ReadFile failed" );
     }
 
     if ( bytes != sizeof ( processId ) )
     {
         Exception err = toString ( "read %d bytes, expected %d", bytes, sizeof ( processId ) );
-        LOG_AND_THROW ( err, "ReadFile failed" );
+        LOG_AND_THROW_ERROR ( err, "ReadFile failed" );
     }
 
     LOG ( "processId=%08x", processId );
@@ -265,7 +265,7 @@ void ProcessManager::connectPipe()
     if ( pipe == INVALID_HANDLE_VALUE )
     {
         WindowsException err = GetLastError();
-        LOG_AND_THROW ( err, "CreateFile failed" );
+        LOG_AND_THROW_ERROR ( err, "CreateFile failed" );
     }
 
     LOG ( "Pipe connected" );
@@ -275,13 +275,13 @@ void ProcessManager::connectPipe()
     if ( !WriteFile ( pipe, & ( ipcSocket->address.port ), sizeof ( ipcSocket->address.port ), &bytes, 0 ) )
     {
         WindowsException err = GetLastError();
-        LOG_AND_THROW ( err, "WriteFile failed" );
+        LOG_AND_THROW_ERROR ( err, "WriteFile failed" );
     }
 
     if ( bytes != sizeof ( ipcSocket->address.port ) )
     {
         Exception err = toString ( "wrote %d bytes, expected %d", bytes, sizeof ( ipcSocket->address.port ) );
-        LOG_AND_THROW ( err, "WriteFile failed" );
+        LOG_AND_THROW_ERROR ( err, "WriteFile failed" );
     }
 
     processId = GetCurrentProcessId();
@@ -289,13 +289,13 @@ void ProcessManager::connectPipe()
     if ( !WriteFile ( pipe, &processId, sizeof ( processId ), &bytes, 0 ) )
     {
         WindowsException err = GetLastError();
-        LOG_AND_THROW ( err, "WriteFile failed" );
+        LOG_AND_THROW_ERROR ( err, "WriteFile failed" );
     }
 
     if ( bytes != sizeof ( processId ) )
     {
         Exception err = toString ( "wrote %d bytes, expected %d", bytes, sizeof ( ipcSocket->address.port ) );
-        LOG_AND_THROW ( err, "WriteFile failed" );
+        LOG_AND_THROW_ERROR ( err, "WriteFile failed" );
     }
 }
 

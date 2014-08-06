@@ -224,8 +224,7 @@ Controller::Controller ( SDL_Joystick *joystick ) : joystick ( joystick )
             }
         }
 
-        Exception err = toString ( "Too many duplicate guids for: '%s'", this->guid.guid );
-        LOG_AND_THROW ( err, "" );
+        LOG_AND_THROW_STRING ( "Too many duplicate guids for: '%s'", this->guid.guid );
     }
 
     clearMapping();

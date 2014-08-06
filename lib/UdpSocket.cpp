@@ -21,7 +21,9 @@ using namespace std;
 
 
 UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, uint64_t keepAlive )
-    : Socket ( IpAddrPort ( "", port ), Protocol::UDP ), type ( Type::Server ), gbn ( this, keepAlive )
+    : Socket ( IpAddrPort ( "", port ), Protocol::UDP )
+    , type ( Type::Server )
+    , gbn ( this, keepAlive )
 {
     this->owner = owner;
     this->state = State::Listening;
@@ -30,7 +32,9 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, uint64_t keepAlive )
 }
 
 UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, uint64_t keepAlive )
-    : Socket ( address, Protocol::UDP ), type ( Type::Client ), gbn ( this, keepAlive )
+    : Socket ( address, Protocol::UDP )
+    , type ( Type::Client )
+    , gbn ( this, keepAlive )
 {
     this->owner = owner;
     this->state = ( keepAlive ? State::Connecting : State::Connected );
@@ -41,15 +45,10 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, uint64_t
         send ( new UdpConnect ( UdpConnect::Request ) );
 }
 
-UdpSocket::UdpSocket ( ChildSocketEnum, UdpSocket *parentSocket, const IpAddrPort& address )
-    : Socket ( address, Protocol::UDP ), type ( Type::Child ), gbn ( this, parentSocket->getKeepAlive() )
-    , parentSocket ( parentSocket )
-{
-    this->state = State::Connected;
-}
-
 UdpSocket::UdpSocket ( Socket::Owner *owner, const SocketShareData& data )
-    : Socket ( data.address, Protocol::UDP ), gbn ( this, 0 )
+    : Socket ( data.address, Protocol::UDP )
+    , type ( data.clientGbnState ? Type::Client : Type::Server )
+    , gbn ( this, 0 )
 {
     assert ( data.protocol == Protocol::UDP );
 
@@ -71,7 +70,44 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const SocketShareData& data )
         throw err;
     }
 
+    switch ( type.value )
+    {
+        case Type::Client:
+            gbn = data.clientGbnState->getAs<GoBackN>();
+            break;
+
+        case Type::Server:
+            for ( const auto& kv : data.serverChildSockets )
+            {
+                UdpSocket *socket = new UdpSocket ( ChildSocket, this, kv.first, kv.second );
+                childSockets.insert ( make_pair ( address, SocketPtr ( socket ) ) );
+            }
+            break;
+
+        default:
+            LOG_AND_THROW_STRING ( "Invalid UDP socket type!" );
+            break;
+    }
+
     SocketManager::get().add ( this );
+}
+
+UdpSocket::UdpSocket ( ChildSocketEnum, UdpSocket *parentSocket, const IpAddrPort& address )
+    : Socket ( address, Protocol::UDP )
+    , type ( Type::Child )
+    , gbn ( this, parentSocket->getKeepAlive() )
+    , parentSocket ( parentSocket )
+{
+    this->state = State::Connected;
+}
+
+UdpSocket::UdpSocket ( ChildSocketEnum, UdpSocket *parentSocket, const IpAddrPort& address, const GoBackN& state )
+    : Socket ( address, Protocol::UDP )
+    , type ( Type::Child )
+    , gbn ( this, state )
+    , parentSocket ( parentSocket )
+{
+    this->state = State::Connected;
 }
 
 UdpSocket::~UdpSocket()
@@ -91,10 +127,7 @@ void UdpSocket::disconnect()
 
     // Detach child sockets first
     for ( auto& kv : childSockets )
-    {
-        assert ( typeid ( *kv.second ) == typeid ( UdpSocket ) );
-        static_cast<UdpSocket *> ( kv.second.get() )->parentSocket = 0;
-    }
+        kv.second->getAsUDP().parentSocket = 0;
 
     // Check and remove child from parent
     if ( parentSocket != 0 )
@@ -212,6 +245,15 @@ void UdpSocket::sendRaw ( GoBackN *gbn, const MsgPtr& msg )
     assert ( getRemoteAddress().empty() == false );
 
     sendRaw ( msg, getRemoteAddress() );
+}
+
+void UdpSocket::recvRaw ( GoBackN *gbn, const MsgPtr& msg )
+{
+    assert ( gbn == &this->gbn );
+    assert ( getRemoteAddress().empty() == false );
+
+    if ( owner )
+        owner->readEvent ( this, msg, getRemoteAddress() );
 }
 
 void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
@@ -334,8 +376,7 @@ void UdpSocket::gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address 
     if ( it != childSockets.end() )
     {
         // Get the existing child socket
-        assert ( typeid ( *it->second ) == typeid ( UdpSocket ) );
-        socket = static_cast<UdpSocket *> ( it->second.get() );
+        socket = & ( it->second->getAsUDP() );
     }
     else if ( msg.get()
               && msg->getMsgType() == MsgType::UdpConnect
@@ -359,7 +400,32 @@ void UdpSocket::gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address 
 
 MsgPtr UdpSocket::share ( int processId )
 {
+    if ( isChild() )
+        return NullMsg;
+
     MsgPtr data = Socket::share ( processId );
 
+    assert ( typeid ( *data ) == typeid ( SocketShareData ) );
+    assert ( type == Type::Client || type == Type::Server );
+
+    switch ( type.value )
+    {
+        case Type::Client:
+            data->getAs<SocketShareData>().clientGbnState.reset ( new GoBackN ( gbn ) );
+            break;
+
+        case Type::Server:
+            for ( const auto& kv : childSockets )
+            {
+                data->getAs<SocketShareData>().serverChildSockets[kv.first] = kv.second->getAsUDP().gbn;
+                kv.second->getAsUDP().gbn.reset();
+            }
+            break;
+
+        default:
+            return NullMsg;
+    }
+
+    gbn.reset();
     return data;
 }

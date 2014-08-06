@@ -8,6 +8,7 @@
 #include <winsock2.h>
 #include <windows.h>
 #include <ws2tcpip.h>
+#include <cereal/types/unordered_map.hpp>
 
 #include <cassert>
 #include <unordered_set>
@@ -472,6 +473,8 @@ void SocketShareData::save ( cereal::BinaryOutputArchive& ar ) const
          info->dwMessageSize,
          info->dwProviderReserved,
          info->szProtocol );
+
+    ar ( Protocol::encode ( clientGbnState ), serverChildSockets );
 }
 
 void SocketShareData::load ( cereal::BinaryInputArchive& ar )
@@ -503,6 +506,12 @@ void SocketShareData::load ( cereal::BinaryInputArchive& ar )
          info->dwMessageSize,
          info->dwProviderReserved,
          info->szProtocol );
+
+    string buffer;
+    ar ( buffer, serverChildSockets );
+
+    size_t consumed;
+    clientGbnState = Protocol::decode ( &buffer[0], buffer.size(), consumed );
 }
 
 SocketPtr Socket::shared ( Socket::Owner *owner, const SocketShareData& data )
@@ -511,4 +520,28 @@ SocketPtr Socket::shared ( Socket::Owner *owner, const SocketShareData& data )
         return TcpSocket::shared ( owner, data );
     else
         return UdpSocket::shared ( owner, data );
+}
+
+TcpSocket& Socket::getAsTCP()
+{
+    assert ( typeid ( *this ) == typeid ( TcpSocket ) );
+    return *static_cast<TcpSocket *> ( this );
+}
+
+const TcpSocket& Socket::getAsTCP() const
+{
+    assert ( typeid ( *this ) == typeid ( TcpSocket ) );
+    return *static_cast<const TcpSocket *> ( this );
+}
+
+UdpSocket& Socket::getAsUDP()
+{
+    assert ( typeid ( *this ) == typeid ( UdpSocket ) );
+    return *static_cast<UdpSocket *> ( this );
+}
+
+const UdpSocket& Socket::getAsUDP() const
+{
+    assert ( typeid ( *this ) == typeid ( UdpSocket ) );
+    return *static_cast<const UdpSocket *> ( this );
 }

@@ -2,6 +2,8 @@
 #include "Logger.h"
 #include "Utilities.h"
 
+#include <cereal/types/string.hpp>
+
 #include <string>
 #include <cassert>
 
@@ -20,7 +22,7 @@ string formatSerializableSequence ( const MsgPtr& msg )
 
 void GoBackN::timerExpired ( Timer *timer )
 {
-    assert ( timer == &sendTimer );
+    assert ( timer == sendTimer.get() );
 
     if ( sendList.empty() && !keepAlive )
     {
@@ -58,7 +60,7 @@ void GoBackN::timerExpired ( Timer *timer )
         }
     }
 
-    sendTimer.start ( SEND_INTERVAL );
+    sendTimer->start ( SEND_INTERVAL );
 }
 
 void GoBackN::sendGoBackN ( SerializableSequence *message )
@@ -83,8 +85,11 @@ void GoBackN::sendGoBackN ( const MsgPtr& msg )
 
     LOG_LIST ( sendList, formatSerializableSequence );
 
-    if ( !sendTimer.isStarted() )
-        sendTimer.start ( SEND_INTERVAL );
+    if ( !sendTimer )
+        sendTimer.reset ( new Timer ( this ) );
+
+    if ( !sendTimer->isStarted() )
+        sendTimer->start ( SEND_INTERVAL );
 }
 
 void GoBackN::recvRaw ( const MsgPtr& msg )
@@ -99,11 +104,15 @@ void GoBackN::recvRaw ( const MsgPtr& msg )
         LOG ( "this=%08x; keepAlive=%llu; countDown=%d", this, keepAlive, countDown );
     }
 
-    // Ignore non-sequential messages
-    if ( !msg.get() || msg->getBaseType() != BaseType::SerializableSequence )
+    // Ignore null keep alive messages
+    if ( !msg )
+        return;
+
+    // Filter non-sequential messages
+    if ( msg->getBaseType() != BaseType::SerializableSequence )
     {
-        if ( msg.get() )
-            LOG ( "Unexpected '%s'; recvSequence=%u", msg, recvSequence );
+        LOG ( "Received '%s'", msg );
+        owner->recvRaw ( this, msg );
         return;
     }
 
@@ -138,8 +147,14 @@ void GoBackN::recvRaw ( const MsgPtr& msg )
 
     owner->sendRaw ( this, MsgPtr ( new AckSequence ( recvSequence ) ) );
 
-    if ( keepAlive && !sendTimer.isStarted() )
-        sendTimer.start ( SEND_INTERVAL );
+    if ( keepAlive )
+    {
+        if ( !sendTimer )
+            sendTimer.reset ( new Timer ( this ) );
+
+        if ( !sendTimer->isStarted() )
+            sendTimer->start ( SEND_INTERVAL );
+    }
 
     owner->recvGoBackN ( this, msg );
 }
@@ -157,13 +172,55 @@ void GoBackN::reset()
     sendSequence = recvSequence = 0;
     sendList.clear();
     sendListPos = sendList.end();
-    sendTimer.stop();
+    sendTimer.reset();
 
     LOG ( "reset GoBackN state" );
 }
 
 GoBackN::GoBackN ( Owner *owner, uint64_t timeout )
-    : owner ( owner ), sendListPos ( sendList.end() ), sendTimer ( this )
-    , keepAlive ( timeout ), countDown ( timeout / SEND_INTERVAL )
+    : owner ( owner )
+    , sendListPos ( sendList.end() )
+    , keepAlive ( timeout )
+    , countDown ( timeout / SEND_INTERVAL ) {}
+
+GoBackN::GoBackN ( Owner *owner, const GoBackN& state ) : owner ( owner ), sendListPos ( sendList.end() )
 {
+    *this = state;
+}
+
+GoBackN& GoBackN::operator= ( const GoBackN& other )
+{
+    sendSequence = other.sendSequence;
+    recvSequence = other.recvSequence;
+    ackSequence = other.ackSequence;
+    sendList = other.sendList;
+    keepAlive = other.keepAlive;
+    countDown = other.keepAlive;
+
+    return *this;
+}
+
+void GoBackN::save ( cereal::BinaryOutputArchive& ar ) const
+{
+    ar ( keepAlive, sendSequence, recvSequence, ackSequence );
+
+    ar ( sendList.size() );
+
+    for ( const MsgPtr& msg : sendList )
+        ar ( Protocol::encode ( msg ) );
+}
+
+void GoBackN::load ( cereal::BinaryInputArchive& ar )
+{
+    ar ( keepAlive, sendSequence, recvSequence, ackSequence );
+
+    size_t size, consumed;
+    ar ( size );
+
+    string buffer;
+    for ( size_t i = 0; i < size; ++i )
+    {
+        ar ( buffer );
+        sendList.push_back ( Protocol::decode ( &buffer[0], buffer.size(), consumed ) );
+    }
 }

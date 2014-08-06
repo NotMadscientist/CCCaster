@@ -12,14 +12,18 @@ struct UdpConnect : public SerializableSequence
 
 class UdpSocket : public Socket, public GoBackN::Owner
 {
-    // UDP child socket enum type for choosing the right constructor
-    enum ChildSocketEnum { ChildSocket };
+public:
 
     // UDP socket type enum
     ENUM ( Type, Client, Server, Child );
 
     // UDP socket type constant
     const Type type = Type::Unknown;
+
+private:
+
+    // UDP child socket enum type for choosing the right constructor
+    enum ChildSocketEnum { ChildSocket };
 
     // GoBackN instance
     GoBackN gbn;
@@ -35,6 +39,7 @@ class UdpSocket : public Socket, public GoBackN::Owner
 
     // GoBackN callbacks
     void sendRaw ( GoBackN *gbn, const MsgPtr& msg ) override;
+    void recvRaw ( GoBackN *gbn, const MsgPtr& msg ) override;
     void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override;
     void timeoutGoBackN ( GoBackN *gbn ) override;
 
@@ -50,11 +55,14 @@ class UdpSocket : public Socket, public GoBackN::Owner
     // Construct a client socket
     UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, uint64_t keepAlive );
 
-    // Construct a child socket
+    // Construct a socket from SocketShareData
+    UdpSocket ( Socket::Owner *owner, const SocketShareData& data );
+
+    // Construct a child socket from the parent socket
     UdpSocket ( ChildSocketEnum, UdpSocket *parentSocket, const IpAddrPort& address );
 
-    // Construct a socket from share data
-    UdpSocket ( Socket::Owner *owner, const SocketShareData& data );
+    // Construct a child socket from GoBackN state
+    UdpSocket ( ChildSocketEnum, UdpSocket *parentSocket, const IpAddrPort& address, const GoBackN& state );
 
 protected:
 
@@ -73,7 +81,7 @@ public:
     static SocketPtr bind ( Socket::Owner *owner, uint16_t port );
     static SocketPtr bind ( Socket::Owner *owner, const IpAddrPort& address );
 
-    // Create a socket from share data
+    // Create a socket from SocketShareData
     static SocketPtr shared ( Socket::Owner *owner, const SocketShareData& data );
 
     // Destructor
@@ -95,7 +103,7 @@ public:
     inline std::unordered_map<IpAddrPort, SocketPtr>& getChildSockets() { return childSockets; }
 
     // Get the data needed to share this socket with another process.
-    // Child UDP sockets CANNOT be shared, the parent share data contains all the child sockets.
+    // Child UDP sockets CANNOT be shared, the parent SocketShareData contains all the child sockets.
     // The child sockets can be restored via getChildSockets after the parent socket is constructed.
     MsgPtr share ( int processId );
 
@@ -111,30 +119,3 @@ public:
     // Reset the state of the GoBackN instance
     inline void resetGbnState() { gbn.reset(); }
 };
-
-
-// // Contains the GoBackN state
-// struct GoBackNState : public SerializableMessage
-// {
-//     uint64_t keepAlive = 0;
-//     uint32_t sendSequence = 0, recvSequence = 0, ackSequence = 0;
-//     std::list<MsgPtr> sendList;
-// };
-
-
-// // Message for sending UDP socket share data
-// struct ShareUdpSocket : public SerializableMessage, public SocketShareData
-// {
-//     IpAddrPort address;
-//     Socket::Protocol protocol;
-//     Socket::State state;
-//     std::string readBuffer;
-//     size_t readPos = 0;
-//     std::shared_ptr<WSAPROTOCOL_INFO> info;
-
-//     inline bool hasKeepAlive() const { return ( keepAlive != 0 ); }
-
-//     MsgType getMsgType() const override;
-//     void save ( cereal::BinaryOutputArchive& ar ) const override;
-//     void load ( cereal::BinaryInputArchive& ar ) override;
-// };

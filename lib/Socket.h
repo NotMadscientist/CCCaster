@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IpAddrPort.h"
+#include "GoBackN.h"
 
 #include <vector>
 #include <memory>
@@ -15,6 +16,8 @@
 struct _WSAPROTOCOL_INFOA;
 typedef struct _WSAPROTOCOL_INFOA WSAPROTOCOL_INFO;
 class Socket;
+class TcpSocket;
+class UdpSocket;
 struct SocketShareData;
 
 typedef std::shared_ptr<Socket> SocketPtr;
@@ -89,7 +92,7 @@ protected:
 
 public:
 
-    // Create a socket from share data
+    // Create a socket from SocketShareData
     static SocketPtr shared ( Socket::Owner *owner, const SocketShareData& data );
 
     // Basic constructors
@@ -140,6 +143,12 @@ public:
     // Set the check sum fail percentage for testing purposes
     inline void setCheckSumFail ( uint8_t percentage ) { checkSumFail = percentage; }
 
+    // Cast this to another socket type
+    TcpSocket& getAsTCP();
+    const TcpSocket& getAsTCP() const;
+    UdpSocket& getAsUDP();
+    const UdpSocket& getAsUDP() const;
+
     friend class SocketManager;
 };
 
@@ -153,6 +162,10 @@ struct SocketShareData : public SerializableMessage
     std::string readBuffer;
     size_t readPos = 0;
     std::shared_ptr<WSAPROTOCOL_INFO> info;
+
+    // Extra data for UDP sockets
+    MsgPtr clientGbnState;
+    std::unordered_map<IpAddrPort, GoBackN> serverChildSockets;
 
     inline SocketShareData() {}
 

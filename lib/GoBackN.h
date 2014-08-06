@@ -13,7 +13,7 @@ struct AckSequence : public SerializableSequence
 };
 
 
-class GoBackN : public Timer::Owner
+class GoBackN : public Timer::Owner, public SerializableMessage
 {
 public:
 
@@ -21,6 +21,9 @@ public:
     {
         // Send a message via raw socket
         virtual void sendRaw ( GoBackN *gbn, const MsgPtr& msg ) = 0;
+
+        // Receive a raw non-sequenced message
+        virtual void recvRaw ( GoBackN *gbn, const MsgPtr& msg ) {};
 
         // Receive a message from GoBackN
         virtual void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) = 0;
@@ -46,7 +49,7 @@ private:
     std::list<MsgPtr>::iterator sendListPos;
 
     // Timer for repeatedly sending messages
-    Timer sendTimer;
+    TimerPtr sendTimer;
 
     // The timeout for keep alive packets, 0 to disable
     uint64_t keepAlive = 0;
@@ -59,8 +62,12 @@ private:
 
 public:
 
-    // Constructor
+    // Basic constructors
+    inline GoBackN() {}
+    inline GoBackN ( const GoBackN& other ) { *this = other; }
     GoBackN ( Owner *owner, uint64_t timeout = 0 );
+    GoBackN ( Owner *owner, const GoBackN& state );
+    GoBackN& operator= ( const GoBackN& other );
 
     // Send a message via GoBackN
     void sendGoBackN ( SerializableSequence *message );
@@ -83,5 +90,8 @@ public:
     // Reset the state of GoBackN
     void reset();
 
-    friend struct SocketShareData;
+    // Protocol methods
+    MsgType getMsgType() const override;
+    void save ( cereal::BinaryOutputArchive& ar ) const override;
+    void load ( cereal::BinaryInputArchive& ar ) override;
 };

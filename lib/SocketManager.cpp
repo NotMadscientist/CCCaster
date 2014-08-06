@@ -68,7 +68,7 @@ void SocketManager::check ( uint64_t timeout )
     if ( count == SOCKET_ERROR )
     {
         WindowsException err = WSAGetLastError();
-        LOG_AND_THROW ( err, "select failed" );
+        LOG_AND_THROW_ERROR ( err, "select failed" );
     }
 
     if ( count == 0 )
@@ -107,7 +107,7 @@ void SocketManager::check ( uint64_t timeout )
                 if ( ioctlsocket ( socket->fd, FIONREAD, &numBytes ) != 0 )
                 {
                     WindowsException err = WSAGetLastError();
-                    LOG_AND_THROW ( err, "ioctlsocket failed" );
+                    LOG_AND_THROW_ERROR ( err, "ioctlsocket failed" );
                 }
 
                 if ( socket->isTCP() && numBytes == 0 )
@@ -161,7 +161,7 @@ void SocketManager::initialize()
     if ( error != NO_ERROR )
     {
         WindowsException err = error;
-        LOG_AND_THROW ( err, "WSAStartup failed" );
+        LOG_AND_THROW_ERROR ( err, "WSAStartup failed" );
     }
 
     initialized = true;
