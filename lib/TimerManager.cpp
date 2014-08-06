@@ -75,6 +75,9 @@ void TimerManager::check()
             timer->owner->timerExpired ( timer );
         }
 
+        if ( allocatedTimers.find ( timer ) == allocatedTimers.end() )
+            continue;
+
         if ( timer->delay > 0 )
         {
             LOG ( "Started timer %08x; delay='%llu ms'", timer, timer->delay );

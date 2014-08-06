@@ -40,6 +40,10 @@ void ConsoleCore::UpdateWindowSize()
     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
     MAXSCREENX = csbi.srWindow.Right - csbi.srWindow.Left + 1;
     MAXSCREENY = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+    if (MAXSCREENX < 0)
+        return;
+    if (MAXSCREENY < 0)
+        return;
     // Increase the buffer size if needed
     if (m_screenBuffer.size() < (size_t)MAXSCREENX*MAXSCREENY)
          m_screenBuffer.resize(MAXSCREENX*MAXSCREENY);
