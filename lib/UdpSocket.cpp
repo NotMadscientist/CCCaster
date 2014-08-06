@@ -17,9 +17,11 @@ using namespace std;
 
 #define DEFAULT_KEEP_ALIVE 1000
 
+#define LOG_UDP_SOCKET(SOCKET, FORMAT, ...) LOG_SOCKET ( SOCKET, "type=%s; " FORMAT, type, ## __VA_ARGS__)
+
 
 UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, uint64_t keepAlive )
-    : Socket ( IpAddrPort ( "", port ), Protocol::UDP ), gbn ( this, keepAlive )
+    : Socket ( IpAddrPort ( "", port ), Protocol::UDP ), type ( Type::Server ), gbn ( this, keepAlive )
 {
     this->owner = owner;
     this->state = State::Listening;
@@ -28,7 +30,7 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, uint64_t keepAlive )
 }
 
 UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, uint64_t keepAlive )
-    : Socket ( address, Protocol::UDP ), gbn ( this, keepAlive )
+    : Socket ( address, Protocol::UDP ), type ( Type::Client ), gbn ( this, keepAlive )
 {
     this->owner = owner;
     this->state = ( keepAlive ? State::Connecting : State::Connected );
@@ -39,8 +41,9 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, uint64_t
         send ( new UdpConnect ( UdpConnect::Request ) );
 }
 
-UdpSocket::UdpSocket ( ChildSocketEnum, UdpSocket *parent, const IpAddrPort& address )
-    : Socket ( address, Protocol::UDP ), hasParent ( true ), parent ( parent ), gbn ( this, parent->getKeepAlive() )
+UdpSocket::UdpSocket ( ChildSocketEnum, UdpSocket *parentSocket, const IpAddrPort& address )
+    : Socket ( address, Protocol::UDP ), type ( Type::Child ), gbn ( this, parentSocket->getKeepAlive() )
+    , parentSocket ( parentSocket )
 {
     this->state = State::Connected;
 }
@@ -63,7 +66,7 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const SocketShareData& data )
     if ( this->fd == INVALID_SOCKET )
     {
         WindowsException err = WSAGetLastError();
-        LOG_SOCKET ( this, "%s; WSASocket failed", err );
+        LOG_UDP_SOCKET ( this, "%s; WSASocket failed", err );
         this->fd = 0;
         throw err;
     }
@@ -78,7 +81,8 @@ UdpSocket::~UdpSocket()
 
 void UdpSocket::disconnect()
 {
-    if ( !isChild() )
+    // Real UDP sockets need to be removed on disconnect
+    if ( isReal() )
         SocketManager::get().remove ( this );
 
     Socket::disconnect();
@@ -89,14 +93,14 @@ void UdpSocket::disconnect()
     for ( auto& kv : childSockets )
     {
         assert ( typeid ( *kv.second ) == typeid ( UdpSocket ) );
-        static_cast<UdpSocket *> ( kv.second.get() )->parent = 0;
+        static_cast<UdpSocket *> ( kv.second.get() )->parentSocket = 0;
     }
 
     // Check and remove child from parent
-    if ( parent != 0 )
+    if ( parentSocket != 0 )
     {
-        parent->childSockets.erase ( getRemoteAddress() );
-        parent = 0;
+        parentSocket->childSockets.erase ( getRemoteAddress() );
+        parentSocket = 0;
     }
 }
 
@@ -190,13 +194,15 @@ bool UdpSocket::sendRaw ( const MsgPtr& msg, const IpAddrPort& address )
     if ( !buffer.empty() )
         LOG ( "Base64 : %s", toBase64 ( &buffer[0], min ( 256u, buffer.size() ) ) );
 
-    if ( !isChild() )
+    // Real UDP sockets send directly
+    if ( isReal()  )
         return Socket::send ( &buffer[0], buffer.size(), address.empty() ? this->address : address );
 
-    if ( parent )
-        return parent->Socket::send ( &buffer[0], buffer.size(), address.empty() ? this->address : address );
+    // Child UDP sockets send via parent if not disconnected
+    if ( isChild() && parentSocket )
+        return parentSocket->Socket::send ( &buffer[0], buffer.size(), address.empty() ? this->address : address );
 
-    LOG_SOCKET ( this, "Cannot send over disconnected socket" );
+    LOG_UDP_SOCKET ( this, "Cannot send over disconnected socket" );
     return false;
 }
 
@@ -213,20 +219,33 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
     assert ( gbn == &this->gbn );
     assert ( getRemoteAddress().empty() == false );
 
-    LOG_SOCKET ( this, "got '%s'", msg );
-
-    if ( !isChild() )
+    // Child sockets handle GoBackN message as a proxy of the parent socket,
+    // this is so the GoBackN state resides in the child socket.
+    if ( isChild() )
     {
+        assert ( parentSocket->childSockets.find ( getRemoteAddress() ) != parentSocket->childSockets.end() );
+        assert ( parentSocket->childSockets[getRemoteAddress()].get() == this );
+
         switch ( msg->getMsgType() )
         {
             case MsgType::UdpConnect:
-                if ( msg->getAs<UdpConnect>().value == UdpConnect::Reply )
+                switch ( msg->getAs<UdpConnect>().value )
                 {
-                    state = State::Connected;
-                    send ( new UdpConnect ( UdpConnect::Final ) );
-                    LOG_SOCKET ( this, "connectEvent" );
-                    if ( owner )
-                        owner->connectEvent ( this );
+                    case UdpConnect::Request:
+                        // UdpConnect::Request should be responded to with a Reply
+                        send ( new UdpConnect ( UdpConnect::Reply ) );
+                        break;
+
+                    case UdpConnect::Final:
+                        // UdpConnect::Final message means the client connected properly and is now accepted
+                        LOG_UDP_SOCKET ( this, "acceptEvent" );
+                        parentSocket->acceptedSocket = parentSocket->childSockets[getRemoteAddress()];
+                        if ( parentSocket->owner )
+                            parentSocket->owner->acceptEvent ( parentSocket );
+                        break;
+
+                    default:
+                        break;
                 }
                 break;
 
@@ -238,27 +257,23 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
     }
     else
     {
-        assert ( parent->childSockets.find ( getRemoteAddress() ) != parent->childSockets.end() );
+        assert ( isReal() == true );
 
         switch ( msg->getMsgType() )
         {
             case MsgType::UdpConnect:
-                switch ( msg->getAs<UdpConnect>().value )
+                if ( isConnecting() && msg->getAs<UdpConnect>().value == UdpConnect::Reply )
                 {
-                    case UdpConnect::Request:
-                        parent->childSockets[getRemoteAddress()]->send ( new UdpConnect ( UdpConnect::Reply ) );
-                        break;
-
-                    case UdpConnect::Final:
-                        LOG_SOCKET ( this, "acceptEvent" );
-                        parent->acceptedSocket = parent->childSockets[getRemoteAddress()];
-                        if ( parent->owner )
-                            parent->owner->acceptEvent ( parent );
-                        break;
-
-                    default:
-                        break;
+                    // UdpConnect::Reply while connecting indicates this socket is now connected
+                    state = State::Connected;
+                    send ( new UdpConnect ( UdpConnect::Final ) );
+                    LOG_UDP_SOCKET ( this, "connectEvent" );
+                    if ( owner )
+                        owner->connectEvent ( this );
+                    return;
                 }
+
+                LOG_UDP_SOCKET ( this, "Unexpected '%s' from '%s'", msg, address );
                 break;
 
             default:
@@ -274,7 +289,7 @@ void UdpSocket::timeoutGoBackN ( GoBackN *gbn )
     assert ( gbn == &this->gbn );
     assert ( getRemoteAddress().empty() == false );
 
-    LOG_SOCKET ( this, "disconnectEvent" );
+    LOG_UDP_SOCKET ( this, "disconnectEvent" );
 
     Socket::Owner *owner = this->owner;
 
@@ -286,19 +301,29 @@ void UdpSocket::timeoutGoBackN ( GoBackN *gbn )
 
 void UdpSocket::readEvent ( const MsgPtr& msg, const IpAddrPort& address )
 {
-    if ( getKeepAlive() == 0 ) // Recv directly if not in GoBackN mode
+    if ( getKeepAlive() == 0 )
     {
+        // Recv directly if not in GoBackN mode
         if ( owner )
             owner->readEvent ( this, msg, address );
+        return;
     }
-    else if ( isClient() ) // Client sockets recv into the GoBackN instance
+
+    if ( isClient() )
     {
+        // Client UDP sockets recv into the GoBackN instance
         gbn.recvRaw ( msg );
+        return;
     }
-    else if ( !isChild() ) // Server sockets recv into the correctly addressed socket
+
+    if ( isServer() )
     {
+        // Server UDP sockets recv into the addressed socket
         gbnRecvAddressed ( msg, address );
+        return;
     }
+
+    LOG_UDP_SOCKET ( this, "Unexpected '%s' from '%s'", msg, address );
 }
 
 void UdpSocket::gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address )
@@ -322,12 +347,19 @@ void UdpSocket::gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address 
     }
     else
     {
-        LOG_SOCKET ( this, "Unexpected '%s' from '%s'", msg, address );
-        LOG_SOCKET ( this, "Ignoring because no child socket for '%s'", address );
+        LOG_UDP_SOCKET ( this, "Unexpected '%s' from '%s'", msg, address );
+        LOG_UDP_SOCKET ( this, "Ignoring because no child socket for '%s'", address );
         return;
     }
 
     assert ( socket != 0 );
 
     socket->readEvent ( msg, address );
+}
+
+MsgPtr UdpSocket::share ( int processId )
+{
+    MsgPtr data = Socket::share ( processId );
+
+    return data;
 }

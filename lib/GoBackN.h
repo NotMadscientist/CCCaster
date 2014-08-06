@@ -82,4 +82,6 @@ public:
 
     // Reset the state of GoBackN
     void reset();
+
+    friend struct SocketShareData;
 };

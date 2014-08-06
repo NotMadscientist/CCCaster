@@ -12,17 +12,20 @@ struct UdpConnect : public SerializableSequence
 
 class UdpSocket : public Socket, public GoBackN::Owner
 {
-    // Enum type for child sockets
+    // UDP child socket enum type for choosing the right constructor
     enum ChildSocketEnum { ChildSocket };
 
-    // Indicates this is a child socket, and has a parent socket
-    const bool hasParent = false;
+    // UDP socket type enum
+    ENUM ( Type, Client, Server, Child );
 
-    // Parent socket
-    UdpSocket *parent = 0;
+    // UDP socket type constant
+    const Type type = Type::Unknown;
 
     // GoBackN instance
     GoBackN gbn;
+
+    // Parent socket
+    UdpSocket *parentSocket = 0;
 
     // Child sockets
     std::unordered_map<IpAddrPort, SocketPtr> childSockets;
@@ -48,7 +51,7 @@ class UdpSocket : public Socket, public GoBackN::Owner
     UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, uint64_t keepAlive );
 
     // Construct a child socket
-    UdpSocket ( ChildSocketEnum, UdpSocket *parent, const IpAddrPort& address );
+    UdpSocket ( ChildSocketEnum, UdpSocket *parentSocket, const IpAddrPort& address );
 
     // Construct a socket from share data
     UdpSocket ( Socket::Owner *owner, const SocketShareData& data );
@@ -82,8 +85,19 @@ public:
     // Accept a new socket
     SocketPtr accept ( Socket::Owner *owner ) override;
 
-    // Indicates this is a child socket
-    inline bool isChild() const { return hasParent; }
+    // If this UDP socket is backed by a real socket handle, and not proxy of another socket
+    inline bool isReal() const { return ( type == Type::Client || type == Type::Server ); }
+
+    // Child UDP sockets aren't real sockets, they are just proxies that recv from the parent socket
+    inline bool isChild() const { return ( type == Type::Child ); }
+
+    // Get the map of address to child socket
+    inline std::unordered_map<IpAddrPort, SocketPtr>& getChildSockets() { return childSockets; }
+
+    // Get the data needed to share this socket with another process.
+    // Child UDP sockets CANNOT be shared, the parent share data contains all the child sockets.
+    // The child sockets can be restored via getChildSockets after the parent socket is constructed.
+    MsgPtr share ( int processId );
 
     // Send a protocol message, return false indicates disconnected
     bool send ( SerializableMessage *message, const IpAddrPort& address = IpAddrPort() ) override;
@@ -97,3 +111,30 @@ public:
     // Reset the state of the GoBackN instance
     inline void resetGbnState() { gbn.reset(); }
 };
+
+
+// // Contains the GoBackN state
+// struct GoBackNState : public SerializableMessage
+// {
+//     uint64_t keepAlive = 0;
+//     uint32_t sendSequence = 0, recvSequence = 0, ackSequence = 0;
+//     std::list<MsgPtr> sendList;
+// };
+
+
+// // Message for sending UDP socket share data
+// struct ShareUdpSocket : public SerializableMessage, public SocketShareData
+// {
+//     IpAddrPort address;
+//     Socket::Protocol protocol;
+//     Socket::State state;
+//     std::string readBuffer;
+//     size_t readPos = 0;
+//     std::shared_ptr<WSAPROTOCOL_INFO> info;
+
+//     inline bool hasKeepAlive() const { return ( keepAlive != 0 ); }
+
+//     MsgType getMsgType() const override;
+//     void save ( cereal::BinaryOutputArchive& ar ) const override;
+//     void load ( cereal::BinaryInputArchive& ar ) override;
+// };
