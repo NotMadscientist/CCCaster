@@ -120,7 +120,7 @@ void TimerManager::initialize()
     if ( initialized )
         return;
 
-    // Seed the RNG in this thread because Windows has per-thread RNG
+    // Seed the RNG in this thread because Windows has per-thread RNG, and timers are also thread specific
     srand ( time ( 0 ) );
 
     // Make sure we are using a single core on a dual core machine, otherwise timings will be off.
