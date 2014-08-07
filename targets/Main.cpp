@@ -32,24 +32,25 @@ struct Main : public CommonMain
         if ( isHost() )
         {
             assert ( ctrlSocket.get() != 0 );
+            assert ( ctrlSocket->isConnected() == true );
             assert ( dataSocket.get() != 0 );
+            assert ( dataSocket->isConnected() == true );
             assert ( serverCtrlSocket.get() != 0 );
             assert ( serverDataSocket.get() != 0 );
-
-            procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
-
-            // We don't send the dataSocket since it will be included in the serverDataSocket's SocketShareData
-
-            procMan.ipcSend ( serverCtrlSocket->share ( procMan.getProcessId() ) );
-
             assert ( serverDataSocket->getAsUDP().getChildSockets().size() == 1 );
+            assert ( serverDataSocket->getAsUDP().getChildSockets().begin()->second == dataSocket );
 
+            // We don't send the dataSocket since it will be included in serverDataSocket's SocketShareData
+            procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
+            procMan.ipcSend ( serverCtrlSocket->share ( procMan.getProcessId() ) );
             procMan.ipcSend ( serverDataSocket->share ( procMan.getProcessId() ) );
         }
         else
         {
             assert ( ctrlSocket.get() != 0 );
+            assert ( ctrlSocket->isConnected() == true );
             assert ( dataSocket.get() != 0 );
+            assert ( dataSocket->isConnected() == true );
 
             procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
             procMan.ipcSend ( dataSocket->share ( procMan.getProcessId() ) );

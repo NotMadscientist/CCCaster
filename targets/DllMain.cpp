@@ -16,6 +16,8 @@ using namespace std;
 
 #define LOG_FILE FOLDER "dll.log"
 
+#define SEND_INPUTS_INTERVAL 100
+
 
 // Declarations
 void initializePreHacks();
@@ -63,6 +65,92 @@ struct Main : public CommonMain
     // The current transition index
     uint16_t index = 0;
 
+    // If we are currently sending and receiving inputs
+    bool sendRecvInputs = false;
+
+
+    // DLL callback method
+
+    void callback()
+    {
+        if ( state != State::Polling )
+            return;
+
+        // Don't poll for events until a frame step happens
+        if ( previousWorldTimer == *CC_WORLD_TIMER_ADDR )
+            return;
+
+        if ( initialWorldTimer == 0 )
+            initialWorldTimer = *CC_WORLD_TIMER_ADDR;
+
+        previousWorldTimer = *CC_WORLD_TIMER_ADDR;
+
+        frame = ( *CC_WORLD_TIMER_ADDR ) - initialWorldTimer;
+
+        // Input testing code
+        uint16_t input;
+        {
+            uint16_t direction = 5;
+
+            if ( GetKeyState ( 'P' ) & 0x80 )
+                direction = 8;
+            else if ( GetKeyState ( VK_OEM_1 ) & 0x80 )
+                direction = 2;
+
+            if ( GetKeyState ( 'L' ) & 0x80 )
+                --direction;
+            else if ( GetKeyState ( VK_OEM_7 ) & 0x80 )
+                ++direction;
+
+            if ( direction == 5 )
+                direction = 0;
+
+            uint16_t buttons = 0;
+
+            if ( GetKeyState ( 'E' ) & 0x80 )       buttons = ( CC_BUTTON_A | CC_BUTTON_SELECT );
+            if ( GetKeyState ( 'R' ) & 0x80 )       buttons = ( CC_BUTTON_B | CC_BUTTON_CANCEL );
+            if ( GetKeyState ( 'T' ) & 0x80 )       buttons = CC_BUTTON_C;
+            if ( GetKeyState ( VK_SPACE ) & 0x80 )  buttons = CC_BUTTON_D;
+            if ( GetKeyState ( 'A' ) & 0x80 )       buttons = CC_BUTTON_E;
+            if ( GetKeyState ( 'D' ) & 0x80 )       buttons = CC_BUTTON_FN2;
+            if ( GetKeyState ( 'G' ) & 0x80 )       buttons = CC_BUTTON_FN1;
+            if ( GetKeyState ( VK_F5 ) & 0x80 )     buttons = CC_BUTTON_START;
+
+            input = COMBINE_INPUT ( direction, buttons );
+        }
+
+        netMan.setInput ( localPlayer, frame, index, input );
+
+        if ( sendRecvInputs )
+            dataSocket->send ( netMan.getInputs ( localPlayer, frame, index ) );
+
+        for ( ;; )
+        {
+            if ( !EventManager::get().poll ( pollTimeout ) )
+            {
+                state = State::Stopping;
+                return;
+            }
+
+            if ( !sendRecvInputs )
+                break;
+
+            if ( netMan.getEndFrame ( remotePlayer ) + netMan.delay > frame )
+            {
+                timer.reset();
+                break;
+            }
+
+            if ( !timer )
+            {
+                timer.reset ( new Timer ( this ) );
+                timer->start ( SEND_INPUTS_INTERVAL );
+            }
+        }
+
+        procMan.writeGameInput ( localPlayer, netMan.getDelayedInput ( localPlayer, frame, index ) );
+        procMan.writeGameInput ( remotePlayer, netMan.getDelayedInput ( remotePlayer, frame, index ) );
+    }
 
     // ProcessManager
 
@@ -124,9 +212,7 @@ struct Main : public CommonMain
                     else if ( !serverDataSocket )
                     {
                         serverDataSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
-
                         assert ( serverDataSocket->getAsUDP().getChildSockets().size() == 1 );
-
                         dataSocket = serverDataSocket->getAsUDP().getChildSockets().begin()->second;
                         dataSocket->owner = this;
                     }
@@ -137,10 +223,13 @@ struct Main : public CommonMain
                     if ( !ctrlSocket )
                     {
                         ctrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
+                        assert ( ctrlSocket->isConnected() == true );
                     }
                     else if ( !dataSocket )
                     {
                         dataSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
+                        assert ( dataSocket->isConnected() == true );
+                        sendRecvInputs = true;
                     }
                     return;
                 }
@@ -206,81 +295,12 @@ struct Main : public CommonMain
 
     void timerExpired ( Timer *timer ) override
     {
-    }
+        assert ( timer == this->timer.get() );
+        assert ( sendRecvInputs == true );
 
-    // DLL callback
+        dataSocket->send ( netMan.getInputs ( localPlayer, frame, index ) );
 
-    void callback()
-    {
-        if ( state != State::Polling )
-            return;
-
-        // Don't poll for events until a frame step happens
-        if ( previousWorldTimer == *CC_WORLD_TIMER_ADDR )
-            return;
-
-        if ( initialWorldTimer == 0 )
-            initialWorldTimer = *CC_WORLD_TIMER_ADDR;
-
-        previousWorldTimer = *CC_WORLD_TIMER_ADDR;
-
-        frame = ( *CC_WORLD_TIMER_ADDR ) - initialWorldTimer;
-
-        // Input testing code
-        uint16_t input;
-        {
-            uint16_t direction = 5;
-
-            if ( GetKeyState ( 'P' ) & 0x80 )
-                direction = 8;
-            else if ( GetKeyState ( VK_OEM_1 ) & 0x80 )
-                direction = 2;
-
-            if ( GetKeyState ( 'L' ) & 0x80 )
-                --direction;
-            else if ( GetKeyState ( VK_OEM_7 ) & 0x80 )
-                ++direction;
-
-            if ( direction == 5 )
-                direction = 0;
-
-            uint16_t buttons = 0;
-
-            if ( GetKeyState ( 'E' ) & 0x80 )       buttons = ( CC_BUTTON_A | CC_BUTTON_SELECT );
-            if ( GetKeyState ( 'R' ) & 0x80 )       buttons = ( CC_BUTTON_B | CC_BUTTON_CANCEL );
-            if ( GetKeyState ( 'T' ) & 0x80 )       buttons = CC_BUTTON_C;
-            if ( GetKeyState ( VK_SPACE ) & 0x80 )  buttons = CC_BUTTON_D;
-            if ( GetKeyState ( 'A' ) & 0x80 )       buttons = CC_BUTTON_E;
-            if ( GetKeyState ( 'D' ) & 0x80 )       buttons = CC_BUTTON_FN2;
-            if ( GetKeyState ( 'G' ) & 0x80 )       buttons = CC_BUTTON_FN1;
-            if ( GetKeyState ( VK_F5 ) & 0x80 )     buttons = CC_BUTTON_START;
-
-            input = COMBINE_INPUT ( direction, buttons );
-        }
-
-        netMan.setInput ( localPlayer, frame, index, input );
-
-        // TODO use a proper state variable instead of these conditions
-        bool checkInputs = ( dataSocket && dataSocket->isConnected() );
-
-        if ( checkInputs )
-            dataSocket->send ( netMan.getInputs ( localPlayer, frame, index ) );
-
-        do
-        {
-            if ( !EventManager::get().poll ( pollTimeout ) )
-            {
-                state = State::Stopping;
-                return;
-            }
-
-            if ( !checkInputs )
-                break;
-        }
-        while ( netMan.getEndFrame ( remotePlayer ) + netMan.delay < frame + 1 );
-
-        procMan.writeGameInput ( localPlayer, netMan.getDelayedInput ( localPlayer, frame, index ) );
-        procMan.writeGameInput ( remotePlayer, netMan.getDelayedInput ( remotePlayer, frame, index ) );
+        timer->start ( SEND_INPUTS_INTERVAL );
     }
 
     // Constructor
