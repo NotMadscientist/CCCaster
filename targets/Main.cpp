@@ -22,12 +22,18 @@ enum CommandLineOptions { UNKNOWN, HELP, GTEST, STDOUT, PLUS };
 
 struct Main : public CommonMain
 {
-    // ProcessManager
+    MsgPtr netplaySetup;
 
+    // ProcessManager callbacks
     void ipcConnectEvent() override
     {
+        assert ( address.empty() == false );
+        assert ( clientType != ClientType::Unknown );
+        assert ( netplaySetup.get() != 0 );
+
         procMan.ipcSend ( REF_PTR ( address ) );
         procMan.ipcSend ( new ClientType ( clientType ) );
+        procMan.ipcSend ( netplaySetup );
 
         if ( isHost() )
         {
@@ -66,8 +72,7 @@ struct Main : public CommonMain
     {
     }
 
-    // ControllerManager
-
+    // ControllerManager callbacks
     void attachedJoystick ( Controller *controller ) override
     {
     }
@@ -76,14 +81,12 @@ struct Main : public CommonMain
     {
     }
 
-    // Controller
-
+    // Controller callback
     void doneMapping ( Controller *controller, uint32_t key ) override
     {
     }
 
-    // Socket
-
+    // Socket callbacks
     void acceptEvent ( Socket *serverSocket ) override
     {
         if ( serverSocket == serverCtrlSocket.get() )
@@ -106,6 +109,8 @@ struct Main : public CommonMain
             assert ( ctrlSocket->isConnected() == true );
             assert ( dataSocket->isConnected() == true );
 
+            netplaySetup.reset ( new NetplaySetup ( 4, 1 + ( rand() % 2 ) ) );
+            ctrlSocket->send ( netplaySetup );
             procMan.openGame();
         }
     }
@@ -115,11 +120,6 @@ struct Main : public CommonMain
         assert ( ctrlSocket.get() != 0 );
         assert ( dataSocket.get() != 0 );
         assert ( socket == ctrlSocket.get() || socket == dataSocket.get() );
-
-        if ( ctrlSocket->isConnected() && dataSocket->isConnected() )
-        {
-            procMan.openGame();
-        }
     }
 
     void disconnectEvent ( Socket *socket ) override
@@ -129,16 +129,29 @@ struct Main : public CommonMain
 
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
     {
+        if ( !msg.get() )
+            return;
+
+        switch ( msg->getMsgType() )
+        {
+            case MsgType::NetplaySetup:
+                // TODO check state
+                netplaySetup = msg;
+                procMan.openGame();
+                break;
+
+            default:
+                LOG ( "Unexpected '%s'", msg );
+                break;
+        }
     }
 
-    // Timer
-
+    // Timer callback
     void timerExpired ( Timer *timer ) override
     {
     }
 
     // Constructor
-
     Main ( Option opt[], const IpAddrPort& address ) : CommonMain ( address )
     {
         if ( opt[STDOUT] )
@@ -162,7 +175,6 @@ struct Main : public CommonMain
     }
 
     // Destructor
-
     ~Main()
     {
         procMan.closeGame();
@@ -189,6 +201,22 @@ static BOOL WINAPI consoleCtrl ( DWORD ctrl )
 
 int main ( int argc, char *argv[] )
 {
+#if 0
+    Logger::get().initialize();
+
+    size_t consumed;
+    char bytes[] = {};
+
+    MsgPtr msg = Protocol::decode ( bytes, sizeof ( bytes ), consumed );
+
+    assert ( consumed == sizeof ( bytes ) );
+
+    assert ( false );
+
+    Logger::get().deinitialize();
+    return 0;
+#endif
+
     static const Descriptor options[] =
     {
         { UNKNOWN, 0,  "",        "", Arg::None, "Usage: " BINARY " [options]\n\nOptions:" },

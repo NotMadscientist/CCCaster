@@ -90,6 +90,9 @@ public:
     // Reset the state of GoBackN
     void reset();
 
+    // Log the send the list for debugging purposes
+    void logSendList() const;
+
     // Protocol methods
     MsgType getMsgType() const override;
     void save ( cereal::BinaryOutputArchive& ar ) const override;

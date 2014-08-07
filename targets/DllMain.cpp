@@ -69,8 +69,7 @@ struct Main : public CommonMain
     bool sendRecvInputs = false;
 
 
-    // DLL callback method
-
+    // DLL callback
     void callback()
     {
         if ( state != State::Polling )
@@ -152,8 +151,7 @@ struct Main : public CommonMain
         procMan.writeGameInput ( remotePlayer, netMan.getDelayedInput ( remotePlayer, frame, index ) );
     }
 
-    // ProcessManager
-
+    // ProcessManager callbacks
     void ipcDisconnectEvent() override
     {
         EventManager::get().stop();
@@ -167,38 +165,35 @@ struct Main : public CommonMain
         switch ( msg->getMsgType() )
         {
             case MsgType::IpAddrPort:
-                if ( !address.empty() )
-                {
-                    LOG ( "Unexpected '%s'", msg );
-                    break;
-                }
-
+                // TODO check state
                 address = msg->getAs<IpAddrPort>();
                 LOG ( "Using: '%s'", address );
                 break;
 
             case MsgType::ClientType:
-                if ( clientType != ClientType::Unknown )
-                {
-                    LOG ( "Unexpected '%s'", msg );
-                    break;
-                }
-
+                // TODO check state
                 clientType = msg->getAs<ClientType>().value;
                 LOG ( "ClientType is %s", isHost() ? "Host" : "Client" );
+                break;
 
-                // TODO randomize player side per session
-                localPlayer = ( isHost() ? 1 : 2 );
-                remotePlayer = ( isHost() ? 2 : 1 );
+            case MsgType::NetplaySetup:
+                // TODO check state
+                netMan.delay = msg->getAs<NetplaySetup>().delay;
+                if ( isHost() )
+                {
+                    localPlayer = msg->getAs<NetplaySetup>().hostPlayer;
+                    remotePlayer = 3 - msg->getAs<NetplaySetup>().hostPlayer;
+                }
+                else
+                {
+                    remotePlayer = msg->getAs<NetplaySetup>().hostPlayer;
+                    localPlayer = 3 - msg->getAs<NetplaySetup>().hostPlayer;
+                }
+                LOG ( "delay=%d; localPlayer=%d; remotePlayer=%d", netMan.delay, localPlayer, remotePlayer );
                 break;
 
             case MsgType::SocketShareData:
-                if ( clientType == ClientType::Unknown )
-                {
-                    LOG ( "Unexpected '%s'", msg );
-                    break;
-                }
-
+                // TODO check state
                 if ( isHost() )
                 {
                     if ( !ctrlSocket )
@@ -215,8 +210,9 @@ struct Main : public CommonMain
                         assert ( serverDataSocket->getAsUDP().getChildSockets().size() == 1 );
                         dataSocket = serverDataSocket->getAsUDP().getChildSockets().begin()->second;
                         dataSocket->owner = this;
+                        assert ( dataSocket->isConnected() );
+                        sendRecvInputs = true;
                     }
-                    return;
                 }
                 else
                 {
@@ -231,10 +227,7 @@ struct Main : public CommonMain
                         assert ( dataSocket->isConnected() == true );
                         sendRecvInputs = true;
                     }
-                    return;
                 }
-
-                LOG ( "Unexpected '%s'", msg );
                 break;
 
             default:
@@ -243,8 +236,7 @@ struct Main : public CommonMain
         }
     }
 
-    // ControllerManager
-
+    // ControllerManager callbacks
     void attachedJoystick ( Controller *controller ) override
     {
     }
@@ -253,14 +245,12 @@ struct Main : public CommonMain
     {
     }
 
-    // Controller
-
+    // Controller callback
     void doneMapping ( Controller *controller, uint32_t key ) override
     {
     }
 
-    // Socket
-
+    // Socket callbacks
     void acceptEvent ( Socket *serverSocket ) override
     {
     }
@@ -291,8 +281,7 @@ struct Main : public CommonMain
         }
     }
 
-    // Timer
-
+    // Timer callback
     void timerExpired ( Timer *timer ) override
     {
         assert ( timer == this->timer.get() );
@@ -304,18 +293,14 @@ struct Main : public CommonMain
     }
 
     // Constructor
-
     Main()
     {
         // Initialization is not done here because of threading issues
 
         procMan.connectPipe();
-
-        netMan.delay = 4;
     }
 
     // Destructor
-
     ~Main()
     {
         procMan.disconnectPipe();

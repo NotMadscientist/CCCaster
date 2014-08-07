@@ -443,6 +443,10 @@ MsgPtr Socket::share ( int processId )
     }
 
     SocketManager::get().remove ( this );
+
+    LOG ( "Sharing:" );
+    LOG ( "address='%s'; protocol=%s; state=%s", address, protocol, state );
+
     return MsgPtr ( new SocketShareData ( address, protocol, state, readBuffer, readPos, info ) );
 }
 
@@ -474,7 +478,7 @@ void SocketShareData::save ( cereal::BinaryOutputArchive& ar ) const
          info->dwProviderReserved,
          info->szProtocol );
 
-    ar ( Protocol::encode ( clientGbnState ), serverChildSockets );
+    ar ( isUdpServer, Protocol::encode ( gbnState ), childSockets );
 }
 
 void SocketShareData::load ( cereal::BinaryInputArchive& ar )
@@ -508,10 +512,10 @@ void SocketShareData::load ( cereal::BinaryInputArchive& ar )
          info->szProtocol );
 
     string buffer;
-    ar ( buffer, serverChildSockets );
+    ar ( isUdpServer, buffer, childSockets );
 
     size_t consumed;
-    clientGbnState = Protocol::decode ( &buffer[0], buffer.size(), consumed );
+    gbnState = Protocol::decode ( &buffer[0], buffer.size(), consumed );
 }
 
 SocketPtr Socket::shared ( Socket::Owner *owner, const SocketShareData& data )

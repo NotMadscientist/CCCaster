@@ -18,6 +18,18 @@ struct ClientType : public SerializableMessage
 };
 
 
+struct NetplaySetup : public SerializableMessage
+{
+    uint8_t delay = 0;
+    uint8_t hostPlayer = 1;
+
+    inline NetplaySetup() {}
+    inline NetplaySetup ( uint8_t delay, uint8_t hostPlayer ) : delay ( delay ), hostPlayer ( hostPlayer ) {}
+
+    PROTOCOL_BOILERPLATE ( delay, hostPlayer );
+};
+
+
 struct PlayerInputs : public SerializableMessage
 {
     uint32_t frame = 0;

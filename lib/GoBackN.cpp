@@ -224,3 +224,8 @@ void GoBackN::load ( cereal::BinaryInputArchive& ar )
         sendList.push_back ( Protocol::decode ( &buffer[0], buffer.size(), consumed ) );
     }
 }
+
+void GoBackN::logSendList() const
+{
+    LOG_LIST ( sendList, formatSerializableSequence );
+}
