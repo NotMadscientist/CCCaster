@@ -4,6 +4,14 @@
 
 using namespace std;
 
+#define ASSERT_INPUTS_RANGE(START, END, SIZE)               \
+    do {                                                    \
+        assert ( END > START );                             \
+        assert ( END - START <= NUM_INPUTS );               \
+        assert ( START < SIZE );                            \
+        assert ( END <= SIZE );                             \
+    } while ( 0 )
+
 
 uint16_t NetplayManager::getInput ( uint8_t player, uint32_t frame, uint16_t index )
 {
@@ -32,20 +40,17 @@ MsgPtr NetplayManager::getInputs ( uint8_t player, uint32_t frame, uint16_t inde
 
     PlayerInputs *playerInputs = new PlayerInputs ( frame, index );
 
-    if ( frame >= inputs[player - 1].size() )
+    // End frame is frame + 1
+    if ( frame + 1 > inputs[player - 1].size() )
         frame = inputs[player - 1].size() - 1;
 
-    uint32_t start = 0;
+    uint32_t startFrame = 0;
     if ( frame + 1 > NUM_INPUTS )
-        start = frame + 1 - NUM_INPUTS;
+        startFrame = frame + 1 - NUM_INPUTS;
 
-    assert ( frame + 1 > start );
-    assert ( frame + 1 - start <= NUM_INPUTS );
+    ASSERT_INPUTS_RANGE ( startFrame, frame + 1, inputs[player - 1].size() );
 
-    assert ( start < inputs[player - 1].size() );
-    assert ( frame + 1 <= inputs[player - 1].size() );
-
-    copy ( inputs[player - 1].begin() + start, inputs[player - 1].begin() + ( frame + 1 ),
+    copy ( inputs[player - 1].begin() + startFrame, inputs[player - 1].begin() + ( frame + 1 ),
            playerInputs->inputs.begin() );
 
     return MsgPtr ( playerInputs );
@@ -58,11 +63,7 @@ void NetplayManager::setInputs ( uint8_t player, const PlayerInputs& playerInput
     if ( playerInputs.getEndFrame() > inputs[player - 1].size() )
         inputs[player - 1].resize ( playerInputs.getEndFrame(), 0 );
 
-    assert ( playerInputs.getEndFrame() > playerInputs.getStartFrame() );
-    assert ( playerInputs.getEndFrame() - playerInputs.getStartFrame() <= NUM_INPUTS );
-
-    assert ( playerInputs.getStartFrame() < inputs[player - 1].size() );
-    assert ( playerInputs.getEndFrame() <= inputs[player - 1].size() );
+    ASSERT_INPUTS_RANGE ( playerInputs.getStartFrame(), playerInputs.getEndFrame(), inputs[player - 1].size() );
 
     copy ( playerInputs.inputs.begin(), playerInputs.inputs.begin() + playerInputs.size(),
            inputs[player - 1].begin() + playerInputs.getStartFrame() );
