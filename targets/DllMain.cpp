@@ -4,6 +4,7 @@
 #include "Thread.h"
 #include "Constants.h"
 #include "NetplayManager.h"
+#include "ChangeMonitor.h"
 
 #include <windows.h>
 
@@ -35,14 +36,20 @@ static shared_ptr<Main> main;
 // Mutex for deinitialize()
 static Mutex deinitMutex;
 
-// Position of the current menu's cursor
+// Position of the current menu's cursor, this gets updated by ASM hacks
 uint32_t currentMenuIndex = 0;
 
-// Pointer to the value of the character select mode (moon, colour, etc...)
-uint32_t *charaSelectModePtr = 0;
+// Pointers to P1 and P2 character select mode (moon, colour, etc...), this gets updated by ASM hacks
+uint32_t *charaSelectModes[2];
+
+// Enum of values to monitor
+ENUM ( VarName, currentMenuIndex, charaSelectModeP1, charaSelectModeP2 );
 
 
-struct Main : public CommonMain
+struct Main
+        : public CommonMain
+        , public RefChangeMonitor<VarName::Enum, uint32_t>::Owner
+        , public PtrToRefChangeMonitor<VarName::Enum, uint32_t>::Owner
 {
     // The NetplayManager instance
     NetplayManager netMan;
@@ -79,12 +86,23 @@ struct Main : public CommonMain
         if ( previousWorldTimer == *CC_WORLD_TIMER_ADDR )
             return;
 
+        // Start watching for changes when we initialize this timer
         if ( initialWorldTimer == 0 )
+        {
             initialWorldTimer = *CC_WORLD_TIMER_ADDR;
+
+            ChangeMonitor::get().addRef ( this, VarName::currentMenuIndex, currentMenuIndex );
+            ChangeMonitor::get().addPtrToRef ( this, VarName::charaSelectModeP1,
+                                               const_cast<const uint32_t *&> ( charaSelectModes[0] ), ( uint32_t ) 0 );
+            ChangeMonitor::get().addPtrToRef ( this, VarName::charaSelectModeP2,
+                                               const_cast<const uint32_t *&> ( charaSelectModes[1] ), ( uint32_t ) 0 );
+        }
 
         previousWorldTimer = *CC_WORLD_TIMER_ADDR;
 
         frame = ( *CC_WORLD_TIMER_ADDR ) - initialWorldTimer;
+
+        ChangeMonitor::get().check();
 
         // Input testing code
         uint16_t input;
@@ -149,6 +167,12 @@ struct Main : public CommonMain
 
         procMan.writeGameInput ( localPlayer, netMan.getDelayedInput ( localPlayer, frame, index ) );
         procMan.writeGameInput ( remotePlayer, netMan.getDelayedInput ( remotePlayer, frame, index ) );
+    }
+
+    // ChangeMonitor callbacks
+    void hasChanged ( const VarName::Enum& var, uint32_t previous, uint32_t current ) override
+    {
+        LOG ( "%s changed; previous=%u; current=%u", VarName ( var ), previous, current );
     }
 
     // ProcessManager callbacks

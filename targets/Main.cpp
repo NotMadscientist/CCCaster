@@ -294,7 +294,7 @@ int main ( int argc, char *argv[] )
     return 0;
 }
 
-// Empty definitions needed to keep the linker happy
+// Empty definitions for unused DLL stuff, needed to keep the linker happy
 extern "C" void callback() {}
 uint32_t currentMenuIndex;
-uint32_t *charaSelectModePtr;
+uint32_t *charaSelectModes[2];
