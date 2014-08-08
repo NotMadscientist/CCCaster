@@ -12,8 +12,6 @@
 .depend
 Thumbs.db
 cccaster*
-Version.h
-Protocol.*.h
 tmp
 gmon.out
 profile*.txt
