@@ -10,12 +10,12 @@ LAUNCHER = $(FOLDER)/launcher.exe
 MBAA_EXE = MBAA.exe
 
 # Library sources
-GTEST_CC_SRCS = contrib/gtest/fused-src/gtest/gtest-all.cc
-JLIB_CC_SRCS = $(wildcard contrib/JLib/*.cc)
-HOOK_CC_SRCS = $(wildcard contrib/minhook/src/*.cc) $(wildcard contrib/d3dhook/*.cc)
-HOOK_C_SRCS = $(wildcard contrib/minhook/src/hde32/*.c)
+GTEST_CC_SRCS = 3rdparty/gtest/fused-src/gtest/gtest-all.cc
+JLIB_CC_SRCS = $(wildcard 3rdparty/JLib/*.cc)
+HOOK_CC_SRCS = $(wildcard 3rdparty/minhook/src/*.cc) $(wildcard 3rdparty/d3dhook/*.cc)
+HOOK_C_SRCS = $(wildcard 3rdparty/minhook/src/hde32/*.c)
 CONTRIB_CC_SRCS = $(GTEST_CC_SRCS) $(JLIB_CC_SRCS)
-CONTRIB_C_SRCS = $(wildcard contrib/*.c)
+CONTRIB_C_SRCS = $(wildcard 3rdparty/*.c)
 
 # Main program sources
 BASE_CPP_SRCS = $(wildcard *.cpp) $(wildcard lib/*.cpp)
@@ -43,23 +43,23 @@ ZIP = zip
 ifeq ($(OS),Windows_NT)
     CHMOD_X = icacls $@ /grant Everyone:F
     GRANT = icacls $@ /grant Everyone:F
-    ASTYLE = contrib/astyle.exe
+    ASTYLE = 3rdparty/astyle.exe
 else
     CHMOD_X = chmod +x $@
     GRANT =
-    ASTYLE = contrib/astyle
+    ASTYLE = 3rdparty/astyle
 endif
 
 # Build flags
 DEFINES = -DWIN32_LEAN_AND_MEAN -D_M_IX86 -DNAMED_PIPE='"\\\\.\\pipe\\cccaster_pipe"' -DMBAA_EXE='"$(MBAA_EXE)"'
 DEFINES += -DBINARY='"$(BINARY)"' -DHOOK_DLL='"$(DLL)"' -DLAUNCHER='"$(LAUNCHER)"' -DFOLDER='"$(FOLDER)/"'
-INCLUDES = -I$(CURDIR) -I$(CURDIR)/lib -I$(CURDIR)/tests -I$(CURDIR)/contrib -I$(CURDIR)/contrib/cereal/include
-INCLUDES += -I$(CURDIR)/contrib/gtest/include -I$(CURDIR)/contrib/SDL2/include
-INCLUDES += -I$(CURDIR)/contrib/minhook/include -I$(CURDIR)/contrib/d3dhook
+INCLUDES = -I$(CURDIR) -I$(CURDIR)/lib -I$(CURDIR)/tests -I$(CURDIR)/3rdparty -I$(CURDIR)/3rdparty/cereal/include
+INCLUDES += -I$(CURDIR)/3rdparty/gtest/include -I$(CURDIR)/3rdparty/SDL2/include
+INCLUDES += -I$(CURDIR)/3rdparty/minhook/include -I$(CURDIR)/3rdparty/d3dhook
 CC_FLAGS = -m32 $(INCLUDES) $(DEFINES)
 
 # Linker flags
-LD_FLAGS = -m32 -static -L$(CURDIR)/contrib/SDL2/build -L$(CURDIR)/contrib/SDL2/build/.libs
+LD_FLAGS = -m32 -static -L$(CURDIR)/3rdparty/SDL2/build -L$(CURDIR)/3rdparty/SDL2/build/.libs
 LD_FLAGS += -lSDL2 -lSDL2main -lws2_32 -lwinmm -lwinpthread -ldinput8 -lgdi32 -limm32 -lole32 -loleaut32 -lversion
 
 # Build options
@@ -85,14 +85,15 @@ profile: $(ARCHIVE)
 $(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
 	$(ZIP) $(NAME).v$(VERSION).zip $^
 	$(GRANT)
+	rm -rf $(FOLDER)
 	@echo
 	if [ -s scripts/deploy ]; then scripts/deploy; fi;
 
 $(FOLDER):
 	@mkdir $(FOLDER)
 
-$(BINARY): sdl $(MAIN_OBJECTS) icon.res
-	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(MAIN_OBJECTS) icon.res $(LD_FLAGS)
+$(BINARY): sdl $(MAIN_OBJECTS) res/icon.res
+	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(MAIN_OBJECTS) res/icon.res $(LD_FLAGS)
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
@@ -109,8 +110,8 @@ $(LAUNCHER): $(LAUNCHER_CPP_SRCS) $(FOLDER)
 	$(STRIP) $@
 	$(CHMOD_X)
 
-icon.res: icon.rc icon.ico
-	$(WINDRES) -F pe-i386 icon.rc -O coff -o $@
+res/icon.res: res/icon.rc res/icon.ico
+	$(WINDRES) -F pe-i386 res/icon.rc -O coff -o $@
 
 define make_version
 @printf "#define COMMIT_ID \"`git rev-parse HEAD`\"\n\
@@ -140,19 +141,19 @@ version:
 autogen: protocol version
 
 sdl:
-	make --jobs --directory contrib/SDL2 CFLAGS="-m32 -ggdb3 -O0 -fno-inline"
+	make --jobs --directory 3rdparty/SDL2 CFLAGS="-m32 -ggdb3 -O0 -fno-inline"
 	@echo
 
 sdl_release:
-	make --jobs --directory contrib/SDL2 CFLAGS="-m32 -s -Os -O3"
+	make --jobs --directory 3rdparty/SDL2 CFLAGS="-m32 -s -Os -O3"
 	@echo
 
 sdl_profile:
-	make --jobs --directory contrib/SDL2 CFLAGS="-m32 -O3 -fno-rtti -pg"
+	make --jobs --directory 3rdparty/SDL2 CFLAGS="-m32 -O3 -fno-rtti -pg"
 	@echo
 
 sdl_clean:
-	make --directory contrib/SDL2 clean
+	make --directory 3rdparty/SDL2 clean
 
 clean:
 	rm -f $(AUTOGEN_HEADERS) .depend *.res *.exe *.dll *.zip *.o lib/*.o targets/*.o tests/*.o
