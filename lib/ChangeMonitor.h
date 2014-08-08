@@ -27,13 +27,27 @@ protected:
 
 public:
 
-    // Add a RefChangeMonitor, returns a pointer that can be deleted to remove the monitor
+    // Add a RefChangeMonitor, returns a pointer that can be used to remove the monitor
     template<typename O, typename K, typename T>
-    ChangeMonitorPtr addRef ( O *owner, K key, const T& ref );
+    ChangeMonitor *addRef ( O *owner, K key, const T& ref );
 
-    // Add a PtrToRefChangeMonitor, returns a pointer that can be deleted to remove the monitor
+    // Add a PtrToRefChangeMonitor, returns a pointer that can be used to remove the monitor
     template<typename O, typename K, typename T>
-    ChangeMonitorPtr addPtrToRef ( O *owner, K key, const T *&ptr, T nullPtrValue );
+    ChangeMonitor *addPtrToRef ( O *owner, K key, const T *&ptr, T nullPtrValue );
+
+    // Remove a ChangeMonitor, returns true only if something was removed
+    inline bool remove ( ChangeMonitor *monitor )
+    {
+        for ( auto it = monitors.begin(); it != monitors.end(); ++it )
+        {
+            if ( it->get() == monitor )
+            {
+                monitors.erase ( it );
+                return true;
+            }
+        }
+        return false;
+    }
 
     // Check all monitors for changes
     inline void check()
@@ -86,18 +100,6 @@ public:
         , current ( ref )
         , previous ( ref ) {}
 
-    inline ~RefChangeMonitor()
-    {
-        for ( auto it = ChangeMonitor::monitors.begin(); it != ChangeMonitor::monitors.end(); ++it )
-        {
-            if ( it->get() == this )
-            {
-                monitors.erase ( it );
-                return;
-            }
-        }
-    }
-
 protected:
 
     void checkChanged() override
@@ -113,7 +115,7 @@ protected:
 };
 
 template<typename O, typename K, typename T>
-inline ChangeMonitorPtr ChangeMonitor::addRef ( O *owner, K key, const T& ref )
+inline ChangeMonitor *ChangeMonitor::addRef ( O *owner, K key, const T& ref )
 {
     typedef typename RefChangeMonitor<K, T>::Owner Owner;
 
@@ -121,7 +123,7 @@ inline ChangeMonitorPtr ChangeMonitor::addRef ( O *owner, K key, const T& ref )
 
     monitors.push_back ( monitor );
 
-    return monitor;
+    return monitor.get();
 }
 
 
@@ -165,18 +167,6 @@ public:
             previous = *ptr;
     }
 
-    inline ~PtrToRefChangeMonitor()
-    {
-        for ( auto it = ChangeMonitor::monitors.begin(); it != ChangeMonitor::monitors.end(); ++it )
-        {
-            if ( it->get() == this )
-            {
-                monitors.erase ( it );
-                return;
-            }
-        }
-    }
-
 protected:
 
     void checkChanged() override
@@ -197,7 +187,7 @@ protected:
 };
 
 template<typename O, typename K, typename T>
-inline ChangeMonitorPtr ChangeMonitor::addPtrToRef ( O *owner, K key, const T *&ptr, T nullPtrValue )
+inline ChangeMonitor *ChangeMonitor::addPtrToRef ( O *owner, K key, const T *&ptr, T nullPtrValue )
 {
     typedef typename PtrToRefChangeMonitor<K, T>::Owner Owner;
 
@@ -206,5 +196,5 @@ inline ChangeMonitorPtr ChangeMonitor::addPtrToRef ( O *owner, K key, const T *&
 
     monitors.push_back ( monitor );
 
-    return monitor;
+    return monitor.get();
 }

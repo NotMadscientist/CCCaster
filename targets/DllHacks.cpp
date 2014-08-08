@@ -29,7 +29,7 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
     if ( !font )
     {
         D3DXCreateFont (
-            device,
+            device,                         // D3D device pointer
             24,                             // height
             0,                              // width
             FW_NORMAL,                      // weight
