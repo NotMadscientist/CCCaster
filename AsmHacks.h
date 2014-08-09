@@ -32,6 +32,9 @@ extern uint32_t currentMenuIndex;
 ENUM ( CharacterSelectMode, ModeCharacter = 0, ModeMoon = 1, ModeColour = 2 );
 extern uint32_t *charaSelectModes[2];
 
+// Round start counter, this gets incremented whenever players can start moving
+extern uint32_t roundStartCounter;
+
 
 namespace AsmHacks
 {
@@ -62,13 +65,14 @@ static const AsmList hookMainLoop =
         0x6A, 0x01,                                                                 // push 01
         0x6A, 0x00,                                                                 // push 00
         0x6A, 0x00,                                                                 // push 00
-        0xE9, INLINE_DWORD ( CC_LOOP_START_ADDR - MM_HOOK_CALL2_ADDR - 5 )          // jmp CC_LOOP_START_ADDR+6
+        0xE9, INLINE_DWORD ( CC_LOOP_START_ADDR - MM_HOOK_CALL2_ADDR - 5 )          // jmp CC_LOOP_START_ADDR+6 (after)
     } },
 
     // Write the jump location last, due to dependencies on the callback hook code
     { CC_LOOP_START_ADDR, {
         0xE9, INLINE_DWORD ( MM_HOOK_CALL1_ADDR - CC_LOOP_START_ADDR - 5 ),         // jmp MM_HOOK_CALL1_ADDR
         0x90                                                                        // nop
+                                                                                    // after:
     } }
 };
 
@@ -139,7 +143,7 @@ static const AsmList copyMenuVariables =
     { ( void * ) 0x4294D1, {
         0x8B, 0x7E, 0x40,                                           // mov edi,[esi+40]
         0x89, 0x3D, INLINE_DWORD ( &currentMenuIndex ),             // mov [&currentMenuIndex],edi
-        0xE9, 0xF1, 0x04, 0x00, 0x00                                // jmp 004299D0 (goto after)
+        0xE9, 0xF1, 0x04, 0x00, 0x00                                // jmp 0x4299CB+5 (after)
     } },
     { ( void * ) 0x429817, {
         0x85, 0xC9,                                                 // test ecx,ecx
@@ -177,6 +181,27 @@ static const AsmList copyMenuVariables =
         0xD9, 0xE8, 0x8B, 0x0D, 0x08, 0xD8, 0x74, 0x00, 0x69, 0xFF, 0xDC, 0x01, 0x00, 0x00, 0xD9, 0x5C,
         0x0F, 0x28, 0xD8, 0x1D, 0x60, 0xE9, 0x76, 0x00, 0x5F, 0x5E, 0xDF, 0xE0, 0xF6, 0xC4, 0x41, 0x7A,
         0x0B, 0x8B, 0x54, 0x24, 0x04, 0xC7, 0x42, 0x48, 0x01, 0x00, 0x00, 0x00, 0xC2, 0x0C, 0x00
+    } }
+};
+
+static const AsmList detectRoundStart =
+{
+    // Increment a counter at the beginning of the round when players can move
+    { ( void * ) 0x440CC5, {
+        0xEB, 0x4F                                                  // jmp 0x440D16
+                                                                    // after:
+    } },
+    { ( void * ) 0x440D16, {
+        0xB9, INLINE_DWORD ( &roundStartCounter ),                  // mov ecx,[&roundStartCounter]
+        0xE9, 0xE2, 0x02, 0x00, 0x00                                // jmp 0x441002
+    } },
+    { ( void * ) 0x441002, {
+        0x8B, 0x31,                                                 // mov esi,[ecx]
+        0x46,                                                       // inc esi
+        0x89, 0x31,                                                 // mov [ecx],esi
+        0x5E,                                                       // pop esi
+        0x59,                                                       // pop ecx
+        0xE9, 0x07, 0xFD, 0xFF, 0xFF                                // jmp 0x440CC5+2 (after)
     } }
 };
 

@@ -5,6 +5,7 @@
 
 uint32_t currentMenuIndex = 0;
 uint32_t *charaSelectModes[2] = { 0, 0 };
+uint32_t roundStartCounter = 0;
 
 
 int memwrite ( void *dst, const void *src, size_t len )

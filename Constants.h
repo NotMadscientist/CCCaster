@@ -40,7 +40,7 @@
 #define CC_MODE_OPENING             3
 #define CC_MODE_TITLE               2
 #define CC_MODE_MAIN                25
-#define CC_MODE_CH_SELECT           20
+#define CC_MODE_CHARA_SELECT        20
 #define CC_MODE_LOADING             8
 #define CC_MODE_INGAME              1
 #define CC_MODE_RETRY               5
