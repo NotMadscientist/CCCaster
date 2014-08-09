@@ -3,6 +3,8 @@
 using namespace std;
 
 
+ChangeMonitor::ChangeMonitor() {}
+
 ChangeMonitor& ChangeMonitor::get()
 {
     static ChangeMonitor cm;

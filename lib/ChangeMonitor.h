@@ -4,39 +4,38 @@
 #include <memory>
 
 
-class ChangeMonitor;
-typedef std::shared_ptr<ChangeMonitor> ChangeMonitorPtr;
-
-
 class ChangeMonitor
 {
-    // Private copy constructor, etc. for singleton class
+public:
+
+    struct Interface
+    {
+        // To be implemented by derived types, should return true if changed
+        virtual bool check() = 0;
+    };
+
+private:
+
+    // List of all the ChangeMonitor::Interface implmentations
+    std::vector<std::shared_ptr<ChangeMonitor::Interface>> monitors;
+
+    // Private constructor, etc. for singleton class
+    ChangeMonitor();
     ChangeMonitor ( const ChangeMonitor& );
     const ChangeMonitor& operator= ( const ChangeMonitor& );
-
-protected:
-
-    // Protected constructor because this class is also an interface
-    ChangeMonitor() {};
-
-    // Empty base checkChanged method, to be implemented by derived types
-    virtual void checkChanged() {};
-
-    // List of all the ChangeMonitor implmentations
-    std::vector<ChangeMonitorPtr> monitors;
 
 public:
 
     // Add a RefChangeMonitor, returns a pointer that can be used to remove the monitor
     template<typename O, typename K, typename T>
-    ChangeMonitor *addRef ( O *owner, K key, const T& ref );
+    ChangeMonitor::Interface *addRef ( O *owner, K key, const T& ref );
 
     // Add a PtrToRefChangeMonitor, returns a pointer that can be used to remove the monitor
     template<typename O, typename K, typename T>
-    ChangeMonitor *addPtrToRef ( O *owner, K key, const T *&ptr, T nullPtrValue );
+    ChangeMonitor::Interface *addPtrToRef ( O *owner, K key, const T *&ptr, T nullPtrValue );
 
-    // Remove a ChangeMonitor, returns true only if something was removed
-    bool remove ( ChangeMonitor *monitor )
+    // Remove a ChangeMonitor::Interface, returns true only if something was removed
+    bool remove ( ChangeMonitor::Interface *monitor )
     {
         for ( auto it = monitors.begin(); it != monitors.end(); ++it )
         {
@@ -46,6 +45,7 @@ public:
                 return true;
             }
         }
+
         return false;
     }
 
@@ -54,7 +54,7 @@ public:
     {
         // Iterate using indicies, because the list can change
         for ( size_t i = 0; i < monitors.size(); ++i )
-            monitors[i]->checkChanged();
+            monitors[i]->check();
     }
 
     // Clear all monitors
@@ -67,10 +67,12 @@ public:
     static ChangeMonitor& get();
 };
 
+typedef std::shared_ptr<ChangeMonitor::Interface> ChangeMonitorPtr;
+
 
 // This monitors for changes to a reference
 template<typename K, typename T>
-class RefChangeMonitor : public ChangeMonitor
+class RefChangeMonitor : public ChangeMonitor::Interface
 {
 public:
 
@@ -100,22 +102,21 @@ public:
         , current ( ref )
         , previous ( ref ) {}
 
-protected:
-
-    void checkChanged() override
+    bool check() override
     {
         if ( current == previous )
-            return;
+            return false;
 
         if ( owner )
             owner->hasChanged ( key, previous, current );
 
         previous = current;
+        return true;
     }
 };
 
 template<typename O, typename K, typename T>
-ChangeMonitor *ChangeMonitor::addRef ( O *owner, K key, const T& ref )
+ChangeMonitor::Interface *ChangeMonitor::addRef ( O *owner, K key, const T& ref )
 {
     typedef typename RefChangeMonitor<K, T>::Owner Owner;
 
@@ -129,7 +130,7 @@ ChangeMonitor *ChangeMonitor::addRef ( O *owner, K key, const T& ref )
 
 // This monitors for changes of a pointer to a reference (the reference not the pointer)
 template<typename K, typename T>
-class PtrToRefChangeMonitor : public ChangeMonitor
+class PtrToRefChangeMonitor : public ChangeMonitor::Interface
 {
 public:
 
@@ -167,9 +168,7 @@ public:
             previous = *ptr;
     }
 
-protected:
-
-    void checkChanged() override
+    bool check() override
     {
         T current = nullPtrValue;
 
@@ -177,17 +176,18 @@ protected:
             current = *ptr;
 
         if ( current == previous )
-            return;
+            return false;
 
         if ( owner )
             owner->hasChanged ( key, previous, current );
 
         previous = current;
+        return true;
     }
 };
 
 template<typename O, typename K, typename T>
-ChangeMonitor *ChangeMonitor::addPtrToRef ( O *owner, K key, const T *&ptr, T nullPtrValue )
+ChangeMonitor::Interface *ChangeMonitor::addPtrToRef ( O *owner, K key, const T *&ptr, T nullPtrValue )
 {
     typedef typename PtrToRefChangeMonitor<K, T>::Owner Owner;
 
