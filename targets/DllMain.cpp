@@ -2,7 +2,7 @@
 #include "Logger.h"
 #include "Utilities.h"
 #include "Thread.h"
-#include "Constants.h"
+#include "AsmHacks.h"
 #include "NetplayManager.h"
 #include "ChangeMonitor.h"
 
@@ -36,14 +36,8 @@ static shared_ptr<Main> main;
 // Mutex for deinitialize()
 static Mutex deinitMutex;
 
-// Position of the current menu's cursor, this gets updated by ASM hacks
-uint32_t currentMenuIndex = 0;
-
-// Pointers to P1 and P2 character select mode (moon, colour, etc...), this gets updated by ASM hacks
-uint32_t *charaSelectModes[2];
-
 // Enum of values to monitor
-ENUM ( VarName, currentMenuIndex, charaSelectModeP1, charaSelectModeP2 );
+ENUM ( VarName, currentMenuIndex, currentGameMode, charaSelectModeP1, charaSelectModeP2 );
 
 
 struct Main
@@ -92,6 +86,7 @@ struct Main
             initialWorldTimer = *CC_WORLD_TIMER_ADDR;
 
             ChangeMonitor::get().addRef ( this, VarName::currentMenuIndex, currentMenuIndex );
+            ChangeMonitor::get().addRef ( this, VarName::currentGameMode, *CC_GAME_MODE_ADDR );
             ChangeMonitor::get().addPtrToRef ( this, VarName::charaSelectModeP1,
                                                const_cast<const uint32_t *&> ( charaSelectModes[0] ), ( uint32_t ) 0 );
             ChangeMonitor::get().addPtrToRef ( this, VarName::charaSelectModeP2,

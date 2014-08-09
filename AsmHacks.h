@@ -25,12 +25,12 @@ int memwrite ( void *dst, const void *src, size_t len );
 // DLL callback function
 extern "C" void callback();
 
-// Position of the current menu's cursor
+// Position of the current menu's cursor, this gets updated by ASM hacks
 extern uint32_t currentMenuIndex;
 
-// Pointer to the value of the character select mode (character, moon, colour, etc...)
+// Pointers to P1 and P2 character select mode (moon, colour, etc...), this gets updated by ASM hacks
 ENUM ( CharacterSelectMode, ModeCharacter = 0, ModeMoon = 1, ModeColour = 2 );
-extern uint32_t charaSelectModes[2];
+extern uint32_t *charaSelectModes[2];
 
 
 namespace AsmHacks

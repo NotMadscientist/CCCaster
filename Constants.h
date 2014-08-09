@@ -1,7 +1,6 @@
 #pragma once
 
 // Game constants and addresses are prefixed CC
-
 #define CC_VERSION                  "1.4.0"
 #define CC_TITLE                    "MELTY BLOOD Actress Again Current Code Ver.1.07 Rev." CC_VERSION
 #define CC_STARTUP_TITLE_EN         CC_TITLE " Startup Menu"
@@ -11,19 +10,17 @@
 #define CC_LOOP_START_ADDR          ( ( char * )     0x40D330 ) // Start of the main event loop
 #define CC_SCREEN_WIDTH_ADDR        ( ( uint32_t * ) 0x54D048 ) // The width of the main viewport
 #define CC_WORLD_TIMER_ADDR         ( ( uint32_t * ) 0x55D1D4 ) // Frame step timer, always counting up
+#define CC_STAGE_SELECTOR_ADDR      ( ( uint32_t * ) 0x74FD98 ) // Currently selected stage, can be written to
 #define CC_FPS_COUNTER_ADDR         ( ( uint32_t * ) 0x774A70 ) // Value of the displayed FPS counter
 #define CC_PERF_FREQ_ADDR           ( ( uint64_t * ) 0x774A80 ) // Value of QueryPerformanceFrequency for game FPS
 
-#define CC_MAX_MENU_INDEX           ( 20 )
-
-#define CC_PTR_TO_WRITE_INPUT_ADDR  ( ( char * ) 0x76E6AC ) // Pointer to the location to write game input
-#define CC_P1_OFFSET_DIRECTION      ( 0x18 )                // Offset to write P1 direction input
-#define CC_P1_OFFSET_BUTTONS        ( 0x24 )                // Offset to write P1 buttons input
-#define CC_P2_OFFSET_DIRECTION      ( 0x2C )                // Offset to write P2 direction input
-#define CC_P2_OFFSET_BUTTONS        ( 0x38 )                // Offset to write P2 buttons input
+#define CC_PTR_TO_WRITE_INPUT_ADDR  ( ( char * ) 0x76E6AC )     // Pointer to the location to write game input
+#define CC_P1_OFFSET_DIRECTION      ( 0x18 )                    // Offset to write P1 direction input
+#define CC_P1_OFFSET_BUTTONS        ( 0x24 )                    // Offset to write P1 buttons input
+#define CC_P2_OFFSET_DIRECTION      ( 0x2C )                    // Offset to write P2 direction input
+#define CC_P2_OFFSET_BUTTONS        ( 0x38 )                    // Offset to write P2 buttons input
 
 // Directions are just written in numpad format, EXCEPT neutral is 0
-
 #define CC_BUTTON_A                 ( 0x0010 )
 #define CC_BUTTON_B                 ( 0x0020 )
 #define CC_BUTTON_C                 ( 0x0008 )
@@ -36,7 +33,19 @@
 #define CC_BUTTON_SELECT            ( 0x0400 )
 #define CC_BUTTON_CANCEL            ( 0x0800 )
 
-// Asm hack are prefixed MM (for modified memory), they should be written to safe locations
+#define CC_GAME_MODE_ADDR           ( ( uint32_t * ) 0x54EEE8 ) // Current game mode, constants below
 
+// List of game modes revelant to netplay
+#define CC_MODE_STARTUP             65535
+#define CC_MODE_OPENING             3
+#define CC_MODE_TITLE               2
+#define CC_MODE_MAIN                25
+#define CC_MODE_CH_SELECT           20
+#define CC_MODE_LOADING             8
+#define CC_MODE_INGAME              1
+#define CC_MODE_RETRY               5
+
+
+// Asm hacks are prefixed MM (for modified memory), they should be written to safe locations
 #define MM_HOOK_CALL1_ADDR          ( ( char * ) 0x40D032 )
 #define MM_HOOK_CALL2_ADDR          ( ( char * ) 0x40D411 )
