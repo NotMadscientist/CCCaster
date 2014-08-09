@@ -32,16 +32,16 @@ public:
     struct Owner
     {
         // Accepted a socket from server socket
-        inline virtual void acceptEvent ( Socket *serverSocket ) { serverSocket->accept ( this ).reset(); }
+        virtual void acceptEvent ( Socket *serverSocket ) { serverSocket->accept ( this ).reset(); }
 
         // Socket connected event
-        inline virtual void connectEvent ( Socket *socket ) {}
+        virtual void connectEvent ( Socket *socket ) {}
 
         // Socket disconnected event
-        inline virtual void disconnectEvent ( Socket *socket ) {}
+        virtual void disconnectEvent ( Socket *socket ) {}
 
         // Socket read event
-        inline virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) {}
+        virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) {}
     };
 
     // Socket protocol
@@ -108,15 +108,15 @@ public:
     void init();
 
     // Socket state query functions
-    inline bool isTCP() const { return ( protocol == Protocol::TCP ); }
-    inline bool isUDP() const { return ( protocol == Protocol::UDP ); }
-    inline virtual State getState() const { return state; }
-    inline virtual bool isConnecting() const { return isClient() && ( state == State::Connecting ); }
-    inline virtual bool isConnected() const { return isClient() && ( state == State::Connected ); }
-    inline virtual bool isDisconnected() const { return ( state == State::Disconnected ); }
-    inline virtual bool isClient() const { return !address.addr.empty(); }
-    inline virtual bool isServer() const { return address.addr.empty(); }
-    inline virtual const IpAddrPort& getRemoteAddress() const { if ( isServer() ) return NullAddress; return address; }
+    bool isTCP() const { return ( protocol == Protocol::TCP ); }
+    bool isUDP() const { return ( protocol == Protocol::UDP ); }
+    virtual State getState() const { return state; }
+    virtual bool isConnecting() const { return isClient() && ( state == State::Connecting ); }
+    virtual bool isConnected() const { return isClient() && ( state == State::Connected ); }
+    virtual bool isDisconnected() const { return ( state == State::Disconnected ); }
+    virtual bool isClient() const { return !address.addr.empty(); }
+    virtual bool isServer() const { return address.addr.empty(); }
+    virtual const IpAddrPort& getRemoteAddress() const { if ( isServer() ) return NullAddress; return address; }
 
     // Send raw bytes directly, a return value of false indicates socket is disconnected
     bool send ( const char *buffer, size_t len );
@@ -138,10 +138,10 @@ public:
     virtual bool send ( const MsgPtr& msg, const IpAddrPort& address = IpAddrPort() ) = 0;
 
     // Set the packet loss for testing purposes
-    inline void setPacketLoss ( uint8_t percentage ) { packetLoss = percentage; }
+    void setPacketLoss ( uint8_t percentage ) { packetLoss = percentage; }
 
     // Set the check sum fail percentage for testing purposes
-    inline void setCheckSumFail ( uint8_t percentage ) { checkSumFail = percentage; }
+    void setCheckSumFail ( uint8_t percentage ) { checkSumFail = percentage; }
 
     // Cast this to another socket type
     TcpSocket& getAsTCP();
@@ -168,19 +168,19 @@ struct SocketShareData : public SerializableMessage
     MsgPtr gbnState;
     std::unordered_map<IpAddrPort, GoBackN> childSockets;
 
-    inline SocketShareData() {}
+    SocketShareData() {}
 
-    inline SocketShareData ( const IpAddrPort& address,
-                             Socket::Protocol protocol,
-                             Socket::State state,
-                             const std::string& readBuffer,
-                             size_t readPos,
-                             const std::shared_ptr<WSAPROTOCOL_INFO>& info )
+    SocketShareData ( const IpAddrPort& address,
+                      Socket::Protocol protocol,
+                      Socket::State state,
+                      const std::string& readBuffer,
+                      size_t readPos,
+                      const std::shared_ptr<WSAPROTOCOL_INFO>& info )
         : address ( address ), protocol ( protocol ), state ( state )
         , readBuffer ( readBuffer ), readPos ( readPos ), info ( info ) {}
 
-    inline bool isTCP() const { return ( protocol == Socket::Protocol::TCP ); }
-    inline bool isUDP() const { return ( protocol == Socket::Protocol::UDP ); }
+    bool isTCP() const { return ( protocol == Socket::Protocol::TCP ); }
+    bool isUDP() const { return ( protocol == Socket::Protocol::UDP ); }
 
     MsgType getMsgType() const override;
     void save ( cereal::BinaryOutputArchive& ar ) const override;

@@ -28,7 +28,7 @@ namespace std
 
 template<> struct hash<Guid>
 {
-    inline size_t operator() ( const Guid& a ) const
+    size_t operator() ( const Guid& a ) const
     {
         size_t seed = 0;
 
@@ -42,7 +42,7 @@ template<> struct hash<Guid>
 
 template<> struct hash<IndexedGuid>
 {
-    inline size_t operator() ( const IndexedGuid& a ) const
+    size_t operator() ( const IndexedGuid& a ) const
     {
         size_t seed = 0;
 

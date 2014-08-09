@@ -94,13 +94,13 @@ public:
     SocketPtr accept ( Socket::Owner *owner ) override;
 
     // If this UDP socket is backed by a real socket handle, and not proxy of another socket
-    inline bool isReal() const { return ( type == Type::Client || type == Type::Server ); }
+    bool isReal() const { return ( type == Type::Client || type == Type::Server ); }
 
     // Child UDP sockets aren't real sockets, they are just proxies that recv from the parent socket
-    inline bool isChild() const { return ( type == Type::Child ); }
+    bool isChild() const { return ( type == Type::Child ); }
 
     // Get the map of address to child socket
-    inline std::unordered_map<IpAddrPort, SocketPtr>& getChildSockets() { return childSockets; }
+    std::unordered_map<IpAddrPort, SocketPtr>& getChildSockets() { return childSockets; }
 
     // Get the data needed to share this socket with another process.
     // Child UDP sockets CANNOT be shared, the parent SocketShareData contains all the child sockets.
@@ -113,9 +113,9 @@ public:
     bool send ( const MsgPtr& msg, const IpAddrPort& address = IpAddrPort() ) override;
 
     // Get/set the timeout for keep alive packets, 0 to disable
-    inline uint64_t getKeepAlive() const { return gbn.getKeepAlive(); };
-    inline void setKeepAlive ( uint64_t timeout ) { gbn.setKeepAlive ( timeout ); };
+    uint64_t getKeepAlive() const { return gbn.getKeepAlive(); };
+    void setKeepAlive ( uint64_t timeout ) { gbn.setKeepAlive ( timeout ); };
 
     // Reset the state of the GoBackN instance
-    inline void resetGbnState() { gbn.reset(); }
+    void resetGbnState() { gbn.reset(); }
 };

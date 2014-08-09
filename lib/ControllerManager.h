@@ -12,8 +12,8 @@ public:
 
     struct Owner
     {
-        inline virtual void attachedJoystick ( Controller *controller ) {}
-        inline virtual void detachedJoystick ( Controller *controller ) {}
+        virtual void attachedJoystick ( Controller *controller ) {}
+        virtual void detachedJoystick ( Controller *controller ) {}
     };
 
     Owner *owner = 0;
@@ -43,12 +43,12 @@ public:
     void clear();
 
     // Get the keyboard controller
-    inline Controller *getKeyboard() { return &keyboard; };
+    Controller *getKeyboard() { return &keyboard; };
 
     // Initialize / deinitialize controller manager
     void initialize ( Owner *owner );
     void deinitialize();
-    inline bool isInitialized() const { return initialized; }
+    bool isInitialized() const { return initialized; }
 
     // Get the singleton instance
     static ControllerManager& get();

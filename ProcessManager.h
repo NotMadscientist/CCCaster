@@ -22,13 +22,13 @@ public:
     struct Owner
     {
         // IPC connected event
-        inline virtual void ipcConnectEvent() {}
+        virtual void ipcConnectEvent() {}
 
         // IPC disconnected event
-        inline virtual void ipcDisconnectEvent() {}
+        virtual void ipcDisconnectEvent() {}
 
         // IPC read event
-        inline virtual void ipcReadEvent ( const MsgPtr& msg ) {}
+        virtual void ipcReadEvent ( const MsgPtr& msg ) {}
     };
 
     Owner *owner = 0;
@@ -80,19 +80,19 @@ public:
     void disconnectPipe();
 
     // Indicates if the IPC pipe and socket are connected
-    inline bool ipcConnected() const { return ( pipe && ipcSocket && ipcSocket->isClient() && connected ); }
+    bool ipcConnected() const { return ( pipe && ipcSocket && ipcSocket->isClient() && connected ); }
 
     // Send a message over the IPC socket
-    inline bool ipcSend ( Serializable *msg ) { return ipcSend ( MsgPtr ( msg ) ); }
-    inline bool ipcSend ( const MsgPtr& msg ) { if ( !ipcSocket ) return false; else return ipcSocket->send ( msg ); }
+    bool ipcSend ( Serializable *msg ) { return ipcSend ( MsgPtr ( msg ) ); }
+    bool ipcSend ( const MsgPtr& msg ) { if ( !ipcSocket ) return false; else return ipcSocket->send ( msg ); }
 
     // Get the process ID of the game
-    inline int getProcessId() const { return processId; }
+    int getProcessId() const { return processId; }
 
     // Write game input
     void writeGameInput ( uint8_t player, uint16_t direction, uint16_t buttons );
 
-    inline void writeGameInput ( uint8_t player, uint16_t input )
+    void writeGameInput ( uint8_t player, uint16_t input )
     {
         writeGameInput ( player, INLINE_INPUT ( input ) );
     }

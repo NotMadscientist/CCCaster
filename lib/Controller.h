@@ -36,7 +36,7 @@ public:
 
     struct Owner
     {
-        inline virtual void doneMapping ( Controller *controller, uint32_t key ) {}
+        virtual void doneMapping ( Controller *controller, uint32_t key ) {}
     };
 
     Owner *owner = 0;
@@ -98,11 +98,11 @@ public:
     void clearMapping();
 
     // Get the controller state
-    inline uint32_t getState() const { return state; }
+    uint32_t getState() const { return state; }
 
     // Indicates if this is a keyboard / joystick controller
-    inline bool isKeyboard() const { return ( joystick == 0 ); }
-    inline bool isJoystick() const { return ( joystick != 0 ); }
+    bool isKeyboard() const { return ( joystick == 0 ); }
+    bool isJoystick() const { return ( joystick != 0 ); }
 
     friend class ControllerManager;
 };

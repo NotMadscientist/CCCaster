@@ -25,7 +25,7 @@ class Mutex
 
 public:
 
-    inline Mutex()
+    Mutex()
     {
         pthread_mutexattr_t attr;
         pthread_mutexattr_init ( &attr );
@@ -33,17 +33,17 @@ public:
         pthread_mutex_init ( &mutex, &attr );
     }
 
-    inline ~Mutex()
+    ~Mutex()
     {
         pthread_mutex_destroy ( &mutex );
     }
 
-    inline void lock()
+    void lock()
     {
         pthread_mutex_lock ( &mutex );
     }
 
-    inline void unlock()
+    void unlock()
     {
         pthread_mutex_unlock ( &mutex );
     }
@@ -58,12 +58,12 @@ class Lock
 
 public:
 
-    inline Lock ( Mutex& mutex ) : mutex ( mutex )
+    Lock ( Mutex& mutex ) : mutex ( mutex )
     {
         mutex.lock();
     }
 
-    inline ~Lock()
+    ~Lock()
     {
         mutex.unlock();
     }
@@ -79,33 +79,33 @@ class CondVar
 
 public:
 
-    inline CondVar()
+    CondVar()
     {
         pthread_cond_init ( &cond, 0 );
     }
 
-    inline ~CondVar()
+    ~CondVar()
     {
         pthread_cond_destroy ( &cond );
     }
 
-    inline int wait ( Mutex& mutex )
+    int wait ( Mutex& mutex )
     {
         return pthread_cond_wait ( &cond, & ( mutex.mutex ) );
     }
 
-    inline int wait ( Mutex& mutex, long timeout )
+    int wait ( Mutex& mutex, long timeout )
     {
         timespec ts = gettimeoffset ( timeout );
         return pthread_cond_timedwait ( &cond, & ( mutex.mutex ), &ts );
     }
 
-    inline void signal()
+    void signal()
     {
         pthread_cond_signal ( &cond );
     }
 
-    inline void broadcast()
+    void broadcast()
     {
         pthread_cond_broadcast ( &cond );
     }
@@ -121,20 +121,20 @@ class Thread
 
 public:
 
-    inline Thread() {}
-    inline virtual ~Thread() { join(); }
+    Thread() {}
+    virtual ~Thread() { join(); }
 
     virtual void start();
 
     virtual void join();
 
-    inline void release()
+    void release()
     {
         LOCK ( mutex );
         running = false;
     }
 
-    inline bool isRunning() const
+    bool isRunning() const
     {
         LOCK ( mutex );
         return running;

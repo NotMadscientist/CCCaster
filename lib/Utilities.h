@@ -17,19 +17,19 @@
 #define ENUM(NAME, ...)                                                                                         \
     struct NAME : public BetterEnum {                                                                           \
         enum Enum : uint8_t { Unknown, __VA_ARGS__ } value = Unknown;                                           \
-        inline NAME() {}                                                                                        \
-        inline NAME ( Enum value ) : value ( value ) {}                                                         \
-        inline NAME& operator= ( Enum value ) { this->value = value; return *this; }                            \
-        inline std::string str() const override {                                                               \
+        NAME() {}                                                                                               \
+        NAME ( Enum value ) : value ( value ) {}                                                                \
+        NAME& operator= ( Enum value ) { this->value = value; return *this; }                                   \
+        std::string str() const override {                                                                      \
             static const std::vector<std::string> list = split ( "Unknown, " #__VA_ARGS__, ", " );              \
             return #NAME "::" + list[value];                                                                    \
         }                                                                                                       \
-        inline void save ( cereal::BinaryOutputArchive& ar ) const override { ar ( value ); }                   \
-        inline void load ( cereal::BinaryInputArchive& ar ) override { ar ( value ); }                          \
-        inline bool operator== ( const NAME& other ) const { return value == other.value; }                     \
-        inline bool operator!= ( const NAME& other ) const { return value != other.value; }                     \
-        inline bool operator== ( Enum other ) const { return value == other; }                                  \
-        inline bool operator!= ( Enum other ) const { return value != other; }                                  \
+        void save ( cereal::BinaryOutputArchive& ar ) const override { ar ( value ); }                          \
+        void load ( cereal::BinaryInputArchive& ar ) override { ar ( value ); }                                 \
+        bool operator== ( const NAME& other ) const { return value == other.value; }                            \
+        bool operator!= ( const NAME& other ) const { return value != other.value; }                            \
+        bool operator== ( Enum other ) const { return value == other; }                                         \
+        bool operator!= ( Enum other ) const { return value != other; }                                         \
     }
 
 
@@ -50,7 +50,7 @@ namespace std
 
 // Hash util
 template<class T>
-inline void hash_combine ( size_t& seed, const T& v )
+void hash_combine ( size_t& seed, const T& v )
 {
     hash<T> hasher;
     seed ^= hasher ( v ) + 0x9e3779b9 + ( seed << 6 ) + ( seed >> 2 );
@@ -141,8 +141,8 @@ struct Exception
 {
     std::string msg;
 
-    inline Exception() {}
-    inline Exception ( const std::string& msg ) : msg ( msg ) {}
+    Exception() {}
+    Exception ( const std::string& msg ) : msg ( msg ) {}
 };
 
 
@@ -151,7 +151,7 @@ struct WindowsException : public Exception
 {
     int code = 0;
 
-    inline WindowsException() {}
+    WindowsException() {}
     WindowsException ( int code );
 };
 
@@ -178,12 +178,12 @@ class RollingAverage
 
 public:
 
-    inline RollingAverage ( size_t size ) : values ( size ) {}
+    RollingAverage ( size_t size ) : values ( size ) {}
 
-    inline RollingAverage ( size_t size, T initial )
+    RollingAverage ( size_t size, T initial )
         : values ( size, initial ), sum ( initial ), average ( initial ), index ( 1 ), count ( 1 ) {}
 
-    inline void set ( T value )
+    void set ( T value )
     {
         sum += value;
 
@@ -199,24 +199,24 @@ public:
         average = sum / count;
     }
 
-    inline T get() const
+    T get() const
     {
         return average;
     }
 
-    inline void reset()
+    void reset()
     {
         sum = average = index = count = 0;
     }
 
-    inline void reset ( T initial )
+    void reset ( T initial )
     {
         values[0] = initial;
         sum = average = initial;
         index = count = 1;
     }
 
-    inline size_t size() const
+    size_t size() const
     {
         return values.size();
     }

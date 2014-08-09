@@ -27,7 +27,7 @@ class Logger
 public:
 
     // Basic constructor
-    inline Logger() {}
+    Logger() {}
 
     // Initialize / deinitialize logging
     void initialize ( const std::string& name = "", bool prependPidToName = false );

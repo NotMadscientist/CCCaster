@@ -33,13 +33,13 @@ struct CommonMain
     TimerPtr timer;
 
 
-    inline CommonMain() : procMan ( this ) {}
+    CommonMain() : procMan ( this ) {}
 
-    inline CommonMain ( const IpAddrPort& address )
+    CommonMain ( const IpAddrPort& address )
         : address ( address )
         , clientType ( address.addr.empty() ? ClientType::Host : ClientType::Client )
         , procMan ( this ) {}
 
-    inline bool isHost() const { return ( clientType == ClientType::Host ); }
-    inline bool isClient() const { return ( clientType == ClientType::Client ); }
+    bool isHost() const { return ( clientType == ClientType::Host ); }
+    bool isClient() const { return ( clientType == ClientType::Client ); }
 };

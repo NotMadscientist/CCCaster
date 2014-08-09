@@ -28,9 +28,9 @@ public:
 
     void stop();
 
-    inline uint64_t getDelay() const { return delay; }
+    uint64_t getDelay() const { return delay; }
 
-    inline bool isStarted() const { return ( delay > 0 || expiry > 0 ); }
+    bool isStarted() const { return ( delay > 0 || expiry > 0 ); }
 
     friend class TimerManager;
 };

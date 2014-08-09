@@ -8,7 +8,7 @@
 
 struct AckSequence : public SerializableSequence
 {
-    inline AckSequence ( uint32_t sequence ) : SerializableSequence ( sequence ) {}
+    AckSequence ( uint32_t sequence ) : SerializableSequence ( sequence ) {}
     EMPTY_MESSAGE_BOILERPLATE ( AckSequence )
 };
 
@@ -29,7 +29,7 @@ public:
         virtual void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) = 0;
 
         // Timeout GoBackN if keep alive is enabled
-        inline virtual void timeoutGoBackN ( GoBackN *gbn ) {};
+        virtual void timeoutGoBackN ( GoBackN *gbn ) {};
     };
 
     Owner *owner = 0;
@@ -63,8 +63,8 @@ private:
 public:
 
     // Basic constructors
-    inline GoBackN() {}
-    inline GoBackN ( const GoBackN& other ) { *this = other; }
+    GoBackN() {}
+    GoBackN ( const GoBackN& other ) { *this = other; }
     GoBackN ( Owner *owner, uint64_t timeout = 0 );
     GoBackN ( Owner *owner, const GoBackN& state );
     GoBackN& operator= ( const GoBackN& other );
@@ -77,15 +77,15 @@ public:
     void recvRaw ( const MsgPtr& msg );
 
     // Get/set the timeout for keep alive packets, 0 to disable
-    inline uint64_t getKeepAlive() const { return keepAlive; }
+    uint64_t getKeepAlive() const { return keepAlive; }
     void setKeepAlive ( uint64_t timeout );
 
     // Get the number of messages sent and received
-    inline uint32_t getSendCount() const { return sendSequence; }
-    inline uint32_t getRecvCount() const { return recvSequence; }
+    uint32_t getSendCount() const { return sendSequence; }
+    uint32_t getRecvCount() const { return recvSequence; }
 
     // Get the number of messages ACKed
-    inline uint32_t getAckCount() const { return ackSequence; }
+    uint32_t getAckCount() const { return ackSequence; }
 
     // Reset the state of GoBackN
     void reset();

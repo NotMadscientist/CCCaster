@@ -17,10 +17,10 @@ class ChangeMonitor
 protected:
 
     // Protected constructor because this class is also an interface
-    inline ChangeMonitor() {};
+    ChangeMonitor() {};
 
     // Empty base checkChanged method, to be implemented by derived types
-    inline virtual void checkChanged() {};
+    virtual void checkChanged() {};
 
     // List of all the ChangeMonitor implmentations
     std::vector<ChangeMonitorPtr> monitors;
@@ -36,7 +36,7 @@ public:
     ChangeMonitor *addPtrToRef ( O *owner, K key, const T *&ptr, T nullPtrValue );
 
     // Remove a ChangeMonitor, returns true only if something was removed
-    inline bool remove ( ChangeMonitor *monitor )
+    bool remove ( ChangeMonitor *monitor )
     {
         for ( auto it = monitors.begin(); it != monitors.end(); ++it )
         {
@@ -50,7 +50,7 @@ public:
     }
 
     // Check all monitors for changes
-    inline void check()
+    void check()
     {
         // Iterate using indicies, because the list can change
         for ( size_t i = 0; i < monitors.size(); ++i )
@@ -58,7 +58,7 @@ public:
     }
 
     // Clear all monitors
-    inline void clear()
+    void clear()
     {
         monitors.clear();
     }
@@ -76,7 +76,7 @@ public:
 
     struct Owner
     {
-        inline virtual void hasChanged ( const K& key, T previous, T current ) {}
+        virtual void hasChanged ( const K& key, T previous, T current ) {}
     };
 
     Owner *owner = 0;
@@ -94,7 +94,7 @@ private:
 
 public:
 
-    inline RefChangeMonitor ( Owner *owner, K key, const T& ref )
+    RefChangeMonitor ( Owner *owner, K key, const T& ref )
         : owner ( owner )
         , key ( key )
         , current ( ref )
@@ -115,7 +115,7 @@ protected:
 };
 
 template<typename O, typename K, typename T>
-inline ChangeMonitor *ChangeMonitor::addRef ( O *owner, K key, const T& ref )
+ChangeMonitor *ChangeMonitor::addRef ( O *owner, K key, const T& ref )
 {
     typedef typename RefChangeMonitor<K, T>::Owner Owner;
 
@@ -135,7 +135,7 @@ public:
 
     struct Owner
     {
-        inline virtual void hasChanged ( const K& key, T previous, T current ) {}
+        virtual void hasChanged ( const K& key, T previous, T current ) {}
     };
 
     Owner *owner = 0;
@@ -156,7 +156,7 @@ private:
 
 public:
 
-    inline PtrToRefChangeMonitor ( Owner *owner, K key, const T *&ptr, T nullPtrValue )
+    PtrToRefChangeMonitor ( Owner *owner, K key, const T *&ptr, T nullPtrValue )
         : owner ( owner )
         , key ( key )
         , ptr ( ptr )
@@ -187,7 +187,7 @@ protected:
 };
 
 template<typename O, typename K, typename T>
-inline ChangeMonitor *ChangeMonitor::addPtrToRef ( O *owner, K key, const T *&ptr, T nullPtrValue )
+ChangeMonitor *ChangeMonitor::addPtrToRef ( O *owner, K key, const T *&ptr, T nullPtrValue )
 {
     typedef typename PtrToRefChangeMonitor<K, T>::Owner Owner;
 

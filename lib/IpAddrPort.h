@@ -24,26 +24,26 @@ struct IpAddrPort : public SerializableMessage
     uint16_t port = 0;
     bool isV4 = true;
 
-    inline IpAddrPort() {}
-    inline IpAddrPort ( const std::string& addr, uint16_t port ) : addr ( addr ), port ( port ) {}
+    IpAddrPort() {}
+    IpAddrPort ( const std::string& addr, uint16_t port ) : addr ( addr ), port ( port ) {}
 
     IpAddrPort ( const std::string& addrPort );
     IpAddrPort ( const sockaddr *sa );
 
     const std::shared_ptr<addrinfo>& getAddrInfo() const;
 
-    inline bool empty() const
+    bool empty() const
     {
         return ( addr.empty() && !port );
     }
 
-    inline void clear()
+    void clear()
     {
         addr.clear();
         port = 0;
     }
 
-    inline std::string str() const
+    std::string str() const
     {
         if ( empty() )
             return "";
@@ -52,7 +52,7 @@ struct IpAddrPort : public SerializableMessage
         return ss.str();
     }
 
-    inline const char *c_str() const
+    const char *c_str() const
     {
         if ( empty() )
             return "";
@@ -76,7 +76,7 @@ namespace std
 
 template<> struct hash<IpAddrPort>
 {
-    inline size_t operator() ( const IpAddrPort& a ) const
+    size_t operator() ( const IpAddrPort& a ) const
     {
         size_t seed = 0;
         hash_combine ( seed, a.addr );

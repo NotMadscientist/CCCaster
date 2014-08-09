@@ -50,16 +50,16 @@ public:
     // Initialize / deinitialize timer manager
     void initialize();
     void deinitialize();
-    inline bool isInitialized() const { return initialized; }
+    bool isInitialized() const { return initialized; }
 
     // Indicates if using the hi-res timer
-    inline bool isHiRes() const { return useHiResTimer; }
+    bool isHiRes() const { return useHiResTimer; }
 
     // Get the current time in milliseconds
-    inline uint64_t getNow() const { return now; }
+    uint64_t getNow() const { return now; }
 
     // Get the next time when a timer will expire
-    inline uint64_t getNextExpiry() const { return nextExpiry; }
+    uint64_t getNextExpiry() const { return nextExpiry; }
 
     // Get the singleton instance
     static TimerManager& get();
