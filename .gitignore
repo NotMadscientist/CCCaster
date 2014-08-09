@@ -12,6 +12,6 @@
 .depend
 Thumbs.db
 cccaster*
-tmp
+tmp*
 gmon.out
 profile*.txt

@@ -1,5 +1,9 @@
 #pragma once
 
+// Number of frames of inputs to send per message
+#define NUM_INPUTS                  30
+
+
 // Game constants and addresses are prefixed CC
 #define CC_VERSION                  "1.4.0"
 #define CC_TITLE                    "MELTY BLOOD Actress Again Current Code Ver.1.07 Rev." CC_VERSION
@@ -10,6 +14,7 @@
 #define CC_LOOP_START_ADDR          ( ( char * )     0x40D330 ) // Start of the main event loop
 #define CC_SCREEN_WIDTH_ADDR        ( ( uint32_t * ) 0x54D048 ) // The width of the main viewport
 #define CC_WORLD_TIMER_ADDR         ( ( uint32_t * ) 0x55D1D4 ) // Frame step timer, always counting up
+#define CC_SKIP_FRAMES_ADDR         ( ( uint32_t * ) 0x55D25C ) // Set to N to disable FPS limit for N frames
 #define CC_STAGE_SELECTOR_ADDR      ( ( uint32_t * ) 0x74FD98 ) // Currently selected stage, can be written to
 #define CC_FPS_COUNTER_ADDR         ( ( uint32_t * ) 0x774A70 ) // Value of the displayed FPS counter
 #define CC_PERF_FREQ_ADDR           ( ( uint64_t * ) 0x774A80 ) // Value of QueryPerformanceFrequency for game FPS
@@ -36,14 +41,22 @@
 #define CC_GAME_MODE_ADDR           ( ( uint32_t * ) 0x54EEE8 ) // Current game mode, constants below
 
 // List of game modes revelant to netplay
-#define CC_MODE_STARTUP             65535
-#define CC_MODE_OPENING             3
-#define CC_MODE_TITLE               2
-#define CC_MODE_MAIN                25
-#define CC_MODE_CHARA_SELECT        20
-#define CC_MODE_LOADING             8
-#define CC_MODE_INGAME              1
-#define CC_MODE_RETRY               5
+#define CC_GAME_MODE_STARTUP        65535
+#define CC_GAME_MODE_OPENING        3
+#define CC_GAME_MODE_TITLE          2
+#define CC_GAME_MODE_DEMO           13
+#define CC_GAME_MODE_MAIN           25
+#define CC_GAME_MODE_CHARA_SELECT   20
+#define CC_GAME_MODE_LOADING        8
+#define CC_GAME_MODE_INGAME         1
+#define CC_GAME_MODE_RETRY          5
+
+// Complete RNG state
+#define CC_RNGSTATE0_ADDR           ( ( uint32_t * ) 0x563778 )
+#define CC_RNGSTATE1_ADDR           ( ( uint32_t * ) 0x56377C )
+#define CC_RNGSTATE2_ADDR           ( ( uint32_t * ) 0x564068 )
+#define CC_RNGSTATE3_ADDR           ( ( char * )     0x56406C )
+#define CC_RNGSTATE3_SIZE           224
 
 
 // Asm hacks are prefixed MM (for modified memory), they should be written to safe locations

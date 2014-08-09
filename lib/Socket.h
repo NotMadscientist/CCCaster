@@ -154,7 +154,7 @@ public:
 
 
 // Contains data for sharing a socket across processes
-struct SocketShareData : public SerializableMessage
+struct SocketShareData : public SerializableSequence
 {
     IpAddrPort address;
     Socket::Protocol protocol;

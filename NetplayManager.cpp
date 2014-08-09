@@ -1,8 +1,10 @@
 #include "NetplayManager.h"
+#include "Logger.h"
 
 #include <algorithm>
 
 using namespace std;
+
 
 #define ASSERT_INPUTS_RANGE(START, END, SIZE)               \
     do {                                                    \
@@ -13,7 +15,13 @@ using namespace std;
     } while ( 0 )
 
 
-uint16_t NetplayManager::getInput ( uint8_t player, uint32_t frame, uint16_t index )
+void NetplayManager::setDelay ( uint8_t delay )
+{
+    // TODO handle rollback delay
+    this->delay = delay;
+}
+
+uint16_t NetplayManager::getInput ( uint8_t player, uint32_t frame, uint16_t index ) const
 {
     assert ( player == 1 || player == 2 );
 
@@ -33,7 +41,7 @@ void NetplayManager::setInput ( uint8_t player, uint32_t frame, uint16_t index, 
     inputs[player - 1][frame] = input;
 }
 
-MsgPtr NetplayManager::getInputs ( uint8_t player, uint32_t frame, uint16_t index )
+MsgPtr NetplayManager::getInputs ( uint8_t player, uint32_t frame, uint16_t index ) const
 {
     assert ( player == 1 || player == 2 );
     assert ( inputs[player - 1].empty() == false );
@@ -69,7 +77,7 @@ void NetplayManager::setInputs ( uint8_t player, const PlayerInputs& playerInput
            inputs[player - 1].begin() + playerInputs.getStartFrame() );
 }
 
-uint16_t NetplayManager::getDelayedInput ( uint8_t player, uint32_t frame, uint16_t index )
+uint16_t NetplayManager::getDelayedInput ( uint8_t player, uint32_t frame, uint16_t index ) const
 {
     assert ( player == 1 || player == 2 );
 
@@ -82,7 +90,7 @@ uint16_t NetplayManager::getDelayedInput ( uint8_t player, uint32_t frame, uint1
     return inputs[player - 1][frame - delay];
 }
 
-uint32_t NetplayManager::getEndFrame ( uint8_t player )
+uint32_t NetplayManager::getEndFrame ( uint8_t player ) const
 {
     assert ( player == 1 || player == 2 );
 

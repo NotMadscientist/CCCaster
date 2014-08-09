@@ -9,6 +9,7 @@
 #include <windows.h>
 
 #include <cassert>
+#include <algorithm>
 
 using namespace std;
 
@@ -46,6 +47,18 @@ void ProcessManager::writeGameInput ( uint8_t player, uint16_t direction, uint16
             LOG_AND_THROW_STRING ( "Invalid player number!" );
             break;
     }
+}
+
+MsgPtr ProcessManager::getRngState() const
+{
+    RngState *rngState = new RngState();
+
+    rngState->rngState0 = *CC_RNGSTATE0_ADDR;
+    rngState->rngState1 = *CC_RNGSTATE1_ADDR;
+    rngState->rngState2 = *CC_RNGSTATE2_ADDR;
+    copy ( CC_RNGSTATE3_ADDR, CC_RNGSTATE3_ADDR + CC_RNGSTATE3_SIZE, rngState->rngState3.begin() );
+
+    return MsgPtr ( rngState );
 }
 
 void ProcessManager::acceptEvent ( Socket *serverSocket )

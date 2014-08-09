@@ -9,7 +9,7 @@ using namespace std;
 using namespace cereal;
 
 // Useful options for debugging and testing
-// #define LOG_DECODE
+// #define LOG_PROTOCOL
 // #define FORCE_COMPRESSION
 
 
@@ -80,6 +80,13 @@ string Protocol::encode ( const MsgPtr& msg )
     {
         getMD5 ( ss.str(), msg->md5 );
         msg->md5empty = false;
+
+#ifdef LOG_PROTOCOL
+        LOG ( "%s", msg->getMsgType() );
+        if ( ss.str().size() <= 256 )
+            LOG ( "data=[ %s ]", toBase64 ( ss.str() ) );
+        LOG ( "md5=[ %s ]", toBase64 ( msg->md5, sizeof ( msg->md5 ) ) );
+#endif
     }
 
     // Encode MD5 at end of message data
@@ -105,7 +112,7 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
     // Decode with compression
     DecodeResult result = decodeStageTwo ( bytes, len, consumed, type, data );
 
-#ifdef LOG_DECODE
+#ifdef LOG_PROTOCOL
     LOG ( "decodeStageTwo: result=%s", result );
 #endif
 
@@ -115,7 +122,7 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
         return NullMsg;
     }
 
-#ifdef LOG_DECODE
+#ifdef LOG_PROTOCOL
     if ( data.size() <= 256 )
         LOG ( "decodeStageTwo: data=[ %s ]", toBase64 ( data ) );
 #endif
@@ -147,7 +154,7 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
     }
     catch ( const cereal::Exception& err )
     {
-#ifdef LOG_DECODE
+#ifdef LOG_PROTOCOL
         LOG ( "type=%s; cereal::Exception: '%s'", type, err.what() );
 #endif
         msg.reset();
@@ -168,13 +175,18 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
         consumed = ( len - remaining );
     }
 
-    if ( !checkMD5 ( &data[0], data.size() - sizeof ( msg->md5 ), msg->md5 ) )
-    {
-#ifdef LOG_DECODE
-        LOG ( "MD5 checksum failed" );
-#endif
-        return NullMsg;
-    }
+//     if ( !checkMD5 ( &data[0], consumed - sizeof ( msg->md5 ), msg->md5 ) )
+//     {
+// #ifdef LOG_PROTOCOL
+//         LOG ( "MD5 checksum failed for %s", type );
+//         LOG ( "data=[ %s ]", toBase64 ( &data[0], consumed - sizeof ( msg->md5 ) ) );
+//         LOG ( "md5     =[ %s ]", toBase64 ( msg->md5, sizeof ( msg->md5 ) ) );
+//         char md5[sizeof ( msg->md5 )];
+//         getMD5 ( &data[0], consumed - sizeof ( msg->md5 ), md5 );
+//         LOG ( "expected=[ %s ]", toBase64 ( md5, sizeof ( msg->md5 ) ) );
+// #endif
+//         return NullMsg;
+//     }
 
     return msg;
 }
@@ -288,4 +300,9 @@ ostream& operator<< ( ostream& os, const MsgPtr& msg )
         return ( os << "NullMsg" );
     else
         return ( os << msg->str() );
+}
+
+ostream& operator<< ( ostream& os, const Serializable& msg )
+{
+    return ( os << msg.str() );
 }

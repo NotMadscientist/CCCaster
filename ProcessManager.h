@@ -2,6 +2,7 @@
 
 #include "Socket.h"
 #include "Timer.h"
+#include "Protocol.h"
 
 
 #define COMBINE_INPUT(DIRECTION, BUTTONS)   ( ( DIRECTION ) | ( ( BUTTONS ) << 4 ) )
@@ -9,7 +10,7 @@
 #define INLINE_INPUT(INPUT)                 ( ( INPUT ) & 0x000F ), ( ( ( INPUT ) & 0xFFF0 ) >> 4 )
 
 
-struct IpcConnected : public SerializableMessage
+struct IpcConnected : public SerializableSequence
 {
     EMPTY_MESSAGE_BOILERPLATE ( IpcConnected )
 };
@@ -96,4 +97,7 @@ public:
     {
         writeGameInput ( player, INLINE_INPUT ( input ) );
     }
+
+    // Get the game RNG state
+    MsgPtr getRngState() const;
 };

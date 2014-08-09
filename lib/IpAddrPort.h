@@ -18,7 +18,7 @@ uint16_t getPortFromSockAddr ( const sockaddr *sa );
 const char *inet_ntop ( int af, const void *src, char *dst, size_t size );
 
 // IP address with port
-struct IpAddrPort : public SerializableMessage
+struct IpAddrPort : public SerializableSequence
 {
     std::string addr;
     uint16_t port = 0;

@@ -379,7 +379,8 @@ void Socket::readEvent()
         return;
     }
 
-    LOG ( "Base64 : %s", toBase64 ( bufferEnd, min ( 256u, bufferLen ) ) );
+    if ( bufferLen <= 256 )
+        LOG ( "Base64 : %s", toBase64 ( bufferEnd, bufferLen ) );
 
     if ( readPos >= sizeof ( MsgType ) && ! ::Protocol::checkMsgType ( * ( MsgType * ) &readBuffer[0] ) )
     {
@@ -426,8 +427,9 @@ MsgPtr Socket::share ( int processId )
 
     if ( WSADuplicateSocket ( fd, processId, info.get() ) )
     {
-        LOG_SOCKET ( this, "%s; WSADuplicateSocket failed", WindowsException ( WSAGetLastError() ) );
-        return 0;
+        WindowsException err = WSAGetLastError();
+        LOG_SOCKET ( this, "%s; WSADuplicateSocket failed", err );
+        throw err;
     }
 
     // Workaround for Wine, because apparently these aren't set

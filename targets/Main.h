@@ -22,7 +22,9 @@ struct CommonMain
 {
     IpAddrPort address;
 
-    ClientType::Enum clientType = ClientType::Unknown;
+    ClientType clientType;
+
+    NetplaySetup netplaySetup;
 
     ProcessManager procMan;
 

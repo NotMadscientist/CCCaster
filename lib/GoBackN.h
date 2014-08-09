@@ -13,7 +13,7 @@ struct AckSequence : public SerializableSequence
 };
 
 
-class GoBackN : public Timer::Owner, public SerializableMessage
+class GoBackN : public Timer::Owner, public SerializableSequence
 {
 public:
 

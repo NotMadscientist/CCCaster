@@ -237,8 +237,8 @@ bool UdpSocket::sendRaw ( const MsgPtr& msg, const IpAddrPort& address )
 
     LOG ( "Encoded '%s' to [ %u bytes ]", msg, buffer.size() );
 
-    if ( !buffer.empty() )
-        LOG ( "Base64 : %s", toBase64 ( &buffer[0], min ( 256u, buffer.size() ) ) );
+    if ( !buffer.empty() && buffer.size() <= 256 )
+        LOG ( "Base64 : %s", toBase64 ( buffer ) );
 
     // Real UDP sockets send directly
     if ( isReal()  )

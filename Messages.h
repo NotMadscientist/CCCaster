@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Constants.h"
 #include "Protocol.h"
 
 #include <cereal/types/array.hpp>
@@ -9,24 +10,38 @@
 #include <cassert>
 
 
-#define NUM_INPUTS 30
-
-
-struct ClientType : public SerializableMessage
+struct ClientType : public SerializableSequence
 {
-    ENUM_MESSAGE_BOILERPLATE ( ClientType, Host, Client );
+    ENUM_MESSAGE_BOILERPLATE ( ClientType, Host, Client )
 };
 
 
-struct NetplaySetup : public SerializableMessage
+struct EndOfMessages : public SerializableSequence
+{
+    EMPTY_MESSAGE_BOILERPLATE ( EndOfMessages )
+};
+
+
+struct NetplaySetup : public SerializableSequence
 {
     uint8_t delay = 0;
     uint8_t hostPlayer = 1;
+    uint8_t training = 0;
 
     NetplaySetup() {}
-    NetplaySetup ( uint8_t delay, uint8_t hostPlayer ) : delay ( delay ), hostPlayer ( hostPlayer ) {}
 
-    PROTOCOL_BOILERPLATE ( delay, hostPlayer );
+    PROTOCOL_BOILERPLATE ( delay, hostPlayer, training )
+};
+
+
+struct RngState : public SerializableSequence
+{
+    uint32_t rngState0, rngState1, rngState2;
+    std::array<char, CC_RNGSTATE3_SIZE> rngState3;
+
+    RngState() {}
+
+    PROTOCOL_BOILERPLATE ( rngState0, rngState1, rngState2, rngState3 );
 };
 
 
@@ -45,7 +60,7 @@ struct PlayerInputs : public SerializableMessage
     PlayerInputs() {}
     PlayerInputs ( uint32_t frame, uint16_t index ) : frame ( frame ), index ( index ) {}
 
-    PROTOCOL_BOILERPLATE ( frame, index, inputs );
+    PROTOCOL_BOILERPLATE ( frame, index, inputs )
 };
 
 

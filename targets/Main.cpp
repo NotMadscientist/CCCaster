@@ -22,18 +22,16 @@ enum CommandLineOptions { UNKNOWN, HELP, GTEST, STDOUT, PLUS };
 
 struct Main : public CommonMain
 {
-    MsgPtr netplaySetup;
-
     // ProcessManager callbacks
     void ipcConnectEvent() override
     {
         assert ( address.empty() == false );
         assert ( clientType != ClientType::Unknown );
-        assert ( netplaySetup.get() != 0 );
+        assert ( netplaySetup.delay != 0 );
 
         procMan.ipcSend ( REF_PTR ( address ) );
-        procMan.ipcSend ( new ClientType ( clientType ) );
-        procMan.ipcSend ( netplaySetup );
+        procMan.ipcSend ( REF_PTR ( clientType ) );
+        procMan.ipcSend ( REF_PTR ( netplaySetup ) );
 
         if ( isHost() )
         {
@@ -61,6 +59,8 @@ struct Main : public CommonMain
             procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
             procMan.ipcSend ( dataSocket->share ( procMan.getProcessId() ) );
         }
+
+        procMan.ipcSend ( new EndOfMessages() );
     }
 
     void ipcDisconnectEvent() override
@@ -109,8 +109,11 @@ struct Main : public CommonMain
             assert ( ctrlSocket->isConnected() == true );
             assert ( dataSocket->isConnected() == true );
 
-            netplaySetup.reset ( new NetplaySetup ( 4, 1 + ( rand() % 2 ) ) );
-            ctrlSocket->send ( netplaySetup );
+            netplaySetup.delay = 4;
+            netplaySetup.hostPlayer = 1 + ( rand() % 2 );
+            netplaySetup.training = 0;
+
+            ctrlSocket->send ( REF_PTR ( netplaySetup ) );
             procMan.openGame();
         }
     }
@@ -136,7 +139,7 @@ struct Main : public CommonMain
         {
             case MsgType::NetplaySetup:
                 // TODO check state
-                netplaySetup = msg;
+                netplaySetup = msg->getAs<NetplaySetup>();
                 procMan.openGame();
                 break;
 
@@ -204,14 +207,25 @@ int main ( int argc, char *argv[] )
 #if 0
     Logger::get().initialize();
 
-    size_t consumed;
-    char bytes[] = {};
+    size_t pos = 0, consumed;
+    char bytes[] =
+    {
+    };
 
-    MsgPtr msg = Protocol::decode ( bytes, sizeof ( bytes ), consumed );
+    for ( ;; )
+    {
+        if ( pos == sizeof ( bytes ) )
+            break;
 
-    assert ( consumed == sizeof ( bytes ) );
+        MsgPtr msg = Protocol::decode ( &bytes[pos], sizeof ( bytes ) - pos, consumed );
 
-    assert ( false );
+        pos += consumed;
+
+        PRINT ( "%s", msg );
+
+        if ( !msg )
+            break;
+    }
 
     Logger::get().deinitialize();
     return 0;

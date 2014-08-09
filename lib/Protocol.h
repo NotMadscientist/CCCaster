@@ -27,6 +27,10 @@
         static const std::vector<std::string> list = split ( "Unknown, " #__VA_ARGS__, ", " );              \
         return #NAME "::" + list[value];                                                                    \
     }                                                                                                       \
+    bool operator== ( const NAME& other ) const { return value == other.value; }                            \
+    bool operator!= ( const NAME& other ) const { return value != other.value; }                            \
+    bool operator== ( Enum other ) const { return value == other; }                                         \
+    bool operator!= ( Enum other ) const { return value != other; }                                         \
     PROTOCOL_BOILERPLATE ( value )
 
 #define REF_PTR(VALUE) MsgPtr ( &VALUE, ignoreMsgPtr )
@@ -46,6 +50,7 @@ struct Serializable;
 typedef std::shared_ptr<Serializable> MsgPtr;
 std::ostream& operator<< ( std::ostream& os, MsgType type );
 std::ostream& operator<< ( std::ostream& os, const MsgPtr& msg );
+std::ostream& operator<< ( std::ostream& os, const Serializable& msg );
 
 
 // Function that does nothing to a message pointer

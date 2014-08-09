@@ -61,6 +61,8 @@ bool EventManager::poll ( uint64_t timeout )
     if ( !running )
         return false;
 
+    // LOG ( "timeout=%llu", timeout );
+
     assert ( timeout > 0 );
 
     TimerManager::get().updateNow();

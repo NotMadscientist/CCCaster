@@ -36,28 +36,19 @@ static shared_ptr<Main> main;
 // Mutex for deinitialize()
 static Mutex deinitMutex;
 
-// Enum of values to monitor
-ENUM ( VarName, WorldTime, MenuIndex, GameMode, RoundStart, CharaSelectModeP1, CharaSelectModeP2 );
+// Enum of variables to monitor
+ENUM ( Variable, WorldTime, MenuIndex, GameMode, RoundStart, CharaSelectModeP1, CharaSelectModeP2 );
 
 struct Main
         : public CommonMain
-        , public RefChangeMonitor<VarName::Enum, uint32_t>::Owner
-        , public PtrToRefChangeMonitor<VarName::Enum, uint32_t>::Owner
+        , public RefChangeMonitor<Variable, uint32_t>::Owner
+        , public PtrToRefChangeMonitor<Variable, uint32_t>::Owner
 {
     // The NetplayManager instance
     NetplayManager netMan;
 
     // The ChangeMonitor for CC_WORLD_TIMER_ADDR
-    RefChangeMonitor<VarName::Enum, uint32_t> worldTimerMoniter;
-
-    // The starting value of CC_WORLD_TIMER_ADDR, frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime
-    uint32_t startWorldTime = 0;
-
-    // The current netplay frame
-    uint32_t frame = 0;
-
-    // The current transition index
-    uint16_t index = 0;
+    RefChangeMonitor<Variable, uint32_t> worldTimerMoniter;
 
     // The timeout for each call to EventManager::poll
     uint64_t pollTimeout = 1;
@@ -65,152 +56,290 @@ struct Main
     // The local and remote player numbers
     uint8_t localPlayer = 1, remotePlayer = 2;
 
-    // If we are currently sending and receiving inputs
-    bool sendRecvInputs = false;
+    // The host and client player numbers
+    uint8_t hostPlayer = 1, clientPlayer = 2;
+
+    // The current netplay frame, frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime
+    uint32_t frame = 0;
+
+    // The current transition index, incremented whenever the netplay state changes
+    uint16_t index = 0;
+
+    // The starting value of CC_WORLD_TIMER_ADDR, where frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime.
+    // This is reset to the current world time whenever the netplay state changes, ie a state transition happens.
+    uint32_t startWorldTime = 0;
 
 
     void frameStep()
     {
-        // First check for changes to important variables for state transitions
+        // Clear inputs first
+        procMan.writeGameInput ( 1, 0 );
+        procMan.writeGameInput ( 2, 0 );
+
+        // Check for changes to important variables for state transitions
         ChangeMonitor::get().check();
 
-        // Input testing code
-        uint16_t input;
+        // TODO
+        switch ( netMan.state.value )
         {
-            uint16_t direction = 5;
-
-            if ( GetKeyState ( 'P' ) & 0x80 )
-                direction = 8;
-            else if ( GetKeyState ( VK_OEM_1 ) & 0x80 )
-                direction = 2;
-
-            if ( GetKeyState ( 'L' ) & 0x80 )
-                --direction;
-            else if ( GetKeyState ( VK_OEM_7 ) & 0x80 )
-                ++direction;
-
-            if ( direction == 5 )
-                direction = 0;
-
-            uint16_t buttons = 0;
-
-            if ( GetKeyState ( 'E' ) & 0x80 )       buttons = ( CC_BUTTON_A | CC_BUTTON_SELECT );
-            if ( GetKeyState ( 'R' ) & 0x80 )       buttons = ( CC_BUTTON_B | CC_BUTTON_CANCEL );
-            if ( GetKeyState ( 'T' ) & 0x80 )       buttons = CC_BUTTON_C;
-            if ( GetKeyState ( VK_SPACE ) & 0x80 )  buttons = CC_BUTTON_D;
-            if ( GetKeyState ( 'A' ) & 0x80 )       buttons = CC_BUTTON_E;
-            if ( GetKeyState ( 'D' ) & 0x80 )       buttons = CC_BUTTON_FN2;
-            if ( GetKeyState ( 'G' ) & 0x80 )       buttons = CC_BUTTON_FN1;
-            if ( GetKeyState ( VK_F5 ) & 0x80 )     buttons = CC_BUTTON_START;
-
-            input = COMBINE_INPUT ( direction, buttons );
-        }
-
-        netMan.setInput ( localPlayer, frame, index, input );
-
-        if ( sendRecvInputs )
-            dataSocket->send ( netMan.getInputs ( localPlayer, frame, index ) );
-
-        // Poll for events in a loop
-        for ( ;; )
-        {
-            if ( !EventManager::get().poll ( pollTimeout ) )
-            {
-                appState = AppState::Stopping;
+            case NetplayState::CharaSelect:
+                if ( !EventManager::get().poll ( pollTimeout ) )
+                    appState = AppState::Stopping;
                 return;
-            }
 
-            if ( !sendRecvInputs )
-                break;
+            // case NetplayState::Loading:
+            //     break;
 
-            // Stop polling once we have enough inputs
-            if ( netMan.getEndFrame ( remotePlayer ) + netMan.delay > frame )
-            {
-                timer.reset();
-                break;
-            }
+            // case NetplayState::Skippable:
+            //     break;
 
-            if ( !timer )
-            {
-                timer.reset ( new Timer ( this ) );
-                timer->start ( SEND_INPUTS_INTERVAL );
-            }
+            // case NetplayState::InGame:
+            //     break;
+
+            // case NetplayState::Retry:
+            //     break;
+
+            // case NetplayState::Retry:
+            //     break;
+
+            case NetplayState::Initial:
+                gotoGameMode();
+
+            case NetplayState::PreInitial:
+                gotoMainMenu();
+
+                // Disable FPS limit while skipping to character select
+                *CC_SKIP_FRAMES_ADDR = 1;
+
+                if ( !EventManager::get().poll ( pollTimeout ) )
+                    appState = AppState::Stopping;
+                return;
+
+            default:
+                LOG_AND_THROW_STRING ( "Invalid state %s!", netMan.state );
+                return;
         }
 
-        // Write netplay inputs
-        procMan.writeGameInput ( localPlayer, netMan.getDelayedInput ( localPlayer, frame, index ) );
-        procMan.writeGameInput ( remotePlayer, netMan.getDelayedInput ( remotePlayer, frame, index ) );
+        // // Input testing code
+        // uint16_t input;
+        // {
+        //     uint16_t direction = 5;
+
+        //     if ( GetKeyState ( 'P' ) & 0x80 )
+        //         direction = 8;
+        //     else if ( GetKeyState ( VK_OEM_1 ) & 0x80 )
+        //         direction = 2;
+
+        //     if ( GetKeyState ( 'L' ) & 0x80 )
+        //         --direction;
+        //     else if ( GetKeyState ( VK_OEM_7 ) & 0x80 )
+        //         ++direction;
+
+        //     if ( direction == 5 )
+        //         direction = 0;
+
+        //     uint16_t buttons = 0;
+
+        //     if ( GetKeyState ( 'E' ) & 0x80 )       buttons = ( CC_BUTTON_A | CC_BUTTON_SELECT );
+        //     if ( GetKeyState ( 'R' ) & 0x80 )       buttons = ( CC_BUTTON_B | CC_BUTTON_CANCEL );
+        //     if ( GetKeyState ( 'T' ) & 0x80 )       buttons = CC_BUTTON_C;
+        //     if ( GetKeyState ( VK_SPACE ) & 0x80 )  buttons = CC_BUTTON_D;
+        //     if ( GetKeyState ( 'A' ) & 0x80 )       buttons = CC_BUTTON_E;
+        //     if ( GetKeyState ( 'D' ) & 0x80 )       buttons = CC_BUTTON_FN2;
+        //     if ( GetKeyState ( 'G' ) & 0x80 )       buttons = CC_BUTTON_FN1;
+        //     if ( GetKeyState ( VK_F5 ) & 0x80 )     buttons = CC_BUTTON_START;
+
+        //     input = COMBINE_INPUT ( direction, buttons );
+        // }
+
+        // netMan.setInput ( localPlayer, frame, index, input );
+
+        // if ( sendRecvInputs )
+        //     dataSocket->send ( netMan.getInputs ( localPlayer, frame, index ) );
+
+        // // Poll for events in a loop
+        // for ( ;; )
+        // {
+        //     if ( !EventManager::get().poll ( pollTimeout ) )
+        //     {
+        //         appState = AppState::Stopping;
+        //         return;
+        //     }
+
+        //     if ( !sendRecvInputs )
+        //         break;
+
+        //     // Stop polling once we have enough inputs
+        //     if ( netMan.getEndFrame ( remotePlayer ) + netMan.getDelay() > frame )
+        //     {
+        //         timer.reset();
+        //         break;
+        //     }
+
+        //     if ( !timer )
+        //     {
+        //         timer.reset ( new Timer ( this ) );
+        //         timer->start ( SEND_INPUTS_INTERVAL );
+        //     }
+        // }
+
+        // // Write netplay inputs
+        // procMan.writeGameInput ( localPlayer, netMan.getDelayedInput ( localPlayer, frame, index ) );
+        // procMan.writeGameInput ( remotePlayer, netMan.getDelayedInput ( remotePlayer, frame, index ) );
     }
 
-    // Game state change callbacks
+    void gotoMainMenu()
+    {
+        assert ( netMan.state.value >= NetplayState::PreInitial && netMan.state.value <= NetplayState::Initial );
+
+        if ( ( *CC_GAME_MODE_ADDR ) == CC_GAME_MODE_MAIN )
+            return;
+
+        if ( ( *CC_WORLD_TIMER_ADDR ) % 2 )
+            return;
+
+        procMan.writeGameInput ( hostPlayer, 0, CC_BUTTON_A | CC_BUTTON_SELECT );
+    }
+
+    void gotoGameMode()
+    {
+        assert ( netMan.state == NetplayState::Initial );
+
+        static bool mainMenuOptionSelected = false;
+        uint16_t direction = 0;
+        uint16_t buttons = 0;
+
+        if ( ( *CC_GAME_MODE_ADDR ) != CC_GAME_MODE_MAIN )
+        {
+            mainMenuOptionSelected = false;
+            return;
+        }
+
+        if ( netplaySetup.training )
+        {
+            if ( !mainMenuOptionSelected )
+            {
+                // Training mode is the second option on the main menu
+                if ( currentMenuIndex == 2 )
+                    mainMenuOptionSelected = true;
+                else
+                    direction = 2;
+            }
+            else
+            {
+                buttons = ( CC_BUTTON_A | CC_BUTTON_SELECT );
+            }
+        }
+        else
+        {
+            if ( !mainMenuOptionSelected )
+            {
+                // Versus mode is the first option on the main menu
+                if ( currentMenuIndex == 1 )
+                    mainMenuOptionSelected = true;
+                else
+                    direction = 2;
+            }
+            else
+            {
+                buttons = ( CC_BUTTON_A | CC_BUTTON_SELECT );
+            }
+        }
+
+        if ( ( *CC_WORLD_TIMER_ADDR ) % 2 )
+            return;
+
+        procMan.writeGameInput ( hostPlayer, direction, buttons );
+    }
+
+    void netplayStateChanged ( const NetplayState& state )
+    {
+        if ( state == netMan.state )
+            return;
+
+        LOG ( "NetplayState: previous=%s; current=%s", netMan.state, state );
+
+        assert ( netMan.state != state );
+
+        if ( state.value >= NetplayState::CharaSelect && state.value <= NetplayState::Menu )
+        {
+            startWorldTime = *CC_WORLD_TIMER_ADDR;
+            frame = 0;
+            ++index;
+        }
+
+        netMan.state = state;
+    }
+
     void gameModeChanged ( uint32_t previous, uint32_t current )
     {
-        // if ( current == 0
-        //         || current == CC_MODE_STARTUP
-        //         || current == CC_MODE_OPENING
-        //         || current == CC_MODE_TITLE
-        //         || current == CC_MODE_MAIN )
-        // {
-        //     netplayState = NetplayState::Initial;
-        //     return;
-        // }
+        if ( current == 0
+                || current == CC_GAME_MODE_STARTUP
+                || current == CC_GAME_MODE_OPENING
+                || current == CC_GAME_MODE_TITLE
+                || current == CC_GAME_MODE_DEMO
+                || current == CC_GAME_MODE_MAIN
+                || ( previous == CC_GAME_MODE_DEMO && current == CC_GAME_MODE_INGAME ) )
+        {
+            return;
+        }
 
-        // if ( current == CC_MODE_CHARA_SELECT )
-        // {
-        //     netplayState = NetplayState::CharaSelect;
-        //     return;
-        // }
+        if ( current == CC_GAME_MODE_CHARA_SELECT )
+        {
+            netplayStateChanged ( NetplayState::CharaSelect );
+            return;
+        }
 
-        // if ( current == CC_MODE_LOADING )
-        // {
-        //     netplayState = NetplayState::Loading;
-        //     return;
-        // }
+        if ( current == CC_GAME_MODE_LOADING )
+        {
+            netplayStateChanged ( NetplayState::Loading );
+            return;
+        }
 
-        // if ( current == CC_MODE_INGAME )
-        // {
-        //     netplayState = NetplayState::InGame;
-        //     return;
-        // }
+        if ( current == CC_GAME_MODE_INGAME )
+        {
+            // In-game starts with character intros, which is a skippable state
+            netplayStateChanged ( NetplayState::Skippable );
+            return;
+        }
 
-        // if ( current == CC_MODE_RETRY )
-        // {
-        //     netplayState = NetplayState::Retry;
-        //     return;
-        // }
+        if ( current == CC_GAME_MODE_RETRY )
+        {
+            netplayStateChanged ( NetplayState::Retry );
+            return;
+        }
 
-        // LOG_AND_THROW_STRING ( "Unknown game mode! previous=%u; current=%u", previous, current );
+        LOG_AND_THROW_STRING ( "Unknown game mode! previous=%u; current=%u", previous, current );
     }
 
     // ChangeMonitor callbacks
-    void hasChanged ( const VarName::Enum& var, uint32_t previous, uint32_t current ) override
+    void hasChanged ( const Variable& var, uint32_t previous, uint32_t current ) override
     {
-        switch ( var )
+        switch ( var.value )
         {
-            case VarName::WorldTime:
-                // TODO only start counting frames after entering chara select
-                if ( startWorldTime == 0 )
-                    startWorldTime = *CC_WORLD_TIMER_ADDR;
+            case Variable::WorldTime:
                 frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime;
                 frameStep();
                 break;
 
-            case VarName::GameMode:
-                LOG ( "%s changed; previous=%u; current=%u", VarName ( var ), previous, current );
+            case Variable::GameMode:
+                LOG ( "%s: previous=%u; current=%u",  var, previous, current );
                 gameModeChanged ( previous, current );
                 break;
 
-            case VarName::RoundStart:
-                LOG ( "%s changed; previous=%u; current=%u", VarName ( var ), previous, current );
+            case Variable::RoundStart:
+                LOG ( "%s: previous=%u; current=%u", var, previous, current );
+                // In-game happens after round start, when players can start moving
+                netplayStateChanged ( NetplayState::InGame );
                 break;
 
-            case VarName::MenuIndex:
+            case Variable::MenuIndex:
                 break;
 
-            case VarName::CharaSelectModeP1:
+            case Variable::CharaSelectModeP1:
                 break;
 
-            case VarName::CharaSelectModeP2:
+            case Variable::CharaSelectModeP2:
                 break;
 
             default:
@@ -232,35 +361,44 @@ struct Main
         switch ( msg->getMsgType() )
         {
             case MsgType::IpAddrPort:
-                // TODO check state
+                if ( !address.empty() )
+                    break;
+
                 address = msg->getAs<IpAddrPort>();
-                LOG ( "Using: '%s'", address );
+                LOG ( "address='%s'", address );
                 break;
 
             case MsgType::ClientType:
-                // TODO check state
-                clientType = msg->getAs<ClientType>().value;
-                LOG ( "ClientType is %s", isHost() ? "Host" : "Client" );
+                if ( clientType != ClientType::Unknown )
+                    break;
+
+                clientType = msg->getAs<ClientType>();
+                LOG ( "clientType=%s", clientType );
                 break;
 
             case MsgType::NetplaySetup:
-                // TODO check state
-                netMan.delay = msg->getAs<NetplaySetup>().delay;
+                if ( netplaySetup.delay != 0 )
+                    break;
+
+                netplaySetup = msg->getAs<NetplaySetup>();
+                netMan.setDelay ( msg->getAs<NetplaySetup>().delay );
+
                 if ( isHost() )
                 {
-                    localPlayer = msg->getAs<NetplaySetup>().hostPlayer;
-                    remotePlayer = 3 - msg->getAs<NetplaySetup>().hostPlayer;
+                    hostPlayer = localPlayer = msg->getAs<NetplaySetup>().hostPlayer;
+                    clientPlayer = remotePlayer = 3 - msg->getAs<NetplaySetup>().hostPlayer;
                 }
                 else
                 {
-                    remotePlayer = msg->getAs<NetplaySetup>().hostPlayer;
-                    localPlayer = 3 - msg->getAs<NetplaySetup>().hostPlayer;
+                    hostPlayer = remotePlayer = msg->getAs<NetplaySetup>().hostPlayer;
+                    clientPlayer = localPlayer = 3 - msg->getAs<NetplaySetup>().hostPlayer;
                 }
-                LOG ( "delay=%d; localPlayer=%d; remotePlayer=%d", netMan.delay, localPlayer, remotePlayer );
+
+                LOG ( "delay=%d; training=%d; hostPlayer=%d; clientPlayer=%d; localPlayer=%d; remotePlayer=%d",
+                      netMan.getDelay(), netplaySetup.training, hostPlayer, clientPlayer, localPlayer, remotePlayer );
                 break;
 
             case MsgType::SocketShareData:
-                // TODO check state
                 if ( isHost() )
                 {
                     if ( !ctrlSocket )
@@ -278,7 +416,6 @@ struct Main
                         dataSocket = serverDataSocket->getAsUDP().getChildSockets().begin()->second;
                         dataSocket->owner = this;
                         assert ( dataSocket->isConnected() );
-                        sendRecvInputs = true;
                     }
                 }
                 else
@@ -292,9 +429,36 @@ struct Main
                     {
                         dataSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
                         assert ( dataSocket->isConnected() == true );
-                        sendRecvInputs = true;
                     }
                 }
+                break;
+
+            case MsgType::EndOfMessages:
+                if ( address.empty() )
+                    LOG_AND_THROW_STRING ( "Empty address!" );
+
+                if ( clientType == ClientType::Unknown )
+                    LOG_AND_THROW_STRING ( "Unknown clientType!" );
+
+                if ( netplaySetup.delay == 0 )
+                    LOG_AND_THROW_STRING ( "Uninitalized netplaySetup!" );
+
+                if ( !ctrlSocket )
+                    LOG_AND_THROW_STRING ( "Uninitalized ctrlSocket!" );
+
+                if ( !dataSocket )
+                    LOG_AND_THROW_STRING ( "Uninitalized dataSocket!" );
+
+                if ( isHost() )
+                {
+                    if ( !serverCtrlSocket )
+                        LOG_AND_THROW_STRING ( "Uninitalized serverCtrlSocket!" );
+
+                    if ( !serverDataSocket )
+                        LOG_AND_THROW_STRING ( "Uninitalized serverDataSocket!" );
+                }
+
+                netplayStateChanged ( NetplayState::Initial );
                 break;
 
             default:
@@ -352,7 +516,6 @@ struct Main
     void timerExpired ( Timer *timer ) override
     {
         assert ( timer == this->timer.get() );
-        assert ( sendRecvInputs == true );
 
         dataSocket->send ( netMan.getInputs ( localPlayer, frame, index ) );
 
@@ -362,28 +525,33 @@ struct Main
     // DLL callback
     void callback()
     {
+        // Don't poll until we're in the correct state
         if ( appState != AppState::Polling )
             return;
 
+        // First check if the world timer changed, if not, poll for events once and return
         if ( !worldTimerMoniter.check() )
-            EventManager::get().poll ( pollTimeout );
+            if ( !EventManager::get().poll ( pollTimeout ) )
+                appState = AppState::Stopping;
     }
 
     // Constructor
-    Main() : worldTimerMoniter ( this, VarName::WorldTime, *CC_WORLD_TIMER_ADDR )
+    Main() : worldTimerMoniter ( this, Variable::WorldTime, *CC_WORLD_TIMER_ADDR )
     {
         // Timer and controller initialization is not done here because of threading issues
 
-        ChangeMonitor::get().addRef ( this, VarName::GameMode, *CC_GAME_MODE_ADDR );
-        ChangeMonitor::get().addRef ( this, VarName::RoundStart, roundStartCounter );
-
-        // ChangeMonitor::get().addRef ( this, VarName::MenuIndex, currentMenuIndex );
-        // ChangeMonitor::get().addPtrToRef ( this, VarName::CharaSelectModeP1,
-        //                                    const_cast<const uint32_t *&> ( charaSelectModes[0] ), ( uint32_t ) 0 );
-        // ChangeMonitor::get().addPtrToRef ( this, VarName::CharaSelectModeP2,
-        //                                    const_cast<const uint32_t *&> ( charaSelectModes[1] ), ( uint32_t ) 0 );
-
         procMan.connectPipe();
+
+        netplayStateChanged ( NetplayState::PreInitial );
+
+        ChangeMonitor::get().addRef ( this, Variable ( Variable::GameMode ), *CC_GAME_MODE_ADDR );
+        ChangeMonitor::get().addRef ( this, Variable ( Variable::RoundStart ), roundStartCounter );
+
+        // ChangeMonitor::get().addRef ( this, Variable ( Variable::MenuIndex ), currentMenuIndex );
+        // ChangeMonitor::get().addPtrToRef ( this, Variable ( Variable::CharaSelectModeP1 ),
+        //                                    const_cast<const uint32_t *&> ( charaSelectModes[0] ), ( uint32_t ) 0 );
+        // ChangeMonitor::get().addPtrToRef ( this, Variable ( Variable::CharaSelectModeP2 ),
+        //                                    const_cast<const uint32_t *&> ( charaSelectModes[1] ), ( uint32_t ) 0 );
     }
 
     // Destructor
