@@ -27,7 +27,7 @@ void deinitializeHacks();
 static void deinitialize();
 
 // Main application state
-static ENUM ( State, Uninitialized, Polling, Stopping, Deinitialized ) state = State::Uninitialized;
+static ENUM ( AppState, Uninitialized, Polling, Stopping, Deinitialized ) appState = AppState::Uninitialized;
 
 // Main application instance
 struct Main;
@@ -37,8 +37,7 @@ static shared_ptr<Main> main;
 static Mutex deinitMutex;
 
 // Enum of values to monitor
-ENUM ( VarName, currentMenuIndex, currentGameMode, charaSelectModeP1, charaSelectModeP2 );
-
+ENUM ( VarName, WorldTime, MenuIndex, GameMode, RoundStart, CharaSelectModeP1, CharaSelectModeP2 );
 
 struct Main
         : public CommonMain
@@ -48,17 +47,11 @@ struct Main
     // The NetplayManager instance
     NetplayManager netMan;
 
-    // The initial value of CC_WORLD_TIMER_ADDR
-    uint32_t initialWorldTimer = 0;
+    // The ChangeMonitor for CC_WORLD_TIMER_ADDR
+    RefChangeMonitor<VarName::Enum, uint32_t> worldTimerMoniter;
 
-    // The previous value of CC_WORLD_TIMER_ADDR
-    uint32_t previousWorldTimer = 0;
-
-    // The timeout for each call to EventManager::poll
-    uint64_t pollTimeout = 1;
-
-    // The local and remote player numbers
-    uint8_t localPlayer = 1, remotePlayer = 2;
+    // The starting value of CC_WORLD_TIMER_ADDR, frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime
+    uint32_t startWorldTime = 0;
 
     // The current netplay frame
     uint32_t frame = 0;
@@ -66,37 +59,19 @@ struct Main
     // The current transition index
     uint16_t index = 0;
 
+    // The timeout for each call to EventManager::poll
+    uint64_t pollTimeout = 1;
+
+    // The local and remote player numbers
+    uint8_t localPlayer = 1, remotePlayer = 2;
+
     // If we are currently sending and receiving inputs
     bool sendRecvInputs = false;
 
 
-    // DLL callback
-    void callback()
+    void frameStep()
     {
-        if ( state != State::Polling )
-            return;
-
-        // Don't poll for events until a frame step happens
-        if ( previousWorldTimer == *CC_WORLD_TIMER_ADDR )
-            return;
-
-        // Start watching for changes when we initialize this timer
-        if ( initialWorldTimer == 0 )
-        {
-            initialWorldTimer = *CC_WORLD_TIMER_ADDR;
-
-            ChangeMonitor::get().addRef ( this, VarName::currentMenuIndex, currentMenuIndex );
-            ChangeMonitor::get().addRef ( this, VarName::currentGameMode, *CC_GAME_MODE_ADDR );
-            ChangeMonitor::get().addPtrToRef ( this, VarName::charaSelectModeP1,
-                                               const_cast<const uint32_t *&> ( charaSelectModes[0] ), ( uint32_t ) 0 );
-            ChangeMonitor::get().addPtrToRef ( this, VarName::charaSelectModeP2,
-                                               const_cast<const uint32_t *&> ( charaSelectModes[1] ), ( uint32_t ) 0 );
-        }
-
-        previousWorldTimer = *CC_WORLD_TIMER_ADDR;
-
-        frame = ( *CC_WORLD_TIMER_ADDR ) - initialWorldTimer;
-
+        // First check for changes to important variables for state transitions
         ChangeMonitor::get().check();
 
         // Input testing code
@@ -136,17 +111,19 @@ struct Main
         if ( sendRecvInputs )
             dataSocket->send ( netMan.getInputs ( localPlayer, frame, index ) );
 
+        // Poll for events in a loop
         for ( ;; )
         {
             if ( !EventManager::get().poll ( pollTimeout ) )
             {
-                state = State::Stopping;
+                appState = AppState::Stopping;
                 return;
             }
 
             if ( !sendRecvInputs )
                 break;
 
+            // Stop polling once we have enough inputs
             if ( netMan.getEndFrame ( remotePlayer ) + netMan.delay > frame )
             {
                 timer.reset();
@@ -160,14 +137,85 @@ struct Main
             }
         }
 
+        // Write netplay inputs
         procMan.writeGameInput ( localPlayer, netMan.getDelayedInput ( localPlayer, frame, index ) );
         procMan.writeGameInput ( remotePlayer, netMan.getDelayedInput ( remotePlayer, frame, index ) );
+    }
+
+    // Game state change callbacks
+    void gameModeChanged ( uint32_t previous, uint32_t current )
+    {
+        // if ( current == 0
+        //         || current == CC_MODE_STARTUP
+        //         || current == CC_MODE_OPENING
+        //         || current == CC_MODE_TITLE
+        //         || current == CC_MODE_MAIN )
+        // {
+        //     netplayState = NetplayState::Initial;
+        //     return;
+        // }
+
+        // if ( current == CC_MODE_CHARA_SELECT )
+        // {
+        //     netplayState = NetplayState::CharaSelect;
+        //     return;
+        // }
+
+        // if ( current == CC_MODE_LOADING )
+        // {
+        //     netplayState = NetplayState::Loading;
+        //     return;
+        // }
+
+        // if ( current == CC_MODE_INGAME )
+        // {
+        //     netplayState = NetplayState::InGame;
+        //     return;
+        // }
+
+        // if ( current == CC_MODE_RETRY )
+        // {
+        //     netplayState = NetplayState::Retry;
+        //     return;
+        // }
+
+        // LOG_AND_THROW_STRING ( "Unknown game mode! previous=%u; current=%u", previous, current );
     }
 
     // ChangeMonitor callbacks
     void hasChanged ( const VarName::Enum& var, uint32_t previous, uint32_t current ) override
     {
-        LOG ( "%s changed; previous=%u; current=%u", VarName ( var ), previous, current );
+        switch ( var )
+        {
+            case VarName::WorldTime:
+                // TODO only start counting frames after entering chara select
+                if ( startWorldTime == 0 )
+                    startWorldTime = *CC_WORLD_TIMER_ADDR;
+                frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime;
+                frameStep();
+                break;
+
+            case VarName::GameMode:
+                LOG ( "%s changed; previous=%u; current=%u", VarName ( var ), previous, current );
+                gameModeChanged ( previous, current );
+                break;
+
+            case VarName::RoundStart:
+                LOG ( "%s changed; previous=%u; current=%u", VarName ( var ), previous, current );
+                break;
+
+            case VarName::MenuIndex:
+                break;
+
+            case VarName::CharaSelectModeP1:
+                break;
+
+            case VarName::CharaSelectModeP2:
+                break;
+
+            default:
+                break;
+        }
     }
 
     // ProcessManager callbacks
@@ -311,10 +359,29 @@ struct Main
         timer->start ( SEND_INPUTS_INTERVAL );
     }
 
-    // Constructor
-    Main()
+    // DLL callback
+    void callback()
     {
-        // Initialization is not done here because of threading issues
+        if ( appState != AppState::Polling )
+            return;
+
+        if ( !worldTimerMoniter.check() )
+            EventManager::get().poll ( pollTimeout );
+    }
+
+    // Constructor
+    Main() : worldTimerMoniter ( this, VarName::WorldTime, *CC_WORLD_TIMER_ADDR )
+    {
+        // Timer and controller initialization is not done here because of threading issues
+
+        ChangeMonitor::get().addRef ( this, VarName::GameMode, *CC_GAME_MODE_ADDR );
+        ChangeMonitor::get().addRef ( this, VarName::RoundStart, roundStartCounter );
+
+        // ChangeMonitor::get().addRef ( this, VarName::MenuIndex, currentMenuIndex );
+        // ChangeMonitor::get().addPtrToRef ( this, VarName::CharaSelectModeP1,
+        //                                    const_cast<const uint32_t *&> ( charaSelectModes[0] ), ( uint32_t ) 0 );
+        // ChangeMonitor::get().addPtrToRef ( this, VarName::CharaSelectModeP2,
+        //                                    const_cast<const uint32_t *&> ( charaSelectModes[1] ), ( uint32_t ) 0 );
 
         procMan.connectPipe();
     }
@@ -324,18 +391,18 @@ struct Main
     {
         procMan.disconnectPipe();
 
-        // Deinitialization is not done here because of threading issues
+        // Timer and controller deinitialization is not done here because of threading issues
     }
 };
 
 extern "C" void callback()
 {
-    if ( state == State::Deinitialized )
+    if ( appState == AppState::Deinitialized )
         return;
 
     try
     {
-        if ( state == State::Uninitialized )
+        if ( appState == AppState::Uninitialized )
         {
             initializePostHacks();
 
@@ -344,7 +411,7 @@ extern "C" void callback()
             ControllerManager::get().initialize ( main.get() );
 
             EventManager::get().startPolling();
-            state = State::Polling;
+            appState = AppState::Polling;
         }
 
         assert ( main.get() != 0 );
@@ -354,20 +421,20 @@ extern "C" void callback()
     catch ( const WindowsException& err )
     {
         LOG ( "Stopping due to WindowsException: %s", err );
-        state = State::Stopping;
+        appState = AppState::Stopping;
     }
     catch ( const Exception& err )
     {
         LOG ( "Stopping due to Exception: %s", err );
-        state = State::Stopping;
+        appState = AppState::Stopping;
     }
     catch ( ... )
     {
         LOG ( "Stopping due to unknown exception!" );
-        state = State::Stopping;
+        appState = AppState::Stopping;
     }
 
-    if ( state == State::Stopping )
+    if ( appState == AppState::Stopping )
     {
         LOG ( "Exiting" );
 
@@ -425,7 +492,7 @@ static void deinitialize()
 {
     LOCK ( deinitMutex );
 
-    if ( state == State::Deinitialized )
+    if ( appState == AppState::Deinitialized )
         return;
 
     main.reset();
@@ -438,5 +505,5 @@ static void deinitialize()
 
     deinitializeHacks();
 
-    state = State::Deinitialized;
+    appState = AppState::Deinitialized;
 }

@@ -7,6 +7,45 @@
 
 class NetplayManager
 {
+public:
+
+    /* State transitions
+
+    Initial -> CharaSelect
+
+    CharaSelect -> Loading
+
+    Loading -> Transition
+
+    Transition -> { InGame, Retry }
+
+    InGame -> { Transition, Menu (training mode only) }
+
+    Retry -> { Loading, CharaSelect }
+
+    Menu -> { InGame, CharaSelect}
+
+    */
+
+    // Main netplay state
+    ENUM ( NetplayState,
+           Initial     = 0x01,  // Initial starting phase
+           CharaSelect = 0x02,  // Character select
+           Loading     = 0x04,  // Loading screen
+           Transition  = 0x08,  // Transitions (chara intros, rounds, post-game, pre-retry)
+           InGame      = 0x10,  // In-game
+           Retry       = 0x20,  // Retry menu
+           Menu        = 0x40   // Pause menu or training mode menu
+         ) netplayState;
+
+    struct Owner
+    {
+    };
+
+    Owner *owner = 0;
+
+private:
+
     std::vector<uint16_t> inputs[2];
 
 public:
