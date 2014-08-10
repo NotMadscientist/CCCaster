@@ -148,10 +148,6 @@ sdl_release:
 	make --jobs --directory 3rdparty/SDL2 CFLAGS="-m32 -s -Os -O3"
 	@echo
 
-sdl_profile:
-	make --jobs --directory 3rdparty/SDL2 CFLAGS="-m32 -O3 -fno-rtti -pg"
-	@echo
-
 sdl_clean:
 	make --directory 3rdparty/SDL2 clean
 
