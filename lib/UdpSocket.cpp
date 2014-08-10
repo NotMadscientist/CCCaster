@@ -15,8 +15,6 @@
 using namespace std;
 
 
-#define DEFAULT_KEEP_ALIVE 2000
-
 #define LOG_UDP_SOCKET(SOCKET, FORMAT, ...) LOG_SOCKET ( SOCKET, "type=%s; " FORMAT, type, ## __VA_ARGS__)
 
 

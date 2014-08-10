@@ -33,12 +33,17 @@ struct Main : public CommonMain
         procMan.ipcSend ( REF_PTR ( clientType ) );
         procMan.ipcSend ( REF_PTR ( netplaySetup ) );
 
+        assert ( ctrlSocket.get() != 0 );
+        assert ( ctrlSocket->isConnected() == true );
+        assert ( dataSocket.get() != 0 );
+        assert ( dataSocket->isConnected() == true );
+
+        // Disable keepAlive during the limbo period while sharing sockets
+        ctrlSocket->setKeepAlive ( 0 );
+        dataSocket->setKeepAlive ( 0 );
+
         if ( isHost() )
         {
-            assert ( ctrlSocket.get() != 0 );
-            assert ( ctrlSocket->isConnected() == true );
-            assert ( dataSocket.get() != 0 );
-            assert ( dataSocket->isConnected() == true );
             assert ( serverCtrlSocket.get() != 0 );
             assert ( serverDataSocket.get() != 0 );
             assert ( serverDataSocket->getAsUDP().getChildSockets().size() == 1 );
@@ -51,11 +56,6 @@ struct Main : public CommonMain
         }
         else
         {
-            assert ( ctrlSocket.get() != 0 );
-            assert ( ctrlSocket->isConnected() == true );
-            assert ( dataSocket.get() != 0 );
-            assert ( dataSocket->isConnected() == true );
-
             procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
             procMan.ipcSend ( dataSocket->share ( procMan.getProcessId() ) );
         }

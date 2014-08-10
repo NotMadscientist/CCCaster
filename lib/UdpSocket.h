@@ -4,6 +4,9 @@
 #include "GoBackN.h"
 
 
+#define DEFAULT_KEEP_ALIVE 1000
+
+
 struct UdpConnect : public SerializableSequence
 {
     ENUM_MESSAGE_BOILERPLATE ( UdpConnect, Request, Reply, Final )
@@ -113,8 +116,8 @@ public:
     bool send ( const MsgPtr& msg, const IpAddrPort& address = IpAddrPort() ) override;
 
     // Get/set the timeout for keep alive packets, 0 to disable
-    uint64_t getKeepAlive() const { return gbn.getKeepAlive(); };
-    void setKeepAlive ( uint64_t timeout ) { gbn.setKeepAlive ( timeout ); };
+    uint64_t getKeepAlive() const { return gbn.getKeepAlive(); }
+    void setKeepAlive ( uint64_t timeout ) { gbn.setKeepAlive ( timeout ); }
 
     // Reset the state of the GoBackN instance
     void resetGbnState() { gbn.reset(); }

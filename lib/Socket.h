@@ -137,6 +137,10 @@ public:
     virtual bool send ( SerializableSequence *message, const IpAddrPort& address = IpAddrPort() ) = 0;
     virtual bool send ( const MsgPtr& msg, const IpAddrPort& address = IpAddrPort() ) = 0;
 
+    // Get/set the timeout for keep alive packets, 0 to disable, only valid for UDP sockets
+    virtual uint64_t getKeepAlive() const { return 0; }
+    virtual void setKeepAlive ( uint64_t timeout ) {}
+
     // Set the packet loss for testing purposes
     void setPacketLoss ( uint8_t percentage ) { packetLoss = percentage; }
 
