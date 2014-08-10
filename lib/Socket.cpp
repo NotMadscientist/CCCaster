@@ -245,11 +245,20 @@ bool Socket::send ( const char *buffer, size_t len )
         if ( sentBytes == SOCKET_ERROR )
         {
             WindowsException err = WSAGetLastError();
+
+            // Disconnect the socket if an error occured during send
             if ( isTCP() )
+            {
                 LOG_SOCKET ( this, "%s; send failed", err );
+                LOG_SOCKET ( this, "disconnect due to send error" );
+                disconnectEvent();
+            }
             else
+            {
                 LOG_SOCKET ( this, "%s; sendto failed", err );
-            disconnect();
+                disconnect();
+            }
+
             return false;
         }
 
