@@ -386,6 +386,7 @@ void Socket::readEvent()
     {
         LOG ( "Clearing invalid buffer!" );
         readBuffer.clear();
+        readBuffer.resize ( READ_BUFFER_SIZE, ( char ) 0 );
         readPos = 0;
         return;
     }
@@ -401,6 +402,7 @@ void Socket::readEvent()
             // Erase the consumed bytes (shifting the array)
             assert ( consumed <= readPos );
             readBuffer.erase ( 0, consumed );
+            readBuffer.resize ( READ_BUFFER_SIZE, ( char ) 0 );
             readPos -= consumed;
         }
 

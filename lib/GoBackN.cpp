@@ -169,12 +169,12 @@ void GoBackN::setKeepAlive ( uint64_t timeout )
 
 void GoBackN::reset()
 {
+    LOG ( "this=%08x; sendTimer=%08x", this, sendTimer.get() );
+
     sendSequence = recvSequence = 0;
     sendList.clear();
     sendListPos = sendList.end();
     sendTimer.reset();
-
-    LOG ( "reset GoBackN state" );
 }
 
 GoBackN::GoBackN ( Owner *owner, uint64_t timeout )
