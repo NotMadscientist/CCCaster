@@ -22,6 +22,10 @@ using namespace AsmHacks;
 
 static ID3DXFont *font = 0;
 
+static LRESULT CALLBACK keyboardCallback ( int, WPARAM, LPARAM ) { return 1; }
+
+static HHOOK keybdHook = 0;
+
 
 // Note: this is on the SAME thread as the main thread where callback happens
 void PresentFrameBegin ( IDirect3DDevice9 *device )
@@ -101,6 +105,10 @@ void initializePreHacks()
 
 void initializePostHacks()
 {
+    // Hook and ignore keyboard messages to prevent lag from unhandled messages
+    if ( ! ( keybdHook = SetWindowsHookEx ( WH_KEYBOARD, keyboardCallback, 0, GetCurrentThreadId() ) ) )
+        LOG ( "SetWindowsHookEx failed: %s", WindowsException ( GetLastError() ) );
+
     if ( detectWine() )
         return;
 
@@ -118,6 +126,9 @@ void initializePostHacks()
 void deinitializeHacks()
 {
     UnhookDirectX();
+
+    if ( keybdHook )
+        UnhookWindowsHookEx ( keybdHook );
 
     for ( int i = hookMainLoop.size() - 1; i >= 0; --i )
         hookMainLoop[i].revert();
