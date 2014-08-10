@@ -30,7 +30,10 @@ void GoBackN::timerExpired ( Timer *timer )
     }
     else if ( sendList.empty() && keepAlive )
     {
-        owner->sendRaw ( this, NullMsg );
+        if ( skipNextKeepAlive )
+            skipNextKeepAlive = false;
+        else
+            owner->sendRaw ( this, NullMsg );
     }
     else
     {
@@ -63,6 +66,15 @@ void GoBackN::timerExpired ( Timer *timer )
     sendTimer->start ( SEND_INTERVAL );
 }
 
+void GoBackN::checkAndStartTimer()
+{
+    if ( !sendTimer )
+        sendTimer.reset ( new Timer ( this ) );
+
+    if ( !sendTimer->isStarted() )
+        sendTimer->start ( SEND_INTERVAL );
+}
+
 void GoBackN::sendGoBackN ( SerializableSequence *message )
 {
     MsgPtr msg ( message );
@@ -85,11 +97,7 @@ void GoBackN::sendGoBackN ( const MsgPtr& msg )
 
     LOG_LIST ( sendList, formatSerializableSequence );
 
-    if ( !sendTimer )
-        sendTimer.reset ( new Timer ( this ) );
-
-    if ( !sendTimer->isStarted() )
-        sendTimer->start ( SEND_INTERVAL );
+    checkAndStartTimer();
 }
 
 void GoBackN::recvRaw ( const MsgPtr& msg )
@@ -102,6 +110,8 @@ void GoBackN::recvRaw ( const MsgPtr& msg )
         countDown = ( keepAlive / SEND_INTERVAL );
 
         LOG ( "this=%08x; keepAlive=%llu; countDown=%d", this, keepAlive, countDown );
+
+        checkAndStartTimer();
     }
 
     // Ignore null keep alive messages
@@ -146,15 +156,6 @@ void GoBackN::recvRaw ( const MsgPtr& msg )
     ++recvSequence;
 
     owner->sendRaw ( this, MsgPtr ( new AckSequence ( recvSequence ) ) );
-
-    if ( keepAlive )
-    {
-        if ( !sendTimer )
-            sendTimer.reset ( new Timer ( this ) );
-
-        if ( !sendTimer->isStarted() )
-            sendTimer->start ( SEND_INTERVAL );
-    }
 
     owner->recvGoBackN ( this, msg );
 }

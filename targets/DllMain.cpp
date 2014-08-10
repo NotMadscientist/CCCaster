@@ -83,9 +83,10 @@ struct Main
         switch ( netMan.state.value )
         {
             case NetplayState::CharaSelect:
-                if ( !EventManager::get().poll ( pollTimeout ) )
-                    appState = AppState::Stopping;
-                return;
+                // if ( !EventManager::get().poll ( pollTimeout ) )
+                //     appState = AppState::Stopping;
+                // return;
+                break;
 
             // case NetplayState::Loading:
             //     break;
@@ -120,72 +121,67 @@ struct Main
                 return;
         }
 
-        // // Input testing code
-        // uint16_t input;
-        // {
-        //     uint16_t direction = 5;
+        // Input testing code
+        uint16_t input;
+        {
+            uint16_t direction = 5;
 
-        //     if ( GetKeyState ( 'P' ) & 0x80 )
-        //         direction = 8;
-        //     else if ( GetKeyState ( VK_OEM_1 ) & 0x80 )
-        //         direction = 2;
+            if ( GetKeyState ( 'P' ) & 0x80 )
+                direction = 8;
+            else if ( GetKeyState ( VK_OEM_1 ) & 0x80 )
+                direction = 2;
 
-        //     if ( GetKeyState ( 'L' ) & 0x80 )
-        //         --direction;
-        //     else if ( GetKeyState ( VK_OEM_7 ) & 0x80 )
-        //         ++direction;
+            if ( GetKeyState ( 'L' ) & 0x80 )
+                --direction;
+            else if ( GetKeyState ( VK_OEM_7 ) & 0x80 )
+                ++direction;
 
-        //     if ( direction == 5 )
-        //         direction = 0;
+            if ( direction == 5 )
+                direction = 0;
 
-        //     uint16_t buttons = 0;
+            uint16_t buttons = 0;
 
-        //     if ( GetKeyState ( 'E' ) & 0x80 )       buttons = ( CC_BUTTON_A | CC_BUTTON_SELECT );
-        //     if ( GetKeyState ( 'R' ) & 0x80 )       buttons = ( CC_BUTTON_B | CC_BUTTON_CANCEL );
-        //     if ( GetKeyState ( 'T' ) & 0x80 )       buttons = CC_BUTTON_C;
-        //     if ( GetKeyState ( VK_SPACE ) & 0x80 )  buttons = CC_BUTTON_D;
-        //     if ( GetKeyState ( 'A' ) & 0x80 )       buttons = CC_BUTTON_E;
-        //     if ( GetKeyState ( 'D' ) & 0x80 )       buttons = CC_BUTTON_FN2;
-        //     if ( GetKeyState ( 'G' ) & 0x80 )       buttons = CC_BUTTON_FN1;
-        //     if ( GetKeyState ( VK_F5 ) & 0x80 )     buttons = CC_BUTTON_START;
+            if ( GetKeyState ( 'E' ) & 0x80 )       buttons = ( CC_BUTTON_A | CC_BUTTON_SELECT );
+            if ( GetKeyState ( 'R' ) & 0x80 )       buttons = ( CC_BUTTON_B | CC_BUTTON_CANCEL );
+            if ( GetKeyState ( 'T' ) & 0x80 )       buttons = CC_BUTTON_C;
+            if ( GetKeyState ( VK_SPACE ) & 0x80 )  buttons = CC_BUTTON_D;
+            if ( GetKeyState ( 'A' ) & 0x80 )       buttons = CC_BUTTON_E;
+            if ( GetKeyState ( 'D' ) & 0x80 )       buttons = CC_BUTTON_FN2;
+            if ( GetKeyState ( 'G' ) & 0x80 )       buttons = CC_BUTTON_FN1;
+            if ( GetKeyState ( VK_F5 ) & 0x80 )     buttons = CC_BUTTON_START;
 
-        //     input = COMBINE_INPUT ( direction, buttons );
-        // }
+            input = COMBINE_INPUT ( direction, buttons );
+        }
 
-        // netMan.setInput ( localPlayer, frame, index, input );
+        netMan.setInput ( localPlayer, frame, index, input );
+        dataSocket->send ( netMan.getInputs ( localPlayer, frame, index ) );
 
-        // if ( sendRecvInputs )
-        //     dataSocket->send ( netMan.getInputs ( localPlayer, frame, index ) );
+        // Poll for events in a loop
+        for ( ;; )
+        {
+            if ( !EventManager::get().poll ( pollTimeout ) )
+            {
+                appState = AppState::Stopping;
+                return;
+            }
 
-        // // Poll for events in a loop
-        // for ( ;; )
-        // {
-        //     if ( !EventManager::get().poll ( pollTimeout ) )
-        //     {
-        //         appState = AppState::Stopping;
-        //         return;
-        //     }
+            // Stop polling once we have enough inputs
+            if ( netMan.getEndFrame ( remotePlayer ) + netMan.getDelay() > frame )
+            {
+                timer.reset();
+                break;
+            }
 
-        //     if ( !sendRecvInputs )
-        //         break;
+            if ( !timer )
+            {
+                timer.reset ( new Timer ( this ) );
+                timer->start ( SEND_INPUTS_INTERVAL );
+            }
+        }
 
-        //     // Stop polling once we have enough inputs
-        //     if ( netMan.getEndFrame ( remotePlayer ) + netMan.getDelay() > frame )
-        //     {
-        //         timer.reset();
-        //         break;
-        //     }
-
-        //     if ( !timer )
-        //     {
-        //         timer.reset ( new Timer ( this ) );
-        //         timer->start ( SEND_INPUTS_INTERVAL );
-        //     }
-        // }
-
-        // // Write netplay inputs
-        // procMan.writeGameInput ( localPlayer, netMan.getDelayedInput ( localPlayer, frame, index ) );
-        // procMan.writeGameInput ( remotePlayer, netMan.getDelayedInput ( remotePlayer, frame, index ) );
+        // Write netplay inputs
+        procMan.writeGameInput ( localPlayer, netMan.getDelayedInput ( localPlayer, frame, index ) );
+        procMan.writeGameInput ( remotePlayer, netMan.getDelayedInput ( remotePlayer, frame, index ) );
     }
 
     void gotoMainMenu()

@@ -57,8 +57,14 @@ private:
     // The countdown timer for the keep alive packets
     uint32_t countDown = 0;
 
+    // Delay sending the keep alive packet for one iteration
+    bool skipNextKeepAlive = false;
+
     // Timer callback that sends the messages
     void timerExpired ( Timer *timer ) override;
+
+    // Start the timer if necessary
+    void checkAndStartTimer();
 
 public:
 
@@ -86,6 +92,9 @@ public:
 
     // Get the number of messages ACKed
     uint32_t getAckCount() const { return ackSequence; }
+
+    // Delay sending the next keep alive packet
+    void delayKeepAliveOnce() { skipNextKeepAlive = true; }
 
     // Reset the state of GoBackN
     void reset();

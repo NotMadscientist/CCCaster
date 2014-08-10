@@ -192,6 +192,7 @@ SocketPtr UdpSocket::accept ( Socket::Owner *owner )
 
 bool UdpSocket::send ( SerializableMessage *message, const IpAddrPort& address )
 {
+    gbn.delayKeepAliveOnce();
     return sendRaw ( MsgPtr ( message ), address );
 }
 
@@ -208,6 +209,7 @@ bool UdpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
     switch ( msg->getBaseType().value )
     {
         case BaseType::SerializableMessage:
+            gbn.delayKeepAliveOnce();
             return sendRaw ( msg, address );
 
         case BaseType::SerializableSequence:
