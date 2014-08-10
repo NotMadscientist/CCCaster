@@ -200,13 +200,7 @@ void *enumFindWindow ( const string& title )
             char buffer[4096];
             GetWindowText ( hwnd, buffer, sizeof ( buffer ) );
 
-            string name = buffer;
-            while ( !name.empty() && name.back() == ' ' )
-                name.pop_back();
-            while ( !name.empty() && name[0] == ' ' )
-                name = name.substr ( 1 );
-
-            if ( tmpTitle == name )
+            if ( tmpTitle == trim ( buffer ) )
                 tmpHwnd = hwnd;
             return true;
         }
