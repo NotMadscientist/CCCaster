@@ -34,13 +34,13 @@ void ProcessManager::writeGameInput ( uint8_t player, uint16_t direction, uint16
     switch ( player )
     {
         case 1:
-            memwrite ( baseAddr + CC_P1_OFFSET_DIRECTION, &direction, sizeof ( direction ) );
-            memwrite ( baseAddr + CC_P1_OFFSET_BUTTONS, &buttons, sizeof ( buttons ) );
+            ( * ( uint16_t * ) ( baseAddr + CC_P1_OFFSET_DIRECTION ) ) = direction;
+            ( * ( uint16_t * ) ( baseAddr + CC_P1_OFFSET_BUTTONS ) ) = buttons;
             break;
 
         case 2:
-            memwrite ( baseAddr + CC_P2_OFFSET_DIRECTION, &direction, sizeof ( direction ) );
-            memwrite ( baseAddr + CC_P2_OFFSET_BUTTONS, &buttons, sizeof ( buttons ) );
+            ( * ( uint16_t * ) ( baseAddr + CC_P2_OFFSET_DIRECTION ) ) = direction;
+            ( * ( uint16_t * ) ( baseAddr + CC_P2_OFFSET_BUTTONS ) ) = buttons;
             break;
 
         default:
