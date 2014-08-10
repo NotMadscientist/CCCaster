@@ -159,12 +159,28 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
 #endif
         msg.reset();
     }
+    catch ( const std::exception& err )
+    {
+#ifdef LOG_PROTOCOL
+        LOG ( "type=%s; std::exception: '%s'", type, err.what() );
+#endif
+        msg.reset();
+    }
+    catch ( ... )
+    {
+#ifdef LOG_PROTOCOL
+        LOG ( "type=%s; Unknown exception!", type );
+#endif
+        msg.reset();
+    }
 
     if ( !msg.get() )
     {
         consumed = 0;
         return NullMsg;
     }
+
+    size_t dataSize = data.size();
 
     // decodeStageTwo does not update the value of consumed if the data was not compressed
     if ( result == DecodeResult::NotCompressed )
@@ -173,20 +189,21 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
         size_t remaining = ss.rdbuf()->in_avail();
         assert ( len >= remaining );
         consumed = ( len - remaining );
+        dataSize = ( data.size() - remaining );
     }
 
-//     if ( !checkMD5 ( &data[0], consumed - sizeof ( msg->md5 ), msg->md5 ) )
-//     {
-// #ifdef LOG_PROTOCOL
-//         LOG ( "MD5 checksum failed for %s", type );
-//         LOG ( "data=[ %s ]", toBase64 ( &data[0], consumed - sizeof ( msg->md5 ) ) );
-//         LOG ( "md5     =[ %s ]", toBase64 ( msg->md5, sizeof ( msg->md5 ) ) );
-//         char md5[sizeof ( msg->md5 )];
-//         getMD5 ( &data[0], consumed - sizeof ( msg->md5 ), md5 );
-//         LOG ( "expected=[ %s ]", toBase64 ( md5, sizeof ( msg->md5 ) ) );
-// #endif
-//         return NullMsg;
-//     }
+    if ( !checkMD5 ( &data[0], dataSize - sizeof ( msg->md5 ), msg->md5 ) )
+    {
+#ifdef LOG_PROTOCOL
+        LOG ( "MD5 checksum failed for %s", type );
+        LOG ( "data=[ %s ]", toBase64 ( &data[0], dataSize - sizeof ( msg->md5 ) ) );
+        LOG ( "md5     =[ %s ]", toBase64 ( msg->md5, sizeof ( msg->md5 ) ) );
+        char md5[sizeof ( msg->md5 )];
+        getMD5 ( &data[0], dataSize - sizeof ( msg->md5 ), md5 );
+        LOG ( "expected=[ %s ]", toBase64 ( md5, sizeof ( msg->md5 ) ) );
+#endif
+        return NullMsg;
+    }
 
     return msg;
 }
@@ -247,8 +264,27 @@ DecodeResult decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, M
             archive ( msgData );                // compressed size + compressed data
         }
     }
+    catch ( const cereal::Exception& err )
+    {
+#ifdef LOG_PROTOCOL
+        LOG ( "cereal::Exception: '%s'", type, err.what() );
+#endif
+        consumed = 0;
+        return DecodeResult::Failed;
+    }
+    catch ( const std::exception& err )
+    {
+#ifdef LOG_PROTOCOL
+        LOG ( "std::exception: '%s'", type, err.what() );
+#endif
+        consumed = 0;
+        return DecodeResult::Failed;
+    }
     catch ( ... )
     {
+#ifdef LOG_PROTOCOL
+        LOG ( "Unknown exception!" );
+#endif
         consumed = 0;
         return DecodeResult::Failed;
     }

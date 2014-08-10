@@ -4,7 +4,7 @@ set confirm off
 break assert
 break _assert
 break __assert
-break terminate
+break abort
 
 set $_exitcode = -999
 

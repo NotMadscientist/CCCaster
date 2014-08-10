@@ -7,8 +7,8 @@
 using namespace std;
 
 
-#define PACKET_LOSS     10
-#define CHECK_SUM_FAIL  10
+#define PACKET_LOSS     50
+#define CHECK_SUM_FAIL  50
 #define LONG_TIMEOUT    ( 120 * 1000 )
 
 

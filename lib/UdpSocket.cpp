@@ -224,12 +224,19 @@ bool UdpSocket::sendRaw ( const MsgPtr& msg, const IpAddrPort& address )
 {
 #ifndef RELEASE
     // Simulate failed checksum
-    if ( rand() % 100 < checkSumFail && msg )
+    if ( checkSumFail && msg )
     {
-        LOG ( "Munging checksum for '%s'", msg );
-        for ( char& byte : msg->md5 )
-            byte = ( rand() % 0x100 );
-        msg->md5empty = false;
+        if ( rand() % 100 < checkSumFail )
+        {
+            LOG ( "Munging checksum for '%s'", msg );
+            for ( char& byte : msg->md5 )
+                byte = ( rand() % 0x100 );
+            msg->md5empty = false;
+        }
+        else
+        {
+            msg->md5empty = true;
+        }
     }
 #endif
 
