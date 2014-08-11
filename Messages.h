@@ -10,15 +10,15 @@
 #include <cassert>
 
 
+
+
+struct EndOfMessages : public SerializableSequence { EMPTY_MESSAGE_BOILERPLATE ( EndOfMessages ) };
+struct CharaSelectLoaded : public SerializableSequence { EMPTY_MESSAGE_BOILERPLATE ( CharaSelectLoaded ) };
+
+
 struct ClientType : public SerializableSequence
 {
     ENUM_MESSAGE_BOILERPLATE ( ClientType, Host, Client )
-};
-
-
-struct EndOfMessages : public SerializableSequence
-{
-    EMPTY_MESSAGE_BOILERPLATE ( EndOfMessages )
 };
 
 

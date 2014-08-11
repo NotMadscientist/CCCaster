@@ -49,6 +49,10 @@ struct Main : public CommonMain
             assert ( serverDataSocket->getAsUDP().getChildSockets().size() == 1 );
             assert ( serverDataSocket->getAsUDP().getChildSockets().begin()->second == dataSocket );
 
+            // Disable keepAlive during the limbo period while sharing sockets
+            serverCtrlSocket->setKeepAlive ( 0 );
+            serverDataSocket->setKeepAlive ( 0 );
+
             // We don't send the dataSocket since it will be included in serverDataSocket's SocketShareData
             procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
             procMan.ipcSend ( serverCtrlSocket->share ( procMan.getProcessId() ) );

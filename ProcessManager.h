@@ -10,10 +10,7 @@
 #define INLINE_INPUT(INPUT)                 ( ( INPUT ) & 0x000F ), ( ( ( INPUT ) & 0xFFF0 ) >> 4 )
 
 
-struct IpcConnected : public SerializableSequence
-{
-    EMPTY_MESSAGE_BOILERPLATE ( IpcConnected )
-};
+struct IpcConnected : public SerializableSequence { EMPTY_MESSAGE_BOILERPLATE ( IpcConnected ) };
 
 
 class ProcessManager : public Socket::Owner, public Timer::Owner
@@ -96,6 +93,12 @@ public:
     void writeGameInput ( uint8_t player, uint16_t input )
     {
         writeGameInput ( player, INLINE_INPUT ( input ) );
+    }
+
+    void clearInputs()
+    {
+        writeGameInput ( 1, 0, 0 );
+        writeGameInput ( 2, 0, 0 );
     }
 
     // Get the game RNG state

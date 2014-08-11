@@ -165,7 +165,7 @@ void GoBackN::setKeepAlive ( uint64_t timeout )
     keepAlive = timeout;
     countDown = ( timeout / SEND_INTERVAL );
 
-    LOG ( "timeout=%llu; countDown=%d", keepAlive, countDown );
+    LOG ( "keepAlive=%llu; countDown=%d", keepAlive, countDown );
 }
 
 void GoBackN::reset()
