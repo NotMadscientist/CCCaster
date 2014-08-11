@@ -345,7 +345,7 @@ bool Socket::recv ( char *buffer, size_t& len, IpAddrPort& address )
 
 void Socket::readEvent()
 {
-    char *bufferEnd = & ( readBuffer[readPos] );
+    char *bufferEnd = &readBuffer[readPos];
     size_t bufferLen = readBuffer.size() - readPos;
 
     IpAddrPort address = getRemoteAddress();

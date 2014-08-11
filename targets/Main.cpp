@@ -17,7 +17,7 @@ using namespace option;
 
 
 // Set of command line options
-enum CommandLineOptions { UNKNOWN, HELP, GTEST, STDOUT, PLUS };
+enum CommandLineOptions { UNKNOWN, HELP, DUMMY, GTEST, STDOUT, PLUS };
 
 
 struct Main : public CommonMain
@@ -106,7 +106,7 @@ struct Main : public CommonMain
     }
 
     // Socket callbacks
-    void acceptEvent ( Socket *serverSocket ) override
+    virtual void acceptEvent ( Socket *serverSocket ) override
     {
         if ( serverSocket == serverCtrlSocket.get() )
         {
@@ -139,19 +139,19 @@ struct Main : public CommonMain
         }
     }
 
-    void connectEvent ( Socket *socket ) override
+    virtual void connectEvent ( Socket *socket ) override
     {
         assert ( ctrlSocket.get() != 0 );
         assert ( dataSocket.get() != 0 );
         assert ( socket == ctrlSocket.get() || socket == dataSocket.get() );
     }
 
-    void disconnectEvent ( Socket *socket ) override
+    virtual void disconnectEvent ( Socket *socket ) override
     {
         EventManager::get().stop();
     }
 
-    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
+    virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
     {
         if ( !msg.get() )
             return;
@@ -173,7 +173,7 @@ struct Main : public CommonMain
     }
 
     // Timer callback
-    void timerExpired ( Timer *timer ) override
+    virtual void timerExpired ( Timer *timer ) override
     {
     }
 
@@ -201,7 +201,7 @@ struct Main : public CommonMain
     }
 
     // Destructor
-    ~Main()
+    virtual ~Main()
     {
         procMan.closeGame();
 
@@ -211,6 +211,100 @@ struct Main : public CommonMain
         Logger::get().deinitialize();
     }
 };
+
+
+struct DummyMain : public Main
+{
+    PlayerInputs fakeInputs;
+
+    // Socket callbacks
+    void acceptEvent ( Socket *serverSocket ) override
+    {
+        if ( serverSocket == serverCtrlSocket.get() )
+        {
+            ctrlSocket = serverCtrlSocket->accept ( this );
+        }
+        else if ( serverSocket == serverDataSocket.get() )
+        {
+            dataSocket = serverDataSocket->accept ( this );
+        }
+        else
+        {
+            LOG ( "Ignoring acceptEvent from serverSocket=%08x", serverSocket );
+            serverSocket->accept ( this ).reset();
+            return;
+        }
+
+        if ( ctrlSocket && dataSocket )
+        {
+            assert ( ctrlSocket->isConnected() == true );
+            assert ( dataSocket->isConnected() == true );
+
+            netplaySetup.delay = 4;
+            netplaySetup.hostPlayer = 1 + ( rand() % 2 );
+            netplaySetup.training = 0;
+
+            ctrlSocket->send ( REF_PTR ( netplaySetup ) );
+
+            // DON'T start the game, just disable keepAlive
+            ctrlSocket->setKeepAlive ( 0 );
+            dataSocket->setKeepAlive ( 0 );
+        }
+    }
+
+    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
+    {
+        if ( !msg.get() )
+            return;
+
+        switch ( msg->getMsgType() )
+        {
+            case MsgType::NetplaySetup:
+                // TODO check state
+                netplaySetup = msg->getAs<NetplaySetup>();
+
+                // DON'T start the game, just disable keepAlive
+                ctrlSocket->setKeepAlive ( 0 );
+                dataSocket->setKeepAlive ( 0 );
+                break;
+
+            case MsgType::CharaSelectLoaded:
+                LOG ( "Character select loaded for both sides" );
+
+                // Pretend we also just loaded character select
+                ctrlSocket->send ( new CharaSelectLoaded() );
+
+                // Now we can re-enable keepAlive
+                ctrlSocket->setKeepAlive ( DEFAULT_KEEP_ALIVE );
+                dataSocket->setKeepAlive ( DEFAULT_KEEP_ALIVE );
+                break;
+
+            case MsgType::PlayerInputs:
+                // Reply with fake inputs
+                fakeInputs.frame = msg->getAs<PlayerInputs>().frame + netplaySetup.delay * 2;
+                fakeInputs.index = msg->getAs<PlayerInputs>().index;
+                fakeInputs.invalidate();
+                dataSocket->send ( REF_PTR ( fakeInputs ) );
+                break;
+
+            default:
+                LOG ( "Unexpected '%s'", msg );
+                break;
+        }
+    }
+
+    // Timer callback
+    void timerExpired ( Timer *timer ) override
+    {
+    }
+
+    // Constructor
+    DummyMain ( Option opt[], const IpAddrPort& address ) : Main ( opt, address ), fakeInputs ( 0, 0 )
+    {
+        memset ( &fakeInputs.inputs[0], 0, fakeInputs.inputs.size() );
+    }
+};
+
 
 static void signalHandler ( int signum )
 {
@@ -258,6 +352,7 @@ int main ( int argc, char *argv[] )
     {
         { UNKNOWN, 0,  "",        "", Arg::None, "Usage: " BINARY " [options]\n\nOptions:" },
         { HELP,    0, "h",    "help", Arg::None, "  --help, -h    Print usage and exit." },
+        { DUMMY,   0,  "",   "dummy", Arg::None, "  --dummy       Run as a dummy application." },
         { GTEST,   0,  "",   "gtest", Arg::None, "  --gtest       Run unit tests and exit." },
         { STDOUT,  0,  "",  "stdout", Arg::None, "  --stdout      Output logs to stdout." },
         { PLUS,    0, "p",    "plus", Arg::None, "  --plus, -p    Increment count." },
@@ -316,7 +411,12 @@ int main ( int argc, char *argv[] )
 
         PRINT ( "Using: '%s'", address );
 
-        Main main ( opt, address );
+        shared_ptr<Main> main;
+        if ( opt[DUMMY] )
+            main.reset ( new DummyMain ( opt, address ) );
+        else
+            main.reset ( new Main ( opt, address ) );
+
         EventManager::get().start();
     }
     catch ( const WindowsException& err )
