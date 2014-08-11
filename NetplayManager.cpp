@@ -78,6 +78,7 @@ uint16_t NetplayManager::getInitialInput ( uint8_t player ) const
 
 uint16_t NetplayManager::getCharaSelectInput ( uint8_t player ) const
 {
+    // TODO
     return getDelayedInput ( player );
 }
 
