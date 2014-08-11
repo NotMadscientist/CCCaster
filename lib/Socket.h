@@ -168,7 +168,7 @@ struct SocketShareData : public SerializableSequence
     std::shared_ptr<WSAPROTOCOL_INFO> info;
 
     // Extra data for UDP sockets
-    uint8_t udpType;
+    uint8_t udpType = 0;
     MsgPtr gbnState;
     std::unordered_map<IpAddrPort, GoBackN> childSockets;
 

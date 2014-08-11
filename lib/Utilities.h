@@ -16,7 +16,7 @@
 
 #define ENUM(NAME, ...)                                                                                         \
     struct NAME : public BetterEnum {                                                                           \
-        enum Enum : uint8_t { Unknown, __VA_ARGS__ } value = Unknown;                                           \
+        enum Enum : uint8_t { Unknown = 0, __VA_ARGS__ } value = Unknown;                                       \
         NAME() {}                                                                                               \
         NAME ( Enum value ) : value ( value ) {}                                                                \
         NAME& operator= ( Enum value ) { this->value = value; return *this; }                                   \

@@ -20,7 +20,7 @@
     MsgType getMsgType() const override;
 
 #define ENUM_MESSAGE_BOILERPLATE(NAME, ...)                                                                 \
-    enum Enum : uint8_t { Unknown, __VA_ARGS__ } value = Unknown;                                           \
+    enum Enum : uint8_t { Unknown = 0, __VA_ARGS__ } value = Unknown;                                       \
     NAME() {}                                                                                               \
     NAME ( Enum value ) : value ( value ) {}                                                                \
     std::string str() const override {                                                                      \
