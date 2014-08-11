@@ -18,7 +18,7 @@ class UdpSocket : public Socket, public GoBackN::Owner
 public:
 
     // UDP socket type enum
-    ENUM ( Type, Client, Server, Child );
+    ENUM ( Type, ConnectionLess, Client, Server, Child );
 
     // UDP socket type constant
     const Type type = Type::Unknown;
@@ -53,10 +53,10 @@ private:
     bool sendRaw ( const MsgPtr& msg, const IpAddrPort& address );
 
     // Construct a server socket
-    UdpSocket ( Socket::Owner *owner, uint16_t port, uint64_t keepAlive );
+    UdpSocket ( Socket::Owner *owner, uint16_t port, const Type& type );
 
     // Construct a client socket
-    UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, uint64_t keepAlive );
+    UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, const Type& type );
 
     // Construct a socket from SocketShareData
     UdpSocket ( Socket::Owner *owner, const SocketShareData& data );
@@ -97,7 +97,10 @@ public:
     SocketPtr accept ( Socket::Owner *owner ) override;
 
     // If this UDP socket is backed by a real socket handle, and not proxy of another socket
-    bool isReal() const { return ( type == Type::Client || type == Type::Server ); }
+    bool isReal() const { return ( type == Type::ConnectionLess || type == Type::Client || type == Type::Server ); }
+
+    // If this is a vanilla connection-less UDP socket
+    bool isConnectionLess() const { return ( type == Type::ConnectionLess ); }
 
     // Child UDP sockets aren't real sockets, they are just proxies that recv from the parent socket
     bool isChild() const { return ( type == Type::Child ); }
@@ -117,7 +120,7 @@ public:
 
     // Get/set the timeout for keep alive packets, 0 to disable
     uint64_t getKeepAlive() const { return gbn.getKeepAlive(); }
-    void setKeepAlive ( uint64_t timeout ) { gbn.setKeepAlive ( timeout ); }
+    void setKeepAlive ( uint64_t timeout ) { if ( !isConnectionLess() ) gbn.setKeepAlive ( timeout ); }
 
     // Reset the state of the GoBackN instance
     void resetGbnState() { gbn.reset(); }

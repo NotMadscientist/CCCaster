@@ -18,10 +18,10 @@ using namespace std;
 #define LOG_UDP_SOCKET(SOCKET, FORMAT, ...) LOG_SOCKET ( SOCKET, "type=%s; " FORMAT, type, ## __VA_ARGS__)
 
 
-UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, uint64_t keepAlive )
+UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, const Type& type )
     : Socket ( IpAddrPort ( "", port ), Protocol::UDP )
-    , type ( Type::Server )
-    , gbn ( this, keepAlive )
+    , type ( type )
+    , gbn ( this, isConnectionLess() ? 0 : DEFAULT_KEEP_ALIVE )
 {
     this->owner = owner;
     this->state = State::Listening;
@@ -29,13 +29,13 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, uint64_t keepAlive )
     SocketManager::get().add ( this );
 }
 
-UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, uint64_t keepAlive )
+UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, const Type& type )
     : Socket ( address, Protocol::UDP )
-    , type ( Type::Client )
-    , gbn ( this, keepAlive )
+    , type ( type )
+    , gbn ( this, isConnectionLess() ? 0 : DEFAULT_KEEP_ALIVE )
 {
     this->owner = owner;
-    this->state = ( keepAlive ? State::Connecting : State::Connected );
+    this->state = ( isConnectionLess() ? State::Connected : State::Connecting );
     Socket::init();
     SocketManager::get().add ( this );
 
@@ -45,7 +45,7 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, uint64_t
 
 UdpSocket::UdpSocket ( Socket::Owner *owner, const SocketShareData& data )
     : Socket ( data.address, Protocol::UDP )
-    , type ( data.isUdpServer ? Type::Server : Type::Client )
+    , type ( ( Type::Enum ) data.udpType )
     , gbn ( this, 0 )
 {
     assert ( data.protocol == Protocol::UDP );
@@ -72,6 +72,10 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const SocketShareData& data )
 
     switch ( type.value )
     {
+        case Type::ConnectionLess:
+            LOG ( "connection-less: address='%s'", address );
+            break;
+
         case Type::Client:
             gbn = data.gbnState->getAs<GoBackN>();
 
@@ -150,22 +154,22 @@ void UdpSocket::disconnect()
 
 SocketPtr UdpSocket::listen ( Socket::Owner *owner, uint16_t port )
 {
-    return SocketPtr ( new UdpSocket ( owner, port, DEFAULT_KEEP_ALIVE ) );
+    return SocketPtr ( new UdpSocket ( owner, port, Type::Server ) );
 }
 
 SocketPtr UdpSocket::connect ( Socket::Owner *owner, const IpAddrPort& address )
 {
-    return SocketPtr ( new UdpSocket ( owner, address, DEFAULT_KEEP_ALIVE ) );
+    return SocketPtr ( new UdpSocket ( owner, address, Type::Client ) );
 }
 
 SocketPtr UdpSocket::bind ( Socket::Owner *owner, uint16_t port )
 {
-    return SocketPtr ( new UdpSocket ( owner, port, 0 ) );
+    return SocketPtr ( new UdpSocket ( owner, port, Type::ConnectionLess ) );
 }
 
 SocketPtr UdpSocket::bind ( Socket::Owner *owner, const IpAddrPort& address )
 {
-    return SocketPtr ( new UdpSocket ( owner, address, 0 ) );
+    return SocketPtr ( new UdpSocket ( owner, address, Type::ConnectionLess ) );
 }
 
 SocketPtr UdpSocket::shared ( Socket::Owner *owner, const SocketShareData& data )
@@ -201,7 +205,7 @@ bool UdpSocket::send ( SerializableSequence *message, const IpAddrPort& address 
 
 bool UdpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
 {
-    if ( getKeepAlive() == 0 || !msg.get() )
+    if ( isConnectionLess() )
         return sendRaw ( msg, address );
 
     switch ( msg->getBaseType().value )
@@ -212,7 +216,7 @@ bool UdpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
 
         case BaseType::SerializableSequence:
             gbn.sendGoBackN ( msg );
-            return true;
+            return isConnected();
 
         default:
             LOG ( "Unhandled BaseType '%s'!", msg->getBaseType() );
@@ -370,9 +374,9 @@ void UdpSocket::timeoutGoBackN ( GoBackN *gbn )
 
 void UdpSocket::readEvent ( const MsgPtr& msg, const IpAddrPort& address )
 {
-    if ( getKeepAlive() == 0 )
+    if ( isConnectionLess() || ( msg.get() && msg->getBaseType() != BaseType::SerializableSequence ) )
     {
-        // Recv directly if not in GoBackN mode
+        // Recv directly if we're in connection-less mode, or it's not a sequenced message
         if ( owner )
             owner->readEvent ( this, msg, address );
         return;
@@ -433,30 +437,28 @@ MsgPtr UdpSocket::share ( int processId )
     MsgPtr data = Socket::share ( processId );
 
     assert ( typeid ( *data ) == typeid ( SocketShareData ) );
-    assert ( type == Type::Client || type == Type::Server );
+    assert ( isReal() == true );
 
     LOG ( "Sharing UDP:" );
 
     switch ( type.value )
     {
-        case Type::Client:
-            data->getAs<SocketShareData>().isUdpServer = false;
+        case Type::ConnectionLess:
+            LOG ( "connection-less: address='%s'", address );
+            break;
 
+        case Type::Client:
             LOG ( "client: address='%s'; keepAlive=%d", address, getKeepAlive() );
             gbn.logSendList();
 
             data->getAs<SocketShareData>().gbnState.reset ( new GoBackN ( gbn ) );
-            gbn.reset(); // Reset to stop the GoBackN timers from firing
             break;
 
         case Type::Server:
-            data->getAs<SocketShareData>().isUdpServer = true;
-
             LOG ( "server: address='%s'; keepAlive=%d", address, getKeepAlive() );
             gbn.logSendList();
 
             data->getAs<SocketShareData>().gbnState.reset ( new GoBackN ( gbn ) );
-            gbn.reset(); // Reset to stop the GoBackN timers from firing
 
             for ( const auto& kv : childSockets )
             {
@@ -471,6 +473,9 @@ MsgPtr UdpSocket::share ( int processId )
         default:
             return NullMsg;
     }
+
+    data->getAs<SocketShareData>().udpType = type.value;
+    gbn.reset(); // Reset to stop the GoBackN timers from firing
 
     return data;
 }

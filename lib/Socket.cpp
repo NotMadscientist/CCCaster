@@ -491,7 +491,7 @@ void SocketShareData::save ( cereal::BinaryOutputArchive& ar ) const
          info->dwProviderReserved,
          info->szProtocol );
 
-    ar ( isUdpServer, Protocol::encode ( gbnState ), childSockets );
+    ar ( udpType, Protocol::encode ( gbnState ), childSockets );
 }
 
 void SocketShareData::load ( cereal::BinaryInputArchive& ar )
@@ -525,7 +525,7 @@ void SocketShareData::load ( cereal::BinaryInputArchive& ar )
          info->szProtocol );
 
     string buffer;
-    ar ( isUdpServer, buffer, childSockets );
+    ar ( udpType, buffer, childSockets );
 
     size_t consumed;
     gbnState = Protocol::decode ( &buffer[0], buffer.size(), consumed );
