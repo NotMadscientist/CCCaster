@@ -85,7 +85,6 @@ profile: $(ARCHIVE)
 $(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
 	$(ZIP) $(NAME).v$(VERSION).zip $^
 	$(GRANT)
-	rm -rf $(FOLDER)
 	@echo
 	if [ -s scripts/deploy ]; then scripts/deploy; fi;
 

@@ -40,7 +40,7 @@ void GoBackN::timerExpired ( Timer *timer )
         if ( sendListPos == sendList.end() )
             sendListPos = sendList.begin();
 
-        LOG_LIST ( sendList, formatSerializableSequence );
+        logSendList();
 
         LOG ( "Sending '%s'; sequence=%u; sendSequence=%d",
               *sendListPos, ( **sendListPos ).getAs<SerializableSequence>().getSequence(), sendSequence );
@@ -95,7 +95,7 @@ void GoBackN::sendGoBackN ( const MsgPtr& msg )
 
     sendList.push_back ( msg );
 
-    LOG_LIST ( sendList, formatSerializableSequence );
+    logSendList();
 
     checkAndStartTimer();
 }
@@ -141,7 +141,7 @@ void GoBackN::recvRaw ( const MsgPtr& msg )
             sendList.pop_front();
         sendListPos = sendList.end();
 
-        LOG_LIST ( sendList, formatSerializableSequence );
+        logSendList();
         return;
     }
 

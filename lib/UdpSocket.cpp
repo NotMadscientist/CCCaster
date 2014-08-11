@@ -94,7 +94,7 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const SocketShareData& data )
                 UdpSocket *socket = new UdpSocket ( ChildSocket, this, kv.first, kv.second );
                 childSockets.insert ( make_pair ( socket->address, SocketPtr ( socket ) ) );
 
-                LOG ( "childSocket: address='%s'; keepAlive=%d", socket->address, socket->getKeepAlive() );
+                LOG ( "child: address='%s'; keepAlive=%d", socket->address, socket->getKeepAlive() );
                 socket->gbn.logSendList();
             }
             break;
@@ -462,7 +462,7 @@ MsgPtr UdpSocket::share ( int processId )
 
             for ( const auto& kv : childSockets )
             {
-                LOG ( "childSocket: address='%s'; keepAlive=%d", kv.first, kv.second->getAsUDP().getKeepAlive() );
+                LOG ( "child: address='%s'; keepAlive=%d", kv.first, kv.second->getAsUDP().getKeepAlive() );
                 kv.second->getAsUDP().gbn.logSendList();
 
                 data->getAs<SocketShareData>().childSockets[kv.first] = kv.second->getAsUDP().gbn;
