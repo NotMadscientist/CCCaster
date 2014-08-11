@@ -273,15 +273,21 @@ struct Main
 
                 netplaySetup = msg->getAs<NetplaySetup>();
 
+                if ( netplaySetup.delay == 0 )
+                    LOG_AND_THROW_STRING ( "netplaySetup.delay=%d is invalid!", netplaySetup.delay );
+
+                if ( netplaySetup.hostPlayer != 1 && netplaySetup.hostPlayer != 2 )
+                    LOG_AND_THROW_STRING ( "netplaySetup.hostPlayer=%d is invalid!", netplaySetup.hostPlayer );
+
                 if ( isHost() )
                 {
-                    hostPlayer = localPlayer = msg->getAs<NetplaySetup>().hostPlayer;
-                    clientPlayer = remotePlayer = 3 - msg->getAs<NetplaySetup>().hostPlayer;
+                    hostPlayer = localPlayer = netplaySetup.hostPlayer;
+                    clientPlayer = remotePlayer = ( 3 - netplaySetup.hostPlayer );
                 }
                 else
                 {
-                    hostPlayer = remotePlayer = msg->getAs<NetplaySetup>().hostPlayer;
-                    clientPlayer = localPlayer = 3 - msg->getAs<NetplaySetup>().hostPlayer;
+                    hostPlayer = remotePlayer = netplaySetup.hostPlayer;
+                    clientPlayer = localPlayer = ( 3 - netplaySetup.hostPlayer );
                 }
 
                 LOG ( "delay=%d; training=%d; hostPlayer=%d; clientPlayer=%d; localPlayer=%d; remotePlayer=%d",

@@ -25,7 +25,7 @@ struct ClientType : public SerializableSequence
 struct NetplaySetup : public SerializableSequence
 {
     uint8_t delay = 0;
-    uint8_t hostPlayer = 1;
+    uint8_t hostPlayer = 0;
     uint8_t training = 0;
 
     NetplaySetup() {}
