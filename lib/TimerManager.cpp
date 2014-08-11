@@ -100,9 +100,11 @@ void TimerManager::add ( Timer *timer )
 
 void TimerManager::remove ( Timer *timer )
 {
-    LOG ( "Removing timer %08x", timer );
-    allocatedTimers.erase ( timer );
-    changed = true;
+    if ( allocatedTimers.erase ( timer ) )
+    {
+        LOG ( "Removing timer %08x", timer );
+        changed = true;
+    }
 }
 
 void TimerManager::clear()

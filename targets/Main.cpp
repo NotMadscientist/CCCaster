@@ -22,6 +22,23 @@ enum CommandLineOptions { UNKNOWN, HELP, GTEST, STDOUT, PLUS };
 
 struct Main : public CommonMain
 {
+    void startGame()
+    {
+        // Remove sockets from the EventManager so messages get buffered.
+        // These are safe to call even if null or the socket is not a real fd.
+        SocketManager::get().remove ( serverCtrlSocket.get() );
+        SocketManager::get().remove ( serverDataSocket.get() );
+        SocketManager::get().remove ( ctrlSocket.get() );
+        SocketManager::get().remove ( dataSocket.get() );
+
+        // Disable keepAlive during the limbo period while sharing sockets
+        ctrlSocket->setKeepAlive ( 0 );
+        dataSocket->setKeepAlive ( 0 );
+
+        // Open the game wait and for callback to ipcConnectEvent
+        procMan.openGame();
+    }
+
     // ProcessManager callbacks
     void ipcConnectEvent() override
     {
@@ -38,10 +55,6 @@ struct Main : public CommonMain
         assert ( dataSocket.get() != 0 );
         assert ( dataSocket->isConnected() == true );
 
-        // Disable keepAlive during the limbo period while sharing sockets
-        ctrlSocket->setKeepAlive ( 0 );
-        dataSocket->setKeepAlive ( 0 );
-
         if ( isHost() )
         {
             assert ( serverCtrlSocket.get() != 0 );
@@ -53,10 +66,12 @@ struct Main : public CommonMain
             serverCtrlSocket->setKeepAlive ( 0 );
             serverDataSocket->setKeepAlive ( 0 );
 
-            // We don't send the dataSocket since it will be included in serverDataSocket's SocketShareData
-            procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
             procMan.ipcSend ( serverCtrlSocket->share ( procMan.getProcessId() ) );
             procMan.ipcSend ( serverDataSocket->share ( procMan.getProcessId() ) );
+
+            // We don't share UDP sockets since they will be included in the server's share data
+            if ( ctrlSocket->isTCP() )
+                procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
         }
         else
         {
@@ -118,7 +133,9 @@ struct Main : public CommonMain
             netplaySetup.training = 0;
 
             ctrlSocket->send ( REF_PTR ( netplaySetup ) );
-            procMan.openGame();
+
+            // Start the game wait and for callback to ipcConnectEvent
+            startGame();
         }
     }
 
@@ -144,7 +161,9 @@ struct Main : public CommonMain
             case MsgType::NetplaySetup:
                 // TODO check state
                 netplaySetup = msg->getAs<NetplaySetup>();
-                procMan.openGame();
+
+                // Start the game wait and for callback to ipcConnectEvent
+                startGame();
                 break;
 
             default:

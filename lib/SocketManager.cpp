@@ -134,9 +134,11 @@ void SocketManager::add ( Socket *socket )
 
 void SocketManager::remove ( Socket *socket )
 {
-    LOG_SOCKET ( socket, "Removing socket" );
-    allocatedSockets.erase ( socket );
-    changed = true;
+    if ( allocatedSockets.erase ( socket ) )
+    {
+        LOG_SOCKET ( socket, "Removing socket" );
+        changed = true;
+    }
 }
 
 void SocketManager::clear()

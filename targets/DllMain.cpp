@@ -291,21 +291,31 @@ struct Main
             case MsgType::SocketShareData:
                 if ( isHost() )
                 {
-                    if ( !ctrlSocket )
-                    {
-                        ctrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
-                    }
-                    else if ( !serverCtrlSocket )
+                    if ( !serverCtrlSocket )
                     {
                         serverCtrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
+
+                        if ( serverCtrlSocket->isUDP() )
+                        {
+                            assert ( serverCtrlSocket->getAsUDP().getChildSockets().size() == 1 );
+                            ctrlSocket = serverCtrlSocket->getAsUDP().getChildSockets().begin()->second;
+                            ctrlSocket->owner = this;
+                            assert ( ctrlSocket->isConnected() );
+                        }
                     }
                     else if ( !serverDataSocket )
                     {
                         serverDataSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
+
+                        assert ( serverDataSocket->isUDP() == true );
                         assert ( serverDataSocket->getAsUDP().getChildSockets().size() == 1 );
                         dataSocket = serverDataSocket->getAsUDP().getChildSockets().begin()->second;
                         dataSocket->owner = this;
                         assert ( dataSocket->isConnected() );
+                    }
+                    else if ( !ctrlSocket )
+                    {
+                        ctrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
                     }
                 }
                 else
