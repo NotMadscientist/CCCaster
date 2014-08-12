@@ -5,6 +5,7 @@
 #include "Messages.h"
 #include "Constants.h"
 #include "AsmHacks.h"
+#include "EventManager.h"
 
 #include <windows.h>
 
@@ -14,11 +15,13 @@
 using namespace std;
 
 
-#define GAME_START_INTERVAL ( 1000 )
+#define GAME_START_INTERVAL     ( 1000 )
 
-#define GAME_START_ATTEMPTS ( 10 )
+#define GAME_START_ATTEMPTS     ( 10 )
 
-#define IPC_CONNECT_TIMEOUT ( 10000 )
+#define IPC_CONNECT_TIMEOUT     ( 10000 )
+
+#define PIPE_CONNECT_TIMEOUT    ( 10000 )
 
 
 void ProcessManager::writeGameInput ( uint8_t player, uint16_t direction, uint16_t buttons )
@@ -192,6 +195,26 @@ void ProcessManager::openGame()
 
     LOG ( "Connecting pipe" );
 
+    struct TimeoutThread : public Thread
+    {
+        void run() override
+        {
+            Sleep ( PIPE_CONNECT_TIMEOUT );
+
+            HANDLE pipe = CreateFile ( NAMED_PIPE, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                       0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0 );
+
+            if ( pipe == INVALID_HANDLE_VALUE )
+                return;
+
+            CloseHandle ( pipe );
+        }
+    };
+
+    shared_ptr<Thread> thread ( new TimeoutThread() );
+    thread->start();
+    EventManager::get().addThread ( thread );
+
     if ( !ConnectNamedPipe ( pipe, 0 ) )
     {
         int error = GetLastError();
@@ -264,7 +287,7 @@ void ProcessManager::connectPipe()
 
     ipcSocket = TcpSocket::listen ( this, 0 );
 
-    LOG ( "Connecting pipe" );
+    LOG ( "Creating pipe" );
 
     pipe = CreateFile (
                NAMED_PIPE,                              // name of the pipe
@@ -281,7 +304,7 @@ void ProcessManager::connectPipe()
         LOG_AND_THROW_ERROR ( err, "CreateFile failed" );
     }
 
-    LOG ( "Pipe connected" );
+    LOG ( "Pipe created" );
 
     DWORD bytes;
 

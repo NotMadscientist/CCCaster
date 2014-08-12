@@ -301,7 +301,7 @@ struct DummyMain : public Main
     // Constructor
     DummyMain ( Option opt[], const IpAddrPort& address ) : Main ( opt, address ), fakeInputs ( 0, 0 )
     {
-        memset ( &fakeInputs.inputs[0], 0, fakeInputs.inputs.size() );
+        fakeInputs.inputs.fill ( 0 );
     }
 };
 
@@ -318,6 +318,7 @@ static BOOL WINAPI consoleCtrl ( DWORD ctrl )
     EventManager::get().release();
     return TRUE;
 }
+
 
 int main ( int argc, char *argv[] )
 {
@@ -428,6 +429,7 @@ int main ( int argc, char *argv[] )
         PRINT ( "Error: %s", err );
     }
 
+    EventManager::get().release();
     return 0;
 }
 

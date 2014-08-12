@@ -111,11 +111,7 @@ void EventManager::start()
 
     LOG ( "Finished event loop" );
 
-    LOG ( "Joining reaper thread" );
-
-    reaperThread.join();
-
-    LOG ( "Joined reaper thread" );
+    stop();
 }
 
 void EventManager::stop()
@@ -123,13 +119,21 @@ void EventManager::stop()
     LOG ( "Stopping everything" );
 
     running = false;
+
+    LOG ( "Joining reaper thread" );
+
+    reaperThread.join();
+
+    LOG ( "Joined reaper thread" );
 }
 
 void EventManager::release()
 {
-    stop();
-
     LOG ( "Releasing everything" );
+
+    running = false;
+
+    LOG ( "Releasing reaper thread" );
 
     reaperThread.release();
 }
