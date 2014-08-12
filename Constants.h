@@ -44,7 +44,8 @@
 #define CC_GAME_MODE_STARTUP        65535
 #define CC_GAME_MODE_OPENING        3
 #define CC_GAME_MODE_TITLE          2
-#define CC_GAME_MODE_DEMO           13
+#define CC_GAME_MODE_LOADING_DEMO   13
+#define CC_GAME_MODE_HIGH_SCORES    11
 #define CC_GAME_MODE_MAIN           25
 #define CC_GAME_MODE_CHARA_SELECT   20
 #define CC_GAME_MODE_LOADING        8

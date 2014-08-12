@@ -161,10 +161,12 @@ struct Main
                 || current == CC_GAME_MODE_STARTUP
                 || current == CC_GAME_MODE_OPENING
                 || current == CC_GAME_MODE_TITLE
-                || current == CC_GAME_MODE_DEMO
                 || current == CC_GAME_MODE_MAIN
-                || ( previous == CC_GAME_MODE_DEMO && current == CC_GAME_MODE_INGAME ) )
+                || current == CC_GAME_MODE_LOADING_DEMO
+                || ( previous == CC_GAME_MODE_LOADING_DEMO && current == CC_GAME_MODE_INGAME )
+                || CC_GAME_MODE_HIGH_SCORES )
         {
+            assert ( netMan.getState() == NetplayState::PreInitial || netMan.getState() == NetplayState::Initial );
             return;
         }
 
