@@ -89,6 +89,20 @@ void Socket::init()
             continue;
         }
 
+        if ( isServer() || isUDP() )
+        {
+            char yes = 1;
+
+            // SO_REUSEADDR can replace existing port binds
+            // SO_EXCLUSIVEADDRUSE only replaces if not exact match
+            if ( setsockopt ( fd, SOL_SOCKET, SO_REUSEADDR, &yes, 1 ) == SOCKET_ERROR )
+            {
+                err = WSAGetLastError();
+                LOG_SOCKET ( this, "%s; setsockopt failed", err );
+                // Should be safe to continue even if this fails
+            }
+        }
+
         if ( isClient() )
         {
             if ( isTCP() )
@@ -130,19 +144,6 @@ void Socket::init()
         }
         else
         {
-            char yes = 1;
-
-            // SO_REUSEADDR can replace existing port binds
-            // SO_EXCLUSIVEADDRUSE only replaces if not exact match, so it is safer
-            if ( setsockopt ( fd, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, &yes, 1 ) == SOCKET_ERROR )
-            {
-                err = WSAGetLastError();
-                LOG_SOCKET ( this, "%s; setsockopt failed", err );
-                closesocket ( fd );
-                fd = 0;
-                throw err;
-            }
-
             if ( ::bind ( fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
             {
                 err = WSAGetLastError();
