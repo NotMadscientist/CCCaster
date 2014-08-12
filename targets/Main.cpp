@@ -35,6 +35,12 @@ struct Main : public CommonMain
         ctrlSocket->setKeepAlive ( 0 );
         dataSocket->setKeepAlive ( 0 );
 
+        if ( isHost() )
+        {
+            serverCtrlSocket->setKeepAlive ( 0 );
+            serverDataSocket->setKeepAlive ( 0 );
+        }
+
         // Open the game wait and for callback to ipcConnectEvent
         procMan.openGame();
     }
@@ -62,16 +68,17 @@ struct Main : public CommonMain
             assert ( serverDataSocket->getAsUDP().getChildSockets().size() == 1 );
             assert ( serverDataSocket->getAsUDP().getChildSockets().begin()->second == dataSocket );
 
-            // Disable keepAlive during the limbo period while sharing sockets
-            serverCtrlSocket->setKeepAlive ( 0 );
-            serverDataSocket->setKeepAlive ( 0 );
-
             procMan.ipcSend ( serverCtrlSocket->share ( procMan.getProcessId() ) );
             procMan.ipcSend ( serverDataSocket->share ( procMan.getProcessId() ) );
 
             // We don't share UDP sockets since they will be included in the server's share data
             if ( ctrlSocket->isTCP() )
+            {
+                assert ( serverCtrlSocket->getAsUDP().getChildSockets().size() == 1 );
+                assert ( serverCtrlSocket->getAsUDP().getChildSockets().begin()->second == ctrlSocket );
+
                 procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
+            }
         }
         else
         {
