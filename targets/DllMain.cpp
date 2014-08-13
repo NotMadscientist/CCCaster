@@ -142,8 +142,8 @@ struct Main
         }
 
         // Write netplay inputs
-        procMan.writeGameInput ( localPlayer, netMan.getNetplayInput ( localPlayer ) );
-        procMan.writeGameInput ( remotePlayer, netMan.getNetplayInput ( remotePlayer ) );
+        procMan.writeGameInput ( localPlayer, netMan.getInput ( localPlayer ) );
+        procMan.writeGameInput ( remotePlayer, netMan.getInput ( remotePlayer ) );
     }
 
     void bothCharaSelectLoaded()

@@ -8,12 +8,19 @@
 using namespace std;
 
 
-#define ASSERT_INPUTS_RANGE(START, END, SIZE)               \
-    do {                                                    \
-        assert ( END > START );                             \
-        assert ( END - START <= NUM_INPUTS );               \
-        assert ( START < SIZE );                            \
-        assert ( END <= SIZE );                             \
+#define ASSERT_INPUTS_RANGE(START, END, SIZE)                       \
+    do {                                                            \
+        assert ( ( END ) > ( START ) );                             \
+        assert ( ( END ) - ( START ) <= ( NUM_INPUTS ) );           \
+        assert ( ( START ) < ( SIZE ) );                            \
+        assert ( ( END ) <= ( SIZE ) );                             \
+    } while ( 0 )
+
+#define RETURN_MASH_INPUT(DIRECTION, BUTTONS)                       \
+    do {                                                            \
+        if ( frame % 2 )                                            \
+            return 0;                                               \
+        return COMBINE_INPUT ( ( DIRECTION ), ( BUTTONS ) );        \
     } while ( 0 )
 
 
@@ -22,10 +29,7 @@ uint16_t NetplayManager::getPreInitialInput ( uint8_t player ) const
     if ( ( *CC_GAME_MODE_ADDR ) == CC_GAME_MODE_MAIN )
         return 0;
 
-    if ( frame % 2 )
-        return 0;
-
-    return ( CC_BUTTON_A | CC_BUTTON_SELECT );
+    RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
 }
 
 uint16_t NetplayManager::getInitialInput ( uint8_t player ) const
@@ -35,9 +39,6 @@ uint16_t NetplayManager::getInitialInput ( uint8_t player ) const
         gameModeSelected = false;
         return getPreInitialInput ( player );
     }
-
-    if ( frame % 2 )
-        return 0;
 
     uint16_t direction = 0;
     uint16_t buttons = 0;
@@ -73,7 +74,7 @@ uint16_t NetplayManager::getInitialInput ( uint8_t player ) const
         }
     }
 
-    return COMBINE_INPUT ( direction, buttons );
+    RETURN_MASH_INPUT ( direction, buttons );
 }
 
 uint16_t NetplayManager::getCharaSelectInput ( uint8_t player ) const
@@ -89,17 +90,22 @@ uint16_t NetplayManager::getCharaSelectInput ( uint8_t player ) const
 
 uint16_t NetplayManager::getLoadingInput ( uint8_t player ) const
 {
-    return 0;
+    return getDelayedInput ( player );
 }
 
 uint16_t NetplayManager::getSkippableInput ( uint8_t player ) const
 {
-    return 0;
+    return getDelayedInput ( player );
 }
 
 uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
 {
-    return 0;
+    uint16_t input = getDelayedInput ( player );
+
+    // Disable pausing in-game
+    input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_START );
+
+    return input;
 }
 
 uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
@@ -117,9 +123,11 @@ uint16_t NetplayManager::getDelayedInput ( uint8_t player ) const
     if ( frame < setup.delay )
         return 0;
 
-    assert ( frame - setup.delay < inputs[player - 1].size() );
+    assert ( player == 1 || player == 2 );
+    assert ( inputs.empty() == false );
+    assert ( frame - setup.delay < inputs[index][player - 1].size() );
 
-    return inputs[player - 1][frame - setup.delay];
+    return inputs[index][player - 1][frame - setup.delay];
 }
 
 NetplayManager::NetplayManager ( const NetplaySetup& setup ) : setup ( setup ) {}
@@ -140,7 +148,10 @@ void NetplayManager::setState ( const NetplayState& state )
     {
         startWorldTime = *CC_WORLD_TIMER_ADDR;
         frame = 0;
-        ++index;
+        if ( this->state != NetplayState::Initial )
+            ++index;
+        if ( index >= inputs.size() )
+            inputs.resize ( index + 1 );
     }
 
     this->state = state;
@@ -149,29 +160,31 @@ void NetplayManager::setState ( const NetplayState& state )
 void NetplayManager::setInput ( uint8_t player, uint16_t input )
 {
     assert ( player == 1 || player == 2 );
+    assert ( inputs.empty() == false );
 
-    if ( frame >= inputs[player - 1].size() )
-        inputs[player - 1].resize ( frame + 1, 0 );
+    if ( frame >= inputs[index][player - 1].size() )
+        inputs[index][player - 1].resize ( frame + 1, 0 );
 
-    inputs[player - 1][frame] = input;
+    inputs[index][player - 1][frame] = input;
 }
 
 MsgPtr NetplayManager::getInputs ( uint8_t player ) const
 {
     assert ( player == 1 || player == 2 );
-    assert ( inputs[player - 1].empty() == false );
-    assert ( frame + 1 <= inputs[player - 1].size() );
+    assert ( inputs.empty() == false );
+    assert ( inputs[index][player - 1].empty() == false );
+    assert ( frame + 1 <= inputs[index][player - 1].size() );
 
-    PlayerInputs *playerInputs = new PlayerInputs ( frame, index );
+    PlayerInputs *playerInputs = new PlayerInputs ( frame, inputs.size() - 1 );
 
     const uint32_t endFrame = frame + 1;
     uint32_t startFrame = 0;
     if ( endFrame > NUM_INPUTS )
         startFrame = endFrame - NUM_INPUTS;
 
-    ASSERT_INPUTS_RANGE ( startFrame, endFrame, inputs[player - 1].size() );
+    ASSERT_INPUTS_RANGE ( startFrame, endFrame, inputs[index][player - 1].size() );
 
-    copy ( inputs[player - 1].begin() + startFrame, inputs[player - 1].begin() + endFrame,
+    copy ( inputs[index][player - 1].begin() + startFrame, inputs[index][player - 1].begin() + endFrame,
            playerInputs->inputs.begin() );
 
     return MsgPtr ( playerInputs );
@@ -181,18 +194,26 @@ void NetplayManager::setInputs ( uint8_t player, const PlayerInputs& playerInput
 {
     assert ( player == 1 || player == 2 );
 
-    if ( playerInputs.getEndFrame() > inputs[player - 1].size() )
-        inputs[player - 1].resize ( playerInputs.getEndFrame(), 0 );
+    if ( playerInputs.index >= inputs.size() )
+        inputs.resize ( playerInputs.index + 1 );
 
-    ASSERT_INPUTS_RANGE ( playerInputs.getStartFrame(), playerInputs.getEndFrame(), inputs[player - 1].size() );
+    if ( playerInputs.getEndFrame() > inputs[playerInputs.index][player - 1].size() )
+        inputs[playerInputs.index][player - 1].resize ( playerInputs.getEndFrame(), 0 );
+
+    ASSERT_INPUTS_RANGE ( playerInputs.getStartFrame(), playerInputs.getEndFrame(),
+                          inputs[playerInputs.index][player - 1].size() );
 
     copy ( playerInputs.inputs.begin(), playerInputs.inputs.begin() + playerInputs.size(),
-           inputs[player - 1].begin() + playerInputs.getStartFrame() );
+           inputs[playerInputs.index][player - 1].begin() + playerInputs.getStartFrame() );
 }
 
-uint16_t NetplayManager::getNetplayInput ( uint8_t player ) const
+uint16_t NetplayManager::getInput ( uint8_t player ) const
 {
     assert ( player == 1 || player == 2 );
+
+    // If the inputs array is ahead, then we should mash to skip
+    if ( size_t ( index + 1 ) < inputs.size() )
+        RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
 
     switch ( state.value )
     {
@@ -231,5 +252,13 @@ bool NetplayManager::areInputsReady() const
     if ( state.value < NetplayState::CharaSelect )
         return true;
 
-    return ( inputs[0].size() + setup.delay > frame ) && ( inputs[1].size() + setup.delay > frame );
+    assert ( inputs.empty() == false );
+
+    // If the inputs array is ahead, then we can just mash to skip
+    if ( size_t ( index + 1 ) < inputs.size() )
+        return true;
+
+    assert ( size_t ( index + 1 ) == inputs.size() );
+
+    return ( inputs[index][0].size() + setup.delay > frame ) && ( inputs[index][1].size() + setup.delay > frame );
 }

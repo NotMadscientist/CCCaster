@@ -9,6 +9,7 @@ break abort
 
 set $_exitcode = -999
 
+echo \n
 run
 
 if $_exitcode != -999

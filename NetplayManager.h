@@ -47,12 +47,13 @@ class NetplayManager
     // Current netplay frame, frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime
     uint32_t frame = 0;
 
-    // Current transition index, incremented whenever the netplay state changes
+    // Current transition index, incremented whenever the netplay state changes (after CharaSelect)
     uint16_t index = 0;
 
-    // Array of P1 and P2 inputs
-    std::vector<uint16_t> inputs[2];
+    // Mapping: index -> player -> frame -> input
+    std::vector<std::array<std::vector<uint16_t>, 2>> inputs;
 
+    // Get the input for the specific netplay state
     uint16_t getPreInitialInput ( uint8_t player ) const;
     uint16_t getInitialInput ( uint8_t player ) const;
     uint16_t getCharaSelectInput ( uint8_t player ) const;
@@ -62,23 +63,29 @@ class NetplayManager
     uint16_t getRetryMenuInput ( uint8_t player ) const;
     uint16_t getPauseMenuInput ( uint8_t player ) const;
 
+    // Get the delayed input for the current frame
     uint16_t getDelayedInput ( uint8_t player ) const;
 
 public:
 
+    // Basic constructor, stores the provided NetplaySetup as a const reference
     NetplayManager ( const NetplaySetup& setup );
 
+    // Update the current netplay frame
     void updateFrame();
 
+    // Get / set the current netplay state
     const NetplayState& getState() const { return state; }
     void setState ( const NetplayState& state );
 
+    // Get / set the input for the current frame given the player
+    uint16_t getInput ( uint8_t player ) const;
     void setInput ( uint8_t player, uint16_t input );
 
+    // Get / set batch inputs for the given player
     MsgPtr getInputs ( uint8_t player ) const;
     void setInputs ( uint8_t player, const PlayerInputs& playerInputs );
 
-    uint16_t getNetplayInput ( uint8_t player ) const;
-
+    // If inputs are ready to be used, if not then keep polling
     bool areInputsReady() const;
 };
