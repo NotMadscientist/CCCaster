@@ -37,7 +37,7 @@ static shared_ptr<Main> main;
 static Mutex deinitMutex;
 
 // Enum of variables to monitor
-ENUM ( Variable, WorldTime, MenuIndex, GameMode, RoundStart, CharaSelectModeP1, CharaSelectModeP2 );
+ENUM ( Variable, WorldTime, GameMode, RoundStart );
 
 
 struct Main
@@ -65,6 +65,15 @@ struct Main
 
     // Timer for resending inputs while waiting
     TimerPtr resendTimer;
+
+    // The RNG state for the next netplay state
+    MsgPtr nextRngState;
+
+    // Indicates if we should wait for the next RNG state before continuing
+    bool waitForRngState = false;
+
+    // Indicates if we should set the game's RNG state with nextRngState
+    bool shouldSetRngState = false;
 
 
     void frameStep()
@@ -119,26 +128,37 @@ struct Main
             dataSocket->send ( netMan.getInputs ( localPlayer ) );
         }
 
-        // Poll until we have enough inputs to run
         for ( ;; )
         {
+            // Poll until we are ready to run
             if ( !EventManager::get().poll ( pollTimeout ) )
             {
                 appState = AppState::Stopping;
                 return;
             }
 
-            if ( netMan.areInputsReady() )
+            // Check if we should wait for anything
+            if ( netMan.areInputsReady() && !waitForRngState )
             {
                 resendTimer.reset();
                 break;
             }
 
+            // Start resending inputs since we are waiting
             if ( !resendTimer )
             {
                 resendTimer.reset ( new Timer ( this ) );
                 resendTimer->start ( RESEND_INPUTS_INTERVAL );
             }
+        }
+
+        // Update the RNG state if necessary
+        if ( shouldSetRngState )
+        {
+            assert ( nextRngState.get() != 0 );
+            procMan.setRngState ( nextRngState->getAs<RngState>() );
+            nextRngState.reset();
+            shouldSetRngState = false;
         }
 
         // Write netplay inputs
@@ -153,6 +173,24 @@ struct Main
         // Now we can re-enable keepAlive
         ctrlSocket->setKeepAlive ( DEFAULT_KEEP_ALIVE );
         dataSocket->setKeepAlive ( DEFAULT_KEEP_ALIVE );
+    }
+
+    void netplayStateChanged ( const NetplayState& state )
+    {
+        if ( state.value == NetplayState::CharaSelect || state.value == NetplayState::InGame )
+        {
+            if ( isHost() )
+            {
+                ctrlSocket->send ( procMan.getRngState() );
+            }
+            else
+            {
+                waitForRngState = ( nextRngState.get() == 0 );
+                shouldSetRngState = true;
+            }
+        }
+
+        netMan.setState ( state );
     }
 
     void gameModeChanged ( uint32_t previous, uint32_t current )
@@ -180,26 +218,26 @@ struct Main
                 ctrlSocket->send ( new CharaSelectLoaded() );
             }
 
-            netMan.setState ( NetplayState::CharaSelect );
+            netplayStateChanged ( NetplayState::CharaSelect );
             return;
         }
 
         if ( current == CC_GAME_MODE_LOADING )
         {
-            netMan.setState ( NetplayState::Loading );
+            netplayStateChanged ( NetplayState::Loading );
             return;
         }
 
         if ( current == CC_GAME_MODE_INGAME )
         {
             // In-game starts with character intros, which is a skippable state
-            netMan.setState ( NetplayState::Skippable );
+            netplayStateChanged ( NetplayState::Skippable );
             return;
         }
 
         if ( current == CC_GAME_MODE_RETRY )
         {
-            netMan.setState ( NetplayState::RetryMenu );
+            netplayStateChanged ( NetplayState::RetryMenu );
             return;
         }
 
@@ -223,16 +261,7 @@ struct Main
             case Variable::RoundStart:
                 LOG ( "%s: previous=%u; current=%u", var, previous, current );
                 // In-game happens after round start, when players can start moving
-                netMan.setState ( NetplayState::InGame );
-                break;
-
-            case Variable::MenuIndex:
-                break;
-
-            case Variable::CharaSelectModeP1:
-                break;
-
-            case Variable::CharaSelectModeP2:
+                netplayStateChanged ( NetplayState::InGame );
                 break;
 
             default:
@@ -366,7 +395,7 @@ struct Main
                         LOG_AND_THROW_STRING ( "Uninitalized serverDataSocket!" );
                 }
 
-                netMan.setState ( NetplayState::Initial );
+                netplayStateChanged ( NetplayState::Initial );
                 break;
 
             default:
@@ -424,6 +453,11 @@ struct Main
                 netMan.setInputs ( remotePlayer, msg->getAs<PlayerInputs>() );
                 break;
 
+            case MsgType::RngState:
+                nextRngState = msg;
+                waitForRngState = false;
+                break;
+
             default:
                 LOG ( "Unexpected '%s'", msg );
                 break;
@@ -460,16 +494,10 @@ struct Main
 
         procMan.connectPipe();
 
-        netMan.setState ( NetplayState::PreInitial );
+        netplayStateChanged ( NetplayState::PreInitial );
 
         ChangeMonitor::get().addRef ( this, Variable ( Variable::GameMode ), *CC_GAME_MODE_ADDR );
         ChangeMonitor::get().addRef ( this, Variable ( Variable::RoundStart ), roundStartCounter );
-
-        // ChangeMonitor::get().addRef ( this, Variable ( Variable::MenuIndex ), currentMenuIndex );
-        // ChangeMonitor::get().addPtrToRef ( this, Variable ( Variable::CharaSelectModeP1 ),
-        //                                    const_cast<const uint32_t *&> ( charaSelectModes[0] ), ( uint32_t ) 0 );
-        // ChangeMonitor::get().addPtrToRef ( this, Variable ( Variable::CharaSelectModeP2 ),
-        //                                    const_cast<const uint32_t *&> ( charaSelectModes[1] ), ( uint32_t ) 0 );
     }
 
     // Destructor

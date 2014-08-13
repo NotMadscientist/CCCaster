@@ -3,6 +3,7 @@
 #include "Socket.h"
 #include "Timer.h"
 #include "Protocol.h"
+#include "Messages.h"
 
 
 #define COMBINE_INPUT(DIRECTION, BUTTONS)   ( ( DIRECTION ) | ( ( BUTTONS ) << 4 ) )
