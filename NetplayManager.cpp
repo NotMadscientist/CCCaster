@@ -88,11 +88,6 @@ uint16_t NetplayManager::getCharaSelectInput ( uint8_t player ) const
     return input;
 }
 
-uint16_t NetplayManager::getLoadingInput ( uint8_t player ) const
-{
-    return getDelayedInput ( player );
-}
-
 uint16_t NetplayManager::getSkippableInput ( uint8_t player ) const
 {
     return getDelayedInput ( player );
@@ -227,8 +222,6 @@ uint16_t NetplayManager::getInput ( uint8_t player ) const
             return getCharaSelectInput ( player );
 
         case NetplayState::Loading:
-            return getLoadingInput ( player );
-
         case NetplayState::Skippable:
             return getSkippableInput ( player );
 

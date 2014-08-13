@@ -57,7 +57,6 @@ class NetplayManager
     uint16_t getPreInitialInput ( uint8_t player ) const;
     uint16_t getInitialInput ( uint8_t player ) const;
     uint16_t getCharaSelectInput ( uint8_t player ) const;
-    uint16_t getLoadingInput ( uint8_t player ) const;
     uint16_t getSkippableInput ( uint8_t player ) const;
     uint16_t getInGameInput ( uint8_t player ) const;
     uint16_t getRetryMenuInput ( uint8_t player ) const;
