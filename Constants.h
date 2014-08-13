@@ -41,23 +41,28 @@
 #define CC_GAME_MODE_ADDR           ( ( uint32_t * ) 0x54EEE8 ) // Current game mode, constants below
 
 // List of game modes revelant to netplay
-#define CC_GAME_MODE_STARTUP        65535
-#define CC_GAME_MODE_OPENING        3
-#define CC_GAME_MODE_TITLE          2
-#define CC_GAME_MODE_LOADING_DEMO   13
-#define CC_GAME_MODE_HIGH_SCORES    11
-#define CC_GAME_MODE_MAIN           25
-#define CC_GAME_MODE_CHARA_SELECT   20
-#define CC_GAME_MODE_LOADING        8
-#define CC_GAME_MODE_INGAME         1
-#define CC_GAME_MODE_RETRY          5
+#define CC_GAME_MODE_STARTUP        ( 65535 )
+#define CC_GAME_MODE_OPENING        ( 3 )
+#define CC_GAME_MODE_TITLE          ( 2 )
+#define CC_GAME_MODE_LOADING_DEMO   ( 13 )
+#define CC_GAME_MODE_HIGH_SCORES    ( 11 )
+#define CC_GAME_MODE_MAIN           ( 25 )
+#define CC_GAME_MODE_CHARA_SELECT   ( 20 )
+#define CC_GAME_MODE_LOADING        ( 8 )
+#define CC_GAME_MODE_INGAME         ( 1 )
+#define CC_GAME_MODE_RETRY          ( 5 )
 
 // Complete RNG state
 #define CC_RNGSTATE0_ADDR           ( ( uint32_t * ) 0x563778 )
 #define CC_RNGSTATE1_ADDR           ( ( uint32_t * ) 0x56377C )
 #define CC_RNGSTATE2_ADDR           ( ( uint32_t * ) 0x564068 )
 #define CC_RNGSTATE3_ADDR           ( ( char * )     0x56406C )
-#define CC_RNGSTATE3_SIZE           224
+#define CC_RNGSTATE3_SIZE           ( 224 )
+
+// Character select selection mode
+#define CC_CHARA_SELECT_CHARA       ( 0 )
+#define CC_CHARA_SELECT_MOON        ( 1 )
+#define CC_CHARA_SELECT_COLOUR      ( 2 )
 
 
 // Asm hacks are prefixed MM (for modified memory), they should be written to safe locations

@@ -78,8 +78,13 @@ uint16_t NetplayManager::getInitialInput ( uint8_t player ) const
 
 uint16_t NetplayManager::getCharaSelectInput ( uint8_t player ) const
 {
-    // TODO
-    return getDelayedInput ( player );
+    uint16_t input = getDelayedInput ( player );
+
+    // Prevent exiting character select
+    if ( !charaSelectModes[player - 1] || ( *charaSelectModes[player - 1] ) == CC_CHARA_SELECT_CHARA )
+        input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_B | CC_BUTTON_CANCEL );
+
+    return input;
 }
 
 uint16_t NetplayManager::getLoadingInput ( uint8_t player ) const

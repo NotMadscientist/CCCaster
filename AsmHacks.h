@@ -29,7 +29,6 @@ extern "C" void callback();
 extern uint32_t currentMenuIndex;
 
 // Pointers to P1 and P2 character select mode (moon, colour, etc...), this gets updated by ASM hacks
-ENUM ( CharacterSelectMode, ModeCharacter = 0, ModeMoon = 1, ModeColour = 2 );
 extern uint32_t *charaSelectModes[2];
 
 // Round start counter, this gets incremented whenever players can start moving
