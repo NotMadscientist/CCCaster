@@ -64,6 +64,14 @@ MsgPtr ProcessManager::getRngState() const
     return MsgPtr ( rngState );
 }
 
+void ProcessManager::setRngState ( const RngState& rngState )
+{
+    *CC_RNGSTATE0_ADDR = rngState->rngState0;
+    *CC_RNGSTATE1_ADDR = rngState->rngState1;
+    *CC_RNGSTATE2_ADDR = rngState->rngState2;
+    copy ( rngState->rngState3.begin(), rngState->rngState3.end(), CC_RNGSTATE3_ADDR );
+}
+
 void ProcessManager::acceptEvent ( Socket *serverSocket )
 {
     assert ( serverSocket == ipcSocket.get() );

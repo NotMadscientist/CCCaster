@@ -101,6 +101,7 @@ public:
         writeGameInput ( 2, 0, 0 );
     }
 
-    // Get the game RNG state
+    // Get / set the game RNG state
     MsgPtr getRngState() const;
+    void setRngState ( const RngState& rngState );
 };
