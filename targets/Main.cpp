@@ -74,10 +74,12 @@ struct Main : public CommonMain
             // We don't share UDP sockets since they will be included in the server's share data
             if ( ctrlSocket->isTCP() )
             {
+                procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
+            }
+            else
+            {
                 assert ( serverCtrlSocket->getAsUDP().getChildSockets().size() == 1 );
                 assert ( serverCtrlSocket->getAsUDP().getChildSockets().begin()->second == ctrlSocket );
-
-                procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
             }
         }
         else
