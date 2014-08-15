@@ -18,16 +18,25 @@ using namespace std;
 
 void EventManager::checkEvents ( uint64_t timeout )
 {
-    TimerManager::get().check();
+    if ( checkBitMask & CHECK_TIMERS )
+    {
+        TimerManager::get().check();
 
-    if ( TimerManager::get().getNextExpiry() != UINT64_MAX )
-        timeout = TimerManager::get().getNextExpiry() - TimerManager::get().getNow();
+        if ( TimerManager::get().getNextExpiry() != UINT64_MAX )
+            timeout = TimerManager::get().getNextExpiry() - TimerManager::get().getNow();
+    }
 
-    assert ( timeout > 0 );
+    if ( checkBitMask & CHECK_SOCKETS )
+    {
+        assert ( timeout > 0 );
 
-    SocketManager::get().check ( timeout );
+        SocketManager::get().check ( timeout );
+    }
 
-    ControllerManager::get().check();
+    if ( checkBitMask & CHECK_CONTROLLERS )
+    {
+        ControllerManager::get().check();
+    }
 }
 
 void EventManager::eventLoop()

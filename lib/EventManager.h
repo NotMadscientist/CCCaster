@@ -6,6 +6,11 @@
 #include <memory>
 
 
+#define CHECK_TIMERS        0x0001
+#define CHECK_SOCKETS       0x0002
+#define CHECK_CONTROLLERS   0x0004
+
+
 class EventManager
 {
     // Thread to join zombie thread
@@ -37,6 +42,9 @@ class EventManager
     const EventManager& operator= ( const EventManager& );
 
 public:
+
+    // Bit mask for which managers to check for events during poll/start
+    uint8_t checkBitMask = ( CHECK_TIMERS | CHECK_SOCKETS | CHECK_CONTROLLERS );
 
     // Add a thread to be joined on the reaper thread, aka garbage collected when it finishes
     void addThread ( const std::shared_ptr<Thread>& thread );

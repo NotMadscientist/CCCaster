@@ -92,6 +92,9 @@ struct Main
         }
         else if ( netMan.getState().value >= NetplayState::CharaSelect )
         {
+            // Check for changes to controller state
+            ControllerManager::get().check();
+
             // Input testing code
             uint16_t input;
             {
@@ -524,6 +527,7 @@ extern "C" void callback()
             TimerManager::get().initialize();
             ControllerManager::get().initialize ( main.get() );
 
+            EventManager::get().checkBitMask = ( CHECK_TIMERS | CHECK_SOCKETS );
             EventManager::get().startPolling();
             appState = AppState::Polling;
         }
