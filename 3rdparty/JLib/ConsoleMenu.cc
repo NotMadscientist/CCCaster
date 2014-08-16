@@ -209,11 +209,11 @@ DWORD ConsoleMenu::Show()
             return USERESC;
         case LEFT_KEY:
         case RIGHT_KEY:
-            if (m_enableDelete != 2)
+            if (m_enableDelete != ENABLE_LR_DELETE)
                 break;
         case DELETE_KEY:
         case BACKSPACE_KEY:
-            if (!m_enableDelete)
+            if (m_enableDelete == DISABLE_DELETE)
                 break;
             delete [] menuBuffer;
             pCore->Color(&oldFormat);
@@ -266,12 +266,12 @@ BOOL ConsoleMenu::SelectedItem(int position)
     return TRUE;
 }
 
-void ConsoleMenu::EnableEscape(bool enableEscape)
+void ConsoleMenu::EscapeKey(bool enableEscape)
 {
     m_enableEscape = enableEscape;
 }
 
-void ConsoleMenu::EnableDelete(int enableDelete)
+void ConsoleMenu::DeleteItems(int enableDelete)
 {
     m_enableDelete = enableDelete;
 }

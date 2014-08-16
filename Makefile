@@ -19,7 +19,7 @@ CONTRIB_C_SRCS = $(wildcard 3rdparty/*.c)
 
 # Main program sources
 BASE_CPP_SRCS = $(wildcard *.cpp) $(wildcard lib/*.cpp)
-MAIN_CPP_SRCS = targets/Main.cpp $(wildcard tests/*.cpp) $(BASE_CPP_SRCS)
+MAIN_CPP_SRCS = $(wildcard targets/Main*.cpp) $(wildcard tests/*.cpp) $(BASE_CPP_SRCS)
 DLL_CPP_SRCS = $(wildcard targets/Dll*.cpp) $(BASE_CPP_SRCS)
 LAUNCHER_CPP_SRCS = targets/Launcher.cpp
 

@@ -1,4 +1,5 @@
 #include "Main.h"
+#include "MainUi.h"
 #include "Logger.h"
 #include "Test.h"
 #include "Constants.h"
@@ -418,15 +419,27 @@ int main ( int argc, char *argv[] )
         else if ( parser.nonOptionsCount() == 2 )
             address = string ( parser.nonOption ( 0 ) ) + parser.nonOption ( 1 );
 
-        PRINT ( "Using: '%s'", address );
+        for ( MainUi ui; ; )
+        {
+            if ( address.empty() )
+            {
+                ui.start();
+                address = ui.getConfig().getString ( "address" );
+            }
 
-        shared_ptr<Main> main;
-        if ( opt[DUMMY] )
-            main.reset ( new DummyMain ( opt, address ) );
-        else
-            main.reset ( new Main ( opt, address ) );
+            PRINT ( "Using: '%s'", address );
 
-        EventManager::get().start();
+            shared_ptr<Main> main;
+
+            if ( opt[DUMMY] )
+                main.reset ( new DummyMain ( opt, address ) );
+            else
+                main.reset ( new Main ( opt, address ) );
+
+            address.clear();
+
+            EventManager::get().start();
+        }
     }
     catch ( const WindowsException& err )
     {

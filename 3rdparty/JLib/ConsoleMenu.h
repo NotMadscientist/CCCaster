@@ -28,6 +28,10 @@
 #include "CharacterBox.h"
 #include <list>
 
+#define DISABLE_DELETE      0
+#define ENABLE_DELETE       1
+#define ENABLE_LR_DELETE    2
+
 //      ConsoleMenu
 //  A ConsoleMenu is a collection of items.  Menus can draw themselves
 //  and use ConsoleCore.  To launch a menu call Show and then check
@@ -219,8 +223,12 @@ public:
     //  Returns: true if successful
     BOOL SelectedItem(int position);
 
-    void EnableEscape(bool enableEscape = true);
-    void EnableDelete(int enableDelete = 1);
+    // Enable the escape key
+    void EscapeKey(bool enableEscape);
+
+    // Enable deleting items
+    // 1 for just delete/BS, 2 for delete/BS/left/right
+    void DeleteItems(int enableDelete);
 
 protected:
     //      Selection
