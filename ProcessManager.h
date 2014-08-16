@@ -49,9 +49,6 @@ private:
     // Number of attempts to start the game
     int gameStartCount = 0;
 
-    // IPC connect timer
-    TimerPtr ipcConnectTimer;
-
     // IPC connected flag
     bool connected = false;
 

@@ -19,8 +19,6 @@ using namespace std;
 
 #define GAME_START_ATTEMPTS     ( 10 )
 
-#define IPC_CONNECT_TIMEOUT     ( 10000 )
-
 #define PIPE_CONNECT_TIMEOUT    ( 10000 )
 
 
@@ -125,53 +123,34 @@ void ProcessManager::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddr
 
 void ProcessManager::timerExpired ( Timer *timer )
 {
-    if ( timer == gameStartTimer.get() )
-    {
-        if ( gameStartCount >= GAME_START_ATTEMPTS )
-        {
-            disconnectPipe();
+    assert ( timer == gameStartTimer.get() );
 
-            LOG ( "Failed to start game" );
-
-            if ( owner )
-                owner->ipcDisconnectEvent();
-            return;
-        }
-
-        gameStartTimer->start ( GAME_START_INTERVAL );
-        ++gameStartCount;
-
-        LOG ( "Trying to start game (%d)", gameStartCount );
-
-        void *hwnd = 0;
-        if ( ! ( hwnd = enumFindWindow ( CC_STARTUP_TITLE_EN ) )
-                && ! ( hwnd = enumFindWindow ( CC_STARTUP_TITLE_JP ) ) )
-            return;
-
-        if ( ! ( hwnd = FindWindowEx ( ( HWND ) hwnd, 0, 0, CC_STARTUP_BUTTON ) ) )
-            return;
-
-        if ( !PostMessage ( ( HWND ) hwnd, BM_CLICK, 0, 0 ) )
-            return;
-
-        gameStartTimer.reset();
-
-        ipcConnectTimer.reset ( new Timer ( this ) );
-        ipcConnectTimer->start ( IPC_CONNECT_TIMEOUT );
-        return;
-    }
-
-    assert ( timer == ipcConnectTimer.get() );
-
-    if ( !ipcConnected() )
+    if ( gameStartCount >= GAME_START_ATTEMPTS && !ipcConnected() )
     {
         disconnectPipe();
 
-        LOG ( "IPC connect timed out" );
+        LOG ( "Failed to start game" );
 
         if ( owner )
             owner->ipcDisconnectEvent();
+        return;
     }
+
+    gameStartTimer->start ( GAME_START_INTERVAL );
+    ++gameStartCount;
+
+    LOG ( "Trying to start game (%d)", gameStartCount );
+
+    void *hwnd = 0;
+    if ( ! ( hwnd = enumFindWindow ( CC_STARTUP_TITLE_EN ) )
+            && ! ( hwnd = enumFindWindow ( CC_STARTUP_TITLE_JP ) ) )
+        return;
+
+    if ( ! ( hwnd = FindWindowEx ( ( HWND ) hwnd, 0, 0, CC_STARTUP_BUTTON ) ) )
+        return;
+
+    if ( !PostMessage ( ( HWND ) hwnd, BM_CLICK, 0, 0 ) )
+        return;
 }
 
 void ProcessManager::openGame()
@@ -345,7 +324,6 @@ void ProcessManager::connectPipe()
 
 void ProcessManager::disconnectPipe()
 {
-    ipcConnectTimer.reset();
     gameStartTimer.reset();
     ipcSocket.reset();
 
