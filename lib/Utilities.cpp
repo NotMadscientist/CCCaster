@@ -8,7 +8,7 @@
 #include <windows.h>
 
 #include <cctype>
-#include <iostream>
+#include <fstream>
 
 using namespace std;
 
@@ -229,4 +229,98 @@ bool detectWine()
 
     isWine = ( GetProcAddress ( hntdll, "wine_get_version" ) ? 1 : 0 );
     return isWine;
+}
+
+string ConfigSettings::getString ( const string& key )
+{
+    ASSERT ( types[key] == Type::String );
+
+    return settings[key];
+}
+
+void ConfigSettings::putString ( const string& key, const string& str )
+{
+    settings[key] = str;
+    types[key] = Type::String;
+}
+
+int ConfigSettings::getInt ( const string& key )
+{
+    ASSERT ( types[key] == Type::Integer );
+
+    int i;
+    stringstream ss ( settings[key] );
+    ss >> i;
+    return i;
+}
+
+void ConfigSettings::putInt ( const string& key, int i )
+{
+    settings[key] = toString ( i );
+    types[key] = Type::Integer;
+}
+
+bool ConfigSettings::save ( const char *file ) const
+{
+    bool good;
+    ofstream fout ( file );
+
+    if ( ( good = fout.good() ) )
+    {
+        fout << endl;
+        for ( auto it = settings.begin(); it != settings.end(); ++it )
+            fout << ( it == settings.begin() ? "" : "\n" ) << it->first << '=' << it->second << endl;
+    }
+
+    fout.close();
+    return good;
+}
+
+bool ConfigSettings::load ( const char *file )
+{
+    bool good;
+    string line;
+    ifstream fin ( file );
+
+    good = fin.good();
+    while ( getline ( fin, line ) )
+    {
+        size_t div = line.find ( '=' );
+        if ( div == string::npos )
+            continue;
+
+        auto it = types.find ( line.substr ( 0, div ) );
+        if ( it != types.end() )
+        {
+            stringstream ss ( line.substr ( div + 1 ) );
+            ss >> ws;
+
+            switch ( it->second )
+            {
+                case Type::String:
+                {
+                    string str;
+                    getline ( ss, str );
+                    putString ( it->first, str );
+                    break;
+                }
+
+                case Type::Integer:
+                {
+                    int i;
+                    ss >> i;
+                    if ( ss.fail() )
+                        continue;
+                    putInt ( it->first, i );
+                    break;
+                }
+
+                default:
+                    break;
+            }
+        }
+    }
+
+    fin.close();
+    return good;
 }

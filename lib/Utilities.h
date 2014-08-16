@@ -6,6 +6,7 @@
 #include <type_traits>
 #include <cstdio>
 #include <iostream>
+#include <unordered_map>
 
 #include <cereal/archives/binary.hpp>
 
@@ -232,3 +233,22 @@ inline void clamp ( T& value, T min, T max )
     else if ( value > max )
         value = max;
 }
+
+
+// Class to store configuration settings
+class ConfigSettings
+{
+    enum class Type : uint8_t { String, Integer };
+    std::unordered_map<std::string, std::string> settings;
+    std::unordered_map<std::string, Type> types;
+
+public:
+    std::string getString ( const std::string& key );
+    void putString ( const std::string& key, const std::string& str );
+
+    int getInt ( const std::string& key );
+    void putInt ( const std::string& key, int i );
+
+    bool save ( const char *file ) const;
+    bool load ( const char *file );
+};
