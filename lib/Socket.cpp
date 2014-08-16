@@ -10,7 +10,6 @@
 #include <ws2tcpip.h>
 #include <cereal/types/unordered_map.hpp>
 
-#include <cassert>
 #include <unordered_set>
 #include <algorithm>
 
@@ -55,7 +54,7 @@ void Socket::disconnect()
 
 void Socket::init()
 {
-    assert ( fd == 0 );
+    ASSERT ( fd == 0 );
 
     WindowsException err;
     shared_ptr<addrinfo> addrInfo;
@@ -222,8 +221,8 @@ bool Socket::send ( const char *buffer, size_t len )
         return false;
     }
 
-    assert ( isClient() == true );
-    assert ( fd != 0 );
+    ASSERT ( isClient() == true );
+    ASSERT ( fd != 0 );
 
     size_t totalBytes = 0;
 
@@ -280,8 +279,8 @@ bool Socket::send ( const char *buffer, size_t len, const IpAddrPort& address )
         return false;
     }
 
-    assert ( isUDP() == true );
-    assert ( fd != 0 );
+    ASSERT ( isUDP() == true );
+    ASSERT ( fd != 0 );
 
     size_t totalBytes = 0;
 
@@ -308,8 +307,8 @@ bool Socket::send ( const char *buffer, size_t len, const IpAddrPort& address )
 
 bool Socket::recv ( char *buffer, size_t& len )
 {
-    assert ( isClient() == true );
-    assert ( fd != 0 );
+    ASSERT ( isClient() == true );
+    ASSERT ( fd != 0 );
 
     int recvBytes = ::recv ( fd, buffer, len, 0 );
 
@@ -325,8 +324,8 @@ bool Socket::recv ( char *buffer, size_t& len )
 
 bool Socket::recv ( char *buffer, size_t& len, IpAddrPort& address )
 {
-    assert ( isUDP() == true );
-    assert ( fd != 0 );
+    ASSERT ( isUDP() == true );
+    ASSERT ( fd != 0 );
 
     sockaddr_storage sas;
     int saLen = sizeof ( sas );
@@ -410,7 +409,7 @@ void Socket::readEvent()
         if ( consumed )
         {
             // Erase the consumed bytes (shifting the array)
-            assert ( consumed <= readPos );
+            ASSERT ( consumed <= readPos );
             readBuffer.erase ( 0, consumed );
             readBuffer.resize ( READ_BUFFER_SIZE, ( char ) 0 );
             readPos -= consumed;
@@ -542,24 +541,24 @@ SocketPtr Socket::shared ( Socket::Owner *owner, const SocketShareData& data )
 
 TcpSocket& Socket::getAsTCP()
 {
-    assert ( typeid ( *this ) == typeid ( TcpSocket ) );
+    ASSERT ( typeid ( *this ) == typeid ( TcpSocket ) );
     return *static_cast<TcpSocket *> ( this );
 }
 
 const TcpSocket& Socket::getAsTCP() const
 {
-    assert ( typeid ( *this ) == typeid ( TcpSocket ) );
+    ASSERT ( typeid ( *this ) == typeid ( TcpSocket ) );
     return *static_cast<const TcpSocket *> ( this );
 }
 
 UdpSocket& Socket::getAsUDP()
 {
-    assert ( typeid ( *this ) == typeid ( UdpSocket ) );
+    ASSERT ( typeid ( *this ) == typeid ( UdpSocket ) );
     return *static_cast<UdpSocket *> ( this );
 }
 
 const UdpSocket& Socket::getAsUDP() const
 {
-    assert ( typeid ( *this ) == typeid ( UdpSocket ) );
+    ASSERT ( typeid ( *this ) == typeid ( UdpSocket ) );
     return *static_cast<const UdpSocket *> ( this );
 }

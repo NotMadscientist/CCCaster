@@ -6,7 +6,6 @@
 #include <optionparser.h>
 #include <windows.h>
 
-#include <cassert>
 #include <exception>
 
 using namespace std;
@@ -48,25 +47,25 @@ struct Main : public CommonMain
     // ProcessManager callbacks
     void ipcConnectEvent() override
     {
-        assert ( address.empty() == false );
-        assert ( clientType != ClientType::Unknown );
-        assert ( netplaySetup.delay != 0 );
+        ASSERT ( address.empty() == false );
+        ASSERT ( clientType != ClientType::Unknown );
+        ASSERT ( netplaySetup.delay != 0 );
 
         procMan.ipcSend ( REF_PTR ( address ) );
         procMan.ipcSend ( REF_PTR ( clientType ) );
         procMan.ipcSend ( REF_PTR ( netplaySetup ) );
 
-        assert ( ctrlSocket.get() != 0 );
-        assert ( ctrlSocket->isConnected() == true );
-        assert ( dataSocket.get() != 0 );
-        assert ( dataSocket->isConnected() == true );
+        ASSERT ( ctrlSocket.get() != 0 );
+        ASSERT ( ctrlSocket->isConnected() == true );
+        ASSERT ( dataSocket.get() != 0 );
+        ASSERT ( dataSocket->isConnected() == true );
 
         if ( isHost() )
         {
-            assert ( serverCtrlSocket.get() != 0 );
-            assert ( serverDataSocket.get() != 0 );
-            assert ( serverDataSocket->getAsUDP().getChildSockets().size() == 1 );
-            assert ( serverDataSocket->getAsUDP().getChildSockets().begin()->second == dataSocket );
+            ASSERT ( serverCtrlSocket.get() != 0 );
+            ASSERT ( serverDataSocket.get() != 0 );
+            ASSERT ( serverDataSocket->getAsUDP().getChildSockets().size() == 1 );
+            ASSERT ( serverDataSocket->getAsUDP().getChildSockets().begin()->second == dataSocket );
 
             procMan.ipcSend ( serverCtrlSocket->share ( procMan.getProcessId() ) );
             procMan.ipcSend ( serverDataSocket->share ( procMan.getProcessId() ) );
@@ -78,8 +77,8 @@ struct Main : public CommonMain
             }
             else
             {
-                assert ( serverCtrlSocket->getAsUDP().getChildSockets().size() == 1 );
-                assert ( serverCtrlSocket->getAsUDP().getChildSockets().begin()->second == ctrlSocket );
+                ASSERT ( serverCtrlSocket->getAsUDP().getChildSockets().size() == 1 );
+                ASSERT ( serverCtrlSocket->getAsUDP().getChildSockets().begin()->second == ctrlSocket );
             }
         }
         else
@@ -134,8 +133,8 @@ struct Main : public CommonMain
 
         if ( ctrlSocket && dataSocket )
         {
-            assert ( ctrlSocket->isConnected() == true );
-            assert ( dataSocket->isConnected() == true );
+            ASSERT ( ctrlSocket->isConnected() == true );
+            ASSERT ( dataSocket->isConnected() == true );
 
             netplaySetup.delay = 4;
             netplaySetup.hostPlayer = 1 + ( rand() % 2 );
@@ -150,9 +149,9 @@ struct Main : public CommonMain
 
     virtual void connectEvent ( Socket *socket ) override
     {
-        assert ( ctrlSocket.get() != 0 );
-        assert ( dataSocket.get() != 0 );
-        assert ( socket == ctrlSocket.get() || socket == dataSocket.get() );
+        ASSERT ( ctrlSocket.get() != 0 );
+        ASSERT ( dataSocket.get() != 0 );
+        ASSERT ( socket == ctrlSocket.get() || socket == dataSocket.get() );
     }
 
     virtual void disconnectEvent ( Socket *socket ) override
@@ -246,8 +245,8 @@ struct DummyMain : public Main
 
         if ( ctrlSocket && dataSocket )
         {
-            assert ( ctrlSocket->isConnected() == true );
-            assert ( dataSocket->isConnected() == true );
+            ASSERT ( ctrlSocket->isConnected() == true );
+            ASSERT ( dataSocket->isConnected() == true );
 
             netplaySetup.delay = 4;
             netplaySetup.hostPlayer = 1 + ( rand() % 2 );

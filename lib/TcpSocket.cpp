@@ -8,7 +8,6 @@
 #include <windows.h>
 #include <ws2tcpip.h>
 
-#include <cassert>
 #include <algorithm>
 
 using namespace std;
@@ -40,15 +39,15 @@ TcpSocket::TcpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address )
 
 TcpSocket::TcpSocket ( Socket::Owner *owner, const SocketShareData& data ) : Socket ( data.address, Protocol::TCP )
 {
-    assert ( data.protocol == Protocol::TCP );
+    ASSERT ( data.protocol == Protocol::TCP );
 
     this->owner = owner;
     this->state = data.state;
     this->readBuffer = data.readBuffer;
     this->readPos = data.readPos;
 
-    assert ( data.info->iSocketType == SOCK_STREAM );
-    assert ( data.info->iProtocol == IPPROTO_TCP );
+    ASSERT ( data.info->iSocketType == SOCK_STREAM );
+    ASSERT ( data.info->iProtocol == IPPROTO_TCP );
 
     this->fd = WSASocket ( data.info->iAddressFamily, SOCK_STREAM, IPPROTO_TCP, data.info.get(), 0, 0 );
 

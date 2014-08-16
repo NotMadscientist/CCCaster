@@ -9,7 +9,6 @@
 
 #include <windows.h>
 
-#include <cassert>
 #include <algorithm>
 
 using namespace std;
@@ -26,9 +25,9 @@ void ProcessManager::writeGameInput ( uint8_t player, uint16_t direction, uint16
 {
     // LOG ( "player=%d; direction=%d; buttons=%04x", player, direction, buttons );
 
-    assert ( direction >= 0 );
-    assert ( direction <= 9 );
-    assert ( direction != 5 );
+    ASSERT ( direction >= 0 );
+    ASSERT ( direction <= 9 );
+    ASSERT ( direction != 5 );
 
     char *const baseAddr = * ( char ** ) CC_PTR_TO_WRITE_INPUT_ADDR;
 
@@ -72,27 +71,27 @@ void ProcessManager::setRngState ( const RngState& rngState )
 
 void ProcessManager::acceptEvent ( Socket *serverSocket )
 {
-    assert ( serverSocket == ipcSocket.get() );
-    assert ( serverSocket->isServer() == true );
+    ASSERT ( serverSocket == ipcSocket.get() );
+    ASSERT ( serverSocket->isServer() == true );
 
     ipcSocket = serverSocket->accept ( this );
 
-    assert ( ipcSocket->address.addr == "127.0.0.1" );
+    ASSERT ( ipcSocket->address.addr == "127.0.0.1" );
 
     ipcSocket->send ( new IpcConnected() );
 }
 
 void ProcessManager::connectEvent ( Socket *socket )
 {
-    assert ( socket == ipcSocket.get() );
-    assert ( ipcSocket->address.addr == "127.0.0.1" );
+    ASSERT ( socket == ipcSocket.get() );
+    ASSERT ( ipcSocket->address.addr == "127.0.0.1" );
 
     ipcSocket->send ( new IpcConnected() );
 }
 
 void ProcessManager::disconnectEvent ( Socket *socket )
 {
-    assert ( socket == ipcSocket.get() );
+    ASSERT ( socket == ipcSocket.get() );
 
     disconnectPipe();
 
@@ -104,12 +103,12 @@ void ProcessManager::disconnectEvent ( Socket *socket )
 
 void ProcessManager::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
 {
-    assert ( socket == ipcSocket.get() );
-    assert ( address.addr == "127.0.0.1" );
+    ASSERT ( socket == ipcSocket.get() );
+    ASSERT ( address.addr == "127.0.0.1" );
 
     if ( msg && msg->getMsgType() == MsgType::IpcConnected )
     {
-        assert ( connected == false );
+        ASSERT ( connected == false );
 
         connected = true;
 
@@ -123,7 +122,7 @@ void ProcessManager::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddr
 
 void ProcessManager::timerExpired ( Timer *timer )
 {
-    assert ( timer == gameStartTimer.get() );
+    ASSERT ( timer == gameStartTimer.get() );
 
     if ( gameStartCount >= GAME_START_ATTEMPTS && !ipcConnected() )
     {

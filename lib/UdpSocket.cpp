@@ -8,7 +8,6 @@
 #include <windows.h>
 #include <ws2tcpip.h>
 
-#include <cassert>
 #include <typeinfo>
 #include <algorithm>
 
@@ -48,15 +47,15 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const SocketShareData& data )
     , type ( ( Type::Enum ) data.udpType )
     , gbn ( this, 0 )
 {
-    assert ( data.protocol == Protocol::UDP );
+    ASSERT ( data.protocol == Protocol::UDP );
 
     this->owner = owner;
     this->state = data.state;
     this->readBuffer = data.readBuffer;
     this->readPos = data.readPos;
 
-    assert ( data.info->iSocketType == SOCK_DGRAM );
-    assert ( data.info->iProtocol == IPPROTO_UDP );
+    ASSERT ( data.info->iSocketType == SOCK_DGRAM );
+    ASSERT ( data.info->iProtocol == IPPROTO_UDP );
 
     this->fd = WSASocket ( data.info->iAddressFamily, SOCK_DGRAM, IPPROTO_UDP, data.info.get(), 0, 0 );
 
@@ -265,16 +264,16 @@ bool UdpSocket::sendRaw ( const MsgPtr& msg, const IpAddrPort& address )
 
 void UdpSocket::sendRaw ( GoBackN *gbn, const MsgPtr& msg )
 {
-    assert ( gbn == &this->gbn );
-    assert ( getRemoteAddress().empty() == false );
+    ASSERT ( gbn == &this->gbn );
+    ASSERT ( getRemoteAddress().empty() == false );
 
     sendRaw ( msg, getRemoteAddress() );
 }
 
 void UdpSocket::recvRaw ( GoBackN *gbn, const MsgPtr& msg )
 {
-    assert ( gbn == &this->gbn );
-    assert ( getRemoteAddress().empty() == false );
+    ASSERT ( gbn == &this->gbn );
+    ASSERT ( getRemoteAddress().empty() == false );
 
     if ( owner )
         owner->readEvent ( this, msg, getRemoteAddress() );
@@ -282,15 +281,15 @@ void UdpSocket::recvRaw ( GoBackN *gbn, const MsgPtr& msg )
 
 void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
 {
-    assert ( gbn == &this->gbn );
-    assert ( getRemoteAddress().empty() == false );
+    ASSERT ( gbn == &this->gbn );
+    ASSERT ( getRemoteAddress().empty() == false );
 
     // Child sockets handle GoBackN message as a proxy of the parent socket,
     // this is so the GoBackN state resides in the child socket.
     if ( isChild() )
     {
-        assert ( parentSocket->childSockets.find ( getRemoteAddress() ) != parentSocket->childSockets.end() );
-        assert ( parentSocket->childSockets[getRemoteAddress()].get() == this );
+        ASSERT ( parentSocket->childSockets.find ( getRemoteAddress() ) != parentSocket->childSockets.end() );
+        ASSERT ( parentSocket->childSockets[getRemoteAddress()].get() == this );
 
         switch ( msg->getMsgType() )
         {
@@ -330,7 +329,7 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
     }
     else
     {
-        assert ( isReal() == true );
+        ASSERT ( isReal() == true );
 
         switch ( msg->getMsgType() )
         {
@@ -359,8 +358,8 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
 
 void UdpSocket::timeoutGoBackN ( GoBackN *gbn )
 {
-    assert ( gbn == &this->gbn );
-    assert ( getRemoteAddress().empty() == false );
+    ASSERT ( gbn == &this->gbn );
+    ASSERT ( getRemoteAddress().empty() == false );
 
     LOG_UDP_SOCKET ( this, "disconnectEvent" );
 
@@ -424,7 +423,7 @@ void UdpSocket::gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address 
         return;
     }
 
-    assert ( socket != 0 );
+    ASSERT ( socket != 0 );
 
     socket->readEvent ( msg, address );
 }
@@ -436,8 +435,8 @@ MsgPtr UdpSocket::share ( int processId )
 
     MsgPtr data = Socket::share ( processId );
 
-    assert ( typeid ( *data ) == typeid ( SocketShareData ) );
-    assert ( isReal() == true );
+    ASSERT ( typeid ( *data ) == typeid ( SocketShareData ) );
+    ASSERT ( isReal() == true );
 
     LOG ( "Sharing UDP:" );
 

@@ -6,8 +6,6 @@
 #include <winsock2.h>
 #include <windows.h>
 
-#include <cassert>
-
 using namespace std;
 
 
@@ -57,7 +55,7 @@ void SocketManager::check ( uint64_t timeout )
             FD_SET ( socket->fd, &readFds );
     }
 
-    assert ( timeout > 0 );
+    ASSERT ( timeout > 0 );
 
     timeval tv;
     tv.tv_sec = timeout / 1000UL;
@@ -74,7 +72,7 @@ void SocketManager::check ( uint64_t timeout )
     if ( count == 0 )
         return;
 
-    assert ( TimerManager::get().isInitialized() == true );
+    ASSERT ( TimerManager::get().isInitialized() == true );
     TimerManager::get().updateNow();
 
     for ( Socket *socket : activeSockets )

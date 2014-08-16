@@ -5,7 +5,6 @@
 #include <cereal/types/string.hpp>
 
 #include <string>
-#include <cassert>
 
 using namespace std;
 
@@ -15,14 +14,14 @@ using namespace std;
 
 string formatSerializableSequence ( const MsgPtr& msg )
 {
-    assert ( msg->getBaseType() == BaseType::SerializableSequence );
+    ASSERT ( msg->getBaseType() == BaseType::SerializableSequence );
     return toString ( "%u:'%s'", msg->getAs<SerializableSequence>().getSequence(), msg );
 }
 
 
 void GoBackN::timerExpired ( Timer *timer )
 {
-    assert ( timer == sendTimer.get() );
+    ASSERT ( timer == sendTimer.get() );
 
     if ( sendList.empty() && !keepAlive )
     {
@@ -85,9 +84,9 @@ void GoBackN::sendGoBackN ( const MsgPtr& msg )
 {
     LOG ( "Adding '%s'; sendSequence=%d", msg, sendSequence + 1 );
 
-    assert ( msg->getBaseType() == BaseType::SerializableSequence );
-    assert ( sendList.empty() || sendList.back()->getAs<SerializableSequence>().getSequence() == sendSequence );
-    assert ( owner != 0 );
+    ASSERT ( msg->getBaseType() == BaseType::SerializableSequence );
+    ASSERT ( sendList.empty() || sendList.back()->getAs<SerializableSequence>().getSequence() == sendSequence );
+    ASSERT ( owner != 0 );
 
     msg->getAs<SerializableSequence>().setSequence ( ++sendSequence );
 
@@ -102,7 +101,7 @@ void GoBackN::sendGoBackN ( const MsgPtr& msg )
 
 void GoBackN::recvRaw ( const MsgPtr& msg )
 {
-    assert ( owner != 0 );
+    ASSERT ( owner != 0 );
 
     if ( keepAlive )
     {

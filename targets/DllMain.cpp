@@ -10,7 +10,6 @@
 
 #include <vector>
 #include <memory>
-#include <cassert>
 
 using namespace std;
 
@@ -158,7 +157,7 @@ struct Main
         // Update the RNG state if necessary
         if ( shouldSetRngState )
         {
-            assert ( nextRngState.get() != 0 );
+            ASSERT ( nextRngState.get() != 0 );
             procMan.setRngState ( nextRngState->getAs<RngState>() );
             nextRngState.reset();
             shouldSetRngState = false;
@@ -207,7 +206,7 @@ struct Main
                 || ( previous == CC_GAME_MODE_LOADING_DEMO && current == CC_GAME_MODE_INGAME )
                 || current == CC_GAME_MODE_HIGH_SCORES )
         {
-            assert ( netMan.getState() == NetplayState::PreInitial || netMan.getState() == NetplayState::Initial );
+            ASSERT ( netMan.getState() == NetplayState::PreInitial || netMan.getState() == NetplayState::Initial );
             return;
         }
 
@@ -337,21 +336,21 @@ struct Main
 
                         if ( serverCtrlSocket->isUDP() )
                         {
-                            assert ( serverCtrlSocket->getAsUDP().getChildSockets().size() == 1 );
+                            ASSERT ( serverCtrlSocket->getAsUDP().getChildSockets().size() == 1 );
                             ctrlSocket = serverCtrlSocket->getAsUDP().getChildSockets().begin()->second;
                             ctrlSocket->owner = this;
-                            assert ( ctrlSocket->isConnected() );
+                            ASSERT ( ctrlSocket->isConnected() );
                         }
                     }
                     else if ( !serverDataSocket )
                     {
                         serverDataSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
 
-                        assert ( serverDataSocket->isUDP() == true );
-                        assert ( serverDataSocket->getAsUDP().getChildSockets().size() == 1 );
+                        ASSERT ( serverDataSocket->isUDP() == true );
+                        ASSERT ( serverDataSocket->getAsUDP().getChildSockets().size() == 1 );
                         dataSocket = serverDataSocket->getAsUDP().getChildSockets().begin()->second;
                         dataSocket->owner = this;
-                        assert ( dataSocket->isConnected() );
+                        ASSERT ( dataSocket->isConnected() );
                     }
                     else if ( !ctrlSocket )
                     {
@@ -363,12 +362,12 @@ struct Main
                     if ( !ctrlSocket )
                     {
                         ctrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
-                        assert ( ctrlSocket->isConnected() == true );
+                        ASSERT ( ctrlSocket->isConnected() == true );
                     }
                     else if ( !dataSocket )
                     {
                         dataSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
-                        assert ( dataSocket->isConnected() == true );
+                        ASSERT ( dataSocket->isConnected() == true );
                     }
                 }
                 break;
@@ -532,7 +531,7 @@ extern "C" void callback()
             appState = AppState::Polling;
         }
 
-        assert ( main.get() != 0 );
+        ASSERT ( main.get() != 0 );
 
         main->callback();
     }

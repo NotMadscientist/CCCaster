@@ -54,7 +54,7 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
     if ( viewport.Width == * CC_SCREEN_WIDTH_ADDR )
     {
         const long centerX = ( long ) viewport.Width / 2;
-        const long centerY = ( long ) viewport.Height / 2;
+        // const long centerY = ( long ) viewport.Height / 2;
 
         RECT rect;
         rect.left    = centerX - 200;

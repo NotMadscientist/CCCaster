@@ -3,8 +3,6 @@
 #include "Utilities.h"
 #include "Logger.h"
 
-#include <cassert>
-
 using namespace std;
 using namespace cereal;
 
@@ -187,7 +185,7 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
     {
         // Check for unread bytes
         size_t remaining = ss.rdbuf()->in_avail();
-        assert ( len >= remaining );
+        ASSERT ( len >= remaining );
         consumed = ( len - remaining );
         dataSize = ( data.size() - remaining );
     }
@@ -291,7 +289,7 @@ DecodeResult decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, M
 
     // Get remaining bytes
     size_t remaining = ss.rdbuf()->in_avail();
-    assert ( len >= remaining );
+    ASSERT ( len >= remaining );
 
     // Decompress message data if needed
     if ( compressionLevel )

@@ -8,8 +8,6 @@
 #include <windows.h>
 #include <mmsystem.h>
 
-#include <cassert>
-
 using namespace std;
 
 
@@ -28,7 +26,7 @@ void EventManager::checkEvents ( uint64_t timeout )
 
     if ( checkBitMask & CHECK_SOCKETS )
     {
-        assert ( timeout > 0 );
+        ASSERT ( timeout > 0 );
 
         SocketManager::get().check ( timeout );
     }
@@ -72,7 +70,7 @@ bool EventManager::poll ( uint64_t timeout )
 
     // LOG ( "timeout=%llu", timeout );
 
-    assert ( timeout > 0 );
+    ASSERT ( timeout > 0 );
 
     TimerManager::get().updateNow();
     uint64_t now = TimerManager::get().getNow();

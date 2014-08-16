@@ -2,12 +2,12 @@
 
 #include "Constants.h"
 #include "Protocol.h"
+#include "Logger.h"
 
 #include <cereal/types/array.hpp>
 #include <cereal/types/vector.hpp>
 
 #include <array>
-#include <cassert>
 
 
 struct EndOfMessages : public SerializableSequence { EMPTY_MESSAGE_BOILERPLATE ( EndOfMessages ) };
@@ -62,8 +62,12 @@ struct PlayerInputs : public SerializableMessage
 };
 
 
-struct DoubleInputs : public SerializableMessage
+class DoubleInputs : public SerializableMessage
 {
+    PlayerInputs inputs[2];
+
+public:
+
     uint32_t getFrame() const { return inputs[0].frame; }
     void setFrame ( uint32_t frame ) { inputs[0].frame = inputs[1].frame = frame; }
 
@@ -72,13 +76,13 @@ struct DoubleInputs : public SerializableMessage
 
     std::array<uint16_t, NUM_INPUTS>& getInputs ( uint8_t player )
     {
-        assert ( player == 1 || player == 2 );
+        ASSERT ( player == 1 || player == 2 );
         return inputs[player - 1].inputs;
     }
 
     const PlayerInputs& get ( uint8_t player ) const
     {
-        assert ( player == 1 || player == 2 );
+        ASSERT ( player == 1 || player == 2 );
         return inputs[player - 1];
     }
 
@@ -104,8 +108,4 @@ struct DoubleInputs : public SerializableMessage
         inputs[1].frame = inputs[0].frame;
         inputs[1].index = inputs[0].index;
     }
-
-private:
-
-    PlayerInputs inputs[2];
 };

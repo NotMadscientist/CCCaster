@@ -3,8 +3,6 @@
 
 #include <SDL.h>
 
-#include <cassert>
-
 using namespace std;
 
 
@@ -37,7 +35,7 @@ void ControllerManager::check()
             {
                 SDL_JoystickID id = events[i].jaxis.which;
                 Controller *controller = joysticks[id].get();
-                assert ( controller != 0 );
+                ASSERT ( controller != 0 );
 
                 // LOG_CONTROLLER ( controller, "id=%d; SDL_JOYAXISMOTION", id );
 
@@ -49,7 +47,7 @@ void ControllerManager::check()
             {
                 SDL_JoystickID id = events[i].jhat.which;
                 Controller *controller = joysticks[id].get();
-                assert ( controller != 0 );
+                ASSERT ( controller != 0 );
 
                 // LOG_CONTROLLER ( controller, "id=%d; SDL_JOYHATMOTION", id );
 
@@ -61,7 +59,7 @@ void ControllerManager::check()
             {
                 SDL_JoystickID id = events[i].jbutton.which;
                 Controller *controller = joysticks[id].get();
-                assert ( controller != 0 );
+                ASSERT ( controller != 0 );
 
                 // LOG_CONTROLLER ( controller, "id=%d; SDL_JOYBUTTONDOWN", id );
 
@@ -73,7 +71,7 @@ void ControllerManager::check()
             {
                 SDL_JoystickID id = events[i].jbutton.which;
                 Controller *controller = joysticks[id].get();
-                assert ( controller != 0 );
+                ASSERT ( controller != 0 );
 
                 // LOG_CONTROLLER ( controller, "id=%d; SDL_JOYBUTTONUP", id );
 
@@ -86,7 +84,7 @@ void ControllerManager::check()
                 SDL_Joystick *joystick = SDL_JoystickOpen ( events[i].jdevice.which );
                 SDL_JoystickID id = SDL_JoystickInstanceID ( joystick );
                 Controller *controller = new Controller ( joystick );
-                assert ( controller != 0 );
+                ASSERT ( controller != 0 );
 
                 LOG_CONTROLLER ( controller, "id=%d; SDL_JOYDEVICEADDED", id );
 
@@ -109,7 +107,7 @@ void ControllerManager::check()
             {
                 SDL_JoystickID id = events[i].jdevice.which;
                 Controller *controller = joysticks[id].get();
-                assert ( controller != 0 );
+                ASSERT ( controller != 0 );
 
                 LOG_CONTROLLER ( controller, "id=%d; SDL_JOYDEVICEREMOVED", id );
 

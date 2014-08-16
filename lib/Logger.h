@@ -71,13 +71,32 @@ public:
 
 #define LOG_AND_THROW_STRING(FORMAT, ...)                                                                           \
     do {                                                                                                            \
-        Exception err = toString ( FORMAT, ## __VA_ARGS__ );                                                        \
+        ::Exception err = toString ( FORMAT, ## __VA_ARGS__ );                                                      \
         LOG ( FORMAT, ## __VA_ARGS__ );                                                                             \
         throw err;                                                                                                  \
     } while ( 0 )
+
 
 #define LOG_AND_THROW_ERROR(EXCEPTION, FORMAT, ...)                                                                 \
     do {                                                                                                            \
         LOG ( "%s; " FORMAT, EXCEPTION, ## __VA_ARGS__ );                                                           \
         throw EXCEPTION;                                                                                            \
     } while ( 0 )
+
+
+#if !defined(RELEASE) && defined(ENABLE_LOGGING)
+
+#define ASSERT(ASSERTION)                                                                                           \
+    do {                                                                                                            \
+        if ( ASSERTION )                                                                                            \
+            break;                                                                                                  \
+        ::Exception err = toString ( "'%s' failed @ %s:%d", #ASSERTION, __FILE__, __LINE__ );                       \
+        LOG ( "%s", err );                                                                                          \
+        throw err;                                                                                                  \
+    } while ( 0 )
+
+#else
+
+#define ASSERT ((...)
+
+#endif

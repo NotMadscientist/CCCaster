@@ -10,10 +10,10 @@ using namespace std;
 
 #define ASSERT_INPUTS_RANGE(START, END, SIZE)                       \
     do {                                                            \
-        assert ( ( END ) > ( START ) );                             \
-        assert ( ( END ) - ( START ) <= ( NUM_INPUTS ) );           \
-        assert ( ( START ) < ( SIZE ) );                            \
-        assert ( ( END ) <= ( SIZE ) );                             \
+        ASSERT ( ( END ) > ( START ) );                             \
+        ASSERT ( ( END ) - ( START ) <= ( NUM_INPUTS ) );           \
+        ASSERT ( ( START ) < ( SIZE ) );                            \
+        ASSERT ( ( END ) <= ( SIZE ) );                             \
     } while ( 0 )
 
 #define RETURN_MASH_INPUT(DIRECTION, BUTTONS)                       \
@@ -118,9 +118,9 @@ uint16_t NetplayManager::getDelayedInput ( uint8_t player ) const
     if ( frame < setup.delay )
         return 0;
 
-    assert ( player == 1 || player == 2 );
-    assert ( inputs.empty() == false );
-    assert ( frame - setup.delay < inputs[index][player - 1].size() );
+    ASSERT ( player == 1 || player == 2 );
+    ASSERT ( inputs.empty() == false );
+    ASSERT ( frame - setup.delay < inputs[index][player - 1].size() );
 
     return inputs[index][player - 1][frame - setup.delay];
 }
@@ -154,8 +154,8 @@ void NetplayManager::setState ( const NetplayState& state )
 
 void NetplayManager::setInput ( uint8_t player, uint16_t input )
 {
-    assert ( player == 1 || player == 2 );
-    assert ( inputs.empty() == false );
+    ASSERT ( player == 1 || player == 2 );
+    ASSERT ( inputs.empty() == false );
 
     if ( frame >= inputs[index][player - 1].size() )
         inputs[index][player - 1].resize ( frame + 1, 0 );
@@ -165,10 +165,10 @@ void NetplayManager::setInput ( uint8_t player, uint16_t input )
 
 MsgPtr NetplayManager::getInputs ( uint8_t player ) const
 {
-    assert ( player == 1 || player == 2 );
-    assert ( inputs.empty() == false );
-    assert ( inputs[index][player - 1].empty() == false );
-    assert ( frame + 1 <= inputs[index][player - 1].size() );
+    ASSERT ( player == 1 || player == 2 );
+    ASSERT ( inputs.empty() == false );
+    ASSERT ( inputs[index][player - 1].empty() == false );
+    ASSERT ( frame + 1 <= inputs[index][player - 1].size() );
 
     PlayerInputs *playerInputs = new PlayerInputs ( frame, inputs.size() - 1 );
 
@@ -187,7 +187,7 @@ MsgPtr NetplayManager::getInputs ( uint8_t player ) const
 
 void NetplayManager::setInputs ( uint8_t player, const PlayerInputs& playerInputs )
 {
-    assert ( player == 1 || player == 2 );
+    ASSERT ( player == 1 || player == 2 );
 
     if ( playerInputs.index >= inputs.size() )
         inputs.resize ( playerInputs.index + 1 );
@@ -204,7 +204,7 @@ void NetplayManager::setInputs ( uint8_t player, const PlayerInputs& playerInput
 
 uint16_t NetplayManager::getInput ( uint8_t player ) const
 {
-    assert ( player == 1 || player == 2 );
+    ASSERT ( player == 1 || player == 2 );
 
     // If the inputs array is ahead, then we should mash to skip
     if ( size_t ( index + 1 ) < inputs.size() )
@@ -245,13 +245,13 @@ bool NetplayManager::areInputsReady() const
     if ( state.value < NetplayState::CharaSelect )
         return true;
 
-    assert ( inputs.empty() == false );
+    ASSERT ( inputs.empty() == false );
 
     // If the inputs array is ahead, then we can just mash to skip
     if ( size_t ( index + 1 ) < inputs.size() )
         return true;
 
-    assert ( size_t ( index + 1 ) == inputs.size() );
+    ASSERT ( size_t ( index + 1 ) == inputs.size() );
 
     return ( inputs[index][0].size() + setup.delay > frame ) && ( inputs[index][1].size() + setup.delay > frame );
 }
