@@ -243,10 +243,10 @@ class ConfigSettings
     std::unordered_map<std::string, Type> types;
 
 public:
-    std::string getString ( const std::string& key );
+    std::string getString ( const std::string& key ) const;
     void putString ( const std::string& key, const std::string& str );
 
-    int getInt ( const std::string& key );
+    int getInt ( const std::string& key ) const;
     void putInt ( const std::string& key, int i );
 
     bool save ( const char *file ) const;

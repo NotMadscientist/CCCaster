@@ -231,11 +231,13 @@ bool detectWine()
     return isWine;
 }
 
-string ConfigSettings::getString ( const string& key )
+string ConfigSettings::getString ( const string& key ) const
 {
-    ASSERT ( types[key] == Type::String );
+    ASSERT ( types.find ( key ) != types.end() );
+    ASSERT ( types.find ( key )->second == Type::String );
+    ASSERT ( settings.find ( key ) != settings.end() );
 
-    return settings[key];
+    return settings.find ( key )->second;
 }
 
 void ConfigSettings::putString ( const string& key, const string& str )
@@ -244,12 +246,14 @@ void ConfigSettings::putString ( const string& key, const string& str )
     types[key] = Type::String;
 }
 
-int ConfigSettings::getInt ( const string& key )
+int ConfigSettings::getInt ( const string& key ) const
 {
-    ASSERT ( types[key] == Type::Integer );
+    ASSERT ( types.find ( key ) != types.end() );
+    ASSERT ( types.find ( key )->second == Type::Integer );
+    ASSERT ( settings.find ( key ) != settings.end() );
 
     int i;
-    stringstream ss ( settings[key] );
+    stringstream ss ( settings.find ( key )->second );
     ss >> i;
     return i;
 }
