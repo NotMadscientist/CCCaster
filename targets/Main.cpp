@@ -3,6 +3,7 @@
 #include "Logger.h"
 #include "Test.h"
 #include "Constants.h"
+#include "Pinger.h"
 
 #include <optionparser.h>
 #include <windows.h>
@@ -15,23 +16,57 @@ using namespace option;
 
 #define LOG_FILE FOLDER "debug.log"
 
+#define PING_INTERVAL ( 100 )
+
+#define NUM_PINGS ( 5 )
+
 
 // Set of command line options
 enum CommandLineOptions { UNKNOWN, HELP, DUMMY, GTEST, STDOUT, PLUS };
 
+// Main UI instance
+static MainUi ui;
 
-struct Main : public CommonMain
+
+/* Connect procedure
+
+    1 - Connect both sockets
+
+    2 - Both send and check version (TODO)
+
+    3 - Host pings then sends stats
+
+    4 - Client pings then sends stats
+
+    5 - Both see the calculated delay and decide to connect (host chooses settings)
+
+*/
+
+struct Main : public CommonMain, public Pinger::Owner
 {
-    void startGame()
-    {
-        // Remove sockets from the EventManager so messages get buffered.
-        // These are safe to call even if null or the socket is not a real fd.
-        SocketManager::get().remove ( serverCtrlSocket.get() );
-        SocketManager::get().remove ( serverDataSocket.get() );
-        SocketManager::get().remove ( ctrlSocket.get() );
-        SocketManager::get().remove ( dataSocket.get() );
+    Pinger pinger;
 
-        // Disable keepAlive during the limbo period while sharing sockets
+    Statistics remoteStats;
+
+    NetplaySetup netplaySetup;
+
+
+    virtual void gotPingStats ( const Statistics& remoteStats )
+    {
+        if ( isClient() )
+        {
+            this->remoteStats = remoteStats;
+            pinger.start();
+            return;
+        }
+
+        this->remoteStats = remoteStats;
+        donePinging();
+    }
+
+    virtual void donePinging()
+    {
+        // Disable keepAlive during the initial limbo period
         ctrlSocket->setKeepAlive ( 0 );
         dataSocket->setKeepAlive ( 0 );
 
@@ -41,18 +76,83 @@ struct Main : public CommonMain
             serverDataSocket->setKeepAlive ( 0 );
         }
 
+        Statistics stats = pinger.getStats();
+        stats.merge ( remoteStats );
+
+        if ( isHost() )
+        {
+            if ( !ui.acceptMenu ( stats ) )
+            {
+                EventManager::get().stop();
+                return;
+            }
+
+            netplaySetup = ui.getNetplaySetup();
+            netplaySetup.hostPlayer = 1 + ( rand() % 2 );
+            ctrlSocket->send ( REF_PTR ( netplaySetup ) );
+
+            // Start the game and wait for callback to ipcConnectEvent
+            startGame();
+        }
+        else
+        {
+            if ( !ui.connectMenu ( stats ) )
+            {
+                EventManager::get().stop();
+                return;
+            }
+
+            // Wait for NetplaySetup before starting game
+        }
+    }
+
+    virtual void gotNetplaySetup ( const NetplaySetup& netplaySetup )
+    {
+        this->netplaySetup = netplaySetup;
+
+        // Start the game and wait for callback to ipcConnectEvent
+        startGame();
+    }
+
+    virtual void startGame()
+    {
+        // Remove sockets from the EventManager so messages get buffered.
+        // These are safe to call even if null or the socket is not a real fd.
+        SocketManager::get().remove ( serverCtrlSocket.get() );
+        SocketManager::get().remove ( serverDataSocket.get() );
+        SocketManager::get().remove ( ctrlSocket.get() );
+        SocketManager::get().remove ( dataSocket.get() );
+
         // Open the game wait and for callback to ipcConnectEvent
         procMan.openGame();
     }
 
-    // ProcessManager callbacks
-    void ipcConnectEvent() override
+    // Pinger callbacks
+    virtual void sendPing ( Pinger *pinger, const MsgPtr& ping ) override
     {
-        ASSERT ( address.empty() == false );
+        ASSERT ( pinger == &this->pinger );
+
+        dataSocket->send ( ping );
+    }
+
+    virtual void donePinging ( Pinger *pinger, const Statistics& stats, uint8_t packetLoss ) override
+    {
+        ASSERT ( pinger == &this->pinger );
+
+        LOG ( "latency=%.2f ms; jitter=%.2f ms; packetLoss=%d%", stats.getMean(), stats.getJitter(), packetLoss );
+
+        ctrlSocket->send ( new Statistics ( stats ) );
+
+        if ( isClient() )
+            donePinging();
+    }
+
+    // ProcessManager callbacks
+    virtual void ipcConnectEvent() override
+    {
         ASSERT ( clientType != ClientType::Unknown );
         ASSERT ( netplaySetup.delay != 0 );
 
-        procMan.ipcSend ( REF_PTR ( address ) );
         procMan.ipcSend ( REF_PTR ( clientType ) );
         procMan.ipcSend ( REF_PTR ( netplaySetup ) );
 
@@ -91,32 +191,33 @@ struct Main : public CommonMain
         procMan.ipcSend ( new EndOfMessages() );
     }
 
-    void ipcDisconnectEvent() override
+    virtual void ipcDisconnectEvent() override
     {
         EventManager::get().stop();
     }
 
-    void ipcReadEvent ( const MsgPtr& msg ) override
+    virtual void ipcReadEvent ( const MsgPtr& msg ) override
     {
     }
 
     // ControllerManager callbacks
-    void attachedJoystick ( Controller *controller ) override
+    virtual void attachedJoystick ( Controller *controller ) override
     {
     }
 
-    void detachedJoystick ( Controller *controller ) override
+    virtual void detachedJoystick ( Controller *controller ) override
     {
     }
 
     // Controller callback
-    void doneMapping ( Controller *controller, uint32_t key ) override
+    virtual void doneMapping ( Controller *controller, uint32_t key ) override
     {
     }
 
     // Socket callbacks
     virtual void acceptEvent ( Socket *serverSocket ) override
     {
+        // TODO proper queueing
         if ( serverSocket == serverCtrlSocket.get() )
         {
             ctrlSocket = serverCtrlSocket->accept ( this );
@@ -137,14 +238,9 @@ struct Main : public CommonMain
             ASSERT ( ctrlSocket->isConnected() == true );
             ASSERT ( dataSocket->isConnected() == true );
 
-            netplaySetup.delay = 4;
-            netplaySetup.hostPlayer = 1 + ( rand() % 2 );
-            netplaySetup.training = 0;
+            // TOOD version check
 
-            ctrlSocket->send ( REF_PTR ( netplaySetup ) );
-
-            // Start the game wait and for callback to ipcConnectEvent
-            startGame();
+            pinger.start();
         }
     }
 
@@ -167,12 +263,16 @@ struct Main : public CommonMain
 
         switch ( msg->getMsgType() )
         {
-            case MsgType::NetplaySetup:
-                // TODO check state
-                netplaySetup = msg->getAs<NetplaySetup>();
+            case MsgType::Ping:
+                pinger.gotPong ( msg );
+                break;
 
-                // Start the game wait and for callback to ipcConnectEvent
-                startGame();
+            case MsgType::Statistics:
+                gotPingStats ( msg->getAs<Statistics>() );
+                break;
+
+            case MsgType::NetplaySetup:
+                gotNetplaySetup ( msg->getAs<NetplaySetup>() );
                 break;
 
             default:
@@ -187,7 +287,9 @@ struct Main : public CommonMain
     }
 
     // Constructor
-    Main ( Option opt[], const IpAddrPort& address ) : CommonMain ( address )
+    Main ( Option opt[], const IpAddrPort& address )
+        : CommonMain ( address.addr.empty() ? ClientType::Host : ClientType::Client )
+        , pinger ( this, PING_INTERVAL, NUM_PINGS )
     {
         if ( opt[STDOUT] )
             Logger::get().initialize();
@@ -226,41 +328,12 @@ struct DummyMain : public Main
 {
     PlayerInputs fakeInputs;
 
-    // Socket callbacks
-    void acceptEvent ( Socket *serverSocket ) override
+    void startGame() override
     {
-        if ( serverSocket == serverCtrlSocket.get() )
-        {
-            ctrlSocket = serverCtrlSocket->accept ( this );
-        }
-        else if ( serverSocket == serverDataSocket.get() )
-        {
-            dataSocket = serverDataSocket->accept ( this );
-        }
-        else
-        {
-            LOG ( "Ignoring acceptEvent from serverSocket=%08x", serverSocket );
-            serverSocket->accept ( this ).reset();
-            return;
-        }
-
-        if ( ctrlSocket && dataSocket )
-        {
-            ASSERT ( ctrlSocket->isConnected() == true );
-            ASSERT ( dataSocket->isConnected() == true );
-
-            netplaySetup.delay = 4;
-            netplaySetup.hostPlayer = 1 + ( rand() % 2 );
-            netplaySetup.training = 0;
-
-            ctrlSocket->send ( REF_PTR ( netplaySetup ) );
-
-            // DON'T start the game, just disable keepAlive
-            ctrlSocket->setKeepAlive ( 0 );
-            dataSocket->setKeepAlive ( 0 );
-        }
+        // Don't start the game in dummy mode
     }
 
+    // Socket callback
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
     {
         if ( !msg.get() )
@@ -268,15 +341,6 @@ struct DummyMain : public Main
 
         switch ( msg->getMsgType() )
         {
-            case MsgType::NetplaySetup:
-                // TODO check state
-                netplaySetup = msg->getAs<NetplaySetup>();
-
-                // DON'T start the game, just disable keepAlive
-                ctrlSocket->setKeepAlive ( 0 );
-                dataSocket->setKeepAlive ( 0 );
-                break;
-
             case MsgType::CharaSelectLoaded:
                 LOG ( "Character select loaded for both sides" );
 
@@ -297,7 +361,7 @@ struct DummyMain : public Main
                 break;
 
             default:
-                LOG ( "Unexpected '%s'", msg );
+                Main::readEvent ( socket, msg, address );
                 break;
         }
     }
@@ -418,14 +482,18 @@ int main ( int argc, char *argv[] )
             address = string ( parser.nonOption ( 0 ) );
         else if ( parser.nonOptionsCount() == 2 )
             address = string ( parser.nonOption ( 0 ) ) + parser.nonOption ( 1 );
+        else
+            return 0;
 
-        for ( MainUi ui; ; )
+        //for ( ;; )
         {
-            if ( address.empty() )
+            /*if ( address.empty() )
             {
-                ui.start();
-                address = ui.getConfig().getString ( "address" );
-            }
+                if ( !ui.mainMenu() )
+                    continue;
+
+                address = ui.getMainAddress();
+            }*/
 
             PRINT ( "Using: '%s'", address );
 

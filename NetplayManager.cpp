@@ -125,8 +125,6 @@ uint16_t NetplayManager::getDelayedInput ( uint8_t player ) const
     return inputs[index][player - 1][frame - setup.delay];
 }
 
-NetplayManager::NetplayManager ( const NetplaySetup& setup ) : setup ( setup ) {}
-
 void NetplayManager::updateFrame()
 {
     frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime;

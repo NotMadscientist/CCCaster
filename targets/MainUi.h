@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Utilities.h"
+#include "Messages.h"
+#include "Statistics.h"
 
 
 class MainUi
@@ -9,7 +11,13 @@ class MainUi
 
 public:
 
-    void start();
+    bool mainMenu();
 
-    const ConfigSettings& getConfig() const { return config; }
+    bool acceptMenu ( const Statistics& stats );
+
+    bool connectMenu ( const Statistics& stats );
+
+    std::string getMainAddress() const;
+
+    NetplaySetup getNetplaySetup() const;
 };

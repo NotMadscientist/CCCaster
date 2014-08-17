@@ -284,14 +284,6 @@ struct Main
 
         switch ( msg->getMsgType() )
         {
-            case MsgType::IpAddrPort:
-                if ( !address.empty() )
-                    break;
-
-                address = msg->getAs<IpAddrPort>();
-                LOG ( "address='%s'", address );
-                break;
-
             case MsgType::ClientType:
                 if ( clientType != ClientType::Unknown )
                     break;
@@ -301,30 +293,30 @@ struct Main
                 break;
 
             case MsgType::NetplaySetup:
-                if ( netplaySetup.delay != 0 )
+                if ( netMan.setup.delay != 0 )
                     break;
 
-                netplaySetup = msg->getAs<NetplaySetup>();
+                netMan.setup = msg->getAs<NetplaySetup>();
 
-                if ( netplaySetup.delay == 0 )
-                    LOG_AND_THROW_STRING ( "netplaySetup.delay=%d is invalid!", netplaySetup.delay );
+                if ( netMan.setup.delay == 0 )
+                    LOG_AND_THROW_STRING ( "netMan.setup.delay=%d is invalid!", netMan.setup.delay );
 
-                if ( netplaySetup.hostPlayer != 1 && netplaySetup.hostPlayer != 2 )
-                    LOG_AND_THROW_STRING ( "netplaySetup.hostPlayer=%d is invalid!", netplaySetup.hostPlayer );
+                if ( netMan.setup.hostPlayer != 1 && netMan.setup.hostPlayer != 2 )
+                    LOG_AND_THROW_STRING ( "netMan.setup.hostPlayer=%d is invalid!", netMan.setup.hostPlayer );
 
                 if ( isHost() )
                 {
-                    hostPlayer = localPlayer = netplaySetup.hostPlayer;
-                    clientPlayer = remotePlayer = ( 3 - netplaySetup.hostPlayer );
+                    hostPlayer = localPlayer = netMan.setup.hostPlayer;
+                    clientPlayer = remotePlayer = ( 3 - netMan.setup.hostPlayer );
                 }
                 else
                 {
-                    hostPlayer = remotePlayer = netplaySetup.hostPlayer;
-                    clientPlayer = localPlayer = ( 3 - netplaySetup.hostPlayer );
+                    hostPlayer = remotePlayer = netMan.setup.hostPlayer;
+                    clientPlayer = localPlayer = ( 3 - netMan.setup.hostPlayer );
                 }
 
                 LOG ( "delay=%d; training=%d; hostPlayer=%d; clientPlayer=%d; localPlayer=%d; remotePlayer=%d",
-                      netplaySetup.delay, netplaySetup.training, hostPlayer, clientPlayer, localPlayer, remotePlayer );
+                      netMan.setup.delay, netMan.setup.training, hostPlayer, clientPlayer, localPlayer, remotePlayer );
                 break;
 
             case MsgType::SocketShareData:
@@ -373,19 +365,16 @@ struct Main
                 break;
 
             case MsgType::EndOfMessages:
-                if ( address.empty() )
-                    LOG_AND_THROW_STRING ( "Empty address!" );
-
                 if ( clientType == ClientType::Unknown )
                     LOG_AND_THROW_STRING ( "Unknown clientType!" );
 
-                if ( netplaySetup.delay == 0 )
-                    LOG_AND_THROW_STRING ( "Uninitalized netplaySetup!" );
+                if ( netMan.setup.delay == 0 )
+                    LOG_AND_THROW_STRING ( "Uninitalized netMan.setup!" );
 
-                if ( !ctrlSocket )
+                if ( !ctrlSocket || !ctrlSocket->isConnected() )
                     LOG_AND_THROW_STRING ( "Uninitalized ctrlSocket!" );
 
-                if ( !dataSocket )
+                if ( !dataSocket || !dataSocket->isConnected() )
                     LOG_AND_THROW_STRING ( "Uninitalized dataSocket!" );
 
                 if ( isHost() )
@@ -490,7 +479,7 @@ struct Main
     }
 
     // Constructor
-    Main() : netMan ( netplaySetup ), worldTimerMoniter ( this, Variable::WorldTime, *CC_WORLD_TIMER_ADDR )
+    Main() : worldTimerMoniter ( this, Variable::WorldTime, *CC_WORLD_TIMER_ADDR )
     {
         // Timer and controller initialization is not done here because of threading issues
 

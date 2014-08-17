@@ -31,8 +31,6 @@ ENUM ( NetplayState, PreInitial, Initial, CharaSelect, Loading, Skippable, InGam
 
 class NetplayManager
 {
-    const NetplaySetup& setup;
-
     // Netplay state
     NetplayState state;
 
@@ -67,8 +65,8 @@ class NetplayManager
 
 public:
 
-    // Basic constructor, stores the provided NetplaySetup as a const reference
-    NetplayManager ( const NetplaySetup& setup );
+    // Netplay setup
+    NetplaySetup setup;
 
     // Update the current netplay frame
     void updateFrame();
