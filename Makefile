@@ -180,7 +180,7 @@ format:
     $(filter-out AsmHacks.h, $(NON_GEN_SRCS) $(NON_GEN_HEADERS))
 
 count:
-	@wc -l $(NON_GEN_SRCS) $(NON_GEN_HEADERS) | sort -r
+	@wc -l $(NON_GEN_SRCS) $(NON_GEN_HEADERS) | sort -r | head -n 10 && echo '    ...'
 
 .PHONY: clean check trim format count deploy autogen protocol version sdl sdl_release sdl_profile sdl_clean
 

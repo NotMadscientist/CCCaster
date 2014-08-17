@@ -9,7 +9,7 @@
 using namespace std;
 
 
-#define SEND_INTERVAL 100
+#define SEND_INTERVAL 50
 
 
 string formatSerializableSequence ( const MsgPtr& msg )

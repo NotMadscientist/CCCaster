@@ -111,6 +111,7 @@ void ProcessManager::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddr
         ASSERT ( connected == false );
 
         connected = true;
+        gameStartTimer.reset();
 
         if ( owner )
             owner->ipcConnectEvent();
