@@ -137,29 +137,28 @@ size_t uncompress ( const char *src, size_t srcLen, char *dst, size_t dstLen );
 size_t compressBound ( size_t srcLen );
 
 
-// General exception type
+// Exception types
 struct Exception
 {
     std::string msg;
 
     Exception() {}
     Exception ( const std::string& msg ) : msg ( msg ) {}
+
+    virtual std::string str() const;
 };
 
-
-// Windows exception type
 struct WindowsException : public Exception
 {
     int code = 0;
 
     WindowsException() {}
     WindowsException ( int code );
+
+    std::string str() const;
 };
 
-
-// Stream operators
 std::ostream& operator<< ( std::ostream& os, const Exception& exception );
-std::ostream& operator<< ( std::ostream& os, const WindowsException& error );
 
 
 // Find the first window handle with the given title (NOT thread safe)

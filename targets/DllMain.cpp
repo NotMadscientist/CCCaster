@@ -524,14 +524,9 @@ extern "C" void callback()
 
         main->callback();
     }
-    catch ( const WindowsException& err )
-    {
-        LOG ( "Stopping due to WindowsException: %s", err );
-        appState = AppState::Stopping;
-    }
     catch ( const Exception& err )
     {
-        LOG ( "Stopping due to Exception: %s", err );
+        LOG ( "Stopping due to exception: %s", err );
         appState = AppState::Stopping;
     }
     catch ( ... )
@@ -567,14 +562,9 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
 
                 main.reset ( new Main() );
             }
-            catch ( const WindowsException& err )
-            {
-                LOG ( "Aborting due to WindowsException: %s", err );
-                exit ( 0 );
-            }
             catch ( const Exception& err )
             {
-                LOG ( "Aborting due to Exception: %s", err );
+                LOG ( "Aborting due to exception: %s", err );
                 exit ( 0 );
             }
             catch ( ... )

@@ -79,7 +79,7 @@ string trim ( string str, const string& ws )
 
 vector<string> split ( const string& str, const string& delim )
 {
-    vector<std::string> result;
+    vector<string> result;
 
     string copy = str;
 
@@ -170,18 +170,16 @@ static string getWindowsExceptionAsString ( int error )
     return str;
 }
 
+string Exception::str() const { return msg; }
+
 WindowsException::WindowsException ( int code ) : Exception ( getWindowsExceptionAsString ( code ) ), code ( code ) {}
+
+string WindowsException::str() const { return toString ( "[%d] '%s'", code, msg ); }
 
 ostream& operator<< ( ostream& os, const Exception& error )
 {
-    return ( os << error.msg );
+    return ( os << error.str() );
 }
-
-ostream& operator<< ( ostream& os, const WindowsException& error )
-{
-    return ( os << "[" << error.code << "] '" << error.msg << "'" );
-}
-
 
 // Windows utilities
 

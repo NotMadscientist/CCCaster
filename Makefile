@@ -113,9 +113,9 @@ res/icon.res: res/icon.rc res/icon.ico
 	$(WINDRES) -F pe-i386 res/icon.rc -O coff -o $@
 
 define make_version
-@printf "#define COMMIT_ID \"`git rev-parse HEAD`\"\n\
-#define BUILD_TIME \"`date`\"\n\
-#define VERSION \"$(VERSION)\"" > lib/Version.h
+@printf "#define COMMIT_ID \"`git rev-parse HEAD`\"\n" > lib/Version.h
+@printf "#define BUILD_TIME \"`date`\"\n"             >> lib/Version.h
+@printf "#define VERSION \"$(VERSION)\"\n"            >> lib/Version.h
 endef
 
 define make_protocol
@@ -126,7 +126,7 @@ endef
 	$(make_version)
 	$(make_protocol)
 	@echo "Regenerating .depend"
-	@$(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp > $@
+	@$(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp                                                       > $@
 	@$(CXX) $(CC_FLAGS) -std=c++11 -MM lib/*.cpp     | sed -r "s/^([A-Za-z]+\.o\: )/lib\/\1/"     >> $@
 	@$(CXX) $(CC_FLAGS) -std=c++11 -MM targets/*.cpp | sed -r "s/^([A-Za-z]+\.o\: )/targets\/\1/" >> $@
 	@$(CXX) $(CC_FLAGS) -std=c++11 -MM tests/*.cpp   | sed -r "s/^([A-Za-z]+\.o\: )/tests\/\1/"   >> $@
