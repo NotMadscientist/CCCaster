@@ -23,12 +23,12 @@ struct ClientType : public SerializableSequence
 struct NetplaySetup : public SerializableSequence
 {
     uint8_t delay = 0;
-    uint8_t hostPlayer = 0;
     uint8_t training = 0;
+    uint8_t hostPlayer = 0;
 
     NetplaySetup() {}
 
-    PROTOCOL_BOILERPLATE ( delay, hostPlayer, training )
+    PROTOCOL_BOILERPLATE ( delay, training, hostPlayer )
 };
 
 

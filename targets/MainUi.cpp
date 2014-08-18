@@ -1,5 +1,6 @@
 #include "MainUi.h"
 #include "Logger.h"
+#include "Utilities.h"
 
 #include <JLib/ConsoleCore.h>
 
@@ -56,7 +57,9 @@ bool MainUi::mainMenu()
 
     getline ( cin, address );
 
-    return true;
+    address = trim ( address );
+
+    return !address.empty();
 }
 
 bool MainUi::acceptMenu ( const Statistics& stats )

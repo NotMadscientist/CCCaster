@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cmath>
-
 #include "Protocol.h"
+
+#include <cmath>
 
 
 // Template class to calculate stats with an online algorithm
