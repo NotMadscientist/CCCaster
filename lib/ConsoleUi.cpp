@@ -1,4 +1,5 @@
 #include "ConsoleUi.h"
+#include "Utilities.h"
 
 #include <windows.h>
 
@@ -25,6 +26,9 @@ void ConsoleUi::initialize ( const string& title )
     SetConsoleTitle ( title.c_str() );
     SetConsoleOutputCP ( 437 );
 
+    if ( detectWine() )
+        return;
+
     // Undocumented console font functions:
     // http://blogs.microsoft.co.il/blogs/pavely/archive/2009/07/23/changing-console-fonts.aspx
     // http://cpptutorials.freeforums.org/please-oh-please-anyway-to-adjust-the-console-font-size-t605.html
@@ -48,27 +52,27 @@ void ConsoleUi::initialize ( const string& title )
 #endif
 
     // Get handle
-    HANDLE hnd = GetStdHandle ( STD_OUTPUT_HANDLE );
+    HANDLE handle = GetStdHandle ( STD_OUTPUT_HANDLE );
 
     // Get Number of console fonts
-    DWORD num = GetNumberOfConsoleFonts();
+    DWORD numFounts = GetNumberOfConsoleFonts();
 
     // Setup array
-    vector<CONSOLE_FONT_INFO> fonts ( num );
+    vector<CONSOLE_FONT_INFO> fonts ( numFounts );
 
     // Get font info
-    GetConsoleFontInfo ( hnd, false, num, &fonts[0] );
+    GetConsoleFontInfo ( handle, false, numFounts, &fonts[0] );
 
-    for ( size_t i = 0; i < num; ++i )
+    for ( size_t i = 0; i < numFounts; ++i )
     {
         // Get console font Size
-        fonts[i].dwFontSize = GetConsoleFontSize ( hnd, fonts[i].nFont );
+        fonts[i].dwFontSize = GetConsoleFontSize ( handle, fonts[i].nFont );
 
         // Find the right font size
         if ( fonts[i].dwFontSize.X == 8 && fonts[i].dwFontSize.Y == 12 )
         {
             // Set that font
-            SetConsoleFont ( hnd, fonts[i].nFont );
+            SetConsoleFont ( handle, fonts[i].nFont );
             break;
         }
     }

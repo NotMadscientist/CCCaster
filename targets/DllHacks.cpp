@@ -85,7 +85,7 @@ void InvalidateDeviceObjects()
     }
 }
 
-void initializePreHacks()
+void initializePreLoadHacks()
 {
     for ( const Asm& hack : hookMainLoop )
         WRITE_ASM_HACK ( hack );
@@ -103,7 +103,7 @@ void initializePreHacks()
         WRITE_ASM_HACK ( hack );
 }
 
-void initializePostHacks()
+void initializePostLoadHacks()
 {
     // Hook and ignore keyboard messages to prevent lag from unhandled messages
     if ( ! ( keybdHook = SetWindowsHookEx ( WH_KEYBOARD, keyboardCallback, 0, GetCurrentThreadId() ) ) )

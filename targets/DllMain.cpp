@@ -20,8 +20,8 @@ using namespace std;
 
 
 // Declarations
-void initializePreHacks();
-void initializePostHacks();
+void initializePreLoadHacks();
+void initializePostLoadHacks();
 void deinitializeHacks();
 static void deinitialize();
 
@@ -42,7 +42,6 @@ ENUM ( Variable, WorldTime, GameMode, RoundStart );
 struct Main
         : public CommonMain
         , public RefChangeMonitor<Variable, uint32_t>::Owner
-        , public PtrToRefChangeMonitor<Variable, uint32_t>::Owner
 {
     // NetplayManager instance
     NetplayManager netMan;
@@ -298,21 +297,24 @@ struct Main
 
                 netMan.setup = msg->getAs<NetplaySetup>();
 
-                if ( netMan.setup.delay == 0 )
+                if ( netMan.setup.delay == 0xFF )
                     LOG_AND_THROW_STRING ( "netMan.setup.delay=%d is invalid!", netMan.setup.delay );
 
-                if ( netMan.setup.hostPlayer != 1 && netMan.setup.hostPlayer != 2 )
-                    LOG_AND_THROW_STRING ( "netMan.setup.hostPlayer=%d is invalid!", netMan.setup.hostPlayer );
+                if ( !isLocal() )
+                {
+                    if ( netMan.setup.hostPlayer != 1 && netMan.setup.hostPlayer != 2 )
+                        LOG_AND_THROW_STRING ( "netMan.setup.hostPlayer=%d is invalid!", netMan.setup.hostPlayer );
 
-                if ( isHost() )
-                {
-                    hostPlayer = localPlayer = netMan.setup.hostPlayer;
-                    clientPlayer = remotePlayer = ( 3 - netMan.setup.hostPlayer );
-                }
-                else
-                {
-                    hostPlayer = remotePlayer = netMan.setup.hostPlayer;
-                    clientPlayer = localPlayer = ( 3 - netMan.setup.hostPlayer );
+                    if ( isHost() )
+                    {
+                        hostPlayer = localPlayer = netMan.setup.hostPlayer;
+                        clientPlayer = remotePlayer = ( 3 - netMan.setup.hostPlayer );
+                    }
+                    else
+                    {
+                        hostPlayer = remotePlayer = netMan.setup.hostPlayer;
+                        clientPlayer = localPlayer = ( 3 - netMan.setup.hostPlayer );
+                    }
                 }
 
                 LOG ( "delay=%d; training=%d; hostPlayer=%d; clientPlayer=%d; localPlayer=%d; remotePlayer=%d",
@@ -320,47 +322,52 @@ struct Main
                 break;
 
             case MsgType::SocketShareData:
-                if ( isHost() )
+                switch ( clientType.value )
                 {
-                    if ( !serverCtrlSocket )
-                    {
-                        serverCtrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
-
-                        if ( serverCtrlSocket->isUDP() )
+                    case ClientType::Host:
+                        if ( !serverCtrlSocket )
                         {
-                            ASSERT ( serverCtrlSocket->getAsUDP().getChildSockets().size() == 1 );
-                            ctrlSocket = serverCtrlSocket->getAsUDP().getChildSockets().begin()->second;
-                            ctrlSocket->owner = this;
-                            ASSERT ( ctrlSocket->isConnected() );
-                        }
-                    }
-                    else if ( !serverDataSocket )
-                    {
-                        serverDataSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
+                            serverCtrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
 
-                        ASSERT ( serverDataSocket->isUDP() == true );
-                        ASSERT ( serverDataSocket->getAsUDP().getChildSockets().size() == 1 );
-                        dataSocket = serverDataSocket->getAsUDP().getChildSockets().begin()->second;
-                        dataSocket->owner = this;
-                        ASSERT ( dataSocket->isConnected() );
-                    }
-                    else if ( !ctrlSocket )
-                    {
-                        ctrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
-                    }
-                }
-                else
-                {
-                    if ( !ctrlSocket )
-                    {
-                        ctrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
-                        ASSERT ( ctrlSocket->isConnected() == true );
-                    }
-                    else if ( !dataSocket )
-                    {
-                        dataSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
-                        ASSERT ( dataSocket->isConnected() == true );
-                    }
+                            if ( serverCtrlSocket->isUDP() )
+                            {
+                                ASSERT ( serverCtrlSocket->getAsUDP().getChildSockets().size() == 1 );
+                                ctrlSocket = serverCtrlSocket->getAsUDP().getChildSockets().begin()->second;
+                                ctrlSocket->owner = this;
+                                ASSERT ( ctrlSocket->isConnected() );
+                            }
+                        }
+                        else if ( !serverDataSocket )
+                        {
+                            serverDataSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
+
+                            ASSERT ( serverDataSocket->isUDP() == true );
+                            ASSERT ( serverDataSocket->getAsUDP().getChildSockets().size() == 1 );
+                            dataSocket = serverDataSocket->getAsUDP().getChildSockets().begin()->second;
+                            dataSocket->owner = this;
+                            ASSERT ( dataSocket->isConnected() );
+                        }
+                        else if ( !ctrlSocket )
+                        {
+                            ctrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
+                        }
+                        break;
+
+                    case ClientType::Client:
+                        if ( !ctrlSocket )
+                        {
+                            ctrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
+                            ASSERT ( ctrlSocket->isConnected() == true );
+                        }
+                        else if ( !dataSocket )
+                        {
+                            dataSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
+                            ASSERT ( dataSocket->isConnected() == true );
+                        }
+                        break;
+
+                    default:
+                        break;
                 }
                 break;
 
@@ -368,22 +375,25 @@ struct Main
                 if ( clientType == ClientType::Unknown )
                     LOG_AND_THROW_STRING ( "Unknown clientType!" );
 
-                if ( netMan.setup.delay == 0 )
+                if ( netMan.setup.delay == 0xFF )
                     LOG_AND_THROW_STRING ( "Uninitalized netMan.setup!" );
 
-                if ( !ctrlSocket || !ctrlSocket->isConnected() )
-                    LOG_AND_THROW_STRING ( "Uninitalized ctrlSocket!" );
-
-                if ( !dataSocket || !dataSocket->isConnected() )
-                    LOG_AND_THROW_STRING ( "Uninitalized dataSocket!" );
-
-                if ( isHost() )
+                if ( !isLocal() )
                 {
-                    if ( !serverCtrlSocket )
-                        LOG_AND_THROW_STRING ( "Uninitalized serverCtrlSocket!" );
+                    if ( !ctrlSocket || !ctrlSocket->isConnected() )
+                        LOG_AND_THROW_STRING ( "Uninitalized ctrlSocket!" );
 
-                    if ( !serverDataSocket )
-                        LOG_AND_THROW_STRING ( "Uninitalized serverDataSocket!" );
+                    if ( !dataSocket || !dataSocket->isConnected() )
+                        LOG_AND_THROW_STRING ( "Uninitalized dataSocket!" );
+
+                    if ( isHost() )
+                    {
+                        if ( !serverCtrlSocket )
+                            LOG_AND_THROW_STRING ( "Uninitalized serverCtrlSocket!" );
+
+                        if ( !serverDataSocket )
+                            LOG_AND_THROW_STRING ( "Uninitalized serverDataSocket!" );
+                    }
                 }
 
                 netplayStateChanged ( NetplayState::Initial );
@@ -509,12 +519,13 @@ extern "C" void callback()
     {
         if ( appState == AppState::Uninitialized )
         {
-            initializePostHacks();
+            initializePostLoadHacks();
 
             // Joystick and timer must be initialized in the main thread
             TimerManager::get().initialize();
             ControllerManager::get().initialize ( main.get() );
 
+            // Only poll timers and sockets; controllers state is only allowed to change once a frame
             EventManager::get().checkBitMask = ( CHECK_TIMERS | CHECK_SOCKETS );
             EventManager::get().startPolling();
             appState = AppState::Polling;
@@ -558,13 +569,18 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
             {
                 // It is safe to initialize sockets here
                 SocketManager::get().initialize();
-                initializePreHacks();
+                initializePreLoadHacks();
 
                 main.reset ( new Main() );
             }
             catch ( const Exception& err )
             {
                 LOG ( "Aborting due to exception: %s", err );
+                exit ( 0 );
+            }
+            catch ( const std::exception& err )
+            {
+                LOG ( "Aborting due to std::exception: %s", err.what() );
                 exit ( 0 );
             }
             catch ( ... )

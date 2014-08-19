@@ -35,4 +35,5 @@ struct CommonMain
 
     bool isHost() const { return ( clientType == ClientType::Host ); }
     bool isClient() const { return ( clientType == ClientType::Client ); }
+    bool isLocal() const { return ( clientType == ClientType::Broadcast || clientType == ClientType::Offline ); }
 };

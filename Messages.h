@@ -16,13 +16,13 @@ struct CharaSelectLoaded : public SerializableSequence { EMPTY_MESSAGE_BOILERPLA
 
 struct ClientType : public SerializableSequence
 {
-    ENUM_MESSAGE_BOILERPLATE ( ClientType, Host, Client )
+    ENUM_MESSAGE_BOILERPLATE ( ClientType, Host, Client, Broadcast, Offline )
 };
 
 
 struct NetplaySetup : public SerializableSequence
 {
-    uint8_t delay = 0;
+    uint8_t delay = 0xFF;
     uint8_t training = 0;
     uint8_t hostPlayer = 0;
 

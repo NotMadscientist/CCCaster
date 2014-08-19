@@ -22,7 +22,7 @@ using namespace option;
 
 
 // Set of command line options
-enum CommandLineOptions { UNKNOWN, HELP, DUMMY, GTEST, STDOUT, PLUS };
+enum CommandLineOptions { UNKNOWN, HELP, DUMMY, GTEST, STDOUT, NO_FORK, PLUS };
 
 // Main UI instance
 static MainUi ui;
@@ -291,10 +291,6 @@ struct Main : public CommonMain, public Pinger::Owner
         : CommonMain ( address.addr.empty() ? ClientType::Host : ClientType::Client )
         , pinger ( this, PING_INTERVAL, NUM_PINGS )
     {
-        if ( opt[STDOUT] )
-            Logger::get().initialize();
-        else
-            Logger::get().initialize ( LOG_FILE );
         TimerManager::get().initialize();
         SocketManager::get().initialize();
         ControllerManager::get().initialize ( this );
@@ -319,7 +315,6 @@ struct Main : public CommonMain, public Pinger::Owner
         ControllerManager::get().deinitialize();
         SocketManager::get().deinitialize();
         TimerManager::get().deinitialize();
-        Logger::get().deinitialize();
     }
 };
 
@@ -378,6 +373,7 @@ struct DummyMain : public Main
     }
 };
 
+
 static void run ( Option opt[], const string& address )
 {
     try
@@ -402,16 +398,23 @@ static void run ( Option opt[], const string& address )
 }
 
 
+static void deinitialize()
+{
+    EventManager::get().release();
+    Logger::get().deinitialize();
+    exit ( 0 );
+}
+
 static void signalHandler ( int signum )
 {
     LOG ( "Interupt signal %d received", signum );
-    EventManager::get().release();
+    deinitialize();
 }
 
 static BOOL WINAPI consoleCtrl ( DWORD ctrl )
 {
     LOG ( "Console ctrl %d received", ctrl );
-    EventManager::get().release();
+    deinitialize();
     return TRUE;
 }
 
@@ -452,6 +455,7 @@ int main ( int argc, char *argv[] )
         { DUMMY,   0,  "",   "dummy", Arg::None, "  --dummy       Run as a dummy application." },
         { GTEST,   0,  "",   "gtest", Arg::None, "  --gtest       Run unit tests and exit." },
         { STDOUT,  0,  "",  "stdout", Arg::None, "  --stdout      Output logs to stdout." },
+        { NO_FORK, 0,  "", "no-fork", Arg::None, 0 }, // Don't fork when inside Wine, ie already running wineconosle
         { PLUS,    0, "p",    "plus", Arg::None, "  --plus, -p    Increment count." },
         {
             UNKNOWN, 0, "", "", Arg::None,
@@ -479,11 +483,13 @@ int main ( int argc, char *argv[] )
         return 0;
     }
 
+    // Setup signal and console handlers
     signal ( SIGABRT, signalHandler );
     signal ( SIGINT, signalHandler );
     signal ( SIGTERM, signalHandler );
     SetConsoleCtrlHandler ( consoleCtrl, TRUE );
 
+    // Run the unit test suite
     if ( opt[GTEST] )
     {
         Logger::get().initialize();
@@ -492,17 +498,30 @@ int main ( int argc, char *argv[] )
         return result;
     }
 
+    // Fork and re-run under wineconsole, needed for proper JLib support
+    if ( detectWine() && !opt[NO_FORK] )
+        return system ( ( string ( "wineconsole " ) + GetCommandLine() + " --no-fork" ).c_str() );
+
+    // Check if we should use stdout
+    if ( opt[STDOUT] )
+        Logger::get().initialize();
+    else
+        Logger::get().initialize ( LOG_FILE );
+
+    // Warn on invalid command line options
     for ( Option *it = opt[UNKNOWN]; it; it = it->next() )
         ui.message += toString ( "Unknown option: '%s'\n", it->name );
 
     for ( int i = 2; i < parser.nonOptionsCount(); ++i )
         ui.message += toString ( "Non-option (%d): '%s'\n", i, parser.nonOption ( i ) );
 
+    // Non-options 1 and 2 are the IP address and port
     if ( parser.nonOptionsCount() == 1 )
         run ( opt, parser.nonOption ( 0 ) );
     else if ( parser.nonOptionsCount() == 2 )
         run ( opt, string ( parser.nonOption ( 0 ) ) + parser.nonOption ( 1 ) );
 
+    // Main UI loop
     try
     {
         ui.initialize();
@@ -514,12 +533,16 @@ int main ( int argc, char *argv[] )
     {
         PRINT ( "Error: %s", err );
     }
+    catch ( const std::exception& err )
+    {
+        PRINT ( "Error: %s", err.what() );
+    }
     catch ( ... )
     {
         PRINT ( "Unknown error!" );
     }
 
-    EventManager::get().release();
+    deinitialize();
     return 0;
 }
 
