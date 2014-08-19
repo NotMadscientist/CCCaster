@@ -3,13 +3,26 @@
 #include "Utilities.h"
 #include "Messages.h"
 #include "Statistics.h"
+#include "ConsoleUi.h"
+
+#include <string>
 
 
 class MainUi
 {
     ConfigSettings config;
 
+    NetplaySetup setup;
+
+    ConsoleUi ui;
+
 public:
+
+    std::string message;
+
+    std::string error;
+
+    MainUi();
 
     bool mainMenu();
 

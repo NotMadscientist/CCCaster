@@ -378,6 +378,29 @@ struct DummyMain : public Main
     }
 };
 
+static void run ( Option opt[], const string& address )
+{
+    try
+    {
+        shared_ptr<Main> main;
+
+        if ( opt[DUMMY] )
+            main.reset ( new DummyMain ( opt, address ) );
+        else
+            main.reset ( new Main ( opt, address ) );
+
+        EventManager::get().start();
+    }
+    catch ( const Exception& err )
+    {
+        ui.error = toString ( "Error: %s", err );
+    }
+    catch ( ... )
+    {
+        ui.error = "Unknown error!";
+    }
+}
+
 
 static void signalHandler ( int signum )
 {
@@ -470,52 +493,28 @@ int main ( int argc, char *argv[] )
     }
 
     for ( Option *it = opt[UNKNOWN]; it; it = it->next() )
-        PRINT ( "Unknown option: '%s'", it->name );
+        ui.message += toString ( "Unknown option: '%s'\n", it->name );
 
     for ( int i = 2; i < parser.nonOptionsCount(); ++i )
-        PRINT ( "Non-option (%d): '%s'", i, parser.nonOption ( i ) );
+        ui.message += toString ( "Non-option (%d): '%s'\n", i, parser.nonOption ( i ) );
+
+    if ( parser.nonOptionsCount() == 1 )
+        run ( opt, parser.nonOption ( 0 ) );
+    else if ( parser.nonOptionsCount() == 2 )
+        run ( opt, string ( parser.nonOption ( 0 ) ) + parser.nonOption ( 1 ) );
 
     try
     {
-        IpAddrPort address;
-        if ( parser.nonOptionsCount() == 1 )
-            address = string ( parser.nonOption ( 0 ) );
-        else if ( parser.nonOptionsCount() == 2 )
-            address = string ( parser.nonOption ( 0 ) ) + parser.nonOption ( 1 );
-        else
-            return 0;
-
-        //for ( ;; )
-        {
-            /*if ( address.empty() )
-            {
-                if ( !ui.mainMenu() )
-                    continue;
-
-                address = ui.getMainAddress();
-            }*/
-
-            PRINT ( "Using: '%s'", address );
-
-            shared_ptr<Main> main;
-
-            if ( opt[DUMMY] )
-                main.reset ( new DummyMain ( opt, address ) );
-            else
-                main.reset ( new Main ( opt, address ) );
-
-            address.clear();
-
-            EventManager::get().start();
-        }
-    }
-    catch ( const WindowsException& err )
-    {
-        PRINT ( "Error: %s", err );
+        while ( ui.mainMenu() )
+            run ( opt, ui.getMainAddress() );
     }
     catch ( const Exception& err )
     {
         PRINT ( "Error: %s", err );
+    }
+    catch ( ... )
+    {
+        PRINT ( "Unknown error!" );
     }
 
     EventManager::get().release();

@@ -28,7 +28,6 @@
 #include <vector>
 
 #include "ConsoleDefinitions.h"
-#include "ConsoleCore.h"
 #include "CharacterBox.h"
 #include "ConsoleFormat.h"
 #include "ConsoleMenu.h"
