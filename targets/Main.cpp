@@ -505,6 +505,8 @@ int main ( int argc, char *argv[] )
 
     try
     {
+        ui.initialize();
+
         while ( ui.mainMenu() )
             run ( opt, ui.getMainAddress() );
     }

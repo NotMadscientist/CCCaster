@@ -24,6 +24,8 @@ public:
 
     MainUi();
 
+    void initialize();
+
     bool mainMenu();
 
     bool acceptMenu ( const Statistics& stats );

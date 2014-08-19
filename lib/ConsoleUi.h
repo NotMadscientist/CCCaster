@@ -35,16 +35,37 @@ public:
 
     protected:
 
-        // Position and size of the UI element
-        COORD pos, size;
+        // Position that the UI element should be displayed
+        COORD pos;
 
-        // Show the element, returns true if we should keep showing, false if we hit a menu
+        // Size of the UI element. Used as both input and output parameters.
+        // It is first set to the max size bounding box available to draw.
+        // Then it is set to the actual size of the of element drawn.
+        COORD size;
+
+        // Show the element, returns true if we should show the next one, false if we hit a menu and should stop
         virtual bool show() = 0;
 
         friend ConsoleUi;
     };
 
 private:
+
+    static const std::string ellipsis; // "..."
+
+    static const std::string minText; // "A..."
+
+    static const std::string minMenuItem; // "[1] A..."
+
+    static const std::string borders; // "**"
+
+    static const std::string paddedBorders; // "*  *"
+
+    static const size_t bordersHeight = 2; // 2 borders
+
+    static const size_t bordersTitleHeight = 4; // 3 borders + title
+
+    static const size_t maxMenuItems = 9 + 26; // 1-9 and A-Z
 
     typedef std::shared_ptr<Element> ElementPtr;
 
@@ -68,46 +89,51 @@ public:
 
         std::shared_ptr<WindowedMenu> menu;
 
+        std::string shortenWithEllipsis ( const std::string& text )
+        {
+            if ( text.size() + paddedBorders.size() > ( size_t ) size.X )
+                return text.substr ( 0, size.X - paddedBorders.size() - ellipsis.size() ) + ellipsis;
+
+            return text;
+        }
+
     protected:
 
         bool show() override
         {
             if ( !menu )
             {
-                ASSERT ( size.X > 11 );             // '* [#] A... *'
-                ASSERT ( size.Y > 4 );              // three rows + title
-                ASSERT ( items.size() <= 9 + 26 );  // 1-9 + A-Z
+                ASSERT ( ( size_t ) size.X >= minMenuItem.size() + paddedBorders.size() );
+                ASSERT ( ( size_t ) size.Y > bordersTitleHeight );
+                ASSERT ( items.size() <= maxMenuItems );
 
-                if ( title.size() > ( size_t ) size.X - 4 )
-                    title = title.substr ( 0, size.X - 7 ) + "...";
-                title = " " + title + " ";
+                title = " " + shortenWithEllipsis ( title ) + " ";
 
                 menu.reset ( new WindowedMenu ( pos, items.size(), title, THEME ) );
 
                 for ( size_t i = 0; i < items.size(); ++i )
                 {
-                    if ( items[i].size() > ( size_t ) size.X - 8 )
-                        items[i] = items[i].substr ( 0, size.X - 11 ) + "...";
-
                     if ( i < 9 )
-                        menu->Append ( toString ( " [%d] %s ", i + 1, items[i] ) );
+                        items[i] = toString ( "[%d] %s", i + 1, items[i] );
                     else
-                        menu->Append ( toString ( " [%c] %s ", 'A' + i - 9, items[i] ) );
+                        items[i] = toString ( "[%c] %s", 'A' + i - 9, items[i] );
+
+                    menu->Append ( " " + shortenWithEllipsis ( items[i] ) + " " );
                 }
 
                 if ( !lastItem.empty() )
                 {
-                    if ( lastItem.size() > ( size_t ) size.X - 8 )
-                        lastItem = lastItem.substr ( 0, size.X - 11 ) + "...";
-
-                    menu->Append ( toString ( " [0] %s ", lastItem ) );
+                    lastItem = toString ( "[0] %s", lastItem );
+                    menu->Append ( " " + shortenWithEllipsis ( lastItem ) + " " );
                 }
 
-                menu->MaxToShow ( std::min ( ( size_t ) size.Y - 4, menu->Count() ) );
+                // Limit the menu vertial display size
+                menu->MaxToShow ( std::min ( ( size_t ) size.Y - bordersTitleHeight, menu->Count() ) );
 
-                size.X = std::min ( ( size_t ) size.X, title.size() + 2 );        // title + border
-                size.X = std::min ( ( size_t ) size.X, menu->LongestItem() + 2 ); // item + border
-                size.Y = std::min ( ( size_t ) size.Y, items.size() + 4 );        // items.size() + three rows + title
+                // Update the element size after formatting the text
+                size.X = std::min ( ( size_t ) size.X, title.size() + borders.size() );
+                size.X = std::min ( ( size_t ) size.X, menu->LongestItem() + borders.size() );
+                size.Y = std::min ( ( size_t ) size.Y, items.size() + bordersTitleHeight );
 
                 menu->Origin ( pos );
                 menu->EscapeKey ( true );
@@ -127,6 +153,10 @@ public:
     struct Prompt : public Element
     {
     };
+
+    void *consoleWindow = 0;
+
+    void initialize ( const std::string& title );
 
     void pushRight ( Element *element )
     {

@@ -1,23 +1,25 @@
 #include "MainUi.h"
 #include "Logger.h"
 #include "Utilities.h"
-
-#include <JLib/ConsoleCore.h>
+#include "Version.h"
 
 #include <iostream>
 
 using namespace std;
 
 
-// Initial console window dimensions (definitions needed for JLib)
-int MAXSCREENX = 80;
-int MAXSCREENY = 25;
+#define TITLE "CCCaster " VERSION
 
 
 MainUi::MainUi()
 {
-    ui.pushRight ( new ConsoleUi::Menu ( "Main",
+    ui.pushRight ( new ConsoleUi::Menu ( TITLE,
     { "Netplay", "Spectate", "Broadcast", "Training", "Controls", "Settings" }, "Quit" ) );
+}
+
+void MainUi::initialize()
+{
+    ui.initialize ( TITLE );
 }
 
 bool MainUi::mainMenu()

@@ -97,6 +97,6 @@ public:
 
 #else
 
-#define ASSERT ((...)
+#define ASSERT(...)
 
 #endif
