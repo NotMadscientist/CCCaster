@@ -53,7 +53,7 @@ public:
 
 #define LOG(FORMAT, ...)                                                                                            \
     do {                                                                                                            \
-        Logger::get().log ( __FILE__, __LINE__, __PRETTY_FUNCTION__, TO_C_STR ( FORMAT, ## __VA_ARGS__ ) );         \
+        Logger::get().log ( __BASE_FILE__, __LINE__, __PRETTY_FUNCTION__, TO_C_STR ( FORMAT, ## __VA_ARGS__ ) );    \
     } while ( 0 )
 
 #define LOG_LIST(LIST, TO_STRING)                                                                                   \
@@ -90,7 +90,7 @@ public:
     do {                                                                                                            \
         if ( ASSERTION )                                                                                            \
             break;                                                                                                  \
-        ::Exception err = toString ( "'%s' failed @ %s:%d", #ASSERTION, __FILE__, __LINE__ );                       \
+        ::Exception err = toString ( "'%s' failed @ %s:%d", #ASSERTION, __BASE_FILE__, __LINE__ );                  \
         LOG ( "%s", err );                                                                                          \
         throw err;                                                                                                  \
     } while ( 0 )
