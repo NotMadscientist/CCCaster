@@ -23,9 +23,6 @@ bool MainUi::mainMenu()
 {
     ConsoleCore::GetInstance()->ClearScreen();
 
-    // ui->pushBelow ( new ConsoleUi::TextBox ( "foo foofoo\n asdf  asdf asd\n a\n \n\n" ) );
-    // ui->pushRight ( new ConsoleUi::TextBox ( "foo foofoo\n asdf  asdf asd\n a\n \n\n" ) );
-
     ConsoleUi::Element *menu = ui->show();
 
     switch ( menu->resultInt )

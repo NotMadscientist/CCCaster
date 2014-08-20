@@ -41,9 +41,13 @@ class ConsoleUi
 {
 public:
 
+    // Base UI element
     struct Element
     {
+        // Output integer, INT_MIN is the invalid sentinel value
         int resultInt = INT_MIN;
+
+        // Output string
         std::string resultStr;
 
     protected:
@@ -56,7 +60,7 @@ public:
         // Then it is set to the actual size of the of element drawn.
         COORD size;
 
-        // Initialize the UI element based on the current size
+        // Initialize the UI element based on the current size, this also updates the size
         virtual void initialize() = 0;
 
         // Show the element, returns true if we should pop and continue, false if we hit a menu and should stop
@@ -85,11 +89,14 @@ private:
 
     typedef std::shared_ptr<Element> ElementPtr;
 
+    // UI elements stack
     std::stack<ElementPtr> stack;
 
+    // Console window handle
     void *consoleWindow = 0;
 
-    void push ( Element *element, short width, short height );
+    // Initialize the element and push it onto the stack
+    void initalizeAndPush ( Element *element, short width, short height );
 
 public:
 
@@ -241,9 +248,72 @@ public:
             , menu ( pos, items.size(), " " + shortenWithEllipsis ( title ) + " ", THEME ) {}
     };
 
+    // Prompt types
+    enum PromptTypeInteger { PromptInteger };
+    enum PromptTypeString { PromptString };
+
     // Integer or string prompt
-    struct Prompt : public Element
+    class Prompt : public Element
     {
+        std::string title;
+        bool isIntegerPrompt = false;
+        bool allowNegative = true;
+        size_t maxDigits = 9;
+
+    protected:
+
+        void initialize() override
+        {
+            ASSERT ( ( size_t ) size.X >= title.size() + paddedBorders.size() );
+            ASSERT ( ( size_t ) size.Y > bordersTitleHeight );
+            size.Y = 1 + bordersTitleHeight;
+        }
+
+        bool show() override
+        {
+            LOG ( "title='%s'; pos=%s; size=%s", title, pos, size );
+
+            CharacterBox::Draw ( pos, pos + size, '*' );
+            ConsoleCore *cc = ConsoleCore::GetInstance();
+            cc->Prints ( " " + title + " ", false, 0, pos.X + 1, pos.Y + 1 );
+            cc->Prints ( std::string ( size.X - borders.size(), '*' ), false, 0, pos.X + 1, pos.Y + 2 );
+
+            COORD scanPos = { short ( pos.X + 2 ), short ( pos.Y + 3 ) };
+            cc->CursorPosition ( &scanPos );
+
+            if ( isIntegerPrompt )
+            {
+                if ( cc->ScanNumber ( scanPos, resultInt, std::min ( maxDigits, size.X - paddedBorders.size() ),
+                                      allowNegative, resultInt != INT_MIN ) )
+                    LOG ( "resultInt='%s'", resultInt );
+                else
+                    resultInt = INT_MIN;
+            }
+            else
+            {
+                if ( cc->ScanString ( scanPos, resultStr, size.X - paddedBorders.size() ) )
+                    LOG ( "resultStr='%s'", resultStr );
+                else
+                    resultStr.clear();
+            }
+
+            return false;
+        }
+
+    public:
+
+        Prompt ( PromptTypeString, const std::string& title, const std::string& initial = "" )
+            : title ( title ), isIntegerPrompt ( false )
+        {
+            resultStr = initial;
+        }
+
+        Prompt ( PromptTypeInteger, const std::string& title, int initial = INT_MIN,
+                 bool allowNegative = true, size_t maxDigits = 9 )
+            : title ( title ), isIntegerPrompt ( true ), allowNegative ( allowNegative ), maxDigits ( maxDigits )
+        {
+            resultInt = initial;
+        }
     };
 
     // Basic constructor

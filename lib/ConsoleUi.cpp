@@ -78,7 +78,7 @@ ConsoleUi::ConsoleUi ( const string& title )
     }
 }
 
-void ConsoleUi::push ( ConsoleUi::Element *element, short width, short height )
+void ConsoleUi::initalizeAndPush ( ConsoleUi::Element *element, short width, short height )
 {
     if ( stack.empty() )
     {
@@ -102,7 +102,7 @@ void ConsoleUi::pushRight ( ConsoleUi::Element *element, short width, short heig
         element->size -= element->pos;
     }
 
-    push ( element, width, height );
+    initalizeAndPush ( element, width, height );
 }
 
 void ConsoleUi::pushBelow ( ConsoleUi::Element *element, short width, short height )
@@ -115,7 +115,7 @@ void ConsoleUi::pushBelow ( ConsoleUi::Element *element, short width, short heig
         element->size -= element->pos;
     }
 
-    push ( element, width, height );
+    initalizeAndPush ( element, width, height );
 }
 
 void ConsoleUi::pushInFront ( ConsoleUi::Element *element, short width, short height )
@@ -127,7 +127,7 @@ void ConsoleUi::pushInFront ( ConsoleUi::Element *element, short width, short he
         element->size -= element->pos;
     }
 
-    push ( element, width, height );
+    initalizeAndPush ( element, width, height );
 }
 
 void ConsoleUi::pop()
