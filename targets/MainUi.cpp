@@ -2,6 +2,7 @@
 #include "Logger.h"
 #include "Utilities.h"
 #include "Version.h"
+#include "ConsoleUi.h"
 
 #include <iostream>
 
@@ -11,31 +12,55 @@ using namespace std;
 #define TITLE "CCCaster " VERSION
 
 
-MainUi::MainUi()
-{
-    ui.pushRight ( new ConsoleUi::Menu ( TITLE,
-    { "Netplay", "Spectate", "Broadcast", "Training", "Controls", "Settings" }, "Quit" ) );
-}
-
 void MainUi::initialize()
 {
-    ui.initialize ( TITLE );
+    ui.reset ( new ConsoleUi ( TITLE ) );
+    ui->pushRight ( new ConsoleUi::Menu ( TITLE,
+    { "Netplay", "Spectate", "Broadcast", "Offline", "Controls", "Settings" }, "Quit" ) );
 }
 
 bool MainUi::mainMenu()
 {
     ConsoleCore::GetInstance()->ClearScreen();
 
-    ConsoleUi::Element *element = ui.show();
+    // ui->pushBelow ( new ConsoleUi::TextBox ( "foo foofoo\n asdf  asdf asd\n a\n \n\n" ) );
+    // ui->pushRight ( new ConsoleUi::TextBox ( "foo foofoo\n asdf  asdf asd\n a\n \n\n" ) );
 
-    switch ( element->resultInt )
+    ConsoleUi::Element *menu = ui->show();
+
+    switch ( menu->resultInt )
     {
+        // Netplay
         case 0:
             break;
 
+        // Spectate
         case 1:
             break;
 
+        // Broadcast
+        case 2:
+            break;
+
+        // Offline
+        case 3:
+            ui->pushRight ( new ConsoleUi::Menu ( "Offline", { "Versus", "Training" }, "Cancel" ) );
+            menu = ui->show();
+            ui->pop();
+            break;
+
+        // Controls
+        case 4:
+            break;
+
+        // Settings
+        case 5:
+            break;
+
+        // Quit
+        case 6:
+        case BADMENU:
+        case USERESC:
         default:
             return false;
     }

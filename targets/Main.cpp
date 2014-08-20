@@ -398,8 +398,17 @@ static void run ( Option opt[], const string& address )
 }
 
 
+static Mutex deinitMutex;
+static bool deinitialized = false;
+
 static void deinitialize()
 {
+    LOCK ( deinitMutex );
+
+    if ( deinitialized )
+        return;
+    deinitialized = true;
+
     EventManager::get().release();
     Logger::get().deinitialize();
     exit ( 0 );

@@ -20,7 +20,7 @@ const string ConsoleUi::borders = "**";
 const string ConsoleUi::paddedBorders = "*  *";
 
 
-void ConsoleUi::initialize ( const string& title )
+ConsoleUi::ConsoleUi ( const string& title )
 {
     consoleWindow = GetConsoleWindow();
     SetConsoleTitle ( title.c_str() );
@@ -76,4 +76,76 @@ void ConsoleUi::initialize ( const string& title )
             break;
         }
     }
+}
+
+void ConsoleUi::push ( ConsoleUi::Element *element, short width, short height )
+{
+    if ( stack.empty() )
+    {
+        element->pos = ORIGIN;
+        element->size = { short ( MAXSCREENX  ), short ( MAXSCREENY ) };
+    }
+
+    element->size.X = min ( element->size.X, width );
+    element->size.Y = min ( element->size.Y, height );
+    element->initialize();
+
+    stack.push ( ConsoleUi::ElementPtr ( element ) );
+}
+
+void ConsoleUi::pushRight ( ConsoleUi::Element *element, short width, short height )
+{
+    if ( !stack.empty() )
+    {
+        element->pos = { short ( stack.top()->pos.X + stack.top()->size.X ), stack.top()->pos.Y };
+        element->size = { short ( MAXSCREENX ), short ( MAXSCREENY ) };
+        element->size -= element->pos;
+    }
+
+    push ( element, width, height );
+}
+
+void ConsoleUi::pushBelow ( ConsoleUi::Element *element, short width, short height )
+{
+    if ( !stack.empty() )
+    {
+        element->pos = { stack.top()->pos.X, short ( stack.top()->pos.Y + stack.top()->size.Y ) };
+        element->pos.Y -= 1; // Merge horizontal borders
+        element->size = { short ( MAXSCREENX ), short ( MAXSCREENY ) };
+        element->size -= element->pos;
+    }
+
+    push ( element, width, height );
+}
+
+void ConsoleUi::pushInFront ( ConsoleUi::Element *element, short width, short height )
+{
+    if ( !stack.empty() )
+    {
+        element->pos = stack.top()->pos;
+        element->size = { short ( MAXSCREENX ), short ( MAXSCREENY ) };
+        element->size -= element->pos;
+    }
+
+    push ( element, width, height );
+}
+
+void ConsoleUi::pop()
+{
+    ASSERT ( stack.empty() == false );
+
+    stack.pop();
+}
+
+ConsoleUi::Element *ConsoleUi::show()
+{
+    ASSERT ( stack.empty() == false );
+
+    while ( !stack.empty() && stack.top()->show() )
+        stack.pop();
+
+    if ( !stack.empty() )
+        return stack.top().get();
+
+    return 0;
 }

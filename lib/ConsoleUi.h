@@ -7,8 +7,10 @@
 
 #include <memory>
 #include <vector>
+#include <stack>
 #include <climits>
 #include <algorithm>
+#include <sstream>
 
 
 #define ORIGIN ( ( COORD ) { 0, 0 } )
@@ -22,6 +24,17 @@
     ConsoleFormat::BLACK | ConsoleFormat::ONBRIGHTWHITE,    \
     ConsoleFormat::SYSTEM,                                  \
     ConsoleFormat::SYSTEM
+
+
+// Operators
+inline COORD operator+ ( const COORD& a, const COORD& b ) { return { short ( a.X + b.X ), short ( a.Y + b.Y ) }; }
+inline COORD operator- ( const COORD& a, const COORD& b ) { return { short ( a.X - b.X ), short ( a.Y - b.Y ) }; }
+
+inline COORD& operator+= ( COORD& a, const COORD& b ) { a.X += b.X; a.Y += b.Y; return a; }
+inline COORD& operator-= ( COORD& a, const COORD& b ) { a.X -= b.X; a.Y -= b.Y; return a; }
+
+inline std::ostream& operator<< ( std::ostream& os, const COORD& a )
+{ return ( os << '{' << a.X << ", " << a.Y << '}' ); }
 
 
 class ConsoleUi
@@ -43,7 +56,10 @@ public:
         // Then it is set to the actual size of the of element drawn.
         COORD size;
 
-        // Show the element, returns true if we should show the next one, false if we hit a menu and should stop
+        // Initialize the UI element based on the current size
+        virtual void initialize() = 0;
+
+        // Show the element, returns true if we should pop and continue, false if we hit a menu and should stop
         virtual bool show() = 0;
 
         friend ConsoleUi;
@@ -69,25 +85,96 @@ private:
 
     typedef std::shared_ptr<Element> ElementPtr;
 
-    std::vector<ElementPtr> stack;
+    std::stack<ElementPtr> stack;
+
+    void *consoleWindow = 0;
+
+    void push ( Element *element, short width, short height );
 
 public:
 
-    struct TextBox : public Element
+    // Auto-wrapped text box
+    class TextBox : public Element
     {
+        std::string text;
+        std::vector<std::string> lines;
+
+    protected:
+
+        void initialize() override
+        {
+            std::stringstream ss ( text );
+            std::string line;
+
+            while ( getline ( ss, line ) )
+            {
+                if ( line.size() + paddedBorders.size() > ( size_t ) size.Y )
+                {
+                    std::stringstream ss ( line );
+                    std::string token;
+
+                    for ( line.clear(); ss >> token; )
+                    {
+                        if ( line.empty() )
+                        {
+                            line = token;
+                        }
+                        else if ( line.size() + 1 + token.size() + paddedBorders.size() > ( size_t ) size.Y )
+                        {
+                            lines.push_back ( " " + line + " " );
+                            line.clear();
+                        }
+                        else
+                        {
+                            line += " " + token;
+                        }
+                    }
+
+                    if ( ! line.empty() )
+                        lines.push_back ( " " + line + " " );
+                }
+                else
+                {
+                    lines.push_back ( " " + line + " " );
+                }
+            }
+
+            size_t longestLine = 0;
+            for ( const std::string& line : lines )
+                if ( line.size() > longestLine )
+                    longestLine = line.size();
+
+            ASSERT ( ( size_t ) size.X >= longestLine + borders.size() );
+            ASSERT ( ( size_t ) size.Y >= lines.size() + bordersHeight );
+
+            size.X = longestLine + borders.size();
+            size.Y = lines.size() + bordersHeight;
+        }
+
+        bool show() override
+        {
+            LOG ( "text='%s'; pos=%s; size=%s", text, pos, size );
+
+            CharacterBox::Draw ( pos, pos + size, '*' );
+            for ( size_t i = 0; i < lines.size(); ++i )
+                ConsoleCore::GetInstance()->Prints ( lines[i], false, 0, pos.X + 1, pos.Y + 1 + i );
+
+            return true;
+        }
+
+    public:
+
+        TextBox ( const std::string& text ) : text ( text ) {}
     };
 
-    struct TitleTextBox : public Element
-    {
-    };
-
+    // Scrollable menu
     class Menu : public Element
     {
         std::string title;
         std::vector<std::string> items;
         std::string lastItem;
 
-        std::shared_ptr<WindowedMenu> menu;
+        WindowedMenu menu;
 
         std::string shortenWithEllipsis ( const std::string& text )
         {
@@ -99,125 +186,82 @@ public:
 
     protected:
 
-        bool show() override
+        void initialize() override
         {
-            if ( !menu )
+            ASSERT ( ( size_t ) size.X >= minMenuItem.size() + paddedBorders.size() );
+            ASSERT ( ( size_t ) size.Y > bordersTitleHeight );
+            ASSERT ( items.size() <= maxMenuItems );
+
+            for ( size_t i = 0; i < items.size(); ++i )
             {
-                ASSERT ( ( size_t ) size.X >= minMenuItem.size() + paddedBorders.size() );
-                ASSERT ( ( size_t ) size.Y > bordersTitleHeight );
-                ASSERT ( items.size() <= maxMenuItems );
+                if ( i < 9 )
+                    items[i] = toString ( "[%d] %s", i + 1, items[i] );
+                else
+                    items[i] = toString ( "[%c] %s", 'A' + i - 9, items[i] );
 
-                title = " " + shortenWithEllipsis ( title ) + " ";
-
-                menu.reset ( new WindowedMenu ( pos, items.size(), title, THEME ) );
-
-                for ( size_t i = 0; i < items.size(); ++i )
-                {
-                    if ( i < 9 )
-                        items[i] = toString ( "[%d] %s", i + 1, items[i] );
-                    else
-                        items[i] = toString ( "[%c] %s", 'A' + i - 9, items[i] );
-
-                    menu->Append ( " " + shortenWithEllipsis ( items[i] ) + " " );
-                }
-
-                if ( !lastItem.empty() )
-                {
-                    lastItem = toString ( "[0] %s", lastItem );
-                    menu->Append ( " " + shortenWithEllipsis ( lastItem ) + " " );
-                }
-
-                // Limit the menu vertial display size
-                menu->MaxToShow ( std::min ( ( size_t ) size.Y - bordersTitleHeight, menu->Count() ) );
-
-                // Update the element size after formatting the text
-                size.X = std::min ( ( size_t ) size.X, title.size() + borders.size() );
-                size.X = std::min ( ( size_t ) size.X, menu->LongestItem() + borders.size() );
-                size.Y = std::min ( ( size_t ) size.Y, items.size() + bordersTitleHeight );
-
-                menu->Origin ( pos );
-                menu->EscapeKey ( true );
-                menu->Scrollable ( true );
+                menu.Append ( " " + shortenWithEllipsis ( items[i] ) + " ", i );
             }
 
-            resultInt = menu->Show();
+            if ( !lastItem.empty() )
+            {
+                lastItem = toString ( "[0] %s", lastItem );
+                menu.Append ( " " + shortenWithEllipsis ( lastItem ) + " ", items.size() );
+            }
+
+            // Limit the menu vertial display size
+            menu.MaxToShow ( std::min ( ( size_t ) size.Y - bordersTitleHeight, menu.Count() ) );
+
+            // Update the element size after formatting the text
+            size.X = std::max ( menu.LongestItem() + borders.size(), title.size() + borders.size() );
+            size.Y = items.size() + ( lastItem.empty() ? 0 : 1 ) + bordersTitleHeight;
+
+            menu.Origin ( pos );
+            menu.EscapeKey ( true );
+            menu.Scrollable ( true );
+        }
+
+        bool show() override
+        {
+            LOG ( "title='%s'; pos=%s; size=%s", title, pos, size );
+
+            if ( ( resultInt = menu.Show() ) == 0 )
+            {
+                resultInt = menu.SelectedValue();
+                resultStr = menu.SelectedText();
+                LOG ( "resultInt=%d; resultStr='%s'", resultInt, resultStr );
+            }
+
             return false;
         }
 
     public:
 
         Menu ( const std::string& title, const std::vector<std::string>& items, const std::string& lastItem = "" )
-            : title ( title ), items ( items ), lastItem ( lastItem ) {}
+            : title ( title ), items ( items ), lastItem ( lastItem )
+            , menu ( pos, items.size(), " " + shortenWithEllipsis ( title ) + " ", THEME ) {}
     };
 
+    // Integer or string prompt
     struct Prompt : public Element
     {
     };
 
-    void *consoleWindow = 0;
+    // Basic constructor
+    ConsoleUi ( const std::string& title );
 
-    void initialize ( const std::string& title );
+    // Push an element to the right or below the current one
+    void pushRight ( Element *element, short width = SHRT_MAX, short height = SHRT_MAX );
+    void pushBelow ( Element *element, short width = SHRT_MAX, short height = SHRT_MAX );
 
-    void pushRight ( Element *element )
-    {
-        if ( stack.empty() )
-        {
-            element->pos = ORIGIN;
-            element->size = { short ( MAXSCREENX - 1 ), short ( MAXSCREENY - 1 ) };
-        }
-        else
-        {
-            element->pos = { short ( stack.back()->pos.X + stack.back()->size.X ), stack.back()->pos.Y };
-        }
+    // Push an element in front of the current one
+    void pushInFront ( Element *element, short width = SHRT_MAX, short height = SHRT_MAX );
 
-        stack.push_back ( ElementPtr ( element ) );
-    }
+    // Pop an element
+    void pop();
 
-    void pushBelow ( Element *element )
-    {
-        if ( stack.empty() )
-        {
-            element->pos = ORIGIN;
-            element->size = { short ( MAXSCREENX - 1 ), short ( MAXSCREENY - 1 ) };
-        }
-        else
-        {
-            element->pos = { stack.back()->pos.X, short ( stack.back()->pos.Y + stack.back()->size.Y ) };
-        }
+    // Show and pop elements until we reach a menu, then return the pointer to the menu
+    Element *show();
 
-        stack.push_back ( ElementPtr ( element ) );
-    }
-
-    void pushCurrent ( Element *element )
-    {
-        if ( stack.empty() )
-        {
-            element->pos = ORIGIN;
-            element->size = { short ( MAXSCREENX - 1 ), short ( MAXSCREENY - 1 ) };
-        }
-        else
-        {
-            element->pos = stack.back()->pos;
-        }
-
-        stack.push_back ( ElementPtr ( element ) );
-    }
-
-    void pop()
-    {
-        ASSERT ( stack.empty() == false );
-
-        stack.pop_back();
-    }
-
-    Element *show()
-    {
-        ASSERT ( stack.empty() == false );
-
-        for ( auto it = stack.rbegin(); it != stack.rend(); ++it )
-            if ( ! ( **it ).show() )
-                return it->get();
-
-        return 0;
-    }
+    // Get the top element
+    Element *top() const { return stack.top().get(); }
 };

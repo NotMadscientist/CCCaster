@@ -3,10 +3,12 @@
 #include "Utilities.h"
 #include "Messages.h"
 #include "Statistics.h"
-#include "ConsoleUi.h"
 
 #include <string>
+#include <memory>
 
+
+class ConsoleUi;
 
 class MainUi
 {
@@ -14,15 +16,13 @@ class MainUi
 
     NetplaySetup setup;
 
-    ConsoleUi ui;
+    std::shared_ptr<ConsoleUi> ui;
 
 public:
 
     std::string message;
 
     std::string error;
-
-    MainUi();
 
     void initialize();
 
