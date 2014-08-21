@@ -18,7 +18,7 @@ using namespace std;
 
 #define GAME_START_ATTEMPTS     ( 10 )
 
-#define PIPE_CONNECT_TIMEOUT    ( 10000 )
+#define PIPE_CONNECT_TIMEOUT    ( 2000 )
 
 
 void ProcessManager::writeGameInput ( uint8_t player, uint16_t direction, uint16_t buttons )

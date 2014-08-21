@@ -98,6 +98,15 @@ private:
     // Initialize the element and push it onto the stack
     void initalizeAndPush ( Element *element, short width, short height );
 
+    // Clear the top element (visually)
+    void clearTop() const
+    {
+        if ( stack.empty() )
+            ConsoleCore::GetInstance()->ClearScreen();
+        else
+            CharacterBox::Draw ( top()->pos, top()->pos + top()->size, ' ' );
+    }
+
 public:
 
     // Auto-wrapped text box
@@ -333,12 +342,31 @@ public:
     // Push an element in front of the current one
     void pushInFront ( Element *element, short width = SHRT_MAX, short height = SHRT_MAX );
 
-    // Pop an element
-    void pop();
+    // Pop an element off the stack
+    void pop()
+    {
+        ASSERT ( stack.empty() == false );
 
-    // Show and pop elements until we reach a menu, then return the pointer to the menu
-    Element *show();
+        clearTop();
+        stack.pop();
+    }
+
+    // Pop and show elements until we reach a menu, then return the pointer to the menu.
+    // Note this DOESN'T clear any non-menu elements from the screen.
+    Element *popUntilMenu();
 
     // Get the top element
-    Element *top() const { return stack.top().get(); }
+    Element *top() const
+    {
+        if ( stack.empty() )
+            return 0;
+
+        return stack.top().get();
+    }
+
+    // Clear the screen
+    void clear()
+    {
+        ConsoleCore::GetInstance()->ClearScreen();
+    }
 };

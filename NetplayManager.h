@@ -83,6 +83,10 @@ public:
     MsgPtr getInputs ( uint8_t player ) const;
     void setInputs ( uint8_t player, const PlayerInputs& playerInputs );
 
+    // Get / set batch inputs for the both players
+    MsgPtr getBothInputs() const;
+    void setBothInputs ( const BothInputs& bothInputs );
+
     // If inputs are ready to be used, if not then keep polling
     bool areInputsReady() const;
 };

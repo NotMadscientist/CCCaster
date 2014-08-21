@@ -126,7 +126,14 @@ struct Main
             }
 
             netMan.setInput ( localPlayer, input );
-            dataSocket->send ( netMan.getInputs ( localPlayer ) );
+
+            if ( isLocal() )
+                netMan.setInput ( remotePlayer, 0 );
+
+            if ( isBroadcast() )
+                ;
+            else if ( !isOffline() )
+                dataSocket->send ( netMan.getInputs ( localPlayer ) );
         }
 
         for ( ;; )
@@ -137,6 +144,10 @@ struct Main
                 appState = AppState::Stopping;
                 return;
             }
+
+            // Don't need wait for inputs in local modes
+            if ( isLocal() )
+                break;
 
             // Check if we should wait for anything
             if ( netMan.areInputsReady() && !waitForRngState )
@@ -184,7 +195,7 @@ struct Main
             {
                 ctrlSocket->send ( procMan.getRngState() );
             }
-            else
+            else if ( isClient() )
             {
                 waitForRngState = ( nextRngState.get() == 0 );
                 shouldSetRngState = true;
@@ -212,7 +223,7 @@ struct Main
         if ( current == CC_GAME_MODE_CHARA_SELECT )
         {
             // Once both sides have loaded up to character select for the first time
-            if ( netMan.getState() == NetplayState::Initial )
+            if ( !isLocal() && netMan.getState() == NetplayState::Initial )
             {
                 if ( remoteCharaSelectLoaded )
                     bothCharaSelectLoaded();
@@ -292,7 +303,7 @@ struct Main
                 break;
 
             case MsgType::NetplaySetup:
-                if ( netMan.setup.delay != 0 )
+                if ( netMan.setup.delay != 0xFF )
                     break;
 
                 netMan.setup = msg->getAs<NetplaySetup>();
@@ -438,31 +449,44 @@ struct Main
         if ( !msg.get() )
             return;
 
-        switch ( msg->getMsgType() )
+        switch ( clientType.value )
         {
-            case MsgType::CharaSelectLoaded:
-                // Once both sides have loaded up to character select for the first time
-                if ( !remoteCharaSelectLoaded )
+            case ClientType::Host:
+            case ClientType::Client:
+                switch ( msg->getMsgType() )
                 {
-                    if ( netMan.getState().value >= NetplayState::CharaSelect )
-                        bothCharaSelectLoaded();
-                    remoteCharaSelectLoaded = true;
+                    case MsgType::CharaSelectLoaded:
+                        // Once both sides have loaded up to character select for the first time
+                        if ( !remoteCharaSelectLoaded )
+                        {
+                            if ( netMan.getState().value >= NetplayState::CharaSelect )
+                                bothCharaSelectLoaded();
+                            remoteCharaSelectLoaded = true;
+                        }
+                        return;
+
+                    case MsgType::PlayerInputs:
+                        netMan.setInputs ( remotePlayer, msg->getAs<PlayerInputs>() );
+                        return;
+
+                    case MsgType::RngState:
+                        nextRngState = msg;
+                        waitForRngState = false;
+                        return;
+
+                    default:
+                        break;
                 }
                 break;
 
-            case MsgType::PlayerInputs:
-                netMan.setInputs ( remotePlayer, msg->getAs<PlayerInputs>() );
-                break;
-
-            case MsgType::RngState:
-                nextRngState = msg;
-                waitForRngState = false;
+            case ClientType::Broadcast:
                 break;
 
             default:
-                LOG ( "Unexpected '%s'", msg );
                 break;
         }
+
+        LOG ( "Unexpected '%s'", msg );
     }
 
     // Timer callback
@@ -539,11 +563,22 @@ extern "C" void callback()
     {
         LOG ( "Stopping due to exception: %s", err );
         appState = AppState::Stopping;
+        if ( main )
+            main->procMan.ipcSend ( new ErrorMessage ( "Error: " + err.str() ) );
+    }
+    catch ( const std::exception& err )
+    {
+        LOG ( "Stopping due to std::exception: %s", err.what() );
+        appState = AppState::Stopping;
+        if ( main )
+            main->procMan.ipcSend ( new ErrorMessage ( string ( "Error: " ) + err.what() ) );
     }
     catch ( ... )
     {
         LOG ( "Stopping due to unknown exception!" );
         appState = AppState::Stopping;
+        if ( main )
+            main->procMan.ipcSend ( new ErrorMessage ( "Unknown error!" ) );
     }
 
     if ( appState == AppState::Stopping )

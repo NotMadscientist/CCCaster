@@ -5,34 +5,36 @@
 #include "Statistics.h"
 
 #include <string>
-#include <memory>
 
 
-class ConsoleUi;
+// The function to run the game with the provided connection address or netplay setup
+typedef void ( * RunFuncPtr ) ( const std::string& address, const NetplaySetup& netplaySetup );
+
 
 class MainUi
 {
     ConfigSettings config;
 
-    NetplaySetup setup;
+    NetplaySetup netplaySetup;
 
-    std::shared_ptr<ConsoleUi> ui;
+    void netplay ( RunFuncPtr run );
+    void spectate ( RunFuncPtr run );
+    void broadcast ( RunFuncPtr run );
+    void offline ( RunFuncPtr run );
+    void controls();
+    void settings();
 
 public:
 
-    std::string message;
+    std::string sessionMessage;
 
-    std::string error;
+    std::string sessionError;
 
-    void initialize();
+    void main ( RunFuncPtr run );
 
-    bool mainMenu();
+    bool accepted ( const Statistics& stats );
 
-    bool acceptMenu ( const Statistics& stats );
+    bool connected ( const Statistics& stats );
 
-    bool connectMenu ( const Statistics& stats );
-
-    std::string getMainAddress() const;
-
-    NetplaySetup getNetplaySetup() const;
+    const NetplaySetup& getNetplaySetup() const { return netplaySetup; }
 };

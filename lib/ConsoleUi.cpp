@@ -130,14 +130,7 @@ void ConsoleUi::pushInFront ( ConsoleUi::Element *element, short width, short he
     initalizeAndPush ( element, width, height );
 }
 
-void ConsoleUi::pop()
-{
-    ASSERT ( stack.empty() == false );
-
-    stack.pop();
-}
-
-ConsoleUi::Element *ConsoleUi::show()
+ConsoleUi::Element *ConsoleUi::popUntilMenu()
 {
     ASSERT ( stack.empty() == false );
 

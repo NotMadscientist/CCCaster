@@ -44,7 +44,7 @@ static MainUi ui;
 
 struct Main : public CommonMain, public Pinger::Owner
 {
-    Pinger pinger;
+    shared_ptr<Pinger> pinger;
 
     Statistics remoteStats;
 
@@ -56,7 +56,7 @@ struct Main : public CommonMain, public Pinger::Owner
         if ( isClient() )
         {
             this->remoteStats = remoteStats;
-            pinger.start();
+            pinger->start();
             return;
         }
 
@@ -76,19 +76,18 @@ struct Main : public CommonMain, public Pinger::Owner
             serverDataSocket->setKeepAlive ( 0 );
         }
 
-        Statistics stats = pinger.getStats();
+        Statistics stats = pinger->getStats();
         stats.merge ( remoteStats );
 
         if ( isHost() )
         {
-            if ( !ui.acceptMenu ( stats ) )
+            if ( !ui.accepted ( stats ) )
             {
                 EventManager::get().stop();
                 return;
             }
 
             netplaySetup = ui.getNetplaySetup();
-            netplaySetup.hostPlayer = 1 + ( rand() % 2 );
             ctrlSocket->send ( REF_PTR ( netplaySetup ) );
 
             // Start the game and wait for callback to ipcConnectEvent
@@ -96,7 +95,7 @@ struct Main : public CommonMain, public Pinger::Owner
         }
         else
         {
-            if ( !ui.connectMenu ( stats ) )
+            if ( !ui.connected ( stats ) )
             {
                 EventManager::get().stop();
                 return;
@@ -130,14 +129,14 @@ struct Main : public CommonMain, public Pinger::Owner
     // Pinger callbacks
     virtual void sendPing ( Pinger *pinger, const MsgPtr& ping ) override
     {
-        ASSERT ( pinger == &this->pinger );
+        ASSERT ( pinger == this->pinger.get() );
 
         dataSocket->send ( ping );
     }
 
     virtual void donePinging ( Pinger *pinger, const Statistics& stats, uint8_t packetLoss ) override
     {
-        ASSERT ( pinger == &this->pinger );
+        ASSERT ( pinger == this->pinger.get() );
 
         LOG ( "latency=%.2f ms; jitter=%.2f ms; packetLoss=%d%", stats.getMean(), stats.getJitter(), packetLoss );
 
@@ -151,41 +150,44 @@ struct Main : public CommonMain, public Pinger::Owner
     virtual void ipcConnectEvent() override
     {
         ASSERT ( clientType != ClientType::Unknown );
-        ASSERT ( netplaySetup.delay != 0 );
+        ASSERT ( netplaySetup.delay != 0xFF );
 
         procMan.ipcSend ( REF_PTR ( clientType ) );
         procMan.ipcSend ( REF_PTR ( netplaySetup ) );
 
-        ASSERT ( ctrlSocket.get() != 0 );
-        ASSERT ( ctrlSocket->isConnected() == true );
-        ASSERT ( dataSocket.get() != 0 );
-        ASSERT ( dataSocket->isConnected() == true );
-
-        if ( isHost() )
+        if ( !isLocal() )
         {
-            ASSERT ( serverCtrlSocket.get() != 0 );
-            ASSERT ( serverDataSocket.get() != 0 );
-            ASSERT ( serverDataSocket->getAsUDP().getChildSockets().size() == 1 );
-            ASSERT ( serverDataSocket->getAsUDP().getChildSockets().begin()->second == dataSocket );
+            ASSERT ( ctrlSocket.get() != 0 );
+            ASSERT ( ctrlSocket->isConnected() == true );
+            ASSERT ( dataSocket.get() != 0 );
+            ASSERT ( dataSocket->isConnected() == true );
 
-            procMan.ipcSend ( serverCtrlSocket->share ( procMan.getProcessId() ) );
-            procMan.ipcSend ( serverDataSocket->share ( procMan.getProcessId() ) );
-
-            // We don't share UDP sockets since they will be included in the server's share data
-            if ( ctrlSocket->isTCP() )
+            if ( isHost() )
             {
-                procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
+                ASSERT ( serverCtrlSocket.get() != 0 );
+                ASSERT ( serverDataSocket.get() != 0 );
+                ASSERT ( serverDataSocket->getAsUDP().getChildSockets().size() == 1 );
+                ASSERT ( serverDataSocket->getAsUDP().getChildSockets().begin()->second == dataSocket );
+
+                procMan.ipcSend ( serverCtrlSocket->share ( procMan.getProcessId() ) );
+                procMan.ipcSend ( serverDataSocket->share ( procMan.getProcessId() ) );
+
+                // We don't share UDP sockets since they will be included in the server's share data
+                if ( ctrlSocket->isTCP() )
+                {
+                    procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
+                }
+                else
+                {
+                    ASSERT ( serverCtrlSocket->getAsUDP().getChildSockets().size() == 1 );
+                    ASSERT ( serverCtrlSocket->getAsUDP().getChildSockets().begin()->second == ctrlSocket );
+                }
             }
             else
             {
-                ASSERT ( serverCtrlSocket->getAsUDP().getChildSockets().size() == 1 );
-                ASSERT ( serverCtrlSocket->getAsUDP().getChildSockets().begin()->second == ctrlSocket );
+                procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
+                procMan.ipcSend ( dataSocket->share ( procMan.getProcessId() ) );
             }
-        }
-        else
-        {
-            procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
-            procMan.ipcSend ( dataSocket->share ( procMan.getProcessId() ) );
         }
 
         procMan.ipcSend ( new EndOfMessages() );
@@ -198,6 +200,13 @@ struct Main : public CommonMain, public Pinger::Owner
 
     virtual void ipcReadEvent ( const MsgPtr& msg ) override
     {
+        if ( !msg.get() || msg->getMsgType() != MsgType::ErrorMessage )
+        {
+            LOG ( "Unexpected '%s'", msg );
+            return;
+        }
+
+        ui.sessionError = msg->getAs<ErrorMessage>().error;
     }
 
     // ControllerManager callbacks
@@ -240,7 +249,7 @@ struct Main : public CommonMain, public Pinger::Owner
 
             // TOOD version check
 
-            pinger.start();
+            pinger->start();
         }
     }
 
@@ -264,7 +273,7 @@ struct Main : public CommonMain, public Pinger::Owner
         switch ( msg->getMsgType() )
         {
             case MsgType::Ping:
-                pinger.gotPong ( msg );
+                pinger->gotPong ( msg );
                 break;
 
             case MsgType::Statistics:
@@ -286,10 +295,10 @@ struct Main : public CommonMain, public Pinger::Owner
     {
     }
 
-    // Constructor
-    Main ( Option opt[], const IpAddrPort& address )
+    // Netplay constructor
+    Main ( const IpAddrPort& address )
         : CommonMain ( address.addr.empty() ? ClientType::Host : ClientType::Client )
-        , pinger ( this, PING_INTERVAL, NUM_PINGS )
+        , pinger ( new Pinger ( this, PING_INTERVAL, NUM_PINGS ) )
     {
         TimerManager::get().initialize();
         SocketManager::get().initialize();
@@ -305,6 +314,19 @@ struct Main : public CommonMain, public Pinger::Owner
             ctrlSocket = TcpSocket::connect ( this, address );
             dataSocket = UdpSocket::connect ( this, address );
         }
+    }
+
+    // Broadcast or offline constructor
+    Main ( const NetplaySetup& netplaySetup )
+        : CommonMain ( netplaySetup.broadcastPort ? ClientType::Broadcast : ClientType::Offline )
+        , netplaySetup ( netplaySetup )
+    {
+        TimerManager::get().initialize();
+        SocketManager::get().initialize();
+        ControllerManager::get().initialize ( this );
+
+        // Open the game wait and for callback to ipcConnectEvent
+        procMan.openGame();
     }
 
     // Destructor
@@ -367,33 +389,63 @@ struct DummyMain : public Main
     }
 
     // Constructor
-    DummyMain ( Option opt[], const IpAddrPort& address ) : Main ( opt, address ), fakeInputs ( 0, 0 )
+    DummyMain ( const IpAddrPort& address ) : Main ( address ), fakeInputs ( 0, 0 )
     {
         fakeInputs.inputs.fill ( 0 );
     }
 };
 
 
-static void run ( Option opt[], const string& address )
+static void runMain ( const string& address, const NetplaySetup& netplaySetup )
 {
     try
     {
-        shared_ptr<Main> main;
-
-        if ( opt[DUMMY] )
-            main.reset ( new DummyMain ( opt, address ) );
+        if ( address.empty() )
+        {
+            Main main ( netplaySetup );
+            EventManager::get().start();
+        }
         else
-            main.reset ( new Main ( opt, address ) );
+        {
+            Main main ( address );
+            EventManager::get().start();
+        }
+    }
+    catch ( const Exception& err )
+    {
+        ui.sessionError = toString ( "Error: %s", err );
+    }
+    catch ( const std::exception& err )
+    {
+        ui.sessionError = toString ( "Error: %s", err.what() );
+    }
+    catch ( ... )
+    {
+        ui.sessionError = "Unknown error!";
+    }
+}
 
+
+static void runDummy ( const string& address, const NetplaySetup& netplaySetup )
+{
+    ASSERT ( address.empty() != false );
+
+    try
+    {
+        DummyMain main ( address );
         EventManager::get().start();
     }
     catch ( const Exception& err )
     {
-        ui.error = toString ( "Error: %s", err );
+        ui.sessionError = toString ( "Error: %s", err );
+    }
+    catch ( const std::exception& err )
+    {
+        ui.sessionError = toString ( "Error: %s", err.what() );
     }
     catch ( ... )
     {
-        ui.error = "Unknown error!";
+        ui.sessionError = "Unknown error!";
     }
 }
 
@@ -517,26 +569,25 @@ int main ( int argc, char *argv[] )
     else
         Logger::get().initialize ( LOG_FILE );
 
+    // Check if we should run in dummy mode
+    RunFuncPtr run = ( opt[DUMMY] ? runDummy : runMain );
+
     // Warn on invalid command line options
     for ( Option *it = opt[UNKNOWN]; it; it = it->next() )
-        ui.message += toString ( "Unknown option: '%s'\n", it->name );
+        ui.sessionMessage += toString ( "Unknown option: '%s'\n", it->name );
 
     for ( int i = 2; i < parser.nonOptionsCount(); ++i )
-        ui.message += toString ( "Non-option (%d): '%s'\n", i, parser.nonOption ( i ) );
+        ui.sessionMessage += toString ( "Non-option (%d): '%s'\n", i, parser.nonOption ( i ) );
 
     // Non-options 1 and 2 are the IP address and port
     if ( parser.nonOptionsCount() == 1 )
-        run ( opt, parser.nonOption ( 0 ) );
+        run ( parser.nonOption ( 0 ), NetplaySetup() );
     else if ( parser.nonOptionsCount() == 2 )
-        run ( opt, string ( parser.nonOption ( 0 ) ) + parser.nonOption ( 1 ) );
+        run ( string ( parser.nonOption ( 0 ) ) + parser.nonOption ( 1 ), NetplaySetup() );
 
-    // Main UI loop
     try
     {
-        ui.initialize();
-
-        while ( ui.mainMenu() )
-            run ( opt, ui.getMainAddress() );
+        ui.main ( run );
     }
     catch ( const Exception& err )
     {
