@@ -115,35 +115,40 @@ public:
 
             while ( getline ( ss, line ) )
             {
-                if ( line.size() + paddedBorders.size() > ( size_t ) size.Y )
+                if ( line.size() + paddedBorders.size() > ( size_t ) size.X )
                 {
-                    std::stringstream ss ( line );
-                    std::string token;
+                    std::vector<std::string> tokens = split ( line );
+                    line.clear();
 
-                    for ( line.clear(); ss >> token; )
+                    for ( const std::string& token : tokens )
                     {
-                        if ( line.empty() )
-                        {
-                            line = token;
-                        }
-                        else if ( line.size() + 1 + token.size() + paddedBorders.size() > ( size_t ) size.Y )
+                        const size_t prefix = ( line.empty() ? 0 : line.size() + 1 );
+
+                        if ( prefix + token.size() + paddedBorders.size() > ( size_t ) size.X )
                         {
                             lines.push_back ( " " + line + " " );
                             line.clear();
                         }
+
+                        if ( line.empty() )
+                            line = token;
                         else
-                        {
                             line += " " + token;
-                        }
                     }
 
-                    if ( ! line.empty() )
+                    if ( !line.empty() )
                         lines.push_back ( " " + line + " " );
                 }
                 else
                 {
                     lines.push_back ( " " + line + " " );
                 }
+            }
+
+            if ( lines.size() + bordersHeight > ( size_t ) size.Y )
+            {
+                lines.resize ( size.Y - bordersHeight - 1 );
+                lines.push_back ( " ... " );
             }
 
             size_t longestLine = 0;
@@ -199,6 +204,8 @@ public:
             ASSERT ( ( size_t ) size.Y > bordersTitleHeight );
             ASSERT ( items.size() <= maxMenuItems );
 
+            menu.Title ( " " + shortenWithEllipsis ( title ) + " " );
+
             for ( size_t i = 0; i < items.size(); ++i )
             {
                 if ( i < 9 )
@@ -245,7 +252,7 @@ public:
 
         Menu ( const std::string& title, const std::vector<std::string>& items, const std::string& lastItem = "" )
             : title ( title ), items ( items ), lastItem ( lastItem )
-            , menu ( pos, items.size(), " " + shortenWithEllipsis ( title ) + " ", THEME ) {}
+            , menu ( pos, items.size(), title, THEME ) {}
     };
 
     // Prompt types
@@ -285,7 +292,7 @@ public:
             {
                 if ( cc->ScanNumber ( scanPos, resultInt, std::min ( maxDigits, size.X - paddedBorders.size() ),
                                       allowNegative, resultInt != INT_MIN ) )
-                    LOG ( "resultInt='%s'", resultInt );
+                    LOG ( "resultInt=%d", resultInt );
                 else
                     resultInt = INT_MIN;
             }
