@@ -190,8 +190,8 @@ public:
     std::string getString ( const std::string& key ) const;
     void putString ( const std::string& key, const std::string& str );
 
-    int getInt ( const std::string& key ) const;
-    void putInt ( const std::string& key, int i );
+    int getInteger ( const std::string& key ) const;
+    void putInteger ( const std::string& key, int i );
 
     bool save ( const char *file ) const;
     bool load ( const char *file );

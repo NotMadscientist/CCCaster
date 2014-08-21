@@ -244,7 +244,7 @@ void ConfigSettings::putString ( const string& key, const string& str )
     types[key] = Type::String;
 }
 
-int ConfigSettings::getInt ( const string& key ) const
+int ConfigSettings::getInteger ( const string& key ) const
 {
     ASSERT ( types.find ( key ) != types.end() );
     ASSERT ( types.find ( key )->second == Type::Integer );
@@ -256,7 +256,7 @@ int ConfigSettings::getInt ( const string& key ) const
     return i;
 }
 
-void ConfigSettings::putInt ( const string& key, int i )
+void ConfigSettings::putInteger ( const string& key, int i )
 {
     settings[key] = toString ( i );
     types[key] = Type::Integer;
@@ -313,7 +313,7 @@ bool ConfigSettings::load ( const char *file )
                     ss >> i;
                     if ( ss.fail() )
                         continue;
-                    putInt ( it->first, i );
+                    putInteger ( it->first, i );
                     break;
                 }
 
