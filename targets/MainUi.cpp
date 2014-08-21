@@ -48,7 +48,7 @@ void MainUi::offline ( RunFuncPtr run )
 
         netplaySetup.training = menu->resultInt;
 
-        ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter delay:", 0, false ) );
+        ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter delay:", 0, false, 3 ), { 1, 0 } );
 
         while ( !finished )
         {
@@ -61,7 +61,7 @@ void MainUi::offline ( RunFuncPtr run )
 
             if ( menu->resultInt >= 0xFF )
             {
-                ui->pushBelow ( new ConsoleUi::TextBox ( "Delay must be less than 255!" ) );
+                ui->pushBelow ( new ConsoleUi::TextBox ( "Delay must be less than 255!" ), { 1, 0 } );
                 continue;
             }
 

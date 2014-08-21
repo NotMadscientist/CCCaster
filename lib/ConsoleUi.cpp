@@ -78,7 +78,7 @@ ConsoleUi::ConsoleUi ( const string& title )
     }
 }
 
-void ConsoleUi::initalizeAndPush ( ConsoleUi::Element *element, short width, short height )
+void ConsoleUi::initalizeAndPush ( ConsoleUi::Element *element, const COORD& expand )
 {
     if ( stack.empty() )
     {
@@ -86,14 +86,13 @@ void ConsoleUi::initalizeAndPush ( ConsoleUi::Element *element, short width, sho
         element->size = { short ( MAXSCREENX  ), short ( MAXSCREENY ) };
     }
 
-    element->size.X = min ( element->size.X, width );
-    element->size.Y = min ( element->size.Y, height );
+    element->expand = expand;
     element->initialize();
 
     stack.push ( ConsoleUi::ElementPtr ( element ) );
 }
 
-void ConsoleUi::pushRight ( ConsoleUi::Element *element, short width, short height )
+void ConsoleUi::pushRight ( ConsoleUi::Element *element, const COORD& expand )
 {
     if ( !stack.empty() )
     {
@@ -102,10 +101,10 @@ void ConsoleUi::pushRight ( ConsoleUi::Element *element, short width, short heig
         element->size -= element->pos;
     }
 
-    initalizeAndPush ( element, width, height );
+    initalizeAndPush ( element, expand );
 }
 
-void ConsoleUi::pushBelow ( ConsoleUi::Element *element, short width, short height )
+void ConsoleUi::pushBelow ( ConsoleUi::Element *element, const COORD& expand )
 {
     if ( !stack.empty() )
     {
@@ -115,10 +114,10 @@ void ConsoleUi::pushBelow ( ConsoleUi::Element *element, short width, short heig
         element->size -= element->pos;
     }
 
-    initalizeAndPush ( element, width, height );
+    initalizeAndPush ( element, expand );
 }
 
-void ConsoleUi::pushInFront ( ConsoleUi::Element *element, short width, short height )
+void ConsoleUi::pushInFront ( ConsoleUi::Element *element, const COORD& expand )
 {
     if ( !stack.empty() )
     {
@@ -127,7 +126,7 @@ void ConsoleUi::pushInFront ( ConsoleUi::Element *element, short width, short he
         element->size -= element->pos;
     }
 
-    initalizeAndPush ( element, width, height );
+    initalizeAndPush ( element, expand );
 }
 
 ConsoleUi::Element *ConsoleUi::popUntilMenu()

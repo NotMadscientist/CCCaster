@@ -52,15 +52,19 @@ public:
 
     protected:
 
-        // Position that the UI element should be displayed
+        // Position that the element should be displayed
         COORD pos;
 
-        // Size of the UI element. Used as both input and output parameters.
+        // Size of the element. Used as both input and output parameters.
         // It is first set to the max size bounding box available to draw.
         // Then it is set to the actual size of the of element drawn.
         COORD size;
 
-        // Initialize the UI element based on the current size, this also updates the size
+        // Indicates if this element should expand to take up the remaining screen space in either dimension.
+        // Note the X and Y componenets are treated as boolean values.
+        COORD expand = { 0, 0 };
+
+        // Initialize the element based on the current size, this also updates the size
         virtual void initialize() = 0;
 
         // Show the element, returns true if we should pop and continue, false if we hit a menu and should stop
@@ -96,7 +100,7 @@ private:
     void *consoleWindow = 0;
 
     // Initialize the element and push it onto the stack
-    void initalizeAndPush ( Element *element, short width, short height );
+    void initalizeAndPush ( Element *element, const COORD& expand );
 
     // Clear the top element (visually)
     void clearTop() const
@@ -168,8 +172,11 @@ public:
             ASSERT ( ( size_t ) size.X >= longestLine + borders.size() );
             ASSERT ( ( size_t ) size.Y >= lines.size() + bordersHeight );
 
-            size.X = longestLine + borders.size();
-            size.Y = lines.size() + bordersHeight;
+            if ( !expand.X )
+                size.X = longestLine + borders.size();
+
+            if ( !expand.Y )
+                size.Y = lines.size() + bordersHeight;
         }
 
         bool show() override
@@ -234,7 +241,7 @@ public:
             // Limit the menu vertial display size
             menu.MaxToShow ( std::min ( ( size_t ) size.Y - bordersTitleHeight, menu.Count() ) );
 
-            // Update the element size after formatting the text
+            // Menus are NEVER expanded
             size.X = std::max ( menu.LongestItem() + borders.size(), title.size() + borders.size() );
             size.Y = items.size() + ( lastItem.empty() ? 0 : 1 ) + bordersTitleHeight;
 
@@ -282,6 +289,11 @@ public:
         {
             ASSERT ( ( size_t ) size.X >= title.size() + paddedBorders.size() );
             ASSERT ( ( size_t ) size.Y > bordersTitleHeight );
+
+            if ( !expand.X )
+                size.X = title.size() + paddedBorders.size();
+
+            // Prompts are NEVER expanded vertically
             size.Y = 1 + bordersTitleHeight;
         }
 
@@ -336,11 +348,11 @@ public:
     ConsoleUi ( const std::string& title );
 
     // Push an element to the right or below the current one
-    void pushRight ( Element *element, short width = SHRT_MAX, short height = SHRT_MAX );
-    void pushBelow ( Element *element, short width = SHRT_MAX, short height = SHRT_MAX );
+    void pushRight ( Element *element, const COORD& expand = { 0, 0 } );
+    void pushBelow ( Element *element, const COORD& expand = { 0, 0 } );
 
     // Push an element in front of the current one
-    void pushInFront ( Element *element, short width = SHRT_MAX, short height = SHRT_MAX );
+    void pushInFront ( Element *element, const COORD& expand = { 0, 0 } );
 
     // Pop an element off the stack
     void pop()
@@ -352,7 +364,7 @@ public:
     }
 
     // Pop and show elements until we reach a menu, then return the pointer to the menu.
-    // Note this DOESN'T clear any non-menu elements from the screen.
+    // Note this DOES NOT clear any non-menu elements from the screen.
     Element *popUntilMenu();
 
     // Get the top element
