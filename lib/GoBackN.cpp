@@ -9,7 +9,9 @@
 using namespace std;
 
 
-#define SEND_INTERVAL 50
+#define SEND_INTERVAL ( 50 )
+
+#define MTU ( 256 )
 
 
 string formatSerializableSequence ( const MsgPtr& msg )
@@ -22,6 +24,7 @@ string formatSerializableSequence ( const MsgPtr& msg )
 void GoBackN::timerExpired ( Timer *timer )
 {
     ASSERT ( timer == sendTimer.get() );
+    ASSERT ( owner != 0 );
 
     if ( sendList.empty() && !keepAlive )
     {
@@ -41,9 +44,13 @@ void GoBackN::timerExpired ( Timer *timer )
 
         logSendList();
 
+        const MsgPtr& msg = *sendListPos;
+
         LOG ( "Sending '%s'; sequence=%u; sendSequence=%d",
-              *sendListPos, ( **sendListPos ).getAs<SerializableSequence>().getSequence(), sendSequence );
-        owner->sendRaw ( this, * ( sendListPos++ ) );
+              msg, msg->getAs<SerializableSequence>().getSequence(), sendSequence );
+
+        owner->sendRaw ( this, msg );
+        ++sendListPos;
     }
 
     if ( keepAlive )
@@ -88,11 +95,29 @@ void GoBackN::sendGoBackN ( const MsgPtr& msg )
     ASSERT ( sendList.empty() || sendList.back()->getAs<SerializableSequence>().getSequence() == sendSequence );
     ASSERT ( owner != 0 );
 
-    msg->getAs<SerializableSequence>().setSequence ( ++sendSequence );
+    msg->getAs<SerializableSequence>().setSequence ( sendSequence + 1 );
+    string bytes = ::Protocol::encode ( msg );
 
-    owner->sendRaw ( this, msg );
+    if ( bytes.size() <= MTU )
+    {
+        ++sendSequence;
+        owner->sendRaw ( this, msg );
+        sendList.push_back ( msg );
+    }
+    else
+    {
+        const uint32_t count = ( bytes.size() / MTU ) + ( bytes.size() % MTU == 0 ? 0 : 1 );
 
-    sendList.push_back ( msg );
+        for ( uint32_t pos = 0, i = 0; pos < bytes.size(); pos += MTU, ++i )
+        {
+            SplitMessage *splitMessage = new SplitMessage ( msg->getMsgType(), bytes.substr ( pos, MTU ), i, count );
+            splitMessage->setSequence ( ++sendSequence );
+
+            MsgPtr msg ( splitMessage );
+            owner->sendRaw ( this, msg );
+            sendList.push_back ( msg );
+        }
+    }
 
     logSendList();
 
@@ -156,6 +181,35 @@ void GoBackN::recvRaw ( const MsgPtr& msg )
 
     owner->sendRaw ( this, MsgPtr ( new AckSequence ( recvSequence ) ) );
 
+    if ( msg->getMsgType() == MsgType::SplitMessage )
+    {
+        const SplitMessage& splitMessage = msg->getAs<SplitMessage>();
+
+        recvBuffer += splitMessage.bytes;
+
+        if ( splitMessage.isLastMessage() )
+        {
+            size_t consumed = 0;
+            MsgPtr msg = ::Protocol::decode ( &recvBuffer[0], recvBuffer.size(), consumed );
+
+            if ( !msg || msg->getMsgType() != splitMessage.origMsgType || consumed != recvBuffer.size() )
+            {
+                LOG ( "Failed to recreate '%s' from [ %u bytes ]", splitMessage.origMsgType, recvBuffer.size() );
+                msg.reset();
+            }
+
+            recvBuffer.clear();
+
+            if ( msg )
+            {
+                LOG ( "Recreated '%s'", msg );
+                owner->recvGoBackN ( this, msg );
+            }
+        }
+
+        return;
+    }
+
     owner->recvGoBackN ( this, msg );
 }
 
@@ -175,6 +229,7 @@ void GoBackN::reset()
     sendList.clear();
     sendListPos = sendList.end();
     sendTimer.reset();
+    recvBuffer.clear();
 }
 
 GoBackN::GoBackN ( Owner *owner, uint64_t timeout )
@@ -202,7 +257,7 @@ GoBackN& GoBackN::operator= ( const GoBackN& other )
 
 void GoBackN::save ( cereal::BinaryOutputArchive& ar ) const
 {
-    ar ( keepAlive, sendSequence, recvSequence, ackSequence );
+    ar ( recvBuffer, keepAlive, sendSequence, recvSequence, ackSequence );
 
     ar ( sendList.size() );
 
@@ -212,7 +267,7 @@ void GoBackN::save ( cereal::BinaryOutputArchive& ar ) const
 
 void GoBackN::load ( cereal::BinaryInputArchive& ar )
 {
-    ar ( keepAlive, sendSequence, recvSequence, ackSequence );
+    ar ( recvBuffer, keepAlive, sendSequence, recvSequence, ackSequence );
 
     size_t size, consumed;
     ar ( size );

@@ -22,11 +22,9 @@ struct TestMessage : public SerializableSequence
 {
     std::string str;
 
-    TestMessage() {}
-
     TestMessage ( const std::string& str ) : str ( str ) {}
 
-    PROTOCOL_BOILERPLATE ( str )
+    PROTOCOL_MESSAGE_BOILERPLATE ( TestMessage, str )
 };
 
 

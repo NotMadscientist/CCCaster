@@ -19,10 +19,9 @@ struct ErrorMessage : public SerializableSequence
 {
     std::string error;
 
-    ErrorMessage() {}
     ErrorMessage ( const std::string& error ) : error ( error ) {}
 
-    PROTOCOL_BOILERPLATE ( error )
+    PROTOCOL_MESSAGE_BOILERPLATE ( ErrorMessage, error )
 };
 
 
@@ -39,9 +38,7 @@ struct NetplaySetup : public SerializableSequence
     uint8_t hostPlayer = 0;
     uint16_t broadcastPort = 0;
 
-    NetplaySetup() {}
-
-    PROTOCOL_BOILERPLATE ( delay, training, hostPlayer, broadcastPort )
+    PROTOCOL_MESSAGE_BOILERPLATE ( NetplaySetup, delay, training, hostPlayer, broadcastPort )
 };
 
 
@@ -50,9 +47,7 @@ struct RngState : public SerializableSequence
     uint32_t rngState0, rngState1, rngState2;
     std::array<char, CC_RNGSTATE3_SIZE> rngState3;
 
-    RngState() {}
-
-    PROTOCOL_BOILERPLATE ( rngState0, rngState1, rngState2, rngState3 );
+    PROTOCOL_MESSAGE_BOILERPLATE ( RngState, rngState0, rngState1, rngState2, rngState3 );
 };
 
 
@@ -68,10 +63,9 @@ struct PlayerInputs : public SerializableMessage
     uint32_t getEndFrame() const { return frame + 1; }
     size_t size() const { return getEndFrame() - getStartFrame(); }
 
-    PlayerInputs() {}
     PlayerInputs ( uint32_t frame, uint16_t index ) : frame ( frame ), index ( index ) {}
 
-    PROTOCOL_BOILERPLATE ( frame, index, inputs )
+    PROTOCOL_MESSAGE_BOILERPLATE ( PlayerInputs, frame, index, inputs )
 };
 
 
@@ -87,8 +81,7 @@ struct BothInputs : public SerializableMessage
     uint32_t getEndFrame() const { return frame + 1; }
     size_t size() const { return getEndFrame() - getStartFrame(); }
 
-    BothInputs() {}
     BothInputs ( uint32_t frame, uint16_t index ) : frame ( frame ), index ( index ) {}
 
-    PROTOCOL_BOILERPLATE ( frame, index, inputs[0], inputs[1] )
+    PROTOCOL_MESSAGE_BOILERPLATE ( BothInputs, frame, index, inputs[0], inputs[1] )
 };

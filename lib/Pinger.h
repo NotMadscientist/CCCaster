@@ -9,10 +9,9 @@ struct Ping : public SerializableMessage
 {
     uint64_t timestamp;
 
-    Ping() {}
     Ping ( uint64_t timestamp ) : timestamp ( timestamp ) {}
 
-    PROTOCOL_BOILERPLATE ( timestamp );
+    PROTOCOL_MESSAGE_BOILERPLATE ( Ping, timestamp );
 };
 
 

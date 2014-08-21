@@ -24,7 +24,6 @@ struct IpAddrPort : public SerializableSequence
     uint16_t port = 0;
     bool isV4 = true;
 
-    IpAddrPort() {}
     IpAddrPort ( const std::string& addr, uint16_t port ) : addr ( addr ), port ( port ) {}
 
     IpAddrPort ( const std::string& addrPort );
@@ -61,7 +60,7 @@ struct IpAddrPort : public SerializableSequence
         return buffer;
     }
 
-    PROTOCOL_BOILERPLATE ( addr, port )
+    PROTOCOL_MESSAGE_BOILERPLATE ( IpAddrPort, addr, port )
 
 private:
 

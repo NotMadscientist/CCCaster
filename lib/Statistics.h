@@ -56,6 +56,6 @@ public:
         count += stats.count;
     }
 
-    PROTOCOL_BOILERPLATE ( count, mean, sumOfSquaredDeltas );
+    PROTOCOL_MESSAGE_BOILERPLATE ( Statistics, count, mean, sumOfSquaredDeltas );
 };
 

@@ -9,7 +9,32 @@
 struct AckSequence : public SerializableSequence
 {
     AckSequence ( uint32_t sequence ) : SerializableSequence ( sequence ) {}
+
     EMPTY_MESSAGE_BOILERPLATE ( AckSequence )
+};
+
+
+struct SplitMessage : public SerializableSequence
+{
+    MsgType origMsgType;
+
+    std::string bytes;
+
+    uint32_t index, count;
+
+    bool isLastMessage() const { return ( index + 1 == count ); }
+
+    std::string str() const
+    {
+        std::stringstream ss;
+        ss << origMsgType << "(" << ( index + 1 ) << "/" << count << ")";
+        return ss.str();
+    }
+
+    SplitMessage ( MsgType origMsgType, const std::string& bytes, uint32_t index = 0, uint32_t count = 1 )
+        : origMsgType ( origMsgType ), bytes ( bytes ), index ( index ), count ( count ) {}
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( SplitMessage, origMsgType, index, count, bytes )
 };
 
 
@@ -50,6 +75,9 @@ private:
 
     // Timer for repeatedly sending messages
     TimerPtr sendTimer;
+
+    // Buffer for accumulating split messages
+    std::string recvBuffer;
 
     // The timeout for keep alive packets, 0 to disable
     uint64_t keepAlive = 0;
