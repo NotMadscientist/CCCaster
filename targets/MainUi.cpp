@@ -16,10 +16,6 @@ using namespace std;
 #define SYSTEM_DEFAULT_ALERT "SystemDefault"
 
 
-// Console UI instance
-shared_ptr<ConsoleUi> ui;
-
-
 void MainUi::netplay ( RunFuncPtr run )
 {
 }

@@ -104,7 +104,7 @@ private:
         if ( stack.empty() )
             ConsoleCore::GetInstance()->ClearScreen();
         else
-            CharacterBox::Draw ( top()->pos, top()->pos + top()->size, ' ' );
+            CharacterBox::Draw ( top()->pos, { short ( MAXSCREENX ), short ( MAXSCREENY ) }, ' ' );
     }
 
 public:
