@@ -89,15 +89,15 @@ $(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
 	if [ -s scripts/deploy ]; then scripts/deploy; fi;
 
 $(FOLDER):
-	@mkdir $(FOLDER)
+	@mkdir -p $(FOLDER)
 
-$(BINARY): sdl $(MAIN_OBJECTS) res/icon.res
+$(BINARY): $(MAIN_OBJECTS) res/icon.res
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(MAIN_OBJECTS) res/icon.res $(LD_FLAGS)
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
 
-$(DLL): sdl $(DLL_OBJECTS) $(FOLDER)
+$(DLL): $(DLL_OBJECTS) $(FOLDER)
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(DLL_OBJECTS) -shared $(LD_FLAGS) -ld3dx9
 	@echo
 	$(STRIP) $@
