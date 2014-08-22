@@ -226,6 +226,8 @@ struct Main : public CommonMain, public Pinger::Owner
     // Socket callbacks
     virtual void acceptEvent ( Socket *serverSocket ) override
     {
+        LOG ( "acceptEvent ( %08x )", serverSocket );
+
         // TODO proper queueing
         if ( serverSocket == serverCtrlSocket.get() )
         {
@@ -255,6 +257,8 @@ struct Main : public CommonMain, public Pinger::Owner
 
     virtual void connectEvent ( Socket *socket ) override
     {
+        LOG ( "connectEvent ( %08x )", socket );
+
         ASSERT ( ctrlSocket.get() != 0 );
         ASSERT ( dataSocket.get() != 0 );
         ASSERT ( socket == ctrlSocket.get() || socket == dataSocket.get() );
@@ -304,6 +308,18 @@ struct Main : public CommonMain, public Pinger::Owner
         SocketManager::get().initialize();
         ControllerManager::get().initialize ( this );
 
+#ifdef UDP_ONLY
+        if ( isHost() )
+        {
+            serverCtrlSocket = UdpSocket::listen ( this, address.port );
+            serverDataSocket = UdpSocket::listen ( this, address.port + 1 );
+        }
+        else
+        {
+            ctrlSocket = UdpSocket::connect ( this, address );
+            dataSocket = UdpSocket::connect ( this, { address.addr, uint16_t ( address.port + 1 ) } );
+        }
+#else
         if ( isHost() )
         {
             serverCtrlSocket = TcpSocket::listen ( this, address.port );
@@ -314,6 +330,7 @@ struct Main : public CommonMain, public Pinger::Owner
             ctrlSocket = TcpSocket::connect ( this, address );
             dataSocket = UdpSocket::connect ( this, address );
         }
+#endif
     }
 
     // Broadcast or offline constructor
