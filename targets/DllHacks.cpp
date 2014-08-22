@@ -22,7 +22,7 @@ using namespace AsmHacks;
 
 static ID3DXFont *font = 0;
 
-static LRESULT CALLBACK keyboardCallback ( int, WPARAM, LPARAM ) { return 1; }
+static LRESULT CALLBACK keyboardCallback ( int, WPARAM, LPARAM );
 
 static HHOOK keybdHook = 0;
 
@@ -134,4 +134,13 @@ void deinitializeHacks()
 
     for ( int i = hookMainLoop.size() - 1; i >= 0; --i )
         hookMainLoop[i].revert();
+}
+
+LRESULT CALLBACK keyboardCallback ( int code, WPARAM wParam, LPARAM lParam )
+{
+    // Pass through the Alt and Enter keys
+    if ( code == HC_ACTION && ( wParam == VK_MENU || wParam == VK_RETURN ) )
+        return CallNextHookEx ( 0, code, wParam, lParam );
+
+    return 1;
 }
