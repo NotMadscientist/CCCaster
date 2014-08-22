@@ -107,35 +107,41 @@ struct Main
             // Input testing code
             uint16_t input;
             {
+#if 0
                 uint16_t direction = ( rand() % 10 );
-
-                // if ( GetKeyState ( 'P' ) & 0x80 )
-                //     direction = 8;
-                // else if ( GetKeyState ( VK_OEM_1 ) & 0x80 )
-                //     direction = 2;
-
-                // if ( GetKeyState ( 'L' ) & 0x80 )
-                //     --direction;
-                // else if ( GetKeyState ( VK_OEM_7 ) & 0x80 )
-                //     ++direction;
-
                 if ( direction == 5 )
                     direction = 0;
 
                 uint16_t buttons = ( rand() % 0x1000 );
-
                 if ( netMan.getState().value == NetplayState::CharaSelect )
                     buttons &= ~ ( CC_BUTTON_B | CC_BUTTON_CANCEL );
+#else
+                uint16_t direction = 5;
 
-                // if ( GetKeyState ( 'E' ) & 0x80 )       buttons = ( CC_BUTTON_A | CC_BUTTON_SELECT );
-                // if ( GetKeyState ( 'R' ) & 0x80 )       buttons = ( CC_BUTTON_B | CC_BUTTON_CANCEL );
-                // if ( GetKeyState ( 'T' ) & 0x80 )       buttons = CC_BUTTON_C;
-                // if ( GetKeyState ( VK_SPACE ) & 0x80 )  buttons = CC_BUTTON_D;
-                // if ( GetKeyState ( 'A' ) & 0x80 )       buttons = CC_BUTTON_E;
-                // if ( GetKeyState ( 'D' ) & 0x80 )       buttons = CC_BUTTON_FN2;
-                // if ( GetKeyState ( 'G' ) & 0x80 )       buttons = CC_BUTTON_FN1;
-                // if ( GetKeyState ( VK_F5 ) & 0x80 )     buttons = CC_BUTTON_START;
+                if ( GetKeyState ( 'P' ) & 0x80 )
+                    direction = 8;
+                else if ( GetKeyState ( VK_OEM_1 ) & 0x80 )
+                    direction = 2;
 
+                if ( GetKeyState ( 'L' ) & 0x80 )
+                    --direction;
+                else if ( GetKeyState ( VK_OEM_7 ) & 0x80 )
+                    ++direction;
+
+                if ( direction == 5 )
+                    direction = 0;
+
+                uint16_t buttons = 0;
+
+                if ( GetKeyState ( 'E' ) & 0x80 )       buttons = ( CC_BUTTON_A | CC_BUTTON_SELECT );
+                if ( GetKeyState ( 'R' ) & 0x80 )       buttons = ( CC_BUTTON_B | CC_BUTTON_CANCEL );
+                if ( GetKeyState ( 'T' ) & 0x80 )       buttons = CC_BUTTON_C;
+                if ( GetKeyState ( VK_SPACE ) & 0x80 )  buttons = CC_BUTTON_D;
+                if ( GetKeyState ( 'A' ) & 0x80 )       buttons = CC_BUTTON_E;
+                if ( GetKeyState ( 'D' ) & 0x80 )       buttons = CC_BUTTON_FN2;
+                if ( GetKeyState ( 'G' ) & 0x80 )       buttons = CC_BUTTON_FN1;
+                if ( GetKeyState ( VK_F5 ) & 0x80 )     buttons = CC_BUTTON_START;
+#endif
                 input = COMBINE_INPUT ( direction, buttons );
             }
 
