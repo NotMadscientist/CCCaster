@@ -31,6 +31,7 @@ void initializePreLoadHacks();
 void initializePostLoadHacks();
 void deinitializeHacks();
 static void deinitialize();
+extern string overlayText;
 
 // Main application state
 static ENUM ( AppState, Uninitialized, Polling, Stopping, Deinitialized ) appState = AppState::Uninitialized;
@@ -200,6 +201,7 @@ struct Main
 
         // Log inputs every frame
         LOG_SYNC ( "Inputs: %04x %04x", netMan.getInput ( 1 ), netMan.getInput ( 2 ) );
+        overlayText = toString ( "%u:%u", netMan.getIndex(), netMan.getFrame() );
     }
 
     void bothCharaSelectLoaded()

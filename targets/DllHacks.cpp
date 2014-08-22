@@ -26,6 +26,8 @@ static LRESULT CALLBACK keyboardCallback ( int, WPARAM, LPARAM ) { return 1; }
 
 static HHOOK keybdHook = 0;
 
+string overlayText;
+
 
 // Note: this is on the SAME thread as the main thread where callback happens
 void PresentFrameBegin ( IDirect3DDevice9 *device )
@@ -64,8 +66,8 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
 
         font->DrawText (
             0,                              // Text as a ID3DXSprite object
-            "Lorem ipsum dolor sit amet",   // Text as a C-string
-            -1,                             // Number of letters, -1 for null-terminated
+            &overlayText[0],                // Text as a C-string
+            overlayText.size(),             // Number of letters, -1 for null-terminated
             &rect,                          // Text bounding RECT
             DT_CENTER,                      // Text formatting
             D3DCOLOR_XRGB ( 0, 255, 0 ) );  // Text color
