@@ -8,6 +8,12 @@
 #include <ctime>
 
 
+#define PREPEND_PID     ( 0x01 )
+#define LOG_TIMESTAMP   ( 0x02 )
+#define LOG_FILE_LINE   ( 0x04 )
+#define LOG_FUNC_NAME   ( 0x08 )
+
+
 class Logger
 {
     // Log file
@@ -18,6 +24,9 @@ class Logger
 
     // Flag to indicate if initialized
     bool initialized = false;
+
+    // Bit mask of options
+    uint32_t options = 0;
 
     // Optionally mutexed logging
 #ifdef LOGGER_MUTEXED
@@ -30,7 +39,8 @@ public:
     Logger() {}
 
     // Initialize / deinitialize logging
-    void initialize ( const std::string& name = "", bool prependPidToName = false );
+    void initialize ( const std::string& name = "",
+                      uint32_t options = ( LOG_TIMESTAMP | LOG_FILE_LINE | LOG_FUNC_NAME ) );
     void deinitialize();
 
     // Flush to file
@@ -50,6 +60,11 @@ public:
 #define LOG_LIST(...)
 
 #else
+
+#define LOG_TO(LOGGER, FORMAT, ...)                                                                                 \
+    do {                                                                                                            \
+        LOGGER.log ( __BASE_FILE__, __LINE__, __PRETTY_FUNCTION__, TO_C_STR ( FORMAT, ## __VA_ARGS__ ) );           \
+    } while ( 0 )
 
 #define LOG(FORMAT, ...)                                                                                            \
     do {                                                                                                            \

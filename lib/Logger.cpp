@@ -4,12 +4,13 @@
 using namespace std;
 
 
-void Logger::initialize ( const string& name, bool prependPidToName )
+void Logger::initialize ( const string& name, uint32_t options )
 {
     if ( initialized )
         return;
 
     initialized = true;
+    this->options = options;
 
     if ( name.empty() )
     {
@@ -17,7 +18,7 @@ void Logger::initialize ( const string& name, bool prependPidToName )
     }
     else
     {
-        if ( prependPidToName )
+        if ( options & PREPEND_PID )
             fd = fopen ( ( toString ( "log%08d", _getpid() ) + name ).c_str(), "w" );
         else
             fd = fopen ( name.c_str(), "w" );
@@ -65,12 +66,25 @@ void Logger::log ( const char *file, int line, const char *func, const char *mes
     LOCK ( mutex );
 #endif
 
-    strftime ( buffer, sizeof ( buffer ), "%H:%M:%S", ts );
+    if ( options & LOG_TIMESTAMP )
+    {
+        strftime ( buffer, sizeof ( buffer ), "%H:%M:%S", ts );
+        fprintf ( fd, "%s:", buffer );
+    }
 
-    string shortFunc ( func );
-    shortFunc = shortFunc.substr ( 0, shortFunc.find ( '(' ) );
+    if ( options & LOG_FILE_LINE )
+    {
+        fprintf ( fd, "%s:%3d:", file, line );
+    }
 
-    fprintf ( fd, "%s:%s:%3d: %s : %s\n", buffer, file, line, shortFunc.c_str(), message );
+    if ( options & LOG_FUNC_NAME )
+    {
+        string shortFunc ( func );
+        shortFunc = shortFunc.substr ( 0, shortFunc.find ( '(' ) );
+        fprintf ( fd, "%s:", shortFunc.c_str() );
+    }
+
+    fprintf ( fd, "%s\n", message );
     fflush ( fd );
 }
 

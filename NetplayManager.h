@@ -21,7 +21,7 @@ ENUM ( NetplayState, PreInitial, Initial, CharaSelect, Loading, Skippable, InGam
 
     Skippable -> { InGame, RetryMenu }
 
-    InGame -> { Skippable, PauseMenu (offline or training mode only) }
+    InGame -> { Skippable, PauseMenu (broadcast / offline only) }
 
     RetryMenu -> { Loading, CharaSelect }
 
@@ -36,6 +36,7 @@ class NetplayManager
 
     // Indicates the game mode has been selected at the main menu.
     // This is used because currentMenuIndex will no longer point to the main menu after selecting versus.
+    // So we use a flag to indicate when the cursor is on the correct main menu index, and then mash through.
     mutable bool gameModeSelected = false;
 
     // The starting value of CC_WORLD_TIMER_ADDR, where frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime.
@@ -46,10 +47,13 @@ class NetplayManager
     uint32_t frame = 0;
 
     // Current transition index, incremented whenever the netplay state changes (after CharaSelect)
-    uint16_t index = 0;
+    uint32_t index = 0;
 
     // Mapping: index -> player -> frame -> input
-    std::vector<std::array<std::vector<uint16_t>, 2>> inputs;
+    std::vector<std::array<std::vector<uint32_t>, 2>> inputs;
+
+    // Data for previous games, each game starts after the Loading state
+    std::vector<MsgPtr> games;
 
     // Get the input for the specific netplay state
     uint16_t getPreInitialInput ( uint8_t player ) const;
@@ -70,6 +74,8 @@ public:
 
     // Update the current netplay frame
     void updateFrame();
+    uint32_t getFrame() const { return frame; }
+    uint32_t getIndex() const { return index; }
 
     // Get / set the current netplay state
     const NetplayState& getState() const { return state; }
@@ -89,4 +95,8 @@ public:
 
     // If inputs are ready to be used, if not then keep polling
     bool areInputsReady() const;
+
+    // Get / set the RNG state for the current index
+    MsgPtr getRngState() const;
+    void setRngState ( const RngState& rngState );
 };

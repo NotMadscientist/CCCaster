@@ -585,22 +585,22 @@ int main ( int argc, char *argv[] )
     else if ( parser.nonOptionsCount() == 2 )
         run ( string ( parser.nonOption ( 0 ) ) + parser.nonOption ( 1 ), NetplaySetup() );
 
-    try
-    {
-        ui.main ( run );
-    }
-    catch ( const Exception& err )
-    {
-        PRINT ( "Error: %s", err );
-    }
-    catch ( const std::exception& err )
-    {
-        PRINT ( "Error: %s", err.what() );
-    }
-    catch ( ... )
-    {
-        PRINT ( "Unknown error!" );
-    }
+    // try
+    // {
+    //     ui.main ( run );
+    // }
+    // catch ( const Exception& err )
+    // {
+    //     PRINT ( "Error: %s", err );
+    // }
+    // catch ( const std::exception& err )
+    // {
+    //     PRINT ( "Error: %s", err.what() );
+    // }
+    // catch ( ... )
+    // {
+    //     PRINT ( "Unknown error!" );
+    // }
 
     deinitialize();
     return 0;

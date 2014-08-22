@@ -8,6 +8,9 @@
 using namespace std;
 
 
+#define MAX_GAMES_TO_KEEP ( 5 )
+
+
 #define ASSERT_INPUTS_RANGE(START, END, SIZE)                       \
     do {                                                            \
         ASSERT ( ( END ) > ( START ) );                             \
@@ -105,7 +108,13 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
 
 uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
 {
-    return 0;
+    uint16_t input = getDelayedInput ( player );
+
+    // Disable saving replay or returning to main menu
+    if ( currentMenuIndex >= 2 )
+        input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
+
+    return input;
 }
 
 uint16_t NetplayManager::getPauseMenuInput ( uint8_t player ) const
@@ -139,12 +148,44 @@ void NetplayManager::setState ( const NetplayState& state )
 
     if ( state.value >= NetplayState::CharaSelect && state.value <= NetplayState::PauseMenu )
     {
+        // Count from frame=0 again
         startWorldTime = *CC_WORLD_TIMER_ADDR;
         frame = 0;
+
+        // Increment the index
         if ( this->state != NetplayState::Initial )
             ++index;
+
+        // Resize the inputs
         if ( index >= inputs.size() )
             inputs.resize ( index + 1 );
+
+        // If we're loading a new game
+        if ( this->state == NetplayState::Loading )
+        {
+            // Add new game data
+            games.push_back ( MsgPtr ( new PerGameData ( index ) ) );
+
+            // Clear old game data
+            if ( int ( games.size() - 1 ) - MAX_GAMES_TO_KEEP >= 0 )
+                games [ int ( games.size() - 1 ) - MAX_GAMES_TO_KEEP ].reset();
+
+            // Clear old input data
+            uint32_t startIndex = 0;
+
+            if ( games.size() > 1 )
+            {
+                ASSERT ( games[games.size() - 1].get() != 0 );
+                ASSERT ( games[games.size() - 1]->getMsgType() == MsgType::PerGameData );
+                startIndex = games[games.size() - 1]->getAs<PerGameData>().startIndex;
+            }
+
+            for ( uint32_t i = startIndex; i < index; ++i )
+            {
+                inputs[i][0].clear();
+                inputs[i][1].clear();
+            }
+        }
     }
 
     this->state = state;
@@ -296,4 +337,15 @@ bool NetplayManager::areInputsReady() const
     ASSERT ( size_t ( index + 1 ) == inputs.size() );
 
     return ( inputs[index][0].size() + setup.delay > frame ) && ( inputs[index][1].size() + setup.delay > frame );
+}
+
+MsgPtr NetplayManager::getRngState() const
+{
+    // TODO
+    return 0;
+}
+
+void NetplayManager::setRngState ( const RngState& rngState )
+{
+    // TODO
 }

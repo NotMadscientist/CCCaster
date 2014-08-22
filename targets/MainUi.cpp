@@ -155,34 +155,42 @@ bool MainUi::accepted ( const Statistics& stats )
 {
     PRINT ( "latency=%.2f ms; jitter=%.2f ms", stats.getMean(), stats.getJitter() );
 
-    int value;
+    // int value;
 
-    PRINT ( "Enter delay:" );
+    // PRINT ( "Enter delay:" );
 
-    cin >> value;
-    netplaySetup.delay = value;
+    // cin >> value;
+    // netplaySetup.delay = value;
 
-    PRINT ( "Enter training mode:" );
+    // PRINT ( "Enter training mode:" );
 
-    cin >> value;
-    netplaySetup.training = value;
+    // cin >> value;
+    // netplaySetup.training = value;
 
-    PRINT ( "Connect?" );
+    // PRINT ( "Connect?" );
 
-    netplaySetup.hostPlayer = 1 + ( rand() % 2 );
+    // netplaySetup.hostPlayer = 1 + ( rand() % 2 );
 
-    cin >> value;
-    return value;
+    // cin >> value;
+    // return value;
+
+    netplaySetup.delay = 4;
+    netplaySetup.training = 0;
+    netplaySetup.hostPlayer = 1;
+
+    return true;
 }
 
 bool MainUi::connected ( const Statistics& stats )
 {
     PRINT ( "latency=%.2f ms; jitter=%.2f ms", stats.getMean(), stats.getJitter() );
 
-    int value;
+    // int value;
 
-    PRINT ( "Connect?" );
+    // PRINT ( "Connect?" );
 
-    cin >> value;
-    return value;
+    // cin >> value;
+    // return value;
+
+    return true;
 }

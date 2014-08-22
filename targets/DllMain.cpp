@@ -16,6 +16,8 @@ using namespace std;
 
 #define LOG_FILE FOLDER "dll.log"
 
+#define SYNC_LOG_FILE FOLDER "sync.log"
+
 #define RESEND_INPUTS_INTERVAL 100
 
 
@@ -45,6 +47,9 @@ struct Main
 {
     // NetplayManager instance
     NetplayManager netMan;
+
+    // Logs RNG state and inputs
+    Logger syncLog;
 
     // If remote has loaded up to character select
     bool remoteCharaSelectLoaded = false;
@@ -80,6 +85,13 @@ struct Main
         netMan.updateFrame();
         procMan.clearInputs();
 
+        // Log the RNG state once every 5 seconds
+        if ( netMan.getFrame() % ( 5 * 60 ) == 0 )
+        {
+            string dump = procMan.getRngState()->getAs<RngState>().dump();
+            LOG_TO ( syncLog, "[%u:%u:%u] %s", *CC_GAME_MODE_ADDR, netMan.getIndex(), netMan.getFrame(), dump );
+        }
+
         // Check for changes to important variables for state transitions
         ChangeMonitor::get().check();
 
@@ -96,31 +108,35 @@ struct Main
             // Input testing code
             uint16_t input;
             {
-                uint16_t direction = 5;
+                uint16_t direction = ( rand() % 10 );
 
-                if ( GetKeyState ( 'P' ) & 0x80 )
-                    direction = 8;
-                else if ( GetKeyState ( VK_OEM_1 ) & 0x80 )
-                    direction = 2;
+                // if ( GetKeyState ( 'P' ) & 0x80 )
+                //     direction = 8;
+                // else if ( GetKeyState ( VK_OEM_1 ) & 0x80 )
+                //     direction = 2;
 
-                if ( GetKeyState ( 'L' ) & 0x80 )
-                    --direction;
-                else if ( GetKeyState ( VK_OEM_7 ) & 0x80 )
-                    ++direction;
+                // if ( GetKeyState ( 'L' ) & 0x80 )
+                //     --direction;
+                // else if ( GetKeyState ( VK_OEM_7 ) & 0x80 )
+                //     ++direction;
 
                 if ( direction == 5 )
                     direction = 0;
 
-                uint16_t buttons = 0;
+                uint16_t buttons = ( rand() % 0x1000 );
 
-                if ( GetKeyState ( 'E' ) & 0x80 )       buttons = ( CC_BUTTON_A | CC_BUTTON_SELECT );
-                if ( GetKeyState ( 'R' ) & 0x80 )       buttons = ( CC_BUTTON_B | CC_BUTTON_CANCEL );
-                if ( GetKeyState ( 'T' ) & 0x80 )       buttons = CC_BUTTON_C;
-                if ( GetKeyState ( VK_SPACE ) & 0x80 )  buttons = CC_BUTTON_D;
-                if ( GetKeyState ( 'A' ) & 0x80 )       buttons = CC_BUTTON_E;
-                if ( GetKeyState ( 'D' ) & 0x80 )       buttons = CC_BUTTON_FN2;
-                if ( GetKeyState ( 'G' ) & 0x80 )       buttons = CC_BUTTON_FN1;
-                if ( GetKeyState ( VK_F5 ) & 0x80 )     buttons = CC_BUTTON_START;
+                if ( netMan.getState().value == NetplayState::CharaSelect )
+                    buttons &= ~ ( CC_BUTTON_B | CC_BUTTON_CANCEL );
+
+
+                // if ( GetKeyState ( 'E' ) & 0x80 )       buttons = ( CC_BUTTON_A | CC_BUTTON_SELECT );
+                // if ( GetKeyState ( 'R' ) & 0x80 )       buttons = ( CC_BUTTON_B | CC_BUTTON_CANCEL );
+                // if ( GetKeyState ( 'T' ) & 0x80 )       buttons = CC_BUTTON_C;
+                // if ( GetKeyState ( VK_SPACE ) & 0x80 )  buttons = CC_BUTTON_D;
+                // if ( GetKeyState ( 'A' ) & 0x80 )       buttons = CC_BUTTON_E;
+                // if ( GetKeyState ( 'D' ) & 0x80 )       buttons = CC_BUTTON_FN2;
+                // if ( GetKeyState ( 'G' ) & 0x80 )       buttons = CC_BUTTON_FN1;
+                // if ( GetKeyState ( VK_F5 ) & 0x80 )     buttons = CC_BUTTON_START;
 
                 input = COMBINE_INPUT ( direction, buttons );
             }
@@ -169,6 +185,7 @@ struct Main
         {
             ASSERT ( nextRngState.get() != 0 );
             procMan.setRngState ( nextRngState->getAs<RngState>() );
+            netMan.setRngState ( nextRngState->getAs<RngState>() );
             nextRngState.reset();
             shouldSetRngState = false;
         }
@@ -176,6 +193,11 @@ struct Main
         // Write netplay inputs
         procMan.writeGameInput ( localPlayer, netMan.getInput ( localPlayer ) );
         procMan.writeGameInput ( remotePlayer, netMan.getInput ( remotePlayer ) );
+
+        // Log inputs every frame
+        LOG_TO ( syncLog, "[%u:%u:%u] %04x %04x",
+                 *CC_GAME_MODE_ADDR, netMan.getIndex(), netMan.getFrame(),
+                 netMan.getInput ( 1 ), netMan.getInput ( 2 ) );
     }
 
     void bothCharaSelectLoaded()
@@ -193,7 +215,9 @@ struct Main
         {
             if ( isHost() )
             {
-                ctrlSocket->send ( procMan.getRngState() );
+                MsgPtr msg = procMan.getRngState();
+                ctrlSocket->send ( msg );
+                netMan.setRngState ( msg->getAs<RngState>() );
             }
             else if ( isClient() )
             {
@@ -523,11 +547,15 @@ struct Main
 
         ChangeMonitor::get().addRef ( this, Variable ( Variable::GameMode ), *CC_GAME_MODE_ADDR );
         ChangeMonitor::get().addRef ( this, Variable ( Variable::RoundStart ), roundStartCounter );
+
+        syncLog.initialize ( SYNC_LOG_FILE, 0 );
     }
 
     // Destructor
     ~Main()
     {
+        syncLog.deinitialize();
+
         procMan.disconnectPipe();
 
         // Timer and controller deinitialization is not done here because of threading issues
