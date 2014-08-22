@@ -1,11 +1,23 @@
 set breakpoint pending on
 set confirm off
 set print thread-events off
-
-break assert
-break _assert
-break __assert
 break abort
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 set $_exitcode = -999
 

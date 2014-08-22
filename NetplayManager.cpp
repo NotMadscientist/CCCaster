@@ -211,14 +211,12 @@ MsgPtr NetplayManager::getInputs ( uint8_t player ) const
 
     PlayerInputs *playerInputs = new PlayerInputs ( frame, inputs.size() - 1 );
 
-    const uint32_t endFrame = frame + 1;
-    uint32_t startFrame = 0;
-    if ( endFrame > NUM_INPUTS )
-        startFrame = endFrame - NUM_INPUTS;
+    ASSERT_INPUTS_RANGE ( playerInputs->getStartFrame(),
+                          playerInputs->getEndFrame(),
+                          inputs[index][player - 1].size() );
 
-    ASSERT_INPUTS_RANGE ( startFrame, endFrame, inputs[index][player - 1].size() );
-
-    copy ( inputs[index][player - 1].begin() + startFrame, inputs[index][player - 1].begin() + endFrame,
+    copy ( inputs[index][player - 1].begin() + playerInputs->getStartFrame(),
+           inputs[index][player - 1].begin() + playerInputs->getEndFrame(),
            playerInputs->inputs.begin() );
 
     return MsgPtr ( playerInputs );
@@ -234,10 +232,12 @@ void NetplayManager::setInputs ( uint8_t player, const PlayerInputs& playerInput
     if ( playerInputs.getEndFrame() > inputs[playerInputs.index][player - 1].size() )
         inputs[playerInputs.index][player - 1].resize ( playerInputs.getEndFrame(), 0 );
 
-    ASSERT_INPUTS_RANGE ( playerInputs.getStartFrame(), playerInputs.getEndFrame(),
+    ASSERT_INPUTS_RANGE ( playerInputs.getStartFrame(),
+                          playerInputs.getEndFrame(),
                           inputs[playerInputs.index][player - 1].size() );
 
-    copy ( playerInputs.inputs.begin(), playerInputs.inputs.begin() + playerInputs.size(),
+    copy ( playerInputs.inputs.begin(),
+           playerInputs.inputs.begin() + playerInputs.size(),
            inputs[playerInputs.index][player - 1].begin() + playerInputs.getStartFrame() );
 }
 
