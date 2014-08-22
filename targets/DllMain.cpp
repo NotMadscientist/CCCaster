@@ -89,7 +89,8 @@ struct Main
         if ( netMan.getFrame() % ( 5 * 60 ) == 0 )
         {
             string dump = procMan.getRngState()->getAs<RngState>().dump();
-            LOG_TO ( syncLog, "[%u:%u:%u] %s", *CC_GAME_MODE_ADDR, netMan.getIndex(), netMan.getFrame(), dump );
+            LOG_TO ( syncLog, "[%u:%u:%s:%u] %s",
+                     *CC_GAME_MODE_ADDR, netMan.getIndex(), netMan.getState(), netMan.getFrame(), dump );
         }
 
         // Check for changes to important variables for state transitions
@@ -195,8 +196,8 @@ struct Main
         procMan.writeGameInput ( remotePlayer, netMan.getInput ( remotePlayer ) );
 
         // Log inputs every frame
-        LOG_TO ( syncLog, "[%u:%u:%u] %04x %04x",
-                 *CC_GAME_MODE_ADDR, netMan.getIndex(), netMan.getFrame(),
+        LOG_TO ( syncLog, "[%u:%u:%s:%u] %04x %04x",
+                 *CC_GAME_MODE_ADDR, netMan.getIndex(), netMan.getState(), netMan.getFrame(),
                  netMan.getInput ( 1 ), netMan.getInput ( 2 ) );
     }
 
