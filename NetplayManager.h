@@ -64,8 +64,8 @@ class NetplayManager
     uint16_t getRetryMenuInput ( uint8_t player ) const;
     uint16_t getPauseMenuInput ( uint8_t player ) const;
 
-    // Get the delayed input for the current frame
-    uint16_t getDelayedInput ( uint8_t player ) const;
+    // Get the delayed input for the given frame, defaults to the current frame
+    uint16_t getDelayedInput ( uint8_t player, uint32_t frame = UINT_MAX ) const;
 
 public:
 

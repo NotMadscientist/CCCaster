@@ -99,7 +99,7 @@ uint16_t NetplayManager::getSkippableInput ( uint8_t player ) const
 
 uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
 {
-    // Workaround for round start desync
+    // Workaround for round start desync, since inputs have effects during a small period after round start.
     if ( frame < 10 )
         return 0;
 
@@ -113,7 +113,14 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
 
 uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
 {
-    uint16_t input = getDelayedInput ( player );
+    uint16_t input = getDelayedInput ( player ), previous = 0;
+    if ( frame > 0 )
+        previous = getDelayedInput ( player, frame - 1 );
+
+    // Don't allow pressing select until after we have stopped moving the cursor. This is a work around for
+    // the issue when select is hit 1 frame after the cursor moves, but before currentMenuIndex is updated.
+    if ( ( previous & 2 ) || ( previous & 8 ) || ( input & 2 ) || ( input & 8 ) )
+        input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
 
     // Disable saving replay or returning to main menu
     if ( currentMenuIndex >= 2 )
@@ -127,8 +134,11 @@ uint16_t NetplayManager::getPauseMenuInput ( uint8_t player ) const
     return 0;
 }
 
-uint16_t NetplayManager::getDelayedInput ( uint8_t player ) const
+uint16_t NetplayManager::getDelayedInput ( uint8_t player, uint32_t frame ) const
 {
+    if ( frame == UINT_MAX )
+        frame = this->frame;
+
     if ( frame < setup.delay )
         return 0;
 
