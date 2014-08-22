@@ -22,7 +22,7 @@ using namespace option;
 
 
 // Set of command line options
-enum CommandLineOptions { UNKNOWN, HELP, DUMMY, GTEST, STDOUT, NO_FORK, PLUS };
+enum CommandLineOptions { UNKNOWN, HELP, DUMMY, GTEST, STDOUT, NO_FORK, NO_UI, PLUS };
 
 // Main UI instance
 static MainUi ui;
@@ -528,13 +528,14 @@ int main ( int argc, char *argv[] )
 
     static const Descriptor options[] =
     {
-        { UNKNOWN, 0,  "",        "", Arg::None, "Usage: " BINARY " [options]\n\nOptions:" },
-        { HELP,    0, "h",    "help", Arg::None, "  --help, -h    Print usage and exit." },
-        { DUMMY,   0,  "",   "dummy", Arg::None, "  --dummy       Run as a dummy application." },
-        { GTEST,   0,  "",   "gtest", Arg::None, "  --gtest       Run unit tests and exit." },
-        { STDOUT,  0,  "",  "stdout", Arg::None, "  --stdout      Output logs to stdout." },
+        { UNKNOWN, 0,  "",        "", Arg::None, "Usage: " BINARY " [options] [address] [port]\n\nOptions:" },
+        { HELP,    0, "h",    "help", Arg::None, "  --help, -h      Print usage and exit." },
+        { DUMMY,   0,  "",   "dummy", Arg::None, "  --dummy         Run as a dummy application." },
+        { GTEST,   0,  "",   "gtest", Arg::None, "  --gtest         Run unit tests and exit." },
+        { STDOUT,  0,  "",  "stdout", Arg::None, "  --stdout        Output logs to stdout." },
         { NO_FORK, 0,  "", "no-fork", Arg::None, 0 }, // Don't fork when inside Wine, ie already running wineconosle
-        { PLUS,    0, "p",    "plus", Arg::None, "  --plus, -p    Increment count." },
+        { NO_UI,   0, "n",   "no-ui", Arg::None, "  --no-ui, -n     No UI, just quits after running once." },
+        { PLUS,    0, "p",    "plus", Arg::None, "  --plus, -p      Increment count." },
         {
             UNKNOWN, 0, "", "", Arg::None,
             "\nExamples:\n"
@@ -602,22 +603,25 @@ int main ( int argc, char *argv[] )
     else if ( parser.nonOptionsCount() == 2 )
         run ( string ( parser.nonOption ( 0 ) ) + parser.nonOption ( 1 ), NetplaySetup() );
 
-    // try
-    // {
-    //     ui.main ( run );
-    // }
-    // catch ( const Exception& err )
-    // {
-    //     PRINT ( "Error: %s", err );
-    // }
-    // catch ( const std::exception& err )
-    // {
-    //     PRINT ( "Error: %s", err.what() );
-    // }
-    // catch ( ... )
-    // {
-    //     PRINT ( "Unknown error!" );
-    // }
+    if ( !opt[NO_UI] )
+    {
+        try
+        {
+            ui.main ( run );
+        }
+        catch ( const Exception& err )
+        {
+            PRINT ( "Error: %s", err );
+        }
+        catch ( const std::exception& err )
+        {
+            PRINT ( "Error: %s", err.what() );
+        }
+        catch ( ... )
+        {
+            PRINT ( "Unknown error!" );
+        }
+    }
 
     deinitialize();
     return 0;
