@@ -129,7 +129,6 @@ struct Main
                 if ( netMan.getState().value == NetplayState::CharaSelect )
                     buttons &= ~ ( CC_BUTTON_B | CC_BUTTON_CANCEL );
 
-
                 // if ( GetKeyState ( 'E' ) & 0x80 )       buttons = ( CC_BUTTON_A | CC_BUTTON_SELECT );
                 // if ( GetKeyState ( 'R' ) & 0x80 )       buttons = ( CC_BUTTON_B | CC_BUTTON_CANCEL );
                 // if ( GetKeyState ( 'T' ) & 0x80 )       buttons = CC_BUTTON_C;
@@ -148,7 +147,7 @@ struct Main
                 netMan.setInput ( remotePlayer, 0 );
 
             if ( isBroadcast() )
-                ;
+                ; // TODO
             else if ( !isOffline() )
                 dataSocket->send ( netMan.getInputs ( localPlayer ) );
         }

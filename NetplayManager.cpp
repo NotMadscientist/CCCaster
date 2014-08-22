@@ -290,7 +290,7 @@ uint16_t NetplayManager::getInput ( uint8_t player ) const
     ASSERT ( player == 1 || player == 2 );
 
     // If the inputs array is ahead, then we should mash to skip
-    if ( size_t ( index + 1 ) < inputs.size() )
+    if ( index + 1 < inputs.size() )
         RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
 
     switch ( state.value )
@@ -328,13 +328,14 @@ bool NetplayManager::areInputsReady() const
     if ( state.value < NetplayState::CharaSelect )
         return true;
 
+    // At this point we should have incremented the index and input array already
     ASSERT ( inputs.empty() == false );
 
     // If the inputs array is ahead, then we can just mash to skip
-    if ( size_t ( index + 1 ) < inputs.size() )
+    if ( index + 1 < inputs.size() )
         return true;
 
-    ASSERT ( size_t ( index + 1 ) == inputs.size() );
+    ASSERT ( index + 1 == inputs.size() );
 
     return ( inputs[index][0].size() + setup.delay > frame ) && ( inputs[index][1].size() + setup.delay > frame );
 }
