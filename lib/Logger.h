@@ -105,9 +105,8 @@ public:
     do {                                                                                                            \
         if ( ASSERTION )                                                                                            \
             break;                                                                                                  \
-        ::Exception err = toString ( "'%s' failed @ %s:%d", #ASSERTION, __BASE_FILE__, __LINE__ );                  \
-        LOG ( "%s", err );                                                                                          \
-        throw err;                                                                                                  \
+        LOG ( "'%s' failed @ %s:%d", #ASSERTION, __BASE_FILE__, __LINE__ );                                         \
+        abort();                                                                                                    \
     } while ( 0 )
 
 #else
