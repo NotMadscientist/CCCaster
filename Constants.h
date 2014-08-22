@@ -13,6 +13,10 @@
 
 #define CC_LOOP_START_ADDR          ( ( char * )     0x40D330 ) // Start of the main event loop
 #define CC_SCREEN_WIDTH_ADDR        ( ( uint32_t * ) 0x54D048 ) // The width of the main viewport
+#define CC_DAMAGE_LEVEL_ADDR        ( ( uint32_t * ) 0x553FCC ) // Default 2
+#define CC_WIN_COUNT_VS_ADDR        ( ( uint32_t * ) 0x553FDC ) // Default 2
+#define CC_TIMER_SPEED_ADDR         ( ( uint32_t * ) 0x553FD0 ) // Default 2
+#define CC_AUTO_REPLAY_SAVE_ADDR    ( ( uint32_t * ) 0x553FE8 ) // 0 to disable, 1 to enable
 #define CC_WORLD_TIMER_ADDR         ( ( uint32_t * ) 0x55D1D4 ) // Frame step timer, always counting up
 #define CC_SKIP_FRAMES_ADDR         ( ( uint32_t * ) 0x55D25C ) // Set to N to disable FPS limit for N frames
 #define CC_STAGE_SELECTOR_ADDR      ( ( uint32_t * ) 0x74FD98 ) // Currently selected stage, can be written to

@@ -8,7 +8,7 @@
 
 #define COMBINE_INPUT(DIRECTION, BUTTONS)   ( ( DIRECTION ) | ( ( BUTTONS ) << 4 ) )
 
-#define INLINE_INPUT(INPUT)                 ( ( INPUT ) & 0x000F ), ( ( ( INPUT ) & 0xFFF0 ) >> 4 )
+#define INLINE_INPUT(INPUT)                 uint16_t ( ( INPUT ) & 0x000Fu ), uint16_t ( ( ( INPUT ) & 0xFFF0u ) >> 4 )
 
 
 struct IpcConnected : public SerializableSequence { EMPTY_MESSAGE_BOILERPLATE ( IpcConnected ) };
