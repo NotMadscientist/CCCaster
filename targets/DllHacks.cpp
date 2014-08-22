@@ -38,7 +38,7 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
             device,                         // D3D device pointer
             24,                             // height
             0,                              // width
-            FW_NORMAL,                      // weight
+            FW_BOLD,                        // weight
             1,                              // # of mipmap levels
             FALSE,                          // italic
             DEFAULT_CHARSET,                // charset
@@ -70,7 +70,7 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
             overlayText.size(),             // Number of letters, -1 for null-terminated
             &rect,                          // Text bounding RECT
             DT_CENTER,                      // Text formatting
-            D3DCOLOR_XRGB ( 0, 255, 0 ) );  // Text color
+            D3DCOLOR_XRGB ( 255, 0, 0 ) );  // Text color
     }
 }
 

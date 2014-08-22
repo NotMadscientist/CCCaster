@@ -93,11 +93,16 @@ uint16_t NetplayManager::getCharaSelectInput ( uint8_t player ) const
 
 uint16_t NetplayManager::getSkippableInput ( uint8_t player ) const
 {
-    return getDelayedInput ( player );
+    // Only allow the A button here
+    return ( getDelayedInput ( player ) & COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT ) );
 }
 
 uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
 {
+    // Workaround for round start desync
+    if ( frame < 10 )
+        return 0;
+
     uint16_t input = getDelayedInput ( player );
 
     // Disable pausing in-game
