@@ -52,6 +52,47 @@
 #define CC_GAME_MODE_INGAME         ( 1 )
 #define CC_GAME_MODE_RETRY          ( 5 )
 
+inline const char *gameModeStr ( unsigned gameMode )
+{
+    switch ( gameMode )
+    {
+        case CC_GAME_MODE_STARTUP:
+            return "Startup";
+
+        case CC_GAME_MODE_OPENING:
+            return "Opening";
+
+        case CC_GAME_MODE_TITLE:
+            return "Title";
+
+        case CC_GAME_MODE_LOADING_DEMO:
+            return "Loading-demo";
+
+        case CC_GAME_MODE_HIGH_SCORES:
+            return "High-scores";
+
+        case CC_GAME_MODE_MAIN:
+            return "Main";
+
+        case CC_GAME_MODE_CHARA_SELECT:
+            return "Character-select";
+
+        case CC_GAME_MODE_LOADING:
+            return "Loading";
+
+        case CC_GAME_MODE_INGAME:
+            return "In-game";
+
+        case CC_GAME_MODE_RETRY:
+            return "Retry";
+
+        default:
+            break;
+    }
+
+    return "Unknown game mode!";
+}
+
 // Complete RNG state
 #define CC_RNGSTATE0_ADDR           ( ( uint32_t * ) 0x563778 )
 #define CC_RNGSTATE1_ADDR           ( ( uint32_t * ) 0x56377C )

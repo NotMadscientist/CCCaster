@@ -20,6 +20,11 @@ using namespace std;
 
 #define RESEND_INPUTS_INTERVAL 100
 
+#define LOG_SYNC(FORMAT, ...)                                                                                   \
+    LOG_TO ( syncLog, "[%u:%s:%u:%s:%u] " FORMAT,                                                               \
+             *CC_GAME_MODE_ADDR, gameModeStr ( *CC_GAME_MODE_ADDR ),                                            \
+             netMan.getIndex(), netMan.getState(), netMan.getFrame(), __VA_ARGS__ )
+
 
 // Declarations
 void initializePreLoadHacks();
@@ -84,14 +89,6 @@ struct Main
         // New frame
         netMan.updateFrame();
         procMan.clearInputs();
-
-        // Log the RNG state once every 5 seconds
-        if ( netMan.getFrame() % ( 5 * 60 ) == 0 )
-        {
-            string dump = procMan.getRngState()->getAs<RngState>().dump();
-            LOG_TO ( syncLog, "[%u:%u:%s:%u] %s",
-                     *CC_GAME_MODE_ADDR, netMan.getIndex(), netMan.getState(), netMan.getFrame(), dump );
-        }
 
         // Check for changes to important variables for state transitions
         ChangeMonitor::get().check();
@@ -188,16 +185,21 @@ struct Main
             netMan.setRngState ( nextRngState->getAs<RngState>() );
             nextRngState.reset();
             shouldSetRngState = false;
+
+            // Log the RNG state after we set it
+            LOG_SYNC ( "RngState: %s", procMan.getRngState()->getAs<RngState>().dump() );
         }
+
+        // Log the RNG state once every 5 seconds
+        if ( netMan.getFrame() % ( 5 * 60 ) == 0 )
+            LOG_SYNC ( "RngState: %s", procMan.getRngState()->getAs<RngState>().dump() );
 
         // Write netplay inputs
         procMan.writeGameInput ( localPlayer, netMan.getInput ( localPlayer ) );
         procMan.writeGameInput ( remotePlayer, netMan.getInput ( remotePlayer ) );
 
         // Log inputs every frame
-        LOG_TO ( syncLog, "[%u:%u:%s:%u] %04x %04x",
-                 *CC_GAME_MODE_ADDR, netMan.getIndex(), netMan.getState(), netMan.getFrame(),
-                 netMan.getInput ( 1 ), netMan.getInput ( 2 ) );
+        LOG_SYNC ( "Inputs: %04x %04x", netMan.getInput ( 1 ), netMan.getInput ( 2 ) );
     }
 
     void bothCharaSelectLoaded()
@@ -227,6 +229,10 @@ struct Main
         }
 
         netMan.setState ( state );
+
+        // Log the RNG state when the host sends it
+        if ( ( state.value == NetplayState::CharaSelect || state.value == NetplayState::InGame ) && isHost() )
+            LOG_SYNC ( "RngState: %s", procMan.getRngState()->getAs<RngState>().dump() );
     }
 
     void gameModeChanged ( uint32_t previous, uint32_t current )
