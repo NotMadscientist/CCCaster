@@ -209,7 +209,7 @@ MsgPtr NetplayManager::getInputs ( uint8_t player ) const
     ASSERT ( inputs[index][player - 1].empty() == false );
     ASSERT ( frame + 1 <= inputs[index][player - 1].size() );
 
-    PlayerInputs *playerInputs = new PlayerInputs ( frame, inputs.size() - 1 );
+    PlayerInputs *playerInputs = new PlayerInputs ( frame, index );
 
     ASSERT_INPUTS_RANGE ( playerInputs->getStartFrame(),
                           playerInputs->getEndFrame(),
@@ -249,7 +249,7 @@ MsgPtr NetplayManager::getBothInputs() const
     ASSERT ( frame + 1 <= inputs[index][0].size() );
     ASSERT ( frame + 1 <= inputs[index][1].size() );
 
-    BothInputs *bothInputs = new BothInputs ( frame, inputs.size() - 1 );
+    BothInputs *bothInputs = new BothInputs ( frame, index );
 
     const uint32_t endFrame = frame + 1;
     uint32_t startFrame = 0;
