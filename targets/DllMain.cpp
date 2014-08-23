@@ -64,6 +64,7 @@ struct Main
     RefChangeMonitor<Variable, uint32_t> worldTimerMoniter;
 
     // Timeout for each call to EventManager::poll
+    // TODO figure out if there is any way to increase this, maybe dynamically?
     uint64_t pollTimeout = 1;
 
     // Local and remote player numbers
