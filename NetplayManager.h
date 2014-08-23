@@ -101,4 +101,6 @@ public:
     // Get / set the RNG state for the current index
     MsgPtr getRngState() const;
     void setRngState ( const RngState& rngState );
+
+    friend class ProcessManager;
 };

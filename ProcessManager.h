@@ -4,14 +4,20 @@
 #include "Timer.h"
 #include "Protocol.h"
 #include "Messages.h"
+#include "NetplayManager.h"
+
+#include <memory>
+#include <stack>
 
 
-#define COMBINE_INPUT(DIRECTION, BUTTONS)   ( ( DIRECTION ) | ( ( BUTTONS ) << 4 ) )
+#define COMBINE_INPUT(DIRECTION, BUTTONS)   uint16_t ( ( DIRECTION ) | ( ( BUTTONS ) << 4 ) )
 
 #define INLINE_INPUT(INPUT)                 uint16_t ( ( INPUT ) & 0x000Fu ), uint16_t ( ( ( INPUT ) & 0xFFF0u ) >> 4 )
 
 
 struct IpcConnected : public SerializableSequence { EMPTY_MESSAGE_BOILERPLATE ( IpcConnected ) };
+
+struct GameState;
 
 
 class ProcessManager : public Socket::Owner, public Timer::Owner
@@ -34,6 +40,22 @@ public:
 
 private:
 
+    struct GameState
+    {
+        // Each game state is uniquely indentified by (netplayState, startWorldTime, frame, index).
+        // They are chronologically ordered by index and then frame.
+        NetplayState netplayState;
+        uint32_t startWorldTime;
+        uint32_t frame, index;
+
+        // The pointer to the raw bytes in the state pool
+        char *rawBytes;
+
+        // Save / load the game state
+        void save();
+        void load();
+    };
+
     // Named pipe
     void *pipe = 0;
 
@@ -51,6 +73,15 @@ private:
 
     // IPC connected flag
     bool connected = false;
+
+    // Memory pool to allocate game states
+    std::shared_ptr<char> memoryPool;
+
+    // Unused indicies in the memory pool, each game state has the same size
+    std::stack<size_t> freeStack;
+
+    // List of saved game states in chronological order
+    std::list<GameState> statesList;
 
     // IPC socket callbacks
     void acceptEvent ( Socket *socket ) override;
@@ -102,4 +133,11 @@ public:
     // Get / set the game RNG state
     MsgPtr getRngState() const;
     void setRngState ( const RngState& rngState );
+
+    // Allocate memory for rollback
+    void allocateRollback();
+
+    // Save / load game state
+    void saveState ( const NetplayManager& netMan );
+    bool loadState ( uint32_t frame, uint32_t index, NetplayManager& netMan );
 };

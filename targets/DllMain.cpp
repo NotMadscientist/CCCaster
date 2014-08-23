@@ -91,6 +91,10 @@ struct Main
         netMan.updateFrame();
         procMan.clearInputs();
 
+        // Only save states when in-game
+        if ( *CC_GAME_MODE_ADDR == CC_GAME_MODE_INGAME )
+            procMan.saveState ( netMan );
+
         // Check for changes to important variables for state transitions
         ChangeMonitor::get().check();
 
@@ -101,6 +105,7 @@ struct Main
         }
         else if ( netMan.getState().value >= NetplayState::CharaSelect )
         {
+
             // Check for changes to controller state
             ControllerManager::get().check();
 
@@ -141,6 +146,9 @@ struct Main
                 if ( GetKeyState ( 'D' ) & 0x80 )       buttons = CC_BUTTON_FN2;
                 if ( GetKeyState ( 'G' ) & 0x80 )       buttons = CC_BUTTON_FN1;
                 if ( GetKeyState ( VK_F5 ) & 0x80 )     buttons = CC_BUTTON_START;
+
+                // if ( GetKeyState ( VK_F6 ) & 0x80 )
+                //     procMan.resetState ( netMan.getFrame() - 30, netMan.getIndex(), netMan );
 #endif
                 input = COMBINE_INPUT ( direction, buttons );
             }
@@ -323,6 +331,11 @@ struct Main
     }
 
     // ProcessManager callbacks
+    void ipcConnectEvent() override
+    {
+        procMan.allocateRollback();
+    }
+
     void ipcDisconnectEvent() override
     {
         EventManager::get().stop();
