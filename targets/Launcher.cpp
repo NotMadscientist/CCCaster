@@ -104,7 +104,6 @@ bool hook ( const string& exe_path, const string& dll_path )
     int tries = 0;
     do
     {
-retry:
         ResumeThread ( pi.hThread );
         Sleep ( 10 );
         SuspendThread ( pi.hThread );
@@ -112,7 +111,7 @@ retry:
         if ( !GetThreadContext ( pi.hThread, &ct ) )
         {
             if ( tries++ < 500 )
-                goto retry;
+                continue;
             Sleep ( 100 );
             TerminateProcess ( pi.hProcess, -1 );
             // MessageBox ( 0, "Could not get thread context.", "launcher error", MB_OK );
