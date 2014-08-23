@@ -17,9 +17,11 @@ ENUM ( NetplayState, PreInitial, Initial, CharaSelect, Loading, Skippable, InGam
 
 /* Netplay state transitions
 
-    PreInitial -> Initial -> CharaSelect -> Loading -> Skippable
+    PreInitial -> Initial -> CharaSelect -> Loading
 
-    Skippable -> { InGame, RetryMenu }
+    Loading -> { Skippable, InGame (training mode) }
+
+    Skippable -> { InGame (versus mode), RetryMenu }
 
     InGame -> { Skippable, PauseMenu (broadcast / offline only) }
 

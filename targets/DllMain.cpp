@@ -280,8 +280,11 @@ struct Main
 
         if ( current == CC_GAME_MODE_INGAME )
         {
-            // In-game starts with character intros, which is a skippable state
-            netplayStateChanged ( NetplayState::Skippable );
+            // Versus mode in-game starts with character intros, which is a skippable state
+            if ( !netMan.setup.training )
+                netplayStateChanged ( NetplayState::Skippable );
+            else
+                netplayStateChanged ( NetplayState::InGame );
             return;
         }
 
