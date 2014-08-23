@@ -56,6 +56,24 @@
 #define CC_GAME_MODE_INGAME         ( 1 )
 #define CC_GAME_MODE_RETRY          ( 5 )
 
+// Complete RNG state
+#define CC_RNGSTATE0_ADDR           ( ( uint32_t * ) 0x563778 )
+#define CC_RNGSTATE1_ADDR           ( ( uint32_t * ) 0x56377C )
+#define CC_RNGSTATE2_ADDR           ( ( uint32_t * ) 0x564068 )
+#define CC_RNGSTATE3_ADDR           ( ( char * )     0x56406C )
+#define CC_RNGSTATE3_SIZE           ( 224 )
+
+// Character select selection mode
+#define CC_CHARA_SELECT_CHARA       ( 0 )
+#define CC_CHARA_SELECT_MOON        ( 1 )
+#define CC_CHARA_SELECT_COLOUR      ( 2 )
+
+
+// Asm hacks are prefixed MM (for modified memory), they should be written to safe locations
+#define MM_HOOK_CALL1_ADDR          ( ( char * ) 0x40D032 )
+#define MM_HOOK_CALL2_ADDR          ( ( char * ) 0x40D411 )
+
+
 inline const char *gameModeStr ( unsigned gameMode )
 {
     switch ( gameMode )
@@ -96,20 +114,3 @@ inline const char *gameModeStr ( unsigned gameMode )
 
     return "Unknown game mode!";
 }
-
-// Complete RNG state
-#define CC_RNGSTATE0_ADDR           ( ( uint32_t * ) 0x563778 )
-#define CC_RNGSTATE1_ADDR           ( ( uint32_t * ) 0x56377C )
-#define CC_RNGSTATE2_ADDR           ( ( uint32_t * ) 0x564068 )
-#define CC_RNGSTATE3_ADDR           ( ( char * )     0x56406C )
-#define CC_RNGSTATE3_SIZE           ( 224 )
-
-// Character select selection mode
-#define CC_CHARA_SELECT_CHARA       ( 0 )
-#define CC_CHARA_SELECT_MOON        ( 1 )
-#define CC_CHARA_SELECT_COLOUR      ( 2 )
-
-
-// Asm hacks are prefixed MM (for modified memory), they should be written to safe locations
-#define MM_HOOK_CALL1_ADDR          ( ( char * ) 0x40D032 )
-#define MM_HOOK_CALL2_ADDR          ( ( char * ) 0x40D411 )

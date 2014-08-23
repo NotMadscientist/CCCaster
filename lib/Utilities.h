@@ -196,3 +196,7 @@ public:
     bool save ( const char *file ) const;
     bool load ( const char *file );
 };
+
+
+template<typename T>
+inline void deleteArray ( T *ptr ) { delete[] ptr; }

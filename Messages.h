@@ -34,12 +34,12 @@ struct ClientType : public SerializableSequence
 
 struct NetplaySetup : public SerializableSequence
 {
-    uint8_t delay = 0xFF;
+    uint8_t delay = 0xFF, rollback = 0xFF;
     uint8_t training = 0;
     uint8_t hostPlayer = 0;
     uint16_t broadcastPort = 0;
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( NetplaySetup, delay, training, hostPlayer, broadcastPort )
+    PROTOCOL_MESSAGE_BOILERPLATE ( NetplaySetup, delay, rollback, training, hostPlayer, broadcastPort )
 };
 
 
