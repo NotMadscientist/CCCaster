@@ -70,9 +70,6 @@ struct Main
     // Local and remote player numbers
     uint8_t localPlayer = 1, remotePlayer = 2;
 
-    // Host and client player numbers
-    uint8_t hostPlayer = 1, clientPlayer = 2;
-
     // Timer for resending inputs while waiting
     TimerPtr resendTimer;
 
@@ -371,20 +368,21 @@ struct Main
                     if ( netMan.setup.hostPlayer != 1 && netMan.setup.hostPlayer != 2 )
                         LOG_AND_THROW_STRING ( "netMan.setup.hostPlayer=%d is invalid!", netMan.setup.hostPlayer );
 
+                    // Determine the player numbers
                     if ( isHost() )
                     {
-                        hostPlayer = localPlayer = netMan.setup.hostPlayer;
-                        clientPlayer = remotePlayer = ( 3 - netMan.setup.hostPlayer );
+                        localPlayer = netMan.setup.hostPlayer;
+                        remotePlayer = netMan.remotePlayer = ( 3 - netMan.setup.hostPlayer );
                     }
                     else
                     {
-                        hostPlayer = remotePlayer = netMan.setup.hostPlayer;
-                        clientPlayer = localPlayer = ( 3 - netMan.setup.hostPlayer );
+                        remotePlayer = netMan.remotePlayer = netMan.setup.hostPlayer;
+                        localPlayer = ( 3 - netMan.setup.hostPlayer );
                     }
                 }
 
-                LOG ( "delay=%d; training=%d; hostPlayer=%d; clientPlayer=%d; localPlayer=%d; remotePlayer=%d",
-                      netMan.setup.delay, netMan.setup.training, hostPlayer, clientPlayer, localPlayer, remotePlayer );
+                LOG ( "delay=%d; training=%d; hostPlayer=%d; localPlayer=%d; remotePlayer=%d",
+                      netMan.setup.delay, netMan.setup.training, netMan.setup.hostPlayer, localPlayer, remotePlayer );
                 break;
 
             case MsgType::SocketShareData:

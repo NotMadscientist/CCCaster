@@ -74,6 +74,9 @@ public:
     // Netplay setup
     NetplaySetup setup;
 
+    // Remote player number
+    uint8_t remotePlayer = 2;
+
     // Update the current netplay frame
     void updateFrame();
     uint32_t getFrame() const { return frame; }
