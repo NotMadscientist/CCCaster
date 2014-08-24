@@ -110,7 +110,7 @@ struct Main
             // Input testing code
             uint16_t input;
             {
-#if 0
+#if 1
                 uint16_t direction = ( rand() % 10 );
                 if ( direction == 5 )
                     direction = 0;

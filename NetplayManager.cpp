@@ -136,9 +136,6 @@ uint16_t NetplayManager::getPauseMenuInput ( uint8_t player ) const
 
 uint16_t NetplayManager::getDelayedInput ( uint8_t player, uint32_t frame ) const
 {
-    if ( frame == UINT_MAX )
-        frame = getFrame();
-
     if ( frame < setup.offset() )
         return 0;
 
