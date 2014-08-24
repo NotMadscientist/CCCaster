@@ -34,7 +34,7 @@ struct ClientType : public SerializableSequence
 
 struct NetplaySetup : public SerializableSequence
 {
-    uint8_t delay = 0xFF, rollback = 0xFF;
+    uint8_t delay = 0xFF, rollback = 0;
     uint8_t training = 0;
     uint8_t hostPlayer = 0;
     uint16_t broadcastPort = 0;

@@ -31,6 +31,19 @@ ENUM ( NetplayState, PreInitial, Initial, CharaSelect, Loading, Skippable, InGam
 
 */
 
+
+union IndexedFrame
+{
+    struct { uint32_t index, frame; } parts;
+    uint64_t value;
+};
+
+inline std::ostream& operator<< ( std::ostream& os, const IndexedFrame& indexedFrame )
+{
+    return ( os << indexedFrame.parts.index << ':' << indexedFrame.parts.frame );
+}
+
+
 class NetplayManager
 {
     // Netplay state
@@ -45,14 +58,22 @@ class NetplayManager
     // This is reset to the current world time whenever the netplay state changes, ie a state transition happens.
     uint32_t startWorldTime = 0;
 
-    // Current netplay frame, frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime
-    uint32_t frame = 0;
+    // Current transition index, incremented whenever the netplay state changes (after CharaSelect).
+    // Current netplay frame, frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime.
+    IndexedFrame indexedFrame = { { 0, 0 } };
 
-    // Current transition index, incremented whenever the netplay state changes (after CharaSelect)
-    uint32_t index = 0;
+    // Last index we care about
+    uint32_t lastStartingIndex = 0;
+
+    // Last changed indexed frame
+    IndexedFrame lastChangedFrame = { { 0, 0 } };
 
     // Mapping: index -> player -> frame -> input
     std::vector<std::array<std::vector<uint32_t>, 2>> inputs;
+
+    // Mapping: index -> frame -> boolean
+    // Indicates if the input for the frame is a real input
+    std::vector<std::vector<bool>> isRealInput;
 
     // Data for previous games, each game starts after the Loading state
     std::vector<MsgPtr> games;
@@ -79,12 +100,13 @@ public:
 
     // Update the current netplay frame
     void updateFrame();
-    uint32_t getFrame() const { return frame; }
-    uint32_t getIndex() const { return index; }
+    uint32_t getFrame() const { return indexedFrame.parts.frame; }
+    uint32_t getIndex() const { return indexedFrame.parts.index; }
+    IndexedFrame getIndexedFrame() const { return indexedFrame; }
 
     // Get / set the current netplay state
-    const NetplayState& getState() const { return state; }
-    void setState ( const NetplayState& state );
+    NetplayState getState() const { return state; }
+    void setState ( NetplayState state );
 
     // Get / set the input for the current frame given the player
     uint16_t getInput ( uint8_t player ) const;

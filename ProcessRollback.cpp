@@ -206,8 +206,7 @@ void ProcessManager::saveState ( const NetplayManager& netMan )
     {
         netMan.state,
         netMan.startWorldTime,
-        netMan.frame,
-        netMan.index,
+        netMan.indexedFrame,
         memoryPool.get() + freeStack.top()
     };
 
@@ -216,20 +215,31 @@ void ProcessManager::saveState ( const NetplayManager& netMan )
     statesList.push_back ( state );
 }
 
-bool ProcessManager::loadState ( uint32_t frame, uint32_t index, NetplayManager& netMan )
+bool ProcessManager::loadState ( IndexedFrame indexedFrame, NetplayManager& netMan )
 {
+    LOG ( "Trying to load state: indexedFrame=%s", indexedFrame );
+
     for ( auto it = statesList.rbegin(); it != statesList.rend(); ++it )
     {
-        if ( it->index <= index && it->frame <= frame )
+        if ( it->indexedFrame.value <= indexedFrame.value )
         {
+            LOG ( "Loaded state: indexedFrame=%s", it->indexedFrame );
+
+            // Overwrite the current game state
             netMan.state = it->netplayState;
             netMan.startWorldTime = it->startWorldTime;
-            netMan.frame = it->frame;
-            netMan.index = it->index;
+            netMan.indexedFrame = it->indexedFrame;
             it->load();
+
+            // Erase all other states after the current one.
+            // Note it.base() returns 1 after the position of it, but moving forward.
+            for ( auto jt = it.base(); jt != statesList.end(); ++jt )
+                freeStack.push ( jt->rawBytes - memoryPool.get() );
+            statesList.erase ( it.base(), statesList.end() );
             return true;
         }
     }
 
+    LOG ( "Failed to load state: indexedFrame=%s", indexedFrame );
     return false;
 }

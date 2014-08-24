@@ -78,7 +78,7 @@ public:
 
     struct Owner
     {
-        virtual void hasChanged ( const K& key, T previous, T current ) {}
+        virtual void hasChanged ( K key, T previous, T current ) {}
     };
 
     Owner *owner = 0;
@@ -136,7 +136,7 @@ public:
 
     struct Owner
     {
-        virtual void hasChanged ( const K& key, T previous, T current ) {}
+        virtual void hasChanged ( K key, T previous, T current ) {}
     };
 
     Owner *owner = 0;

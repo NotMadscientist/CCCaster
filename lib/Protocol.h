@@ -87,7 +87,7 @@ struct Serializable
 
     // Get message and base types
     virtual MsgType getMsgType() const = 0;
-    virtual const BaseType& getBaseType() const = 0;
+    virtual BaseType getBaseType() const = 0;
 
     // Serialize to and deserialize from a binary archive
     virtual void save ( cereal::BinaryOutputArchive& ar ) const {};
@@ -130,7 +130,7 @@ private:
 // Represents a regular message
 struct SerializableMessage : public Serializable
 {
-    const BaseType& getBaseType() const override
+    BaseType getBaseType() const override
     {
         static const BaseType baseType = BaseType::SerializableMessage;
         return baseType;
@@ -145,7 +145,7 @@ struct SerializableSequence : public Serializable
     SerializableSequence() {}
     SerializableSequence ( uint32_t sequence ) : sequence ( sequence ) {}
 
-    const BaseType& getBaseType() const override
+    BaseType getBaseType() const override
     {
         static const BaseType baseType = BaseType::SerializableSequence;
         return baseType;

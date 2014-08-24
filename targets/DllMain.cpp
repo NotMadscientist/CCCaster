@@ -110,7 +110,7 @@ struct Main
             // Input testing code
             uint16_t input;
             {
-#if 1
+#if 0
                 uint16_t direction = ( rand() % 10 );
                 if ( direction == 5 )
                     direction = 0;
@@ -145,8 +145,8 @@ struct Main
                 if ( GetKeyState ( 'G' ) & 0x80 )       buttons = CC_BUTTON_FN1;
                 if ( GetKeyState ( VK_F5 ) & 0x80 )     buttons = CC_BUTTON_START;
 
-                // if ( GetKeyState ( VK_F6 ) & 0x80 )
-                //     procMan.resetState ( netMan.getFrame() - 30, netMan.getIndex(), netMan );
+                if ( GetKeyState ( VK_F6 ) & 0x80 )
+                    procMan.loadState ( { netMan.getIndex(), netMan.getFrame() - 30 }, netMan );
 #endif
                 input = COMBINE_INPUT ( direction, buttons );
             }
@@ -225,7 +225,7 @@ struct Main
         dataSocket->setKeepAlive ( DEFAULT_KEEP_ALIVE );
     }
 
-    void netplayStateChanged ( const NetplayState& state )
+    void netplayStateChanged ( NetplayState state )
     {
         if ( state.value == NetplayState::CharaSelect || state.value == NetplayState::InGame )
         {
@@ -304,7 +304,7 @@ struct Main
     }
 
     // ChangeMonitor callbacks
-    void hasChanged ( const Variable& var, uint32_t previous, uint32_t current ) override
+    void hasChanged ( Variable var, uint32_t previous, uint32_t current ) override
     {
         switch ( var.value )
         {

@@ -42,11 +42,11 @@ private:
 
     struct GameState
     {
-        // Each game state is uniquely indentified by (netplayState, startWorldTime, frame, index).
+        // Each game state is uniquely indentified by (netplayState, startWorldTime, indexedFrame).
         // They are chronologically ordered by index and then frame.
         NetplayState netplayState;
         uint32_t startWorldTime;
-        uint32_t frame, index;
+        IndexedFrame indexedFrame;
 
         // The pointer to the raw bytes in the state pool
         char *rawBytes;
@@ -139,5 +139,5 @@ public:
 
     // Save / load current game state
     void saveState ( const NetplayManager& netMan );
-    bool loadState ( uint32_t frame, uint32_t index, NetplayManager& netMan );
+    bool loadState ( IndexedFrame indexedFrame, NetplayManager& netMan );
 };
