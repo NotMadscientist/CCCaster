@@ -219,7 +219,7 @@ MsgPtr NetplayManager::getInputs ( uint8_t player ) const
 
 void NetplayManager::setInputs ( uint8_t player, const PlayerInputs& playerInputs )
 {
-    if ( playerInputs.getIndex() < lastStartingIndex )
+    if ( playerInputs.getIndex() + 1 < getIndex() )
         return;
 
     ASSERT ( player == 1 || player == 2 );
