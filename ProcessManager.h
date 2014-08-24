@@ -134,8 +134,9 @@ public:
     MsgPtr getRngState() const;
     void setRngState ( const RngState& rngState );
 
-    // Allocate memory for saving game states
+    // Allocate / deallocate memory for saving game states
     void allocateStates();
+    void deallocateStates();
 
     // Save / load current game state
     void saveState ( const NetplayManager& netMan );

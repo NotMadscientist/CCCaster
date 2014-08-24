@@ -195,6 +195,16 @@ void ProcessManager::allocateStates()
     statesList.clear();
 }
 
+void ProcessManager::deallocateStates()
+{
+    memoryPool.reset();
+
+    while ( !freeStack.empty() )
+        freeStack.pop();
+
+    statesList.clear();
+}
+
 void ProcessManager::saveState ( const NetplayManager& netMan )
 {
     if ( freeStack.empty() )

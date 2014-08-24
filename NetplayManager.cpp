@@ -140,26 +140,7 @@ uint16_t NetplayManager::getDelayedInput ( uint8_t player, uint32_t frame ) cons
         return 0;
 
     ASSERT ( player == 1 || player == 2 );
-
-    ASSERT ( inputs.empty() == false );
-    ASSERT ( inputs.size() > getIndex() );
-
-    // if ( setup.rollback )
-    // {
-    //     if ( frame - setup.offset() >= inputs[getIndex()][player - 1].size() )
-    //     {
-    //         uint16_t previous = 0;
-    //         if ( !inputs[getIndex()][player - 1].empty() )
-    //             previous = inputs[getIndex()][player - 1].back();
-
-    //         // Fake inputs for rollback by using the last known input
-    //         inputs[getIndex()][player - 1].resize ( frame - setup.offset() + 1, previous );
-    //     }
-    // }
-
-    ASSERT ( frame - setup.offset() < inputs[getIndex()][player - 1].size() );
-
-    return inputs[getIndex()][player - 1][frame - setup.offset()];
+    return inputs[player - 1].get ( { getIndex(), frame - setup.offset() } );
 }
 
 void NetplayManager::updateFrame()
@@ -184,51 +165,49 @@ void NetplayManager::setState ( NetplayState state )
         if ( this->state != NetplayState::Initial )
             ++indexedFrame.parts.index;
 
-        // Resize the inputs
-        if ( getIndex() >= inputs.size() )
-        {
-            inputs.resize ( getIndex() + 1 );
+        // // Resize the inputs
+        // if ( getIndex() >= inputs.size() )
+        //     inputs.resize ( getIndex() + 1 );
 
-            if ( setup.rollback )
-                isRealInput.resize ( getIndex() + 1 );
-        }
+        // if ( setup.rollback && getIndex() >= isRealInput.size() )
+        //     isRealInput.resize ( getIndex() + 1 );
 
-        // If we're loading a new game
-        if ( this->state == NetplayState::Loading )
-        {
-            // Add new game data
-            games.push_back ( MsgPtr ( new PerGameData ( getIndex() ) ) );
+        // // If we're loading a new game
+        // if ( this->state == NetplayState::Loading )
+        // {
+        //     // Add new game data
+        //     games.push_back ( MsgPtr ( new PerGameData ( getIndex() ) ) );
 
-            // Clear old game data
-            if ( int ( games.size() - 1 ) - MAX_GAMES_TO_KEEP >= 0 )
-                games [ int ( games.size() - 1 ) - MAX_GAMES_TO_KEEP ].reset();
+        //     // Clear old game data
+        //     if ( int ( games.size() - 1 ) - MAX_GAMES_TO_KEEP >= 0 )
+        //         games [ int ( games.size() - 1 ) - MAX_GAMES_TO_KEEP ].reset();
 
-            // Clear old input data
-            uint32_t startIndex = 0;
+        //     // Clear old input data
+        //     uint32_t startIndex = 0;
 
-            if ( games.size() > 1 )
-            {
-                ASSERT ( games[games.size() - 1].get() != 0 );
-                ASSERT ( games[games.size() - 1]->getMsgType() == MsgType::PerGameData );
-                startIndex = games[games.size() - 1]->getAs<PerGameData>().startIndex;
-            }
+        //     if ( games.size() > 1 )
+        //     {
+        //         ASSERT ( games[games.size() - 1].get() != 0 );
+        //         ASSERT ( games[games.size() - 1]->getMsgType() == MsgType::PerGameData );
+        //         startIndex = games[games.size() - 1]->getAs<PerGameData>().startIndex;
+        //     }
 
-            for ( uint32_t i = startIndex; i < getIndex(); ++i )
-            {
-                inputs[i][0].clear();
-                inputs[i][0].shrink_to_fit();
-                inputs[i][1].clear();
-                inputs[i][1].shrink_to_fit();
+        //     for ( uint32_t i = startIndex; i < getIndex(); ++i )
+        //     {
+        //         inputs[i][0].clear();
+        //         inputs[i][0].shrink_to_fit();
+        //         inputs[i][1].clear();
+        //         inputs[i][1].shrink_to_fit();
 
-                if ( setup.rollback )
-                {
-                    isRealInput[i].clear();
-                    isRealInput[i].shrink_to_fit();
-                }
-            }
+        //         if ( setup.rollback )
+        //         {
+        //             isRealInput[i].clear();
+        //             isRealInput[i].shrink_to_fit();
+        //         }
+        //     }
 
-            lastStartingIndex = getIndex();
-        }
+        //     lastStartingIndex = getIndex();
+        // }
     }
 
     this->state = state;
@@ -237,29 +216,15 @@ void NetplayManager::setState ( NetplayState state )
 void NetplayManager::setInput ( uint8_t player, uint16_t input )
 {
     ASSERT ( player == 1 || player == 2 );
-    ASSERT ( inputs.empty() == false );
-
-    if ( getFrame() >= inputs[getIndex()][player - 1].size() )
-        inputs[getIndex()][player - 1].resize ( getFrame() + 1, 0 );
-
-    inputs[getIndex()][player - 1][getFrame()] = input;
+    inputs[player - 1].set ( indexedFrame, input );
 }
 
 MsgPtr NetplayManager::getInputs ( uint8_t player ) const
 {
-    ASSERT ( player == 1 || player == 2 );
-    ASSERT ( inputs.empty() == false );
-    ASSERT ( inputs[getIndex()][player - 1].empty() == false );
-    ASSERT ( getFrame() + 1 <= inputs[getIndex()][player - 1].size() );
-
     PlayerInputs *playerInputs = new PlayerInputs ( indexedFrame );
 
-    ASSERT_INPUTS_RANGE ( playerInputs->getStartFrame(), playerInputs->getEndFrame(),
-                          inputs[getIndex()][player - 1].size() );
-
-    copy ( inputs[getIndex()][player - 1].begin() + playerInputs->getStartFrame(),
-           inputs[getIndex()][player - 1].begin() + playerInputs->getEndFrame(),
-           playerInputs->inputs.begin() );
+    ASSERT ( player == 1 || player == 2 );
+    inputs[player - 1].get ( playerInputs->getStartIndexedFrame(), &playerInputs->inputs[0], playerInputs->size() );
 
     return MsgPtr ( playerInputs );
 }
@@ -270,91 +235,23 @@ void NetplayManager::setInputs ( uint8_t player, const PlayerInputs& playerInput
         return;
 
     ASSERT ( player == 1 || player == 2 );
-
-    if ( playerInputs.getIndex() >= inputs.size() )
-    {
-        inputs.resize ( playerInputs.getIndex() + 1 );
-
-        if ( setup.rollback )
-            isRealInput.resize ( playerInputs.getIndex() + 1 );
-    }
-
-    if ( playerInputs.getEndFrame() > inputs[playerInputs.getIndex()][player - 1].size() )
-    {
-        inputs[playerInputs.getIndex()][player - 1].resize ( playerInputs.getEndFrame(), 0 );
-
-        if ( setup.rollback )
-            isRealInput[playerInputs.getIndex()].resize ( playerInputs.getEndFrame(), false );
-    }
-
-    ASSERT_INPUTS_RANGE ( playerInputs.getStartFrame(), playerInputs.getEndFrame(),
-                          inputs[playerInputs.getIndex()][player - 1].size() );
-
-    copy ( playerInputs.inputs.begin(), playerInputs.inputs.begin() + playerInputs.size(),
-           inputs[playerInputs.getIndex()][player - 1].begin() + playerInputs.getStartFrame() );
-
-    if ( setup.rollback )
-    {
-        fill ( isRealInput[playerInputs.getIndex()].begin() + playerInputs.getStartFrame(),
-               isRealInput[playerInputs.getIndex()].begin() + playerInputs.getEndFrame(), true );
-    }
+    inputs[player - 1].set ( playerInputs.getStartIndexedFrame(), &playerInputs.inputs[0], playerInputs.size() );
 }
 
 MsgPtr NetplayManager::getBothInputs() const
 {
-    ASSERT ( inputs.empty() == false );
-    ASSERT ( inputs[getIndex()][0].empty() == false );
-    ASSERT ( inputs[getIndex()][1].empty() == false );
-    ASSERT ( getFrame() + 1 <= inputs[getIndex()][0].size() );
-    ASSERT ( getFrame() + 1 <= inputs[getIndex()][1].size() );
-
-    BothInputs *bothInputs = new BothInputs ( indexedFrame );
-
-    const uint32_t endFrame = getFrame() + 1;
-    uint32_t startFrame = 0;
-    if ( endFrame > NUM_INPUTS )
-        startFrame = endFrame - NUM_INPUTS;
-
-    ASSERT_INPUTS_RANGE ( startFrame, endFrame, inputs[getIndex()][0].size() );
-    ASSERT_INPUTS_RANGE ( startFrame, endFrame, inputs[getIndex()][1].size() );
-
-    copy ( inputs[getIndex()][0].begin() + startFrame, inputs[getIndex()][0].begin() + endFrame,
-           bothInputs->inputs[0].begin() );
-    copy ( inputs[getIndex()][1].begin() + startFrame, inputs[getIndex()][1].begin() + endFrame,
-           bothInputs->inputs[1].begin() );
-
-    return MsgPtr ( bothInputs );
+    // TODO
+    return 0;
 }
 
 void NetplayManager::setBothInputs ( const BothInputs& bothInputs )
 {
-    if ( bothInputs.getIndex() >= inputs.size() )
-        inputs.resize ( bothInputs.getIndex() + 1 );
-
-    if ( bothInputs.getEndFrame() > inputs[bothInputs.getIndex()][0].size() )
-        inputs[bothInputs.getIndex()][0].resize ( bothInputs.getEndFrame(), 0 );
-
-    if ( bothInputs.getEndFrame() > inputs[bothInputs.getIndex()][1].size() )
-        inputs[bothInputs.getIndex()][1].resize ( bothInputs.getEndFrame(), 0 );
-
-    ASSERT_INPUTS_RANGE ( bothInputs.getStartFrame(), bothInputs.getEndFrame(),
-                          inputs[bothInputs.getIndex()][0].size() );
-    ASSERT_INPUTS_RANGE ( bothInputs.getStartFrame(), bothInputs.getEndFrame(),
-                          inputs[bothInputs.getIndex()][1].size() );
-
-    copy ( bothInputs.inputs[0].begin(), bothInputs.inputs[0].begin() + bothInputs.size(),
-           inputs[bothInputs.getIndex()][0].begin() + bothInputs.getStartFrame() );
-    copy ( bothInputs.inputs[1].begin(), bothInputs.inputs[1].begin() + bothInputs.size(),
-           inputs[bothInputs.getIndex()][1].begin() + bothInputs.getStartFrame() );
+    // TODO
 }
 
 uint16_t NetplayManager::getInput ( uint8_t player ) const
 {
     ASSERT ( player == 1 || player == 2 );
-
-    // If the inputs array is ahead, then we should mash to skip
-    if ( getIndex() + 1 < inputs.size() )
-        RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
 
     switch ( state.value )
     {
@@ -369,6 +266,10 @@ uint16_t NetplayManager::getInput ( uint8_t player ) const
 
         case NetplayState::Loading:
         case NetplayState::Skippable:
+            // If the inputs array is ahead, then we should mash to skip
+            if ( inputs[remotePlayer - 1].getEndIndex() > getIndex() + 1 )
+                RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
+
             return getSkippableInput ( player );
 
         case NetplayState::InGame:
@@ -391,17 +292,7 @@ bool NetplayManager::areInputsReady() const
     if ( state.value < NetplayState::CharaSelect )
         return true;
 
-    // At this point we should have incremented the index and input array already
-    ASSERT ( inputs.empty() == false );
-
-    // If the inputs array is ahead, then we can just mash to skip
-    if ( getIndex() + 1 < inputs.size() )
-        return true;
-
-    ASSERT ( getIndex() + 1 == inputs.size() );
-
-    return ( inputs[getIndex()][0].size() + setup.delay > getFrame() )
-           && ( inputs[getIndex()][1].size() + setup.delay > getFrame() );
+    return ( indexedFrame.value + setup.offset() < inputs[remotePlayer - 1].getEndIndexedFrame().value );
 }
 
 MsgPtr NetplayManager::getRngState() const
@@ -413,4 +304,14 @@ MsgPtr NetplayManager::getRngState() const
 void NetplayManager::setRngState ( const RngState& rngState )
 {
     // TODO
+}
+
+void NetplayManager::setRemotePlayer ( uint8_t player )
+{
+    ASSERT ( player == 1 || player == 2 );
+
+    localPlayer = 3 - player;
+    remotePlayer = player;
+
+    inputs[player - 1].fillFakeInputs = ( setup.rollback > 0 );
 }

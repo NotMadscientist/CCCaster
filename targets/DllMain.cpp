@@ -21,7 +21,7 @@ using namespace std;
 #define RESEND_INPUTS_INTERVAL 100
 
 #define LOG_SYNC(FORMAT, ...)                                                                                   \
-    LOG_TO ( syncLog, "[%u-%s-%s-%s] " FORMAT,                                                                  \
+    LOG_TO ( syncLog, "[%u] %s [%s] %s " FORMAT,                                                                \
              *CC_GAME_MODE_ADDR, gameModeStr ( *CC_GAME_MODE_ADDR ),                                            \
              netMan.getIndexedFrame(), netMan.getState(), __VA_ARGS__ )
 
@@ -82,12 +82,32 @@ struct Main
     // Indicates if we should set the game's RNG state with nextRngState
     bool shouldSetRngState = false;
 
+    // Frame to stop on, when re-running the game due to rollback, 0:0 means not re-running
+    IndexedFrame rollbackStopFrame = { { 0, 0 } };
+
 
     void frameStep()
     {
         // New frame
         netMan.updateFrame();
         procMan.clearInputs();
+
+        // // Don't do anything else while re-running the game
+        // if ( rollbackStopFrame.value )
+        // {
+        //     if ( netMan.getIndexedFrame().value < rollbackStopFrame.value )
+        //     {
+        //         // Disable FPS limit while re-running
+        //         *CC_SKIP_FRAMES_ADDR = 1;
+
+        //         // Just write inputs and return
+        //         procMan.writeGameInput ( localPlayer, netMan.getInput ( localPlayer ) );
+        //         procMan.writeGameInput ( remotePlayer, netMan.getInput ( remotePlayer ) );
+        //         return;
+        //     }
+
+        //     rollbackStopFrame.value = 0;
+        // }
 
         // Only save states when in-game
         if ( netMan.setup.rollback && *CC_GAME_MODE_ADDR == CC_GAME_MODE_INGAME )
@@ -196,6 +216,28 @@ struct Main
             }
         }
 
+        // // Only rollback when in-game
+        // if ( netMan.setup.rollback && *CC_GAME_MODE_ADDR == CC_GAME_MODE_INGAME )
+        // {
+        //     if ( netMan.getLastChangedFrame().value < netMan.getIndexedFrame().value )
+        //     {
+        //         LOG_SYNC ( "Rollback: %s -> %s", netMan.getIndexedFrame(), netMan.getLastChangedFrame() );
+
+        //         // Save when to stop
+        //         rollbackStopFrame = netMan.getIndexedFrame();
+
+        //         // Reset the game state
+        //         procMan.loadState ( netMan.getLastChangedFrame(), netMan );
+
+        //         // Disable FPS limit while re-running
+        //         *CC_SKIP_FRAMES_ADDR = 1;
+
+        //         // Clear some flags
+        //         nextRngState.reset();
+        //         shouldSetRngState = false;
+        //     }
+        // }
+
         // Update the RNG state if necessary
         if ( shouldSetRngState )
         {
@@ -233,7 +275,20 @@ struct Main
 
     void netplayStateChanged ( NetplayState state )
     {
-        if ( state.value == NetplayState::CharaSelect || state.value == NetplayState::InGame )
+        if ( netMan.getState() != NetplayState::InGame && state == NetplayState::InGame )
+        {
+            // dataSocket->setPacketLoss ( 10 );
+            // procMan.allocateStates();
+            // netMan.setup.rollback = 4;
+        }
+        else if ( netMan.getState() == NetplayState::InGame && state != NetplayState::InGame )
+        {
+            // dataSocket->setPacketLoss ( 0 );
+            // procMan.deallocateStates();
+            // netMan.setup.rollback = 0;
+        }
+
+        if ( state == NetplayState::CharaSelect || state == NetplayState::InGame )
         {
             if ( isHost() )
             {
@@ -251,7 +306,7 @@ struct Main
         netMan.setState ( state );
 
         // Log the RNG state when the host sends it
-        if ( ( state.value == NetplayState::CharaSelect || state.value == NetplayState::InGame ) && isHost() )
+        if ( ( state == NetplayState::CharaSelect || state == NetplayState::InGame ) && isHost() )
             LOG_SYNC ( "RngState: %s", procMan.getRngState()->getAs<RngState>().dump() );
     }
 
@@ -373,13 +428,15 @@ struct Main
                     if ( isHost() )
                     {
                         localPlayer = netMan.setup.hostPlayer;
-                        remotePlayer = netMan.remotePlayer = ( 3 - netMan.setup.hostPlayer );
+                        remotePlayer = ( 3 - netMan.setup.hostPlayer );
                     }
                     else
                     {
-                        remotePlayer = netMan.remotePlayer = netMan.setup.hostPlayer;
+                        remotePlayer = netMan.setup.hostPlayer;
                         localPlayer = ( 3 - netMan.setup.hostPlayer );
                     }
+
+                    netMan.setRemotePlayer ( remotePlayer );
                 }
 
                 LOG ( "delay=%d; training=%d; hostPlayer=%d; localPlayer=%d; remotePlayer=%d",

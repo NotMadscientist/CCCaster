@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Messages.h"
+#include "InputsContainer.h"
 
 #include <vector>
 
@@ -54,17 +55,19 @@ class NetplayManager
     uint32_t lastStartingIndex = 0;
 
     // Last changed indexed frame
-    IndexedFrame lastChangedFrame = { { 0, 0 } };
+    IndexedFrame lastChangedFrame = { { UINT_MAX, UINT_MAX } };
 
-    // Mapping: index -> player -> frame -> input
-    std::vector<std::array<std::vector<uint32_t>, 2>> inputs;
-
-    // Mapping: index -> frame -> boolean
-    // Indicates if the input for the frame is a real input
-    std::vector<std::vector<bool>> isRealInput;
+    // Mapping: player -> index -> frame -> input
+    std::array<InputsContainer<uint16_t>, 2> inputs;
 
     // Data for previous games, each game starts after the Loading state
     std::vector<MsgPtr> games;
+
+    // The local player, ie the one where setInput is called each frame
+    uint8_t localPlayer = 1;
+
+    // The remote player, ie the one where setInputs gets called
+    uint8_t remotePlayer = 2;
 
     // Get the input for the specific netplay state
     uint16_t getPreInitialInput ( uint8_t player ) const;
@@ -84,14 +87,15 @@ public:
     // Netplay setup
     NetplaySetup setup;
 
-    // Remote player number
-    uint8_t remotePlayer = 2;
+    // Indicate which player is the remote player
+    void setRemotePlayer ( uint8_t player );
 
     // Update the current netplay frame
     void updateFrame();
     uint32_t getFrame() const { return indexedFrame.parts.frame; }
     uint32_t getIndex() const { return indexedFrame.parts.index; }
     IndexedFrame getIndexedFrame() const { return indexedFrame; }
+    IndexedFrame getLastChangedFrame() const { return lastChangedFrame; }
 
     // Get / set the current netplay state
     NetplayState getState() const { return state; }

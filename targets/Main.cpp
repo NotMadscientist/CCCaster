@@ -228,7 +228,7 @@ struct Main : public CommonMain, public Pinger::Owner
     {
         LOG ( "acceptEvent ( %08x )", serverSocket );
 
-        // TODO proper queueing
+        // TODO proper queueing of potential spectators
         if ( serverSocket == serverCtrlSocket.get() )
         {
             ctrlSocket = serverCtrlSocket->accept ( this );
