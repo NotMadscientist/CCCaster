@@ -331,7 +331,7 @@ struct Main
     // ProcessManager callbacks
     void ipcConnectEvent() override
     {
-        procMan.allocateRollback();
+        procMan.allocateStates();
     }
 
     void ipcDisconnectEvent() override

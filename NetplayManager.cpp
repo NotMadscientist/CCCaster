@@ -251,8 +251,7 @@ void NetplayManager::setInputs ( uint8_t player, const PlayerInputs& playerInput
                           playerInputs.getEndFrame(),
                           inputs[playerInputs.index][player - 1].size() );
 
-    copy ( playerInputs.inputs.begin(),
-           playerInputs.inputs.begin() + playerInputs.size(),
+    copy ( playerInputs.inputs.begin(), playerInputs.inputs.begin() + playerInputs.size(),
            inputs[playerInputs.index][player - 1].begin() + playerInputs.getStartFrame() );
 }
 

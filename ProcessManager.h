@@ -134,10 +134,10 @@ public:
     MsgPtr getRngState() const;
     void setRngState ( const RngState& rngState );
 
-    // Allocate memory for rollback
-    void allocateRollback();
+    // Allocate memory for saving game states
+    void allocateStates();
 
-    // Save / load game state
+    // Save / load current game state
     void saveState ( const NetplayManager& netMan );
     bool loadState ( uint32_t frame, uint32_t index, NetplayManager& netMan );
 };

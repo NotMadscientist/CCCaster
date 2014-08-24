@@ -5,7 +5,7 @@
 using namespace std;
 
 
-#define NUM_ROLLBACK_STATES     ( 60 )
+#define NUM_ROLLBACK_STATES         ( 120 )
 
 
 #define CC_UNKNOWN_TIMER_ADDR       ((char *)0x55D1CC) // 4 bytes
@@ -159,11 +159,14 @@ void ProcessManager::GameState::save()
     ASSERT ( rawBytes != 0 );
 
     size_t pos = 0;
+
     for ( const auto& pair : memLocs.addresses )
     {
         copy ( ( char * ) pair.first, ( char * ) pair.second, &rawBytes[pos] );
         pos += ( size_t ( pair.second ) - size_t ( pair.first ) );
     }
+
+    ASSERT ( pos == memLocs.totalSize );
 }
 
 void ProcessManager::GameState::load()
@@ -171,15 +174,18 @@ void ProcessManager::GameState::load()
     ASSERT ( rawBytes != 0 );
 
     size_t pos = 0;
+
     for ( const auto& pair : memLocs.addresses )
     {
         size_t size = size_t ( pair.second ) - size_t ( pair.first );
         copy ( &rawBytes[pos], &rawBytes[pos + size], ( char * ) pair.first );
         pos += size;
     }
+
+    ASSERT ( pos == memLocs.totalSize );
 }
 
-void ProcessManager::allocateRollback()
+void ProcessManager::allocateStates()
 {
     memoryPool.reset ( new char[NUM_ROLLBACK_STATES * memLocs.totalSize], deleteArray<char> );
     for ( size_t i = 0; i < NUM_ROLLBACK_STATES; ++i )
