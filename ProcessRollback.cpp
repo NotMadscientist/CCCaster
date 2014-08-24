@@ -188,8 +188,11 @@ void ProcessManager::GameState::load()
 void ProcessManager::allocateStates()
 {
     memoryPool.reset ( new char[NUM_ROLLBACK_STATES * memLocs.totalSize], deleteArray<char> );
+
     for ( size_t i = 0; i < NUM_ROLLBACK_STATES; ++i )
         freeStack.push ( i * memLocs.totalSize );
+
+    statesList.clear();
 }
 
 void ProcessManager::saveState ( const NetplayManager& netMan )

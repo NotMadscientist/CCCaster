@@ -1,0 +1,8 @@
+#!/bin/sh
+
+grep RngState ~/MBAACC/cccaster/sync.log > tmpsync1
+grep RngState ~/MBAACC/cccaster2/sync.log > tmpsync2
+
+diff tmpsync1 tmpsync2
+
+rm tmpsync1 tmpsync2

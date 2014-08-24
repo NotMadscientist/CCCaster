@@ -364,7 +364,7 @@ struct DummyMain : public Main
 
     void startGame() override
     {
-        // Don't start the game in dummy mode
+        // Don't start the game when in dummy mode
     }
 
     // Socket callback
@@ -388,8 +388,11 @@ struct DummyMain : public Main
 
             case MsgType::PlayerInputs:
                 // Reply with fake inputs
-                fakeInputs.frame = msg->getAs<PlayerInputs>().frame + netplaySetup.delay * 2;
-                fakeInputs.index = msg->getAs<PlayerInputs>().index;
+                fakeInputs.indexedFrame =
+                {
+                    msg->getAs<PlayerInputs>().getIndex(),
+                    msg->getAs<PlayerInputs>().getFrame() + netplaySetup.delay * 2
+                };
                 fakeInputs.invalidate();
                 dataSocket->send ( REF_PTR ( fakeInputs ) );
                 break;
@@ -406,7 +409,7 @@ struct DummyMain : public Main
     }
 
     // Constructor
-    DummyMain ( const IpAddrPort& address ) : Main ( address ), fakeInputs ( 0, 0 )
+    DummyMain ( const IpAddrPort& address ) : Main ( address ), fakeInputs ( { 0, 0 } )
     {
         fakeInputs.inputs.fill ( 0 );
     }
@@ -500,6 +503,7 @@ static BOOL WINAPI consoleCtrl ( DWORD ctrl )
 int main ( int argc, char *argv[] )
 {
 #if 0
+    // Protocol testing code
     Logger::get().initialize();
 
     size_t pos = 0, consumed;

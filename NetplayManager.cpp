@@ -139,14 +139,30 @@ uint16_t NetplayManager::getDelayedInput ( uint8_t player, uint32_t frame ) cons
     if ( frame == UINT_MAX )
         frame = getFrame();
 
-    if ( frame < setup.delay )
+    if ( frame < setup.offset() )
         return 0;
 
     ASSERT ( player == 1 || player == 2 );
-    ASSERT ( inputs.empty() == false );
-    ASSERT ( frame - setup.delay < inputs[getIndex()][player - 1].size() );
 
-    return inputs[getIndex()][player - 1][frame - setup.delay];
+    ASSERT ( inputs.empty() == false );
+    ASSERT ( inputs.size() > getIndex() );
+
+    // if ( setup.rollback )
+    // {
+    //     if ( frame - setup.offset() >= inputs[getIndex()][player - 1].size() )
+    //     {
+    //         uint16_t previous = 0;
+    //         if ( !inputs[getIndex()][player - 1].empty() )
+    //             previous = inputs[getIndex()][player - 1].back();
+
+    //         // Fake inputs for rollback by using the last known input
+    //         inputs[getIndex()][player - 1].resize ( frame - setup.offset() + 1, previous );
+    //     }
+    // }
+
+    ASSERT ( frame - setup.offset() < inputs[getIndex()][player - 1].size() );
+
+    return inputs[getIndex()][player - 1][frame - setup.offset()];
 }
 
 void NetplayManager::updateFrame()
@@ -239,7 +255,7 @@ MsgPtr NetplayManager::getInputs ( uint8_t player ) const
     ASSERT ( inputs[getIndex()][player - 1].empty() == false );
     ASSERT ( getFrame() + 1 <= inputs[getIndex()][player - 1].size() );
 
-    PlayerInputs *playerInputs = new PlayerInputs ( getFrame(), getIndex() );
+    PlayerInputs *playerInputs = new PlayerInputs ( indexedFrame );
 
     ASSERT_INPUTS_RANGE ( playerInputs->getStartFrame(), playerInputs->getEndFrame(),
                           inputs[getIndex()][player - 1].size() );
@@ -253,37 +269,37 @@ MsgPtr NetplayManager::getInputs ( uint8_t player ) const
 
 void NetplayManager::setInputs ( uint8_t player, const PlayerInputs& playerInputs )
 {
-    if ( playerInputs.index < lastStartingIndex )
+    if ( playerInputs.getIndex() < lastStartingIndex )
         return;
 
     ASSERT ( player == 1 || player == 2 );
 
-    if ( playerInputs.index >= inputs.size() )
+    if ( playerInputs.getIndex() >= inputs.size() )
     {
-        inputs.resize ( playerInputs.index + 1 );
+        inputs.resize ( playerInputs.getIndex() + 1 );
 
         if ( setup.rollback )
-            isRealInput.resize ( playerInputs.index + 1 );
+            isRealInput.resize ( playerInputs.getIndex() + 1 );
     }
 
-    if ( playerInputs.getEndFrame() > inputs[playerInputs.index][player - 1].size() )
+    if ( playerInputs.getEndFrame() > inputs[playerInputs.getIndex()][player - 1].size() )
     {
-        inputs[playerInputs.index][player - 1].resize ( playerInputs.getEndFrame(), 0 );
+        inputs[playerInputs.getIndex()][player - 1].resize ( playerInputs.getEndFrame(), 0 );
 
         if ( setup.rollback )
-            isRealInput[playerInputs.index].resize ( playerInputs.getEndFrame(), false );
+            isRealInput[playerInputs.getIndex()].resize ( playerInputs.getEndFrame(), false );
     }
 
     ASSERT_INPUTS_RANGE ( playerInputs.getStartFrame(), playerInputs.getEndFrame(),
-                          inputs[playerInputs.index][player - 1].size() );
+                          inputs[playerInputs.getIndex()][player - 1].size() );
 
     copy ( playerInputs.inputs.begin(), playerInputs.inputs.begin() + playerInputs.size(),
-           inputs[playerInputs.index][player - 1].begin() + playerInputs.getStartFrame() );
+           inputs[playerInputs.getIndex()][player - 1].begin() + playerInputs.getStartFrame() );
 
     if ( setup.rollback )
     {
-        fill ( isRealInput[playerInputs.index].begin() + playerInputs.getStartFrame(),
-               isRealInput[playerInputs.index].begin() + playerInputs.getEndFrame(), true );
+        fill ( isRealInput[playerInputs.getIndex()].begin() + playerInputs.getStartFrame(),
+               isRealInput[playerInputs.getIndex()].begin() + playerInputs.getEndFrame(), true );
     }
 }
 
@@ -295,7 +311,7 @@ MsgPtr NetplayManager::getBothInputs() const
     ASSERT ( getFrame() + 1 <= inputs[getIndex()][0].size() );
     ASSERT ( getFrame() + 1 <= inputs[getIndex()][1].size() );
 
-    BothInputs *bothInputs = new BothInputs ( getFrame(), getIndex() );
+    BothInputs *bothInputs = new BothInputs ( indexedFrame );
 
     const uint32_t endFrame = getFrame() + 1;
     uint32_t startFrame = 0;
@@ -315,22 +331,24 @@ MsgPtr NetplayManager::getBothInputs() const
 
 void NetplayManager::setBothInputs ( const BothInputs& bothInputs )
 {
-    if ( bothInputs.index >= inputs.size() )
-        inputs.resize ( bothInputs.index + 1 );
+    if ( bothInputs.getIndex() >= inputs.size() )
+        inputs.resize ( bothInputs.getIndex() + 1 );
 
-    if ( bothInputs.getEndFrame() > inputs[bothInputs.index][0].size() )
-        inputs[bothInputs.index][0].resize ( bothInputs.getEndFrame(), 0 );
+    if ( bothInputs.getEndFrame() > inputs[bothInputs.getIndex()][0].size() )
+        inputs[bothInputs.getIndex()][0].resize ( bothInputs.getEndFrame(), 0 );
 
-    if ( bothInputs.getEndFrame() > inputs[bothInputs.index][1].size() )
-        inputs[bothInputs.index][1].resize ( bothInputs.getEndFrame(), 0 );
+    if ( bothInputs.getEndFrame() > inputs[bothInputs.getIndex()][1].size() )
+        inputs[bothInputs.getIndex()][1].resize ( bothInputs.getEndFrame(), 0 );
 
-    ASSERT_INPUTS_RANGE ( bothInputs.getStartFrame(), bothInputs.getEndFrame(), inputs[bothInputs.index][0].size() );
-    ASSERT_INPUTS_RANGE ( bothInputs.getStartFrame(), bothInputs.getEndFrame(), inputs[bothInputs.index][1].size() );
+    ASSERT_INPUTS_RANGE ( bothInputs.getStartFrame(), bothInputs.getEndFrame(),
+                          inputs[bothInputs.getIndex()][0].size() );
+    ASSERT_INPUTS_RANGE ( bothInputs.getStartFrame(), bothInputs.getEndFrame(),
+                          inputs[bothInputs.getIndex()][1].size() );
 
     copy ( bothInputs.inputs[0].begin(), bothInputs.inputs[0].begin() + bothInputs.size(),
-           inputs[bothInputs.index][0].begin() + bothInputs.getStartFrame() );
+           inputs[bothInputs.getIndex()][0].begin() + bothInputs.getStartFrame() );
     copy ( bothInputs.inputs[1].begin(), bothInputs.inputs[1].begin() + bothInputs.size(),
-           inputs[bothInputs.index][1].begin() + bothInputs.getStartFrame() );
+           inputs[bothInputs.getIndex()][1].begin() + bothInputs.getStartFrame() );
 }
 
 uint16_t NetplayManager::getInput ( uint8_t player ) const

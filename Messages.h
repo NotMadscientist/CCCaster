@@ -39,6 +39,14 @@ struct NetplaySetup : public SerializableSequence
     uint8_t hostPlayer = 0;
     uint16_t broadcastPort = 0;
 
+    uint8_t offset() const
+    {
+        if ( delay < rollback )
+            return 0;
+        else
+            return delay - rollback;
+    }
+
     PROTOCOL_MESSAGE_BOILERPLATE ( NetplaySetup, delay, rollback, training, hostPlayer, broadcastPort )
 };
 
@@ -77,35 +85,40 @@ struct PerGameData : public SerializableSequence
 };
 
 
-struct PlayerInputs : public SerializableMessage
+struct BaseInputs
 {
-    uint32_t frame = 0, index = 0;
+    IndexedFrame indexedFrame = { { 0, 0 } };
 
+    uint32_t getIndex() const { return indexedFrame.parts.index; }
+    uint32_t getFrame() const { return indexedFrame.parts.frame; }
+
+    uint32_t getStartFrame() const
+    {
+        return ( indexedFrame.parts.frame + 1 < NUM_INPUTS ) ? 0 : indexedFrame.parts.frame + 1 - NUM_INPUTS;
+    }
+
+    uint32_t getEndFrame() const { return indexedFrame.parts.frame + 1; }
+
+    size_t size() const { return getEndFrame() - getStartFrame(); }
+};
+
+struct PlayerInputs : public SerializableMessage, public BaseInputs
+{
     // Represents the input range [frame - NUM_INPUTS + 1, frame + 1)
     std::array<uint16_t, NUM_INPUTS> inputs;
 
-    uint32_t getStartFrame() const { return ( frame + 1 < NUM_INPUTS ) ? 0 : frame + 1 - NUM_INPUTS; }
-    uint32_t getEndFrame() const { return frame + 1; }
-    size_t size() const { return getEndFrame() - getStartFrame(); }
+    PlayerInputs ( IndexedFrame indexedFrame ) { this->indexedFrame = indexedFrame; }
 
-    PlayerInputs ( uint32_t frame, uint32_t index ) : frame ( frame ), index ( index ) {}
-
-    PROTOCOL_MESSAGE_BOILERPLATE ( PlayerInputs, frame, index, inputs )
+    PROTOCOL_MESSAGE_BOILERPLATE ( PlayerInputs, indexedFrame.value, inputs )
 };
 
 
-struct BothInputs : public SerializableMessage
+struct BothInputs : public SerializableMessage, public BaseInputs
 {
-    uint32_t frame = 0, index = 0;
-
     // Represents the input range [frame - NUM_INPUTS + 1, frame + 1)
     std::array<std::array<uint16_t, NUM_INPUTS>, 2> inputs;
 
-    uint32_t getStartFrame() const { return ( frame + 1 < NUM_INPUTS ) ? 0 : frame + 1 - NUM_INPUTS; }
-    uint32_t getEndFrame() const { return frame + 1; }
-    size_t size() const { return getEndFrame() - getStartFrame(); }
+    BothInputs ( IndexedFrame indexedFrame ) { this->indexedFrame = indexedFrame; }
 
-    BothInputs ( uint32_t frame, uint32_t index ) : frame ( frame ), index ( index ) {}
-
-    PROTOCOL_MESSAGE_BOILERPLATE ( BothInputs, frame, index, inputs )
+    PROTOCOL_MESSAGE_BOILERPLATE ( BothInputs, indexedFrame.value, inputs )
 };

@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cstdint>
+#include <iostream>
+
+
 // Number of frames of inputs to send per message
 #define NUM_INPUTS                  30
 
@@ -74,7 +78,19 @@
 #define MM_HOOK_CALL2_ADDR          ( ( char * ) 0x40D411 )
 
 
-inline const char *gameModeStr ( unsigned gameMode )
+union IndexedFrame
+{
+    struct { uint32_t index, frame; } parts;
+    uint64_t value;
+};
+
+inline std::ostream& operator<< ( std::ostream& os, const IndexedFrame& indexedFrame )
+{
+    return ( os << indexedFrame.parts.index << ':' << indexedFrame.parts.frame );
+}
+
+
+inline const char *gameModeStr ( uint32_t gameMode )
 {
     switch ( gameMode )
     {

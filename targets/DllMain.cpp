@@ -21,9 +21,9 @@ using namespace std;
 #define RESEND_INPUTS_INTERVAL 100
 
 #define LOG_SYNC(FORMAT, ...)                                                                                   \
-    LOG_TO ( syncLog, "[%u:%s:%u:%s:%u] " FORMAT,                                                               \
+    LOG_TO ( syncLog, "[%u-%s-%s-%s] " FORMAT,                                                                  \
              *CC_GAME_MODE_ADDR, gameModeStr ( *CC_GAME_MODE_ADDR ),                                            \
-             netMan.getIndex(), netMan.getState(), netMan.getFrame(), __VA_ARGS__ )
+             netMan.getIndexedFrame(), netMan.getState(), __VA_ARGS__ )
 
 
 // Declarations
@@ -90,7 +90,7 @@ struct Main
         procMan.clearInputs();
 
         // Only save states when in-game
-        if ( *CC_GAME_MODE_ADDR == CC_GAME_MODE_INGAME )
+        if ( netMan.setup.rollback && *CC_GAME_MODE_ADDR == CC_GAME_MODE_INGAME )
             procMan.saveState ( netMan );
 
         // Check for changes to important variables for state transitions
@@ -145,7 +145,13 @@ struct Main
                 if ( GetKeyState ( 'G' ) & 0x80 )       buttons = CC_BUTTON_FN1;
                 if ( GetKeyState ( VK_F5 ) & 0x80 )     buttons = CC_BUTTON_START;
 
-                if ( GetKeyState ( VK_F6 ) & 0x80 )
+                if ( !netMan.setup.rollback && ( GetKeyState ( VK_F7 ) & 0x80 ) )
+                {
+                    procMan.allocateStates();
+                    netMan.setup.rollback = 4;
+                }
+
+                if ( netMan.setup.rollback && ( GetKeyState ( VK_F6 ) & 0x80 ) )
                     procMan.loadState ( { netMan.getIndex(), netMan.getFrame() - 30 }, netMan );
 #endif
                 input = COMBINE_INPUT ( direction, buttons );
@@ -213,7 +219,7 @@ struct Main
 
         // Log inputs every frame
         LOG_SYNC ( "Inputs: %04x %04x", netMan.getInput ( 1 ), netMan.getInput ( 2 ) );
-        overlayText = toString ( "%u:%u", netMan.getIndex(), netMan.getFrame() );
+        overlayText = toString ( "%s", netMan.getIndexedFrame() );
     }
 
     void bothCharaSelectLoaded()
@@ -329,11 +335,6 @@ struct Main
     }
 
     // ProcessManager callbacks
-    void ipcConnectEvent() override
-    {
-        procMan.allocateStates();
-    }
-
     void ipcDisconnectEvent() override
     {
         EventManager::get().stop();

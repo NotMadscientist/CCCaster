@@ -32,18 +32,6 @@ ENUM ( NetplayState, PreInitial, Initial, CharaSelect, Loading, Skippable, InGam
 */
 
 
-union IndexedFrame
-{
-    struct { uint32_t index, frame; } parts;
-    uint64_t value;
-};
-
-inline std::ostream& operator<< ( std::ostream& os, const IndexedFrame& indexedFrame )
-{
-    return ( os << indexedFrame.parts.index << ':' << indexedFrame.parts.frame );
-}
-
-
 class NetplayManager
 {
     // Netplay state
