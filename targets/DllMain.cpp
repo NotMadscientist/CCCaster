@@ -134,6 +134,8 @@ struct Main
                 uint16_t direction = ( rand() % 10 );
                 if ( direction == 5 )
                     direction = 0;
+                if ( netMan.getState().value == NetplayState::RetryMenu && ( netMan.getFrame() % 10 ) )
+                    direction = 0;
 
                 uint16_t buttons = ( rand() % 0x1000 );
                 if ( netMan.getState().value == NetplayState::CharaSelect )

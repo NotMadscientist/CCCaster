@@ -113,13 +113,27 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
 
 uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
 {
-    uint16_t input = getDelayedInput ( player ), previous = 0;
-    if ( getFrame() > 0 )
-        previous = getDelayedInput ( player, getFrame() - 1 );
+    bool hasUpDown = false;
 
-    // Don't allow pressing select until after we have stopped moving the cursor. This is a work around for
-    // the issue when select is hit 1 frame after the cursor moves, but before currentMenuIndex is updated.
-    if ( ( previous & 2 ) || ( previous & 8 ) || ( input & 2 ) || ( input & 8 ) )
+    for ( size_t i = 0; i < 10; ++i )
+    {
+        if ( i > getFrame() )
+            break;
+
+        uint16_t input = getDelayedInput ( player, getFrame() - i );
+
+        if ( ( input & 2 ) || ( input & 8 ) )
+        {
+            hasUpDown = true;
+            break;
+        }
+    }
+
+    uint16_t input = getDelayedInput ( player );
+
+    // Don't allow pressing select until 10f after we have stopped moving the cursor. This is a work around
+    // for the issue when select is pressed after the cursor moves, but before currentMenuIndex is updated.
+    if ( hasUpDown )
         input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
 
     // Disable saving replay or returning to main menu
@@ -136,11 +150,19 @@ uint16_t NetplayManager::getPauseMenuInput ( uint8_t player ) const
 
 uint16_t NetplayManager::getDelayedInput ( uint8_t player, uint32_t frame ) const
 {
-    if ( frame < setup.offset() )
+    if ( frame < setup.getDelay() )
         return 0;
 
     ASSERT ( player == 1 || player == 2 );
-    return inputs[player - 1].get ( { getIndex(), frame - setup.offset() } );
+    return inputs[player - 1].get ( { getIndex(), frame - setup.getDelay() } );
+}
+
+bool NetplayManager::areInputsReady() const
+{
+    if ( state.value < NetplayState::CharaSelect )
+        return true;
+
+    return ( inputs[remotePlayer - 1].getEndIndexedFrame().value > indexedFrame.value + 1 + setup.getDelay() );
 }
 
 void NetplayManager::updateFrame()
@@ -165,49 +187,15 @@ void NetplayManager::setState ( NetplayState state )
         if ( this->state != NetplayState::Initial )
             ++indexedFrame.parts.index;
 
-        // // Resize the inputs
-        // if ( getIndex() >= inputs.size() )
-        //     inputs.resize ( getIndex() + 1 );
+        // Clear old input data
+        if ( this->state == NetplayState::Loading )
+        {
+            // TODO save PerGameData
 
-        // if ( setup.rollback && getIndex() >= isRealInput.size() )
-        //     isRealInput.resize ( getIndex() + 1 );
-
-        // // If we're loading a new game
-        // if ( this->state == NetplayState::Loading )
-        // {
-        //     // Add new game data
-        //     games.push_back ( MsgPtr ( new PerGameData ( getIndex() ) ) );
-
-        //     // Clear old game data
-        //     if ( int ( games.size() - 1 ) - MAX_GAMES_TO_KEEP >= 0 )
-        //         games [ int ( games.size() - 1 ) - MAX_GAMES_TO_KEEP ].reset();
-
-        //     // Clear old input data
-        //     uint32_t startIndex = 0;
-
-        //     if ( games.size() > 1 )
-        //     {
-        //         ASSERT ( games[games.size() - 1].get() != 0 );
-        //         ASSERT ( games[games.size() - 1]->getMsgType() == MsgType::PerGameData );
-        //         startIndex = games[games.size() - 1]->getAs<PerGameData>().startIndex;
-        //     }
-
-        //     for ( uint32_t i = startIndex; i < getIndex(); ++i )
-        //     {
-        //         inputs[i][0].clear();
-        //         inputs[i][0].shrink_to_fit();
-        //         inputs[i][1].clear();
-        //         inputs[i][1].shrink_to_fit();
-
-        //         if ( setup.rollback )
-        //         {
-        //             isRealInput[i].clear();
-        //             isRealInput[i].shrink_to_fit();
-        //         }
-        //     }
-
-        //     lastStartingIndex = getIndex();
-        // }
+            inputs[0].clear ( lastStartingIndex, getIndex() );
+            inputs[1].clear ( lastStartingIndex, getIndex() );
+            lastStartingIndex = getIndex();
+        }
     }
 
     this->state = state;
@@ -266,7 +254,7 @@ uint16_t NetplayManager::getInput ( uint8_t player ) const
 
         case NetplayState::Loading:
         case NetplayState::Skippable:
-            // If the inputs array is ahead, then we should mash to skip
+            // If the remote inputs index is ahead, then we should mash to skip
             if ( inputs[remotePlayer - 1].getEndIndex() > getIndex() + 1 )
                 RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
 
@@ -285,14 +273,6 @@ uint16_t NetplayManager::getInput ( uint8_t player ) const
             LOG_AND_THROW_STRING ( "Invalid state %s!", state );
             return 0;
     }
-}
-
-bool NetplayManager::areInputsReady() const
-{
-    if ( state.value < NetplayState::CharaSelect )
-        return true;
-
-    return ( indexedFrame.value + setup.offset() < inputs[remotePlayer - 1].getEndIndexedFrame().value );
 }
 
 MsgPtr NetplayManager::getRngState() const

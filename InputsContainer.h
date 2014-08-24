@@ -86,6 +86,27 @@ public:
         }
     }
 
+    void clear ( size_t startIndex, size_t endIndex )
+    {
+        for ( size_t i = startIndex; i < endIndex; ++i )
+        {
+            if ( i >= inputs.size() )
+                break;
+
+            inputs[i].clear();
+            inputs[i].shrink_to_fit();
+        }
+
+        for ( size_t i = startIndex; i < endIndex; ++i )
+        {
+            if ( i >= real.size() )
+                break;
+
+            real[i].clear();
+            real[i].shrink_to_fit();
+        }
+    }
+
     uint32_t getEndIndex() const { return inputs.size(); }
 
     uint32_t getEndFrame() const

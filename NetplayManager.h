@@ -90,6 +90,9 @@ public:
     // Indicate which player is the remote player
     void setRemotePlayer ( uint8_t player );
 
+    // If inputs are ready for the current frame, if not then keep polling
+    bool areInputsReady() const;
+
     // Update the current netplay frame
     void updateFrame();
     uint32_t getFrame() const { return indexedFrame.parts.frame; }
@@ -112,9 +115,6 @@ public:
     // Get / set batch inputs for the both players
     MsgPtr getBothInputs() const;
     void setBothInputs ( const BothInputs& bothInputs );
-
-    // If inputs are ready to be used, if not then keep polling
-    bool areInputsReady() const;
 
     // Get / set the RNG state for the current index
     MsgPtr getRngState() const;
