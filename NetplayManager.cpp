@@ -11,14 +11,6 @@ using namespace std;
 #define MAX_GAMES_TO_KEEP ( 5 )
 
 
-#define ASSERT_INPUTS_RANGE(START, END, SIZE)                       \
-    do {                                                            \
-        ASSERT ( ( END ) > ( START ) );                             \
-        ASSERT ( ( END ) - ( START ) <= ( NUM_INPUTS ) );           \
-        ASSERT ( ( START ) < ( SIZE ) );                            \
-        ASSERT ( ( END ) <= ( SIZE ) );                             \
-    } while ( 0 )
-
 #define RETURN_MASH_INPUT(DIRECTION, BUTTONS)                       \
     do {                                                            \
         if ( getFrame() % 2 )                                       \
