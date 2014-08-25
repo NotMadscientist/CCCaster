@@ -66,15 +66,19 @@ void Logger::log ( const char *file, int line, const char *func, const char *mes
     LOCK ( mutex );
 #endif
 
+    bool hasPrefix = false;
+
     if ( options & LOG_TIMESTAMP )
     {
         strftime ( buffer, sizeof ( buffer ), "%H:%M:%S", ts );
         fprintf ( fd, "%s:", buffer );
+        hasPrefix = true;
     }
 
     if ( options & LOG_FILE_LINE )
     {
         fprintf ( fd, "%s:%3d:", file, line );
+        hasPrefix = true;
     }
 
     if ( options & LOG_FUNC_NAME )
@@ -82,9 +86,10 @@ void Logger::log ( const char *file, int line, const char *func, const char *mes
         string shortFunc ( func );
         shortFunc = shortFunc.substr ( 0, shortFunc.find ( '(' ) );
         fprintf ( fd, "%s:", shortFunc.c_str() );
+        hasPrefix = true;
     }
 
-    fprintf ( fd, "%s\n", message );
+    fprintf ( fd, ( hasPrefix ? " %s\n" : "%s\n" ), message );
     fflush ( fd );
 }
 

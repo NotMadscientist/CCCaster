@@ -105,7 +105,7 @@ public:
     do {                                                                                                            \
         if ( ASSERTION )                                                                                            \
             break;                                                                                                  \
-        LOG ( "'%s' failed @ %s:%d", #ASSERTION, __BASE_FILE__, __LINE__ );                                         \
+        LOG ( "Assertion '%s' failed", #ASSERTION );                                                                \
         abort();                                                                                                    \
     } while ( 0 )
 
