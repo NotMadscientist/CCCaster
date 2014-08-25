@@ -448,7 +448,7 @@ static void runMain ( const string& address, const NetplaySetup& netplaySetup )
 
 static void runDummy ( const string& address, const NetplaySetup& netplaySetup )
 {
-    ASSERT ( address.empty() != false );
+    ASSERT ( address.empty() == false );
 
     try
     {
@@ -549,9 +549,15 @@ int main ( int argc, char *argv[] )
         { 0, 0, 0, 0, 0, 0 }
     };
 
-    // Skip program name argv[0] if present, because optionparser doesn't like it
-    argc -= ( argc > 0 );
-    argv += ( argc > 0 );
+    string argv0;
+
+    // Skip argv[0] if present, because optionparser doesn't like it
+    if ( argc > 0 )
+    {
+        argv0 = argv[0];
+        --argc;
+        ++argv;
+    }
 
     Stats stats ( options, argc, argv );
     Option opt[stats.options_max], buffer[stats.buffer_max];
@@ -583,7 +589,18 @@ int main ( int argc, char *argv[] )
 
     // Fork and re-run under wineconsole, needed for proper JLib support
     if ( detectWine() && !opt[NO_FORK] )
-        return system ( ( string ( "wineconsole " ) + GetCommandLine() + " --no-fork" ).c_str() );
+    {
+        string cmd = "wineconsole " + argv0 + " --no-fork";
+
+        for ( int i = 0; i < argc; ++i )
+        {
+            cmd += " ";
+            cmd += argv[i];
+        }
+
+        PRINT ( "%s", cmd );
+        return system ( cmd.c_str() );
+    }
 
     // Check if we should use stdout
     if ( opt[STDOUT] )
