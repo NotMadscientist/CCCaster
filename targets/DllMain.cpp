@@ -82,113 +82,111 @@ struct Main
     // Indicates if we should set the game's RNG state with nextRngState
     bool shouldSetRngState = false;
 
-    // Frame to stop on, when re-running the game due to rollback, 0:0 means not re-running
-    IndexedFrame rollbackStopFrame = { { 0, 0 } };
+    // Frame to stop on, when re-running the game due to rollback.
+    // Also used as a flag to indicate re-run mode, 0:0 means not re-running.
+    IndexedFrame rerunStopFrame = { { 0, 0 } };
 
 
-    void frameStep()
+    void frameStepNormal()
     {
-        // New frame
-        netMan.updateFrame();
-        procMan.clearInputs();
-
-        // // Don't do anything else while re-running the game
-        // if ( rollbackStopFrame.value )
-        // {
-        //     if ( netMan.getIndexedFrame().value < rollbackStopFrame.value )
-        //     {
-        //         // Disable FPS limit while re-running
-        //         *CC_SKIP_FRAMES_ADDR = 1;
-
-        //         // Just write inputs and return
-        //         procMan.writeGameInput ( localPlayer, netMan.getInput ( localPlayer ) );
-        //         procMan.writeGameInput ( remotePlayer, netMan.getInput ( remotePlayer ) );
-        //         return;
-        //     }
-
-        //     rollbackStopFrame.value = 0;
-        // }
-
-        // Only save states when in-game
-        if ( netMan.setup.rollback && *CC_GAME_MODE_ADDR == CC_GAME_MODE_INGAME )
-            procMan.saveState ( netMan );
-
-        // Check for changes to important variables for state transitions
-        ChangeMonitor::get().check();
-
-        if ( netMan.getState().value >= NetplayState::PreInitial && netMan.getState().value <= NetplayState::Initial )
+        switch ( netMan.getState().value )
         {
-            // Disable FPS limit while going to character select
-            *CC_SKIP_FRAMES_ADDR = 1;
-        }
-        else if ( netMan.getState().value >= NetplayState::CharaSelect )
-        {
+            case NetplayState::PreInitial:
+            case NetplayState::Initial:
+                // Disable FPS limit while going to character select
+                *CC_SKIP_FRAMES_ADDR = 1;
+                break;
 
-            // Check for changes to controller state
-            ControllerManager::get().check();
+            case NetplayState::InGame:
+                // Only save rollback states in-game
+                if ( netMan.isRollbackState() )
+                    procMan.saveState ( netMan );
 
-            // Input testing code
-            uint16_t input;
+            case NetplayState::CharaSelect:
+            case NetplayState::Loading:
+            case NetplayState::Skippable:
+            case NetplayState::RetryMenu:
+            case NetplayState::PauseMenu:
             {
-#if 1
-                uint16_t direction = ( rand() % 10 );
-                if ( direction == 5 )
-                    direction = 0;
-                if ( netMan.getState().value == NetplayState::RetryMenu && ( netMan.getFrame() % 10 ) )
-                    direction = 0;
+                // Check for changes to controller state
+                ControllerManager::get().check();
 
-                uint16_t buttons = ( rand() % 0x1000 );
-                if ( netMan.getState().value == NetplayState::CharaSelect )
-                    buttons &= ~ ( CC_BUTTON_B | CC_BUTTON_CANCEL );
-#else
-                uint16_t direction = 5;
+                // Input testing code
+                static bool randomize = false;
+                static uint16_t input = 0;
 
-                if ( GetKeyState ( 'P' ) & 0x80 )
-                    direction = 8;
-                else if ( GetKeyState ( VK_OEM_1 ) & 0x80 )
-                    direction = 2;
-
-                if ( GetKeyState ( 'L' ) & 0x80 )
-                    --direction;
-                else if ( GetKeyState ( VK_OEM_7 ) & 0x80 )
-                    ++direction;
-
-                if ( direction == 5 )
-                    direction = 0;
-
-                uint16_t buttons = 0;
-
-                if ( GetKeyState ( 'E' ) & 0x80 )       buttons = ( CC_BUTTON_A | CC_BUTTON_SELECT );
-                if ( GetKeyState ( 'R' ) & 0x80 )       buttons = ( CC_BUTTON_B | CC_BUTTON_CANCEL );
-                if ( GetKeyState ( 'T' ) & 0x80 )       buttons = CC_BUTTON_C;
-                if ( GetKeyState ( VK_SPACE ) & 0x80 )  buttons = CC_BUTTON_D;
-                if ( GetKeyState ( 'A' ) & 0x80 )       buttons = CC_BUTTON_E;
-                if ( GetKeyState ( 'D' ) & 0x80 )       buttons = CC_BUTTON_FN2;
-                if ( GetKeyState ( 'G' ) & 0x80 )       buttons = CC_BUTTON_FN1;
-                if ( GetKeyState ( VK_F5 ) & 0x80 )     buttons = CC_BUTTON_START;
-
-                if ( !netMan.setup.rollback && ( GetKeyState ( VK_F7 ) & 0x80 ) )
+                if ( randomize )
                 {
-                    procMan.allocateStates();
-                    netMan.setup.rollback = 4;
+                    if ( netMan.getFrame() % 2 )
+                    {
+                        uint16_t direction = ( rand() % 10 );
+
+                        // Reduce the chances of moving the cursor at retry menu
+                        if ( netMan.getState().value == NetplayState::RetryMenu && ( netMan.getFrame() % 10 ) )
+                            direction = 0;
+
+                        uint16_t buttons = ( rand() % 0x1000 );
+
+                        // Prevent hitting some non-essential buttons
+                        buttons &= ~ ( CC_BUTTON_D | CC_BUTTON_FN1 | CC_BUTTON_FN2 | CC_BUTTON_START );
+
+                        // Prevent going back at character select
+                        if ( netMan.getState().value == NetplayState::CharaSelect )
+                            buttons &= ~ ( CC_BUTTON_B | CC_BUTTON_CANCEL );
+
+                        input = COMBINE_INPUT ( direction, buttons );
+                    }
+                }
+                else
+                {
+                    uint16_t direction = 5, buttons = 0;
+
+                    if ( GetKeyState ( 'P' ) & 0x80 )
+                        direction = 8;
+                    else if ( GetKeyState ( VK_OEM_1 ) & 0x80 )
+                        direction = 2;
+
+                    if ( GetKeyState ( 'L' ) & 0x80 )
+                        --direction;
+                    else if ( GetKeyState ( VK_OEM_7 ) & 0x80 )
+                        ++direction;
+
+                    if ( GetKeyState ( 'E' ) & 0x80 )       buttons = ( CC_BUTTON_A | CC_BUTTON_SELECT );
+                    if ( GetKeyState ( 'R' ) & 0x80 )       buttons = ( CC_BUTTON_B | CC_BUTTON_CANCEL );
+                    if ( GetKeyState ( 'T' ) & 0x80 )       buttons = CC_BUTTON_C;
+                    if ( GetKeyState ( VK_SPACE ) & 0x80 )  buttons = CC_BUTTON_D;
+                    if ( GetKeyState ( 'A' ) & 0x80 )       buttons = CC_BUTTON_E;
+                    if ( GetKeyState ( 'D' ) & 0x80 )       buttons = CC_BUTTON_FN2;
+                    if ( GetKeyState ( 'G' ) & 0x80 )       buttons = CC_BUTTON_FN1;
+                    if ( GetKeyState ( VK_F5 ) & 0x80 )     buttons = CC_BUTTON_START;
+
+                    input = COMBINE_INPUT ( direction, buttons );
                 }
 
-                if ( netMan.setup.rollback && ( GetKeyState ( VK_F6 ) & 0x80 ) )
-                    procMan.loadState ( { netMan.getIndex(), netMan.getFrame() - 30 }, netMan );
-#endif
-                input = COMBINE_INPUT ( direction, buttons );
+                if ( GetKeyState ( VK_F7 ) & 0x80 )         randomize = true;
+                if ( GetKeyState ( VK_F8 ) & 0x80 )         randomize = false;
+
+                // Commit inputs to netMan and send them to remote
+                netMan.setInput ( localPlayer, input );
+
+                if ( isLocal() )
+                    netMan.setInput ( remotePlayer, 0 );
+
+                if ( isBroadcast() )
+                    ; // TODO
+                else if ( !isOffline() )
+                    dataSocket->send ( netMan.getInputs ( localPlayer ) );
+
+                break;
             }
 
-            netMan.setInput ( localPlayer, input );
-
-            if ( isLocal() )
-                netMan.setInput ( remotePlayer, 0 );
-
-            if ( isBroadcast() )
-                ; // TODO
-            else if ( !isOffline() )
-                dataSocket->send ( netMan.getInputs ( localPlayer ) );
+            default:
+                ASSERT ( !"Unknown NetplayState!" );
+                break;
         }
+
+        // Clear the last changed frame before we get new inputs
+        netMan.clearLastChangedFrame();
 
         for ( ;; )
         {
@@ -218,27 +216,20 @@ struct Main
             }
         }
 
-        // // Only rollback when in-game
-        // if ( netMan.setup.rollback && *CC_GAME_MODE_ADDR == CC_GAME_MODE_INGAME )
-        // {
-        //     if ( netMan.getLastChangedFrame().value < netMan.getIndexedFrame().value )
-        //     {
-        //         LOG_SYNC ( "Rollback: %s -> %s", netMan.getIndexedFrame(), netMan.getLastChangedFrame() );
+        // Only do rollback related stuff while in-game
+        if ( netMan.getState() == NetplayState::InGame && netMan.isRollbackState()
+                && netMan.getLastChangedFrame().value < netMan.getIndexedFrame().value )
+        {
+            LOG_SYNC ( "Rollback: %s -> %s", netMan.getIndexedFrame(), netMan.getLastChangedFrame() );
 
-        //         // Save when to stop
-        //         rollbackStopFrame = netMan.getIndexedFrame();
+            // Indicate we're re-running (save the frame first)
+            rerunStopFrame = netMan.getIndexedFrame();
 
-        //         // Reset the game state
-        //         procMan.loadState ( netMan.getLastChangedFrame(), netMan );
+            // Reset the game state (this resets game state and netMan state)
+            procMan.loadState ( netMan.getLastChangedFrame(), netMan );
 
-        //         // Disable FPS limit while re-running
-        //         *CC_SKIP_FRAMES_ADDR = 1;
-
-        //         // Clear some flags
-        //         nextRngState.reset();
-        //         shouldSetRngState = false;
-        //     }
-        // }
+            return;
+        }
 
         // Update the RNG state if necessary
         if ( shouldSetRngState )
@@ -257,13 +248,40 @@ struct Main
         if ( netMan.getFrame() % ( 5 * 60 ) == 0 )
             LOG_SYNC ( "RngState: %s", procMan.getRngState()->getAs<RngState>().dump() );
 
-        // Write netplay inputs
-        procMan.writeGameInput ( localPlayer, netMan.getInput ( localPlayer ) );
-        procMan.writeGameInput ( remotePlayer, netMan.getInput ( remotePlayer ) );
-
         // Log inputs every frame
         LOG_SYNC ( "Inputs: %04x %04x", netMan.getInput ( 1 ), netMan.getInput ( 2 ) );
         overlayText = toString ( "%s", netMan.getIndexedFrame() );
+    }
+
+    void frameStepRerun()
+    {
+        // Stop re-running once we're reached the frame we want
+        if ( netMan.getIndexedFrame().value >= rerunStopFrame.value )
+            rerunStopFrame.value = 0;
+    }
+
+    void frameStep()
+    {
+        // New frame
+        netMan.updateFrame();
+        procMan.clearInputs();
+
+        // Check for changes to important variables for state transitions
+        ChangeMonitor::get().check();
+
+        // Perform the frame step
+        if ( rerunStopFrame.value )
+            frameStepRerun();
+        else
+            frameStepNormal();
+
+        // Disable FPS limit while re-running
+        if ( rerunStopFrame.value )
+            *CC_SKIP_FRAMES_ADDR = 1;
+
+        // Write netplay inputs
+        procMan.writeGameInput ( localPlayer, netMan.getInput ( localPlayer ) );
+        procMan.writeGameInput ( remotePlayer, netMan.getInput ( remotePlayer ) );
     }
 
     void bothCharaSelectLoaded()
@@ -279,15 +297,13 @@ struct Main
     {
         if ( netMan.getState() != NetplayState::InGame && state == NetplayState::InGame )
         {
-            // dataSocket->setPacketLoss ( 10 );
-            // procMan.allocateStates();
-            // netMan.setup.rollback = 4;
+            if ( netMan.isRollbackState() )
+                procMan.allocateStates();
         }
         else if ( netMan.getState() == NetplayState::InGame && state != NetplayState::InGame )
         {
-            // dataSocket->setPacketLoss ( 0 );
-            // procMan.deallocateStates();
-            // netMan.setup.rollback = 0;
+            if ( netMan.setup.rollback )
+                procMan.deallocateStates();
         }
 
         if ( state == NetplayState::CharaSelect || state == NetplayState::InGame )
@@ -366,7 +382,7 @@ struct Main
         LOG_AND_THROW_STRING ( "Unknown game mode! previous=%u; current=%u", previous, current );
     }
 
-    // ChangeMonitor callbacks
+    // ChangeMonitor callback
     void hasChanged ( Variable var, uint32_t previous, uint32_t current ) override
     {
         switch ( var.value )
@@ -615,7 +631,7 @@ struct Main
     // DLL callback
     void callback()
     {
-        // Don't poll until we're in the correct state
+        // Don't poll unless we're in the correct state
         if ( appState != AppState::Polling )
             return;
 

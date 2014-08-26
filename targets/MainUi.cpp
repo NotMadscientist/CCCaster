@@ -175,6 +175,7 @@ bool MainUi::accepted ( const Statistics& stats )
     // return value;
 
     netplaySetup.delay = 4;
+    netplaySetup.rollback = 30;
     netplaySetup.training = 0;
     netplaySetup.hostPlayer = 1;
 

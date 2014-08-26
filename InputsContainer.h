@@ -10,8 +10,14 @@
 template<typename T>
 class InputsContainer
 {
+    // Mapping: index -> frame -> input
     std::vector<std::vector<T>> inputs;
+
+    // Mapping: index -> frame -> boolean
     std::vector<std::vector<bool>> real;
+
+    // Last frame of input that changed
+    IndexedFrame lastChangedFrame = { { UINT_MAX, UINT_MAX } };
 
 public:
 
@@ -57,6 +63,21 @@ public:
 
     void set ( IndexedFrame frame, const T *t, size_t n )
     {
+        // TODO refill inputs when faked inputs change
+
+        IndexedFrame f;
+        size_t i;
+
+        for ( i = 0, f = frame; i < n; ++i, ++f.parts.frame )
+        {
+            if ( get ( f ) == t[i] )
+                continue;
+
+            // Indicate changed if the input is different from the last known input
+            lastChangedFrame.value = std::min ( lastChangedFrame.value, f.value );
+            break;
+        }
+
         resize ( frame, n, true );
 
         std::copy ( t, t + n, &inputs[frame.parts.index][frame.parts.frame] );
@@ -118,4 +139,8 @@ public:
     }
 
     IndexedFrame getEndIndexedFrame() const { return { getEndIndex(), getEndFrame() }; }
+
+    const IndexedFrame& getLastChangedFrame() const { return lastChangedFrame; }
+
+    void clearLastChangedFrame() { lastChangedFrame = { { UINT_MAX, UINT_MAX } }; }
 };

@@ -25,9 +25,11 @@ void ProcessManager::writeGameInput ( uint8_t player, uint16_t direction, uint16
 {
     // LOG ( "player=%d; direction=%d; buttons=%04x", player, direction, buttons );
 
+    if ( direction == 5 )
+        direction = 0;
+
     ASSERT ( direction >= 0 );
     ASSERT ( direction <= 9 );
-    ASSERT ( direction != 5 );
 
     char *const baseAddr = * ( char ** ) CC_PTR_TO_WRITE_INPUT_ADDR;
 

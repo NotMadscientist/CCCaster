@@ -54,9 +54,6 @@ class NetplayManager
     // Last index we care about
     uint32_t lastStartingIndex = 0;
 
-    // Last changed indexed frame
-    IndexedFrame lastChangedFrame = { { UINT_MAX, UINT_MAX } };
-
     // Mapping: player -> index -> frame -> input
     std::array<InputsContainer<uint16_t>, 2> inputs;
 
@@ -78,6 +75,9 @@ class NetplayManager
     uint16_t getRetryMenuInput ( uint8_t player ) const;
     uint16_t getPauseMenuInput ( uint8_t player ) const;
 
+    // Get the input for the current frame taking into account delay and rollback
+    uint16_t getOffsetInput ( uint8_t player ) const;
+
     // Get the delayed input for the given frame
     uint16_t getDelayedInput ( uint8_t player ) const { return getDelayedInput ( player, getFrame() ); }
     uint16_t getDelayedInput ( uint8_t player, uint32_t frame ) const;
@@ -98,7 +98,13 @@ public:
     uint32_t getFrame() const { return indexedFrame.parts.frame; }
     uint32_t getIndex() const { return indexedFrame.parts.index; }
     IndexedFrame getIndexedFrame() const { return indexedFrame; }
-    IndexedFrame getLastChangedFrame() const { return lastChangedFrame; }
+
+    // Get / clear the last changed frame (for rollback)
+    const IndexedFrame& getLastChangedFrame() const { return inputs[remotePlayer - 1].getLastChangedFrame(); }
+    void clearLastChangedFrame() { inputs[remotePlayer - 1].clearLastChangedFrame(); }
+
+    // Check if we are in a rollback state, with 10 frame initial buffer window
+    bool isRollbackState() const { return ( setup.rollback && getFrame() >= 10 ); }
 
     // Get / set the current netplay state
     NetplayState getState() const { return state; }

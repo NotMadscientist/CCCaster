@@ -95,7 +95,7 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
     if ( getFrame() < 10 )
         return 0;
 
-    uint16_t input = getDelayedInput ( player );
+    uint16_t input = getOffsetInput ( player );
 
     // Disable pausing in-game
     input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_START );
@@ -140,13 +140,22 @@ uint16_t NetplayManager::getPauseMenuInput ( uint8_t player ) const
     return 0;
 }
 
-uint16_t NetplayManager::getDelayedInput ( uint8_t player, uint32_t frame ) const
+uint16_t NetplayManager::getOffsetInput ( uint8_t player ) const
 {
-    if ( frame < setup.getDelay() )
+    if ( getFrame() < setup.getOffset() )
         return 0;
 
     ASSERT ( player == 1 || player == 2 );
-    return inputs[player - 1].get ( { getIndex(), frame - setup.getDelay() } );
+    return inputs[player - 1].get ( { getIndex(), getFrame() - setup.getOffset() } );
+}
+
+uint16_t NetplayManager::getDelayedInput ( uint8_t player, uint32_t frame ) const
+{
+    if ( frame < setup.delay )
+        return 0;
+
+    ASSERT ( player == 1 || player == 2 );
+    return inputs[player - 1].get ( { getIndex(), frame - setup.delay } );
 }
 
 bool NetplayManager::areInputsReady() const
@@ -154,7 +163,10 @@ bool NetplayManager::areInputsReady() const
     if ( state.value < NetplayState::CharaSelect )
         return true;
 
-    return ( inputs[remotePlayer - 1].getEndIndexedFrame().value > indexedFrame.value + 1 + setup.getDelay() );
+    if ( isRollbackState() && state == NetplayState::InGame )
+        return ( inputs[remotePlayer - 1].getEndIndexedFrame().value + setup.rollback > indexedFrame.value + 1 );
+
+    return ( inputs[remotePlayer - 1].getEndIndexedFrame().value > indexedFrame.value + 1 + setup.delay );
 }
 
 void NetplayManager::updateFrame()

@@ -39,7 +39,7 @@ struct NetplaySetup : public SerializableSequence
     uint8_t hostPlayer = 0;
     uint16_t broadcastPort = 0;
 
-    uint8_t getDelay() const
+    uint8_t getOffset() const
     {
         if ( delay < rollback )
             return 0;
