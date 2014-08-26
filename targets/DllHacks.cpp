@@ -107,8 +107,8 @@ void initializePreLoadHacks()
 
 void initializePostLoadHacks()
 {
-    *CC_DAMAGE_LEVEL_ADDR = 4;
-    *CC_WIN_COUNT_VS_ADDR = 1;
+    // *CC_DAMAGE_LEVEL_ADDR = 4;
+    // *CC_WIN_COUNT_VS_ADDR = 1;
 
     // Hook and ignore keyboard messages to prevent lag from unhandled messages
     if ( ! ( keybdHook = SetWindowsHookEx ( WH_KEYBOARD, keyboardCallback, 0, GetCurrentThreadId() ) ) )

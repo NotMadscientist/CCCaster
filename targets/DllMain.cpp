@@ -295,6 +295,9 @@ struct Main
 
     void netplayStateChanged ( NetplayState state )
     {
+        // Log the RNG state whenever NetplayState changes
+        LOG_SYNC ( "RngState: %s", procMan.getRngState()->getAs<RngState>().dump() );
+
         if ( netMan.getState() != NetplayState::InGame && state == NetplayState::InGame )
         {
             if ( netMan.isRollbackState() )
