@@ -83,6 +83,7 @@ profile: LD_FLAGS += -pg -lgmon
 profile: $(ARCHIVE)
 
 $(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
+	@echo
 	$(ZIP) $(NAME).v$(VERSION).zip $^
 	$(GRANT)
 	@echo
@@ -91,13 +92,13 @@ $(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
 $(FOLDER):
 	@mkdir -p $(FOLDER)
 
-$(BINARY): $(MAIN_OBJECTS) res/icon.res
+$(BINARY): version $(MAIN_OBJECTS) res/icon.res
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(MAIN_OBJECTS) res/icon.res $(LD_FLAGS)
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
 
-$(DLL): $(DLL_OBJECTS) $(FOLDER)
+$(DLL): version $(DLL_OBJECTS) $(FOLDER)
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(DLL_OBJECTS) -shared $(LD_FLAGS) -ld3dx9
 	@echo
 	$(STRIP) $@
