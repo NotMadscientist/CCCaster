@@ -347,7 +347,7 @@ TEST ( GoBackN, Timeout )
             else if ( stage == 1 )
             {
                 socket->setPacketLoss ( 100 );
-                timer->start ( 10 * 1000 );
+                timer->start ( 60 * 1000 );
             }
             else
             {

@@ -578,10 +578,15 @@ int main ( int argc, char *argv[] )
     signal ( SIGTERM, signalHandler );
     SetConsoleCtrlHandler ( consoleCtrl, TRUE );
 
-    // Run the unit test suite
+    // Check if we should log to stdout
+    if ( opt[STDOUT] )
+        Logger::get().initialize();
+    else
+        Logger::get().initialize ( LOG_FILE );
+
+    // Run the unit test suite and exit
     if ( opt[GTEST] )
     {
-        Logger::get().initialize();
         int result = RunAllTests ( argc, argv );
         Logger::get().deinitialize();
         return result;
@@ -601,12 +606,6 @@ int main ( int argc, char *argv[] )
         PRINT ( "%s", cmd );
         return system ( cmd.c_str() );
     }
-
-    // Check if we should use stdout
-    if ( opt[STDOUT] )
-        Logger::get().initialize();
-    else
-        Logger::get().initialize ( LOG_FILE );
 
     // Check if we should run in dummy mode
     RunFuncPtr run = ( opt[DUMMY] ? runDummy : runMain );
