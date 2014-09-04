@@ -18,16 +18,19 @@ void Logger::initialize ( const string& name, uint32_t options )
     }
     else
     {
-        if ( options & PREPEND_PID )
+        if ( options & PID_IN_FILENAME )
             fd = fopen ( ( toString ( "log%08d", _getpid() ) + name ).c_str(), "w" );
         else
             fd = fopen ( name.c_str(), "w" );
     }
 
-    fprintf ( fd, "COMMIT_ID %s\n", COMMIT_ID );
-    fprintf ( fd, "BUILD_TIME %s\n", BUILD_TIME );
-    fprintf ( fd, "VERSION %s\n", VERSION );
-    fflush ( fd );
+    if ( options & LOG_VERSION )
+    {
+        fprintf ( fd, "COMMIT_ID %s\n", COMMIT_ID );
+        fprintf ( fd, "BUILD_TIME %s\n", BUILD_TIME );
+        fprintf ( fd, "VERSION %s\n\n", VERSION );
+        fflush ( fd );
+    }
 }
 
 void Logger::deinitialize()

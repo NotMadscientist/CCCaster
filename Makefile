@@ -7,6 +7,7 @@ BINARY = $(NAME).v$(VERSION).exe
 FOLDER = $(NAME)
 DLL = $(FOLDER)/hook.dll
 LAUNCHER = $(FOLDER)/launcher.exe
+DEBUGGER = debugger.exe
 MBAA_EXE = MBAA.exe
 
 # Library sources
@@ -63,7 +64,7 @@ LD_FLAGS = -m32 -static -L$(CURDIR)/3rdparty/SDL2/build -L$(CURDIR)/3rdparty/SDL
 LD_FLAGS += -lSDL2 -lSDL2main -lws2_32 -lwinmm -lwinpthread -ldinput8 -lgdi32 -limm32 -lole32 -loleaut32 -lversion
 
 # Build options
-DEFINES += -DENABLE_LOGGING
+# DEFINES += -DDISABLE_LOGGING
 # DEFINES += -DLOGGER_MUTEXED
 # DEFINES += -DJLIB_MUTEXED
 
@@ -72,7 +73,7 @@ all: DEFINES += -D_GLIBCXX_DEBUG
 all: CC_FLAGS += -ggdb3 -O0 -fno-inline
 all: $(ARCHIVE)
 
-release: DEFINES += -DNDEBUG -DRELEASE
+release: DEFINES += -DNDEBUG -DRELEASE -DDISABLE_LOGGING
 release: CC_FLAGS += -s -Os -O2 -fno-rtti
 release: $(ARCHIVE)
 
@@ -81,6 +82,8 @@ profile: DEFINES += -DNDEBUG -DRELEASE
 profile: CC_FLAGS += -O2 -fno-rtti -pg
 profile: LD_FLAGS += -pg -lgmon
 profile: $(ARCHIVE)
+
+debugger: $(DEBUGGER)
 
 $(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
 	@echo
@@ -104,8 +107,16 @@ $(DLL): version $(DLL_OBJECTS) $(FOLDER)
 	$(STRIP) $@
 	$(GRANT)
 
-$(LAUNCHER): $(LAUNCHER_CPP_SRCS) $(FOLDER)
-	$(CXX) -o $@ $(LAUNCHER_CPP_SRCS) -m32 -s -Os -O2 -Wall -static -mwindows
+$(LAUNCHER): targets/Launcher.cpp $(FOLDER)
+	$(CXX) -o $@ targets/Launcher.cpp -m32 -s -Os -O2 -Wall -static -mwindows
+	@echo
+	$(STRIP) $@
+	$(CHMOD_X)
+
+$(DEBUGGER): targets/Debugger.cpp lib/Utilities.cpp lib/Logger.cpp
+	$(make_version)
+	$(CXX) -o $@ $^ -m32 -s -Os -O2 -Wall -static -std=c++11 \
+		-I$(CURDIR) -Ilib -I3rdparty/cereal/include -I3rdparty/distorm3/include -L3rdparty/distorm3 -ldistorm3
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
@@ -195,7 +206,13 @@ ifeq (,$(findstring autogen, $(MAKECMDGOALS)))
 ifeq (,$(findstring version, $(MAKECMDGOALS)))
 ifeq (,$(findstring protocol, $(MAKECMDGOALS)))
 ifeq (,$(findstring sdl, $(MAKECMDGOALS)))
+ifeq (,$(findstring debugger, $(MAKECMDGOALS)))
+ifeq (,$(findstring $(LAUNCHER), $(MAKECMDGOALS)))
+ifeq (,$(findstring $(DEBUGGER), $(MAKECMDGOALS)))
 -include .depend
+endif
+endif
+endif
 endif
 endif
 endif

@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <iostream>
 #include <unordered_map>
+#include <cctype>
 
 #include <cereal/archives/binary.hpp>
 
@@ -76,6 +77,10 @@ std::string trim ( std::string str, const std::string& ws = " \t\r\n" );
 // String split
 std::vector<std::string> split ( const std::string& str, const std::string& delim = " " );
 
+// String to lower/upper case
+inline std::string toLower ( std::string str ) { for ( char& c : str ) c = std::tolower ( c ); return str; }
+inline std::string toUpper ( std::string str ) { for ( char& c : str ) c = std::toupper ( c ); return str; }
+
 
 // String formatting functions
 template<typename T>
@@ -122,19 +127,6 @@ inline std::string toString ( const std::string& format, const T& val, V ... val
 
     return buffer + toString ( rest, vals... );
 }
-
-
-// MD5 calculation
-void getMD5 ( const char *bytes, size_t len, char dst[16] );
-void getMD5 ( const std::string& str, char dst[16] );
-bool checkMD5 ( const char *bytes, size_t len, const char md5[16] );
-bool checkMD5 ( const std::string& str, const char md5[16] );
-
-
-// zlib compression
-size_t compress ( const char *src, size_t srcLen, char *dst, size_t dstLen, int level = 9 );
-size_t uncompress ( const char *src, size_t srcLen, char *dst, size_t dstLen );
-size_t compressBound ( size_t srcLen );
 
 
 // Exception types

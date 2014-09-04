@@ -1,6 +1,7 @@
 #include "Protocol.h"
 #include "Protocol.types.h"
 #include "Utilities.h"
+#include "Compression.h"
 #include "Logger.h"
 
 using namespace std;
