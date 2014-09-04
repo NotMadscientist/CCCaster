@@ -11,55 +11,55 @@ using namespace std;
 
 #define LOG_FILE "dump.log"
 
-const uint8_t CC = 0xCC;
+const uint8_t breakpointConstant = 0xCC;
 
 int64_t getRegVal ( uint8_t type, const CONTEXT& context );
 
 
 void processInstruction ( const _CodeInfo& ci, const _DInst& di, const CONTEXT& context )
 {
-    int numMemOperands = 0;
-    uint32_t addr = 0;
+    // int numMemOperands = 0;
+    // uint32_t addr = 0;
 
-    for ( const auto& op : di.ops )
-    {
-        switch ( op.type )
-        {
-            case O_NONE: // operand is to be ignored.
-                continue;
+    // for ( const auto& op : di.ops )
+    // {
+    //     switch ( op.type )
+    //     {
+    //         case O_NONE: // operand is to be ignored.
+    //             continue;
 
-            case O_DISP: // memory dereference with displacement only, instruction.disp.
-                addr = getRegVal ( di.segment, context ) + di.disp;
-                ++numMemOperands;
-                break;
+    //         case O_DISP: // memory dereference with displacement only, instruction.disp.
+    //             addr = getRegVal ( di.segment, context ) + di.disp;
+    //             ++numMemOperands;
+    //             break;
 
-            case O_SMEM: // simple memory dereference with optional displacement (a single register memory dereference).
-                addr = getRegVal ( di.segment, context ) + getRegVal ( op.index, context ) + di.disp;
-                ++numMemOperands;
-                break;
+    //         case O_SMEM: // simple memory dereference with optional displacement (a single register memory dereference).
+    //             addr = getRegVal ( di.segment, context ) + getRegVal ( op.index, context ) + di.disp;
+    //             ++numMemOperands;
+    //             break;
 
-            case O_MEM:  // complex memory dereference (optional fields: s/i/b/disp).
-                addr = getRegVal ( di.segment, context ) + getRegVal ( di.base, context )
-                       + getRegVal ( op.index, context ) * di.scale + di.disp;
-                ++numMemOperands;
-                break;
+    //         case O_MEM:  // complex memory dereference (optional fields: s/i/b/disp).
+    //             addr = getRegVal ( di.segment, context ) + getRegVal ( di.base, context )
+    //                    + getRegVal ( op.index, context ) * di.scale + di.disp;
+    //             ++numMemOperands;
+    //             break;
 
-            case O_REG:  // index holds global register index.
-            case O_IMM:  // instruction.imm.
-            case O_IMM1: // instruction.imm.ex.i1.
-            case O_IMM2: // instruction.imm.ex.i2.
-            case O_PC:   // the relative address of a branch instruction (instruction.imm.addr).
-            case O_PTR:  // the absolute target address of a far branch instruction (instruction.imm.ptr.seg/off).
-                break;
+    //         case O_REG:  // index holds global register index.
+    //         case O_IMM:  // instruction.imm.
+    //         case O_IMM1: // instruction.imm.ex.i1.
+    //         case O_IMM2: // instruction.imm.ex.i2.
+    //         case O_PC:   // the relative address of a branch instruction (instruction.imm.addr).
+    //         case O_PTR:  // the absolute target address of a far branch instruction (instruction.imm.ptr.seg/off).
+    //             break;
 
-            default:
-                PRINT ( "Unhandled operand type: %d", ( int ) op.type );
-                exit ( -1 );
-        }
-    }
+    //         default:
+    //             PRINT ( "Unhandled operand type: %d", ( int ) op.type );
+    //             exit ( -1 );
+    //     }
+    // }
 
-    if ( numMemOperands == 0 )
-        return;
+    // if ( numMemOperands == 0 )
+    //     return;
 
     _DecodedInst decodedInst;
     distorm_format ( &ci, &di, &decodedInst );
@@ -70,7 +70,7 @@ void processInstruction ( const _CodeInfo& ci, const _DInst& di, const CONTEXT& 
           ( decodedInst.operands.length != 0 ? " " : "" ),
           toLower ( ( char * ) decodedInst.operands.p ) );
 
-    LOG ( "addr = %08X", addr );
+    // LOG ( "addr = %08X", addr );
 }
 
 int main ( int argc, char *argv[] )
@@ -131,7 +131,7 @@ int main ( int argc, char *argv[] )
             case CREATE_PROCESS_DEBUG_EVENT:
                 PRINT ( "CREATE_PROCESS_DEBUG_EVENT" );
                 // Breakpoint at the start of the main loop
-                WriteProcessMemory ( process, CC_LOOP_START_ADDR, &CC, 1, 0 );
+                WriteProcessMemory ( process, CC_LOOP_START_ADDR, &breakpointConstant, 1, 0 );
                 break;
 
             case EXIT_PROCESS_DEBUG_EVENT:
@@ -155,10 +155,8 @@ int main ( int argc, char *argv[] )
                 context.ContextFlags = CONTEXT_ALL;
                 GetThreadContext ( thread, &context );
 
-                // LOG ( "eip = %08X", ( uint32_t ) context.Eip );
-
                 // Reset the breakpoint and start stepping
-                if ( context.Eip == int ( CC_LOOP_START_ADDR + 1 ) )
+                if ( !stepping && context.Eip == int ( CC_LOOP_START_ADDR + 1 ) )
                 {
                     --context.Eip;
 
@@ -169,42 +167,35 @@ int main ( int argc, char *argv[] )
 
                     PRINT ( "threadId = %u", ( uint32_t ) event.dwThreadId );
                 }
-                else if ( context.Eip == int ( CC_LOOP_START_ADDR ) )
-                {
-
-                }
-                else if ( !stepping )
-                {
-                    CloseHandle ( thread );
-                    thread = 0;
-                }
 
                 if ( stepping )
                 {
+                    LOG ( "eip = %08X", ( uint32_t ) context.Eip );
+
                     context.EFlags |= 0x100;
                     SetThreadContext ( thread, &context );
 
-                    ReadProcessMemory ( process, ( char * ) context.Eip, buffer, sizeof ( buffer ), 0 );
+                    // ReadProcessMemory ( process, ( char * ) context.Eip, buffer, sizeof ( buffer ), 0 );
 
-                    _DInst di;
-                    unsigned int diCount = 0;
+                    // _DInst di;
+                    // unsigned int diCount = 0;
 
-                    _CodeInfo ci;
-                    ci.code = buffer;
-                    ci.codeLen = sizeof ( buffer );
-                    ci.codeOffset = 0;
-                    ci.dt = Decode32Bits;
-                    ci.features = DF_NONE;
+                    // _CodeInfo ci;
+                    // ci.code = buffer;
+                    // ci.codeLen = sizeof ( buffer );
+                    // ci.codeOffset = 0;
+                    // ci.dt = Decode32Bits;
+                    // ci.features = DF_NONE;
 
-                    // Disassemble just the first instruction in the buffer
-                    if ( distorm_decompose ( &ci, &di, 1, &diCount ) == DECRES_INPUTERR
-                            || diCount == 0 || di.flags == FLAG_NOT_DECODABLE )
-                    {
-                        PRINT ( "decode failed @ eip = %08X", ( uint32_t ) context.Eip );
-                        exit ( -1 );
-                    }
+                    // // Disassemble just the first instruction in the buffer
+                    // if ( distorm_decompose ( &ci, &di, 1, &diCount ) == DECRES_INPUTERR
+                    //         || diCount == 0 || di.flags == FLAG_NOT_DECODABLE )
+                    // {
+                    //     PRINT ( "decode failed @ eip = %08X", ( uint32_t ) context.Eip );
+                    //     exit ( -1 );
+                    // }
 
-                    processInstruction ( ci, di, context );
+                    // processInstruction ( ci, di, context );
                 }
 
                 break;
@@ -214,6 +205,7 @@ int main ( int argc, char *argv[] )
             case EXIT_THREAD_DEBUG_EVENT:
             case LOAD_DLL_DEBUG_EVENT:
             case UNLOAD_DLL_DEBUG_EVENT:
+                PRINT ( "Unhandled dwDebugEventCode: %d", event.dwDebugEventCode );
                 break;
 
             default:
