@@ -9,10 +9,11 @@
 
 
 #define LOG_VERSION     ( 0x01 )    // Log version information at the beginning
-#define LOG_TIMESTAMP   ( 0x02 )    // Log the timestamp per message
-#define LOG_FILE_LINE   ( 0x04 )    // Log file:line per message
-#define LOG_FUNC_NAME   ( 0x08 )    // Log the function name per message
-#define PID_IN_FILENAME ( 0x10 )    // Prepend the PID in the log filename
+#define LOG_GM_TIME     ( 0x02 )    // Log the gmtime timestamp per message
+#define LOG_LOCAL_TIME  ( 0x04 )    // Log the localtime timestamp per message
+#define LOG_FILE_LINE   ( 0x08 )    // Log file:line per message
+#define LOG_FUNC_NAME   ( 0x10 )    // Log the function name per message
+#define PID_IN_FILENAME ( 0x20 )    // Prepend the PID in the log filename
 
 
 class Logger
@@ -41,7 +42,7 @@ public:
 
     // Initialize / deinitialize logging
     void initialize ( const std::string& name = "",
-                      uint32_t options = ( LOG_VERSION | LOG_TIMESTAMP | LOG_FILE_LINE | LOG_FUNC_NAME ) );
+                      uint32_t options = ( LOG_VERSION | LOG_GM_TIME | LOG_FILE_LINE | LOG_FUNC_NAME ) );
     void deinitialize();
 
     // Flush to file

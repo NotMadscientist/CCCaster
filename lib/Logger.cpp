@@ -61,18 +61,23 @@ void Logger::log ( const char *file, int line, const char *func, const char *mes
     if ( !fd )
         return;
 
-    time_t t;
-    time ( &t );
-    tm *ts = gmtime ( &t );
-
 #ifdef LOGGER_MUTEXED
     LOCK ( mutex );
 #endif
 
     bool hasPrefix = false;
 
-    if ( options & LOG_TIMESTAMP )
+    if ( options & ( LOG_GM_TIME | LOG_LOCAL_TIME ) )
     {
+        time_t t;
+        time ( &t );
+
+        tm *ts;
+        if ( options & LOG_GM_TIME )
+            ts = gmtime ( &t );
+        else
+            ts = localtime ( &t );
+
         strftime ( buffer, sizeof ( buffer ), "%H:%M:%S", ts );
         fprintf ( fd, "%s:", buffer );
         hasPrefix = true;

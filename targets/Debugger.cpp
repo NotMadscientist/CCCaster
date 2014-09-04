@@ -75,7 +75,7 @@ void processInstruction ( const _CodeInfo& ci, const _DInst& di, const CONTEXT& 
 
 int main ( int argc, char *argv[] )
 {
-    Logger::get().initialize ( LOG_FILE, LOG_TIMESTAMP );
+    Logger::get().initialize ( LOG_FILE, LOG_LOCAL_TIME );
 
     string exe = "MBAA.exe";
     string cwd;
@@ -131,7 +131,7 @@ int main ( int argc, char *argv[] )
             case CREATE_PROCESS_DEBUG_EVENT:
                 PRINT ( "CREATE_PROCESS_DEBUG_EVENT" );
                 // Breakpoint at the start of the main loop
-                WriteProcessMemory ( process, ( char * ) 0x40D330, &CC, 1, 0 );
+                WriteProcessMemory ( process, CC_LOOP_START_ADDR, &CC, 1, 0 );
                 break;
 
             case EXIT_PROCESS_DEBUG_EVENT:
@@ -158,18 +158,18 @@ int main ( int argc, char *argv[] )
                 // LOG ( "eip = %08X", ( uint32_t ) context.Eip );
 
                 // Reset the breakpoint and start stepping
-                if ( context.Eip == 0x40D331 )
+                if ( context.Eip == int ( CC_LOOP_START_ADDR + 1 ) )
                 {
                     --context.Eip;
 
                     uint8_t val = 0x6A;
-                    WriteProcessMemory ( process, ( char * ) 0x40D330, &val, 1, 0 );
+                    WriteProcessMemory ( process, CC_LOOP_START_ADDR, &val, 1, 0 );
 
                     stepping = true;
 
                     PRINT ( "threadId = %u", ( uint32_t ) event.dwThreadId );
                 }
-                else if ( context.Eip == 0x40D330 )
+                else if ( context.Eip == int ( CC_LOOP_START_ADDR ) )
                 {
 
                 }
