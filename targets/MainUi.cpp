@@ -66,6 +66,7 @@ void MainUi::offline ( RunFuncPtr run )
             }
 
             netplaySetup.delay = menu->resultInt;
+            netplaySetup.rollback = 30; // TODO remove me testing
 
             run ( "", netplaySetup );
             finished = true;

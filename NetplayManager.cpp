@@ -98,7 +98,8 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
     uint16_t input = getOffsetInput ( player );
 
     // Disable pausing in-game
-    input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_START );
+    if ( !setup.training )
+        input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_START );
 
     return input;
 }

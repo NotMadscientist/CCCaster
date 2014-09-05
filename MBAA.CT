@@ -146,18 +146,18 @@
       <Address>00555144</Address>
     </CheatEntry>
     <CheatEntry>
-      <ID>222</ID>
-      <Description>"P2 seq (see framedisplay)"</Description>
+      <ID>228</ID>
+      <Description>"P1 health"</Description>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
-      <Address>00555C3C</Address>
+      <Address>005551EC</Address>
     </CheatEntry>
     <CheatEntry>
-      <ID>218</ID>
-      <Description>"P2 st (see framedisplay)"</Description>
+      <ID>2</ID>
+      <Description>"P1 red health"</Description>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
-      <Address>00555C40</Address>
+      <Address>005551F0</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>124</ID>
@@ -186,7 +186,7 @@
     <CheatEntry>
       <ID>135</ID>
       <Description>"P1 Y previous"</Description>
-      <ShowAsSigned>0</ShowAsSigned>
+      <ShowAsSigned>1</ShowAsSigned>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
       <Address>00555248</Address>
@@ -224,6 +224,20 @@
       <Address>00555256</Address>
     </CheatEntry>
     <CheatEntry>
+      <ID>222</ID>
+      <Description>"P2 seq (see framedisplay)"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>00555C3C</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>218</ID>
+      <Description>"P2 st (see framedisplay)"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>00555C40</Address>
+    </CheatEntry>
+    <CheatEntry>
       <ID>125</ID>
       <Description>"P2 X"</Description>
       <ShowAsSigned>1</ShowAsSigned>
@@ -252,13 +266,6 @@
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
       <Address>00559550</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>2</ID>
-      <Description>"P2 health"</Description>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>00555CE8</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>158</ID>

@@ -160,6 +160,15 @@ struct Main
                     if ( GetKeyState ( 'G' ) & 0x80 )       buttons = CC_BUTTON_FN1;
                     if ( GetKeyState ( VK_F5 ) & 0x80 )     buttons = CC_BUTTON_START;
 
+                    if ( ( GetKeyState ( VK_F6 ) & 0x80 )
+                            && netMan.setup.rollback
+                            && netMan.getState() == NetplayState::InGame
+                            && netMan.getFrame() > 60 )
+                    {
+                        // Sleep ( 1000 );
+                        procMan.loadState ( { netMan.getIndex(), netMan.getFrame() - 10 }, netMan );
+                    }
+
                     input = COMBINE_INPUT ( direction, buttons );
                 }
 
@@ -460,8 +469,9 @@ struct Main
                     netMan.setRemotePlayer ( remotePlayer );
                 }
 
-                LOG ( "delay=%d; training=%d; hostPlayer=%d; localPlayer=%d; remotePlayer=%d",
-                      netMan.setup.delay, netMan.setup.training, netMan.setup.hostPlayer, localPlayer, remotePlayer );
+                LOG ( "delay=%d; rollback=%d; training=%d; hostPlayer=%d; localPlayer=%d; remotePlayer=%d",
+                      netMan.setup.delay, netMan.setup.rollback, netMan.setup.training, netMan.setup.hostPlayer,
+                      localPlayer, remotePlayer );
                 break;
 
             case MsgType::SocketShareData:

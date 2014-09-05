@@ -1,6 +1,7 @@
 #include "ProcessManager.h"
 
 #include <utility>
+#include <algorithm>
 
 using namespace std;
 
@@ -98,59 +99,85 @@ struct MemoryLocations
 
     MemoryLocations ( const vector<pair<void *, void *>>& addresses ) : addresses ( addresses ), totalSize ( 0 )
     {
-        for ( const auto& pair : addresses )
+        sort ( this->addresses.begin(), this->addresses.end(), compareFirst );
+
+        // TODO merge contiguous ranges
+
+        auto it = this->addresses.begin();
+        auto jt = it;
+        for ( ++jt; jt != this->addresses.end(); )
+        {
+            if ( it->second == jt->first )
+            {
+                it->second = jt->second;
+                this->addresses.erase ( jt );
+                jt = it;
+                ++jt;
+                continue;
+            }
+
+            ++it;
+            ++jt;
+        }
+
+        for ( const auto& pair : this->addresses )
             totalSize += ( size_t ( pair.second ) - size_t ( pair.first ) );
+    }
+
+    static bool compareFirst ( const pair<void *, void *>& a, const pair<void *, void *>& b )
+    {
+        return a.first < b.first;
     }
 };
 
+#define ADDR_FOR_EACH_PLAYER(START, END)                                                                \
+    { ( char * ) ( START ), ( char * ) ( END ) },                                                       \
+    { ( ( char * ) ( START ) ) + CC_PLR_STRUCT_LEN, ( ( char * ) ( END ) ) + CC_PLR_STRUCT_LEN }
+
 static const MemoryLocations memLocs (
 {
-    { CC_PLR_ARRAY_ADDR, CC_PLR_ARRAY_ADDR + CC_PLR_STRUCT_LEN * 4 },   // 0x555134 to 0x557D24
-    { CC_HUD_ARRAY_ADDR, CC_HUD_ARRAY_ADDR + CC_HUD_STRUCT_LEN * 2 },   // 0x557DD8 to 0x5581F0
+    ADDR_FOR_EACH_PLAYER ( 0x555140, 0x555144 ), // seq (see framedisplay)
+    ADDR_FOR_EACH_PLAYER ( 0x555144, 0x555148 ), // st (see framedisplay)
+    ADDR_FOR_EACH_PLAYER ( 0x5551EC, 0x5551F0 ), // health
+    ADDR_FOR_EACH_PLAYER ( 0x5551F0, 0x5551F4 ), // red health
+    ADDR_FOR_EACH_PLAYER ( 0x555238, 0x55523C ), // x position
+    ADDR_FOR_EACH_PLAYER ( 0x55523C, 0x555240 ), // y position
+    ADDR_FOR_EACH_PLAYER ( 0x555244, 0x555248 ), // x position (previous)
+    ADDR_FOR_EACH_PLAYER ( 0x555248, 0x55524C ), // y position (previous)
+    ADDR_FOR_EACH_PLAYER ( 0x55524C, 0x555250 ), // x velocity
+    ADDR_FOR_EACH_PLAYER ( 0x555250, 0x555254 ), // y velocity
+    ADDR_FOR_EACH_PLAYER ( 0x555254, 0x555256 ), // x accel
+    ADDR_FOR_EACH_PLAYER ( 0x555256, 0x555258 ), // y accel
 
-    { CC_CAMERA_XY2_ADDR, CC_CAMERA_XY2_ADDR + 8 },                     // 0x5585E8
+    { CC_CAMERA_XY2_ADDR, CC_CAMERA_XY2_ADDR + 8 },
 
-    { CC_P1_SUPER_TIMER1_ADDR, CC_P1_SUPER_TIMER1_ADDR + 8 },           // 0x558684
-    { CC_P1_SUPER_TIMER2_ADDR, CC_P1_SUPER_TIMER2_ADDR + 8 },           // 0x558784
-    { CC_P1_SUPER_TIMER3_ADDR, CC_P1_SUPER_TIMER3_ADDR + 8 },           // 0x558884
-    { CC_P1_SUPER_TIMER4_ADDR, CC_P1_SUPER_TIMER4_ADDR + 4 },           // 0x558908
-    { CC_P1_SUPER_TIMER5_ADDR, CC_P1_SUPER_TIMER5_ADDR + 4 },           // 0x558910
+    { CC_P1_SUPER_TIMER1_ADDR, CC_P1_SUPER_TIMER1_ADDR + 8 },
+    { CC_P1_SUPER_TIMER2_ADDR, CC_P1_SUPER_TIMER2_ADDR + 8 },
+    { CC_P1_SUPER_TIMER3_ADDR, CC_P1_SUPER_TIMER3_ADDR + 8 },
+    { CC_P1_SUPER_TIMER4_ADDR, CC_P1_SUPER_TIMER4_ADDR + 4 },
+    { CC_P1_SUPER_TIMER5_ADDR, CC_P1_SUPER_TIMER5_ADDR + 4 },
 
-    { CC_P2_SUPER_TIMER1_ADDR, CC_P2_SUPER_TIMER1_ADDR + 8 },           // 0x558990
-    { CC_P2_SUPER_TIMER2_ADDR, CC_P2_SUPER_TIMER2_ADDR + 8 },           // 0x558A90
-    { CC_P2_SUPER_TIMER3_ADDR, CC_P2_SUPER_TIMER3_ADDR + 8 },           // 0x558B90
-    { CC_P2_SUPER_TIMER4_ADDR, CC_P2_SUPER_TIMER4_ADDR + 4 },           // 0x558C14
-    { CC_P2_SUPER_TIMER5_ADDR, CC_P2_SUPER_TIMER5_ADDR + 4 },           // 0x558C1C
+    { CC_P2_SUPER_TIMER1_ADDR, CC_P2_SUPER_TIMER1_ADDR + 8 },
+    { CC_P2_SUPER_TIMER2_ADDR, CC_P2_SUPER_TIMER2_ADDR + 8 },
+    { CC_P2_SUPER_TIMER3_ADDR, CC_P2_SUPER_TIMER3_ADDR + 8 },
+    { CC_P2_SUPER_TIMER4_ADDR, CC_P2_SUPER_TIMER4_ADDR + 4 },
+    { CC_P2_SUPER_TIMER5_ADDR, CC_P2_SUPER_TIMER5_ADDR + 4 },
 
-    { CC_UNKNOWN_ADDR_START, CC_UNKNOWN_ADDR_END },                     // 0x559550 to 0x55B3C8
-    { CC_UNKNOWN_TIMER_ADDR, CC_UNKNOWN_TIMER_ADDR + 4 },               // 0x55D1CC
-    { CC_WORLD_TIMER_ADDR, CC_WORLD_TIMER_ADDR  + 1 },                  // 0x55D1D4
-    { CC_DEATHTIMER_ADDR, CC_INTROSTATE_ADDR + 4 },                     // 0x55D208
-    { CC_UNKNOWN2_ADDR_START, CC_UNKNOWN2_ADDR_END },                   // 0x55DEA0 to 0x55DF30
+    { CC_ROUND_TIMER_ADDR, CC_ROUND_TIMER_ADDR + 1 },
+    { CC_REAL_TIMER_ADDR, CC_REAL_TIMER_ADDR + 1 },
 
-    { CC_TIMERS_ADDR_START, CC_TIMERS_ADDR_END },                       // 0x562A3C to 0x562A70
+    { CC_RNGSTATE0_ADDR, CC_RNGSTATE0_ADDR + 1 },
+    { CC_RNGSTATE1_ADDR, CC_RNGSTATE1_ADDR + 1 },
 
-    { CC_MSGS_ADDR_START, CC_MSGS_ADDR_END },                           // 0x563580 to 0x563668
+    { CC_RNGSTATE2_ADDR, CC_RNGSTATE2_ADDR + 1 },
+    { CC_RNGSTATE3_ADDR, CC_RNGSTATE3_ADDR + CC_RNGSTATE3_SIZE },
 
-    { CC_RNGSTATE0_ADDR, CC_RNGSTATE0_ADDR + 1 },                       // 0x563778
-    { CC_RNGSTATE1_ADDR, CC_RNGSTATE1_ADDR + 1 },                       // 0x56377C
+    { CC_P1_SPELL_CIRCLE_ADDR, CC_P1_SPELL_CIRCLE_ADDR + 4 },
+    { CC_P2_SPELL_CIRCLE_ADDR, CC_P2_SPELL_CIRCLE_ADDR + 4 },
 
-    { CC_OUTROSTATE_ADDR, CC_OUTROSTATE_ADDR + 4 },                     // 0x563948
+    { CC_CAMERA_X_ADDR, CC_CAMERA_Y_ADDR + 4 },
 
-    { CC_RNGSTATE2_ADDR, CC_RNGSTATE2_ADDR + 1 },                       // 0x564068
-    { CC_RNGSTATE3_ADDR, CC_RNGSTATE3_ADDR + CC_RNGSTATE3_SIZE },       // 0x56406C to 0x56414C
-
-    { CC_P1_SPELL_CIRCLE_ADDR, CC_P1_SPELL_CIRCLE_ADDR + 4 },           // 0x5641A4
-    { CC_P2_SPELL_CIRCLE_ADDR, CC_P2_SPELL_CIRCLE_ADDR + 4 },           // 0x564200
-
-    { CC_CAMERA_X_ADDR, CC_CAMERA_Y_ADDR + 4 },                         // 0x564B14 and 0x564B18 for X and Y
-
-    { CC_FX_ARRAY_START, CC_FX2_ARRAY_END },                            // 0x61E170 to 0x746048
-    { CC_OUTRO_FX_ARRAY_START, CC_OUTRO_FX_ARRAY_END },                 // 0x74D99C to 0x74DA00
-    { CC_INTRO_FX_ARRAY_START, CC_INTRO_FX_ARRAY_END },                 // 0x74E4C8 to 0x74E86C
-    { CC_INTRO_FX2_ARRAY_START, CC_INTRO_FX2_ARRAY_END },               // 0x76E6F4 to 0x76E7CC
-
-    { CC_METER_ANIMATION_ADDR, CC_METER_ANIMATION_ADDR + 4 },           // 0x7717D8
+    { CC_METER_ANIMATION_ADDR, CC_METER_ANIMATION_ADDR + 4 },
 } );
 
 
@@ -193,6 +220,15 @@ void ProcessManager::allocateStates()
         freeStack.push ( i * memLocs.totalSize );
 
     statesList.clear();
+
+    static bool first = true;
+    if ( !first )
+        return;
+    first = false;
+
+    LOG ( "memLocs:" );
+    for ( const auto& pair : memLocs.addresses )
+        LOG ( "{ %08x, %08x }", pair.first, pair.second );
 }
 
 void ProcessManager::deallocateStates()
