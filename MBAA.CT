@@ -122,14 +122,14 @@
       <Description>"P2 chara"</Description>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
-      <Address>MBAA.exe+157947</Address>
+      <Address>00557947</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>224</ID>
       <Description>"P2 moon"</Description>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
-      <Address>MBAA.exe+15794E</Address>
+      <Address>0055794E</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>11</ID>

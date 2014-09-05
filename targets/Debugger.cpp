@@ -16,7 +16,7 @@ const uint8_t breakpointConstant = 0xCC;
 int64_t getRegVal ( uint8_t type, const CONTEXT& context );
 
 
-void processInstruction ( const _CodeInfo& ci, const _DInst& di, const CONTEXT& context )
+void processInstruction ( uint8_t buffer[64], const _CodeInfo& ci, const _DInst& di, const CONTEXT& context )
 {
     // int numMemOperands = 0;
     // uint32_t addr = 0;
@@ -64,8 +64,9 @@ void processInstruction ( const _CodeInfo& ci, const _DInst& di, const CONTEXT& 
     _DecodedInst decodedInst;
     distorm_format ( &ci, &di, &decodedInst );
 
-    LOG ( "%08X: %s%s%s",
+    LOG ( "%08X: %s:\t%s%s%s",
           ( uint32_t ) context.Eip,
+          toBase64 ( &buffer[decodedInst.offset], decodedInst.size ),
           toLower ( ( char * ) decodedInst.mnemonic.p ),
           ( decodedInst.operands.length != 0 ? " " : "" ),
           toLower ( ( char * ) decodedInst.operands.p ) );
@@ -107,7 +108,7 @@ int main ( int argc, char *argv[] )
     process = pi.hProcess;
     // thread = pi.hThread;
 
-    unsigned char buffer[64];
+    uint8_t buffer[64];
     DEBUG_EVENT event;
     CONTEXT context;
     ZeroMemory ( &buffer, sizeof ( buffer ) );
@@ -132,6 +133,7 @@ int main ( int argc, char *argv[] )
                 PRINT ( "CREATE_PROCESS_DEBUG_EVENT" );
                 // Breakpoint at the start of the main loop
                 WriteProcessMemory ( process, CC_LOOP_START_ADDR, &breakpointConstant, 1, 0 );
+                FlushInstructionCache ( process, CC_LOOP_START_ADDR, 1 );
                 break;
 
             case EXIT_PROCESS_DEBUG_EVENT:
@@ -139,63 +141,84 @@ int main ( int argc, char *argv[] )
                 debugging = false;
                 break;
 
+            case EXCEPTION_SINGLE_STEP:
+                PRINT ( "EXCEPTION_SINGLE_STEP" );
+                break;
+
             case EXCEPTION_DEBUG_EVENT:
-                // PRINT ( "EXCEPTION_DEBUG_EVENT" );
-
-                if ( !thread )
+                switch ( event.u.Exception.ExceptionRecord.ExceptionCode )
                 {
-                    if ( ! ( thread = OpenThread ( THREAD_GET_CONTEXT | THREAD_SET_CONTEXT, 0, event.dwThreadId ) ) )
+                    case EXCEPTION_BREAKPOINT:
+                        if ( !thread )
+                        {
+                            if ( ! ( thread = OpenThread ( THREAD_GET_CONTEXT | THREAD_SET_CONTEXT,
+                                                           0, event.dwThreadId ) ) )
+                            {
+                                WindowsException err = GetLastError();
+                                PRINT ( "OpenThread failed: %s", err );
+                                exit ( -1 );
+                            }
+                        }
+
+                        context.ContextFlags = CONTEXT_ALL;
+                        GetThreadContext ( thread, &context );
+
+                        // Reset the breakpoint and start stepping
+                        if ( !stepping && context.Eip == int ( CC_LOOP_START_ADDR + 1 ) )
+                        {
+                            --context.Eip;
+                            context.EFlags |= 0x100;
+                            SetThreadContext ( thread, &context );
+
+                            uint8_t original = 0x6A;
+                            WriteProcessMemory ( process, CC_LOOP_START_ADDR, &original, 1, 0 );
+                            FlushInstructionCache ( process, CC_LOOP_START_ADDR, 1 );
+
+                            stepping = true;
+
+                            PRINT ( "threadId = %u", ( uint32_t ) event.dwThreadId );
+                        }
+
+                        break;
+
+                    case EXCEPTION_SINGLE_STEP:
                     {
-                        WindowsException err = GetLastError();
-                        PRINT ( "OpenThread failed: %s", err );
-                        exit ( -1 );
+                        // LOG ( "eip = %08X", ( uint32_t ) context.Eip );
+
+                        ReadProcessMemory ( process, ( char * ) context.Eip, buffer, sizeof ( buffer ), 0 );
+                        // WriteProcessMemory ( process, ( char * ) context.Eip, buffer, 1, 0 );
+                        // FlushInstructionCache ( process, ( char * ) context.Eip, 1 );
+
+                        _DInst di;
+                        unsigned int diCount = 0;
+
+                        _CodeInfo ci;
+                        ci.code = buffer;
+                        ci.codeLen = sizeof ( buffer );
+                        ci.codeOffset = 0;
+                        ci.dt = Decode32Bits;
+                        ci.features = DF_NONE;
+
+                        // Disassemble just the first instruction in the buffer
+                        if ( distorm_decompose ( &ci, &di, 1, &diCount ) == DECRES_INPUTERR
+                                || diCount == 0 || di.flags == FLAG_NOT_DECODABLE )
+                        {
+                            PRINT ( "decode failed @ eip = %08X", ( uint32_t ) context.Eip );
+                            exit ( -1 );
+                        }
+
+                        processInstruction ( buffer, ci, di, context );
+
+                        // --context.Eip;
+                        // context.EFlags |= 0x100;
+                        // SetThreadContext ( thread, &context );
+                        break;
                     }
-                }
 
-                context.ContextFlags = CONTEXT_ALL;
-                GetThreadContext ( thread, &context );
-
-                // Reset the breakpoint and start stepping
-                if ( !stepping && context.Eip == int ( CC_LOOP_START_ADDR + 1 ) )
-                {
-                    --context.Eip;
-
-                    uint8_t val = 0x6A;
-                    WriteProcessMemory ( process, CC_LOOP_START_ADDR, &val, 1, 0 );
-
-                    stepping = true;
-
-                    PRINT ( "threadId = %u", ( uint32_t ) event.dwThreadId );
-                }
-
-                if ( stepping )
-                {
-                    LOG ( "eip = %08X", ( uint32_t ) context.Eip );
-
-                    context.EFlags |= 0x100;
-                    SetThreadContext ( thread, &context );
-
-                    // ReadProcessMemory ( process, ( char * ) context.Eip, buffer, sizeof ( buffer ), 0 );
-
-                    // _DInst di;
-                    // unsigned int diCount = 0;
-
-                    // _CodeInfo ci;
-                    // ci.code = buffer;
-                    // ci.codeLen = sizeof ( buffer );
-                    // ci.codeOffset = 0;
-                    // ci.dt = Decode32Bits;
-                    // ci.features = DF_NONE;
-
-                    // // Disassemble just the first instruction in the buffer
-                    // if ( distorm_decompose ( &ci, &di, 1, &diCount ) == DECRES_INPUTERR
-                    //         || diCount == 0 || di.flags == FLAG_NOT_DECODABLE )
-                    // {
-                    //     PRINT ( "decode failed @ eip = %08X", ( uint32_t ) context.Eip );
-                    //     exit ( -1 );
-                    // }
-
-                    // processInstruction ( ci, di, context );
+                    default:
+                        // PRINT ( "Unexpected ExceptionCode: %d", event.u.Exception.ExceptionRecord.ExceptionCode );
+                        // exit ( -1 );
+                        break;
                 }
 
                 break;
@@ -205,7 +228,7 @@ int main ( int argc, char *argv[] )
             case EXIT_THREAD_DEBUG_EVENT:
             case LOAD_DLL_DEBUG_EVENT:
             case UNLOAD_DLL_DEBUG_EVENT:
-                PRINT ( "Unhandled dwDebugEventCode: %d", event.dwDebugEventCode );
+                // PRINT ( "Unhandled dwDebugEventCode: %d", event.dwDebugEventCode );
                 break;
 
             default:
