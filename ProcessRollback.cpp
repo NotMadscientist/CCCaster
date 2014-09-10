@@ -18,9 +18,6 @@ using namespace std;
 #define CC_PLR_STRUCT_LEN           (2812)
 #define CC_PLR_STRUCT_HEADER        (12)               // stuff that doesn't change
 
-#define CC_CAMERA_X_ADDR            ((char *)0x564B14)
-#define CC_CAMERA_Y_ADDR            ((char *)0x564B18)
-
 #define CC_HUD_ARRAY_ADDR           ((char *)0x557DD8) // combo info
 #define CC_HUD_STRUCT_LEN           (524)
 
@@ -65,9 +62,6 @@ using namespace std;
 #define CC_MSGS_ADDR_START          ((char *)0x563580)
 #define CC_MSGS_ADDR_END            ((char *)0x563668)
 
-#define CC_P1_SPELL_CIRCLE_ADDR     ((char *)0x5641A4) // 4 bytes, float
-#define CC_P2_SPELL_CIRCLE_ADDR     ((char *)0x564200) // 4 bytes, float
-
 // Graphical effects array
 // - CC_FX_ARRAY_END-12 is 8 bytes of zeros
 // - CC_FX_ARRAY_END-4 is an int that counts down when an effect is active
@@ -89,7 +83,34 @@ using namespace std;
 #define CC_INTRO_FX2_ARRAY_START    ((char *)0x76E6F4)
 #define CC_INTRO_FX2_ARRAY_END      ((char *)0x76E7CC)
 
-#define CC_METER_ANIMATION_ADDR     ((char *)0x7717D8)
+
+#define CC_P1_SEQUENCE_ADDR         ( ( uint32_t * ) 0x555140 )
+#define CC_P1_SEQ_STATE_ADDR        ( ( uint32_t * ) 0x555144 )
+#define CC_P1_HEALTH_ADDR           ( ( uint32_t * ) 0x5551EC )
+#define CC_P1_RED_HEALTH_ADDR       ( ( uint32_t * ) 0x5551F0 )
+#define CC_P1_X_POSITION_ADDR       ( ( uint32_t * ) 0x555238 )
+#define CC_P1_Y_POSITION_ADDR       ( ( uint32_t * ) 0x55523C )
+#define CC_P1_X_PREV_POS_ADDR       ( ( uint32_t * ) 0x555244 )
+#define CC_P1_Y_PREV_POS_ADDR       ( ( uint32_t * ) 0x555248 )
+#define CC_P1_X_VELOCITY_ADDR       ( ( uint32_t * ) 0x55524C )
+#define CC_P1_Y_VELOCITY_ADDR       ( ( uint32_t * ) 0x555250 )
+#define CC_P1_X_ACCELERATION_ADDR   ( ( uint16_t * ) 0x555254 )
+#define CC_P1_Y_ACCELERATION_ADDR   ( ( uint16_t * ) 0x555256 )
+#define CC_P1_GUARD_BAR_ADDR        ( ( uint32_t * ) 0x5551F4 )
+#define CC_P1_GUARD_QUALITY_ADDR    ( ( uint32_t * ) 0x555208 )
+#define CC_P1_METER_ADDR            ( ( uint32_t * ) 0x555210 )
+
+#define CC_P1_SPELL_CIRCLE_ADDR     ( ( float * )    0x5641A4 )
+#define CC_P2_SPELL_CIRCLE_ADDR     ( ( float * )    0x564200 )
+
+#define CC_CAMERA_X_ADDR            ( ( int * )      0x564B14 )
+#define CC_CAMERA_Y_ADDR            ( ( int * )      0x564B18 )
+#define CC_HIT_SPARKS_ADDR          ( ( uint32_t * ) 0x67BD78 )
+#define CC_METER_ANIMATION_ADDR     ( ( uint32_t * ) 0x7717D8 )
+
+#define CC_EFFECTS_ARRAY_ADDR       ( ( char * )     0x67BDE8 )
+#define CC_EFFECTS_ARRAY_SIZE       ( 828 * 1000 )
+
 
 
 struct MemoryLocations
@@ -101,12 +122,13 @@ struct MemoryLocations
     {
         sort ( this->addresses.begin(), this->addresses.end(), compareFirst );
 
-        // TODO merge contiguous ranges
-
         auto it = this->addresses.begin();
         auto jt = it;
+
+        // Merge continuous ranges
         for ( ++jt; jt != this->addresses.end(); )
         {
+            // Add to the current range if the next one is continuous
             if ( it->second == jt->first )
             {
                 it->second = jt->second;
@@ -130,54 +152,60 @@ struct MemoryLocations
     }
 };
 
-#define ADDR_FOR_EACH_PLAYER(START, END)                                                                \
-    { ( char * ) ( START ), ( char * ) ( END ) },                                                       \
-    { ( ( char * ) ( START ) ) + CC_PLR_STRUCT_LEN, ( ( char * ) ( END ) ) + CC_PLR_STRUCT_LEN }
+#define SINGLE_ADDR(START)      { ( START ), ( START + 1 ) },
+#define ARRAY_ADDR(START, LEN)  { ( START ), ( ( ( char * ) ( START ) ) + LEN ) },
+
+#define PLAYERS_SINGLE_ADDR(START)                                                                      \
+    { ( START ), ( START + 1 ) },                                                                       \
+    { ( ( char * ) ( START ) ) + CC_PLR_STRUCT_LEN, ( ( char * ) ( START + 1 ) ) + CC_PLR_STRUCT_LEN },
 
 static const MemoryLocations memLocs (
 {
-    ADDR_FOR_EACH_PLAYER ( 0x555140, 0x555144 ), // seq (see framedisplay)
-    ADDR_FOR_EACH_PLAYER ( 0x555144, 0x555148 ), // st (see framedisplay)
-    ADDR_FOR_EACH_PLAYER ( 0x5551EC, 0x5551F0 ), // health
-    ADDR_FOR_EACH_PLAYER ( 0x5551F0, 0x5551F4 ), // red health
-    ADDR_FOR_EACH_PLAYER ( 0x555238, 0x55523C ), // x position
-    ADDR_FOR_EACH_PLAYER ( 0x55523C, 0x555240 ), // y position
-    ADDR_FOR_EACH_PLAYER ( 0x555244, 0x555248 ), // x position (previous)
-    ADDR_FOR_EACH_PLAYER ( 0x555248, 0x55524C ), // y position (previous)
-    ADDR_FOR_EACH_PLAYER ( 0x55524C, 0x555250 ), // x velocity
-    ADDR_FOR_EACH_PLAYER ( 0x555250, 0x555254 ), // y velocity
-    ADDR_FOR_EACH_PLAYER ( 0x555254, 0x555256 ), // x accel
-    ADDR_FOR_EACH_PLAYER ( 0x555256, 0x555258 ), // y accel
+    PLAYERS_SINGLE_ADDR ( CC_P1_SEQUENCE_ADDR )
+    PLAYERS_SINGLE_ADDR ( CC_P1_SEQ_STATE_ADDR )
+    PLAYERS_SINGLE_ADDR ( CC_P1_HEALTH_ADDR )
+    PLAYERS_SINGLE_ADDR ( CC_P1_RED_HEALTH_ADDR )
+    PLAYERS_SINGLE_ADDR ( CC_P1_X_POSITION_ADDR )
+    PLAYERS_SINGLE_ADDR ( CC_P1_Y_POSITION_ADDR )
+    PLAYERS_SINGLE_ADDR ( CC_P1_X_PREV_POS_ADDR )
+    PLAYERS_SINGLE_ADDR ( CC_P1_Y_PREV_POS_ADDR )
+    PLAYERS_SINGLE_ADDR ( CC_P1_X_VELOCITY_ADDR )
+    PLAYERS_SINGLE_ADDR ( CC_P1_Y_VELOCITY_ADDR )
+    PLAYERS_SINGLE_ADDR ( CC_P1_X_ACCELERATION_ADDR )
+    PLAYERS_SINGLE_ADDR ( CC_P1_Y_ACCELERATION_ADDR )
+    PLAYERS_SINGLE_ADDR ( CC_P1_GUARD_BAR_ADDR )
+    PLAYERS_SINGLE_ADDR ( CC_P1_GUARD_QUALITY_ADDR )
+    PLAYERS_SINGLE_ADDR ( CC_P1_METER_ADDR )
 
-    { CC_CAMERA_XY2_ADDR, CC_CAMERA_XY2_ADDR + 8 },
+    SINGLE_ADDR ( CC_P1_SPELL_CIRCLE_ADDR )
+    SINGLE_ADDR ( CC_P2_SPELL_CIRCLE_ADDR )
+    SINGLE_ADDR ( CC_HIT_SPARKS_ADDR )
+    SINGLE_ADDR ( CC_ROUND_TIMER_ADDR )
+    SINGLE_ADDR ( CC_REAL_TIMER_ADDR )
+    SINGLE_ADDR ( CC_CAMERA_X_ADDR )
+    SINGLE_ADDR ( CC_CAMERA_Y_ADDR )
+    SINGLE_ADDR ( CC_METER_ANIMATION_ADDR )
 
-    { CC_P1_SUPER_TIMER1_ADDR, CC_P1_SUPER_TIMER1_ADDR + 8 },
-    { CC_P1_SUPER_TIMER2_ADDR, CC_P1_SUPER_TIMER2_ADDR + 8 },
-    { CC_P1_SUPER_TIMER3_ADDR, CC_P1_SUPER_TIMER3_ADDR + 8 },
-    { CC_P1_SUPER_TIMER4_ADDR, CC_P1_SUPER_TIMER4_ADDR + 4 },
-    { CC_P1_SUPER_TIMER5_ADDR, CC_P1_SUPER_TIMER5_ADDR + 4 },
+    SINGLE_ADDR ( CC_RNGSTATE0_ADDR )
+    SINGLE_ADDR ( CC_RNGSTATE1_ADDR )
+    SINGLE_ADDR ( CC_RNGSTATE2_ADDR )
+    ARRAY_ADDR ( CC_RNGSTATE3_ADDR, CC_RNGSTATE3_SIZE )
 
-    { CC_P2_SUPER_TIMER1_ADDR, CC_P2_SUPER_TIMER1_ADDR + 8 },
-    { CC_P2_SUPER_TIMER2_ADDR, CC_P2_SUPER_TIMER2_ADDR + 8 },
-    { CC_P2_SUPER_TIMER3_ADDR, CC_P2_SUPER_TIMER3_ADDR + 8 },
-    { CC_P2_SUPER_TIMER4_ADDR, CC_P2_SUPER_TIMER4_ADDR + 4 },
-    { CC_P2_SUPER_TIMER5_ADDR, CC_P2_SUPER_TIMER5_ADDR + 4 },
+    ARRAY_ADDR ( CC_EFFECTS_ARRAY_ADDR, CC_EFFECTS_ARRAY_SIZE )
 
-    { CC_ROUND_TIMER_ADDR, CC_ROUND_TIMER_ADDR + 1 },
-    { CC_REAL_TIMER_ADDR, CC_REAL_TIMER_ADDR + 1 },
+    // { CC_CAMERA_XY2_ADDR, CC_CAMERA_XY2_ADDR + 8 },
 
-    { CC_RNGSTATE0_ADDR, CC_RNGSTATE0_ADDR + 1 },
-    { CC_RNGSTATE1_ADDR, CC_RNGSTATE1_ADDR + 1 },
+    // { CC_P1_SUPER_TIMER1_ADDR, CC_P1_SUPER_TIMER1_ADDR + 8 },
+    // { CC_P1_SUPER_TIMER2_ADDR, CC_P1_SUPER_TIMER2_ADDR + 8 },
+    // { CC_P1_SUPER_TIMER3_ADDR, CC_P1_SUPER_TIMER3_ADDR + 8 },
+    // { CC_P1_SUPER_TIMER4_ADDR, CC_P1_SUPER_TIMER4_ADDR + 4 },
+    // { CC_P1_SUPER_TIMER5_ADDR, CC_P1_SUPER_TIMER5_ADDR + 4 },
 
-    { CC_RNGSTATE2_ADDR, CC_RNGSTATE2_ADDR + 1 },
-    { CC_RNGSTATE3_ADDR, CC_RNGSTATE3_ADDR + CC_RNGSTATE3_SIZE },
-
-    { CC_P1_SPELL_CIRCLE_ADDR, CC_P1_SPELL_CIRCLE_ADDR + 4 },
-    { CC_P2_SPELL_CIRCLE_ADDR, CC_P2_SPELL_CIRCLE_ADDR + 4 },
-
-    { CC_CAMERA_X_ADDR, CC_CAMERA_Y_ADDR + 4 },
-
-    { CC_METER_ANIMATION_ADDR, CC_METER_ANIMATION_ADDR + 4 },
+    // { CC_P2_SUPER_TIMER1_ADDR, CC_P2_SUPER_TIMER1_ADDR + 8 },
+    // { CC_P2_SUPER_TIMER2_ADDR, CC_P2_SUPER_TIMER2_ADDR + 8 },
+    // { CC_P2_SUPER_TIMER3_ADDR, CC_P2_SUPER_TIMER3_ADDR + 8 },
+    // { CC_P2_SUPER_TIMER4_ADDR, CC_P2_SUPER_TIMER4_ADDR + 4 },
+    // { CC_P2_SUPER_TIMER5_ADDR, CC_P2_SUPER_TIMER5_ADDR + 4 },
 } );
 
 

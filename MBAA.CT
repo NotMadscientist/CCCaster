@@ -160,6 +160,27 @@
       <Address>005551F0</Address>
     </CheatEntry>
     <CheatEntry>
+      <ID>229</ID>
+      <Description>"P1 guard bar"</Description>
+      <Color>80000008</Color>
+      <VariableType>Float</VariableType>
+      <Address>05551F4</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>230</ID>
+      <Description>"P1 guard quality"</Description>
+      <Color>80000008</Color>
+      <VariableType>Float</VariableType>
+      <Address>0555208</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>231</ID>
+      <Description>"P1 meter"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>00555210</Address>
+    </CheatEntry>
+    <CheatEntry>
       <ID>124</ID>
       <Description>"P1 X"</Description>
       <ShowAsSigned>1</ShowAsSigned>
@@ -252,6 +273,22 @@
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
       <Address>00555D38</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>232</ID>
+      <Description>"P2 X accel"</Description>
+      <ShowAsSigned>1</ShowAsSigned>
+      <Color>80000008</Color>
+      <VariableType>2 Bytes</VariableType>
+      <Address>00555D50</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>233</ID>
+      <Description>"P2 Y accel"</Description>
+      <ShowAsSigned>1</ShowAsSigned>
+      <Color>80000008</Color>
+      <VariableType>2 Bytes</VariableType>
+      <Address>00555D52</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>144</ID>
@@ -622,6 +659,13 @@
       <Address>0076E648</Address>
     </CheatEntry>
     <CheatEntry>
+      <ID>235</ID>
+      <Description>"meter animation"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>007717D8</Address>
+    </CheatEntry>
+    <CheatEntry>
       <ID>200</ID>
       <Description>"P1 spell circle angle"</Description>
       <Color>80000008</Color>
@@ -676,6 +720,20 @@
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
       <Address>00774A70</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>234</ID>
+      <Description>"Hit spark counter?"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0067BD78</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>237</ID>
+      <Description>"Effects array start"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0067BDE8</Address>
     </CheatEntry>
   </CheatEntries>
   <CheatCodes>
