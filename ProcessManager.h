@@ -17,8 +17,6 @@
 
 struct IpcConnected : public SerializableSequence { EMPTY_MESSAGE_BOILERPLATE ( IpcConnected ) };
 
-struct GameState;
-
 
 class ProcessManager : public Socket::Owner, public Timer::Owner
 {
