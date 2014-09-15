@@ -95,13 +95,15 @@ $(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
 $(FOLDER):
 	@mkdir -p $(FOLDER)
 
-$(BINARY): version $(MAIN_OBJECTS) res/icon.res
+$(BINARY): version
+$(BINARY): $(MAIN_OBJECTS) res/icon.res
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(MAIN_OBJECTS) res/icon.res $(LD_FLAGS)
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
 
-$(DLL): version $(DLL_OBJECTS) $(FOLDER)
+$(DLL): version
+$(DLL): $(DLL_OBJECTS) $(FOLDER)
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(DLL_OBJECTS) -shared $(LD_FLAGS) -ld3dx9
 	@echo
 	$(STRIP) $@
@@ -113,8 +115,8 @@ $(LAUNCHER): targets/Launcher.cpp $(FOLDER)
 	$(STRIP) $@
 	$(CHMOD_X)
 
+$(DEBUGGER): version
 $(DEBUGGER): targets/Debugger.cpp lib/Utilities.cpp lib/Logger.cpp
-	$(make_version)
 	$(CXX) -o $@ $^ -m32 -s -Os -O2 -Wall -static -std=c++11 \
 		-I$(CURDIR) -Ilib -I3rdparty/cereal/include -I3rdparty/distorm3/include -L3rdparty/distorm3 -ldistorm3
 	@echo
