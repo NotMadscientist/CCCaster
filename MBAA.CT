@@ -735,6 +735,49 @@
       <VariableType>4 Bytes</VariableType>
       <Address>0067BDE8</Address>
     </CheatEntry>
+    <CheatEntry>
+      <ID>242</ID>
+      <Description>"No description"</Description>
+      <ShowAsHex>1</ShowAsHex>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0067C108</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>243</ID>
+      <Description>"No description"</Description>
+      <ShowAsHex>1</ShowAsHex>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0067C108</Address>
+      <Offsets>
+        <Offset>38</Offset>
+      </Offsets>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>246</ID>
+      <Description>"No description"</Description>
+      <ShowAsHex>1</ShowAsHex>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0067C108</Address>
+      <Offsets>
+        <Offset>0</Offset>
+        <Offset>38</Offset>
+      </Offsets>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>245</ID>
+      <Description>"No description"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0067C108</Address>
+      <Offsets>
+        <Offset>0</Offset>
+        <Offset>0</Offset>
+        <Offset>38</Offset>
+      </Offsets>
+    </CheatEntry>
   </CheatEntries>
   <CheatCodes>
     <CodeEntry>
@@ -2791,28 +2834,26 @@
       </After>
     </CodeEntry>
     <CodeEntry>
-      <Description>Change of mov [ecx+10],edx</Description>
-      <Address>0041FD43</Address>
+      <Description>Beginning of effects processing function</Description>
+      <Address>00453B80</Address>
       <ModuleName>MBAA.exe</ModuleName>
-      <ModuleNameOffset>1FD43</ModuleNameOffset>
+      <ModuleNameOffset>53B80</ModuleNameOffset>
       <Before>
-        <Byte>08</Byte>
-        <Byte>00</Byte>
-        <Byte>D9</Byte>
-        <Byte>59</Byte>
-        <Byte>14</Byte>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
       </Before>
       <Actual>
-        <Byte>89</Byte>
-        <Byte>51</Byte>
-        <Byte>10</Byte>
+        <Byte>55</Byte>
       </Actual>
       <After>
-        <Byte>D9</Byte>
-        <Byte>EE</Byte>
-        <Byte>C7</Byte>
-        <Byte>41</Byte>
-        <Byte>08</Byte>
+        <Byte>8B</Byte>
+        <Byte>EC</Byte>
+        <Byte>83</Byte>
+        <Byte>E4</Byte>
+        <Byte>F8</Byte>
       </After>
     </CodeEntry>
   </CheatCodes>

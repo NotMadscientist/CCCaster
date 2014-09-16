@@ -109,7 +109,7 @@ using namespace std;
 #define CC_METER_ANIMATION_ADDR     ( ( uint32_t * ) 0x7717D8 )
 
 #define CC_EFFECTS_ARRAY_ADDR       ( ( char * )     0x67BDE8 )
-#define CC_EFFECTS_ARRAY_SIZE       ( 828 * 1000 )
+#define CC_EFFECTS_ARRAY_SIZE       ( 0x33C * 1000 )
 
 
 
@@ -208,6 +208,54 @@ static const MemoryLocations memLocs (
     // { CC_P2_SUPER_TIMER5_ADDR, CC_P2_SUPER_TIMER5_ADDR + 4 },
 } );
 
+
+struct AddressDump
+{
+    void *addr = 0;
+    size_t size = 0;
+
+    size_t nextOffset = 0;
+    shared_ptr<AddressDump> next;
+
+    AddressDump() {}
+
+    AddressDump ( void *addr, size_t size )
+        : addr ( addr ), size ( size ) {}
+    AddressDump ( void *addr, size_t nextOffset, AddressDump *next )
+        : addr ( addr ), size ( 4 ), nextOffset ( nextOffset ), next ( next ) {}
+
+    AddressDump ( size_t size )
+        : size ( size ) {}
+    AddressDump ( size_t nextOffset, AddressDump *next )
+        : size ( 4 ), nextOffset ( nextOffset ), next ( next ) {}
+
+    void clone ( AddressDump& clone )
+    {
+        clone.addr = addr;
+        clone.size = size;
+        clone.nextOffset = nextOffset;
+
+        if ( next )
+        {
+            clone.next.reset ( new AddressDump() );
+            next->clone ( *clone.next );
+        }
+        else
+        {
+            clone.next = 0;
+        }
+    }
+};
+
+static vector<AddressDump> first =
+{
+    { CC_EFFECTS_ARRAY_ADDR, 0x320 },
+    {
+        CC_EFFECTS_ARRAY_ADDR + 0x320,
+        0x38, new AddressDump ( 0, new AddressDump ( 0, new AddressDump ( 4 ) ) )
+    },
+    { CC_EFFECTS_ARRAY_ADDR + 0x324, 18 }
+};
 
 void ProcessManager::GameState::save()
 {
