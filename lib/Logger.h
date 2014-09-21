@@ -58,6 +58,7 @@ public:
 
 #ifdef DISABLE_LOGGING
 
+#define LOG_TO(...)
 #define LOG(...)
 #define LOG_LIST(...)
 
@@ -86,21 +87,6 @@ public:
 #endif // DISABLE_LOGGING
 
 
-#define LOG_AND_THROW_STRING(FORMAT, ...)                                                                           \
-    do {                                                                                                            \
-        ::Exception err = toString ( FORMAT, ## __VA_ARGS__ );                                                      \
-        LOG ( FORMAT, ## __VA_ARGS__ );                                                                             \
-        throw err;                                                                                                  \
-    } while ( 0 )
-
-
-#define LOG_AND_THROW_ERROR(EXCEPTION, FORMAT, ...)                                                                 \
-    do {                                                                                                            \
-        LOG ( "%s; " FORMAT, EXCEPTION, ## __VA_ARGS__ );                                                           \
-        throw EXCEPTION;                                                                                            \
-    } while ( 0 )
-
-
 #ifndef RELEASE
 
 #define ASSERT(ASSERTION)                                                                                           \
@@ -115,4 +101,19 @@ public:
 
 #define ASSERT(...)
 
-#endif
+#endif // RELEASE
+
+
+#define LOG_AND_THROW_STRING(FORMAT, ...)                                                                           \
+    do {                                                                                                            \
+        ::Exception err = toString ( FORMAT, ## __VA_ARGS__ );                                                      \
+        LOG ( FORMAT, ## __VA_ARGS__ );                                                                             \
+        throw err;                                                                                                  \
+    } while ( 0 )
+
+
+#define LOG_AND_THROW_ERROR(EXCEPTION, FORMAT, ...)                                                                 \
+    do {                                                                                                            \
+        LOG ( "%s; " FORMAT, EXCEPTION, ## __VA_ARGS__ );                                                           \
+        throw EXCEPTION;                                                                                            \
+    } while ( 0 )
