@@ -14,7 +14,7 @@ using namespace std;
 #define CC_INTROSTATE_ADDR          ((char *)0x55D20B) // 1 bytes, intro state, 2 (intro), 1 (pre-game), 0 (in-game)
 #define CC_OUTROSTATE_ADDR          ((char *)0x563948) // 4 bytes, start from 2, goes to 3 (for timeouts?)
 
-#define CC_PLR_ARRAY_ADDR           ((char *)0x555134) // player info
+#define CC_PLR_ARRAY_ADDR           ((char *)   ) // player info
 #define CC_PLR_STRUCT_LEN           (2812)
 #define CC_PLR_STRUCT_HEADER        (12)               // stuff that doesn't change
 
@@ -100,6 +100,8 @@ using namespace std;
 #define CC_P1_GUARD_QUALITY_ADDR    ( ( uint32_t * ) 0x555208 )
 #define CC_P1_METER_ADDR            ( ( uint32_t * ) 0x555210 )
 
+#define CC_PLR_STRUCT_SIZE          ( 0xAFC )
+
 #define CC_P1_SPELL_CIRCLE_ADDR     ( ( float * )    0x5641A4 )
 #define CC_P2_SPELL_CIRCLE_ADDR     ( ( float * )    0x564200 )
 
@@ -109,202 +111,268 @@ using namespace std;
 #define CC_METER_ANIMATION_ADDR     ( ( uint32_t * ) 0x7717D8 )
 
 #define CC_EFFECTS_ARRAY_ADDR       ( ( char * )     0x67BDE8 )
-#define CC_EFFECTS_ARRAY_SIZE       ( 0x33C * 1000 )
-
-
-
-struct MemoryLocations
-{
-    vector<pair<void *, void *>> addresses;
-    size_t totalSize;
-
-    MemoryLocations ( const vector<pair<void *, void *>>& addresses ) : addresses ( addresses ), totalSize ( 0 )
-    {
-        sort ( this->addresses.begin(), this->addresses.end(), compareFirst );
-
-        auto it = this->addresses.begin();
-        auto jt = it;
-
-        // Merge continuous ranges
-        for ( ++jt; jt != this->addresses.end(); )
-        {
-            // Add to the current range if the next one is continuous
-            if ( it->second == jt->first )
-            {
-                it->second = jt->second;
-                this->addresses.erase ( jt );
-                jt = it;
-                ++jt;
-                continue;
-            }
-
-            ++it;
-            ++jt;
-        }
-
-        for ( const auto& pair : this->addresses )
-            totalSize += ( size_t ( pair.second ) - size_t ( pair.first ) );
-    }
-
-    static bool compareFirst ( const pair<void *, void *>& a, const pair<void *, void *>& b )
-    {
-        return a.first < b.first;
-    }
-};
-
-#define SINGLE_ADDR(START)      { ( START ), ( START + 1 ) },
-#define ARRAY_ADDR(START, LEN)  { ( START ), ( ( ( char * ) ( START ) ) + LEN ) },
-
-#define PLAYERS_SINGLE_ADDR(START)                                                                      \
-    { ( START ), ( START + 1 ) },                                                                       \
-    { ( ( char * ) ( START ) ) + CC_PLR_STRUCT_LEN, ( ( char * ) ( START + 1 ) ) + CC_PLR_STRUCT_LEN },
-
-static const MemoryLocations memLocs (
-{
-    PLAYERS_SINGLE_ADDR ( CC_P1_SEQUENCE_ADDR )
-    PLAYERS_SINGLE_ADDR ( CC_P1_SEQ_STATE_ADDR )
-    PLAYERS_SINGLE_ADDR ( CC_P1_HEALTH_ADDR )
-    PLAYERS_SINGLE_ADDR ( CC_P1_RED_HEALTH_ADDR )
-    PLAYERS_SINGLE_ADDR ( CC_P1_X_POSITION_ADDR )
-    PLAYERS_SINGLE_ADDR ( CC_P1_Y_POSITION_ADDR )
-    PLAYERS_SINGLE_ADDR ( CC_P1_X_PREV_POS_ADDR )
-    PLAYERS_SINGLE_ADDR ( CC_P1_Y_PREV_POS_ADDR )
-    PLAYERS_SINGLE_ADDR ( CC_P1_X_VELOCITY_ADDR )
-    PLAYERS_SINGLE_ADDR ( CC_P1_Y_VELOCITY_ADDR )
-    PLAYERS_SINGLE_ADDR ( CC_P1_X_ACCELERATION_ADDR )
-    PLAYERS_SINGLE_ADDR ( CC_P1_Y_ACCELERATION_ADDR )
-    PLAYERS_SINGLE_ADDR ( CC_P1_GUARD_BAR_ADDR )
-    PLAYERS_SINGLE_ADDR ( CC_P1_GUARD_QUALITY_ADDR )
-    PLAYERS_SINGLE_ADDR ( CC_P1_METER_ADDR )
-
-    SINGLE_ADDR ( CC_P1_SPELL_CIRCLE_ADDR )
-    SINGLE_ADDR ( CC_P2_SPELL_CIRCLE_ADDR )
-    SINGLE_ADDR ( CC_HIT_SPARKS_ADDR )
-    SINGLE_ADDR ( CC_ROUND_TIMER_ADDR )
-    SINGLE_ADDR ( CC_REAL_TIMER_ADDR )
-    SINGLE_ADDR ( CC_CAMERA_X_ADDR )
-    SINGLE_ADDR ( CC_CAMERA_Y_ADDR )
-    SINGLE_ADDR ( CC_METER_ANIMATION_ADDR )
-
-    SINGLE_ADDR ( CC_RNGSTATE0_ADDR )
-    SINGLE_ADDR ( CC_RNGSTATE1_ADDR )
-    SINGLE_ADDR ( CC_RNGSTATE2_ADDR )
-    ARRAY_ADDR ( CC_RNGSTATE3_ADDR, CC_RNGSTATE3_SIZE )
-
-    ARRAY_ADDR ( CC_EFFECTS_ARRAY_ADDR, CC_EFFECTS_ARRAY_SIZE )
-
-    // { CC_CAMERA_XY2_ADDR, CC_CAMERA_XY2_ADDR + 8 },
-
-    // { CC_P1_SUPER_TIMER1_ADDR, CC_P1_SUPER_TIMER1_ADDR + 8 },
-    // { CC_P1_SUPER_TIMER2_ADDR, CC_P1_SUPER_TIMER2_ADDR + 8 },
-    // { CC_P1_SUPER_TIMER3_ADDR, CC_P1_SUPER_TIMER3_ADDR + 8 },
-    // { CC_P1_SUPER_TIMER4_ADDR, CC_P1_SUPER_TIMER4_ADDR + 4 },
-    // { CC_P1_SUPER_TIMER5_ADDR, CC_P1_SUPER_TIMER5_ADDR + 4 },
-
-    // { CC_P2_SUPER_TIMER1_ADDR, CC_P2_SUPER_TIMER1_ADDR + 8 },
-    // { CC_P2_SUPER_TIMER2_ADDR, CC_P2_SUPER_TIMER2_ADDR + 8 },
-    // { CC_P2_SUPER_TIMER3_ADDR, CC_P2_SUPER_TIMER3_ADDR + 8 },
-    // { CC_P2_SUPER_TIMER4_ADDR, CC_P2_SUPER_TIMER4_ADDR + 4 },
-    // { CC_P2_SUPER_TIMER5_ADDR, CC_P2_SUPER_TIMER5_ADDR + 4 },
-} );
+#define CC_EFFECTS_ARRAY_COUNT      ( 1000 )
+#define CC_EFFECT_ELEMENT_SIZE      ( 0x33C )
 
 
 struct AddressDump
 {
-    void *addr = 0;
-    size_t size = 0;
+    char *addr = 0;
+    const size_t size;
+    const size_t totalSize;
 
-    size_t nextOffset = 0;
-    shared_ptr<AddressDump> next;
+    const size_t nextOffset;
+    const shared_ptr<AddressDump> nextAddress;
 
-    AddressDump() {}
+    template<typename T>
+    AddressDump ( T *addr )
+        : addr ( ( char * ) addr ), size ( sizeof ( *addr ) ), totalSize ( sizeof ( *addr ) ), nextOffset ( 0 ) {}
 
     AddressDump ( void *addr, size_t size )
-        : addr ( addr ), size ( size ) {}
-    AddressDump ( void *addr, size_t nextOffset, AddressDump *next )
-        : addr ( addr ), size ( 4 ), nextOffset ( nextOffset ), next ( next ) {}
+        : addr ( ( char * ) addr ), size ( size ), totalSize ( size ), nextOffset ( 0 ) {}
+    AddressDump ( void *addr, size_t nextOffset, AddressDump *nextAddress )
+        : addr ( ( char * ) addr ), size ( 4 ), totalSize ( 4 + nextAddress->totalSize )
+        , nextOffset ( nextOffset ), nextAddress ( nextAddress ) {}
 
-    AddressDump ( size_t size )
-        : size ( size ) {}
-    AddressDump ( size_t nextOffset, AddressDump *next )
-        : size ( 4 ), nextOffset ( nextOffset ), next ( next ) {}
-
-    void clone ( AddressDump& clone )
+    AddressDump copy ( size_t plusAddr = 0, size_t plusSize = 0 ) const
     {
-        clone.addr = addr;
-        clone.size = size;
-        clone.nextOffset = nextOffset;
-
-        if ( next )
-        {
-            clone.next.reset ( new AddressDump() );
-            next->clone ( *clone.next );
-        }
+        if ( nextAddress )
+            return AddressDump ( addr + plusAddr, size + plusSize, totalSize + plusSize, nextOffset,
+                                 nextAddress->clone() );
         else
-        {
-            clone.next = 0;
-        }
+            return AddressDump ( addr + plusAddr, size + plusSize, totalSize + plusSize, nextOffset, 0 );
+    }
+
+    bool hasChild() const { return ( nextAddress.get() != 0 ); }
+
+    static AddressDump *child ( size_t size )
+    {
+        return new AddressDump ( ChildAddress, size );
+    }
+
+    static AddressDump *child ( size_t nextOffset, AddressDump *nextAddress )
+    {
+        return new AddressDump ( ChildAddress, nextOffset, nextAddress );
+    }
+
+private:
+
+    enum ChildAddressEnum { ChildAddress };
+
+    AddressDump ( ChildAddressEnum, size_t size )
+        : size ( size ), totalSize ( size ), nextOffset ( 0 ) {}
+    AddressDump ( ChildAddressEnum, size_t nextOffset, AddressDump *nextAddress )
+        : size ( 4 ), totalSize ( 4 + nextAddress->totalSize )
+        , nextOffset ( nextOffset ), nextAddress ( nextAddress ) {}
+
+    AddressDump ( void *addr, size_t size, size_t totalSize, size_t nextOffset, AddressDump *nextAddress )
+        : addr ( ( char * ) addr ), size ( size ), totalSize ( totalSize )
+        , nextOffset ( nextOffset ), nextAddress ( nextAddress ) {}
+
+    AddressDump *clone() const
+    {
+        if ( nextAddress )
+            return new AddressDump ( addr, size, totalSize, nextOffset, nextAddress->clone() );
+        else
+            return new AddressDump ( addr, size, totalSize, nextOffset, 0 );
     }
 };
 
-static vector<AddressDump> first =
+
+struct AddressList
 {
-    { CC_EFFECTS_ARRAY_ADDR, 0x320 },
+    vector<AddressDump> addresses;
+    size_t totalSize = 0;
+
+    AddressList() {}
+
+    AddressList ( const vector<AddressDump>& addresses )
     {
-        CC_EFFECTS_ARRAY_ADDR + 0x320,
-        0x38, new AddressDump ( 0, new AddressDump ( 0, new AddressDump ( 4 ) ) )
-    },
-    { CC_EFFECTS_ARRAY_ADDR + 0x324, 18 }
+        append ( addresses );
+        optimize();
+    }
+
+    void optimize()
+    {
+        // Sort using a list of pointers
+        vector<AddressDump *> sorted;
+        for ( AddressDump& addr : addresses )
+            sorted.push_back ( &addr );
+
+        sort ( sorted.begin(), sorted.end(), comparePtrs );
+
+        vector<AddressDump> newAddrs ( 1, sorted.front()->copy() );
+        auto it = sorted.begin();
+        auto jt = it;
+
+        // Merge continuous address ranges
+        for ( ++jt; jt != sorted.end(); ++jt )
+        {
+            // Add to the previous address's size if the next one is continuous, and neither have children
+            // TODO handle groups of unevaluated nextAddresses (optimization)
+            if ( newAddrs.back().addr + newAddrs.back().size == ( **jt ).addr
+                    && !newAddrs.back().hasChild() && ! ( **jt ).hasChild() )
+            {
+                // Merge the two addresses
+                AddressDump tmp = newAddrs.back().copy ( 0, ( **jt ).size );
+                newAddrs.pop_back();
+                newAddrs.push_back ( tmp );
+
+                // Erase and try the next address
+                sorted.erase ( jt );
+                jt = it;
+                continue;
+            }
+
+            ++it;
+            newAddrs.push_back ( ( **jt ).copy() );
+        }
+
+        addresses.clear();
+        append ( newAddrs );
+
+        totalSize = 0;
+        for ( const AddressDump& addr : addresses )
+            totalSize += addr.totalSize;
+    }
+
+    void append ( const vector<AddressDump>& b, size_t addrOffset = 0 ) { append ( addresses, b, addrOffset ); }
+
+    void append ( const AddressList& b, size_t addrOffset = 0 ) { append ( addresses, b.addresses, addrOffset ); }
+
+    static void append ( vector<AddressDump>& a, const vector<AddressDump>& b, size_t addrOffset = 0 )
+    {
+        for ( const AddressDump& addr : b )
+            a.push_back ( addr.copy ( addrOffset ) );
+    }
+
+    static bool comparePtrs ( const AddressDump *a, const AddressDump *b )
+    {
+        return a->addr < b->addr;
+    }
 };
+
+static AddressList allAddrs;
+
 
 void ProcessManager::GameState::save()
 {
-    ASSERT ( rawBytes != 0 );
+    // ASSERT ( rawBytes != 0 );
 
-    size_t pos = 0;
+    // size_t pos = 0;
 
-    for ( const auto& pair : memLocs.addresses )
-    {
-        copy ( ( char * ) pair.first, ( char * ) pair.second, &rawBytes[pos] );
-        pos += ( size_t ( pair.second ) - size_t ( pair.first ) );
-    }
+    // for ( const auto& pair : memLocs.addresses )
+    // {
+    //     copy ( ( char * ) pair.first, ( char * ) pair.second, &rawBytes[pos] );
+    //     pos += ( size_t ( pair.second ) - size_t ( pair.first ) );
+    // }
 
-    ASSERT ( pos == memLocs.totalSize );
+    // ASSERT ( pos == memLocs.totalSize );
 }
 
 void ProcessManager::GameState::load()
 {
-    ASSERT ( rawBytes != 0 );
+    // ASSERT ( rawBytes != 0 );
 
-    size_t pos = 0;
+    // size_t pos = 0;
 
-    for ( const auto& pair : memLocs.addresses )
-    {
-        size_t size = size_t ( pair.second ) - size_t ( pair.first );
-        copy ( &rawBytes[pos], &rawBytes[pos + size], ( char * ) pair.first );
-        pos += size;
-    }
+    // for ( const auto& pair : memLocs.addresses )
+    // {
+    //     size_t size = size_t ( pair.second ) - size_t ( pair.first );
+    //     copy ( &rawBytes[pos], &rawBytes[pos + size], ( char * ) pair.first );
+    //     pos += size;
+    // }
 
-    ASSERT ( pos == memLocs.totalSize );
+    // ASSERT ( pos == memLocs.totalSize );
 }
 
 void ProcessManager::allocateStates()
 {
-    memoryPool.reset ( new char[NUM_ROLLBACK_STATES * memLocs.totalSize], deleteArray<char> );
+    static const AddressList playerAddrs (
+    {
+        CC_P1_SEQUENCE_ADDR,
+        CC_P1_SEQ_STATE_ADDR,
+        CC_P1_HEALTH_ADDR,
+        CC_P1_RED_HEALTH_ADDR,
+        CC_P1_X_POSITION_ADDR,
+        CC_P1_Y_POSITION_ADDR,
+        CC_P1_X_PREV_POS_ADDR,
+        CC_P1_Y_PREV_POS_ADDR,
+        CC_P1_X_VELOCITY_ADDR,
+        CC_P1_Y_VELOCITY_ADDR,
+        CC_P1_X_ACCELERATION_ADDR,
+        CC_P1_Y_ACCELERATION_ADDR,
+        CC_P1_GUARD_BAR_ADDR,
+        CC_P1_GUARD_QUALITY_ADDR,
+        CC_P1_METER_ADDR,
+    } );
+
+    static const AddressList effectAddrs (
+    {
+        { CC_EFFECTS_ARRAY_ADDR, 0x320 },
+        {
+            CC_EFFECTS_ARRAY_ADDR + 0x320,
+            0x38, AddressDump::child ( 0, AddressDump::child ( 0, AddressDump::child ( 4 ) ) )
+        },
+        { CC_EFFECTS_ARRAY_ADDR + 0x324, 24 },
+    } );
+
+    static const AddressList miscAddrs (
+    {
+        CC_P1_SPELL_CIRCLE_ADDR,
+        CC_P2_SPELL_CIRCLE_ADDR,
+        CC_HIT_SPARKS_ADDR,
+        CC_ROUND_TIMER_ADDR,
+        CC_REAL_TIMER_ADDR,
+        CC_CAMERA_X_ADDR,
+        CC_CAMERA_Y_ADDR,
+        CC_METER_ANIMATION_ADDR,
+
+        CC_RNGSTATE0_ADDR,
+        CC_RNGSTATE1_ADDR,
+        CC_RNGSTATE2_ADDR,
+        { CC_RNGSTATE3_ADDR, CC_RNGSTATE3_SIZE },
+
+        // { CC_CAMERA_XY2_ADDR, 8 },
+
+        // { CC_P1_SUPER_TIMER1_ADDR, 8 },
+        // { CC_P1_SUPER_TIMER2_ADDR, 8 },
+        // { CC_P1_SUPER_TIMER3_ADDR, 8 },
+        // { CC_P1_SUPER_TIMER4_ADDR, 4 },
+        // { CC_P1_SUPER_TIMER5_ADDR, 4 },
+        // { CC_P2_SUPER_TIMER1_ADDR, 8 },
+        // { CC_P2_SUPER_TIMER2_ADDR, 8 },
+        // { CC_P2_SUPER_TIMER3_ADDR, 8 },
+        // { CC_P2_SUPER_TIMER4_ADDR, 4 },
+        // { CC_P2_SUPER_TIMER5_ADDR, 4 },
+    } );
+
+
+    if ( allAddrs.addresses.empty() )
+    {
+        allAddrs.append ( miscAddrs );
+
+        allAddrs.append ( playerAddrs, 0 );                     // Player 1
+        allAddrs.append ( playerAddrs, CC_PLR_STRUCT_SIZE );    // Player 2
+
+        for ( size_t i = 0; i < CC_EFFECTS_ARRAY_COUNT; ++i )
+            allAddrs.append ( effectAddrs, CC_EFFECT_ELEMENT_SIZE * i );
+
+        allAddrs.optimize();
+
+        LOG ( "allAddrs:" );
+        for ( const AddressDump& addr : allAddrs.addresses )
+            LOG ( "{ %08x, %08x }", addr.addr, addr.addr + addr.size );
+
+        LOG ( "totalSize=%u", allAddrs.totalSize );
+    }
+
+    memoryPool.reset ( new char[NUM_ROLLBACK_STATES * allAddrs.totalSize], deleteArray<char> );
 
     for ( size_t i = 0; i < NUM_ROLLBACK_STATES; ++i )
-        freeStack.push ( i * memLocs.totalSize );
+        freeStack.push ( i * allAddrs.totalSize );
 
     statesList.clear();
-
-    static bool first = true;
-    if ( !first )
-        return;
-    first = false;
-
-    LOG ( "memLocs:" );
-    for ( const auto& pair : memLocs.addresses )
-        LOG ( "{ %08x, %08x }", pair.first, pair.second );
 }
 
 void ProcessManager::deallocateStates()
