@@ -41,6 +41,7 @@ WINDRES = $(PREFIX)windres
 STRIP = $(PREFIX)strip
 ZIP = zip
 
+
 ifeq ($(OS),Windows_NT)
     CHMOD_X = icacls $@ /grant Everyone:F
     GRANT = icacls $@ /grant Everyone:F
@@ -50,6 +51,7 @@ else
     GRANT =
     ASTYLE = 3rdparty/astyle
 endif
+
 
 # Build flags
 DEFINES = -DWIN32_LEAN_AND_MEAN -D_M_IX86 -DNAMED_PIPE='"\\\\.\\pipe\\cccaster_pipe"' -DMBAA_EXE='"$(MBAA_EXE)"'
@@ -68,41 +70,43 @@ LD_FLAGS += -lSDL2 -lSDL2main -lws2_32 -lwinmm -lwinpthread -ldinput8 -lgdi32 -l
 # DEFINES += -DLOGGER_MUTEXED
 # DEFINES += -DJLIB_MUTEXED
 
-all: STRIP = touch
-all: DEFINES += -D_GLIBCXX_DEBUG
-all: CC_FLAGS += -ggdb3 -O0 -fno-inline
-all: $(ARCHIVE)
 
-release: DEFINES += -DNDEBUG -DRELEASE -DDISABLE_LOGGING
-release: CC_FLAGS += -s -Os -O2 -fno-rtti
-release: $(ARCHIVE)
+debug: post-build
+release: post-build
+profile: post-build
 
-profile: STRIP = touch
-profile: DEFINES += -DNDEBUG -DRELEASE
-profile: CC_FLAGS += -O2 -fno-rtti -pg
-profile: LD_FLAGS += -pg -lgmon
-profile: $(ARCHIVE)
+target-debug: STRIP = touch
+target-debug: DEFINES += -D_GLIBCXX_DEBUG
+target-debug: CC_FLAGS += -ggdb3 -O0 -fno-inline
+target-debug: $(ARCHIVE)
+
+target-release: DEFINES += -DNDEBUG -DRELEASE -DDISABLE_LOGGING
+target-release: CC_FLAGS += -s -Os -O2 -fno-rtti
+target-release: $(ARCHIVE)
+
+target-profile: STRIP = touch
+target-profile: DEFINES += -DNDEBUG -DRELEASE
+target-profile: CC_FLAGS += -O2 -fno-rtti -pg
+target-profile: LD_FLAGS += -pg -lgmon
+target-profile: $(ARCHIVE)
 
 debugger: $(DEBUGGER)
+
 
 $(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
 	@echo
 	$(ZIP) $(NAME).v$(VERSION).zip $^
 	$(GRANT)
-	@echo
-	if [ -s scripts/deploy ]; then scripts/deploy; fi;
 
 $(FOLDER):
 	@mkdir -p $(FOLDER)
 
-$(BINARY): version
 $(BINARY): $(MAIN_OBJECTS) res/icon.res
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(MAIN_OBJECTS) res/icon.res $(LD_FLAGS)
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
 
-$(DLL): version
 $(DLL): $(DLL_OBJECTS) $(FOLDER)
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(DLL_OBJECTS) -shared $(LD_FLAGS) -ld3dx9
 	@echo
@@ -115,7 +119,6 @@ $(LAUNCHER): targets/Launcher.cpp $(FOLDER)
 	$(STRIP) $@
 	$(CHMOD_X)
 
-$(DEBUGGER): version
 $(DEBUGGER): targets/Debugger.cpp lib/Utilities.cpp lib/Logger.cpp
 	$(CXX) -o $@ $^ -m32 -s -Os -O2 -Wall -static -std=c++11 \
 		-I$(CURDIR) -Ilib -I3rdparty/cereal/include -I3rdparty/distorm3/include -L3rdparty/distorm3 -ldistorm3
@@ -125,6 +128,7 @@ $(DEBUGGER): targets/Debugger.cpp lib/Utilities.cpp lib/Logger.cpp
 
 res/icon.res: res/icon.rc res/icon.ico
 	$(WINDRES) -F pe-i386 res/icon.rc -O coff -o $@
+
 
 define make_version
 @printf "#define COMMIT_ID \"`git rev-parse HEAD`\"\n" > lib/Version.h
@@ -136,6 +140,7 @@ define make_protocol
 @scripts/make_protocol $(NON_GEN_HEADERS)
 endef
 
+
 .depend: $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
 	$(make_version)
 	$(make_protocol)
@@ -145,24 +150,18 @@ endef
 	@$(CXX) $(CC_FLAGS) -std=c++11 -MM targets/*.cpp | sed -r "s/^([A-Za-z]+\.o\: )/targets\/\1/" >> $@
 	@$(CXX) $(CC_FLAGS) -std=c++11 -MM tests/*.cpp   | sed -r "s/^([A-Za-z]+\.o\: )/tests\/\1/"   >> $@
 
-protocol: $(NON_GEN_HEADERS)
-	$(make_protocol)
-
-version:
-	$(make_version)
-
-autogen: protocol version
 
 sdl:
-	make --jobs --directory 3rdparty/SDL2 CFLAGS="-m32 -ggdb3 -O0 -fno-inline"
+	@$(MAKE) --directory 3rdparty/SDL2 --environment-overrides CFLAGS='-m32 -ggdb3 -O0 -fno-inline'
 	@echo
 
 sdl_release:
-	make --jobs --directory 3rdparty/SDL2 CFLAGS="-m32 -s -Os -O3"
+	@$(MAKE) --directory 3rdparty/SDL2  CFLAGS='-m32 -s -Os -O3'
 	@echo
 
 sdl_clean:
-	make --directory 3rdparty/SDL2 clean
+	@$(MAKE) --directory 3rdparty/SDL2 clean
+
 
 clean:
 	rm -f $(AUTOGEN_HEADERS) .depend *.res *.exe *.dll *.zip *.o lib/*.o targets/*.o tests/*.o
@@ -196,17 +195,44 @@ format:
 count:
 	@wc -l $(NON_GEN_SRCS) $(NON_GEN_HEADERS) | sort -r | head -n 10 && echo '    ...'
 
-.PHONY: clean check trim format count deploy autogen protocol version sdl sdl_release sdl_profile sdl_clean
+.PHONY: clean check trim format count deploy sdl sdl_release sdl_profile sdl_clean
 
+
+pre-build:
+	@echo
+	$(make_version)
+	$(make_protocol)
+	@echo Pre-build
+	@echo
+
+post-build: main-build
+	@echo
+	if [ -s scripts/deploy ]; then scripts/deploy; fi;
+	@echo Post-build
+	@echo
+
+
+ifneq (,$(findstring release, $(MAKECMDGOALS)))
+main-build: pre-build
+	@$(MAKE) --no-print-directory target-release
+else
+ifneq (,$(findstring profile, $(MAKECMDGOALS)))
+main-build: pre-build
+	@$(MAKE) --no-print-directory target-profile
+else
+main-build: pre-build
+	@$(MAKE) --no-print-directory target-debug
+endif
+endif
+
+
+# Don't include .depend if making any of the following targets
 ifeq (,$(findstring clean, $(MAKECMDGOALS)))
 ifeq (,$(findstring check, $(MAKECMDGOALS)))
 ifeq (,$(findstring trim, $(MAKECMDGOALS)))
 ifeq (,$(findstring format, $(MAKECMDGOALS)))
 ifeq (,$(findstring count, $(MAKECMDGOALS)))
 ifeq (,$(findstring deploy, $(MAKECMDGOALS)))
-ifeq (,$(findstring autogen, $(MAKECMDGOALS)))
-ifeq (,$(findstring version, $(MAKECMDGOALS)))
-ifeq (,$(findstring protocol, $(MAKECMDGOALS)))
 ifeq (,$(findstring sdl, $(MAKECMDGOALS)))
 ifeq (,$(findstring debugger, $(MAKECMDGOALS)))
 ifeq (,$(findstring $(LAUNCHER), $(MAKECMDGOALS)))
@@ -222,9 +248,7 @@ endif
 endif
 endif
 endif
-endif
-endif
-endif
+
 
 %.o: %.cpp
 	$(CXX) $(CC_FLAGS) -Wall -std=c++11 -o $@ -c $<
