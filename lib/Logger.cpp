@@ -4,6 +4,15 @@
 using namespace std;
 
 
+#ifdef DISABLE_LOGGING
+
+void Logger::initialize ( const string& name, uint32_t options ) {}
+void Logger::deinitialize() {}
+void Logger::flush() {}
+void Logger::log ( const char *file, int line, const char *func, const char *message ) {}
+
+#else
+
 void Logger::initialize ( const string& name, uint32_t options )
 {
     if ( initialized )
@@ -100,6 +109,8 @@ void Logger::log ( const char *file, int line, const char *func, const char *mes
     fprintf ( fd, ( hasPrefix ? " %s\n" : "%s\n" ), message );
     fflush ( fd );
 }
+
+#endif // DISABLE_LOGGING
 
 Logger& Logger::get()
 {

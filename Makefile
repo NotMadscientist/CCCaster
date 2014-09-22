@@ -71,9 +71,7 @@ LD_FLAGS += -lSDL2 -lSDL2main -lws2_32 -lwinmm -lwinpthread -ldinput8 -lgdi32 -l
 # DEFINES += -DJLIB_MUTEXED
 
 
-debug: post-build
-release: post-build
-profile: post-build
+all: debug
 
 target-debug: STRIP = touch
 target-debug: DEFINES += -D_GLIBCXX_DEBUG
@@ -83,6 +81,10 @@ target-debug: $(ARCHIVE)
 target-release: DEFINES += -DNDEBUG -DRELEASE -DDISABLE_LOGGING
 target-release: CC_FLAGS += -s -Os -O2 -fno-rtti
 target-release: $(ARCHIVE)
+
+target-release-logging: DEFINES += -DNDEBUG -DRELEASE
+target-release-logging:: CC_FLAGS += -s -Os -O2 -fno-rtti
+target-release-logging:: $(ARCHIVE)
 
 target-profile: STRIP = touch
 target-profile: DEFINES += -DNDEBUG -DRELEASE
@@ -155,11 +157,11 @@ sdl:
 	@$(MAKE) --directory 3rdparty/SDL2 --environment-overrides CFLAGS='-m32 -ggdb3 -O0 -fno-inline'
 	@echo
 
-sdl_release:
+sdl-release:
 	@$(MAKE) --directory 3rdparty/SDL2  CFLAGS='-m32 -s -Os -O3'
 	@echo
 
-sdl_clean:
+sdl-clean:
 	@$(MAKE) --directory 3rdparty/SDL2 clean
 
 
@@ -211,7 +213,15 @@ post-build: main-build
 	@echo Post-build
 	@echo
 
+debug: post-build
+release: post-build
+release-logging: post-build
+profile: post-build
 
+ifneq (,$(findstring release-logging, $(MAKECMDGOALS)))
+main-build: pre-build
+	@$(MAKE) --no-print-directory target-release-logging
+else
 ifneq (,$(findstring release, $(MAKECMDGOALS)))
 main-build: pre-build
 	@$(MAKE) --no-print-directory target-release
@@ -222,6 +232,7 @@ main-build: pre-build
 else
 main-build: pre-build
 	@$(MAKE) --no-print-directory target-debug
+endif
 endif
 endif
 
