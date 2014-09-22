@@ -115,67 +115,51 @@ using namespace std;
 #define CC_EFFECT_ELEMENT_SIZE      ( 0x33C )
 
 
+struct AddressList;
+
+
 struct AddressDump
 {
-    char *addr = 0;
+    char *const addr; // or offset if child
     const size_t size;
     const size_t totalSize;
 
-    const size_t nextOffset;
-    const shared_ptr<AddressDump> nextAddress;
+    const shared_ptr<const AddressList> children;
 
     template<typename T>
     AddressDump ( T *addr )
-        : addr ( ( char * ) addr ), size ( sizeof ( *addr ) ), totalSize ( sizeof ( *addr ) ), nextOffset ( 0 ) {}
+        : addr ( ( char * ) addr ), size ( sizeof ( *addr ) ), totalSize ( sizeof ( *addr ) ) {}
 
     AddressDump ( void *addr, size_t size )
-        : addr ( ( char * ) addr ), size ( size ), totalSize ( size ), nextOffset ( 0 ) {}
-    AddressDump ( void *addr, size_t nextOffset, AddressDump *nextAddress )
-        : addr ( ( char * ) addr ), size ( 4 ), totalSize ( 4 + nextAddress->totalSize )
-        , nextOffset ( nextOffset ), nextAddress ( nextAddress ) {}
+        : addr ( ( char * ) addr ), size ( size ), totalSize ( size ) {}
 
-    AddressDump copy ( size_t plusAddr = 0, size_t plusSize = 0 ) const
+    AddressDump ( void *addr, const AddressDump& childAddr );
+
+    AddressDump copy ( size_t plusAddr = 0, size_t plusSize = 0 ) const;
+
+    static AddressDump child ( size_t offset, size_t size )
     {
-        if ( nextAddress )
-            return AddressDump ( addr + plusAddr, size + plusSize, totalSize + plusSize, nextOffset,
-                                 nextAddress->clone() );
-        else
-            return AddressDump ( addr + plusAddr, size + plusSize, totalSize + plusSize, nextOffset, 0 );
+        return AddressDump ( ChildAddress, offset, size );
     }
 
-    bool hasChild() const { return ( nextAddress.get() != 0 ); }
-
-    static AddressDump *child ( size_t size )
+    static AddressDump child ( size_t offset, const AddressDump& childAddr )
     {
-        return new AddressDump ( ChildAddress, size );
-    }
-
-    static AddressDump *child ( size_t nextOffset, AddressDump *nextAddress )
-    {
-        return new AddressDump ( ChildAddress, nextOffset, nextAddress );
+        return AddressDump ( ChildAddress, offset, childAddr );
     }
 
 private:
 
     enum ChildAddressEnum { ChildAddress };
 
-    AddressDump ( ChildAddressEnum, size_t size )
-        : size ( size ), totalSize ( size ), nextOffset ( 0 ) {}
-    AddressDump ( ChildAddressEnum, size_t nextOffset, AddressDump *nextAddress )
-        : size ( 4 ), totalSize ( 4 + nextAddress->totalSize )
-        , nextOffset ( nextOffset ), nextAddress ( nextAddress ) {}
+    AddressDump ( ChildAddressEnum, size_t offset, size_t size )
+        : addr ( ( char * ) offset ), size ( size ), totalSize ( size ) {}
 
-    AddressDump ( void *addr, size_t size, size_t totalSize, size_t nextOffset, AddressDump *nextAddress )
-        : addr ( ( char * ) addr ), size ( size ), totalSize ( totalSize )
-        , nextOffset ( nextOffset ), nextAddress ( nextAddress ) {}
+    AddressDump ( ChildAddressEnum, size_t offset, const AddressDump& childAddr );
 
-    AddressDump *clone() const
-    {
-        if ( nextAddress )
-            return new AddressDump ( addr, size, totalSize, nextOffset, nextAddress->clone() );
-        else
-            return new AddressDump ( addr, size, totalSize, nextOffset, 0 );
-    }
+    AddressDump ( char *addr, size_t size, size_t totalSize )
+        : addr (  addr ), size ( size ), totalSize ( totalSize ) {}
+
+    AddressDump ( char *addr, size_t size, size_t totalSize, const AddressList& children );
 };
 
 
@@ -186,11 +170,15 @@ struct AddressList
 
     AddressList() {}
 
-    AddressList ( const vector<AddressDump>& addresses )
-    {
-        append ( addresses );
-        optimize();
-    }
+    AddressList ( const AddressDump& addr ) : totalSize ( addr.totalSize ) { addresses.push_back ( addr.copy() ); }
+
+    AddressList ( const vector<AddressDump>& addresses ) { append ( addresses ); }
+
+    AddressList ( const AddressList& addresses ) { append ( addresses.addresses ); }
+
+    void append ( const vector<AddressDump>& b, size_t addrOffset = 0 ) { append ( addresses, b, addrOffset ); }
+
+    void append ( const AddressList& b, size_t addrOffset = 0 ) { append ( addresses, b.addresses, addrOffset ); }
 
     void optimize()
     {
@@ -199,7 +187,11 @@ struct AddressList
         for ( AddressDump& addr : addresses )
             sorted.push_back ( &addr );
 
-        sort ( sorted.begin(), sorted.end(), comparePtrs );
+        sort ( sorted.begin(), sorted.end(), compareAddressDumpPtrs );
+
+        // LOG ( "sorted:" );
+        // for ( const AddressDump *addr : sorted )
+        //     LOG ( "{ %08x, %08x }", addr->addr, addr->addr + addr->size );
 
         vector<AddressDump> newAddrs ( 1, sorted.front()->copy() );
         auto it = sorted.begin();
@@ -209,14 +201,20 @@ struct AddressList
         for ( ++jt; jt != sorted.end(); ++jt )
         {
             // Add to the previous address's size if the next one is continuous, and neither have children
-            // TODO handle groups of unevaluated nextAddresses (optimization)
+            // TODO handle groups of unevaluated children's (optimization)
             if ( newAddrs.back().addr + newAddrs.back().size == ( **jt ).addr
-                    && !newAddrs.back().hasChild() && ! ( **jt ).hasChild() )
+                    && !newAddrs.back().children && ! ( **jt ).children )
             {
+                // LOG ( "merging:" );
+                // LOG ( "{ %08x, %08x }", newAddrs.back().addr, newAddrs.back().addr + newAddrs.back().size );
+                // LOG ( "{ %08x, %08x }", ( **jt ).addr, ( **jt ).addr + ( **jt ).size );
+
                 // Merge the two addresses
                 AddressDump tmp = newAddrs.back().copy ( 0, ( **jt ).size );
                 newAddrs.pop_back();
                 newAddrs.push_back ( tmp );
+
+                // LOG ( "{ %08x, %08x }", newAddrs.back().addr, newAddrs.back().addr + newAddrs.back().size );
 
                 // Erase and try the next address
                 sorted.erase ( jt );
@@ -236,9 +234,7 @@ struct AddressList
             totalSize += addr.totalSize;
     }
 
-    void append ( const vector<AddressDump>& b, size_t addrOffset = 0 ) { append ( addresses, b, addrOffset ); }
-
-    void append ( const AddressList& b, size_t addrOffset = 0 ) { append ( addresses, b.addresses, addrOffset ); }
+private:
 
     static void append ( vector<AddressDump>& a, const vector<AddressDump>& b, size_t addrOffset = 0 )
     {
@@ -246,11 +242,33 @@ struct AddressList
             a.push_back ( addr.copy ( addrOffset ) );
     }
 
-    static bool comparePtrs ( const AddressDump *a, const AddressDump *b )
+    static bool compareAddressDumpPtrs ( const AddressDump *a, const AddressDump *b )
     {
         return a->addr < b->addr;
     }
 };
+
+
+inline AddressDump::AddressDump ( void *addr, const AddressDump& childAddr )
+    : addr ( ( char * ) addr ), size ( 4 ), totalSize ( 4 + childAddr.totalSize )
+    , children ( new AddressList ( childAddr ) ) {}
+
+inline AddressDump::AddressDump ( ChildAddressEnum, size_t offset, const AddressDump& childAddr )
+    : addr ( ( char * ) offset ), size ( 4 ), totalSize ( 4 + childAddr.totalSize )
+    , children ( new AddressList ( childAddr ) ) {}
+
+inline AddressDump::AddressDump ( char *addr, size_t size, size_t totalSize, const AddressList& children )
+    : addr ( addr ), size ( size ), totalSize ( totalSize )
+    , children ( new AddressList ( children ) ) {}
+
+inline AddressDump AddressDump::copy ( size_t plusAddr, size_t plusSize ) const
+{
+    if ( children )
+        return AddressDump ( addr + plusAddr, size + plusSize, totalSize + plusSize, *children );
+    else
+        return AddressDump ( addr + plusAddr, size + plusSize, totalSize + plusSize );
+}
+
 
 static AddressList allAddrs;
 
@@ -312,7 +330,7 @@ void ProcessManager::allocateStates()
         { CC_EFFECTS_ARRAY_ADDR, 0x320 },
         {
             CC_EFFECTS_ARRAY_ADDR + 0x320,
-            0x38, AddressDump::child ( 0, AddressDump::child ( 0, AddressDump::child ( 4 ) ) )
+            AddressDump::child ( 0x38, AddressDump::child ( 0, AddressDump::child ( 0, 4 ) ) )
         },
         { CC_EFFECTS_ARRAY_ADDR + 0x324, 24 },
     } );
