@@ -122,9 +122,9 @@ struct AddressDump
 {
     char *const addr; // or offset if child
     const size_t size;
-    const size_t totalSize;
 
-    const shared_ptr<const AddressList> children;
+    size_t totalSize;
+    shared_ptr<AddressList> children;
 
     template<typename T>
     AddressDump ( T *addr )
@@ -172,9 +172,9 @@ struct AddressList
 
     AddressList ( const AddressDump& addr ) : totalSize ( addr.totalSize ) { addresses.push_back ( addr.copy() ); }
 
-    AddressList ( const vector<AddressDump>& addresses ) { append ( addresses ); }
+    AddressList ( const vector<AddressDump>& addresses ) { append ( addresses ); optimize(); }
 
-    AddressList ( const AddressList& addresses ) { append ( addresses.addresses ); }
+    AddressList ( const AddressList& addresses ) { append ( addresses.addresses ); optimize(); }
 
     void append ( const vector<AddressDump>& b, size_t addrOffset = 0 ) { append ( addresses, b, addrOffset ); }
 
@@ -201,9 +201,7 @@ struct AddressList
         for ( ++jt; jt != sorted.end(); ++jt )
         {
             // Add to the previous address's size if the next one is continuous, and neither have children
-            // TODO handle groups of unevaluated children's (optimization)
-            if ( newAddrs.back().addr + newAddrs.back().size == ( **jt ).addr
-                    && !newAddrs.back().children && ! ( **jt ).children )
+            if ( newAddrs.back().addr + newAddrs.back().size == ( **jt ).addr )
             {
                 // LOG ( "merging:" );
                 // LOG ( "{ %08x, %08x }", newAddrs.back().addr, newAddrs.back().addr + newAddrs.back().size );
@@ -211,6 +209,12 @@ struct AddressList
 
                 // Merge the two addresses
                 AddressDump tmp = newAddrs.back().copy ( 0, ( **jt ).size );
+
+                if ( tmp.children && ( **jt ).children )
+                    tmp.children->append ( * ( **jt ).children );
+                else if ( ( **jt ).children )
+                    tmp.children.reset ( new AddressList ( * ( **jt ).children ) );
+
                 newAddrs.pop_back();
                 newAddrs.push_back ( tmp );
 
@@ -230,8 +234,16 @@ struct AddressList
         append ( newAddrs );
 
         totalSize = 0;
-        for ( const AddressDump& addr : addresses )
+        for ( AddressDump& addr : addresses )
+        {
+            if ( addr.children )
+            {
+                addr.children->optimize();
+                addr.totalSize = addr.size + addr.children->totalSize;
+            }
+
             totalSize += addr.totalSize;
+        }
     }
 
 private:
@@ -335,6 +347,17 @@ void ProcessManager::allocateStates()
         { CC_EFFECTS_ARRAY_ADDR + 0x324, 24 },
     } );
 
+    // LOG ( "effectAddrs:" );
+    // for ( const AddressDump& addr : effectAddrs.addresses )
+    // {
+    //     if ( addr.children )
+    //         LOG ( "{ %08x, %08x } -> []", addr.addr, addr.addr + addr.size );
+    //     else
+    //         LOG ( "{ %08x, %08x }", addr.addr, addr.addr + addr.size );
+    // }
+
+    // LOG ( "effectAddrs.totalSize=%u", effectAddrs.totalSize );
+
     static const AddressList miscAddrs (
     {
         CC_P1_SPELL_CIRCLE_ADDR,
@@ -380,7 +403,12 @@ void ProcessManager::allocateStates()
 
         LOG ( "allAddrs:" );
         for ( const AddressDump& addr : allAddrs.addresses )
-            LOG ( "{ %08x, %08x }", addr.addr, addr.addr + addr.size );
+        {
+            if ( addr.children )
+                LOG ( "{ %08x, %08x } -> []", addr.addr, addr.addr + addr.size );
+            else
+                LOG ( "{ %08x, %08x }", addr.addr, addr.addr + addr.size );
+        }
 
         LOG ( "totalSize=%u", allAddrs.totalSize );
     }
