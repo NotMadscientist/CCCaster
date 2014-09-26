@@ -201,17 +201,17 @@ count:
 
 
 pre-build:
-	@echo
 	$(make_version)
 	$(make_protocol)
-	@echo Pre-build
+	@echo
+	@echo ========== Main-build ==========
 	@echo
 
 post-build: main-build
 	@echo
-	if [ -s scripts/deploy ]; then scripts/deploy; fi;
-	@echo Post-build
+	@echo ========== Post-build ==========
 	@echo
+	if [ -s scripts/deploy ]; then scripts/deploy; fi;
 
 debug: post-build
 release: post-build
