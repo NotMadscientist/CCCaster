@@ -70,7 +70,7 @@ private:
     // The currently active mappings for the above key
     uint32_t activeMappings[4][256][16];
 
-    // Guid mapped to a bitset of indicies, used to determine a free index for a duplicate guid
+    // Guid mapped to a bitset of indices, used to determine a free index for a duplicate guid
     static std::unordered_map<Guid, uint32_t> guidBitset;
 
     // Joystick event callbacks

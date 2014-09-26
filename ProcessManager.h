@@ -40,7 +40,7 @@ private:
 
     struct GameState
     {
-        // Each game state is uniquely indentified by (netplayState, startWorldTime, indexedFrame).
+        // Each game state is uniquely identified by (netplayState, startWorldTime, indexedFrame).
         // They are chronologically ordered by index and then frame.
         NetplayState netplayState;
         uint32_t startWorldTime;
@@ -75,7 +75,7 @@ private:
     // Memory pool to allocate game states
     std::shared_ptr<char> memoryPool;
 
-    // Unused indicies in the memory pool, each game state has the same size
+    // Unused indices in the memory pool, each game state has the same size
     std::stack<size_t> freeStack;
 
     // List of saved game states in chronological order

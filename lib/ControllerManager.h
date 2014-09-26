@@ -26,7 +26,7 @@ private:
     // Maps of joystick controller instances
     std::unordered_map<int, std::shared_ptr<Controller>> joysticks;
 
-    // Flag to inidicate if initialized
+    // Flag to indicate if initialized
     bool initialized = false;
 
     // Private constructor, etc. for singleton class

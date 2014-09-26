@@ -16,7 +16,7 @@ public:
 
 private:
 
-    // List of all the ChangeMonitor::Interface implmentations
+    // List of all the ChangeMonitor::Interface implementations
     std::vector<std::shared_ptr<ChangeMonitor::Interface>> monitors;
 
     // Private constructor, etc. for singleton class
@@ -52,7 +52,7 @@ public:
     // Check all monitors for changes
     void check()
     {
-        // Iterate using indicies, because the list can change
+        // Iterate using indices, because the list can change
         for ( size_t i = 0; i < monitors.size(); ++i )
             monitors[i]->check();
     }

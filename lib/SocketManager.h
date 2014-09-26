@@ -14,7 +14,7 @@ class SocketManager
     // Flag to indicate the set of allocated sockets has changed
     bool changed = false;
 
-    // Flag to inidicate if initialized
+    // Flag to indicate if initialized
     bool initialized = false;
 
     // Private constructor, etc. for singleton class

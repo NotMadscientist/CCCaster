@@ -61,7 +61,7 @@ public:
         COORD size;
 
         // Indicates if this element should expand to take up the remaining screen space in either dimension.
-        // Note the X and Y componenets are treated as boolean values.
+        // Note the X and Y components are treated as boolean values.
         COORD expand = { 0, 0 };
 
         // Initialize the element based on the current size, this also updates the size

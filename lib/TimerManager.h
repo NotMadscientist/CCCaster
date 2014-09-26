@@ -26,7 +26,7 @@ class TimerManager
     // Flag to indicate the set of allocated timers has changed
     bool changed = false;
 
-    // Flag to inidicate if initialized
+    // Flag to indicate if initialized
     bool initialized = false;
 
     // Private constructor, etc. for singleton class
