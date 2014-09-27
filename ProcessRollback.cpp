@@ -1,4 +1,5 @@
 #include "ProcessManager.h"
+#include "MemDump.h"
 
 #include <utility>
 #include <algorithm>
@@ -115,174 +116,7 @@ using namespace std;
 #define CC_EFFECT_ELEMENT_SIZE      ( 0x33C )
 
 
-struct AddressList;
-
-
-struct AddressDump
-{
-    char *const addr; // or offset if child
-    const size_t size;
-
-    size_t totalSize;
-    shared_ptr<AddressList> children;
-
-    template<typename T>
-    AddressDump ( T *addr )
-        : addr ( ( char * ) addr ), size ( sizeof ( *addr ) ), totalSize ( sizeof ( *addr ) ) {}
-
-    AddressDump ( void *addr, size_t size )
-        : addr ( ( char * ) addr ), size ( size ), totalSize ( size ) {}
-
-    AddressDump ( void *addr, const AddressDump& childAddr );
-
-    AddressDump copy ( size_t plusAddr = 0, size_t plusSize = 0 ) const;
-
-    static AddressDump child ( size_t offset, size_t size )
-    {
-        return AddressDump ( ChildAddress, offset, size );
-    }
-
-    static AddressDump child ( size_t offset, const AddressDump& childAddr )
-    {
-        return AddressDump ( ChildAddress, offset, childAddr );
-    }
-
-private:
-
-    enum ChildAddressEnum { ChildAddress };
-
-    AddressDump ( ChildAddressEnum, size_t offset, size_t size )
-        : addr ( ( char * ) offset ), size ( size ), totalSize ( size ) {}
-
-    AddressDump ( ChildAddressEnum, size_t offset, const AddressDump& childAddr );
-
-    AddressDump ( char *addr, size_t size, size_t totalSize )
-        : addr (  addr ), size ( size ), totalSize ( totalSize ) {}
-
-    AddressDump ( char *addr, size_t size, size_t totalSize, const AddressList& children );
-};
-
-
-struct AddressList
-{
-    vector<AddressDump> addresses;
-    size_t totalSize = 0;
-
-    AddressList() {}
-
-    AddressList ( const AddressDump& addr ) : totalSize ( addr.totalSize ) { addresses.push_back ( addr.copy() ); }
-
-    AddressList ( const vector<AddressDump>& addresses ) { append ( addresses ); optimize(); }
-
-    AddressList ( const AddressList& addresses ) { append ( addresses.addresses ); optimize(); }
-
-    void append ( const vector<AddressDump>& b, size_t addrOffset = 0 ) { append ( addresses, b, addrOffset ); }
-
-    void append ( const AddressList& b, size_t addrOffset = 0 ) { append ( addresses, b.addresses, addrOffset ); }
-
-    void optimize()
-    {
-        // Sort using a list of pointers
-        vector<AddressDump *> sorted;
-        for ( AddressDump& addr : addresses )
-            sorted.push_back ( &addr );
-
-        sort ( sorted.begin(), sorted.end(), compareAddressDumpPtrs );
-
-        // LOG ( "sorted:" );
-        // for ( const AddressDump *addr : sorted )
-        //     LOG ( "{ %08x, %08x }", addr->addr, addr->addr + addr->size );
-
-        vector<AddressDump> newAddrs ( 1, sorted.front()->copy() );
-        auto it = sorted.begin();
-        auto jt = it;
-
-        // Merge continuous address ranges
-        for ( ++jt; jt != sorted.end(); ++jt )
-        {
-            // Add to the previous address's size if the next one is continuous, and neither have children
-            if ( newAddrs.back().addr + newAddrs.back().size == ( **jt ).addr )
-            {
-                // LOG ( "merging:" );
-                // LOG ( "{ %08x, %08x }", newAddrs.back().addr, newAddrs.back().addr + newAddrs.back().size );
-                // LOG ( "{ %08x, %08x }", ( **jt ).addr, ( **jt ).addr + ( **jt ).size );
-
-                // Merge the two addresses
-                AddressDump tmp = newAddrs.back().copy ( 0, ( **jt ).size );
-
-                if ( tmp.children && ( **jt ).children )
-                    tmp.children->append ( * ( **jt ).children );
-                else if ( ( **jt ).children )
-                    tmp.children.reset ( new AddressList ( * ( **jt ).children ) );
-
-                newAddrs.pop_back();
-                newAddrs.push_back ( tmp );
-
-                // LOG ( "{ %08x, %08x }", newAddrs.back().addr, newAddrs.back().addr + newAddrs.back().size );
-
-                // Erase and try the next address
-                sorted.erase ( jt );
-                jt = it;
-                continue;
-            }
-
-            ++it;
-            newAddrs.push_back ( ( **jt ).copy() );
-        }
-
-        addresses.clear();
-        append ( newAddrs );
-
-        totalSize = 0;
-        for ( AddressDump& addr : addresses )
-        {
-            if ( addr.children )
-            {
-                addr.children->optimize();
-                addr.totalSize = addr.size + addr.children->totalSize;
-            }
-
-            totalSize += addr.totalSize;
-        }
-    }
-
-private:
-
-    static void append ( vector<AddressDump>& a, const vector<AddressDump>& b, size_t addrOffset = 0 )
-    {
-        for ( const AddressDump& addr : b )
-            a.push_back ( addr.copy ( addrOffset ) );
-    }
-
-    static bool compareAddressDumpPtrs ( const AddressDump *a, const AddressDump *b )
-    {
-        return a->addr < b->addr;
-    }
-};
-
-
-inline AddressDump::AddressDump ( void *addr, const AddressDump& childAddr )
-    : addr ( ( char * ) addr ), size ( 4 ), totalSize ( 4 + childAddr.totalSize )
-    , children ( new AddressList ( childAddr ) ) {}
-
-inline AddressDump::AddressDump ( ChildAddressEnum, size_t offset, const AddressDump& childAddr )
-    : addr ( ( char * ) offset ), size ( 4 ), totalSize ( 4 + childAddr.totalSize )
-    , children ( new AddressList ( childAddr ) ) {}
-
-inline AddressDump::AddressDump ( char *addr, size_t size, size_t totalSize, const AddressList& children )
-    : addr ( addr ), size ( size ), totalSize ( totalSize )
-    , children ( new AddressList ( children ) ) {}
-
-inline AddressDump AddressDump::copy ( size_t plusAddr, size_t plusSize ) const
-{
-    if ( children )
-        return AddressDump ( addr + plusAddr, size + plusSize, totalSize + plusSize, *children );
-    else
-        return AddressDump ( addr + plusAddr, size + plusSize, totalSize + plusSize );
-}
-
-
-static AddressList allAddrs;
+static MemList allAddrs;
 
 
 void ProcessManager::GameState::save()
@@ -318,7 +152,7 @@ void ProcessManager::GameState::load()
 
 void ProcessManager::allocateStates()
 {
-    static const AddressList playerAddrs (
+    static const MemList playerAddrs (
     {
         CC_P1_SEQUENCE_ADDR,
         CC_P1_SEQ_STATE_ADDR,
@@ -337,18 +171,18 @@ void ProcessManager::allocateStates()
         CC_P1_METER_ADDR,
     } );
 
-    static const AddressList effectAddrs (
+    static const MemList effectAddrs (
     {
         { CC_EFFECTS_ARRAY_ADDR, 0x320 },
         {
             CC_EFFECTS_ARRAY_ADDR + 0x320,
-            AddressDump::child ( 0x38, AddressDump::child ( 0, AddressDump::child ( 0, 4 ) ) )
+            MemDump::child ( 0x38, MemDump::child ( 0, MemDump::child ( 0, 4 ) ) )
         },
         { CC_EFFECTS_ARRAY_ADDR + 0x324, 24 },
     } );
 
     // LOG ( "effectAddrs:" );
-    // for ( const AddressDump& addr : effectAddrs.addresses )
+    // for ( const MemDump& addr : effectAddrs.addresses )
     // {
     //     if ( addr.children )
     //         LOG ( "{ %08x, %08x } -> []", addr.addr, addr.addr + addr.size );
@@ -358,7 +192,7 @@ void ProcessManager::allocateStates()
 
     // LOG ( "effectAddrs.totalSize=%u", effectAddrs.totalSize );
 
-    static const AddressList miscAddrs (
+    static const MemList miscAddrs (
     {
         CC_P1_SPELL_CIRCLE_ADDR,
         CC_P2_SPELL_CIRCLE_ADDR,
@@ -402,7 +236,7 @@ void ProcessManager::allocateStates()
         allAddrs.optimize();
 
         LOG ( "allAddrs:" );
-        for ( const AddressDump& addr : allAddrs.addresses )
+        for ( const MemDump& addr : allAddrs.addresses )
         {
             if ( addr.children )
                 LOG ( "{ %08x, %08x } -> []", addr.addr, addr.addr + addr.size );
