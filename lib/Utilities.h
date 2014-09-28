@@ -8,6 +8,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <cctype>
+#include <algorithm>
 
 #include <cereal/archives/binary.hpp>
 
@@ -159,6 +160,9 @@ void *enumFindWindow ( const std::string& title );
 // Detect if we're running on Wine
 bool detectWine();
 
+// Write to a memory location in the same process, returns 0 on success
+int memwrite ( void *dst, const void *src, size_t len );
+
 
 // Clamp a value to a range
 template<typename T>
@@ -192,3 +196,42 @@ public:
 
 template<typename T>
 inline void deleteArray ( T *ptr ) { delete[] ptr; }
+
+
+// Return a sorted list with increasing order
+template<typename T>
+inline T sorted ( const T& list )
+{
+    std::vector<typename T::const_pointer> ptrs;
+    ptrs.reserve ( list.size() );
+    for ( const auto& x : list )
+        ptrs.push_back ( &x );
+
+    std::sort ( ptrs.begin(), ptrs.end(),
+    [] ( typename T::const_pointer a, typename T::const_pointer b ) { return ( *a ) < ( *b ); } );
+
+    T sorted;
+    sorted.reserve ( ptrs.size() );
+    for ( const auto& x : ptrs )
+        sorted.push_back ( *x );
+    return sorted;
+}
+
+// Return a sorted list with comparison function
+template<typename T, typename F>
+inline T sorted ( const T& list, const F& compare )
+{
+    std::vector<typename T::const_pointer> ptrs;
+    ptrs.reserve ( list.size() );
+    for ( const auto& x : list )
+        ptrs.push_back ( &x );
+
+    std::sort ( ptrs.begin(), ptrs.end(),
+    [&] ( typename T::const_pointer a, typename T::const_pointer b ) { return compare ( *a, *b ); } );
+
+    T sorted;
+    sorted.reserve ( ptrs.size() );
+    for ( const auto& x : ptrs )
+        sorted.push_back ( *x );
+    return sorted;
+}

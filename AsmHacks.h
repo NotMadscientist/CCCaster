@@ -19,9 +19,6 @@
 #define INLINE_NOP_THREE_TIMES { 0x90, 0x90, 0x90 }
 
 
-// Write to a memory location in the same process, returns 0 on success
-int memwrite ( void *dst, const void *src, size_t len );
-
 // DLL callback function
 extern "C" void callback();
 
