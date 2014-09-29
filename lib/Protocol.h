@@ -133,7 +133,7 @@ private:
 };
 
 
-// Represents a regular message
+// Represents a regular message, should only be used when size constrained AND reliability is not required
 struct SerializableMessage : public Serializable
 {
     BaseType getBaseType() const override
@@ -144,7 +144,7 @@ struct SerializableMessage : public Serializable
 };
 
 
-// Represents a sequential message
+// Represents a sequential message, should be used for any message that's not size constrained
 struct SerializableSequence : public Serializable
 {
     // Basic constructors
