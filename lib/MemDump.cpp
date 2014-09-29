@@ -1,11 +1,15 @@
 #include "MemDump.h"
 #include "Utilities.h"
+#include "Compression.h"
 
 #include <list>
 #include <algorithm>
 #include <cstring>
+#include <sstream>
+#include <fstream>
 
 using namespace std;
+using namespace cereal;
 
 
 static bool compareMemDumpAddrs ( const MemDumpBase& a, const MemDumpBase& b )
@@ -13,7 +17,7 @@ static bool compareMemDumpAddrs ( const MemDumpBase& a, const MemDumpBase& b )
     return ( a.getAddr() < b.getAddr() );
 }
 
-void MemDumpBase::save ( char *&dump ) const
+void MemDumpBase::saveDump ( char *&dump ) const
 {
     ASSERT ( dump != 0 );
 
@@ -27,10 +31,10 @@ void MemDumpBase::save ( char *&dump ) const
     dump += size;
 
     for ( const MemDumpPtr& ptr : ptrs )
-        ptr.save ( dump );
+        ptr.saveDump ( dump );
 }
 
-void MemDumpBase::load ( const char *&dump ) const
+void MemDumpBase::loadDump ( const char *&dump ) const
 {
     ASSERT ( dump != 0 );
 
@@ -42,7 +46,7 @@ void MemDumpBase::load ( const char *&dump ) const
     dump += size;
 
     for ( const MemDumpPtr& ptr : ptrs )
-        ptr.load ( dump );
+        ptr.loadDump ( dump );
 }
 
 vector<MemDumpPtr> MemDumpBase::setParents ( const vector<MemDumpPtr>& ptrs, const MemDumpBase *parent )
@@ -106,8 +110,164 @@ void MemDumpList::update()
         addrs.push_back ( *jt );
     }
 
-    // Update the sizes
+    // Update the total size
     totalSize = 0;
     for ( const MemDump& mem : addrs )
         totalSize += mem.getTotalSize();
+}
+
+void MemDumpBase::save ( BinaryOutputArchive& ar ) const
+{
+    ar ( size, ptrs.size() );
+    for ( const MemDumpPtr& ptr : ptrs )
+        ptr.save ( ar );
+}
+
+void MemDumpPtr::save ( BinaryOutputArchive& ar ) const
+{
+    ar ( srcOffset, dstOffset );
+    MemDumpBase::save ( ar );
+}
+
+void MemDump::save ( BinaryOutputArchive& ar ) const
+{
+    ar ( ( uint32_t& ) addr );
+    MemDumpBase::save ( ar );
+}
+
+void MemDumpList::save ( BinaryOutputArchive& ar ) const
+{
+    ar ( totalSize, addrs.size() );
+    for ( const MemDump& mem : addrs )
+        mem.save ( ar );
+}
+
+static vector<MemDumpPtr> loadPtrs ( size_t count, BinaryInputArchive& ar )
+{
+    vector<MemDumpPtr> ret;
+    ret.reserve ( count );
+
+    for ( size_t i = 0; i < count; ++i )
+    {
+        size_t srcOffset, dstOffset, size, ptrsCount;
+        ar ( srcOffset, dstOffset, size, ptrsCount );
+
+        if ( ptrsCount )
+            ret.push_back ( MemDumpPtr ( srcOffset, dstOffset, size, loadPtrs ( ptrsCount, ar ) ) );
+        else
+            ret.push_back ( MemDumpPtr ( srcOffset, dstOffset, size ) );
+    }
+
+    return ret;
+}
+
+void MemDumpList::load ( BinaryInputArchive& ar )
+{
+    size_t count;
+    ar ( totalSize, count );
+
+    for ( size_t i = 0; i < count; ++i )
+    {
+        char *addr;
+        size_t size, ptrsCount;
+        ar ( ( uint32_t& ) addr, size, ptrsCount );
+
+        if ( ptrsCount )
+            append ( { addr, size, loadPtrs ( ptrsCount, ar ) } );
+        else
+            append ( { addr, size } );
+    }
+}
+
+bool MemDumpList::save ( const char *filename ) const
+{
+    string data;
+
+    // Try to serialize this class
+    try
+    {
+        ostringstream ss ( ostringstream::binary );
+        BinaryOutputArchive archive ( ss );
+        save ( archive );
+        data = ss.str();
+    }
+    catch ( ... )
+    {
+        // TODO LOG OR THROW
+        return false;
+    }
+
+    // Compute MD5
+    char md5[16];
+    getMD5 ( data, md5 );
+    data.append ( md5, sizeof ( md5 ) );
+
+    // Try to write to the file
+    ofstream fout ( filename, ofstream::binary );
+    bool good = fout.good();
+    if ( good )
+        good = fout.write ( &data[0], data.size() ).good();
+    fout.close();
+    return good;
+}
+
+bool MemDumpList::load ( const char *filename )
+{
+    string data;
+
+    // Open file
+    ifstream fin ( filename, ifstream::binary );
+    bool good = fin.good();
+
+    if ( good )
+    {
+        // Get the length of the file
+        fin.seekg ( 0, fin.end );
+        size_t length = fin.tellg();
+        fin.seekg ( 0, fin.beg );
+
+        // Try to read from the file
+        data.resize ( length, 0 );
+        fin.read ( &data[0], data.size() );
+    }
+
+    fin.close();
+
+    if ( !good )
+    {
+        // TODO LOG OR THROW
+        return false;
+    }
+
+    if ( data.size() <= 16 )
+    {
+        // TODO LOG OR THROW
+        return false;
+    }
+
+    // Check MD5
+    char md5[16];
+    copy ( data.begin() + ( data.size() - 16 ), data.end(), md5 );
+    data.resize ( data.size() - 16 );
+
+    if ( ! checkMD5 ( data, md5 ) )
+    {
+        // TODO LOG OR THROW
+        return false;
+    }
+
+    // Try to deserialize this class
+    try
+    {
+        istringstream ss ( data, ostringstream::binary );
+        BinaryInputArchive archive ( ss );
+        load ( archive );
+    }
+    catch ( ... )
+    {
+        // TODO LOG OR THROW
+        return false;
+    }
+
+    return true;
 }

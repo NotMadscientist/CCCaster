@@ -2,8 +2,10 @@
 
 #include "Logger.h"
 
+#include <cereal/archives/binary.hpp>
+
 #include <vector>
-#include <memory>
+#include <string>
 
 
 struct MemDumpPtr;
@@ -27,11 +29,14 @@ struct MemDumpBase
     virtual char *getAddr() const = 0;
 
     // Save / load the this memory dump to / from the given pointer
-    void save ( char *&dump ) const;
-    void load ( const char *&dump ) const;
+    void saveDump ( char *&dump ) const;
+    void loadDump ( const char *&dump ) const;
 
     // Get the total size of this memory dump
     size_t getTotalSize() const;
+
+    // Serialization
+    virtual void save ( cereal::BinaryOutputArchive& ar ) const;
 
 protected:
 
@@ -81,6 +86,9 @@ struct MemDumpPtr : public MemDumpBase
 
         return dstAddr + dstOffset;
     }
+
+    // Serialization
+    void save ( cereal::BinaryOutputArchive& ar ) const override;
 
 private:
 
@@ -134,16 +142,19 @@ struct MemDump : public MemDumpBase
 
     // Get the starting address of this memory dump
     char *getAddr() const override { return addr; }
+
+    // Serialization
+    void save ( cereal::BinaryOutputArchive& ar ) const override;
 };
 
 
 struct MemDumpList
 {
-    // List of memory dumps
-    std::vector<MemDump> addrs;
-
     // Total size of memory dumps, only valid after calling update()
     size_t totalSize = 0;
+
+    // List of memory dumps
+    std::vector<MemDump> addrs;
 
     // True only if addrs.empty()
     bool empty() { return addrs.empty(); }
@@ -176,4 +187,10 @@ struct MemDumpList
 
     // Update the list of memory dumps: merge continuous address ranges, and compute total size
     void update();
+
+    // Serialization
+    void save ( cereal::BinaryOutputArchive& ar ) const;
+    void load ( cereal::BinaryInputArchive& ar );
+    bool save ( const char *filename ) const;
+    bool load ( const char *filename );
 };

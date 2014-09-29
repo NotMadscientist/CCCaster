@@ -126,7 +126,7 @@ void ProcessManager::GameState::save()
     char *dump = rawBytes;
 
     for ( const MemDump& mem : allAddrs.addrs )
-        mem.save ( dump );
+        mem.saveDump ( dump );
 
     ASSERT ( dump == rawBytes + allAddrs.totalSize );
 }
@@ -138,7 +138,7 @@ void ProcessManager::GameState::load()
     const char *dump = rawBytes;
 
     for ( const MemDump& mem : allAddrs.addrs )
-        mem.load ( dump );
+        mem.loadDump ( dump );
 
     ASSERT ( dump == rawBytes + allAddrs.totalSize );
 }
@@ -199,6 +199,8 @@ void ProcessManager::allocateStates()
 
     if ( allAddrs.empty() )
     {
+        // TODO remove me testing
+#if 1
         allAddrs.append ( miscAddrs );
 
         allAddrs.append ( playerAddrs );                        // Player 1
@@ -210,6 +212,13 @@ void ProcessManager::allocateStates()
         LOG ( "allAddrs.update()" );
 
         allAddrs.update();
+
+        allAddrs.save ( "dump.bin" );
+#else
+        allAddrs.load ( "dump.bin" );
+#endif
+
+        LOG ( "allAddrs.totalSize=%u", allAddrs.totalSize );
 
         LOG ( "allAddrs:" );
         for ( const MemDump& mem : allAddrs.addrs )
@@ -237,8 +246,6 @@ void ProcessManager::allocateStates()
                 }
             }
         }
-
-        LOG ( "totalSize=%u", allAddrs.totalSize );
     }
 
     memoryPool.reset ( new char[NUM_ROLLBACK_STATES * allAddrs.totalSize], deleteArray<char> );
