@@ -6,10 +6,8 @@ ARCHIVE = $(NAME).v$(VERSION).zip
 BINARY = $(NAME).v$(VERSION).exe
 FOLDER = $(NAME)
 DLL = $(FOLDER)/hook.dll
-ADDR_LIST = $(FOLDER)/addr-list.bin
 LAUNCHER = $(FOLDER)/launcher.exe
 DEBUGGER = debugger.exe
-ADDR_GEN = addr-gen.exe
 MBAA_EXE = MBAA.exe
 
 # Library sources
@@ -94,7 +92,6 @@ target-profile: LD_FLAGS += -pg -lgmon
 target-profile: $(ARCHIVE)
 
 debugger: $(DEBUGGER)
-addr-gen: $(ADDR_GEN)
 
 
 $(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
@@ -129,8 +126,6 @@ $(DEBUGGER): targets/Debugger.cpp lib/Utilities.cpp lib/Logger.cpp
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
-
-$(ADDR_GEN):
 
 res/icon.res: res/icon.rc res/icon.ico
 	$(WINDRES) -F pe-i386 res/icon.rc -O coff -o $@

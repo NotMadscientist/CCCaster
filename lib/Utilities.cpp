@@ -222,14 +222,15 @@ void ConfigSettings::putInteger ( const string& key, int i )
 
 bool ConfigSettings::save ( const char *file ) const
 {
-    bool good;
     ofstream fout ( file );
+    bool good = fout.good();
 
-    if ( ( good = fout.good() ) )
+    if ( good )
     {
         fout << endl;
         for ( auto it = settings.begin(); it != settings.end(); ++it )
             fout << ( it == settings.begin() ? "" : "\n" ) << it->first << '=' << it->second << endl;
+        good = fout.good();
     }
 
     fout.close();
@@ -238,45 +239,47 @@ bool ConfigSettings::save ( const char *file ) const
 
 bool ConfigSettings::load ( const char *file )
 {
-    bool good;
-    string line;
     ifstream fin ( file );
+    bool good = fin.good();
 
-    good = fin.good();
-    while ( getline ( fin, line ) )
+    if ( good )
     {
-        size_t div = line.find ( '=' );
-        if ( div == string::npos )
-            continue;
-
-        auto it = types.find ( line.substr ( 0, div ) );
-        if ( it != types.end() )
+        string line;
+        while ( getline ( fin, line ) )
         {
-            stringstream ss ( line.substr ( div + 1 ) );
-            ss >> ws;
+            size_t div = line.find ( '=' );
+            if ( div == string::npos )
+                continue;
 
-            switch ( it->second )
+            auto it = types.find ( line.substr ( 0, div ) );
+            if ( it != types.end() )
             {
-                case Type::String:
-                {
-                    string str;
-                    getline ( ss, str );
-                    putString ( it->first, str );
-                    break;
-                }
+                stringstream ss ( line.substr ( div + 1 ) );
+                ss >> ws;
 
-                case Type::Integer:
+                switch ( it->second )
                 {
-                    int i;
-                    ss >> i;
-                    if ( ss.fail() )
-                        continue;
-                    putInteger ( it->first, i );
-                    break;
-                }
+                    case Type::String:
+                    {
+                        string str;
+                        getline ( ss, str );
+                        putString ( it->first, str );
+                        break;
+                    }
 
-                default:
-                    break;
+                    case Type::Integer:
+                    {
+                        int i;
+                        ss >> i;
+                        if ( ss.fail() )
+                            continue;
+                        putInteger ( it->first, i );
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
             }
         }
     }
