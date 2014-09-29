@@ -6,8 +6,10 @@ ARCHIVE = $(NAME).v$(VERSION).zip
 BINARY = $(NAME).v$(VERSION).exe
 FOLDER = $(NAME)
 DLL = $(FOLDER)/hook.dll
+ADDR_LIST = $(FOLDER)/addr-list.bin
 LAUNCHER = $(FOLDER)/launcher.exe
 DEBUGGER = debugger.exe
+ADDR_GEN = addr-gen.exe
 MBAA_EXE = MBAA.exe
 
 # Library sources
@@ -22,7 +24,6 @@ CONTRIB_C_SRCS = $(wildcard 3rdparty/*.c)
 BASE_CPP_SRCS = $(wildcard *.cpp) $(wildcard lib/*.cpp)
 MAIN_CPP_SRCS = $(wildcard targets/Main*.cpp) $(wildcard tests/*.cpp) $(BASE_CPP_SRCS)
 DLL_CPP_SRCS = $(wildcard targets/Dll*.cpp) $(BASE_CPP_SRCS)
-LAUNCHER_CPP_SRCS = targets/Launcher.cpp
 
 NON_GEN_SRCS = *.cpp lib/*.cpp targets/*.cpp tests/*.cpp
 NON_GEN_HEADERS = $(filter-out lib/Version.h, $(filter-out lib/Protocol.%.h, \
@@ -93,6 +94,7 @@ target-profile: LD_FLAGS += -pg -lgmon
 target-profile: $(ARCHIVE)
 
 debugger: $(DEBUGGER)
+addr-gen: $(ADDR_GEN)
 
 
 $(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
@@ -127,6 +129,8 @@ $(DEBUGGER): targets/Debugger.cpp lib/Utilities.cpp lib/Logger.cpp
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
+
+$(ADDR_GEN):
 
 res/icon.res: res/icon.rc res/icon.ico
 	$(WINDRES) -F pe-i386 res/icon.rc -O coff -o $@

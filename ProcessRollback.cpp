@@ -121,33 +121,26 @@ static MemDumpList allAddrs;
 
 void ProcessManager::GameState::save()
 {
-    // ASSERT ( rawBytes != 0 );
+    ASSERT ( rawBytes != 0 );
 
-    // size_t pos = 0;
+    char *dump = rawBytes;
 
-    // for ( const auto& pair : memLocs.addresses )
-    // {
-    //     copy ( ( char * ) pair.first, ( char * ) pair.second, &rawBytes[pos] );
-    //     pos += ( size_t ( pair.second ) - size_t ( pair.first ) );
-    // }
+    for ( const MemDump& mem : allAddrs.addrs )
+        mem.save ( dump );
 
-    // ASSERT ( pos == memLocs.totalSize );
+    ASSERT ( dump == rawBytes + allAddrs.totalSize );
 }
 
 void ProcessManager::GameState::load()
 {
-    // ASSERT ( rawBytes != 0 );
+    ASSERT ( rawBytes != 0 );
 
-    // size_t pos = 0;
+    const char *dump = rawBytes;
 
-    // for ( const auto& pair : memLocs.addresses )
-    // {
-    //     size_t size = size_t ( pair.second ) - size_t ( pair.first );
-    //     copy ( &rawBytes[pos], &rawBytes[pos + size], ( char * ) pair.first );
-    //     pos += size;
-    // }
+    for ( const MemDump& mem : allAddrs.addrs )
+        mem.load ( dump );
 
-    // ASSERT ( pos == memLocs.totalSize );
+    ASSERT ( dump == rawBytes + allAddrs.totalSize );
 }
 
 void ProcessManager::allocateStates()
@@ -225,19 +218,19 @@ void ProcessManager::allocateStates()
 
             for ( const MemDumpPtr& ptr0 : mem.ptrs )
             {
-                assert ( ptr0.parent == &mem );
+                ASSERT ( ptr0.parent == &mem );
 
                 LOG ( "  [0x%x]+0x%x -> { %u bytes }", ptr0.srcOffset, ptr0.dstOffset, ptr0.size );
 
                 for ( const MemDumpPtr& ptr1 : ptr0.ptrs )
                 {
-                    assert ( ptr1.parent == &ptr0 );
+                    ASSERT ( ptr1.parent == &ptr0 );
 
                     LOG ( "    [0x%x]+0x%x -> { %u bytes }", ptr1.srcOffset, ptr1.dstOffset, ptr1.size );
 
                     for ( const MemDumpPtr& ptr2 : ptr1.ptrs )
                     {
-                        assert ( ptr2.parent == &ptr1 );
+                        ASSERT ( ptr2.parent == &ptr1 );
 
                         LOG ( "      [0x%x]+0x%x -> { %u bytes }", ptr2.srcOffset, ptr2.dstOffset, ptr2.size );
                     }

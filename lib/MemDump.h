@@ -1,6 +1,7 @@
 #pragma once
 
-#include <cassert>
+#include "Logger.h"
+
 #include <vector>
 #include <memory>
 
@@ -24,6 +25,10 @@ struct MemDumpBase
 
     // Get the starting address of this memory dump
     virtual char *getAddr() const = 0;
+
+    // Save / load the this memory dump to / from the given pointer
+    void save ( char *&dump ) const;
+    void load ( const char *&dump ) const;
 
     // Get the total size of this memory dump
     size_t getTotalSize() const;
@@ -62,9 +67,19 @@ struct MemDumpPtr : public MemDumpBase
     // Get the starting address of this memory dump
     char *getAddr() const override
     {
-        assert ( parent != 0 );
-        assert ( srcOffset + 4 <= parent->size );
-        return ( * ( char ** ) ( parent->getAddr() + srcOffset ) ) + dstOffset;
+        ASSERT ( parent != 0 );
+
+        if ( parent->getAddr() == 0 )
+            return 0;
+
+        ASSERT ( srcOffset + 4 <= parent->size );
+
+        char *dstAddr = * ( char ** ) ( parent->getAddr() + srcOffset );
+
+        if ( dstAddr == 0 )
+            return 0;
+
+        return dstAddr + dstOffset;
     }
 
 private:
@@ -114,7 +129,7 @@ struct MemDump : public MemDumpBase
     MemDump ( const MemDump& a, const MemDump& b )
         : MemDumpBase ( a.size + b.size, concat ( a.ptrs, addOffsets ( b.ptrs, a.size ) ) ), addr ( a.addr )
     {
-        assert ( a.addr + a.size == b.addr );
+        ASSERT ( a.addr + a.size == b.addr );
     }
 
     // Get the starting address of this memory dump

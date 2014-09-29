@@ -2,13 +2,47 @@
 #include "Utilities.h"
 
 #include <list>
+#include <algorithm>
+#include <cstring>
 
 using namespace std;
 
 
 static bool compareMemDumpAddrs ( const MemDumpBase& a, const MemDumpBase& b )
 {
-    return a.getAddr() < b.getAddr();
+    return ( a.getAddr() < b.getAddr() );
+}
+
+void MemDumpBase::save ( char *&dump ) const
+{
+    ASSERT ( dump != 0 );
+
+    const char *addr = getAddr();
+
+    if ( addr )
+        copy ( addr, addr + size, dump );
+    else
+        memset ( dump, 0, size );
+
+    dump += size;
+
+    for ( const MemDumpPtr& ptr : ptrs )
+        ptr.save ( dump );
+}
+
+void MemDumpBase::load ( const char *&dump ) const
+{
+    ASSERT ( dump != 0 );
+
+    char *addr = getAddr();
+
+    if ( addr )
+        copy ( dump, dump + size, addr );
+
+    dump += size;
+
+    for ( const MemDumpPtr& ptr : ptrs )
+        ptr.load ( dump );
 }
 
 vector<MemDumpPtr> MemDumpBase::setParents ( const vector<MemDumpPtr>& ptrs, const MemDumpBase *parent )

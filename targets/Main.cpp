@@ -584,11 +584,6 @@ int main ( int argc, char *argv[] )
     else
         Logger::get().initialize ( LOG_FILE );
 
-    // TODO remove me testing code
-    ProcessManager pm ( 0 );
-    pm.allocateStates();
-    exit ( 0 );
-
     // Run the unit test suite and exit
     if ( opt[GTEST] )
     {
