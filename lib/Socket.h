@@ -172,8 +172,6 @@ struct SocketShareData : public SerializableSequence
     MsgPtr gbnState;
     std::unordered_map<IpAddrPort, GoBackN> childSockets;
 
-    SocketShareData() {}
-
     SocketShareData ( const IpAddrPort& address,
                       Socket::Protocol protocol,
                       Socket::State state,
@@ -186,7 +184,5 @@ struct SocketShareData : public SerializableSequence
     bool isTCP() const { return ( protocol == Socket::Protocol::TCP ); }
     bool isUDP() const { return ( protocol == Socket::Protocol::UDP ); }
 
-    MsgType getMsgType() const override;
-    void save ( cereal::BinaryOutputArchive& ar ) const override;
-    void load ( cereal::BinaryInputArchive& ar ) override;
+    DECLARE_MESSAGE_BOILERPLATE ( SocketShareData )
 };

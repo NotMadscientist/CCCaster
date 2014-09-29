@@ -97,7 +97,6 @@ private:
 public:
 
     // Basic constructors
-    GoBackN() {}
     GoBackN ( const GoBackN& other ) { *this = other; }
     GoBackN ( Owner *owner, uint64_t timeout = 0 );
     GoBackN ( Owner *owner, const GoBackN& state );
@@ -130,8 +129,5 @@ public:
     // Log the send the list for debugging purposes
     void logSendList() const;
 
-    // Protocol methods
-    MsgType getMsgType() const override;
-    void save ( cereal::BinaryOutputArchive& ar ) const override;
-    void load ( cereal::BinaryInputArchive& ar ) override;
+    DECLARE_MESSAGE_BOILERPLATE ( GoBackN )
 };

@@ -14,6 +14,12 @@
     NAME() {}                                                                                               \
     MsgType getMsgType() const override;
 
+#define DECLARE_MESSAGE_BOILERPLATE(NAME)                                                                   \
+    NAME() {}                                                                                               \
+    MsgType getMsgType() const override;                                                                    \
+    void save ( cereal::BinaryOutputArchive& ar ) const override;                                           \
+    void load ( cereal::BinaryInputArchive& ar ) override;
+
 #define PROTOCOL_MESSAGE_BOILERPLATE(NAME, ...)                                                             \
     NAME() {}                                                                                               \
     MsgType getMsgType() const override;                                                                    \
