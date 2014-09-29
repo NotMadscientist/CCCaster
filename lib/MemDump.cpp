@@ -1,69 +1,79 @@
 #include "MemDump.h"
+#include "Utilities.h"
 
-#include <algorithm>
+#include <list>
 
 using namespace std;
 
 
-static bool compareMemDumpPtrs ( const MemDump *a, const MemDump *b )
+static bool compareMemDumpAddrs ( const MemDumpBase& a, const MemDumpBase& b )
 {
-    return a->addr < b->addr;
+    return a.getAddr() < b.getAddr();
 }
 
-void MemList::optimize()
+vector<MemDumpPtr> MemDumpBase::setParents ( const vector<MemDumpPtr>& ptrs, const MemDumpBase *parent )
 {
-    // Sort using a list of pointers
-    vector<MemDump *> sorted;
-    for ( MemDump& addr : addresses )
-        sorted.push_back ( &addr );
+    vector<MemDumpPtr> ret;
+    ret.reserve ( ptrs.size() );
+    for ( const MemDumpPtr& ptr : ptrs )
+        ret.push_back ( MemDumpPtr ( parent, ptr.ptrs, ptr.srcOffset, ptr.dstOffset, ptr.size ) );
+    return ret;
+}
 
-    sort ( sorted.begin(), sorted.end(), compareMemDumpPtrs );
+vector<MemDumpPtr> MemDumpBase::addOffsets ( const vector<MemDumpPtr>& ptrs, size_t addSrcOffset )
+{
+    vector<MemDumpPtr> ret;
+    ret.reserve ( ptrs.size() );
+    for ( const MemDumpPtr& ptr : ptrs )
+        ret.push_back ( MemDumpPtr ( ptr.parent, ptr.ptrs, ptr.srcOffset + addSrcOffset, ptr.dstOffset, ptr.size ) );
+    return ret;
+}
 
-    vector<MemDump> newAddrs ( 1, sorted.front()->copy() );
-    auto it = sorted.begin();
+vector<MemDumpPtr> MemDumpBase::concat ( const vector<MemDumpPtr>& a, const vector<MemDumpPtr>& b )
+{
+    vector<MemDumpPtr> ret;
+    ret.reserve ( a.size() + b.size() );
+    for ( const MemDumpPtr& ptr : a )
+        ret.push_back ( ptr );
+    for ( const MemDumpPtr& ptr : b )
+        ret.push_back ( ptr );
+    return ret;
+}
+
+void MemDumpList::update()
+{
+    vector<MemDump> sortedVector = sorted ( addrs, compareMemDumpAddrs );
+    list<MemDump> sortedList ( sortedVector.begin(), sortedVector.end() );
+
+    addrs.clear();
+    addrs.push_back ( sortedList.front() );
+
+    auto it = sortedList.begin();
     auto jt = it;
 
     // Merge continuous address ranges
-    for ( ++jt; jt != sorted.end(); ++jt )
+    for ( ++jt; jt != sortedList.end(); ++jt )
     {
-        // Add to the previous address's size if the next one is continuous, and neither have children
-        if ( newAddrs.back().addr + newAddrs.back().size == ( **jt ).addr )
+        // Add to the previous address's size if the next one is continuous
+        if ( addrs.back().addr + addrs.back().size == jt->addr )
         {
             // Merge the two addresses
-            MemDump tmp = newAddrs.back().copy ( 0, ( **jt ).size );
-
-            if ( tmp.children && ( **jt ).children )
-                tmp.children->append ( * ( **jt ).children );
-            else if ( ( **jt ).children )
-                tmp.children.reset ( new MemList ( * ( **jt ).children ) );
-
-            newAddrs.pop_back();
-            newAddrs.push_back ( tmp );
+            MemDump merged ( addrs.back(), *jt );
+            addrs.pop_back();
+            addrs.push_back ( merged );
 
             // Erase and try the next address
-            sorted.erase ( jt );
+            sortedList.erase ( jt );
             jt = it;
             continue;
         }
 
         ++it;
-        newAddrs.push_back ( ( **jt ).copy() );
+        addrs.push_back ( *jt );
     }
-
-    addresses.clear();
-    append ( newAddrs );
 
     // Update the sizes
     totalSize = 0;
-
-    for ( MemDump& addr : addresses )
-    {
-        if ( addr.children )
-        {
-            addr.children->optimize();
-            addr.totalSize = addr.size + addr.children->totalSize;
-        }
-
-        totalSize += addr.totalSize;
-    }
+    for ( const MemDump& mem : addrs )
+        totalSize += mem.getTotalSize();
 }

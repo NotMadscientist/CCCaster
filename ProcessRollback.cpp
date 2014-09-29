@@ -116,7 +116,7 @@ using namespace std;
 #define CC_EFFECT_ELEMENT_SIZE      ( 0x33C )
 
 
-static MemList allAddrs;
+static MemDumpList allAddrs;
 
 
 void ProcessManager::GameState::save()
@@ -152,7 +152,7 @@ void ProcessManager::GameState::load()
 
 void ProcessManager::allocateStates()
 {
-    static const MemList playerAddrs (
+    static const vector<MemDump> playerAddrs =
     {
         CC_P1_SEQUENCE_ADDR,
         CC_P1_SEQ_STATE_ADDR,
@@ -169,30 +169,9 @@ void ProcessManager::allocateStates()
         CC_P1_GUARD_BAR_ADDR,
         CC_P1_GUARD_QUALITY_ADDR,
         CC_P1_METER_ADDR,
-    } );
+    };
 
-    static const MemList effectAddrs (
-    {
-        { CC_EFFECTS_ARRAY_ADDR, 0x320 },
-        {
-            CC_EFFECTS_ARRAY_ADDR + 0x320,
-            MemDump::child ( 0x38, MemDump::child ( 0, MemDump::child ( 0, 4 ) ) )
-        },
-        { CC_EFFECTS_ARRAY_ADDR + 0x324, 24 },
-    } );
-
-    // LOG ( "effectAddrs:" );
-    // for ( const MemDump& addr : effectAddrs.addresses )
-    // {
-    //     if ( addr.children )
-    //         LOG ( "{ %08x, %08x } -> []", addr.addr, addr.addr + addr.size );
-    //     else
-    //         LOG ( "{ %08x, %08x }", addr.addr, addr.addr + addr.size );
-    // }
-
-    // LOG ( "effectAddrs.totalSize=%u", effectAddrs.totalSize );
-
-    static const MemList miscAddrs (
+    static const vector<MemDump> miscAddrs =
     {
         CC_P1_SPELL_CIRCLE_ADDR,
         CC_P2_SPELL_CIRCLE_ADDR,
@@ -220,28 +199,50 @@ void ProcessManager::allocateStates()
         // { CC_P2_SUPER_TIMER3_ADDR, 8 },
         // { CC_P2_SUPER_TIMER4_ADDR, 4 },
         // { CC_P2_SUPER_TIMER5_ADDR, 4 },
-    } );
+    };
 
+    static const MemDump effectAddrs ( CC_EFFECTS_ARRAY_ADDR, CC_EFFECT_ELEMENT_SIZE,
+    { MemDumpPtr ( 0x320, 0x38, 4, { MemDumpPtr ( 0, 0, 4, { MemDumpPtr ( 0, 0, 4 ) } ) } ) } );
 
-    if ( allAddrs.addresses.empty() )
+    if ( allAddrs.empty() )
     {
         allAddrs.append ( miscAddrs );
 
-        allAddrs.append ( playerAddrs, 0 );                     // Player 1
+        allAddrs.append ( playerAddrs );                        // Player 1
         allAddrs.append ( playerAddrs, CC_PLR_STRUCT_SIZE );    // Player 2
 
         for ( size_t i = 0; i < CC_EFFECTS_ARRAY_COUNT; ++i )
             allAddrs.append ( effectAddrs, CC_EFFECT_ELEMENT_SIZE * i );
 
-        allAddrs.optimize();
+        LOG ( "allAddrs.update()" );
+
+        allAddrs.update();
 
         LOG ( "allAddrs:" );
-        for ( const MemDump& addr : allAddrs.addresses )
+        for ( const MemDump& mem : allAddrs.addrs )
         {
-            if ( addr.children )
-                LOG ( "{ %08x, %08x } -> []", addr.addr, addr.addr + addr.size );
-            else
-                LOG ( "{ %08x, %08x }", addr.addr, addr.addr + addr.size );
+            LOG ( "{ %08x, %08x }", mem.getAddr(), mem.getAddr() + mem.size );
+
+            for ( const MemDumpPtr& ptr0 : mem.ptrs )
+            {
+                assert ( ptr0.parent == &mem );
+
+                LOG ( "  [0x%x]+0x%x -> { %u bytes }", ptr0.srcOffset, ptr0.dstOffset, ptr0.size );
+
+                for ( const MemDumpPtr& ptr1 : ptr0.ptrs )
+                {
+                    assert ( ptr1.parent == &ptr0 );
+
+                    LOG ( "    [0x%x]+0x%x -> { %u bytes }", ptr1.srcOffset, ptr1.dstOffset, ptr1.size );
+
+                    for ( const MemDumpPtr& ptr2 : ptr1.ptrs )
+                    {
+                        assert ( ptr2.parent == &ptr1 );
+
+                        LOG ( "      [0x%x]+0x%x -> { %u bytes }", ptr2.srcOffset, ptr2.dstOffset, ptr2.size );
+                    }
+                }
+            }
         }
 
         LOG ( "totalSize=%u", allAddrs.totalSize );
