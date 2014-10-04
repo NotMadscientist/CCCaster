@@ -416,7 +416,7 @@ struct DummyMain : public Main
 };
 
 
-static void runMain ( const string& address, const NetplaySetup& netplaySetup )
+static void runMain ( const IpAddrPort& address, const NetplaySetup& netplaySetup )
 {
     try
     {
@@ -448,7 +448,7 @@ static void runMain ( const string& address, const NetplaySetup& netplaySetup )
 }
 
 
-static void runDummy ( const string& address, const NetplaySetup& netplaySetup )
+static void runDummy ( const IpAddrPort& address, const NetplaySetup& netplaySetup )
 {
     ASSERT ( address.empty() == false );
 

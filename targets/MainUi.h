@@ -3,13 +3,14 @@
 #include "Utilities.h"
 #include "Messages.h"
 #include "Statistics.h"
+#include "IpAddrPort.h"
 
 #include <string>
 #include <memory>
 
 
 // The function to run the game with the provided connection address or netplay setup
-typedef void ( * RunFuncPtr ) ( const std::string& address, const NetplaySetup& netplaySetup );
+typedef void ( * RunFuncPtr ) ( const IpAddrPort& address, const NetplaySetup& netplaySetup );
 
 class ConsoleUi;
 
@@ -19,6 +20,8 @@ class MainUi
     std::shared_ptr<ConsoleUi> ui;
 
     ConfigSettings config;
+
+    IpAddrPort address;
 
     NetplaySetup netplaySetup;
 

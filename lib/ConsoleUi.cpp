@@ -90,6 +90,9 @@ void ConsoleUi::initalizeAndPush ( ConsoleUi::Element *element, const COORD& exp
     element->initialize();
 
     stack.push ( ConsoleUi::ElementPtr ( element ) );
+
+    if ( !element->requiresUser )
+        element->show();
 }
 
 void ConsoleUi::pushRight ( ConsoleUi::Element *element, const COORD& expand )
@@ -127,17 +130,4 @@ void ConsoleUi::pushInFront ( ConsoleUi::Element *element, const COORD& expand )
     }
 
     initalizeAndPush ( element, expand );
-}
-
-ConsoleUi::Element *ConsoleUi::popUntilMenu()
-{
-    ASSERT ( stack.empty() == false );
-
-    while ( !stack.empty() && stack.top()->show() )
-        stack.pop();
-
-    if ( !stack.empty() )
-        return stack.top().get();
-
-    return 0;
 }

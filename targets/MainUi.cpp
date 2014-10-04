@@ -18,18 +18,84 @@ using namespace std;
 
 void MainUi::netplay ( RunFuncPtr run )
 {
+    ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptString,
+                                            "Enter/paste <ip>:<port> to join or <port> to host:",
+                                            ( address.addr.empty() && !address.empty()
+                                                    ? address.str().substr ( 1 )
+                                                    : address.str() ) ),
+    { 1, 0 } ); // Expand width
+
+    for ( ;; )
+    {
+        ConsoleUi::Element *menu = ui->popUntilUser();
+
+        if ( menu->resultStr.empty() )
+            break;
+
+        try
+        {
+            address = menu->resultStr;
+        }
+        catch ( const Exception& err )
+        {
+            ui->pushBelow ( new ConsoleUi::TextBox ( err.str() ), { 1, 0 } ); // Expand width
+            continue;
+        }
+
+        if ( address.addr.empty() )
+        {
+            ui->pushBelow ( new ConsoleUi::Menu ( "Netplay", { "Versus", "Training" }, "Cancel" ) );
+
+            menu = ui->popUntilUser();
+            int result = menu->resultInt;
+
+            ui->pop();
+
+            if ( result >= 0 && result <= 1 )
+            {
+                netplaySetup.training = result;
+
+                ui->pushBelow ( new ConsoleUi::TextBox ( "Hosting..." ), { 1, 0 } ); // Expand width
+
+                // TODO get external IP
+                // TODO copy it to clipboard
+
+                // run ( address, netplaySetup );
+                Sleep ( 1000 );
+
+                ui->pop();
+            }
+        }
+        else
+        {
+            ui->pushBelow ( new ConsoleUi::TextBox ( "Connecting..." ), { 1, 0 } ); // Expand width
+
+            // run ( address, NetplaySetup() );
+            Sleep ( 1000 );
+
+            ui->pop();
+        }
+    }
+
+    ui->pop();
 }
 
 void MainUi::spectate ( RunFuncPtr run )
 {
     ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptString,
                                             "Enter/paste <ip>:<port> to spectate:" ) );
+
+    // TODO implement me
+
     ui->pop();
 }
 
 void MainUi::broadcast ( RunFuncPtr run )
 {
     ui->pushRight ( new ConsoleUi::Menu ( "Broadcast", { "Versus", "Training" }, "Cancel" ) );
+
+    // TODO implement me
+
     ui->pop();
 }
 
@@ -39,34 +105,33 @@ void MainUi::offline ( RunFuncPtr run )
 
     for ( bool finished = false; !finished; )
     {
-        ConsoleUi::Element *menu = ui->popUntilMenu();
-
-        ASSERT ( menu != 0 );
+        ConsoleUi::Element *menu = ui->popUntilUser();
 
         if ( menu->resultInt < 0 || menu->resultInt > 1 )
             break;
 
         netplaySetup.training = menu->resultInt;
 
-        ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter delay:", 0, false, 3 ), { 1, 0 } );
+        ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter delay:", 0, false, 3 ),
+        { 1, 0 } ); // Expand width
 
         while ( !finished )
         {
-            menu = ui->popUntilMenu();
-
-            ASSERT ( menu != 0 );
+            menu = ui->popUntilUser();
 
             if ( menu->resultInt < 0 )
                 break;
 
             if ( menu->resultInt >= 0xFF )
             {
-                ui->pushBelow ( new ConsoleUi::TextBox ( "Delay must be less than 255!" ), { 1, 0 } );
+                ui->pushBelow ( new ConsoleUi::TextBox ( "Delay must be less than 255!" ), { 1, 0 } ); // Expand width
                 continue;
             }
 
             netplaySetup.delay = menu->resultInt;
-            netplaySetup.rollback = 30; // TODO remove me testing
+
+            // TODO remove me testing
+            // netplaySetup.rollback = 30;
 
             run ( "", netplaySetup );
             finished = true;
@@ -116,9 +181,7 @@ void MainUi::main ( RunFuncPtr run )
         sessionError.clear();
         sessionMessage.clear();
 
-        ConsoleUi::Element *menu = ui->popUntilMenu();
-
-        ASSERT ( menu != 0 );
+        ConsoleUi::Element *menu = ui->popUntilUser();
 
         switch ( menu->resultInt )
         {
@@ -154,7 +217,7 @@ void MainUi::main ( RunFuncPtr run )
 
 bool MainUi::accepted ( const Statistics& stats )
 {
-    PRINT ( "latency=%.2f ms; jitter=%.2f ms", stats.getMean(), stats.getJitter() );
+    LOG ( "latency=%.2f ms; jitter=%.2f ms", stats.getMean(), stats.getJitter() );
 
     // int value;
 
@@ -180,12 +243,14 @@ bool MainUi::accepted ( const Statistics& stats )
     netplaySetup.training = 0;
     netplaySetup.hostPlayer = 1;
 
+    // TODO implement me
+
     return true;
 }
 
 bool MainUi::connected ( const Statistics& stats )
 {
-    PRINT ( "latency=%.2f ms; jitter=%.2f ms", stats.getMean(), stats.getJitter() );
+    LOG ( "latency=%.2f ms; jitter=%.2f ms", stats.getMean(), stats.getJitter() );
 
     // int value;
 
@@ -193,6 +258,8 @@ bool MainUi::connected ( const Statistics& stats )
 
     // cin >> value;
     // return value;
+
+    // TODO implement me
 
     return true;
 }

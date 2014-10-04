@@ -53,6 +53,12 @@ public:
 
     protected:
 
+        // Basic constructor
+        Element ( bool requiresUser = true ) : requiresUser ( requiresUser ) {}
+
+        // Indicates this is an element that requires user interaction
+        const bool requiresUser;
+
         // Position that the element should be displayed
         COORD pos;
 
@@ -68,8 +74,8 @@ public:
         // Initialize the element based on the current size, this also updates the size
         virtual void initialize() = 0;
 
-        // Show the element, returns true if we should pop and continue, false if we hit a menu and should stop
-        virtual bool show() = 0;
+        // Show the element, may hang waiting for user interaction
+        virtual void show() = 0;
 
         friend ConsoleUi;
     };
@@ -180,20 +186,18 @@ public:
                 size.Y = lines.size() + bordersHeight;
         }
 
-        bool show() override
+        void show() override
         {
             LOG ( "text='%s'; pos=%s; size=%s", text, pos, size );
 
             CharacterBox::Draw ( pos, pos + size, '*' );
             for ( size_t i = 0; i < lines.size(); ++i )
                 ConsoleCore::GetInstance()->Prints ( lines[i], false, 0, pos.X + 1, pos.Y + 1 + i );
-
-            return true;
         }
 
     public:
 
-        TextBox ( const std::string& text ) : text ( text ) {}
+        TextBox ( const std::string& text ) : Element ( false ), text ( text ) {}
     };
 
     // Scrollable menu
@@ -251,7 +255,7 @@ public:
             menu.Scrollable ( true );
         }
 
-        bool show() override
+        void show() override
         {
             LOG ( "title='%s'; pos=%s; size=%s", title, pos, size );
 
@@ -261,8 +265,6 @@ public:
                 resultStr = menu.SelectedText();
                 LOG ( "resultInt=%d; resultStr='%s'", resultInt, resultStr );
             }
-
-            return false;
         }
 
     public:
@@ -298,7 +300,7 @@ public:
             size.Y = 1 + bordersTitleHeight;
         }
 
-        bool show() override
+        void show() override
         {
             LOG ( "title='%s'; pos=%s; size=%s", title, pos, size );
 
@@ -325,8 +327,6 @@ public:
                 else
                     resultStr.clear();
             }
-
-            return false;
         }
 
     public:
@@ -364,9 +364,32 @@ public:
         stack.pop();
     }
 
-    // Pop and show elements until we reach a menu, then return the pointer to the menu.
-    // Note this DOES NOT clear any non-menu elements from the screen.
-    Element *popUntilMenu();
+    // Pop and show until we reach an element that requires user interaction, then return element.
+    // This should NOT be called without any such elements in the stack.
+    // This does NOT pop the element that it returns.
+    Element *popUntilUser ( bool clearPoppedElements = false )
+    {
+        ASSERT ( stack.empty() == false );
+
+        while ( !stack.empty() )
+        {
+            if ( stack.top()->requiresUser )
+            {
+                stack.top()->show();
+                break;
+            }
+
+            if ( clearPoppedElements )
+                pop();
+            else
+                stack.pop();
+        }
+
+        ASSERT ( stack.empty() == false );
+        ASSERT ( stack.top().get() != 0 );
+
+        return stack.top().get();
+    }
 
     // Get the top element
     Element *top() const
