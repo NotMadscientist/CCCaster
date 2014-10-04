@@ -42,7 +42,7 @@ void Pinger::gotPong ( const MsgPtr& ping )
 
         LOG ( "latency=%llu ms", latency );
 
-        stats.addValue ( latency );
+        stats.addSample ( latency );
     }
     else
     {

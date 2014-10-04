@@ -28,7 +28,7 @@ enum CommandLineOptions { UNKNOWN, HELP, DUMMY, GTEST, STDOUT, NO_FORK, NO_UI, P
 static MainUi ui;
 
 
-/* Connect procedure
+/* Connect procedure (TODO)
 
     1 - Connect both sockets
 
@@ -46,25 +46,12 @@ struct Main : public CommonMain, public Pinger::Owner
 {
     shared_ptr<Pinger> pinger;
 
-    Statistics remoteStats;
+    InitialConfig initialConfig;
 
-    NetplaySetup netplaySetup;
+    NetplayConfig netplayConfig;
 
 
-    virtual void gotPingStats ( const Statistics& remoteStats )
-    {
-        if ( isClient() )
-        {
-            this->remoteStats = remoteStats;
-            pinger->start();
-            return;
-        }
-
-        this->remoteStats = remoteStats;
-        donePinging();
-    }
-
-    virtual void donePinging()
+    virtual void userConfirmation()
     {
         // Disable keepAlive during the initial limbo period
         ctrlSocket->setKeepAlive ( 0 );
@@ -76,38 +63,54 @@ struct Main : public CommonMain, public Pinger::Owner
             serverDataSocket->setKeepAlive ( 0 );
         }
 
-        Statistics stats = pinger->getStats();
-        stats.merge ( remoteStats );
+        initialConfig.stats.merge ( pinger->getStats() );
+
+        LOG ( "merged: latency=%.2f ms; jitter=%.2f ms",
+              initialConfig.stats.getMean(), initialConfig.stats.getStdDev() );
 
         if ( isHost() )
         {
-            if ( !ui.accepted ( stats ) )
+            if ( !ui.accepted ( initialConfig ) )
             {
                 EventManager::get().stop();
                 return;
             }
 
-            netplaySetup = ui.getNetplaySetup();
-            ctrlSocket->send ( REF_PTR ( netplaySetup ) );
+            netplayConfig = ui.getNetplayConfig();
+            ctrlSocket->send ( REF_PTR ( netplayConfig ) );
 
             // Start the game and wait for callback to ipcConnectEvent
             startGame();
         }
         else
         {
-            if ( !ui.connected ( stats ) )
+            if ( !ui.connected ( initialConfig ) )
             {
                 EventManager::get().stop();
                 return;
             }
 
-            // Wait for NetplaySetup before starting game
+            // Wait for NetplayConfig before starting game
         }
     }
 
-    virtual void gotNetplaySetup ( const NetplaySetup& netplaySetup )
+    virtual void gotInitialConfig ( const InitialConfig& initialConfig )
     {
-        this->netplaySetup = netplaySetup;
+        if ( isClient() )
+        {
+            this->initialConfig = initialConfig;
+            pinger->start();
+            return;
+        }
+
+        this->initialConfig = initialConfig;
+        userConfirmation();
+    }
+
+    virtual void gotNetplayConfig ( const NetplayConfig& netplayConfig )
+    {
+        ASSERT ( isClient() == true );
+        this->netplayConfig = netplayConfig;
 
         // Start the game and wait for callback to ipcConnectEvent
         startGame();
@@ -138,22 +141,22 @@ struct Main : public CommonMain, public Pinger::Owner
     {
         ASSERT ( pinger == this->pinger.get() );
 
-        LOG ( "latency=%.2f ms; jitter=%.2f ms; packetLoss=%d%", stats.getMean(), stats.getJitter(), packetLoss );
+        LOG ( "latency=%.2f ms; jitter=%.2f ms; packetLoss=%d%", stats.getMean(), stats.getStdDev(), packetLoss );
 
-        ctrlSocket->send ( new Statistics ( stats ) );
+        ctrlSocket->send ( new InitialConfig ( netplayConfig.training, stats ) );
 
         if ( isClient() )
-            donePinging();
+            userConfirmation();
     }
 
     // ProcessManager callbacks
     virtual void ipcConnectEvent() override
     {
         ASSERT ( clientType != ClientType::Unknown );
-        ASSERT ( netplaySetup.delay != 0xFF );
+        ASSERT ( netplayConfig.delay != 0xFF );
 
         procMan.ipcSend ( REF_PTR ( clientType ) );
-        procMan.ipcSend ( REF_PTR ( netplaySetup ) );
+        procMan.ipcSend ( REF_PTR ( netplayConfig ) );
 
         if ( !isLocal() )
         {
@@ -280,12 +283,12 @@ struct Main : public CommonMain, public Pinger::Owner
                 pinger->gotPong ( msg );
                 break;
 
-            case MsgType::Statistics:
-                gotPingStats ( msg->getAs<Statistics>() );
+            case MsgType::InitialConfig:
+                gotInitialConfig ( msg->getAs<InitialConfig>() );
                 break;
 
-            case MsgType::NetplaySetup:
-                gotNetplaySetup ( msg->getAs<NetplaySetup>() );
+            case MsgType::NetplayConfig:
+                gotNetplayConfig ( msg->getAs<NetplayConfig>() );
                 break;
 
             default:
@@ -334,9 +337,9 @@ struct Main : public CommonMain, public Pinger::Owner
     }
 
     // Broadcast or offline constructor
-    Main ( const NetplaySetup& netplaySetup )
-        : CommonMain ( netplaySetup.broadcastPort ? ClientType::Broadcast : ClientType::Offline )
-        , netplaySetup ( netplaySetup )
+    Main ( const NetplayConfig& netplayConfig )
+        : CommonMain ( netplayConfig.broadcastPort ? ClientType::Broadcast : ClientType::Offline )
+        , netplayConfig ( netplayConfig )
     {
         TimerManager::get().initialize();
         SocketManager::get().initialize();
@@ -391,7 +394,7 @@ struct DummyMain : public Main
                 fakeInputs.indexedFrame =
                 {
                     msg->getAs<PlayerInputs>().getIndex(),
-                    msg->getAs<PlayerInputs>().getFrame() + netplaySetup.delay * 2
+                    msg->getAs<PlayerInputs>().getFrame() + netplayConfig.delay * 2
                 };
                 fakeInputs.invalidate();
                 dataSocket->send ( REF_PTR ( fakeInputs ) );
@@ -416,13 +419,13 @@ struct DummyMain : public Main
 };
 
 
-static void runMain ( const IpAddrPort& address, const NetplaySetup& netplaySetup )
+static void runMain ( const IpAddrPort& address, const NetplayConfig& netplayConfig )
 {
     try
     {
         if ( address.empty() )
         {
-            Main main ( netplaySetup );
+            Main main ( netplayConfig );
             EventManager::get().start();
         }
         else
@@ -448,7 +451,7 @@ static void runMain ( const IpAddrPort& address, const NetplaySetup& netplaySetu
 }
 
 
-static void runDummy ( const IpAddrPort& address, const NetplaySetup& netplaySetup )
+static void runDummy ( const IpAddrPort& address, const NetplayConfig& netplayConfig )
 {
     ASSERT ( address.empty() == false );
 
@@ -623,9 +626,9 @@ int main ( int argc, char *argv[] )
 
     // Non-options 1 and 2 are the IP address and port
     if ( parser.nonOptionsCount() == 1 )
-        run ( parser.nonOption ( 0 ), NetplaySetup() );
+        run ( parser.nonOption ( 0 ), NetplayConfig() );
     else if ( parser.nonOptionsCount() == 2 )
-        run ( string ( parser.nonOption ( 0 ) ) + ":" + parser.nonOption ( 1 ), NetplaySetup() );
+        run ( string ( parser.nonOption ( 0 ) ) + ":" + parser.nonOption ( 1 ), NetplayConfig() );
 
     if ( !opt[NO_UI] )
     {

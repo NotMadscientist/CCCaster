@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Protocol.h"
+#include "Logger.h"
 
 #include <cmath>
 
@@ -20,7 +21,7 @@ class Statistics : public SerializableSequence
 public:
 
     template<typename T>
-    void addValue ( T value )
+    void addSample ( T value )
     {
         // http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Incremental_algorithm
         double delta = value - mean;
@@ -29,24 +30,38 @@ public:
         sumOfSquaredDeltas += delta * ( value - mean );
     }
 
-    void reset() { count = 0; mean = sumOfSquaredDeltas = 0.0; }
+    void reset()
+    {
+        count = 0;
+        mean = sumOfSquaredDeltas = 0.0;
+    }
 
-    size_t getNumSamples() const { return count; }
+    size_t getNumSamples() const
+    {
+        return count;
+    }
 
     double getMean() const
     {
         if ( count < 1 )
-            return -1;
+            return 0;
 
         return mean;
     }
 
-    double getJitter() const
+    double getVariance() const
     {
         if ( count < 2 )
-            return -1;
+            return 0;
 
-        return std::sqrt ( sumOfSquaredDeltas / ( count - 1 ) );
+        ASSERT ( sumOfSquaredDeltas >= 0 );
+
+        return sumOfSquaredDeltas / ( count - 1 );
+    }
+
+    double getStdDev() const
+    {
+        return std::sqrt ( getVariance() );
     }
 
     void merge ( const Statistics& stats )

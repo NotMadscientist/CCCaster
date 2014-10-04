@@ -2,7 +2,6 @@
 
 #include "Utilities.h"
 #include "Messages.h"
-#include "Statistics.h"
 #include "IpAddrPort.h"
 
 #include <string>
@@ -10,7 +9,7 @@
 
 
 // The function to run the game with the provided connection address or netplay setup
-typedef void ( * RunFuncPtr ) ( const IpAddrPort& address, const NetplaySetup& netplaySetup );
+typedef void ( * RunFuncPtr ) ( const IpAddrPort& address, const NetplayConfig& netplayConfig );
 
 class ConsoleUi;
 
@@ -23,7 +22,7 @@ class MainUi
 
     IpAddrPort address;
 
-    NetplaySetup netplaySetup;
+    NetplayConfig netplayConfig;
 
     void netplay ( RunFuncPtr run );
     void spectate ( RunFuncPtr run );
@@ -40,9 +39,9 @@ public:
 
     void main ( RunFuncPtr run );
 
-    bool accepted ( const Statistics& stats );
+    bool accepted ( const InitialConfig& initialConfig );
 
-    bool connected ( const Statistics& stats );
+    bool connected ( const InitialConfig& initialConfig );
 
-    const NetplaySetup& getNetplaySetup() const { return netplaySetup; }
+    const NetplayConfig& getNetplayConfig() const { return netplayConfig; }
 };

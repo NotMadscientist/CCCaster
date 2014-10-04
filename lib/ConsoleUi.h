@@ -45,6 +45,9 @@ public:
     // Base UI element
     struct Element
     {
+        // Indicates this is an element that requires user interaction
+        const bool requiresUser;
+
         // Output integer, INT_MIN is the invalid sentinel value
         int resultInt = INT_MIN;
 
@@ -55,9 +58,6 @@ public:
 
         // Basic constructor
         Element ( bool requiresUser = true ) : requiresUser ( requiresUser ) {}
-
-        // Indicates this is an element that requires user interaction
-        const bool requiresUser;
 
         // Position that the element should be displayed
         COORD pos;
@@ -367,7 +367,7 @@ public:
     // Pop and show until we reach an element that requires user interaction, then return element.
     // This should NOT be called without any such elements in the stack.
     // This does NOT pop the element that it returns.
-    Element *popUntilUser ( bool clearPoppedElements = false )
+    Element *popUntilUserInput ( bool clearPoppedElements = false )
     {
         ASSERT ( stack.empty() == false );
 

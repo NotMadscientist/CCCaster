@@ -27,7 +27,7 @@ void MainUi::netplay ( RunFuncPtr run )
 
     for ( ;; )
     {
-        ConsoleUi::Element *menu = ui->popUntilUser();
+        ConsoleUi::Element *menu = ui->popUntilUserInput();
 
         if ( menu->resultStr.empty() )
             break;
@@ -46,22 +46,21 @@ void MainUi::netplay ( RunFuncPtr run )
         {
             ui->pushBelow ( new ConsoleUi::Menu ( "Netplay", { "Versus", "Training" }, "Cancel" ) );
 
-            menu = ui->popUntilUser();
+            menu = ui->popUntilUserInput();
             int result = menu->resultInt;
 
             ui->pop();
 
             if ( result >= 0 && result <= 1 )
             {
-                netplaySetup.training = result;
+                netplayConfig.training = result;
 
                 ui->pushBelow ( new ConsoleUi::TextBox ( "Hosting..." ), { 1, 0 } ); // Expand width
 
                 // TODO get external IP
                 // TODO copy it to clipboard
 
-                // run ( address, netplaySetup );
-                Sleep ( 1000 );
+                run ( address, netplayConfig );
 
                 ui->pop();
             }
@@ -70,8 +69,7 @@ void MainUi::netplay ( RunFuncPtr run )
         {
             ui->pushBelow ( new ConsoleUi::TextBox ( "Connecting..." ), { 1, 0 } ); // Expand width
 
-            // run ( address, NetplaySetup() );
-            Sleep ( 1000 );
+            run ( address, NetplayConfig() );
 
             ui->pop();
         }
@@ -105,19 +103,19 @@ void MainUi::offline ( RunFuncPtr run )
 
     for ( bool finished = false; !finished; )
     {
-        ConsoleUi::Element *menu = ui->popUntilUser();
+        ConsoleUi::Element *menu = ui->popUntilUserInput();
 
         if ( menu->resultInt < 0 || menu->resultInt > 1 )
             break;
 
-        netplaySetup.training = menu->resultInt;
+        netplayConfig.training = menu->resultInt;
 
         ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter delay:", 0, false, 3 ),
         { 1, 0 } ); // Expand width
 
         while ( !finished )
         {
-            menu = ui->popUntilUser();
+            menu = ui->popUntilUserInput();
 
             if ( menu->resultInt < 0 )
                 break;
@@ -128,12 +126,12 @@ void MainUi::offline ( RunFuncPtr run )
                 continue;
             }
 
-            netplaySetup.delay = menu->resultInt;
+            netplayConfig.delay = menu->resultInt;
 
             // TODO remove me testing
-            // netplaySetup.rollback = 30;
+            // netplayConfig.rollback = 30;
 
-            run ( "", netplaySetup );
+            run ( "", netplayConfig );
             finished = true;
         }
 
@@ -181,7 +179,7 @@ void MainUi::main ( RunFuncPtr run )
         sessionError.clear();
         sessionMessage.clear();
 
-        ConsoleUi::Element *menu = ui->popUntilUser();
+        ConsoleUi::Element *menu = ui->popUntilUserInput();
 
         switch ( menu->resultInt )
         {
@@ -215,51 +213,43 @@ void MainUi::main ( RunFuncPtr run )
     }
 }
 
-bool MainUi::accepted ( const Statistics& stats )
+static ConsoleUi::TextBox *initialConfigTextBox ( const InitialConfig& initialConfig )
 {
-    LOG ( "latency=%.2f ms; jitter=%.2f ms", stats.getMean(), stats.getJitter() );
-
-    // int value;
-
-    // PRINT ( "Enter delay:" );
-
-    // cin >> value;
-    // netplaySetup.delay = value;
-
-    // PRINT ( "Enter training mode:" );
-
-    // cin >> value;
-    // netplaySetup.training = value;
-
-    // PRINT ( "Connect?" );
-
-    // netplaySetup.hostPlayer = 1 + ( rand() % 2 );
-
-    // cin >> value;
-    // return value;
-
-    netplaySetup.delay = 4;
-    netplaySetup.rollback = 30;
-    netplaySetup.training = 0;
-    netplaySetup.hostPlayer = 1;
-
-    // TODO implement me
-
-    return true;
+    return new ConsoleUi::TextBox ( toString (
+                                        "Connected\n"
+                                        "Ping: %.2f ms\n"
+                                        "Delay: %d\n",
+                                        initialConfig.stats.getMean(),
+                                        ( int ) ceil ( initialConfig.stats.getMean() / ( 1000.0 / 60 ) ) ) );
 }
 
-bool MainUi::connected ( const Statistics& stats )
+bool MainUi::accepted ( const InitialConfig& initialConfig )
 {
-    LOG ( "latency=%.2f ms; jitter=%.2f ms", stats.getMean(), stats.getJitter() );
-
-    // int value;
-
-    // PRINT ( "Connect?" );
-
-    // cin >> value;
-    // return value;
+    // netplayConfig.delay = 4;
+    // netplayConfig.rollback = 30;
+    // netplayConfig.training = 0;
+    // netplayConfig.hostPlayer = 1;
 
     // TODO implement me
 
-    return true;
+    ui->pushInFront ( initialConfigTextBox ( initialConfig ), { 1, 0 } ); // Expand width
+
+    Sleep ( 10000 );
+
+    ui->pop();
+
+    return false;
+}
+
+bool MainUi::connected ( const InitialConfig& initialConfig )
+{
+    // TODO implement me
+
+    ui->pushInFront ( initialConfigTextBox ( initialConfig ), { 1, 0 } ); // Expand width
+
+    Sleep ( 10000 );
+
+    ui->pop();
+
+    return false;
 }

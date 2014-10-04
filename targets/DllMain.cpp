@@ -440,11 +440,11 @@ struct Main
                 LOG ( "clientType=%s", clientType );
                 break;
 
-            case MsgType::NetplaySetup:
+            case MsgType::NetplayConfig:
                 if ( netMan.setup.delay != 0xFF )
                     break;
 
-                netMan.setup = msg->getAs<NetplaySetup>();
+                netMan.setup = msg->getAs<NetplayConfig>();
 
                 if ( netMan.setup.delay == 0xFF )
                     LOG_AND_THROW_STRING ( "netMan.setup.delay=%d is invalid!", netMan.setup.delay );

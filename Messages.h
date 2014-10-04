@@ -3,6 +3,7 @@
 #include "Constants.h"
 #include "Protocol.h"
 #include "Logger.h"
+#include "Statistics.h"
 
 #include <cereal/types/array.hpp>
 #include <cereal/types/vector.hpp>
@@ -32,7 +33,18 @@ struct ClientType : public SerializableSequence
 };
 
 
-struct NetplaySetup : public SerializableSequence
+struct InitialConfig : public SerializableSequence
+{
+    uint8_t training = 0;
+    Statistics stats;
+
+    InitialConfig ( uint8_t training, const Statistics& stats ) : training ( training ), stats ( stats ) {}
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( InitialConfig, training, stats )
+};
+
+
+struct NetplayConfig : public SerializableSequence
 {
     uint8_t delay = 0xFF, rollback = 0;
     uint8_t training = 0;
@@ -47,7 +59,7 @@ struct NetplaySetup : public SerializableSequence
             return delay - rollback;
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( NetplaySetup, delay, rollback, training, hostPlayer, broadcastPort )
+    PROTOCOL_MESSAGE_BOILERPLATE ( NetplayConfig, delay, rollback, training, hostPlayer, broadcastPort )
 };
 
 

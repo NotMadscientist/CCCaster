@@ -85,7 +85,7 @@ class NetplayManager
 public:
 
     // Netplay setup
-    NetplaySetup setup;
+    NetplayConfig setup;
 
     // Indicate which player is the remote player
     void setRemotePlayer ( uint8_t player );
