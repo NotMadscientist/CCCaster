@@ -3,6 +3,7 @@
 #include "Utilities.h"
 #include "Logger.h"
 
+// Most of the implementation that depend on JLib is in this header so only the targets that need JLib can to link it
 #include <JLib/ConsoleCore.h>
 
 #include <memory>

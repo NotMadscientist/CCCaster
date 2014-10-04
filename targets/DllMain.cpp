@@ -731,7 +731,7 @@ extern "C" void callback()
     {
         LOG ( "Exiting" );
 
-        // Joystick must be deinitialized on the same thread
+        // Joystick must be deinitialized on the same thread it was initialized
         ControllerManager::get().deinitialize();
         deinitialize();
         exit ( 0 );
@@ -793,7 +793,7 @@ static void deinitialize()
     EventManager::get().release();
     TimerManager::get().deinitialize();
     SocketManager::get().deinitialize();
-    // Joystick must be deinitialized on the same thread it was initialized
+    // Joystick must be deinitialized on the same thread it was initialized, ie not here
     Logger::get().deinitialize();
 
     deinitializeHacks();

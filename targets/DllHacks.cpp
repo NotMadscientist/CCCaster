@@ -70,7 +70,7 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
             overlayText.size(),             // Number of letters, -1 for null-terminated
             &rect,                          // Text bounding RECT
             DT_CENTER,                      // Text formatting
-            D3DCOLOR_XRGB ( 255, 0, 0 ) );  // Text color
+            D3DCOLOR_XRGB ( 255, 0, 0 ) );  // Text colour
     }
 }
 
