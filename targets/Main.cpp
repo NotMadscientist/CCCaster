@@ -435,6 +435,7 @@ static void runMain ( const string& address, const NetplaySetup& netplaySetup )
     {
         ui.sessionError = toString ( "Error: %s", err );
     }
+#ifdef NDEBUG
     catch ( const std::exception& err )
     {
         ui.sessionError = toString ( "Error: %s", err.what() );
@@ -443,6 +444,7 @@ static void runMain ( const string& address, const NetplaySetup& netplaySetup )
     {
         ui.sessionError = "Unknown error!";
     }
+#endif
 }
 
 
@@ -459,6 +461,7 @@ static void runDummy ( const string& address, const NetplaySetup& netplaySetup )
     {
         ui.sessionError = toString ( "Error: %s", err );
     }
+#ifdef NDEBUG
     catch ( const std::exception& err )
     {
         ui.sessionError = toString ( "Error: %s", err.what() );
@@ -467,6 +470,7 @@ static void runDummy ( const string& address, const NetplaySetup& netplaySetup )
     {
         ui.sessionError = "Unknown error!";
     }
+#endif
 }
 
 
@@ -621,7 +625,7 @@ int main ( int argc, char *argv[] )
     if ( parser.nonOptionsCount() == 1 )
         run ( parser.nonOption ( 0 ), NetplaySetup() );
     else if ( parser.nonOptionsCount() == 2 )
-        run ( string ( parser.nonOption ( 0 ) ) + parser.nonOption ( 1 ), NetplaySetup() );
+        run ( string ( parser.nonOption ( 0 ) ) + ":" + parser.nonOption ( 1 ), NetplaySetup() );
 
     if ( !opt[NO_UI] )
     {
@@ -633,6 +637,7 @@ int main ( int argc, char *argv[] )
         {
             PRINT ( "Error: %s", err );
         }
+#ifdef NDEBUG
         catch ( const std::exception& err )
         {
             PRINT ( "Error: %s", err.what() );
@@ -641,6 +646,7 @@ int main ( int argc, char *argv[] )
         {
             PRINT ( "Unknown error!" );
         }
+#endif
     }
 
     deinitialize();

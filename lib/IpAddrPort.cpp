@@ -85,12 +85,12 @@ IpAddrPort::IpAddrPort ( const std::string& addrPort ) : addr ( addrPort ), port
             break;
 
     if ( i == ( int ) addr.size() - 1 )
-        throw Exception ( "Invalid port" );
+        throw Exception ( "Invalid port!" );
 
     stringstream ss ( addr.substr ( i + 1 ) );
 
     if ( ! ( ss >> port ) )
-        throw Exception ( "Invalid port" );
+        throw Exception ( "Invalid port!" );
 
     for ( ; i >= 0; --i )
         if ( isalnum ( addr[i] ) )

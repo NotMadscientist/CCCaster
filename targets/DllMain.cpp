@@ -712,6 +712,7 @@ extern "C" void callback()
         if ( main )
             main->procMan.ipcSend ( new ErrorMessage ( "Error: " + err.str() ) );
     }
+#ifdef NDEBUG
     catch ( const std::exception& err )
     {
         LOG ( "Stopping due to std::exception: %s", err.what() );
@@ -726,6 +727,7 @@ extern "C" void callback()
         if ( main )
             main->procMan.ipcSend ( new ErrorMessage ( "Unknown error!" ) );
     }
+#endif
 
     if ( appState == AppState::Stopping )
     {
@@ -759,6 +761,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
                 LOG ( "Aborting due to exception: %s", err );
                 exit ( 0 );
             }
+#ifdef NDEBUG
             catch ( const std::exception& err )
             {
                 LOG ( "Aborting due to std::exception: %s", err.what() );
@@ -769,6 +772,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
                 LOG ( "Aborting due to unknown exception!" );
                 exit ( 0 );
             }
+#endif
 
             break;
 
