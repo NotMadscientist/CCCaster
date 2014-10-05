@@ -17,8 +17,8 @@ using namespace std;
 #define LOG_UDP_SOCKET(SOCKET, FORMAT, ...) LOG_SOCKET ( SOCKET, "type=%s; " FORMAT, type, ## __VA_ARGS__)
 
 
-UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, const Type& type )
-    : Socket ( IpAddrPort ( "", port ), Protocol::UDP )
+UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, const Type& type, bool isRaw )
+    : Socket ( IpAddrPort ( "", port ), Protocol::UDP, isRaw )
     , type ( type )
     , gbn ( this, isConnectionLess() ? 0 : DEFAULT_KEEP_ALIVE )
 {
@@ -28,8 +28,8 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, const Type& type )
     SocketManager::get().add ( this );
 }
 
-UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, const Type& type )
-    : Socket ( address, Protocol::UDP )
+UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, const Type& type, bool isRaw )
+    : Socket ( address, Protocol::UDP, isRaw )
     , type ( type )
     , gbn ( this, isConnectionLess() ? 0 : DEFAULT_KEEP_ALIVE )
 {
@@ -161,14 +161,14 @@ SocketPtr UdpSocket::connect ( Socket::Owner *owner, const IpAddrPort& address )
     return SocketPtr ( new UdpSocket ( owner, address, Type::Client ) );
 }
 
-SocketPtr UdpSocket::bind ( Socket::Owner *owner, uint16_t port )
+SocketPtr UdpSocket::bind ( Socket::Owner *owner, uint16_t port, bool isRaw )
 {
-    return SocketPtr ( new UdpSocket ( owner, port, Type::ConnectionLess ) );
+    return SocketPtr ( new UdpSocket ( owner, port, Type::ConnectionLess, isRaw ) );
 }
 
-SocketPtr UdpSocket::bind ( Socket::Owner *owner, const IpAddrPort& address )
+SocketPtr UdpSocket::bind ( Socket::Owner *owner, const IpAddrPort& address, bool isRaw )
 {
-    return SocketPtr ( new UdpSocket ( owner, address, Type::ConnectionLess ) );
+    return SocketPtr ( new UdpSocket ( owner, address, Type::ConnectionLess, isRaw ) );
 }
 
 SocketPtr UdpSocket::shared ( Socket::Owner *owner, const SocketShareData& data )

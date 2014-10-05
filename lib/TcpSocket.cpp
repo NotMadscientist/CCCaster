@@ -13,7 +13,8 @@
 using namespace std;
 
 
-TcpSocket::TcpSocket ( Socket::Owner *owner, uint16_t port ) : Socket ( IpAddrPort ( "", port ), Protocol::TCP )
+TcpSocket::TcpSocket ( Socket::Owner *owner, uint16_t port, bool isRaw )
+    : Socket ( IpAddrPort ( "", port ), Protocol::TCP, isRaw )
 {
     this->owner = owner;
     this->state = State::Listening;
@@ -21,7 +22,8 @@ TcpSocket::TcpSocket ( Socket::Owner *owner, uint16_t port ) : Socket ( IpAddrPo
     SocketManager::get().add ( this );
 }
 
-TcpSocket::TcpSocket ( Socket::Owner *owner, const IpAddrPort& address ) : Socket ( address, Protocol::TCP )
+TcpSocket::TcpSocket ( Socket::Owner *owner, const IpAddrPort& address, bool isRaw )
+    : Socket ( address, Protocol::TCP, isRaw )
 {
     this->owner = owner;
     this->state = State::Connecting;
@@ -73,14 +75,14 @@ void TcpSocket::disconnect()
     Socket::disconnect();
 }
 
-SocketPtr TcpSocket::listen ( Socket::Owner *owner, uint16_t port )
+SocketPtr TcpSocket::listen ( Socket::Owner *owner, uint16_t port, bool isRaw )
 {
-    return SocketPtr ( new TcpSocket ( owner, port ) );
+    return SocketPtr ( new TcpSocket ( owner, port, isRaw ) );
 }
 
-SocketPtr TcpSocket::connect ( Socket::Owner *owner, const IpAddrPort& address )
+SocketPtr TcpSocket::connect ( Socket::Owner *owner, const IpAddrPort& address, bool isRaw )
 {
-    return SocketPtr ( new TcpSocket ( owner, address ) );
+    return SocketPtr ( new TcpSocket ( owner, address, isRaw ) );
 }
 
 SocketPtr TcpSocket::accept ( Socket::Owner *owner )
@@ -99,7 +101,7 @@ SocketPtr TcpSocket::accept ( Socket::Owner *owner )
         return 0;
     }
 
-    return SocketPtr ( new TcpSocket ( owner, newFd, ( sockaddr * ) &sas ) );
+    return SocketPtr ( new TcpSocket ( owner, newFd, IpAddrPort ( ( sockaddr * ) &sas ) ) );
 }
 
 bool TcpSocket::send ( SerializableMessage *message, const IpAddrPort& address )

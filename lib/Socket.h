@@ -40,9 +40,15 @@ public:
         // Socket disconnected event
         virtual void disconnectEvent ( Socket *socket ) {}
 
-        // Socket read event
+        // Socket raw data read event (only called if isRaw)
+        virtual void readEvent ( Socket *socket, const char *buffer, size_t len, const IpAddrPort& address ) {}
+
+        // Socket protocol message read event (only called if NOT isRaw)
         virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) {}
     };
+
+    // Raw socket type flag
+    const bool isRaw = false;
 
     // Socket protocol
     ENUM ( Protocol, TCP, UDP );
@@ -84,10 +90,10 @@ protected:
     virtual void connectEvent() {};
     virtual void disconnectEvent() {};
 
-    // Read event callback, calls the function below
+    // Read event callback, calls the function below if NOT isRaw
     virtual void readEvent();
 
-    // Read protocol message callback, not optional
+    // Read protocol message callback, must be implemented, only called if NOT isRaw
     virtual void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) = 0;
 
 public:
@@ -96,7 +102,7 @@ public:
     static SocketPtr shared ( Socket::Owner *owner, const SocketShareData& data );
 
     // Basic constructors
-    Socket ( const IpAddrPort& address, Protocol protocol );
+    Socket ( const IpAddrPort& address, Protocol protocol, bool isRaw = false );
 
     // Virtual destructor
     virtual ~Socket();

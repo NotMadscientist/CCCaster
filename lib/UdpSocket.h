@@ -53,10 +53,10 @@ private:
     bool sendRaw ( const MsgPtr& msg, const IpAddrPort& address );
 
     // Construct a server socket
-    UdpSocket ( Socket::Owner *owner, uint16_t port, const Type& type );
+    UdpSocket ( Socket::Owner *owner, uint16_t port, const Type& type, bool isRaw = false );
 
     // Construct a client socket
-    UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, const Type& type );
+    UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, const Type& type, bool isRaw = false );
 
     // Construct a socket from SocketShareData
     UdpSocket ( Socket::Owner *owner, const SocketShareData& data );
@@ -81,8 +81,8 @@ public:
     static SocketPtr connect ( Socket::Owner *owner, const IpAddrPort& address );
 
     // Create connection-less sockets
-    static SocketPtr bind ( Socket::Owner *owner, uint16_t port );
-    static SocketPtr bind ( Socket::Owner *owner, const IpAddrPort& address );
+    static SocketPtr bind ( Socket::Owner *owner, uint16_t port, bool isRaw = false );
+    static SocketPtr bind ( Socket::Owner *owner, const IpAddrPort& address, bool isRaw = false );
 
     // Create a socket from SocketShareData
     static SocketPtr shared ( Socket::Owner *owner, const SocketShareData& data );

@@ -31,8 +31,8 @@ using namespace std;
     } while ( 0 )
 
 
-Socket::Socket ( const IpAddrPort& address, Protocol protocol )
-    : address ( address ), protocol ( protocol ), readBuffer ( READ_BUFFER_SIZE, ( char ) 0 )
+Socket::Socket ( const IpAddrPort& address, Protocol protocol, bool isRaw )
+    : isRaw ( isRaw ), address ( address ), protocol ( protocol ), readBuffer ( READ_BUFFER_SIZE, ( char ) 0 )
 {
 }
 
@@ -345,16 +345,16 @@ bool Socket::recv ( char *buffer, size_t& len, IpAddrPort& address )
 
 void Socket::readEvent()
 {
-    char *bufferEnd = &readBuffer[readPos];
+    char *bufferStart = &readBuffer[readPos];
     size_t bufferLen = readBuffer.size() - readPos;
 
     IpAddrPort address = getRemoteAddress();
     bool success = false;
 
     if ( isTCP() )
-        success = recv ( bufferEnd, bufferLen );
+        success = recv ( bufferStart, bufferLen );
     else
-        success = recv ( bufferEnd, bufferLen, address );
+        success = recv ( bufferStart, bufferLen, address );
 
     if ( !success )
     {
@@ -376,6 +376,14 @@ void Socket::readEvent()
     }
 #endif
 
+    // Raw read mode
+    if ( isRaw )
+    {
+        if ( owner )
+            owner->readEvent ( this, bufferStart, bufferLen, address );
+        return;
+    }
+
     // Increment the buffer position
     readPos += bufferLen;
     LOG ( "Read [ %u bytes ] from '%s'; %u bytes remaining in buffer", bufferLen, address, readPos );
@@ -389,7 +397,7 @@ void Socket::readEvent()
     }
 
     if ( bufferLen <= 256 )
-        LOG ( "Base64 : %s", toBase64 ( bufferEnd, bufferLen ) );
+        LOG ( "Base64 : %s", toBase64 ( bufferStart, bufferLen ) );
 
     if ( readPos >= sizeof ( MsgType ) && ! ::Protocol::checkMsgType ( * ( MsgType * ) &readBuffer[0] ) )
     {

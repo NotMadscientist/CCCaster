@@ -6,10 +6,10 @@
 class TcpSocket : public Socket
 {
     // Construct a server socket
-    TcpSocket ( Socket::Owner *owner, uint16_t port );
+    TcpSocket ( Socket::Owner *owner, uint16_t port, bool isRaw = false );
 
     // Construct a client socket
-    TcpSocket ( Socket::Owner *owner, const IpAddrPort& address );
+    TcpSocket ( Socket::Owner *owner, const IpAddrPort& address, bool isRaw = false );
 
     // Construct an accepted client socket
     TcpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address );
@@ -28,10 +28,10 @@ protected:
 public:
 
     // Listen for connections on the given port
-    static SocketPtr listen ( Socket::Owner *owner, uint16_t port );
+    static SocketPtr listen ( Socket::Owner *owner, uint16_t port, bool isRaw = false );
 
     // Connect to the given address and port
-    static SocketPtr connect ( Socket::Owner *owner, const IpAddrPort& address );
+    static SocketPtr connect ( Socket::Owner *owner, const IpAddrPort& address, bool isRaw = false );
 
     // Create a socket from SocketShareData
     static SocketPtr shared ( Socket::Owner *owner, const SocketShareData& data );
