@@ -217,7 +217,7 @@ inline T sorted ( const T& list )
     return sorted;
 }
 
-// Return a sorted list with comparison function
+// Return a sorted list with provided comparison function
 template<typename T, typename F>
 inline T sorted ( const T& list, const F& compare )
 {
@@ -235,3 +235,8 @@ inline T sorted ( const T& list, const F& compare )
         sorted.push_back ( *x );
     return sorted;
 }
+
+
+// Clipboard manipulation
+std::string getClipboard();
+void setClipboard ( const std::string& str );

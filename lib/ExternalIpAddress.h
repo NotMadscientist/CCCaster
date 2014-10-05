@@ -14,6 +14,7 @@ public:
     {
         virtual void foundExternalIpAddress ( ExternalIpAddress *extIpAddr, const std::string& address ) {}
 
+        // Note: this sets address to "unknown"
         virtual void unknownExternalIpAddress ( ExternalIpAddress *extIpAddr ) {};
     };
 

@@ -287,3 +287,44 @@ bool ConfigSettings::load ( const char *file )
     fin.close();
     return good;
 }
+
+// Clipboard manipulation
+
+string getClipboard()
+{
+    const char *buffer = "";
+
+    if ( OpenClipboard ( 0 ) )
+    {
+        HANDLE hData = GetClipboardData ( CF_TEXT );
+        buffer = ( const char * ) GlobalLock ( hData );
+        if ( buffer == 0 )
+            buffer = "";
+        GlobalUnlock ( hData );
+        CloseClipboard();
+    }
+    else
+    {
+        LOG ( "OpenClipboard failed: %s", WindowsException ( GetLastError() ) );
+    }
+
+    return string ( buffer );
+}
+
+void setClipboard ( const string& str )
+{
+    if ( OpenClipboard ( 0 ) )
+    {
+        HGLOBAL clipbuffer = GlobalAlloc ( GMEM_DDESHARE, str.size() + 1 );
+        char *buffer = ( char * ) GlobalLock ( clipbuffer );
+        strcpy ( buffer, LPCSTR ( str.c_str() ) );
+        GlobalUnlock ( clipbuffer );
+        EmptyClipboard();
+        SetClipboardData ( CF_TEXT, clipbuffer );
+        CloseClipboard();
+    }
+    else
+    {
+        LOG ( "OpenClipboard failed: %s", WindowsException ( GetLastError() ) );
+    }
+}
