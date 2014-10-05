@@ -37,10 +37,12 @@ struct InitialConfig : public SerializableSequence
 {
     uint8_t training = 0;
     Statistics stats;
+    uint8_t packetLoss = 0;
 
-    InitialConfig ( uint8_t training, const Statistics& stats ) : training ( training ), stats ( stats ) {}
+    InitialConfig ( uint8_t training, const Statistics& stats, uint8_t packetLoss )
+        : training ( training ), stats ( stats ), packetLoss ( packetLoss ) {}
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( InitialConfig, training, stats )
+    PROTOCOL_MESSAGE_BOILERPLATE ( InitialConfig, training, stats, packetLoss )
 };
 
 

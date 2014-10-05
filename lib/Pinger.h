@@ -38,6 +38,8 @@ private:
 
     Statistics stats;
 
+    uint8_t packetLoss = 0;
+
     bool pinging = false;
 
     void timerExpired ( Timer *timer ) override;
@@ -51,4 +53,6 @@ public:
     void gotPong ( const MsgPtr& ping );
 
     const Statistics& getStats() const { return stats; }
+
+    uint8_t getPacketLoss() const { return packetLoss; }
 };

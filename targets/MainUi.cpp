@@ -213,14 +213,29 @@ void MainUi::main ( RunFuncPtr run )
     }
 }
 
+static int computeDelay ( const Statistics& stats )
+{
+    return ( int ) ceil ( stats.getMean() / ( 1000.0 / 60 ) );
+}
+
 static ConsoleUi::TextBox *initialConfigTextBox ( const InitialConfig& initialConfig )
 {
     return new ConsoleUi::TextBox ( toString (
                                         "Connected\n"
-                                        "Ping: %.2f ms\n"
+                                        "Ping: %.2f ms \n"
+#ifndef NDEBUG
+                                        "Worst: %.2f ms\n"
+                                        "StdErr: %.2f ms\n"
+                                        "StdDev: %.2f ms\n"
+#endif
                                         "Delay: %d\n",
                                         initialConfig.stats.getMean(),
-                                        ( int ) ceil ( initialConfig.stats.getMean() / ( 1000.0 / 60 ) ) ) );
+#ifndef NDEBUG
+                                        initialConfig.stats.getWorst(),
+                                        initialConfig.stats.getStdErr(),
+                                        initialConfig.stats.getStdDev(),
+#endif
+                                        computeDelay ( initialConfig.stats ) ) );
 }
 
 bool MainUi::accepted ( const InitialConfig& initialConfig )
@@ -230,10 +245,16 @@ bool MainUi::accepted ( const InitialConfig& initialConfig )
     // netplayConfig.training = 0;
     // netplayConfig.hostPlayer = 1;
 
-    // TODO implement me
+    // Reset and clear the screen if launched directly from command line args
+    if ( !ui )
+    {
+        ui.reset ( new ConsoleUi ( TITLE ) );
+        ui->clear();
+    }
 
     ui->pushInFront ( initialConfigTextBox ( initialConfig ), { 1, 0 } ); // Expand width
 
+    // TODO implement me
     Sleep ( 10000 );
 
     ui->pop();
@@ -243,10 +264,16 @@ bool MainUi::accepted ( const InitialConfig& initialConfig )
 
 bool MainUi::connected ( const InitialConfig& initialConfig )
 {
-    // TODO implement me
+    // Reset and clear the screen if launched directly from command line args
+    if ( !ui )
+    {
+        ui.reset ( new ConsoleUi ( TITLE ) );
+        ui->clear();
+    }
 
     ui->pushInFront ( initialConfigTextBox ( initialConfig ), { 1, 0 } ); // Expand width
 
+    // TODO implement me
     Sleep ( 10000 );
 
     ui->pop();

@@ -64,9 +64,11 @@ struct Main : public CommonMain, public Pinger::Owner
         }
 
         initialConfig.stats.merge ( pinger->getStats() );
+        initialConfig.packetLoss = ( initialConfig.packetLoss + pinger->getPacketLoss() ) / 200;
 
-        LOG ( "merged: latency=%.2f ms; jitter=%.2f ms",
-              initialConfig.stats.getMean(), initialConfig.stats.getStdDev() );
+        LOG ( "merged: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%",
+              initialConfig.stats.getMean(), initialConfig.stats.getWorst(),
+              initialConfig.stats.getStdErr(), initialConfig.stats.getStdDev(), initialConfig.packetLoss );
 
         if ( isHost() )
         {
@@ -141,9 +143,10 @@ struct Main : public CommonMain, public Pinger::Owner
     {
         ASSERT ( pinger == this->pinger.get() );
 
-        LOG ( "latency=%.2f ms; jitter=%.2f ms; packetLoss=%d%", stats.getMean(), stats.getStdDev(), packetLoss );
+        LOG ( "latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%",
+              stats.getMean(), stats.getWorst(), stats.getStdErr(), stats.getStdDev(), packetLoss );
 
-        ctrlSocket->send ( new InitialConfig ( netplayConfig.training, stats ) );
+        ctrlSocket->send ( new InitialConfig ( netplayConfig.training, stats, packetLoss ) );
 
         if ( isClient() )
             userConfirmation();

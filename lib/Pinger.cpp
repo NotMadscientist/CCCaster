@@ -65,8 +65,10 @@ void Pinger::timerExpired ( Timer *timer )
     {
         LOG ( "Done pinging" );
 
+        packetLoss = 100 * ( numPings - stats.getNumSamples() ) / numPings;
+
         if ( owner )
-            owner->donePinging ( this, stats, 100 * ( numPings - stats.getNumSamples() ) / numPings );
+            owner->donePinging ( this, stats, packetLoss );
 
         pingTimer.reset();
         pinging = false;
