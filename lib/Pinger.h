@@ -32,9 +32,9 @@ private:
 
     TimerPtr pingTimer;
 
-    uint64_t pingInterval;
+    uint64_t pingInterval = 0;
 
-    size_t pingCount, numPings;
+    size_t pingCount = 0, numPings = 0;
 
     Statistics stats;
 

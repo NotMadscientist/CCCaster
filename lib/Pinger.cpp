@@ -7,7 +7,11 @@
 
 
 Pinger::Pinger ( Owner *owner, uint64_t pingInterval, size_t numPings )
-    : owner ( owner ), pingInterval ( pingInterval ), numPings ( numPings ) {}
+    : owner ( owner ), pingInterval ( pingInterval ), numPings ( numPings )
+{
+    ASSERT ( pingInterval > 0 );
+    ASSERT ( numPings > 0 );
+}
 
 void Pinger::start()
 {
@@ -20,6 +24,8 @@ void Pinger::start()
 
     pingCount = 1;
 
+    ASSERT ( pingInterval > 0 );
+
     pingTimer.reset ( new Timer ( this ) );
     pingTimer->start ( pingInterval );
 
@@ -31,13 +37,13 @@ void Pinger::gotPong ( const MsgPtr& ping )
     ASSERT ( ping.get() != 0 );
     ASSERT ( ping->getMsgType() == MsgType::Ping );
 
-    uint64_t now = TimerManager::get().getNow();
-
-    if ( now < ping->getAs<Ping>().timestamp )
-        return;
-
     if ( pinging )
     {
+        uint64_t now = TimerManager::get().getNow();
+
+        if ( now < ping->getAs<Ping>().timestamp )
+            return;
+
         uint64_t latency = ( now - ping->getAs<Ping>().timestamp ) / 2;
 
         LOG ( "latency=%llu ms", latency );
@@ -71,6 +77,8 @@ void Pinger::timerExpired ( Timer *timer )
         owner->sendPing ( this, MsgPtr ( new Ping ( TimerManager::get().getNow() ) ) );
 
     ++pingCount;
+
+    ASSERT ( pingInterval > 0 );
 
     pingTimer->start ( pingCount < numPings ? pingInterval : MAX_ROUND_TRIP );
 }
