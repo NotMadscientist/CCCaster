@@ -498,7 +498,7 @@ static void deinitialize()
 
 static void signalHandler ( int signum )
 {
-    LOG ( "Interupt signal %d received", signum );
+    LOG ( "Interrupt signal %d received", signum );
     deinitialize();
 }
 
