@@ -75,7 +75,6 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
 
         initialConfig.stats.merge ( pinger->getStats() );
         initialConfig.packetLoss = ( initialConfig.packetLoss + pinger->getPacketLoss() ) / 200;
-        initialConfig.invalidate();
 
         LOG ( "Merged stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%",
               initialConfig.stats.getMean(), initialConfig.stats.getWorst(),
@@ -397,6 +396,8 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
     // Destructor
     virtual ~Main()
     {
+        externaIpAddress.owner = 0;
+
         procMan.closeGame();
 
         ControllerManager::get().deinitialize();
@@ -496,7 +497,7 @@ static void runMain ( const IpAddrPort& address, const NetplayConfig& netplayCon
         else
         {
             if ( address.addr.empty() )
-                updateExternalIpAddress ( address.port, true );
+                updateExternalIpAddress ( address.port );
             else
                 ui.display ( toString ( "Connecting to %s", address ) );
 

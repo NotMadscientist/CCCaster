@@ -61,6 +61,7 @@ void ExternalIpAddress::failedHttp ( HttpGet *httpGet )
 void ExternalIpAddress::start()
 {
     nextQueryIndex = 1;
+    address.clear();
 
     httpGet.reset ( new HttpGet ( this, externalIpServices[0] ) );
     httpGet->start();
