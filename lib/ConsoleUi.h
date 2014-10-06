@@ -354,6 +354,14 @@ public:
 
     // Push an element in front of the current one
     void pushInFront ( Element *element, const COORD& expand = { 0, 0 } );
+    void pushInFront ( Element *element, const COORD& expand, bool clear )
+    {
+        if ( clear )
+            clearTop();
+
+        pushInFront ( element, expand );
+    }
+
 
     // Pop an element off the stack
     void pop()

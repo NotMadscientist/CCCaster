@@ -57,23 +57,12 @@ void MainUi::netplay ( RunFuncPtr run )
             {
                 netplayConfig.training = result;
 
-                ui->pushBelow ( new ConsoleUi::TextBox ( "Hosting..." ), { 1, 0 } ); // Expand width
-
-                // TODO get external IP
-                // TODO copy it to clipboard
-
                 run ( address, netplayConfig );
-
-                ui->pop();
             }
         }
         else
         {
-            ui->pushBelow ( new ConsoleUi::TextBox ( "Connecting..." ), { 1, 0 } ); // Expand width
-
             run ( address, NetplayConfig() );
-
-            ui->pop();
         }
     }
 
@@ -183,7 +172,7 @@ static string fetchGameUserName()
     return buffer;
 }
 
-void MainUi::main ( RunFuncPtr run )
+MainUi::MainUi()
 {
     config.putInteger ( "alertOnConnect", 3 );
     config.putString ( "alertWavFile", SYSTEM_DEFAULT_ALERT );
@@ -193,9 +182,11 @@ void MainUi::main ( RunFuncPtr run )
     // config.putInteger ( "joystickDeadzone", 25000 );
     config.putInteger ( "lastUsedPort", -1 );
     config.putInteger ( "spectatorCap", -1 );
+}
 
+void MainUi::main ( RunFuncPtr run )
+{
     ui.reset ( new ConsoleUi ( TITLE ) );
-
     ui->pushRight ( new ConsoleUi::Menu ( TITLE,
     { "Netplay", "Spectate", "Broadcast", "Offline", "Controls", "Settings" }, "Quit" ) );
 
@@ -252,24 +243,31 @@ static int computeDelay ( const Statistics& stats )
     return ( int ) ceil ( stats.getMean() / ( 1000.0 / 60 ) );
 }
 
-static ConsoleUi::TextBox *initialConfigTextBox ( const InitialConfig& initialConfig )
+static string formatStats ( const Statistics& stats )
 {
-    return new ConsoleUi::TextBox ( toString (
-                                        "Connected\n"
-                                        "Ping: %.2f ms \n"
+    return toString (
+               "Ping: %.2f ms \n"
 #ifndef NDEBUG
-                                        "Worst: %.2f ms\n"
-                                        "StdErr: %.2f ms\n"
-                                        "StdDev: %.2f ms\n"
+               "Worst: %.2f ms\n"
+               "StdErr: %.2f ms\n"
+               "StdDev: %.2f ms\n"
 #endif
-                                        "Delay: %d\n",
-                                        initialConfig.stats.getMean(),
+               "Delay: %d\n",
+               stats.getMean(),
 #ifndef NDEBUG
-                                        initialConfig.stats.getWorst(),
-                                        initialConfig.stats.getStdErr(),
-                                        initialConfig.stats.getStdDev(),
+               stats.getWorst(),
+               stats.getStdErr(),
+               stats.getStdDev(),
 #endif
-                                        computeDelay ( initialConfig.stats ) ) );
+               computeDelay ( stats ) );
+}
+
+void MainUi::display ( const string& message )
+{
+    if ( !ui )
+        ui.reset ( new ConsoleUi ( TITLE ) );
+
+    ui->pushInFront ( new ConsoleUi::TextBox ( message ), { 1, 0 }, true ); // Expand width and clear
 }
 
 bool MainUi::accepted ( const InitialConfig& initialConfig )
@@ -279,14 +277,11 @@ bool MainUi::accepted ( const InitialConfig& initialConfig )
     // netplayConfig.training = 0;
     // netplayConfig.hostPlayer = 1;
 
-    // Reset and clear the screen if launched directly from command line args
-    if ( !ui )
-    {
-        ui.reset ( new ConsoleUi ( TITLE ) );
-        ui->clear();
-    }
+    ASSERT ( ui.get() != 0 );
 
-    ui->pushInFront ( initialConfigTextBox ( initialConfig ), { 1, 0 } ); // Expand width
+    ui->pushInFront ( new ConsoleUi::TextBox (
+                          toString ( "%s connected\n", initialConfig.remoteName )
+                          + formatStats ( initialConfig.stats ) ), { 1, 0 }, true ); // Expand width and clear
 
     // TODO implement me
     Sleep ( 10000 );
@@ -298,14 +293,11 @@ bool MainUi::accepted ( const InitialConfig& initialConfig )
 
 bool MainUi::connected ( const InitialConfig& initialConfig )
 {
-    // Reset and clear the screen if launched directly from command line args
-    if ( !ui )
-    {
-        ui.reset ( new ConsoleUi ( TITLE ) );
-        ui->clear();
-    }
+    ASSERT ( ui.get() != 0 );
 
-    ui->pushInFront ( initialConfigTextBox ( initialConfig ), { 1, 0 } ); // Expand width
+    ui->pushInFront ( new ConsoleUi::TextBox (
+                          toString ( "Connected to %s\n", initialConfig.remoteName )
+                          + formatStats ( initialConfig.stats ) ), { 1, 0 }, true ); // Expand width and clear
 
     // TODO implement me
     Sleep ( 10000 );

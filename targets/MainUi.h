@@ -37,11 +37,17 @@ public:
 
     std::string sessionError;
 
+    MainUi();
+
     void main ( RunFuncPtr run );
+
+    void display ( const std::string& message );
 
     bool accepted ( const InitialConfig& initialConfig );
 
     bool connected ( const InitialConfig& initialConfig );
+
+    const ConfigSettings& getConfig() const { return config; }
 
     const NetplayConfig& getNetplayConfig() const { return netplayConfig; }
 };

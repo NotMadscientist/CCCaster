@@ -4,6 +4,7 @@
 #include "Test.h"
 #include "Constants.h"
 #include "Pinger.h"
+#include "ExternalIpAddress.h"
 
 #include <optionparser.h>
 #include <windows.h>
@@ -27,6 +28,12 @@ enum CommandLineOptions { UNKNOWN, HELP, DUMMY, GTEST, STDOUT, NO_FORK, NO_UI, P
 // Main UI instance
 static MainUi ui;
 
+// External IP address query tool
+ExternalIpAddress externaIpAddress ( 0 );
+
+// Update the status of the external IP address
+static void updateExternalIpAddress ( uint16_t port );
+
 
 /* Connect procedure (TODO)
 
@@ -42,7 +49,7 @@ static MainUi ui;
 
 */
 
-struct Main : public CommonMain, public Pinger::Owner
+struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress::Owner
 {
     shared_ptr<Pinger> pinger;
 
@@ -63,10 +70,14 @@ struct Main : public CommonMain, public Pinger::Owner
             serverDataSocket->setKeepAlive ( 0 );
         }
 
+        if ( initialConfig.remoteName.empty() )
+            initialConfig.remoteName = ctrlSocket->address.addr;
+
         initialConfig.stats.merge ( pinger->getStats() );
         initialConfig.packetLoss = ( initialConfig.packetLoss + pinger->getPacketLoss() ) / 200;
+        initialConfig.invalidate();
 
-        LOG ( "merged: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%",
+        LOG ( "Merged stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%",
               initialConfig.stats.getMean(), initialConfig.stats.getWorst(),
               initialConfig.stats.getStdErr(), initialConfig.stats.getStdDev(), initialConfig.packetLoss );
 
@@ -98,15 +109,20 @@ struct Main : public CommonMain, public Pinger::Owner
 
     virtual void gotInitialConfig ( const InitialConfig& initialConfig )
     {
-        if ( isClient() )
+        LOG ( "Remote stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%",
+              initialConfig.stats.getMean(), initialConfig.stats.getWorst(),
+              initialConfig.stats.getStdErr(), initialConfig.stats.getStdDev(), initialConfig.packetLoss );
+
+        if ( isHost() )
+        {
+            this->initialConfig = initialConfig;
+            userConfirmation();
+        }
+        else
         {
             this->initialConfig = initialConfig;
             pinger->start();
-            return;
         }
-
-        this->initialConfig = initialConfig;
-        userConfirmation();
     }
 
     virtual void gotNetplayConfig ( const NetplayConfig& netplayConfig )
@@ -143,13 +159,33 @@ struct Main : public CommonMain, public Pinger::Owner
     {
         ASSERT ( pinger == this->pinger.get() );
 
-        LOG ( "latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%",
+        LOG ( "Local stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%",
               stats.getMean(), stats.getWorst(), stats.getStdErr(), stats.getStdDev(), packetLoss );
 
-        ctrlSocket->send ( new InitialConfig ( netplayConfig.training, stats, packetLoss ) );
+        InitialConfig *msg = new InitialConfig();
+        msg->remoteName = ui.getConfig().getString ( "displayName" );
+        msg->training = netplayConfig.training;
+        msg->stats = stats;
+        msg->packetLoss = packetLoss;
+        ctrlSocket->send ( msg );
 
         if ( isClient() )
             userConfirmation();
+    }
+
+    // ExternalIpAddress callbacks
+    virtual void foundExternalIpAddress ( ExternalIpAddress *extIpAddr, const string& address ) override
+    {
+        LOG ( "External IP address: '%s'", address );
+
+        updateExternalIpAddress ( serverCtrlSocket->address.port );
+    }
+
+    virtual void unknownExternalIpAddress ( ExternalIpAddress *extIpAddr ) override
+    {
+        LOG ( "Unknown external IP address!" );
+
+        updateExternalIpAddress ( serverCtrlSocket->address.port );
     }
 
     // ProcessManager callbacks
@@ -337,6 +373,12 @@ struct Main : public CommonMain, public Pinger::Owner
             dataSocket = UdpSocket::connect ( this, address );
         }
 #endif
+
+        if ( isHost() )
+        {
+            externaIpAddress.owner = this;
+            externaIpAddress.start();
+        }
     }
 
     // Broadcast or offline constructor
@@ -422,17 +464,42 @@ struct DummyMain : public Main
 };
 
 
+static void updateExternalIpAddress ( uint16_t port )
+{
+    if ( externaIpAddress.address.empty() || externaIpAddress.address == "unknown" )
+    {
+        ui.display ( toString ( "Hosting on port %u\n", port )
+                     + ( externaIpAddress.address.empty()
+                         ? "(Fetching external IP address...)"
+                         : "(Could not find external IP address!)" ) );
+    }
+    else
+    {
+        setClipboard ( toString ( "%s:%u", externaIpAddress.address, port ) );
+
+        ui.display ( toString ( "Hosting at %s:%u\n"
+                                "(Address copied to clipboard)", externaIpAddress.address, port ) );
+    }
+}
+
+
 static void runMain ( const IpAddrPort& address, const NetplayConfig& netplayConfig )
 {
     try
     {
         if ( address.empty() )
         {
+            // Offline mode
             Main main ( netplayConfig );
             EventManager::get().start();
         }
         else
         {
+            if ( address.addr.empty() )
+                updateExternalIpAddress ( address.port, true );
+            else
+                ui.display ( toString ( "Connecting to %s", address ) );
+
             Main main ( address );
             EventManager::get().start();
         }
@@ -457,9 +524,11 @@ static void runMain ( const IpAddrPort& address, const NetplayConfig& netplayCon
 static void runDummy ( const IpAddrPort& address, const NetplayConfig& netplayConfig )
 {
     ASSERT ( address.empty() == false );
+    ASSERT ( address.addr.empty() == false );
 
     try
     {
+        ui.display ( toString ( "Connecting to %s", address ) );
         DummyMain main ( address );
         EventManager::get().start();
     }

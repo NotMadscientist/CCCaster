@@ -35,14 +35,12 @@ struct ClientType : public SerializableSequence
 
 struct InitialConfig : public SerializableSequence
 {
+    std::string remoteName;
     uint8_t training = 0;
     Statistics stats;
     uint8_t packetLoss = 0;
 
-    InitialConfig ( uint8_t training, const Statistics& stats, uint8_t packetLoss )
-        : training ( training ), stats ( stats ), packetLoss ( packetLoss ) {}
-
-    PROTOCOL_MESSAGE_BOILERPLATE ( InitialConfig, training, stats, packetLoss )
+    PROTOCOL_MESSAGE_BOILERPLATE ( InitialConfig, remoteName, training, stats, packetLoss )
 };
 
 
