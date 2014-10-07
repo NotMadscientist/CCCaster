@@ -4,6 +4,7 @@
 #include <pthread.h>
 
 #include <unordered_set>
+#include <memory>
 
 
 inline timespec gettimeoffset ( long milliseconds )
@@ -121,7 +122,6 @@ class Thread
 
 public:
 
-    Thread() {}
     virtual ~Thread() { join(); }
 
     virtual void start();
@@ -142,6 +142,9 @@ public:
 
     virtual void run() = 0;
 };
+
+
+typedef std::shared_ptr<Thread> ThreadPtr;
 
 
 #define THREAD(NAME, CONTEXT)                                   \

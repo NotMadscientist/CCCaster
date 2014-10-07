@@ -200,7 +200,7 @@ void ProcessManager::openGame()
         }
     };
 
-    shared_ptr<Thread> thread ( new TimeoutThread() );
+    ThreadPtr thread ( new TimeoutThread() );
     thread->start();
     EventManager::get().addThread ( thread );
 

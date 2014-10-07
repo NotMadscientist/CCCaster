@@ -17,7 +17,7 @@ class EventManager
     struct ReaperThread : public Thread
     {
         // Finished threads to kill
-        BlockingQueue<std::shared_ptr<Thread>> zombieThreads;
+        BlockingQueue<ThreadPtr> zombieThreads;
 
         // Thread functions
         void run() override;
@@ -47,7 +47,7 @@ public:
     uint8_t checkBitMask = ( CHECK_TIMERS | CHECK_SOCKETS | CHECK_CONTROLLERS );
 
     // Add a thread to be joined on the reaper thread, aka garbage collected when it finishes
-    void addThread ( const std::shared_ptr<Thread>& thread );
+    void addThread ( const ThreadPtr& thread );
 
     // Start the EventManager for polling, doesn't block
     void startPolling();

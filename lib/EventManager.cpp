@@ -155,7 +155,7 @@ void EventManager::ReaperThread::run()
 {
     for ( ;; )
     {
-        shared_ptr<Thread> thread = zombieThreads.pop();
+        ThreadPtr thread = zombieThreads.pop();
 
         LOG ( "Joining %08x", thread.get() );
 
@@ -170,7 +170,7 @@ void EventManager::ReaperThread::run()
 
 void EventManager::ReaperThread::join()
 {
-    zombieThreads.push ( shared_ptr<Thread>() );
+    zombieThreads.push ( ThreadPtr() );
     Thread::join();
     zombieThreads.clear();
 }
