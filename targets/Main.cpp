@@ -57,7 +57,7 @@ static void updateExternalIpAddress ( uint16_t port, bool training );
 
 struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress::Owner
 {
-    shared_ptr<Pinger> pinger;
+    Pinger pinger;
 
     InitialConfig initialConfig;
 
@@ -78,8 +78,8 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
             serverDataSocket->setKeepAlive ( 0 );
         }
 
-        pingStats.latency.merge ( pinger->getStats() );
-        pingStats.packetLoss = ( pingStats.packetLoss + pinger->getPacketLoss() ) / 200;
+        pingStats.latency.merge ( pinger.getStats() );
+        pingStats.packetLoss = ( pingStats.packetLoss + pinger.getPacketLoss() ) / 200;
 
         LOG ( "Merged stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
               pingStats.latency.getMean(), pingStats.latency.getWorst(),
@@ -132,7 +132,7 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
         if ( isHost() )
         {
             ui.display ( this->initialConfig.getAcceptMessage ( "connecting" ) );
-            pinger->start();
+            pinger.start();
         }
         else
         {
@@ -152,7 +152,7 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
         if ( isHost() )
             userConfirmation();
         else
-            pinger->start();
+            pinger.start();
     }
 
     virtual void gotNetplayConfig ( const NetplayConfig& netplayConfig )
@@ -188,14 +188,14 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
     // Pinger callbacks
     virtual void sendPing ( Pinger *pinger, const MsgPtr& ping ) override
     {
-        ASSERT ( pinger == this->pinger.get() );
+        ASSERT ( pinger == &this->pinger );
 
         dataSocket->send ( ping );
     }
 
     virtual void donePinging ( Pinger *pinger, const Statistics& stats, uint8_t packetLoss ) override
     {
-        ASSERT ( pinger == this->pinger.get() );
+        ASSERT ( pinger == &this->pinger );
 
         LOG ( "Local stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
               stats.getMean(), stats.getWorst(), stats.getStdErr(), stats.getStdDev(), packetLoss );
@@ -304,6 +304,7 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
         LOG ( "acceptEvent ( %08x )", serverSocket );
 
         // TODO proper queueing of potential spectators
+
         if ( serverSocket == serverCtrlSocket.get() )
         {
             ctrlSocket = serverCtrlSocket->accept ( this );
@@ -314,8 +315,8 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
         }
         else
         {
-            LOG ( "Ignoring acceptEvent from serverSocket=%08x", serverSocket );
-            serverSocket->accept ( this ).reset();
+            LOG ( "Unexpected acceptEvent from serverSocket=%08x", serverSocket );
+            serverSocket->accept ( 0 ).reset();
             return;
         }
 
@@ -348,7 +349,13 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
 
     virtual void disconnectEvent ( Socket *socket ) override
     {
-        EventManager::get().stop();
+        LOG ( "disconnectEvent ( %08x )", socket );
+
+        if ( socket == ctrlSocket.get() || socket == dataSocket.get() )
+        {
+            EventManager::get().stop();
+            return;
+        }
     }
 
     virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
@@ -356,27 +363,38 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
         if ( !msg.get() )
             return;
 
-        switch ( msg->getMsgType() )
+        if ( socket == ctrlSocket.get() )
         {
-            case MsgType::InitialConfig:
-                gotInitialConfig ( msg->getAs<InitialConfig>() );
-                break;
+            switch ( msg->getMsgType() )
+            {
+                case MsgType::InitialConfig:
+                    gotInitialConfig ( msg->getAs<InitialConfig>() );
+                    break;
 
-            case MsgType::Ping:
-                pinger->gotPong ( msg );
-                break;
+                case MsgType::Ping:
+                    pinger.gotPong ( msg );
+                    break;
 
-            case MsgType::PingStats:
-                gotPingStats ( msg->getAs<PingStats>() );
-                break;
+                case MsgType::PingStats:
+                    gotPingStats ( msg->getAs<PingStats>() );
+                    break;
 
-            case MsgType::NetplayConfig:
-                gotNetplayConfig ( msg->getAs<NetplayConfig>() );
-                break;
+                case MsgType::NetplayConfig:
+                    gotNetplayConfig ( msg->getAs<NetplayConfig>() );
+                    break;
 
-            default:
-                LOG ( "Unexpected '%s'", msg );
-                break;
+                default:
+                    LOG ( "Unexpected '%s' from ctrlSocket=%08x", msg, socket );
+                    break;
+            }
+        }
+        else if ( socket == dataSocket.get() )
+        {
+            LOG ( "Unexpected '%s' from dataSocket=%08x", msg, socket );
+        }
+        else
+        {
+            LOG ( "Unexpected '%s' from socket=%08x", msg, socket );
         }
     }
 
@@ -388,7 +406,7 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
     // Netplay constructor
     Main ( const IpAddrPort& address, const InitialConfig& initialConfig )
         : CommonMain ( address.addr.empty() ? ClientType::Host : ClientType::Client )
-        , pinger ( new Pinger ( this, PING_INTERVAL, NUM_PINGS ) )
+        , pinger ( this, PING_INTERVAL, NUM_PINGS )
         , initialConfig ( initialConfig )
     {
         TimerManager::get().initialize();

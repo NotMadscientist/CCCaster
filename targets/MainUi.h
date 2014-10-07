@@ -52,4 +52,6 @@ public:
     const ConfigSettings& getConfig() const { return config; }
 
     const NetplayConfig& getNetplayConfig() const { return netplayConfig; }
+
+    const void *getConsoleWindow() const;
 };

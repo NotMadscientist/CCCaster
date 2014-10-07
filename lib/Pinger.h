@@ -32,9 +32,7 @@ private:
 
     TimerPtr pingTimer;
 
-    uint64_t pingInterval = 0;
-
-    size_t pingCount = 0, numPings = 0;
+    size_t pingCount = 0;
 
     Statistics stats;
 
@@ -45,6 +43,12 @@ private:
     void timerExpired ( Timer *timer ) override;
 
 public:
+
+    uint64_t pingInterval = 0;
+
+    size_t numPings = 0;
+
+    Pinger();
 
     Pinger ( Owner *owner, uint64_t pingInterval, size_t numPings );
 

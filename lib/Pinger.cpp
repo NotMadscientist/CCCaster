@@ -6,6 +6,8 @@
 #define MAX_ROUND_TRIP 500
 
 
+Pinger::Pinger() {}
+
 Pinger::Pinger ( Owner *owner, uint64_t pingInterval, size_t numPings )
     : owner ( owner ), pingInterval ( pingInterval ), numPings ( numPings )
 {
@@ -16,6 +18,9 @@ Pinger::Pinger ( Owner *owner, uint64_t pingInterval, size_t numPings )
 void Pinger::start()
 {
     LOG ( "Start pinging" );
+
+    ASSERT ( pingInterval > 0 );
+    ASSERT ( numPings > 0 );
 
     TimerManager::get().updateNow();
 

@@ -149,5 +149,5 @@ public:
         CONTEXT& context;                                       \
     public:                                                     \
         NAME ( CONTEXT& context ) : context ( context ) {}      \
-        void run();                                             \
+        void run() override;                                    \
     }

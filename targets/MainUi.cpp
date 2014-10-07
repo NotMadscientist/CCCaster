@@ -315,3 +315,11 @@ bool MainUi::connected ( const InitialConfig& initialConfig, const PingStats& pi
 
     return false;
 }
+
+const void *MainUi::getConsoleWindow() const
+{
+    if ( !ui )
+        return 0;
+
+    return ui->getConsoleWindow();
+}

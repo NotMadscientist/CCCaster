@@ -413,4 +413,7 @@ public:
     {
         ConsoleCore::GetInstance()->ClearScreen();
     }
+
+    // Get console window handle
+    const void *getConsoleWindow() const { return consoleWindow; }
 };
