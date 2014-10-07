@@ -17,8 +17,12 @@ void splitFormat ( const string& format, string& first, string& rest )
     size_t i;
 
     for ( i = 0; i < format.size(); ++i )
-        if ( format[i] == '%' && ( i + 1 == format.size() || format[i + 1] != '%' ) )
+    {
+        if ( i + 1 < format.size() && format[i] == '%' && format[i + 1] == '%' )
+            ++i;
+        else if ( format[i] == '%' && ( i + 1 == format.size() || format[i + 1] != '%' ) )
             break;
+    }
 
     if ( i == format.size() - 1 )
     {
