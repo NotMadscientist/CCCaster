@@ -84,8 +84,8 @@ class NetplayManager
 
 public:
 
-    // Netplay setup
-    NetplayConfig setup;
+    // Netplay config
+    NetplayConfig config;
 
     // Indicate which player is the remote player
     void setRemotePlayer ( uint8_t player );
@@ -104,7 +104,7 @@ public:
     void clearLastChangedFrame() { inputs[remotePlayer - 1].clearLastChangedFrame(); }
 
     // Check if we are in a rollback state, with 10 frame initial buffer window
-    bool isRollbackState() const { return ( setup.rollback && getFrame() >= 10 ); }
+    bool isRollbackState() const { return ( config.rollback && getFrame() >= 10 ); }
 
     // Get / set the current netplay state
     NetplayState getState() const { return state; }

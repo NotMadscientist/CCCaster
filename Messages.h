@@ -4,6 +4,7 @@
 #include "Protocol.h"
 #include "Logger.h"
 #include "Statistics.h"
+#include "Utilities.h"
 
 #include <cereal/types/array.hpp>
 #include <cereal/types/vector.hpp>
@@ -35,21 +36,42 @@ struct ClientType : public SerializableSequence
 
 struct InitialConfig : public SerializableSequence
 {
-    std::string remoteName;
-    uint8_t training = 0;
-    Statistics stats;
+    // TODO include version here
+    std::string localName, remoteName;
+    uint8_t isTraining = 0;
+
+    std::string getConnectMessage ( const std::string& verb ) const
+    {
+        return toString ( "%s to %s%s", verb, remoteName, ( isTraining ? " (training mode)" : "" ) );
+    }
+
+    std::string getAcceptMessage ( const std::string& verb ) const
+    {
+        return toString ( "%s %s", remoteName, verb );
+    }
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( InitialConfig, localName, remoteName, isTraining )
+};
+
+
+struct PingStats : public SerializableSequence
+{
+    Statistics latency;
     uint8_t packetLoss = 0;
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( InitialConfig, remoteName, training, stats, packetLoss )
+    PingStats ( const Statistics& latency, uint8_t packetLoss ) : latency ( latency ), packetLoss ( packetLoss ) {}
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( PingStats, latency, packetLoss )
 };
 
 
 struct NetplayConfig : public SerializableSequence
 {
+    enum { Training = 0x01, Offline = 0x02 };
+
     uint8_t delay = 0xFF, rollback = 0;
-    uint8_t training = 0;
+    uint8_t flags = 0;
     uint8_t hostPlayer = 0;
-    uint16_t broadcastPort = 0;
 
     uint8_t getOffset() const
     {
@@ -59,7 +81,10 @@ struct NetplayConfig : public SerializableSequence
             return delay - rollback;
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( NetplayConfig, delay, rollback, training, hostPlayer, broadcastPort )
+    bool isTraining() const { return ( flags & Training ); }
+    bool isOffline() const { return ( flags & Offline ); }
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( NetplayConfig, delay, rollback, flags, hostPlayer )
 };
 
 

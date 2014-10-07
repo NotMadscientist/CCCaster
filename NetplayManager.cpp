@@ -38,7 +38,7 @@ uint16_t NetplayManager::getInitialInput ( uint8_t player ) const
     uint16_t direction = 0;
     uint16_t buttons = 0;
 
-    if ( setup.training )
+    if ( config.isTraining() )
     {
         if ( !gameModeSelected )
         {
@@ -98,7 +98,7 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
     uint16_t input = getOffsetInput ( player );
 
     // Disable pausing in-game
-    if ( !setup.training )
+    if ( !config.isTraining() )
         input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_START );
 
     return input;
@@ -143,20 +143,20 @@ uint16_t NetplayManager::getPauseMenuInput ( uint8_t player ) const
 
 uint16_t NetplayManager::getOffsetInput ( uint8_t player ) const
 {
-    if ( getFrame() < setup.getOffset() )
+    if ( getFrame() < config.getOffset() )
         return 0;
 
     ASSERT ( player == 1 || player == 2 );
-    return inputs[player - 1].get ( { getIndex(), getFrame() - setup.getOffset() } );
+    return inputs[player - 1].get ( { getIndex(), getFrame() - config.getOffset() } );
 }
 
 uint16_t NetplayManager::getDelayedInput ( uint8_t player, uint32_t frame ) const
 {
-    if ( frame < setup.delay )
+    if ( frame < config.delay )
         return 0;
 
     ASSERT ( player == 1 || player == 2 );
-    return inputs[player - 1].get ( { getIndex(), frame - setup.delay } );
+    return inputs[player - 1].get ( { getIndex(), frame - config.delay } );
 }
 
 bool NetplayManager::areInputsReady() const
@@ -165,9 +165,9 @@ bool NetplayManager::areInputsReady() const
         return true;
 
     if ( isRollbackState() && state == NetplayState::InGame )
-        return ( inputs[remotePlayer - 1].getEndIndexedFrame().value + setup.rollback > indexedFrame.value + 1 );
+        return ( inputs[remotePlayer - 1].getEndIndexedFrame().value + config.rollback > indexedFrame.value + 1 );
 
-    return ( inputs[remotePlayer - 1].getEndIndexedFrame().value > indexedFrame.value + 1 + setup.delay );
+    return ( inputs[remotePlayer - 1].getEndIndexedFrame().value > indexedFrame.value + 1 + config.delay );
 }
 
 void NetplayManager::updateFrame()
@@ -298,5 +298,5 @@ void NetplayManager::setRemotePlayer ( uint8_t player )
     localPlayer = 3 - player;
     remotePlayer = player;
 
-    inputs[player - 1].fillFakeInputs = ( setup.rollback > 0 );
+    inputs[player - 1].fillFakeInputs = ( config.rollback > 0 );
 }

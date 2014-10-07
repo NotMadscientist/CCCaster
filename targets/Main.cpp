@@ -23,7 +23,7 @@ using namespace option;
 
 
 // Set of command line options
-enum CommandLineOptions { UNKNOWN, HELP, DUMMY, GTEST, STDOUT, NO_FORK, NO_UI, PLUS };
+enum CommandLineOptions { UNKNOWN, HELP, DUMMY, GTEST, STDOUT, NO_FORK, NO_UI, PLUS, TRAINING };
 
 // Main UI instance
 static MainUi ui;
@@ -32,20 +32,26 @@ static MainUi ui;
 ExternalIpAddress externaIpAddress ( 0 );
 
 // Update the status of the external IP address
-static void updateExternalIpAddress ( uint16_t port );
+static void updateExternalIpAddress ( uint16_t port, bool training );
 
 
-/* Connect procedure (TODO)
+/* Connect procedure (WIP)
 
-    1 - Connect both sockets
+    1 - Connect / accept sockets
 
-    2 - Both send and check version (TODO)
+    2 - Both send InitialConfig (displayName, isTraining, version TODO)
 
-    3 - Host pings then sends stats
+    3 - Both recv InitialConfig (update connecting message)
 
-    4 - Client pings then sends stats
+    4 - Host pings, then sends PingStats
 
-    5 - Both see the calculated delay and decide to connect (host chooses settings)
+    5 - Client waits for PingStats, then pings, then sends PingStats
+
+    6 - Both merge PingStats and wait for user confirmation
+
+    7 - Host sends NetplayConfig on confirm
+
+    8 - Client waits for NetplayConfig before starting
 
 */
 
@@ -54,6 +60,8 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
     shared_ptr<Pinger> pinger;
 
     InitialConfig initialConfig;
+
+    PingStats pingStats;
 
     NetplayConfig netplayConfig;
 
@@ -70,25 +78,30 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
             serverDataSocket->setKeepAlive ( 0 );
         }
 
-        if ( initialConfig.remoteName.empty() )
-            initialConfig.remoteName = ctrlSocket->address.addr;
+        pingStats.latency.merge ( pinger->getStats() );
+        pingStats.packetLoss = ( pingStats.packetLoss + pinger->getPacketLoss() ) / 200;
 
-        initialConfig.stats.merge ( pinger->getStats() );
-        initialConfig.packetLoss = ( initialConfig.packetLoss + pinger->getPacketLoss() ) / 200;
-
-        LOG ( "Merged stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%",
-              initialConfig.stats.getMean(), initialConfig.stats.getWorst(),
-              initialConfig.stats.getStdErr(), initialConfig.stats.getStdDev(), initialConfig.packetLoss );
+        LOG ( "Merged stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
+              pingStats.latency.getMean(), pingStats.latency.getWorst(),
+              pingStats.latency.getStdErr(), pingStats.latency.getStdDev(), pingStats.packetLoss );
 
         if ( isHost() )
         {
-            if ( !ui.accepted ( initialConfig ) )
+            if ( !ui.accepted ( initialConfig, pingStats ) )
             {
                 EventManager::get().stop();
                 return;
             }
 
             netplayConfig = ui.getNetplayConfig();
+
+            // Make sure training mode is set consistently
+            if ( initialConfig.isTraining )
+            {
+                netplayConfig.flags |= NetplayConfig::Training;
+                netplayConfig.invalidate();
+            }
+
             ctrlSocket->send ( REF_PTR ( netplayConfig ) );
 
             // Start the game and wait for callback to ipcConnectEvent
@@ -96,7 +109,7 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
         }
         else
         {
-            if ( !ui.connected ( initialConfig ) )
+            if ( !ui.connected ( initialConfig, pingStats ) )
             {
                 EventManager::get().stop();
                 return;
@@ -108,26 +121,52 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
 
     virtual void gotInitialConfig ( const InitialConfig& initialConfig )
     {
-        LOG ( "Remote stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%",
-              initialConfig.stats.getMean(), initialConfig.stats.getWorst(),
-              initialConfig.stats.getStdErr(), initialConfig.stats.getStdDev(), initialConfig.packetLoss );
+        LOG ( "Initial config: remoteName='%s'; training=%d", initialConfig.localName, initialConfig.isTraining );
+
+        this->initialConfig.remoteName = initialConfig.localName;
+        if ( this->initialConfig.remoteName.empty() )
+            this->initialConfig.remoteName = ctrlSocket->address.addr;
+
+        // TODO check versions here
 
         if ( isHost() )
         {
-            this->initialConfig = initialConfig;
-            userConfirmation();
+            ui.display ( this->initialConfig.getAcceptMessage ( "connecting" ) );
+            pinger->start();
         }
         else
         {
-            this->initialConfig = initialConfig;
-            pinger->start();
+            this->initialConfig.isTraining = initialConfig.isTraining;
+            ui.display ( this->initialConfig.getConnectMessage ( "Connecting" ) );
         }
+    }
+
+    virtual void gotPingStats ( const PingStats& pingStats )
+    {
+        LOG ( "Remote stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
+              pingStats.latency.getMean(), pingStats.latency.getWorst(),
+              pingStats.latency.getStdErr(), pingStats.latency.getStdDev(), pingStats.packetLoss );
+
+        this->pingStats = pingStats;
+
+        if ( isHost() )
+            userConfirmation();
+        else
+            pinger->start();
     }
 
     virtual void gotNetplayConfig ( const NetplayConfig& netplayConfig )
     {
         ASSERT ( isClient() == true );
+
         this->netplayConfig = netplayConfig;
+
+        // Make sure training mode is set consistently
+        if ( initialConfig.isTraining )
+        {
+            this->netplayConfig.flags |= NetplayConfig::Training;
+            this->netplayConfig.invalidate();
+        }
 
         // Start the game and wait for callback to ipcConnectEvent
         startGame();
@@ -158,15 +197,10 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
     {
         ASSERT ( pinger == this->pinger.get() );
 
-        LOG ( "Local stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%",
+        LOG ( "Local stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
               stats.getMean(), stats.getWorst(), stats.getStdErr(), stats.getStdDev(), packetLoss );
 
-        InitialConfig *msg = new InitialConfig();
-        msg->remoteName = ui.getConfig().getString ( "displayName" );
-        msg->training = netplayConfig.training;
-        msg->stats = stats;
-        msg->packetLoss = packetLoss;
-        ctrlSocket->send ( msg );
+        ctrlSocket->send ( new PingStats ( stats, packetLoss ) );
 
         if ( isClient() )
             userConfirmation();
@@ -177,14 +211,14 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
     {
         LOG ( "External IP address: '%s'", address );
 
-        updateExternalIpAddress ( serverCtrlSocket->address.port );
+        updateExternalIpAddress ( serverCtrlSocket->address.port, initialConfig.isTraining );
     }
 
     virtual void unknownExternalIpAddress ( ExternalIpAddress *extIpAddr ) override
     {
         LOG ( "Unknown external IP address!" );
 
-        updateExternalIpAddress ( serverCtrlSocket->address.port );
+        updateExternalIpAddress ( serverCtrlSocket->address.port, initialConfig.isTraining );
     }
 
     // ProcessManager callbacks
@@ -290,9 +324,10 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
             ASSERT ( ctrlSocket->isConnected() == true );
             ASSERT ( dataSocket->isConnected() == true );
 
-            // TOOD version check
+            initialConfig.invalidate();
+            ctrlSocket->send ( REF_PTR ( initialConfig ) );
 
-            pinger->start();
+            // TOOD version check
         }
     }
 
@@ -303,6 +338,12 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
         ASSERT ( ctrlSocket.get() != 0 );
         ASSERT ( dataSocket.get() != 0 );
         ASSERT ( socket == ctrlSocket.get() || socket == dataSocket.get() );
+
+        if ( ctrlSocket->isConnected() && dataSocket->isConnected() )
+        {
+            initialConfig.invalidate();
+            ctrlSocket->send ( REF_PTR ( initialConfig ) );
+        }
     }
 
     virtual void disconnectEvent ( Socket *socket ) override
@@ -317,12 +358,16 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
 
         switch ( msg->getMsgType() )
         {
+            case MsgType::InitialConfig:
+                gotInitialConfig ( msg->getAs<InitialConfig>() );
+                break;
+
             case MsgType::Ping:
                 pinger->gotPong ( msg );
                 break;
 
-            case MsgType::InitialConfig:
-                gotInitialConfig ( msg->getAs<InitialConfig>() );
+            case MsgType::PingStats:
+                gotPingStats ( msg->getAs<PingStats>() );
                 break;
 
             case MsgType::NetplayConfig:
@@ -341,9 +386,10 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
     }
 
     // Netplay constructor
-    Main ( const IpAddrPort& address )
+    Main ( const IpAddrPort& address, const InitialConfig& initialConfig )
         : CommonMain ( address.addr.empty() ? ClientType::Host : ClientType::Client )
         , pinger ( new Pinger ( this, PING_INTERVAL, NUM_PINGS ) )
+        , initialConfig ( initialConfig )
     {
         TimerManager::get().initialize();
         SocketManager::get().initialize();
@@ -381,13 +427,20 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
     }
 
     // Broadcast or offline constructor
-    Main ( const NetplayConfig& netplayConfig )
-        : CommonMain ( netplayConfig.broadcastPort ? ClientType::Broadcast : ClientType::Offline )
+    Main ( const NetplayConfig& netplayConfig, uint16_t port = 0 )
+        : CommonMain ( netplayConfig.isOffline() ? ClientType::Offline : ClientType::Broadcast )
         , netplayConfig ( netplayConfig )
     {
         TimerManager::get().initialize();
         SocketManager::get().initialize();
         ControllerManager::get().initialize ( this );
+
+        if ( isBroadcast() )
+        {
+            ASSERT ( port != 0 );
+
+            // TODO
+        }
 
         // Open the game wait and for callback to ipcConnectEvent
         procMan.openGame();
@@ -458,18 +511,19 @@ struct DummyMain : public Main
     }
 
     // Constructor
-    DummyMain ( const IpAddrPort& address ) : Main ( address ), fakeInputs ( { 0, 0 } )
+    DummyMain ( const IpAddrPort& address, const InitialConfig& initialConfig )
+        : Main ( address, initialConfig ), fakeInputs ( { 0, 0 } )
     {
         fakeInputs.inputs.fill ( 0 );
     }
 };
 
 
-static void updateExternalIpAddress ( uint16_t port )
+static void updateExternalIpAddress ( uint16_t port, bool training )
 {
     if ( externaIpAddress.address.empty() || externaIpAddress.address == "unknown" )
     {
-        ui.display ( toString ( "Hosting on port %u\n", port )
+        ui.display ( toString ( "Hosting on port %u%s\n", port, ( training ? " (training mode)" : "" ) )
                      + ( externaIpAddress.address.empty()
                          ? "(Fetching external IP address...)"
                          : "(Could not find external IP address!)" ) );
@@ -478,31 +532,34 @@ static void updateExternalIpAddress ( uint16_t port )
     {
         setClipboard ( toString ( "%s:%u", externaIpAddress.address, port ) );
 
-        ui.display ( toString ( "Hosting at %s:%u\n"
-                                "(Address copied to clipboard)", externaIpAddress.address, port ) );
+        ui.display ( toString ( "Hosting at %s:%u%s\n(Address copied to clipboard)", \
+                                externaIpAddress.address, port, ( training ? " (training mode)" : "" ) ) );
     }
 }
 
 
-static void runMain ( const IpAddrPort& address, const NetplayConfig& netplayConfig )
+static void runMain ( const IpAddrPort& address, const Serializable& config )
 {
     try
     {
-        if ( address.empty() )
+        if ( config.getMsgType() == MsgType::NetplayConfig )
         {
-            // Offline mode
-            Main main ( netplayConfig );
+            Main main ( config.getAs<NetplayConfig>(), address.port );
+            EventManager::get().start();
+        }
+        else if ( config.getMsgType() == MsgType::InitialConfig )
+        {
+            if ( address.addr.empty() )
+                updateExternalIpAddress ( address.port, config.getAs<InitialConfig>().isTraining );
+            else
+                ui.display ( toString ( "Connecting to %s", address ) );
+
+            Main main ( address, config.getAs<InitialConfig>() );
             EventManager::get().start();
         }
         else
         {
-            if ( address.addr.empty() )
-                updateExternalIpAddress ( address.port );
-            else
-                ui.display ( toString ( "Connecting to %s", address ) );
-
-            Main main ( address );
-            EventManager::get().start();
+            ASSERT ( !"This shouldn't happen!" );
         }
     }
     catch ( const Exception& err )
@@ -522,15 +579,16 @@ static void runMain ( const IpAddrPort& address, const NetplayConfig& netplayCon
 }
 
 
-static void runDummy ( const IpAddrPort& address, const NetplayConfig& netplayConfig )
+static void runDummy ( const IpAddrPort& address, const Serializable& config )
 {
     ASSERT ( address.empty() == false );
     ASSERT ( address.addr.empty() == false );
+    ASSERT ( config.getMsgType() == MsgType::InitialConfig );
 
     try
     {
         ui.display ( toString ( "Connecting to %s", address ) );
-        DummyMain main ( address );
+        DummyMain main ( address, config.getAs<InitialConfig>() );
         EventManager::get().start();
     }
     catch ( const Exception& err )
@@ -612,14 +670,15 @@ int main ( int argc, char *argv[] )
 
     static const Descriptor options[] =
     {
-        { UNKNOWN, 0,  "",        "", Arg::None, "Usage: " BINARY " [options] [address] [port]\n\nOptions:" },
-        { HELP,    0, "h",    "help", Arg::None, "  --help, -h      Print usage and exit." },
-        { DUMMY,   0,  "",   "dummy", Arg::None, "  --dummy         Run as a dummy application." },
-        { GTEST,   0,  "",   "gtest", Arg::None, "  --gtest         Run unit tests and exit." },
-        { STDOUT,  0,  "",  "stdout", Arg::None, "  --stdout        Output logs to stdout." },
-        { NO_FORK, 0,  "", "no-fork", Arg::None, 0 }, // Don't fork when inside Wine, ie already running wineconosle
-        { NO_UI,   0, "n",   "no-ui", Arg::None, "  --no-ui, -n     No UI, just quits after running once." },
-        { PLUS,    0, "p",    "plus", Arg::None, "  --plus, -p      Increment count." },
+        { UNKNOWN,  0,  "",         "", Arg::None, "Usage: " BINARY " [options] [address] [port]\n\nOptions:" },
+        { TRAINING, 0, "t", "training", Arg::None, "  --training, -t  Training mode." },
+        { HELP,     0, "h",     "help", Arg::None, "  --help, -h      Print usage and exit." },
+        { DUMMY,    0,  "",    "dummy", Arg::None, "  --dummy         Run as a dummy application." },
+        { GTEST,    0,  "",    "gtest", Arg::None, "  --gtest         Run unit tests and exit." },
+        { STDOUT,   0,  "",   "stdout", Arg::None, "  --stdout        Output logs to stdout." },
+        { NO_FORK,  0,  "",  "no-fork", Arg::None, 0 }, // Don't fork when inside Wine, ie already running wineconosle
+        { NO_UI,    0, "n",    "no-ui", Arg::None, "  --no-ui, -n     No UI, just quits after running once." },
+        { PLUS,     0, "p",     "plus", Arg::None, "  --plus, -p      Increment count." },
         {
             UNKNOWN, 0, "", "", Arg::None,
             "\nExamples:\n"
@@ -697,11 +756,15 @@ int main ( int argc, char *argv[] )
     for ( int i = 2; i < parser.nonOptionsCount(); ++i )
         ui.sessionMessage += toString ( "Non-option (%d): '%s'\n", i, parser.nonOption ( i ) );
 
+    // Check if we are training mode
+    if ( opt[TRAINING] )
+        ui.initialConfig.isTraining = true;
+
     // Non-options 1 and 2 are the IP address and port
     if ( parser.nonOptionsCount() == 1 )
-        run ( parser.nonOption ( 0 ), NetplayConfig() );
+        run ( parser.nonOption ( 0 ), ui.initialConfig );
     else if ( parser.nonOptionsCount() == 2 )
-        run ( string ( parser.nonOption ( 0 ) ) + ":" + parser.nonOption ( 1 ), NetplayConfig() );
+        run ( string ( parser.nonOption ( 0 ) ) + ":" + parser.nonOption ( 1 ), ui.initialConfig );
 
     if ( !opt[NO_UI] )
     {

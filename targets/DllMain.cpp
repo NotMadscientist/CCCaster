@@ -161,7 +161,7 @@ struct Main
                     if ( GetKeyState ( VK_F5 ) & 0x80 )     buttons = CC_BUTTON_START;
 
                     if ( ( GetKeyState ( VK_F6 ) & 0x80 )
-                            && netMan.setup.rollback
+                            && netMan.config.rollback
                             && netMan.getState() == NetplayState::InGame
                             && netMan.getFrame() > 60 )
                     {
@@ -314,7 +314,7 @@ struct Main
         }
         else if ( netMan.getState() == NetplayState::InGame && state != NetplayState::InGame )
         {
-            if ( netMan.setup.rollback )
+            if ( netMan.config.rollback )
                 procMan.deallocateStates();
         }
 
@@ -378,7 +378,7 @@ struct Main
         if ( current == CC_GAME_MODE_INGAME )
         {
             // Versus mode in-game starts with character intros, which is a skippable state
-            if ( !netMan.setup.training )
+            if ( !netMan.config.isTraining() )
                 netplayStateChanged ( NetplayState::Skippable );
             else
                 netplayStateChanged ( NetplayState::InGame );
@@ -441,37 +441,37 @@ struct Main
                 break;
 
             case MsgType::NetplayConfig:
-                if ( netMan.setup.delay != 0xFF )
+                if ( netMan.config.delay != 0xFF )
                     break;
 
-                netMan.setup = msg->getAs<NetplayConfig>();
+                netMan.config = msg->getAs<NetplayConfig>();
 
-                if ( netMan.setup.delay == 0xFF )
-                    LOG_AND_THROW_STRING ( "netMan.setup.delay=%d is invalid!", netMan.setup.delay );
+                if ( netMan.config.delay == 0xFF )
+                    LOG_AND_THROW_STRING ( "netMan.config.delay=%d is invalid!", netMan.config.delay );
 
                 if ( !isLocal() )
                 {
-                    if ( netMan.setup.hostPlayer != 1 && netMan.setup.hostPlayer != 2 )
-                        LOG_AND_THROW_STRING ( "netMan.setup.hostPlayer=%d is invalid!", netMan.setup.hostPlayer );
+                    if ( netMan.config.hostPlayer != 1 && netMan.config.hostPlayer != 2 )
+                        LOG_AND_THROW_STRING ( "netMan.config.hostPlayer=%d is invalid!", netMan.config.hostPlayer );
 
                     // Determine the player numbers
                     if ( isHost() )
                     {
-                        localPlayer = netMan.setup.hostPlayer;
-                        remotePlayer = ( 3 - netMan.setup.hostPlayer );
+                        localPlayer = netMan.config.hostPlayer;
+                        remotePlayer = ( 3 - netMan.config.hostPlayer );
                     }
                     else
                     {
-                        remotePlayer = netMan.setup.hostPlayer;
-                        localPlayer = ( 3 - netMan.setup.hostPlayer );
+                        remotePlayer = netMan.config.hostPlayer;
+                        localPlayer = ( 3 - netMan.config.hostPlayer );
                     }
 
                     netMan.setRemotePlayer ( remotePlayer );
                 }
 
-                LOG ( "delay=%d; rollback=%d; training=%d; hostPlayer=%d; localPlayer=%d; remotePlayer=%d",
-                      netMan.setup.delay, netMan.setup.rollback, netMan.setup.training, netMan.setup.hostPlayer,
-                      localPlayer, remotePlayer );
+                LOG ( "delay=%d; rollback=%d; training=%d; offline=%d; hostPlayer=%d; localPlayer=%d; remotePlayer=%d",
+                      netMan.config.delay, netMan.config.rollback, netMan.config.isTraining(),
+                      netMan.config.isOffline(), netMan.config.hostPlayer, localPlayer, remotePlayer );
                 break;
 
             case MsgType::SocketShareData:
@@ -528,8 +528,8 @@ struct Main
                 if ( clientType == ClientType::Unknown )
                     LOG_AND_THROW_STRING ( "Unknown clientType!" );
 
-                if ( netMan.setup.delay == 0xFF )
-                    LOG_AND_THROW_STRING ( "Uninitalized netMan.setup!" );
+                if ( netMan.config.delay == 0xFF )
+                    LOG_AND_THROW_STRING ( "Uninitalized netMan.config!" );
 
                 if ( !isLocal() )
                 {

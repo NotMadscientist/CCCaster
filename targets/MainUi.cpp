@@ -55,14 +55,14 @@ void MainUi::netplay ( RunFuncPtr run )
 
             if ( result >= 0 && result <= 1 )
             {
-                netplayConfig.training = result;
+                initialConfig.isTraining = result;
 
-                run ( address, netplayConfig );
+                run ( address, initialConfig );
             }
         }
         else
         {
-            run ( address, NetplayConfig() );
+            run ( address, initialConfig );
         }
     }
 
@@ -99,7 +99,9 @@ void MainUi::offline ( RunFuncPtr run )
         if ( menu->resultInt < 0 || menu->resultInt > 1 )
             break;
 
-        netplayConfig.training = menu->resultInt;
+        netplayConfig.flags = NetplayConfig::Offline;
+        if ( menu->resultInt )
+            netplayConfig.flags |= NetplayConfig::Training;
 
         ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter delay:", 0, false, 3 ),
         { 1, 0 } ); // Expand width
@@ -182,6 +184,8 @@ MainUi::MainUi()
     // config.putInteger ( "joystickDeadzone", 25000 );
     config.putInteger ( "lastUsedPort", -1 );
     config.putInteger ( "spectatorCap", -1 );
+
+    initialConfig.localName = config.getString ( "displayName" );
 }
 
 void MainUi::main ( RunFuncPtr run )
@@ -203,6 +207,9 @@ void MainUi::main ( RunFuncPtr run )
 
         sessionError.clear();
         sessionMessage.clear();
+
+        // Update UI internal state here
+        initialConfig.localName = config.getString ( "displayName" );
 
         ConsoleUi::Element *menu = ui->popUntilUserInput();
 
@@ -238,12 +245,12 @@ void MainUi::main ( RunFuncPtr run )
     }
 }
 
-static int computeDelay ( const Statistics& stats )
+static int computeDelay ( const Statistics& latency )
 {
-    return ( int ) ceil ( stats.getMean() / ( 1000.0 / 60 ) );
+    return ( int ) ceil ( latency.getMean() / ( 1000.0 / 60 ) );
 }
 
-static string formatStats ( const Statistics& stats )
+static string formatStats ( const PingStats& pingStats )
 {
     return toString (
                "Ping: %.2f ms \n"
@@ -251,15 +258,17 @@ static string formatStats ( const Statistics& stats )
                "Worst: %.2f ms\n"
                "StdErr: %.2f ms\n"
                "StdDev: %.2f ms\n"
+               "Packet Loss: %d%%\n"
 #endif
                "Delay: %d\n",
-               stats.getMean(),
+               pingStats.latency.getMean(),
 #ifndef NDEBUG
-               stats.getWorst(),
-               stats.getStdErr(),
-               stats.getStdDev(),
+               pingStats.latency.getWorst(),
+               pingStats.latency.getStdErr(),
+               pingStats.latency.getStdDev(),
+               pingStats.packetLoss,
 #endif
-               computeDelay ( stats ) );
+               computeDelay ( pingStats.latency ) );
 }
 
 void MainUi::display ( const string& message )
@@ -270,7 +279,7 @@ void MainUi::display ( const string& message )
     ui->pushInFront ( new ConsoleUi::TextBox ( message ), { 1, 0 }, true ); // Expand width and clear
 }
 
-bool MainUi::accepted ( const InitialConfig& initialConfig )
+bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pingStats )
 {
     // netplayConfig.delay = 4;
     // netplayConfig.rollback = 30;
@@ -280,8 +289,8 @@ bool MainUi::accepted ( const InitialConfig& initialConfig )
     ASSERT ( ui.get() != 0 );
 
     ui->pushInFront ( new ConsoleUi::TextBox (
-                          toString ( "%s connected\n", initialConfig.remoteName )
-                          + formatStats ( initialConfig.stats ) ), { 1, 0 }, true ); // Expand width and clear
+                          initialConfig.getAcceptMessage ( "connected" ) + "\n"
+                          + formatStats ( pingStats ) ), { 1, 0 }, true ); // Expand width and clear
 
     // TODO implement me
     Sleep ( 10000 );
@@ -291,13 +300,13 @@ bool MainUi::accepted ( const InitialConfig& initialConfig )
     return false;
 }
 
-bool MainUi::connected ( const InitialConfig& initialConfig )
+bool MainUi::connected ( const InitialConfig& initialConfig, const PingStats& pingStats )
 {
     ASSERT ( ui.get() != 0 );
 
     ui->pushInFront ( new ConsoleUi::TextBox (
-                          toString ( "Connected to %s\n", initialConfig.remoteName )
-                          + formatStats ( initialConfig.stats ) ), { 1, 0 }, true ); // Expand width and clear
+                          initialConfig.getConnectMessage ( "Connected" ) + "\n"
+                          + formatStats ( pingStats ) ), { 1, 0 }, true ); // Expand width and clear
 
     // TODO implement me
     Sleep ( 10000 );

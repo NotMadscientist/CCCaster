@@ -8,8 +8,8 @@
 #include <memory>
 
 
-// The function to run the game with the provided connection address or netplay setup
-typedef void ( * RunFuncPtr ) ( const IpAddrPort& address, const NetplayConfig& netplayConfig );
+// The function to run the game with the provided connection address or config
+typedef void ( * RunFuncPtr ) ( const IpAddrPort& address, const Serializable& config );
 
 class ConsoleUi;
 
@@ -33,6 +33,8 @@ class MainUi
 
 public:
 
+    InitialConfig initialConfig;
+
     std::string sessionMessage;
 
     std::string sessionError;
@@ -43,9 +45,9 @@ public:
 
     void display ( const std::string& message );
 
-    bool accepted ( const InitialConfig& initialConfig );
+    bool accepted ( const InitialConfig& initialConfig, const PingStats& pingStats );
 
-    bool connected ( const InitialConfig& initialConfig );
+    bool connected ( const InitialConfig& initialConfig, const PingStats& pingStats );
 
     const ConfigSettings& getConfig() const { return config; }
 
