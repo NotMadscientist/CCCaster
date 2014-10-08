@@ -84,11 +84,9 @@ vector<string> split ( const string& str, const string& delim )
 
     string copy = str;
 
-    size_t i;
-
     for ( ;; )
     {
-        i = copy.find_first_of ( delim );
+        size_t i = copy.find_first_of ( delim );
 
         if ( i == string::npos )
             break;

@@ -90,7 +90,7 @@ struct NetplayConfig : public SerializableSequence
 
 struct RngState : public SerializableSequence
 {
-    uint32_t rngState0, rngState1, rngState2;
+    uint32_t rngState0 = 0, rngState1 = 0, rngState2 = 0;
     std::array<char, CC_RNGSTATE3_SIZE> rngState3;
 
     std::string dump() const
