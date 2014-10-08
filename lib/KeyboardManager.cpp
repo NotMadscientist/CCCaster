@@ -60,7 +60,7 @@ public:
     ~KeyboardThread()
     {
         // Since ~Thread calls Thread::join(), which gets overridden,
-        // and its not safe to call virtual functions in the ctor/dtor,
+        // and it's not safe to call virtual functions in the ctor/dtor,
         // we must override the dtor and call KeyboardManager::join().
         join();
     }

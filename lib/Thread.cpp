@@ -31,3 +31,9 @@ void Thread::join()
     pthread_join ( thread, 0 );
     running = false;
 }
+
+void Thread::release()
+{
+    LOCK ( mutex );
+    running = false;
+}

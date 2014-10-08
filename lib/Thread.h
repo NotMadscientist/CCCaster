@@ -3,7 +3,6 @@
 #include <sys/time.h>
 #include <pthread.h>
 
-#include <unordered_set>
 #include <memory>
 
 
@@ -128,11 +127,7 @@ public:
 
     virtual void join();
 
-    void release()
-    {
-        LOCK ( mutex );
-        running = false;
-    }
+    void release();
 
     bool isRunning() const
     {
