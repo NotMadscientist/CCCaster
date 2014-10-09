@@ -420,6 +420,10 @@ struct Main
     }
 
     // ProcessManager callbacks
+    void ipcConnectEvent() override
+    {
+    }
+
     void ipcDisconnectEvent() override
     {
         EventManager::get().stop();

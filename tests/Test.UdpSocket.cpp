@@ -35,6 +35,10 @@ TEST ( UdpSocket, SendConnectionLess )
         MsgPtr msg;
         bool sent;
 
+        void acceptEvent ( Socket *socket ) override {}
+        void connectEvent ( Socket *socket ) override {}
+        void disconnectEvent ( Socket *socket ) override {}
+
         void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
         {
             this->msg = msg;

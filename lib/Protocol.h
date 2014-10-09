@@ -96,8 +96,8 @@ struct Serializable
     virtual BaseType getBaseType() const = 0;
 
     // Serialize to and deserialize from a binary archive
-    virtual void save ( cereal::BinaryOutputArchive& ar ) const {};
-    virtual void load ( cereal::BinaryInputArchive& ar ) {};
+    virtual void save ( cereal::BinaryOutputArchive& ar ) const {}
+    virtual void load ( cereal::BinaryInputArchive& ar ) {}
 
     // Cast this to another another type
     template<typename T> T& getAs() { return *static_cast<T *> ( this ); }
@@ -119,8 +119,8 @@ private:
     mutable bool md5empty = true;
 
     // Serialize and deserialize the base type
-    virtual void saveBase ( cereal::BinaryOutputArchive& ar ) const {};
-    virtual void loadBase ( cereal::BinaryInputArchive& ar ) {};
+    virtual void saveBase ( cereal::BinaryOutputArchive& ar ) const {}
+    virtual void loadBase ( cereal::BinaryInputArchive& ar ) {}
 
     friend struct Protocol;
     friend struct SerializableMessage;

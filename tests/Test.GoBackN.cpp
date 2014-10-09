@@ -13,9 +13,24 @@ using namespace std;
 #define LONG_TIMEOUT    ( 120 * 1000 )
 
 
+struct TestClass : public GoBackN::Owner, public Socket::Owner, public Timer::Owner
+{
+    virtual void sendRaw ( GoBackN *gbn, const MsgPtr& msg ) override {}
+    virtual void recvRaw ( GoBackN *gbn, const MsgPtr& msg ) override {}
+    virtual void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override {}
+    virtual void timeoutGoBackN ( GoBackN *gbn ) override {}
+
+    virtual void acceptEvent ( Socket *socket ) override {}
+    virtual void connectEvent ( Socket *socket ) override {}
+    virtual void disconnectEvent ( Socket *socket ) override {}
+
+    virtual void timerExpired ( Timer *timer ) override {}
+};
+
+
 TEST ( GoBackN, SendOnce )
 {
-    struct TestSocket : public GoBackN::Owner, public Socket::Owner, public Timer::Owner
+    struct TestSocket : public TestClass
     {
         SocketPtr socket;
         IpAddrPort address;
@@ -96,7 +111,7 @@ TEST ( GoBackN, SendOnce )
 
 TEST ( GoBackN, SendSequential )
 {
-    struct TestSocket : public GoBackN::Owner, public Socket::Owner, public Timer::Owner
+    struct TestSocket : public TestClass
     {
         SocketPtr socket;
         IpAddrPort address;
@@ -188,7 +203,7 @@ TEST ( GoBackN, SendAndRecv )
     static int done = 0;
     done = 0;
 
-    struct TestSocket : public GoBackN::Owner, public Socket::Owner, public Timer::Owner
+    struct TestSocket : public TestClass
     {
         SocketPtr socket;
         IpAddrPort address;
@@ -298,7 +313,7 @@ TEST ( GoBackN, Timeout )
     static int done = 0;
     done = 0;
 
-    struct TestSocket : public GoBackN::Owner, public Socket::Owner, public Timer::Owner
+    struct TestSocket : public TestClass
     {
         SocketPtr socket;
         IpAddrPort address;

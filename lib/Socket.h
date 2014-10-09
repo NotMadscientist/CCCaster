@@ -32,19 +32,19 @@ public:
     struct Owner
     {
         // Accepted a socket from server socket
-        virtual void acceptEvent ( Socket *serverSocket ) { serverSocket->accept ( this ).reset(); }
+        virtual void acceptEvent ( Socket *serverSocket ) = 0;
 
         // Socket connected event
-        virtual void connectEvent ( Socket *socket ) {}
+        virtual void connectEvent ( Socket *socket ) = 0;
 
         // Socket disconnected event
-        virtual void disconnectEvent ( Socket *socket ) {}
-
-        // Socket raw data read event (only called if isRaw)
-        virtual void readEvent ( Socket *socket, const char *buffer, size_t len, const IpAddrPort& address ) {}
+        virtual void disconnectEvent ( Socket *socket ) = 0;
 
         // Socket protocol message read event (only called if NOT isRaw)
-        virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) {}
+        virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) = 0;
+
+        // Socket raw data read event (only called if isRaw)
+        virtual void readEvent ( Socket *socket, const char *buffer, size_t len, const IpAddrPort& address ) {};
     };
 
     // Raw socket type flag
@@ -86,9 +86,9 @@ protected:
     uint8_t checkSumFail = 0;
 
     // TCP event callbacks
-    virtual void acceptEvent() {};
-    virtual void connectEvent() {};
-    virtual void disconnectEvent() {};
+    virtual void acceptEvent() {}
+    virtual void connectEvent() {}
+    virtual void disconnectEvent() {}
 
     // Read event callback, calls the function below if NOT isRaw
     virtual void readEvent();

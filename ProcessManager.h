@@ -25,13 +25,13 @@ public:
     struct Owner
     {
         // IPC connected event
-        virtual void ipcConnectEvent() {}
+        virtual void ipcConnectEvent() = 0;
 
         // IPC disconnected event
-        virtual void ipcDisconnectEvent() {}
+        virtual void ipcDisconnectEvent() = 0;
 
         // IPC read event
-        virtual void ipcReadEvent ( const MsgPtr& msg ) {}
+        virtual void ipcReadEvent ( const MsgPtr& msg ) = 0;
     };
 
     Owner *owner = 0;

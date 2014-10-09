@@ -21,9 +21,9 @@ public:
 
     struct Owner
     {
-        virtual void sendPing ( Pinger *pinger, const MsgPtr& ping ) {}
+        virtual void sendPing ( Pinger *pinger, const MsgPtr& ping ) = 0;
 
-        virtual void donePinging ( Pinger *pinger, const Statistics& stats, uint8_t packetLoss ) {};
+        virtual void donePinging ( Pinger *pinger, const Statistics& stats, uint8_t packetLoss ) = 0;
     };
 
     Owner *owner = 0;

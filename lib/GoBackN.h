@@ -48,13 +48,13 @@ public:
         virtual void sendRaw ( GoBackN *gbn, const MsgPtr& msg ) = 0;
 
         // Receive a raw non-sequenced message
-        virtual void recvRaw ( GoBackN *gbn, const MsgPtr& msg ) {};
+        virtual void recvRaw ( GoBackN *gbn, const MsgPtr& msg ) = 0;
 
         // Receive a message from GoBackN
         virtual void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) = 0;
 
         // Timeout GoBackN if keep alive is enabled
-        virtual void timeoutGoBackN ( GoBackN *gbn ) {};
+        virtual void timeoutGoBackN ( GoBackN *gbn ) = 0;
     };
 
     Owner *owner = 0;

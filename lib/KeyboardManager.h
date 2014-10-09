@@ -33,7 +33,10 @@ private:
     // Socket to receive KeyboardEvent messages
     SocketPtr recvSocket;
 
-    // Socket callback
+    // Socket callbacks
+    void acceptEvent ( Socket *socket ) override {}
+    void connectEvent ( Socket *socket ) override {}
+    void disconnectEvent ( Socket *socket ) override {}
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override;
 
 public:

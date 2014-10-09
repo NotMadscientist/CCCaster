@@ -34,6 +34,11 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
     SocketPtr socket, accepted;
     Timer timer;
 
+    virtual void acceptEvent ( Socket *socket ) override {}
+    virtual void connectEvent ( Socket *socket ) override {}
+    virtual void disconnectEvent ( Socket *socket ) override {}
+    virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override {}
+
     BaseTestSocket ( uint16_t port )
         : socket ( T::listen ( this, port ) ), timer ( this )
     {
