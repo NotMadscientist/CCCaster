@@ -17,16 +17,32 @@ struct KeyboardEvent : public SerializableMessage
 };
 
 
-struct KeyboardManager
+class KeyboardManager : public Socket::Owner
 {
-    // Window to match for keyboard events
-    const void *window = 0;
+public:
 
-    // VK codes to match for keyboard events
-    std::unordered_set<int> keys;
+    struct Owner
+    {
+        virtual void keyboardEvent ( int vkCode, bool isDown ) = 0;
+    };
 
-    // Hook keyboard events and send messages to the given socket
-    void hook ( const SocketPtr& eventSocket );
+    Owner *owner = 0;
+
+private:
+
+    // Socket to receive KeyboardEvent messages
+    SocketPtr recvSocket;
+
+    // Socket callback
+    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override;
+
+public:
+
+    // Hook keyboard events
+    void hook ( Owner *owner,
+                const void *window = 0,
+                const std::unordered_set<int>& keys = {},
+                uint8_t options = 0 );
 
     // Unhook keyboard events
     void unhook();

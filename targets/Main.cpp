@@ -56,10 +56,12 @@ static void updateExternalIpAddress ( uint16_t port, bool training );
 
 */
 
-struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress::Owner
+struct Main
+        : public CommonMain
+        , public Pinger::Owner
+        , public ExternalIpAddress::Owner
+        , public KeyboardManager::Owner
 {
-    SocketPtr eventSocket;
-
     Pinger pinger;
 
     InitialConfig initialConfig;
@@ -398,29 +400,22 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
         {
             LOG ( "Unexpected '%s' from dataSocket=%08x", msg, socket );
         }
-        else if ( socket == eventSocket.get() )
-        {
-            switch ( msg->getMsgType() )
-            {
-                case MsgType::KeyboardEvent:
-                    if ( msg->getAs<KeyboardEvent>().vkCode == VK_ESCAPE )
-                        EventManager::get().stop();
-                    break;
-
-                default:
-                    LOG ( "Unexpected '%s' from eventSocket=%08x", msg, socket );
-                    break;
-            }
-        }
         else
         {
-            LOG ( "Unexpected '%s' from socket=%08x", msg, socket );
+            LOG ( "Unexpected '%s' from unknown socket=%08x", msg, socket );
         }
     }
 
     // Timer callback
     virtual void timerExpired ( Timer *timer ) override
     {
+    }
+
+    // KeyboardManager callback
+    virtual void keyboardEvent ( int vkCode, bool isDown ) override
+    {
+        if ( vkCode == VK_ESCAPE )
+            EventManager::get().stop();
     }
 
     // Netplay constructor
@@ -432,12 +427,7 @@ struct Main : public CommonMain, public Pinger::Owner, public ExternalIpAddress:
         TimerManager::get().initialize();
         SocketManager::get().initialize();
         ControllerManager::get().initialize ( this );
-
-        eventSocket = UdpSocket::bind ( this, 0 );
-
-        KeyboardManager::get().window = ui.getConsoleWindow();
-        KeyboardManager::get().keys = { VK_ESCAPE };
-        KeyboardManager::get().hook ( eventSocket );
+        KeyboardManager::get().hook ( this, ui.getConsoleWindow(), { VK_ESCAPE } );
 
 #ifdef UDP_ONLY
         if ( isHost() )
