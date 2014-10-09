@@ -14,9 +14,6 @@ static const void *keyboardWindow = 0;
 // VK codes to match for keyboard events, empty to match all, NOT safe to modify when hooked!
 static unordered_set<int> keyboardKeys;
 
-// Keyboard hooking options
-static uint8_t hookOptions = 0;
-
 // Keyboard hook and message loop thread
 static ThreadPtr keyboardThread;
 
@@ -51,7 +48,7 @@ static LRESULT CALLBACK keyboardCallback ( int code, WPARAM wParam, LPARAM lPara
                 if ( keyboardWindow && ( GetForegroundWindow() != keyboardWindow ) )
                     break;
 
-                // Ignore key if the vkCode is not matched
+                // Ignore key if the VK code is not matched
                 if ( !keyboardKeys.empty() && ( keyboardKeys.find ( vkCode ) == keyboardKeys.end() ) )
                     break;
 
@@ -173,7 +170,8 @@ void KeyboardManager::hook ( Owner *owner, const void *window, const std::unorde
     this->owner = owner;
     keyboardWindow = window;
     keyboardKeys = keys;
-    hookOptions = options;
+
+    // TODO implement other keyboard hook options (ie no message loop, regular hook, polling, etc..)
 
     recvSocket = UdpSocket::bind ( this, 0 );
     sendSocket = UdpSocket::bind ( 0, { "127.0.0.1", recvSocket->address.port } );
