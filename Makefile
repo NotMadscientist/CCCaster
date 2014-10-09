@@ -40,7 +40,7 @@ WINDRES = $(PREFIX)windres
 STRIP = $(PREFIX)strip
 ZIP = zip
 
-
+# OS specific tools
 ifeq ($(OS),Windows_NT)
     CHMOD_X = icacls $@ /grant Everyone:F
     GRANT = icacls $@ /grant Everyone:F
@@ -91,7 +91,16 @@ target-profile: CC_FLAGS += -O2 -fno-rtti -pg
 target-profile: LD_FLAGS += -pg -lgmon
 target-profile: $(ARCHIVE)
 
+archive: $(ARCHIVE)
+binary: $(BINARY)
+dll: $(DLL)
+launcher: $(LAUNCHER)
 debugger: $(DEBUGGER)
+
+# Only include .depend for main targets
+ifeq ($(MAKECMDGOALS),$(filter all debug release release-logging profile binary dll,$(MAKECMDGOALS)))
+-include .depend
+endif
 
 
 $(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
@@ -212,49 +221,27 @@ post-build: main-build
 	@echo
 	if [ -s scripts/deploy ]; then scripts/deploy; fi;
 
+
 debug: post-build
 release: post-build
 release-logging: post-build
 profile: post-build
 
-ifneq (,$(findstring release-logging, $(MAKECMDGOALS)))
+
+ifneq (,$(findstring release-logging,$(MAKECMDGOALS)))
 main-build: pre-build
 	@$(MAKE) --no-print-directory target-release-logging
 else
-ifneq (,$(findstring release, $(MAKECMDGOALS)))
+ifneq (,$(findstring release,$(MAKECMDGOALS)))
 main-build: pre-build
 	@$(MAKE) --no-print-directory target-release
 else
-ifneq (,$(findstring profile, $(MAKECMDGOALS)))
+ifneq (,$(findstring profile,$(MAKECMDGOALS)))
 main-build: pre-build
 	@$(MAKE) --no-print-directory target-profile
 else
 main-build: pre-build
 	@$(MAKE) --no-print-directory target-debug
-endif
-endif
-endif
-
-
-# Don't include .depend if making any of the following targets
-ifeq (,$(findstring clean, $(MAKECMDGOALS)))
-ifeq (,$(findstring check, $(MAKECMDGOALS)))
-ifeq (,$(findstring trim, $(MAKECMDGOALS)))
-ifeq (,$(findstring format, $(MAKECMDGOALS)))
-ifeq (,$(findstring count, $(MAKECMDGOALS)))
-ifeq (,$(findstring deploy, $(MAKECMDGOALS)))
-ifeq (,$(findstring sdl, $(MAKECMDGOALS)))
-ifeq (,$(findstring debugger, $(MAKECMDGOALS)))
-ifeq (,$(findstring $(LAUNCHER), $(MAKECMDGOALS)))
-ifeq (,$(findstring $(DEBUGGER), $(MAKECMDGOALS)))
--include .depend
-endif
-endif
-endif
-endif
-endif
-endif
-endif
 endif
 endif
 endif
