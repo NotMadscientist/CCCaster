@@ -1,4 +1,4 @@
-VERSION = 3.0
+VERSION = 3.0alpha
 NAME = cccaster
 
 # Main programs
@@ -23,9 +23,10 @@ BASE_CPP_SRCS = $(wildcard *.cpp) $(wildcard lib/*.cpp)
 MAIN_CPP_SRCS = $(wildcard targets/Main*.cpp) $(wildcard tests/*.cpp) $(BASE_CPP_SRCS)
 DLL_CPP_SRCS = $(wildcard targets/Dll*.cpp) $(BASE_CPP_SRCS)
 
-NON_GEN_SRCS = *.cpp targets/*.cpp tests/*.cpp $(filter-out lib/Version.cpp,$(wildcard lib/*.cpp))
-NON_GEN_HEADERS = $(filter-out lib/Protocol.%.h,$(wildcard lib/*.h tests/*.h targets/*.h *.h))
-AUTOGEN_SRCS = lib/Version.cpp lib/Protocol.*.h
+NON_GEN_SRCS = *.cpp targets/*.cpp tests/*.cpp lib/*.cpp
+NON_GEN_HEADERS = \
+	$(filter-out lib/Version.local.h,$(filter-out lib/Protocol.%.h,$(wildcard lib/*.h tests/*.h targets/*.h *.h)))
+AUTOGEN_HEADERS = lib/Version.local.h lib/Protocol.*.h
 
 # Main program objects
 MAIN_OBJECTS = $(MAIN_CPP_SRCS:.cpp=.o) $(CONTRIB_CC_SRCS:.cc=.o) $(CONTRIB_C_SRCS:.c=.o)
@@ -95,6 +96,7 @@ debugger: $(DEBUGGER)
 
 $(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
 	@echo
+	rm -f $(filter-out $(ARCHIVE),$(wildcard $(NAME)*.zip))
 	$(ZIP) $(NAME).v$(VERSION).zip $^
 	$(GRANT)
 
@@ -102,6 +104,7 @@ $(FOLDER):
 	@mkdir -p $(FOLDER)
 
 $(BINARY): $(MAIN_OBJECTS) res/icon.res
+	rm -f $(filter-out $(BINARY),$(wildcard $(NAME)*.exe))
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(MAIN_OBJECTS) res/icon.res $(LD_FLAGS)
 	@echo
 	$(STRIP) $@
@@ -135,12 +138,10 @@ res/icon.res: res/icon.rc res/icon.ico
 
 
 define make_version
-@printf "#include \"Version.h\"\n\n"                    > lib/Version.cpp
-@printf "using namespace std;\n\n\n"                   >> lib/Version.cpp
-@printf "Version::Version ( LocalEnum )\n"             >> lib/Version.cpp
-@printf "	: commitId ( \"`git rev-parse HEAD`\" )\n" >> lib/Version.cpp
-@printf "	, buildTime ( \"`date`\" )\n"              >> lib/Version.cpp
-@printf "	, code ( \"$(VERSION)\" ) {}\n"            >> lib/Version.cpp
+@printf "Version::Version ( LocalEnum )\n"               > lib/Version.local.h
+@printf "    : code ( \"$(VERSION)\" )\n"               >> lib/Version.local.h
+@printf "    , commitId ( \"`git rev-parse HEAD`\" )\n" >> lib/Version.local.h
+@printf "    , buildTime ( \"`date`\" ) {}\n"           >> lib/Version.local.h
 endef
 
 define make_protocol
@@ -171,7 +172,7 @@ sdl-clean:
 
 
 clean:
-	rm -f $(AUTOGEN_SRCS) .depend *.res *.exe *.dll *.zip *.o lib/*.o targets/*.o tests/*.o
+	rm -f $(AUTOGEN_HEADERS) .depend *.res *.exe *.dll *.zip *.o lib/*.o targets/*.o tests/*.o
 	rm -f $(MAIN_OBJECTS) $(DLL_OBJECTS)
 	rm -rf $(FOLDER)
 
