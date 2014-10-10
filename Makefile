@@ -23,10 +23,9 @@ BASE_CPP_SRCS = $(wildcard *.cpp) $(wildcard lib/*.cpp)
 MAIN_CPP_SRCS = $(wildcard targets/Main*.cpp) $(wildcard tests/*.cpp) $(BASE_CPP_SRCS)
 DLL_CPP_SRCS = $(wildcard targets/Dll*.cpp) $(BASE_CPP_SRCS)
 
-NON_GEN_SRCS = *.cpp lib/*.cpp targets/*.cpp tests/*.cpp
-NON_GEN_HEADERS = $(filter-out lib/Version.h, $(filter-out lib/Protocol.%.h, \
-	$(wildcard lib/*.h tests/*.h targets/*.h *.h)))
-AUTOGEN_HEADERS = lib/Version.h lib/Protocol.*.h
+NON_GEN_SRCS = *.cpp targets/*.cpp tests/*.cpp $(filter-out Version.cpp,$(wildcard lib/*.cpp))
+NON_GEN_HEADERS = $(filter-out lib/Protocol.%.h,$(wildcard lib/*.h tests/*.h targets/*.h *.h))
+AUTOGEN_SRCS = lib/Version.cpp lib/Protocol.*.h
 
 # Main program objects
 MAIN_OBJECTS = $(MAIN_CPP_SRCS:.cpp=.o) $(CONTRIB_CC_SRCS:.cc=.o) $(CONTRIB_C_SRCS:.c=.o)
@@ -91,14 +90,10 @@ target-profile: CC_FLAGS += -O2 -fno-rtti -pg
 target-profile: LD_FLAGS += -pg -lgmon
 target-profile: $(ARCHIVE)
 
-archive: $(ARCHIVE)
-binary: $(BINARY)
-dll: $(DLL)
-launcher: $(LAUNCHER)
 debugger: $(DEBUGGER)
 
 # Only include .depend for main targets
-ifeq ($(MAKECMDGOALS),$(filter all debug release release-logging profile binary dll,$(MAKECMDGOALS)))
+ifeq ($(MAKECMDGOALS),$(filter all debug release release-logging profile,$(MAKECMDGOALS)))
 -include .depend
 endif
 
@@ -141,9 +136,11 @@ res/icon.res: res/icon.rc res/icon.ico
 
 
 define make_version
-@printf "#define COMMIT_ID \"`git rev-parse HEAD`\"\n" > lib/Version.h
-@printf "#define BUILD_TIME \"`date`\"\n"             >> lib/Version.h
-@printf "#define VERSION \"$(VERSION)\"\n"            >> lib/Version.h
+@printf "#include \"Version.h\"\n\n"                              > lib/Version.cpp
+@printf "using namespace std;\n\n\n"                             >> lib/Version.cpp
+@printf "const string COMMIT_ID = \"`git rev-parse HEAD`\";\n\n" >> lib/Version.cpp
+@printf "const string BUILD_TIME = \"`date`\";\n\n"              >> lib/Version.cpp
+@printf "const string VERSION = \"$(VERSION)\";\n"               >> lib/Version.cpp
 endef
 
 define make_protocol
@@ -174,7 +171,7 @@ sdl-clean:
 
 
 clean:
-	rm -f $(AUTOGEN_HEADERS) .depend *.res *.exe *.dll *.zip *.o lib/*.o targets/*.o tests/*.o
+	rm -f $(AUTOGEN_SRCS) .depend *.res *.exe *.dll *.zip *.o lib/*.o targets/*.o tests/*.o
 	rm -f $(MAIN_OBJECTS) $(DLL_OBJECTS)
 	rm -rf $(FOLDER)
 
@@ -200,7 +197,7 @@ format:
     --keep-one-line-blocks      \
     --align-pointer=name        \
     --align-reference=type      \
-    $(filter-out AsmHacks.h, $(NON_GEN_SRCS) $(NON_GEN_HEADERS))
+    $(filter-out AsmHacks.h,$(NON_GEN_SRCS) $(NON_GEN_HEADERS))
 
 count:
 	@wc -l $(NON_GEN_SRCS) $(NON_GEN_HEADERS) | sort -nr | head -n 10 && echo '    ...'
@@ -254,4 +251,4 @@ endif
 	$(CXX) $(CC_FLAGS) -o $@ -c $<
 
 %.o: %.c
-	$(GCC) $(filter-out -fno-rtti, $(CC_FLAGS)) -Wno-attributes -o $@ -c $<
+	$(GCC) $(filter-out -fno-rtti,$(CC_FLAGS)) -Wno-attributes -o $@ -c $<

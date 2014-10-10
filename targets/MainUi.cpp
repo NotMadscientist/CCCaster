@@ -11,7 +11,7 @@
 using namespace std;
 
 
-#define TITLE "CCCaster " VERSION
+static const string TITLE = "CCCaster " + VERSION;
 
 // System sound prefix and default alert
 #define SYSTEM_ALERT_PREFEX "System"
