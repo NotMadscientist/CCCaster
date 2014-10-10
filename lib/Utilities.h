@@ -93,7 +93,15 @@ inline std::string toString ( const T& val )
 }
 
 template<>
-inline std::string toString<std::string> ( const std::string& val ) { return val; }
+inline std::string toString<std::string> ( const std::string& val )
+{
+    size_t i = val.find ( "%%" );
+
+    if ( i == std::string::npos )
+        return val;
+
+    return val.substr ( 0, i ) + "%" + toString ( val.substr ( i + 2 ) );
+}
 
 template<>
 inline std::string toString<BetterEnum> ( const BetterEnum& val ) { return val.str(); }
