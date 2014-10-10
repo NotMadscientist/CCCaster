@@ -214,98 +214,6 @@ struct Main
             userConfirmation();
     }
 
-    // ExternalIpAddress callbacks
-    virtual void foundExternalIpAddress ( ExternalIpAddress *extIpAddr, const string& address ) override
-    {
-        LOG ( "External IP address: '%s'", address );
-
-        updateExternalIpAddress ( serverCtrlSocket->address.port, initialConfig.isTraining );
-    }
-
-    virtual void unknownExternalIpAddress ( ExternalIpAddress *extIpAddr ) override
-    {
-        LOG ( "Unknown external IP address!" );
-
-        updateExternalIpAddress ( serverCtrlSocket->address.port, initialConfig.isTraining );
-    }
-
-    // ProcessManager callbacks
-    virtual void ipcConnectEvent() override
-    {
-        ASSERT ( clientType != ClientType::Unknown );
-        ASSERT ( netplayConfig.delay != 0xFF );
-
-        procMan.ipcSend ( REF_PTR ( clientType ) );
-        procMan.ipcSend ( REF_PTR ( netplayConfig ) );
-
-        if ( !isLocal() )
-        {
-            ASSERT ( ctrlSocket.get() != 0 );
-            ASSERT ( ctrlSocket->isConnected() == true );
-            ASSERT ( dataSocket.get() != 0 );
-            ASSERT ( dataSocket->isConnected() == true );
-
-            if ( isHost() )
-            {
-                ASSERT ( serverCtrlSocket.get() != 0 );
-                ASSERT ( serverDataSocket.get() != 0 );
-                ASSERT ( serverDataSocket->getAsUDP().getChildSockets().size() == 1 );
-                ASSERT ( serverDataSocket->getAsUDP().getChildSockets().begin()->second == dataSocket );
-
-                procMan.ipcSend ( serverCtrlSocket->share ( procMan.getProcessId() ) );
-                procMan.ipcSend ( serverDataSocket->share ( procMan.getProcessId() ) );
-
-                // We don't share UDP sockets since they will be included in the server's share data
-                if ( ctrlSocket->isTCP() )
-                {
-                    procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
-                }
-                else
-                {
-                    ASSERT ( serverCtrlSocket->getAsUDP().getChildSockets().size() == 1 );
-                    ASSERT ( serverCtrlSocket->getAsUDP().getChildSockets().begin()->second == ctrlSocket );
-                }
-            }
-            else
-            {
-                procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
-                procMan.ipcSend ( dataSocket->share ( procMan.getProcessId() ) );
-            }
-        }
-
-        procMan.ipcSend ( new EndOfMessages() );
-    }
-
-    virtual void ipcDisconnectEvent() override
-    {
-        EventManager::get().stop();
-    }
-
-    virtual void ipcReadEvent ( const MsgPtr& msg ) override
-    {
-        if ( !msg.get() || msg->getMsgType() != MsgType::ErrorMessage )
-        {
-            LOG ( "Unexpected '%s'", msg );
-            return;
-        }
-
-        ui.sessionError = msg->getAs<ErrorMessage>().error;
-    }
-
-    // ControllerManager callbacks
-    virtual void attachedJoystick ( Controller *controller ) override
-    {
-    }
-
-    virtual void detachedJoystick ( Controller *controller ) override
-    {
-    }
-
-    // Controller callback
-    virtual void doneMapping ( Controller *controller, uint32_t key ) override
-    {
-    }
-
     // Socket callbacks
     virtual void acceptEvent ( Socket *serverSocket ) override
     {
@@ -406,9 +314,101 @@ struct Main
         }
     }
 
+    // ProcessManager callbacks
+    virtual void ipcConnectEvent() override
+    {
+        ASSERT ( clientType != ClientType::Unknown );
+        ASSERT ( netplayConfig.delay != 0xFF );
+
+        procMan.ipcSend ( REF_PTR ( clientType ) );
+        procMan.ipcSend ( REF_PTR ( netplayConfig ) );
+
+        if ( !isLocal() )
+        {
+            ASSERT ( ctrlSocket.get() != 0 );
+            ASSERT ( ctrlSocket->isConnected() == true );
+            ASSERT ( dataSocket.get() != 0 );
+            ASSERT ( dataSocket->isConnected() == true );
+
+            if ( isHost() )
+            {
+                ASSERT ( serverCtrlSocket.get() != 0 );
+                ASSERT ( serverDataSocket.get() != 0 );
+                ASSERT ( serverDataSocket->getAsUDP().getChildSockets().size() == 1 );
+                ASSERT ( serverDataSocket->getAsUDP().getChildSockets().begin()->second == dataSocket );
+
+                procMan.ipcSend ( serverCtrlSocket->share ( procMan.getProcessId() ) );
+                procMan.ipcSend ( serverDataSocket->share ( procMan.getProcessId() ) );
+
+                // We don't share UDP sockets since they will be included in the server's share data
+                if ( ctrlSocket->isTCP() )
+                {
+                    procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
+                }
+                else
+                {
+                    ASSERT ( serverCtrlSocket->getAsUDP().getChildSockets().size() == 1 );
+                    ASSERT ( serverCtrlSocket->getAsUDP().getChildSockets().begin()->second == ctrlSocket );
+                }
+            }
+            else
+            {
+                procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
+                procMan.ipcSend ( dataSocket->share ( procMan.getProcessId() ) );
+            }
+        }
+
+        procMan.ipcSend ( new EndOfMessages() );
+    }
+
+    virtual void ipcDisconnectEvent() override
+    {
+        EventManager::get().stop();
+    }
+
+    virtual void ipcReadEvent ( const MsgPtr& msg ) override
+    {
+        if ( !msg.get() || msg->getMsgType() != MsgType::ErrorMessage )
+        {
+            LOG ( "Unexpected '%s'", msg );
+            return;
+        }
+
+        ui.sessionError = msg->getAs<ErrorMessage>().error;
+    }
+
+    // ControllerManager callbacks
+    virtual void attachedJoystick ( Controller *controller ) override
+    {
+    }
+
+    virtual void detachedJoystick ( Controller *controller ) override
+    {
+    }
+
+    // Controller callback
+    virtual void doneMapping ( Controller *controller, uint32_t key ) override
+    {
+    }
+
     // Timer callback
     virtual void timerExpired ( Timer *timer ) override
     {
+    }
+
+    // ExternalIpAddress callbacks
+    virtual void foundExternalIpAddress ( ExternalIpAddress *extIpAddr, const string& address ) override
+    {
+        LOG ( "External IP address: '%s'", address );
+
+        updateExternalIpAddress ( serverCtrlSocket->address.port, initialConfig.isTraining );
+    }
+
+    virtual void unknownExternalIpAddress ( ExternalIpAddress *extIpAddr ) override
+    {
+        LOG ( "Unknown external IP address!" );
+
+        updateExternalIpAddress ( serverCtrlSocket->address.port, initialConfig.isTraining );
     }
 
     // KeyboardManager callback
@@ -438,7 +438,7 @@ struct Main
         else
         {
             ctrlSocket = UdpSocket::connect ( this, address );
-            dataSocket = UdpSocket::connect ( this, { address.addr, uint16_t ( address.port + 1 ) } );
+            dataSocket = UdpSocket::connect ( this, { address.addr, address.port + 1 } );
         }
 #else
         if ( isHost() )

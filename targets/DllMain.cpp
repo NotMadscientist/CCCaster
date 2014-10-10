@@ -419,6 +419,65 @@ struct Main
         }
     }
 
+    // Socket callbacks
+    void acceptEvent ( Socket *serverSocket ) override
+    {
+    }
+
+    void connectEvent ( Socket *socket ) override
+    {
+    }
+
+    void disconnectEvent ( Socket *socket ) override
+    {
+        EventManager::get().stop();
+    }
+
+    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
+    {
+        if ( !msg.get() )
+            return;
+
+        switch ( clientType.value )
+        {
+            case ClientType::Host:
+            case ClientType::Client:
+                switch ( msg->getMsgType() )
+                {
+                    case MsgType::CharaSelectLoaded:
+                        // Once both sides have loaded up to character select for the first time
+                        if ( !remoteCharaSelectLoaded )
+                        {
+                            if ( netMan.getState().value >= NetplayState::CharaSelect )
+                                bothCharaSelectLoaded();
+                            remoteCharaSelectLoaded = true;
+                        }
+                        return;
+
+                    case MsgType::PlayerInputs:
+                        netMan.setInputs ( remotePlayer, msg->getAs<PlayerInputs>() );
+                        return;
+
+                    case MsgType::RngState:
+                        nextRngState = msg;
+                        waitForRngState = false;
+                        return;
+
+                    default:
+                        break;
+                }
+                break;
+
+            case ClientType::Broadcast:
+                break;
+
+            default:
+                break;
+        }
+
+        LOG ( "Unexpected '%s'", msg );
+    }
+
     // ProcessManager callbacks
     void ipcConnectEvent() override
     {
@@ -574,65 +633,6 @@ struct Main
     // Controller callback
     void doneMapping ( Controller *controller, uint32_t key ) override
     {
-    }
-
-    // Socket callbacks
-    void acceptEvent ( Socket *serverSocket ) override
-    {
-    }
-
-    void connectEvent ( Socket *socket ) override
-    {
-    }
-
-    void disconnectEvent ( Socket *socket ) override
-    {
-        EventManager::get().stop();
-    }
-
-    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
-    {
-        if ( !msg.get() )
-            return;
-
-        switch ( clientType.value )
-        {
-            case ClientType::Host:
-            case ClientType::Client:
-                switch ( msg->getMsgType() )
-                {
-                    case MsgType::CharaSelectLoaded:
-                        // Once both sides have loaded up to character select for the first time
-                        if ( !remoteCharaSelectLoaded )
-                        {
-                            if ( netMan.getState().value >= NetplayState::CharaSelect )
-                                bothCharaSelectLoaded();
-                            remoteCharaSelectLoaded = true;
-                        }
-                        return;
-
-                    case MsgType::PlayerInputs:
-                        netMan.setInputs ( remotePlayer, msg->getAs<PlayerInputs>() );
-                        return;
-
-                    case MsgType::RngState:
-                        nextRngState = msg;
-                        waitForRngState = false;
-                        return;
-
-                    default:
-                        break;
-                }
-                break;
-
-            case ClientType::Broadcast:
-                break;
-
-            default:
-                break;
-        }
-
-        LOG ( "Unexpected '%s'", msg );
     }
 
     // Timer callback
