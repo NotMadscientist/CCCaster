@@ -11,7 +11,7 @@
 using namespace std;
 
 
-static const string TITLE = "CCCaster " + VERSION;
+static const string uiTitle = "CCCaster " + LocalVersion.code;
 
 // System sound prefix and default alert
 #define SYSTEM_ALERT_PREFEX "System"
@@ -190,8 +190,8 @@ MainUi::MainUi()
 
 void MainUi::main ( RunFuncPtr run )
 {
-    ui.reset ( new ConsoleUi ( TITLE ) );
-    ui->pushRight ( new ConsoleUi::Menu ( TITLE,
+    ui.reset ( new ConsoleUi ( uiTitle ) );
+    ui->pushRight ( new ConsoleUi::Menu ( uiTitle,
     { "Netplay", "Spectate", "Broadcast", "Offline", "Controls", "Settings" }, "Quit" ) );
 
     for ( ;; )
@@ -274,7 +274,7 @@ static string formatStats ( const PingStats& pingStats )
 void MainUi::display ( const string& message )
 {
     if ( !ui )
-        ui.reset ( new ConsoleUi ( TITLE ) );
+        ui.reset ( new ConsoleUi ( uiTitle ) );
 
     ui->pushInFront ( new ConsoleUi::TextBox ( message ), { 1, 0 }, true ); // Expand width and clear
 }

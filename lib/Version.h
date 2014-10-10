@@ -1,11 +1,24 @@
 #pragma once
 
+#include "Protocol.h"
+
+#include <cereal/types/string.hpp>
+
 #include <string>
 
 
-extern const std::string COMMIT_ID;
+struct Version : public SerializableSequence
+{
+    enum LocalEnum { Local };
 
-extern const std::string BUILD_TIME;
+    std::string commitId;
+    std::string buildTime;
+    std::string code;
 
-extern const std::string VERSION;
+    Version ( LocalEnum );
 
+    PROTOCOL_MESSAGE_BOILERPLATE ( Version, commitId, buildTime, code )
+};
+
+
+const Version LocalVersion ( Version::Local );

@@ -35,9 +35,9 @@ void Logger::initialize ( const string& name, uint32_t options )
 
     if ( options & LOG_VERSION )
     {
-        fprintf ( fd, "COMMIT_ID %s\n", COMMIT_ID.c_str() );
-        fprintf ( fd, "BUILD_TIME %s\n", BUILD_TIME.c_str() );
-        fprintf ( fd, "VERSION %s\n\n", VERSION.c_str() );
+        fprintf ( fd, "LocalVersion.commitId %s\n", LocalVersion.commitId.c_str() );
+        fprintf ( fd, "LocalVersion.buildTime %s\n", LocalVersion.buildTime.c_str() );
+        fprintf ( fd, "LocalVersion.code %s\n\n", LocalVersion.code.c_str() );
         fflush ( fd );
     }
 }

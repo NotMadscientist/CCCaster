@@ -136,11 +136,12 @@ res/icon.res: res/icon.rc res/icon.ico
 
 
 define make_version
-@printf "#include \"Version.h\"\n\n"                              > lib/Version.cpp
-@printf "using namespace std;\n\n\n"                             >> lib/Version.cpp
-@printf "const string COMMIT_ID = \"`git rev-parse HEAD`\";\n\n" >> lib/Version.cpp
-@printf "const string BUILD_TIME = \"`date`\";\n\n"              >> lib/Version.cpp
-@printf "const string VERSION = \"$(VERSION)\";\n"               >> lib/Version.cpp
+@printf "#include \"Version.h\"\n\n"                    > lib/Version.cpp
+@printf "using namespace std;\n\n\n"                   >> lib/Version.cpp
+@printf "Version::Version ( LocalEnum )\n"             >> lib/Version.cpp
+@printf "	: commitId ( \"`git rev-parse HEAD`\" )\n" >> lib/Version.cpp
+@printf "	, buildTime ( \"`date`\" )\n"              >> lib/Version.cpp
+@printf "	, code ( \"$(VERSION)\" ) {}\n"            >> lib/Version.cpp
 endef
 
 define make_protocol
