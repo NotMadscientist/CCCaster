@@ -186,7 +186,7 @@ trim:
 	sed --in-place 's/[[:space:]]\\+$$//' $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
 
 format:
-	$(ASTYLE)              \
+	$(ASTYLE)             \
     --indent=spaces=4           \
     --convert-tabs              \
     --indent-preprocessor       \
