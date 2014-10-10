@@ -23,7 +23,7 @@ BASE_CPP_SRCS = $(wildcard *.cpp) $(wildcard lib/*.cpp)
 MAIN_CPP_SRCS = $(wildcard targets/Main*.cpp) $(wildcard tests/*.cpp) $(BASE_CPP_SRCS)
 DLL_CPP_SRCS = $(wildcard targets/Dll*.cpp) $(BASE_CPP_SRCS)
 
-NON_GEN_SRCS = *.cpp targets/*.cpp tests/*.cpp $(filter-out Version.cpp,$(wildcard lib/*.cpp))
+NON_GEN_SRCS = *.cpp targets/*.cpp tests/*.cpp $(filter-out lib/Version.cpp,$(wildcard lib/*.cpp))
 NON_GEN_HEADERS = $(filter-out lib/Protocol.%.h,$(wildcard lib/*.h tests/*.h targets/*.h *.h))
 AUTOGEN_SRCS = lib/Version.cpp lib/Protocol.*.h
 
@@ -92,11 +92,6 @@ target-profile: $(ARCHIVE)
 
 debugger: $(DEBUGGER)
 
-# Only include .depend for main targets
-ifeq ($(MAKECMDGOALS),$(filter all debug release release-logging profile,$(MAKECMDGOALS)))
--include .depend
-endif
-
 
 $(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
 	@echo
@@ -111,18 +106,21 @@ $(BINARY): $(MAIN_OBJECTS) res/icon.res
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
+	@echo
 
 $(DLL): $(DLL_OBJECTS) $(FOLDER)
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(DLL_OBJECTS) -shared $(LD_FLAGS) -ld3dx9
 	@echo
 	$(STRIP) $@
 	$(GRANT)
+	@echo
 
 $(LAUNCHER): targets/Launcher.cpp $(FOLDER)
 	$(CXX) -o $@ targets/Launcher.cpp -m32 -s -Os -O2 -Wall -static -mwindows
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
+	@echo
 
 $(DEBUGGER): targets/Debugger.cpp lib/Utilities.cpp lib/Logger.cpp
 	$(CXX) -o $@ $^ -m32 -s -Os -O2 -Wall -static -std=c++11 \
@@ -130,6 +128,7 @@ $(DEBUGGER): targets/Debugger.cpp lib/Utilities.cpp lib/Logger.cpp
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
+	@echo
 
 res/icon.res: res/icon.rc res/icon.ico
 	$(WINDRES) -F pe-i386 res/icon.rc -O coff -o $@
@@ -203,7 +202,25 @@ format:
 count:
 	@wc -l $(NON_GEN_SRCS) $(NON_GEN_HEADERS) | sort -nr | head -n 10 && echo '    ...'
 
-.PHONY: clean check trim format count deploy sdl sdl_release sdl_profile sdl_clean
+
+.PHONY: clean check trim format count deploy sdl sdl-release sdl-profile sdl-clean
+
+
+ifeq (,$(findstring clean,$(MAKECMDGOALS)))
+ifeq (,$(findstring check,$(MAKECMDGOALS)))
+ifeq (,$(findstring trim,$(MAKECMDGOALS)))
+ifeq (,$(findstring format,$(MAKECMDGOALS)))
+ifeq (,$(findstring count,$(MAKECMDGOALS)))
+ifeq (,$(findstring deploy,$(MAKECMDGOALS)))
+ifeq (,$(findstring sdl,$(MAKECMDGOALS)))
+-include .depend
+endif
+endif
+endif
+endif
+endif
+endif
+endif
 
 
 pre-build:

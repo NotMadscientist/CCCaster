@@ -2,23 +2,44 @@
 
 DIR=lib
 
-grep --extended-regexp "public Serializable[A-Z]" "$@" | sed -r 's/^(.+\.h):[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nMsgType \2::getMsgType() const { return MsgType::\2; }/' > $DIR/tmp
+echo 'FirstType = 0,' > $DIR/tmp
 
-diff $DIR/tmp $DIR/Protocol.types.h 1> /dev/null 2>&1
+grep --extended-regexp "public Serializable[A-Z]" "$@" \
+  | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/\1,/' \
+  >> $DIR/tmp
+
+echo 'LastType' >> $DIR/tmp
+
+diff $DIR/tmp $DIR/Protocol.enum.h 1> /dev/null 2>&1
+
+# grep --extended-regexp "public Serializable[A-Z]" "$@" \
+#   | sed -r \
+#     's/^(.+\.h):[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nMsgType \2::getMsgType() const { return MsgType::\2; }/' \
+#   > $DIR/tmp
+
+# diff $DIR/tmp $DIR/Protocol.types.h 1> /dev/null 2>&1
 
 if [ $? -ne 0 ]; then
 
-    echo Regenerating protocol
+  echo Regenerating protocol
 
-    grep --extended-regexp "public Serializable[A-Z]" "$@" | sed -r 's/^(.+\.h):[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nMsgType \2::getMsgType() const { return MsgType::\2; }/' > $DIR/Protocol.types.h
+  mv -f $DIR/tmp $DIR/Protocol.enum.h
 
-    grep --extended-regexp "public Serializable[A-Z]" "$@" | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1: return ( os << "\1" );/' > $DIR/Protocol.strings.h
+  grep --extended-regexp "public Serializable[A-Z]" "$@" \
+    | sed -r \
+      's/^(.+\.h):[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nMsgType \2::getMsgType() const { return MsgType::\2; }/' \
+    > $DIR/Protocol.types.h
 
-    echo 'FirstType = 0,' > $DIR/Protocol.enum.h
-    grep --extended-regexp "public Serializable[A-Z]" "$@" | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/\1,/' >> $DIR/Protocol.enum.h
-    echo 'LastType' >> $DIR/Protocol.enum.h
+  grep --extended-regexp "public Serializable[A-Z]" "$@" \
+    | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1: return ( os << "\1" );/' \
+    > $DIR/Protocol.strings.h
 
-    grep --extended-regexp "public Serializable[A-Z]" "$@" | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1: msg.reset ( new \1() ); break;/' > $DIR/Protocol.decode.h
+  grep --extended-regexp "public Serializable[A-Z]" "$@" \
+    | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1: msg.reset ( new \1() ); break;/' \
+    > $DIR/Protocol.decode.h
+
+else
+
+  rm -f $DIR/tmp
+
 fi
-
-rm $DIR/tmp
