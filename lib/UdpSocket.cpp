@@ -284,7 +284,7 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
     ASSERT ( gbn == &this->gbn );
     ASSERT ( getRemoteAddress().empty() == false );
 
-    // Child sockets handle GoBackN message as a proxy of the parent socket,
+    // Child sockets handle GoBackN messages as a proxy of the parent socket,
     // this is so the GoBackN state resides in the child socket.
     if ( isChild() )
     {
@@ -304,7 +304,7 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
                             break;
 
                         case UdpConnect::Final:
-                            // UdpConnect::Final message means the client connected properly and is now accepted
+                            // UdpConnect::Final means the client connected properly and is now accepted
                             state = State::Connected;
                             LOG_UDP_SOCKET ( this, "acceptEvent" );
                             parentSocket->acceptedSocket = parentSocket->childSockets[getRemoteAddress()];

@@ -59,4 +59,6 @@ public:
     const Statistics& getStats() const { return stats; }
 
     uint8_t getPacketLoss() const { return packetLoss; }
+
+    bool isPinging() const { return pinging; }
 };

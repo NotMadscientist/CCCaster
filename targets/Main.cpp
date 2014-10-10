@@ -62,6 +62,8 @@ struct Main
         , public ExternalIpAddress::Owner
         , public KeyboardManager::Owner
 {
+    bool shouldPing = false;
+
     Pinger pinger;
 
     InitialConfig initialConfig;
@@ -87,7 +89,7 @@ struct Main
         KeyboardManager::get().unhook();
 
         pingStats.latency.merge ( pinger.getStats() );
-        pingStats.packetLoss = ( pingStats.packetLoss + pinger.getPacketLoss() ) / 200;
+        pingStats.packetLoss = ( pingStats.packetLoss + pinger.getPacketLoss() ) / 2;
 
         LOG ( "Merged stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
               pingStats.latency.getMean(), pingStats.latency.getWorst(),
@@ -127,6 +129,14 @@ struct Main
         }
     }
 
+    virtual void startPinging()
+    {
+        if ( !shouldPing || pinger.isPinging() || !dataSocket || !dataSocket->isConnected() )
+            return;
+
+        pinger.start();
+    }
+
     virtual void gotInitialConfig ( const InitialConfig& initialConfig )
     {
         LOG ( "Initial config: remoteName='%s'; training=%d", initialConfig.localName, initialConfig.isTraining );
@@ -140,7 +150,8 @@ struct Main
         if ( isHost() )
         {
             ui.display ( this->initialConfig.getAcceptMessage ( "connecting" ) );
-            pinger.start();
+            shouldPing = true;
+            startPinging();
         }
         else
         {
@@ -158,9 +169,14 @@ struct Main
         this->pingStats = pingStats;
 
         if ( isHost() )
+        {
             userConfirmation();
+        }
         else
-            pinger.start();
+        {
+            shouldPing = true;
+            startPinging();
+        }
     }
 
     virtual void gotNetplayConfig ( const NetplayConfig& netplayConfig )
@@ -208,6 +224,7 @@ struct Main
         LOG ( "Local stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
               stats.getMean(), stats.getWorst(), stats.getStdErr(), stats.getStdDev(), packetLoss );
 
+        shouldPing = false;
         ctrlSocket->send ( new PingStats ( stats, packetLoss ) );
 
         if ( isClient() )
@@ -228,6 +245,7 @@ struct Main
         else if ( serverSocket == serverDataSocket.get() )
         {
             dataSocket = serverDataSocket->accept ( this );
+            startPinging();
         }
         else
         {
@@ -255,6 +273,9 @@ struct Main
         ASSERT ( ctrlSocket.get() != 0 );
         ASSERT ( dataSocket.get() != 0 );
         ASSERT ( socket == ctrlSocket.get() || socket == dataSocket.get() );
+
+        if ( dataSocket->isConnected() )
+            startPinging();
 
         if ( ctrlSocket->isConnected() && dataSocket->isConnected() )
         {
@@ -429,7 +450,7 @@ struct Main
         ControllerManager::get().initialize ( this );
         KeyboardManager::get().hook ( this, ui.getConsoleWindow(), { VK_ESCAPE } );
 
-#ifdef UDP_ONLY
+#if 0
         if ( isHost() )
         {
             serverCtrlSocket = UdpSocket::listen ( this, address.port );
@@ -438,7 +459,7 @@ struct Main
         else
         {
             ctrlSocket = UdpSocket::connect ( this, address );
-            dataSocket = UdpSocket::connect ( this, { address.addr, address.port + 1 } );
+            dataSocket = UdpSocket::connect ( this, { address.addr, uint16_t ( address.port + 1 ) } );
         }
 #else
         if ( isHost() )
