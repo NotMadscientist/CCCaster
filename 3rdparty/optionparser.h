@@ -43,9 +43,9 @@
  * @brief This is the only file required to use The Lean Mean C++ Option Parser.
  *        Just \#include it and you're set.
  *
- * The Lean Mean C++ Option Parser handles the program's command line arguments 
+ * The Lean Mean C++ Option Parser handles the program's command line arguments
  * (argc, argv).
- * It supports the short and long option formats of getopt(), getopt_long() 
+ * It supports the short and long option formats of getopt(), getopt_long()
  * and getopt_long_only() but has a more convenient interface.
  * The following features set it apart from other option parsers:
  *
@@ -82,7 +82,7 @@
  *     @endcode
  *     </ul>
  * </ul> @n
- * Despite these features the code size remains tiny. 
+ * Despite these features the code size remains tiny.
  * It is smaller than <a href="http://uclibc.org">uClibc</a>'s GNU getopt() and just a
  * couple 100 bytes larger than uClibc's SUSv3 getopt(). @n
  * (This does not include the usage formatter, of course. But you don't have to use that.)
@@ -896,6 +896,50 @@ struct Arg
       return ARG_OK;
     else
       return ARG_IGNORE;
+  }
+
+  static ArgStatus Unknown(const Option& option, bool msg)
+  {
+    if (msg) printError("Unknown option '", option, "'\n");
+    return ARG_ILLEGAL;
+  }
+
+  static ArgStatus Required(const Option& option, bool msg)
+  {
+    if (option.arg != 0)
+      return ARG_OK;
+
+    if (msg) printError("Option '", option, "' requires an argument\n");
+    return ARG_ILLEGAL;
+  }
+
+  static ArgStatus NonEmpty(const Option& option, bool msg)
+  {
+    if (option.arg != 0 && option.arg[0] != 0)
+      return ARG_OK;
+
+    if (msg) printError("Option '", option, "' requires a non-empty argument\n");
+    return ARG_ILLEGAL;
+  }
+
+  static ArgStatus Numeric(const Option& option, bool msg)
+  {
+    char* endptr = 0;
+    if (option.arg != 0 && strtol(option.arg, &endptr, 10)){};
+    if (endptr != option.arg && *endptr == 0)
+      return ARG_OK;
+
+    if (msg) printError("Option '", option, "' requires a numeric argument\n");
+    return ARG_ILLEGAL;
+  }
+
+private:
+
+  static void printError(const char* msg1, const Option& opt, const char* msg2)
+  {
+    fprintf(stderr, "Error: %s", msg1);
+    fwrite(opt.name, opt.namelen, 1, stderr);
+    fprintf(stderr, "%s", msg2);
   }
 };
 
@@ -1922,8 +1966,8 @@ struct PrintUsageImplementation
     int target_line_in_block; //!< Line index of the parts we should return to the user on this iteration.
     bool hit_target_line; //!< Flag whether we encountered a part with line index target_line_in_block in the current cell.
 
-    /** 
-     * @brief Determines the byte and character lengths of the part at @ref ptr and 
+    /**
+     * @brief Determines the byte and character lengths of the part at @ref ptr and
      * stores them in @ref len and @ref screenlen respectively.
      */
     void update_length()

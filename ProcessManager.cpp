@@ -177,10 +177,28 @@ void ProcessManager::openGame()
 
     LOG ( "Running " MBAA_EXE );
 
+    if ( !gameDir.empty() && gameDir.back() != '/' && gameDir.back() != '\\' )
+        gameDir += '/';
+
+    LOG ( "Game dir: %s", gameDir );
+
+    string command;
+
     if ( detectWine() )
-        system ( "./" LAUNCHER " " MBAA_EXE " " HOOK_DLL " &" );
+    {
+        command = "cd " + gameDir + " && ./" LAUNCHER " " + gameDir + MBAA_EXE " " HOOK_DLL " &";
+        // TODO test if this works
+    }
     else
-        system ( "start \"\" " LAUNCHER " " MBAA_EXE " " HOOK_DLL );
+    {
+        command = "@start > nul 2>&1 \"\"";
+        if ( !gameDir.empty() )
+            command += " /d\"" + gameDir + "\"";
+        command += " " LAUNCHER " " + gameDir + MBAA_EXE " " HOOK_DLL;
+    }
+
+    LOG ( "Command: %s", command );
+    system ( command.c_str() );
 
     LOG ( "Connecting pipe" );
 
@@ -344,3 +362,5 @@ ProcessManager::~ProcessManager()
 {
     disconnectPipe();
 }
+
+string ProcessManager::gameDir;

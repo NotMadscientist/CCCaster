@@ -11,6 +11,7 @@
 #include <windows.h>
 
 #include <exception>
+#include <vector>
 
 using namespace std;
 using namespace option;
@@ -22,9 +23,14 @@ using namespace option;
 
 #define NUM_PINGS ( 5 )
 
+#define STOP_EVENTS_DELAY ( 1000 )
+
 
 // Set of command line options
-enum CommandLineOptions { UNKNOWN, HELP, DUMMY, GTEST, STDOUT, NO_FORK, NO_UI, PLUS, TRAINING };
+enum CommandLineOptions { UNKNOWN, HELP, DUMMY, GTEST, STDOUT, NO_FORK, NO_UI, STRICT_VERSION, TRAINING, DIRECTORY };
+
+// Active command line options
+static vector<Option> opt;
 
 // Main UI instance
 static MainUi ui;
@@ -35,26 +41,6 @@ ExternalIpAddress externaIpAddress ( 0 );
 // Update the status of the external IP address
 static void updateExternalIpAddress ( uint16_t port, bool training );
 
-
-/* Connect procedure (WIP)
-
-    1 - Connect / accept sockets
-
-    2 - Both send InitialConfig (displayName, isTraining, version TODO)
-
-    3 - Both recv InitialConfig (update connecting message)
-
-    4 - Host pings, then sends PingStats
-
-    5 - Client waits for PingStats, then pings, then sends PingStats
-
-    6 - Both merge PingStats and wait for user confirmation
-
-    7 - Host sends NetplayConfig on confirm
-
-    8 - Client waits for NetplayConfig before starting
-
-*/
 
 struct Main
         : public CommonMain
@@ -72,6 +58,33 @@ struct Main
 
     NetplayConfig netplayConfig;
 
+    TimerPtr stopTimer;
+
+    /* Connect procedure
+
+        1 - Connect / accept sockets
+
+        2 - Both send InitialConfig (version, name, isTraining)
+
+        3 - Both recv InitialConfig (update connecting message)
+
+        4 - Host pings, then sends PingStats
+
+        5 - Client waits for PingStats, then pings, then sends PingStats
+
+        6 - Both merge PingStats and wait for user confirmation
+
+        7 - Host sends NetplayConfig on confirm
+
+        8 - Client waits for NetplayConfig before starting
+
+    */
+
+    virtual void delayedStop()
+    {
+        stopTimer.reset ( new Timer ( this ) );
+        stopTimer->start ( STOP_EVENTS_DELAY );
+    }
 
     virtual void userConfirmation()
     {
@@ -139,13 +152,46 @@ struct Main
 
     virtual void gotInitialConfig ( const InitialConfig& initialConfig )
     {
-        LOG ( "Initial config: remoteName='%s'; training=%d", initialConfig.localName, initialConfig.isTraining );
-
+        this->initialConfig.remoteVersion = initialConfig.localVersion;
         this->initialConfig.remoteName = initialConfig.localName;
+
+        const Version RemoteVersion = this->initialConfig.remoteVersion;
+
+        LOG ( "Initial config: remoteVersion='%s'; commitId='%s'; buildTime='%s'; remoteName='%s'; training=%d",
+              RemoteVersion, RemoteVersion.commitId, RemoteVersion.buildTime,
+              this->initialConfig.remoteName, initialConfig.isTraining );
+
         if ( this->initialConfig.remoteName.empty() )
             this->initialConfig.remoteName = ctrlSocket->address.addr;
 
-        // TODO check versions here
+        if ( !LocalVersion.similar ( RemoteVersion, 1 + opt[STRICT_VERSION].count() ) )
+        {
+            string local = toString ( "%s.%s", LocalVersion.major(), LocalVersion.minor() );
+            string remote = toString ( "%s.%s", RemoteVersion.major(), RemoteVersion.minor() );
+
+            if ( opt[STRICT_VERSION].count() >= 1 )
+            {
+                local += LocalVersion.suffix();
+                remote += RemoteVersion.suffix();
+            }
+
+            if ( opt[STRICT_VERSION].count() >= 2 )
+            {
+                local += " " + LocalVersion.commitId;
+                remote += " " + RemoteVersion.commitId;
+            }
+
+            if ( opt[STRICT_VERSION].count() >= 3 )
+            {
+                local += " " + LocalVersion.buildTime;
+                remote += " " + RemoteVersion.buildTime;
+            }
+
+            ui.sessionError = "Incompatible versions:\n" + local + "\n" + remote;
+            ctrlSocket->send ( new ErrorMessage ( ui.sessionError ) );
+            delayedStop();
+            return;
+        }
 
         if ( isHost() )
         {
@@ -308,19 +354,24 @@ struct Main
             {
                 case MsgType::InitialConfig:
                     gotInitialConfig ( msg->getAs<InitialConfig>() );
-                    break;
+                    return;
 
                 case MsgType::PingStats:
                     gotPingStats ( msg->getAs<PingStats>() );
-                    break;
+                    return;
 
                 case MsgType::NetplayConfig:
                     gotNetplayConfig ( msg->getAs<NetplayConfig>() );
-                    break;
+                    return;
+
+                case MsgType::ErrorMessage:
+                    ui.sessionError = msg->getAs<ErrorMessage>().error;
+                    EventManager::get().stop();
+                    return;
 
                 default:
                     LOG ( "Unexpected '%s' from ctrlSocket=%08x", msg, socket );
-                    break;
+                    return;
             }
         }
         else if ( socket == dataSocket.get() )
@@ -329,11 +380,11 @@ struct Main
             {
                 case MsgType::Ping:
                     pinger.gotPong ( msg );
-                    break;
+                    return;
 
                 default:
                     LOG ( "Unexpected '%s' from dataSocket=%08x", msg, socket );
-                    break;
+                    return;
             }
         }
         else
@@ -422,6 +473,9 @@ struct Main
     // Timer callback
     virtual void timerExpired ( Timer *timer ) override
     {
+        ASSERT ( timer == stopTimer.get() );
+
+        EventManager::get().stop();
     }
 
     // ExternalIpAddress callbacks
@@ -570,11 +624,6 @@ struct DummyMain : public Main
                 Main::readEvent ( socket, msg, address );
                 break;
         }
-    }
-
-    // Timer callback
-    void timerExpired ( Timer *timer ) override
-    {
     }
 
     // Constructor
@@ -737,21 +786,39 @@ int main ( int argc, char *argv[] )
 
     static const Descriptor options[] =
     {
-        { UNKNOWN,  0,  "",         "", Arg::None, "Usage: " BINARY " [options] [address] [port]\n\nOptions:" },
-        { TRAINING, 0, "t", "training", Arg::None, "  --training, -t  Training mode." },
-        { HELP,     0, "h",     "help", Arg::None, "  --help, -h      Print usage and exit." },
-        { DUMMY,    0,  "",    "dummy", Arg::None, "  --dummy         Run as a dummy application." },
-        { GTEST,    0,  "",    "gtest", Arg::None, "  --gtest         Run unit tests and exit." },
-        { STDOUT,   0,  "",   "stdout", Arg::None, "  --stdout        Output logs to stdout." },
-        { NO_FORK,  0,  "",  "no-fork", Arg::None, 0 }, // Don't fork when inside Wine, ie already running wineconosle
-        { NO_UI,    0, "n",    "no-ui", Arg::None, "  --no-ui, -n     No UI, just quits after running once." },
-        { PLUS,     0, "p",     "plus", Arg::None, "  --plus, -p      Increment count." },
         {
             UNKNOWN, 0, "", "", Arg::None,
-            "\nExamples:\n"
+            "Usage: " BINARY " [options] [address] [port]\n\nOptions:"
+        },
+
+        { HELP,           0, "h",     "help", Arg::None,     "  --help, -h         Print usage and exit." },
+        { DUMMY,          0,  "",    "dummy", Arg::None,     "  --dummy            Run as a dummy application." },
+        { GTEST,          0,  "",    "gtest", Arg::None,     "  --gtest            Run unit tests and exit." },
+        { STDOUT,         0,  "",   "stdout", Arg::None,     "  --stdout           Output logs to stdout." },
+        { TRAINING,       0, "t", "training", Arg::None,     "  --training, -t     Training mode.\n" },
+        { DIRECTORY,      0, "d",      "dir", Arg::Required, "  --dir, -d          Specify game directory.\n" },
+        {
+            NO_UI, 0, "n", "no-ui", Arg::None,
+            "  --no-ui, -n        No UI, just quits after running once.\n"
+            "                     Should be used with address and/or port.\n"
+        },
+        {
+            STRICT_VERSION, 0, "s", "strict", Arg::None,
+            "  --strict, -s       Strict version match, can be stacked up to 3 times.\n"
+            "                     -s means version suffix must match.\n"
+            "                     -ss means commit ID must match.\n"
+            "                     -sss means build time must match.\n"
+        },
+
+        { NO_FORK, 0, "", "no-fork", Arg::None, 0 }, // Don't fork when inside Wine, ie running wineconosle
+
+        {
+            UNKNOWN, 0, "", "", Arg::None,
+            "Examples:\n"
             "  " BINARY " --unknown -- --this_is_no_option\n"
             "  " BINARY " -unk --plus -ppp file1 file2\n"
         },
+
         { 0, 0, 0, 0, 0, 0 }
     };
 
@@ -766,8 +833,9 @@ int main ( int argc, char *argv[] )
     }
 
     Stats stats ( options, argc, argv );
-    Option opt[stats.options_max], buffer[stats.buffer_max];
-    Parser parser ( options, argc, argv, opt, buffer );
+    Option buffer[stats.buffer_max];
+    opt.resize ( stats.options_max );
+    Parser parser ( options, argc, argv, &opt[0], buffer );
 
     if ( parser.error() )
         return -1;
@@ -813,6 +881,13 @@ int main ( int argc, char *argv[] )
         return system ( cmd.c_str() );
     }
 
+    if ( opt[DIRECTORY] && opt[DIRECTORY].arg )
+        ProcessManager::gameDir = opt[DIRECTORY].arg;
+
+    // Initialize config
+    ui.initialConfig.localVersion = LocalVersion;
+    ui.initialConfig.isTraining = ( bool ) opt[TRAINING];
+
     // Check if we should run in dummy mode
     RunFuncPtr run = ( opt[DUMMY] ? runDummy : runMain );
 
@@ -823,17 +898,20 @@ int main ( int argc, char *argv[] )
     for ( int i = 2; i < parser.nonOptionsCount(); ++i )
         ui.sessionMessage += toString ( "Non-option (%d): '%s'\n", i, parser.nonOption ( i ) );
 
-    // Initialize config
-    ui.initialConfig.localVersion = LocalVersion;
-    ui.initialConfig.isTraining = ( bool ) opt[TRAINING];
-
     // Non-options 1 and 2 are the IP address and port
     if ( parser.nonOptionsCount() == 1 )
+    {
         run ( parser.nonOption ( 0 ), ui.initialConfig );
+    }
     else if ( parser.nonOptionsCount() == 2 )
+    {
         run ( string ( parser.nonOption ( 0 ) ) + ":" + parser.nonOption ( 1 ), ui.initialConfig );
+    }
     else if ( opt[NO_UI] )
+    {
         printUsage ( cout, options );
+        return 0;
+    }
 
     if ( !opt[NO_UI] )
     {

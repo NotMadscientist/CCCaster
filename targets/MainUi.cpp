@@ -64,6 +64,15 @@ void MainUi::netplay ( RunFuncPtr run )
         {
             run ( address, initialConfig );
         }
+
+        if ( !sessionError.empty() )
+        {
+            // TODO better way to do this?
+            while ( !ui->top()->requiresUser )
+                ui->pop();
+            ui->pushBelow ( new ConsoleUi::TextBox ( sessionError ), { 1, 0 } ); // Expand width
+            sessionError.clear();
+        }
     }
 
     ui->pop();
@@ -281,11 +290,6 @@ void MainUi::display ( const string& message )
 
 bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pingStats )
 {
-    // netplayConfig.delay = 4;
-    // netplayConfig.rollback = 30;
-    // netplayConfig.training = 0;
-    // netplayConfig.hostPlayer = 1;
-
     ASSERT ( ui.get() != 0 );
 
     ui->pushInFront ( new ConsoleUi::TextBox (
@@ -294,6 +298,11 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
 
     // TODO implement me
     Sleep ( 10000 );
+
+    // netplayConfig.delay = 10;
+    // // netplayConfig.rollback = 30;
+    // netplayConfig.flags = NetplayConfig::Training;
+    // netplayConfig.hostPlayer = 1;
 
     ui->pop();
 

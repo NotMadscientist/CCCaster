@@ -92,6 +92,9 @@ private:
 
 public:
 
+    // Game directory, empty means current working directory
+    static std::string gameDir;
+
     // Basic constructor / destructor
     ProcessManager ( Owner *owner );
     ~ProcessManager();
