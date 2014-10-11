@@ -24,10 +24,34 @@ string Version::get ( PartEnum part ) const
     return code.substr ( j );
 }
 
-bool Version::compare ( const Version& other, uint8_t level ) const
+bool Version::similar ( const Version& other, uint8_t level ) const
 {
+    switch ( level )
+    {
+        default:
+        case 4:
+            if ( buildTime != other.buildTime )
+                return false;
 
-    return false;
+        case 3:
+            if ( commitId != other.commitId )
+                return false;
+
+        case 2:
+            if ( suffix() != other.suffix() )
+                return false;
+
+        case 1:
+            if ( minor() != other.minor() )
+                return false;
+
+        case 0:
+            if ( major() != other.major() )
+                return false;
+            break;
+    }
+
+    return true;
 }
 
 

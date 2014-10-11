@@ -124,7 +124,7 @@ void MainUi::offline ( RunFuncPtr run )
             // TODO remove me testing
             // netplayConfig.rollback = 30;
 
-            run ( "", netplayConfig );
+            run ( ":0", netplayConfig );
             finished = true;
         }
 

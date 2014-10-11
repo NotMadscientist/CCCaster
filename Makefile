@@ -138,10 +138,11 @@ res/icon.res: res/icon.rc res/icon.ico
 
 
 define make_version
-@printf "Version::Version ( LocalEnum )\n"               > lib/Version.local.h
-@printf "    : code ( \"$(VERSION)\" )\n"               >> lib/Version.local.h
-@printf "    , commitId ( \"`git rev-parse HEAD`\" )\n" >> lib/Version.local.h
-@printf "    , buildTime ( \"`date`\" ) {}\n"           >> lib/Version.local.h
+@printf "const Version LocalVersion (\n"   > lib/Version.local.h
+@printf "    \"$(VERSION)\",\n"           >> lib/Version.local.h
+@printf "    \"`git rev-parse HEAD`\",\n" >> lib/Version.local.h
+@printf "    \"`date`\"\n"                >> lib/Version.local.h
+@printf ");\n"                            >> lib/Version.local.h
 endef
 
 define make_protocol

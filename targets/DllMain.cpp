@@ -236,7 +236,6 @@ struct Main
 
             // Reset the game state (this resets game state and netMan state)
             procMan.loadState ( netMan.getLastChangedFrame(), netMan );
-
             return;
         }
 
@@ -638,11 +637,10 @@ struct Main
     // Timer callback
     void timerExpired ( Timer *timer ) override
     {
-        if ( timer == resendTimer.get() )
-        {
-            dataSocket->send ( netMan.getInputs ( localPlayer ) );
-            resendTimer->start ( RESEND_INPUTS_INTERVAL );
-        }
+        ASSERT ( timer == resendTimer.get() );
+
+        dataSocket->send ( netMan.getInputs ( localPlayer ) );
+        resendTimer->start ( RESEND_INPUTS_INTERVAL );
     }
 
     // DLL callback

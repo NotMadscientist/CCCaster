@@ -38,7 +38,7 @@ void Logger::initialize ( const string& name, uint32_t options )
         fprintf ( fd, "Version '%s' { '%s', '%s', '%s' }\n", LocalVersion.code.c_str(),
                   LocalVersion.major().c_str(), LocalVersion.minor().c_str(), LocalVersion.suffix().c_str() );
         fprintf ( fd, "Commit ID '%s'\n", LocalVersion.commitId.c_str() );
-        fprintf ( fd, "Build time '%s'\n", LocalVersion.buildTime.c_str() );
+        fprintf ( fd, "Build Time '%s'\n", LocalVersion.buildTime.c_str() );
         fflush ( fd );
     }
 }

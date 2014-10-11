@@ -823,15 +823,17 @@ int main ( int argc, char *argv[] )
     for ( int i = 2; i < parser.nonOptionsCount(); ++i )
         ui.sessionMessage += toString ( "Non-option (%d): '%s'\n", i, parser.nonOption ( i ) );
 
-    // Check if we are training mode
-    if ( opt[TRAINING] )
-        ui.initialConfig.isTraining = true;
+    // Initialize config
+    ui.initialConfig.localVersion = LocalVersion;
+    ui.initialConfig.isTraining = ( bool ) opt[TRAINING];
 
     // Non-options 1 and 2 are the IP address and port
     if ( parser.nonOptionsCount() == 1 )
         run ( parser.nonOption ( 0 ), ui.initialConfig );
     else if ( parser.nonOptionsCount() == 2 )
         run ( string ( parser.nonOption ( 0 ) ) + ":" + parser.nonOption ( 1 ), ui.initialConfig );
+    else if ( opt[NO_UI] )
+        printUsage ( cout, options );
 
     if ( !opt[NO_UI] )
     {

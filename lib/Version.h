@@ -9,15 +9,14 @@
 
 struct Version : public SerializableSequence
 {
-    enum LocalEnum { Local };
-
     enum PartEnum { Major, Minor, Suffix };
 
     std::string code;
     std::string commitId;
     std::string buildTime;
 
-    Version ( LocalEnum );
+    Version ( const std::string& code, const std::string& commitId, const std::string& buildTime )
+        : code ( code ), commitId ( commitId ), buildTime ( buildTime ) {}
 
     std::string major() const { return get ( Major ); }
 
@@ -25,7 +24,7 @@ struct Version : public SerializableSequence
 
     std::string suffix() const { return get ( Suffix ); }
 
-    bool compare ( const Version& other, uint8_t level = 0 ) const;
+    bool similar ( const Version& other, uint8_t level = 0xFF ) const;
 
     PROTOCOL_MESSAGE_BOILERPLATE ( Version, code, commitId, buildTime )
 
@@ -35,4 +34,8 @@ private:
 };
 
 
-const Version LocalVersion ( Version::Local );
+// Stream operator
+inline std::ostream& operator<< ( std::ostream& os, const Version& a ) { return ( os << a.code ); }
+
+
+extern const Version LocalVersion;

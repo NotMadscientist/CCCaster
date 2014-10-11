@@ -5,6 +5,7 @@
 #include "Logger.h"
 #include "Statistics.h"
 #include "Utilities.h"
+#include "Version.h"
 
 #include <cereal/types/array.hpp>
 #include <cereal/types/vector.hpp>
@@ -36,7 +37,7 @@ struct ClientType : public SerializableSequence
 
 struct InitialConfig : public SerializableSequence
 {
-    // TODO include version here
+    Version localVersion, remoteVersion;
     std::string localName, remoteName;
     uint8_t isTraining = 0;
 
@@ -50,7 +51,7 @@ struct InitialConfig : public SerializableSequence
         return toString ( "%s %s", remoteName, verb );
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( InitialConfig, localName, remoteName, isTraining )
+    PROTOCOL_MESSAGE_BOILERPLATE ( InitialConfig, localVersion, remoteVersion, localName, remoteName, isTraining )
 };
 
 
