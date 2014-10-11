@@ -373,7 +373,7 @@ void UdpSocket::timeoutGoBackN ( GoBackN *gbn )
 
 void UdpSocket::readEvent ( const MsgPtr& msg, const IpAddrPort& address )
 {
-    if ( isConnectionLess() || ( msg.get() && msg->getBaseType() != BaseType::SerializableSequence ) )
+    if ( isConnectionLess() || ( isClient() && msg.get() && msg->getBaseType() != BaseType::SerializableSequence ) )
     {
         // Recv directly if we're in connection-less mode, or it's not a sequenced message
         if ( owner )
@@ -390,15 +390,15 @@ void UdpSocket::readEvent ( const MsgPtr& msg, const IpAddrPort& address )
 
     if ( isServer() )
     {
-        // Server UDP sockets recv into the addressed socket
-        gbnRecvAddressed ( msg, address );
+        // Server UDP sockets recv into the addressed child socket
+        readEventAddressed ( msg, address );
         return;
     }
 
     LOG_UDP_SOCKET ( this, "Unexpected '%s' from '%s'", msg, address );
 }
 
-void UdpSocket::gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address )
+void UdpSocket::readEventAddressed ( const MsgPtr& msg, const IpAddrPort& address )
 {
     UdpSocket *socket;
 

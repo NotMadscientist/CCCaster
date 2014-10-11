@@ -23,9 +23,7 @@ HttpGet::HttpGet ( Owner *owner, const string& url ) : owner ( owner ), url ( ur
     if ( path.empty() )
         path = "/";
 
-    if ( i == string::npos )
-        host = host;
-    else
+    if ( i != string::npos )
         host = host.substr ( i );
 
     ASSERT ( host.empty() == false );

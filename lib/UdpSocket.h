@@ -46,8 +46,8 @@ private:
     void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override;
     void timeoutGoBackN ( GoBackN *gbn ) override;
 
-    // GoBackN recv into the correctly addressed socket
-    void gbnRecvAddressed ( const MsgPtr& msg, const IpAddrPort& address );
+    // Callback into the correctly addressed socket
+    void readEventAddressed ( const MsgPtr& msg, const IpAddrPort& address );
 
     // Send a protocol message directly, not over GoBackN
     bool sendRaw ( const MsgPtr& msg, const IpAddrPort& address );

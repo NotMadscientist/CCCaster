@@ -241,10 +241,12 @@ struct Main
         if ( serverSocket == serverCtrlSocket.get() )
         {
             ctrlSocket = serverCtrlSocket->accept ( this );
+            LOG ( "ctrlSocket=%08x", ctrlSocket );
         }
         else if ( serverSocket == serverDataSocket.get() )
         {
             dataSocket = serverDataSocket->accept ( this );
+            LOG ( "dataSocket=%08x", dataSocket );
             startPinging();
         }
         else
@@ -308,10 +310,6 @@ struct Main
                     gotInitialConfig ( msg->getAs<InitialConfig>() );
                     break;
 
-                case MsgType::Ping:
-                    pinger.gotPong ( msg );
-                    break;
-
                 case MsgType::PingStats:
                     gotPingStats ( msg->getAs<PingStats>() );
                     break;
@@ -327,7 +325,16 @@ struct Main
         }
         else if ( socket == dataSocket.get() )
         {
-            LOG ( "Unexpected '%s' from dataSocket=%08x", msg, socket );
+            switch ( msg->getMsgType() )
+            {
+                case MsgType::Ping:
+                    pinger.gotPong ( msg );
+                    break;
+
+                default:
+                    LOG ( "Unexpected '%s' from dataSocket=%08x", msg, socket );
+                    break;
+            }
         }
         else
         {
@@ -460,6 +467,8 @@ struct Main
         {
             ctrlSocket = UdpSocket::connect ( this, address );
             dataSocket = UdpSocket::connect ( this, { address.addr, uint16_t ( address.port + 1 ) } );
+            LOG ( "ctrlSocket=%08x", ctrlSocket );
+            LOG ( "dataSocket=%08x", dataSocket );
         }
 #else
         if ( isHost() )
@@ -471,6 +480,8 @@ struct Main
         {
             ctrlSocket = TcpSocket::connect ( this, address );
             dataSocket = UdpSocket::connect ( this, address );
+            LOG ( "ctrlSocket=%08x", ctrlSocket );
+            LOG ( "dataSocket=%08x", dataSocket );
         }
 #endif
 
