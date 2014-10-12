@@ -8,6 +8,7 @@
 #include "EventManager.h"
 
 #include <windows.h>
+#include <direct.h>
 
 #include <algorithm>
 
@@ -177,8 +178,15 @@ void ProcessManager::openGame()
 
     LOG ( "Running " MBAA_EXE );
 
-    if ( !gameDir.empty() && gameDir.back() != '/' && gameDir.back() != '\\' )
-        gameDir += '/';
+    char buffer[4096];
+    _getcwd ( buffer, sizeof ( buffer ) - 1 );
+
+    string cwd = buffer;
+
+    LOG ( "Working dir: %s", cwd );
+
+    if ( !gameDir.empty() && ( gameDir.back() == '/' || gameDir.back() == '\\' ) )
+        gameDir.resize ( gameDir.size() - 1 );
 
     LOG ( "Game dir: %s", gameDir );
 
@@ -186,15 +194,23 @@ void ProcessManager::openGame()
 
     if ( detectWine() )
     {
-        command = "cd " + gameDir + " && ./" LAUNCHER " " + gameDir + MBAA_EXE " " HOOK_DLL " &";
-        // TODO test if this works
+        command = "cd " + gameDir
+                  + " && " + cwd + "/" LAUNCHER " " + gameDir + "/" MBAA_EXE " " + cwd + "/" + HOOK_DLL " &";
+
+        replace ( command.begin(), command.end(), '\\', '/' );
     }
     else
     {
         command = "@start > nul 2>&1 \"\"";
         if ( !gameDir.empty() )
             command += " /d\"" + gameDir + "\"";
-        command += " " LAUNCHER " " + gameDir + MBAA_EXE " " HOOK_DLL;
+        command += " " + cwd + "\\" + LAUNCHER " " + gameDir + "/" MBAA_EXE " " + cwd + "\\" + HOOK_DLL;
+
+        auto begin = command.begin();
+        if ( !gameDir.empty() )
+            begin = command.begin() + ( command.find ( "/d" ) + 2 );
+
+        replace ( begin, command.end(), '/', '\\' );
     }
 
     LOG ( "Command: %s", command );
