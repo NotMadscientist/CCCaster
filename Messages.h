@@ -17,6 +17,7 @@
 
 struct EndOfMessages : public SerializableSequence { EMPTY_MESSAGE_BOILERPLATE ( EndOfMessages ) };
 struct CharaSelectLoaded : public SerializableSequence { EMPTY_MESSAGE_BOILERPLATE ( CharaSelectLoaded ) };
+struct ConfirmConfig : public SerializableSequence { EMPTY_MESSAGE_BOILERPLATE ( ConfirmConfig ) };
 
 
 struct ErrorMessage : public SerializableSequence

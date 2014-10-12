@@ -76,9 +76,9 @@ struct Main
 
         6 - Both merge PingStats and wait for user confirmation
 
-        7 - Host sends NetplayConfig on confirm
+        7 - Host sends NetplayConfig and waits for ConfirmConfig before starting
 
-        8 - Client waits for NetplayConfig before starting
+        8 - Client send ConfirmConfig and waits for NetplayConfig before starting
 
     */
 
@@ -114,17 +114,9 @@ struct Main
 
             netplayConfig = ui.getNetplayConfig();
 
-            // Make sure training mode is set consistently
-            if ( initialConfig.isTraining )
-            {
-                netplayConfig.flags |= NetplayConfig::Training;
-                netplayConfig.invalidate();
-            }
-
             ctrlSocket->send ( REF_PTR ( netplayConfig ) );
 
-            // Start the game and wait for callback to ipcConnectEvent
-            startGame();
+            // Wait for ConfirmConfig before starting game
         }
         else
         {
@@ -133,6 +125,8 @@ struct Main
                 EventManager::get().stop();
                 return;
             }
+
+            ctrlSocket->send ( new ConfirmConfig() );
 
             // Wait for NetplayConfig before starting game
         }
@@ -221,20 +215,14 @@ struct Main
         }
     }
 
-    virtual void gotNetplayConfig ( const NetplayConfig& netplayConfig )
-    {
-        ASSERT ( isClient() == true );
-
-        this->netplayConfig = netplayConfig;
-        this->netplayConfig.flags = ( initialConfig.isTraining ? NetplayConfig::Training : 0 );
-        this->netplayConfig.invalidate();
-
-        // Start the game and wait for callback to ipcConnectEvent
-        startGame();
-    }
-
     virtual void startGame()
     {
+        if ( isNetplay() )
+        {
+            netplayConfig.flags = ( initialConfig.isTraining ? NetplayConfig::Training : 0 );
+            netplayConfig.invalidate();
+        }
+
         // Remove sockets from the EventManager so messages get buffered.
         // These are safe to call even if null or the socket is not a real fd.
         SocketManager::get().remove ( serverCtrlSocket.get() );
@@ -442,7 +430,10 @@ struct Main
                     return;
 
                 case MsgType::NetplayConfig:
-                    gotNetplayConfig ( msg->getAs<NetplayConfig>() );
+                    netplayConfig = msg->getAs<NetplayConfig>();
+
+                case MsgType::ConfirmConfig:
+                    startGame();
                     return;
 
                 case MsgType::ErrorMessage:
