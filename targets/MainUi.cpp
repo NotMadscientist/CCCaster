@@ -290,39 +290,66 @@ void MainUi::display ( const string& message )
 
 bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pingStats )
 {
+    bool ret = false;
+
     ASSERT ( ui.get() != 0 );
 
     ui->pushInFront ( new ConsoleUi::TextBox (
                           initialConfig.getAcceptMessage ( "connected" ) + "\n"
                           + formatStats ( pingStats ) ), { 1, 0 }, true ); // Expand width and clear
 
-    // TODO implement me
-    Sleep ( 10000 );
+    ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger,
+                                            "Enter delay:", computeDelay ( pingStats.latency ),
+                                            false, 3 ), { 1, 0 } ); // Expand width
 
-    // netplayConfig.delay = 10;
-    // // netplayConfig.rollback = 30;
-    // netplayConfig.flags = NetplayConfig::Training;
-    // netplayConfig.hostPlayer = 1;
+    for ( ;; )
+    {
+        ConsoleUi::Element *menu = ui->popUntilUserInput();
+
+        if ( menu->resultInt < 0 )
+            break;
+
+        if ( menu->resultInt >= 0xFF )
+        {
+            ui->pushBelow ( new ConsoleUi::TextBox ( "Delay must be less than 255!" ), { 1, 0 } ); // Expand width
+            continue;
+        }
+
+        netplayConfig.delay = menu->resultInt;
+        netplayConfig.hostPlayer = 1;
+        ret = true;
+        break;
+    }
 
     ui->pop();
+    ui->pop();
 
-    return false;
+    return ret;
+
+    // netplayConfig.delay = 4;
+    // // netplayConfig.rollback = 30;
+    // netplayConfig.hostPlayer = 1;
+    // return true;
 }
 
 bool MainUi::connected ( const InitialConfig& initialConfig, const PingStats& pingStats )
 {
+    bool ret = false;
+
     ASSERT ( ui.get() != 0 );
 
     ui->pushInFront ( new ConsoleUi::TextBox (
                           initialConfig.getConnectMessage ( "Connected" ) + "\n"
                           + formatStats ( pingStats ) ), { 1, 0 }, true ); // Expand width and clear
 
-    // TODO implement me
-    Sleep ( 10000 );
+    ui->pushBelow ( new ConsoleUi::Menu ( "Continue?", { "Yes" }, "No" ) );
+
+    ret = ( ui->popUntilUserInput()->resultInt == 0 );
 
     ui->pop();
+    ui->pop();
 
-    return false;
+    return ret;
 }
 
 const void *MainUi::getConsoleWindow() const
