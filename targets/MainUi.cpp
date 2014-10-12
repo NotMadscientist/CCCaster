@@ -109,7 +109,7 @@ void MainUi::offline ( RunFuncPtr run )
             break;
 
         netplayConfig.flags = NetplayConfig::Offline;
-        if ( menu->resultInt )
+        if ( menu->resultInt == 1 )
             netplayConfig.flags |= NetplayConfig::Training;
 
         ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter delay:", 0, false, 3 ),

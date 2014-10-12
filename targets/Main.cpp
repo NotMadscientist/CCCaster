@@ -230,13 +230,8 @@ struct Main
         ASSERT ( isClient() == true );
 
         this->netplayConfig = netplayConfig;
-
-        // Make sure training mode is set consistently
-        if ( initialConfig.isTraining )
-        {
-            this->netplayConfig.flags |= NetplayConfig::Training;
-            this->netplayConfig.invalidate();
-        }
+        this->netplayConfig.flags = ( initialConfig.isTraining ? NetplayConfig::Training : 0 );
+        this->netplayConfig.invalidate();
 
         // Start the game and wait for callback to ipcConnectEvent
         startGame();
@@ -735,6 +730,7 @@ static void deinitialize()
         return;
     deinitialized = true;
 
+    externaIpAddress.stop();
     EventManager::get().release();
     Logger::get().deinitialize();
     exit ( 0 );

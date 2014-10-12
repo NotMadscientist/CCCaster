@@ -66,3 +66,8 @@ void ExternalIpAddress::start()
     httpGet.reset ( new HttpGet ( this, externalIpServices[0] ) );
     httpGet->start();
 }
+
+void ExternalIpAddress::stop()
+{
+    httpGet.reset();
+}

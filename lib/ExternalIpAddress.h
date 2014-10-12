@@ -37,4 +37,6 @@ public:
     ExternalIpAddress ( Owner *owner );
 
     void start();
+
+    void stop();
 };
