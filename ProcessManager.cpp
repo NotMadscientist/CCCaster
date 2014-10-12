@@ -194,8 +194,7 @@ void ProcessManager::openGame()
 
     if ( detectWine() )
     {
-        command = "cd " + gameDir
-                  + " && " + cwd + "/" LAUNCHER " " + gameDir + "/" MBAA_EXE " " + cwd + "/" + HOOK_DLL " &";
+        command = "cd " + gameDir + " && " + cwd + "/" LAUNCHER " " MBAA_EXE " " + cwd + "/" + HOOK_DLL " &";
 
         replace ( command.begin(), command.end(), '\\', '/' );
     }
