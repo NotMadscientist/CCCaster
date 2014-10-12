@@ -24,6 +24,8 @@ struct Version : public SerializableSequence
 
     std::string suffix() const { return get ( Suffix ); }
 
+    bool isCustom() const;
+
     bool similar ( const Version& other, uint8_t level = 0xFF ) const;
 
     PROTOCOL_MESSAGE_BOILERPLATE ( Version, code, commitId, buildTime )

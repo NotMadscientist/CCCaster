@@ -137,12 +137,10 @@ res/icon.res: res/icon.rc res/icon.ico
 	$(WINDRES) -F pe-i386 res/icon.rc -O coff -o $@
 
 
+CLEAN=`git status | grep "^nothing to commit, working directory clean$$" | sed -r s/.+clean$$/clean/g`
+
 define make_version
-@printf "const Version LocalVersion (\n"   > lib/Version.local.h
-@printf "    \"$(VERSION)\",\n"           >> lib/Version.local.h
-@printf "    \"`git rev-parse HEAD`\",\n" >> lib/Version.local.h
-@printf "    \"`date`\"\n"                >> lib/Version.local.h
-@printf ");\n"                            >> lib/Version.local.h
+@scripts/make_version $(VERSION) > lib/Version.local.h
 endef
 
 define make_protocol

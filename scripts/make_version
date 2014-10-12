@@ -1,0 +1,15 @@
+#!/bin/sh
+
+CODE=$1
+CLEAN=`git status | grep "^nothing to commit, working directory clean$" | sed -r s/.+clean$/clean/g`
+COMMIT_ID=`git rev-parse --short HEAD`
+
+printf "const Version LocalVersion (\n"
+printf "    \"$CODE\",\n"
+if [ "$CLEAN" == "" ]; then
+printf "    \"$COMMIT_ID-custom\",\n"
+else
+printf "    \"$COMMIT_ID-clean\",\n"
+fi
+printf "    \"`date`\"\n"
+printf ");\n"
