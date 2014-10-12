@@ -6,6 +6,7 @@ echo 'FirstType = 0,' > $DIR/tmp
 
 grep --extended-regexp "public Serializable[A-Z]" "$@" \
   | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/\1,/' \
+  | sort \
   >> $DIR/tmp
 
 echo 'LastType' >> $DIR/tmp
@@ -28,14 +29,18 @@ if [ $? -ne 0 ]; then
   grep --extended-regexp "public Serializable[A-Z]" "$@" \
     | sed -r \
       's/^(.+\.h):[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nMsgType \2::getMsgType() const { return MsgType::\2; }/' \
+    | sort \
+    | uniq \
     > $DIR/Protocol.types.h
 
   grep --extended-regexp "public Serializable[A-Z]" "$@" \
     | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1: return ( os << "\1" );/' \
+    | sort \
     > $DIR/Protocol.strings.h
 
   grep --extended-regexp "public Serializable[A-Z]" "$@" \
     | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z]+) .+$$/case MsgType::\1: msg.reset ( new \1() ); break;/' \
+    | sort \
     > $DIR/Protocol.decode.h
 
 else
