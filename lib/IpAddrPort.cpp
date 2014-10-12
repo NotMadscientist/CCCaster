@@ -81,7 +81,7 @@ IpAddrPort::IpAddrPort ( const std::string& addrPort ) : addr ( addrPort ), port
     int i;
 
     for ( i = addr.size() - 1; i >= 0; --i )
-        if ( !isdigit ( addr[i] ) )
+        if ( addr[i] == ':' )
             break;
 
     if ( i == ( int ) addr.size() - 1 )

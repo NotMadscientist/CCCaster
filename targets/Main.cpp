@@ -48,15 +48,17 @@ struct Main
         , public ExternalIpAddress::Owner
         , public KeyboardManager::Owner
 {
+    IpAddrPort address;
+
+    InitialConfig initialConfig;
+
+    NetplayConfig netplayConfig;
+
     bool shouldPing = false;
 
     Pinger pinger;
 
-    InitialConfig initialConfig;
-
     PingStats pingStats;
-
-    NetplayConfig netplayConfig;
 
     TimerPtr stopTimer;
 
@@ -79,12 +81,6 @@ struct Main
         8 - Client waits for NetplayConfig before starting
 
     */
-
-    virtual void delayedStop()
-    {
-        stopTimer.reset ( new Timer ( this ) );
-        stopTimer->start ( STOP_EVENTS_DELAY );
-    }
 
     virtual void userConfirmation()
     {
@@ -248,6 +244,96 @@ struct Main
 
         // Open the game wait and for callback to ipcConnectEvent
         procMan.openGame();
+    }
+
+    virtual void startNetplay()
+    {
+        TimerManager::get().initialize();
+        SocketManager::get().initialize();
+        ControllerManager::get().initialize ( this );
+        KeyboardManager::get().hook ( this, ui.getConsoleWindow(), { VK_ESCAPE } );
+
+        if ( isHost() )
+        {
+            externaIpAddress.owner = this;
+            externaIpAddress.start();
+            updateExternalIpAddress ( address.port, initialConfig.isTraining );
+        }
+        else
+        {
+            ui.display ( toString ( "Connecting to %s", address ) );
+        }
+
+#if 0
+        if ( isHost() )
+        {
+            serverCtrlSocket = UdpSocket::listen ( this, address.port );
+            serverDataSocket = UdpSocket::listen ( this, address.port + 1 );
+        }
+        else
+        {
+            ctrlSocket = UdpSocket::connect ( this, address );
+            dataSocket = UdpSocket::connect ( this, { address.addr, uint16_t ( address.port + 1 ) } );
+            LOG ( "ctrlSocket=%08x", ctrlSocket );
+            LOG ( "dataSocket=%08x", dataSocket );
+        }
+#else
+        if ( isHost() )
+        {
+            serverCtrlSocket = TcpSocket::listen ( this, address.port );
+            serverDataSocket = UdpSocket::listen ( this, address.port );
+        }
+        else
+        {
+            ctrlSocket = TcpSocket::connect ( this, address );
+            dataSocket = UdpSocket::connect ( this, address );
+            LOG ( "ctrlSocket=%08x", ctrlSocket );
+            LOG ( "dataSocket=%08x", dataSocket );
+        }
+#endif
+
+        EventManager::get().start();
+
+        KeyboardManager::get().unhook();
+        ControllerManager::get().deinitialize();
+        SocketManager::get().deinitialize();
+        TimerManager::get().deinitialize();
+    }
+
+    virtual void startLocal()
+    {
+        TimerManager::get().initialize();
+        SocketManager::get().initialize();
+        ControllerManager::get().initialize ( this );
+
+        if ( isBroadcast() )
+        {
+            ASSERT ( address.addr == "" );
+            ASSERT ( address.port != 0 );
+
+            // TODO open sockets
+
+            externaIpAddress.owner = this;
+            externaIpAddress.start();
+        }
+
+        // Open the game immediately
+        procMan.openGame();
+
+        EventManager::get().start();
+
+        externaIpAddress.owner = 0;
+        procMan.closeGame();
+
+        ControllerManager::get().deinitialize();
+        SocketManager::get().deinitialize();
+        TimerManager::get().deinitialize();
+    }
+
+    virtual void delayedStop()
+    {
+        stopTimer.reset ( new Timer ( this ) );
+        stopTimer->start ( STOP_EVENTS_DELAY );
     }
 
     // Pinger callbacks
@@ -495,79 +581,33 @@ struct Main
             EventManager::get().stop();
     }
 
-    // Netplay constructor
-    Main ( const IpAddrPort& address, const InitialConfig& initialConfig )
-        : CommonMain ( address.addr.empty() ? ClientType::Host : ClientType::Client )
-        , pinger ( this, PING_INTERVAL, NUM_PINGS )
-        , initialConfig ( initialConfig )
+    // Constructor
+    Main ( const IpAddrPort& address, const Serializable& config )
+        : CommonMain ( config.getMsgType() == MsgType::InitialConfig
+                       ? ( address.addr.empty() ? ClientType::Host : ClientType::Client )
+                       : ( address.port ? ClientType::Broadcast : ClientType::Offline ) )
+        , address ( address )
     {
-        TimerManager::get().initialize();
-        SocketManager::get().initialize();
-        ControllerManager::get().initialize ( this );
-        KeyboardManager::get().hook ( this, ui.getConsoleWindow(), { VK_ESCAPE } );
-
-#if 0
-        if ( isHost() )
+        if ( isNetplay() )
         {
-            serverCtrlSocket = UdpSocket::listen ( this, address.port );
-            serverDataSocket = UdpSocket::listen ( this, address.port + 1 );
+            initialConfig = config.getAs<InitialConfig>();
+            pinger.owner = this;
+            pinger.pingInterval = PING_INTERVAL;
+            pinger.numPings = NUM_PINGS;
+        }
+        else if ( isLocal() )
+        {
+            netplayConfig = config.getAs<NetplayConfig>();
         }
         else
         {
-            ctrlSocket = UdpSocket::connect ( this, address );
-            dataSocket = UdpSocket::connect ( this, { address.addr, uint16_t ( address.port + 1 ) } );
-            LOG ( "ctrlSocket=%08x", ctrlSocket );
-            LOG ( "dataSocket=%08x", dataSocket );
+            ASSERT ( !"This shouldn't happen!" );
         }
-#else
-        if ( isHost() )
-        {
-            serverCtrlSocket = TcpSocket::listen ( this, address.port );
-            serverDataSocket = UdpSocket::listen ( this, address.port );
-        }
-        else
-        {
-            ctrlSocket = TcpSocket::connect ( this, address );
-            dataSocket = UdpSocket::connect ( this, address );
-            LOG ( "ctrlSocket=%08x", ctrlSocket );
-            LOG ( "dataSocket=%08x", dataSocket );
-        }
-#endif
-
-        if ( isHost() )
-        {
-            externaIpAddress.owner = this;
-            externaIpAddress.start();
-        }
-    }
-
-    // Broadcast or offline constructor
-    Main ( const NetplayConfig& netplayConfig, uint16_t port = 0 )
-        : CommonMain ( netplayConfig.isOffline() ? ClientType::Offline : ClientType::Broadcast )
-        , netplayConfig ( netplayConfig )
-    {
-        TimerManager::get().initialize();
-        SocketManager::get().initialize();
-        ControllerManager::get().initialize ( this );
-
-        if ( isBroadcast() )
-        {
-            ASSERT ( port != 0 );
-
-            // TODO
-        }
-
-        // Open the game wait and for callback to ipcConnectEvent
-        procMan.openGame();
     }
 
     // Destructor
     virtual ~Main()
     {
-        externaIpAddress.owner = 0;
-
-        procMan.closeGame();
-
         KeyboardManager::get().unhook();
         ControllerManager::get().deinitialize();
         SocketManager::get().deinitialize();
@@ -651,22 +691,17 @@ static void updateExternalIpAddress ( uint16_t port, bool training )
 
 static void runMain ( const IpAddrPort& address, const Serializable& config )
 {
+    Main main ( address, config );
+
     try
     {
-        if ( config.getMsgType() == MsgType::NetplayConfig )
+        if ( main.isNetplay() )
         {
-            Main main ( config.getAs<NetplayConfig>(), address.port );
-            EventManager::get().start();
+            main.startNetplay();
         }
-        else if ( config.getMsgType() == MsgType::InitialConfig )
+        else if ( main.isLocal() )
         {
-            if ( address.addr.empty() )
-                updateExternalIpAddress ( address.port, config.getAs<InitialConfig>().isTraining );
-            else
-                ui.display ( toString ( "Connecting to %s", address ) );
-
-            Main main ( address, config.getAs<InitialConfig>() );
-            EventManager::get().start();
+            main.startLocal();
         }
         else
         {
@@ -696,11 +731,11 @@ static void runDummy ( const IpAddrPort& address, const Serializable& config )
     ASSERT ( address.addr.empty() == false );
     ASSERT ( config.getMsgType() == MsgType::InitialConfig );
 
+    DummyMain main ( address, config.getAs<InitialConfig>() );
+
     try
     {
-        ui.display ( toString ( "Connecting to %s", address ) );
-        DummyMain main ( address, config.getAs<InitialConfig>() );
-        EventManager::get().start();
+        main.startNetplay();
     }
     catch ( const Exception& err )
     {
