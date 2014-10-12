@@ -3,10 +3,7 @@
 #include "Utilities.h"
 #include "Version.h"
 #include "ConsoleUi.h"
-#include "Constants.h"
-
-#include <iostream>
-#include <fstream>
+#include "ProcessManager.h"
 
 using namespace std;
 
@@ -151,44 +148,12 @@ void MainUi::settings()
 {
 }
 
-static string fetchGameUserName()
-{
-    string line, buffer;
-    ifstream fin ( CC_NETWORK_CONFIG_FILE );
-
-    while ( getline ( fin, line ) )
-    {
-        buffer.clear();
-
-        if ( line.substr ( 0, sizeof ( CC_NETWORK_USERNAME_KEY ) - 1 ) == CC_NETWORK_USERNAME_KEY )
-        {
-            // Find opening quote
-            size_t pos = line.find ( '"' );
-            if ( pos == string::npos )
-                break;
-
-            buffer = line.substr ( pos + 1 );
-
-            // Find closing quote
-            pos = buffer.rfind ( '"' );
-            if ( pos == string::npos )
-                break;
-
-            buffer.erase ( pos );
-            break;
-        }
-    }
-
-    fin.close();
-    return buffer;
-}
-
-MainUi::MainUi()
+void MainUi::initialize()
 {
     config.putInteger ( "alertOnConnect", 3 );
     config.putString ( "alertWavFile", SYSTEM_DEFAULT_ALERT );
     config.putInteger ( "autoRehostOnError", 5 );
-    config.putString ( "displayName", fetchGameUserName() );
+    config.putString ( "displayName", ProcessManager::fetchGameUserName() );
     // config.putInteger ( "highCpuPriority", 1 );
     // config.putInteger ( "joystickDeadzone", 25000 );
     config.putInteger ( "lastUsedPort", -1 );

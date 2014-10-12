@@ -39,7 +39,7 @@ public:
 
     std::string sessionError;
 
-    MainUi();
+    void initialize();
 
     void main ( RunFuncPtr run );
 

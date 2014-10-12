@@ -11,6 +11,8 @@
 #include <direct.h>
 
 #include <algorithm>
+#include <iostream>
+#include <fstream>
 
 using namespace std;
 
@@ -21,6 +23,8 @@ using namespace std;
 
 #define PIPE_CONNECT_TIMEOUT    ( 5000 )
 
+
+string ProcessManager::gameDir;
 
 void ProcessManager::writeGameInput ( uint8_t player, uint16_t direction, uint16_t buttons )
 {
@@ -203,7 +207,10 @@ void ProcessManager::openGame()
         command = "@start > nul 2>&1 \"\"";
         if ( !gameDir.empty() )
             command += " /d\"" + gameDir + "\"";
-        command += " " + cwd + "\\" + LAUNCHER " " + gameDir + "/" MBAA_EXE " " + cwd + "\\" + HOOK_DLL;
+        command += " " + cwd + "\\" + LAUNCHER " ";
+        if ( !gameDir.empty() )
+            command += gameDir + "\\";
+        command += MBAA_EXE " " + cwd + "\\" + HOOK_DLL;
 
         auto begin = command.begin();
         if ( !gameDir.empty() )
@@ -213,6 +220,7 @@ void ProcessManager::openGame()
     }
 
     LOG ( "Command: %s", command );
+
     system ( command.c_str() );
 
     LOG ( "Connecting pipe" );
@@ -378,4 +386,49 @@ ProcessManager::~ProcessManager()
     disconnectPipe();
 }
 
-string ProcessManager::gameDir;
+string ProcessManager::fetchGameUserName()
+{
+    if ( !gameDir.empty() && ( gameDir.back() == '/' || gameDir.back() == '\\' ) )
+        gameDir.resize ( gameDir.size() - 1 );
+
+    string path;
+    if ( !gameDir.empty() )
+        path = gameDir + ( detectWine() ? "/" : "\\" );
+    path += CC_NETWORK_CONFIG_FILE;
+
+    if ( detectWine() )
+        replace ( path.begin(), path.end(), '\\', '/' );
+    else
+        replace ( path.begin(), path.end(), '/', '\\' );
+
+    LOG ( "Opening: %s", path );
+
+    string line, buffer;
+    ifstream fin ( path );
+
+    while ( getline ( fin, line ) )
+    {
+        buffer.clear();
+
+        if ( line.substr ( 0, sizeof ( CC_NETWORK_USERNAME_KEY ) - 1 ) == CC_NETWORK_USERNAME_KEY )
+        {
+            // Find opening quote
+            size_t pos = line.find ( '"' );
+            if ( pos == string::npos )
+                break;
+
+            buffer = line.substr ( pos + 1 );
+
+            // Find closing quote
+            pos = buffer.rfind ( '"' );
+            if ( pos == string::npos )
+                break;
+
+            buffer.erase ( pos );
+            break;
+        }
+    }
+
+    fin.close();
+    return buffer;
+}

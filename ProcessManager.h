@@ -95,6 +95,9 @@ public:
     // Game directory, empty means current working directory
     static std::string gameDir;
 
+    // Get the user name from the game config
+    static std::string fetchGameUserName();
+
     // Basic constructor / destructor
     ProcessManager ( Owner *owner );
     ~ProcessManager();

@@ -916,6 +916,7 @@ int main ( int argc, char *argv[] )
         ProcessManager::gameDir = opt[DIRECTORY].arg;
 
     // Initialize config
+    ui.initialize();
     ui.initialConfig.localVersion = LocalVersion;
     ui.initialConfig.isTraining = ( bool ) opt[TRAINING];
 
