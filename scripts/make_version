@@ -6,7 +6,7 @@ COMMIT_ID=`git rev-parse --short HEAD`
 
 printf "const Version LocalVersion (\n"
 printf "    \"$CODE\",\n"
-if [ "$CLEAN" == "" ]; then
+if [ "$CLEAN" = "" ]; then
 printf "    \"$COMMIT_ID-custom\",\n"
 else
 printf "    \"$COMMIT_ID-clean\",\n"
