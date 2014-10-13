@@ -28,6 +28,13 @@ struct Version : public SerializableSequence
 
     bool similar ( const Version& other, uint8_t level = 0xFF ) const;
 
+    void clear()
+    {
+        code.clear();
+        commitId.clear();
+        buildTime.clear();
+    }
+
     PROTOCOL_MESSAGE_BOILERPLATE ( Version, code, commitId, buildTime )
 
 private:

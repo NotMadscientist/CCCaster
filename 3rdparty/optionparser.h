@@ -892,8 +892,16 @@ struct Arg
   //! @brief Returns ARG_OK if the argument is attached and ARG_IGNORE otherwise.
   static ArgStatus Optional(const Option& option, bool)
   {
-    if (option.arg && option.name[option.namelen] != 0)
+    if (option.arg != 0)
       return ARG_OK;
+    else
+      return ARG_IGNORE;
+  }
+
+  static ArgStatus OptionalNumeric(const Option& option, bool msg)
+  {
+    if (option.arg != 0)
+      return Numeric(option, msg);
     else
       return ARG_IGNORE;
   }

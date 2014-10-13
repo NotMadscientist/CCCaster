@@ -76,8 +76,11 @@ const char *inet_ntop ( int af, const void *src, char *dst, size_t size )
     return 0;
 }
 
-IpAddrPort::IpAddrPort ( const std::string& addrPort ) : addr ( addrPort ), port ( 0 ), isV4 ( true )
+IpAddrPort::IpAddrPort ( const string& addrPort ) : addr ( addrPort ), port ( 0 ), isV4 ( true )
 {
+    if ( addrPort.empty() )
+        return;
+
     int i;
 
     for ( i = addr.size() - 1; i >= 0; --i )

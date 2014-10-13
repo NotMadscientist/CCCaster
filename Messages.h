@@ -36,26 +36,6 @@ struct ClientType : public SerializableSequence
 };
 
 
-struct InitialConfig : public SerializableSequence
-{
-    Version localVersion, remoteVersion;
-    std::string localName, remoteName;
-    uint8_t isTraining = 0;
-
-    std::string getConnectMessage ( const std::string& verb ) const
-    {
-        return toString ( "%s to %s%s", verb, remoteName, ( isTraining ? " (training mode)" : "" ) );
-    }
-
-    std::string getAcceptMessage ( const std::string& verb ) const
-    {
-        return toString ( "%s %s", remoteName, verb );
-    }
-
-    PROTOCOL_MESSAGE_BOILERPLATE ( InitialConfig, localVersion, remoteVersion, localName, remoteName, isTraining )
-};
-
-
 struct PingStats : public SerializableSequence
 {
     Statistics latency;
@@ -67,13 +47,51 @@ struct PingStats : public SerializableSequence
 };
 
 
-struct NetplayConfig : public SerializableSequence
+struct ConfigOptions
 {
-    enum { Training = 0x01, Offline = 0x02 };
+    enum { Training = 0x01, Broadcast = 0x02, Offline = 0x04 };
 
-    uint8_t delay = 0xFF, rollback = 0;
     uint8_t flags = 0;
+
+    bool isTraining() const { return ( flags & Training ); }
+    bool isBroadcast() const { return ( flags & Broadcast ); }
+    bool isOffline() const { return ( flags & Offline ); }
+};
+
+
+struct InitialConfig : public SerializableSequence, public ConfigOptions
+{
+    Version localVersion, remoteVersion;
+    std::string localName, remoteName;
+
+    std::string getConnectMessage ( const std::string& verb ) const
+    {
+        return toString ( "%s to %s%s", verb, remoteName, ( isTraining() ? " (training mode)" : "" ) );
+    }
+
+    std::string getAcceptMessage ( const std::string& verb ) const
+    {
+        return toString ( "%s %s", remoteName, verb );
+    }
+
+    void clear()
+    {
+        flags = 0;
+        localVersion = LocalVersion;
+        remoteVersion.clear();
+        localName.clear();
+        remoteName.clear();
+    }
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( InitialConfig, flags, localVersion, remoteVersion, localName, remoteName )
+};
+
+
+struct NetplayConfig : public SerializableSequence, public ConfigOptions
+{
+    uint8_t delay = 0xFF, rollback = 0;
     uint8_t hostPlayer = 0;
+    uint16_t broadcastPort = 0;
 
     uint8_t getOffset() const
     {
@@ -83,10 +101,13 @@ struct NetplayConfig : public SerializableSequence
             return delay - rollback;
     }
 
-    bool isTraining() const { return ( flags & Training ); }
-    bool isOffline() const { return ( flags & Offline ); }
+    void clear()
+    {
+        flags = rollback = hostPlayer = broadcastPort = 0;
+        delay = 0xFF;
+    }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( NetplayConfig, delay, rollback, flags, hostPlayer )
+    PROTOCOL_MESSAGE_BOILERPLATE ( NetplayConfig, flags, delay, rollback, hostPlayer, broadcastPort )
 };
 
 

@@ -41,32 +41,14 @@ void MainUi::netplay ( RunFuncPtr run )
             continue;
         }
 
-        if ( address.addr.empty() )
-        {
-            ui->pushBelow ( new ConsoleUi::Menu ( "Netplay", { "Versus", "Training" }, "Cancel" ) );
+        run ( address, initialConfig );
 
-            menu = ui->popUntilUserInput();
-            int result = menu->resultInt;
-
+        // TODO better way to do this?
+        while ( !ui->top()->requiresUser )
             ui->pop();
-
-            if ( result >= 0 && result <= 1 )
-            {
-                initialConfig.isTraining = result;
-
-                run ( address, initialConfig );
-            }
-        }
-        else
-        {
-            run ( address, initialConfig );
-        }
 
         if ( !sessionError.empty() )
         {
-            // TODO better way to do this?
-            while ( !ui->top()->requiresUser )
-                ui->pop();
             ui->pushBelow ( new ConsoleUi::TextBox ( sessionError ), { 1, 0 } ); // Expand width
             sessionError.clear();
         }
@@ -78,7 +60,8 @@ void MainUi::netplay ( RunFuncPtr run )
 void MainUi::spectate ( RunFuncPtr run )
 {
     ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptString,
-                                            "Enter/paste <ip>:<port> to spectate:" ) );
+                                            "Enter/paste <ip>:<port> to spectate:" ),
+    { 1, 0 } ); // Expand width
 
     // TODO implement me
 
@@ -87,54 +70,75 @@ void MainUi::spectate ( RunFuncPtr run )
 
 void MainUi::broadcast ( RunFuncPtr run )
 {
-    ui->pushRight ( new ConsoleUi::Menu ( "Broadcast", { "Versus", "Training" }, "Cancel" ) );
+    ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger,
+                                            "Enter/paste <port> to broadcast:",
+                                            INT_MIN, false, 5 ) );
 
-    // TODO implement me
+    for ( ;; )
+    {
+        ConsoleUi::Element *menu = ui->popUntilUserInput();
+
+        if ( menu->resultInt == INT_MIN )
+            break;
+
+        ASSERT ( menu->resultInt >= 0 );
+
+        if ( menu->resultInt > 0xFFFF )
+        {
+            ui->pushBelow ( new ConsoleUi::TextBox ( "Port must be less than 65536!" ) );
+            continue;
+        }
+
+        netplayConfig.clear();
+        netplayConfig.flags = ( initialConfig.flags | ConfigOptions::Broadcast );
+        netplayConfig.delay = 0;
+        netplayConfig.broadcastPort = menu->resultInt;
+
+        run ( "", netplayConfig );
+
+        // TODO better way to do this?
+        while ( !ui->top()->requiresUser )
+            ui->pop();
+
+        if ( !sessionError.empty() )
+        {
+            ui->pushBelow ( new ConsoleUi::TextBox ( sessionError ), { 1, 0 } ); // Expand width
+            sessionError.clear();
+        }
+    }
 
     ui->pop();
 }
 
 void MainUi::offline ( RunFuncPtr run )
 {
-    ui->pushRight ( new ConsoleUi::Menu ( "Offline", { "Versus", "Training" }, "Cancel" ) );
+    ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter delay:", 0, false, 3 ) );
 
-    for ( bool finished = false; !finished; )
+    for ( ;; )
     {
         ConsoleUi::Element *menu = ui->popUntilUserInput();
 
-        if ( menu->resultInt < 0 || menu->resultInt > 1 )
+        if ( menu->resultInt == INT_MIN )
             break;
 
-        netplayConfig.flags = NetplayConfig::Offline;
-        if ( menu->resultInt == 1 )
-            netplayConfig.flags |= NetplayConfig::Training;
+        ASSERT ( menu->resultInt >= 0 );
 
-        ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter delay:", 0, false, 3 ),
-        { 1, 0 } ); // Expand width
-
-        while ( !finished )
+        if ( menu->resultInt >= 0xFF )
         {
-            menu = ui->popUntilUserInput();
-
-            if ( menu->resultInt < 0 )
-                break;
-
-            if ( menu->resultInt >= 0xFF )
-            {
-                ui->pushBelow ( new ConsoleUi::TextBox ( "Delay must be less than 255!" ), { 1, 0 } ); // Expand width
-                continue;
-            }
-
-            netplayConfig.delay = menu->resultInt;
-
-            // TODO remove me testing
-            // netplayConfig.rollback = 30;
-
-            run ( ":0", netplayConfig );
-            finished = true;
+            ui->pushBelow ( new ConsoleUi::TextBox ( "Delay must be less than 255!" ) );
+            continue;
         }
 
-        ui->pop();
+        netplayConfig.clear();
+        netplayConfig.flags = ( initialConfig.flags | ConfigOptions::Offline );
+        netplayConfig.delay = menu->resultInt;
+        netplayConfig.hostPlayer = 1;
+
+        // TODO remove me testing
+        // netplayConfig.rollback = 30;
+
+        run ( "", netplayConfig );
+        break;
     }
 
     ui->pop();
@@ -159,6 +163,7 @@ void MainUi::initialize()
     config.putInteger ( "lastUsedPort", -1 );
     config.putInteger ( "spectatorCap", -1 );
 
+    initialConfig.clear();
     initialConfig.localName = config.getString ( "displayName" );
 }
 
@@ -185,9 +190,24 @@ void MainUi::main ( RunFuncPtr run )
         // Update UI internal state here
         initialConfig.localName = config.getString ( "displayName" );
 
-        ConsoleUi::Element *menu = ui->popUntilUserInput();
+        int main = ui->popUntilUserInput()->resultInt;
 
-        switch ( menu->resultInt )
+        if ( main < 0 || main > 5 )
+            return;
+
+        if ( main < 4 )
+        {
+            ui->pushRight ( new ConsoleUi::Menu ( "Mode", { "Versus", "Training" }, "Cancel" ) );
+            int mode = ui->popUntilUserInput()->resultInt;
+            ui->pop();
+
+            if ( mode < 0 || mode > 1 )
+                continue;
+
+            initialConfig.flags = ( mode == 1 ? ConfigOptions::Training : 0 );
+        }
+
+        switch ( main )
         {
             case 0:
                 netplay ( run );

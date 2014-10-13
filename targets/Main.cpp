@@ -27,7 +27,8 @@ using namespace option;
 
 
 // Set of command line options
-enum CommandLineOptions { UNKNOWN, HELP, DUMMY, GTEST, STDOUT, NO_FORK, NO_UI, STRICT_VERSION, TRAINING, DIRECTORY };
+enum CommandLineOptions
+{ UNKNOWN, HELP, DUMMY, GTEST, STDOUT, NO_FORK, NO_UI, STRICT_VERSION, TRAINING, BROADCAST, OFFLINE, DIRECTORY };
 
 // Active command line options
 static vector<Option> opt;
@@ -39,7 +40,7 @@ static MainUi ui;
 ExternalIpAddress externaIpAddress ( 0 );
 
 // Update the status of the external IP address
-static void updateExternalIpAddress ( uint16_t port, bool training );
+static void updateExternalIpAddress ( uint16_t port, const ConfigOptions& opt );
 
 
 struct Main
@@ -66,7 +67,7 @@ struct Main
 
         1 - Connect / accept sockets
 
-        2 - Both send InitialConfig (version, name, isTraining)
+        2 - Both send InitialConfig (version, name, flags)
 
         3 - Both recv InitialConfig (update connecting message)
 
@@ -147,9 +148,9 @@ struct Main
 
         const Version RemoteVersion = this->initialConfig.remoteVersion;
 
-        LOG ( "Initial config: remoteVersion='%s'; commitId='%s'; buildTime='%s'; remoteName='%s'; training=%d",
-              RemoteVersion, RemoteVersion.commitId, RemoteVersion.buildTime,
-              this->initialConfig.remoteName, initialConfig.isTraining );
+        LOG ( "Initial config: remoteVersion='%s'; commitId='%s'; buildTime='%s'; remoteName='%s'"
+              "; isTraining=%d; isBroadcast=%d", RemoteVersion, RemoteVersion.commitId, RemoteVersion.buildTime,
+              this->initialConfig.remoteName, initialConfig.isTraining(), initialConfig.isBroadcast() );
 
         if ( this->initialConfig.remoteName.empty() )
             this->initialConfig.remoteName = ctrlSocket->address.addr;
@@ -191,7 +192,7 @@ struct Main
         }
         else
         {
-            this->initialConfig.isTraining = initialConfig.isTraining;
+            this->initialConfig.flags = initialConfig.flags;
             ui.display ( this->initialConfig.getConnectMessage ( "Connecting" ) );
         }
     }
@@ -219,7 +220,7 @@ struct Main
     {
         if ( isNetplay() )
         {
-            netplayConfig.flags = ( initialConfig.isTraining ? NetplayConfig::Training : 0 );
+            netplayConfig.flags = initialConfig.flags;
             netplayConfig.invalidate();
         }
 
@@ -245,7 +246,7 @@ struct Main
         {
             externaIpAddress.owner = this;
             externaIpAddress.start();
-            updateExternalIpAddress ( address.port, initialConfig.isTraining );
+            updateExternalIpAddress ( address.port, initialConfig );
         }
         else
         {
@@ -296,13 +297,9 @@ struct Main
 
         if ( isBroadcast() )
         {
-            ASSERT ( address.addr == "" );
-            ASSERT ( address.port != 0 );
-
-            // TODO open sockets
-
             externaIpAddress.owner = this;
             externaIpAddress.start();
+            updateExternalIpAddress ( netplayConfig.broadcastPort, initialConfig );
         }
 
         // Open the game immediately
@@ -555,14 +552,14 @@ struct Main
     {
         LOG ( "External IP address: '%s'", address );
 
-        updateExternalIpAddress ( serverCtrlSocket->address.port, initialConfig.isTraining );
+        updateExternalIpAddress ( isBroadcast() ? netplayConfig.broadcastPort : this->address.port, initialConfig );
     }
 
     virtual void unknownExternalIpAddress ( ExternalIpAddress *extIpAddr ) override
     {
         LOG ( "Unknown external IP address!" );
 
-        updateExternalIpAddress ( serverCtrlSocket->address.port, initialConfig.isTraining );
+        updateExternalIpAddress ( isBroadcast() ? netplayConfig.broadcastPort : this->address.port, initialConfig );
     }
 
     // KeyboardManager callback
@@ -574,14 +571,13 @@ struct Main
 
     // Constructor
     Main ( const IpAddrPort& address, const Serializable& config )
-        : CommonMain ( config.getMsgType() == MsgType::InitialConfig
-                       ? ( address.addr.empty() ? ClientType::Host : ClientType::Client )
-                       : ( address.port ? ClientType::Broadcast : ClientType::Offline ) )
-        , address ( address )
+        : CommonMain ( getClientType ( address, config ) )
     {
         if ( isNetplay() )
         {
-            initialConfig = config.getAs<InitialConfig>();
+            this->address = address;
+            this->initialConfig = config.getAs<InitialConfig>();
+
             pinger.owner = this;
             pinger.pingInterval = PING_INTERVAL;
             pinger.numPings = NUM_PINGS;
@@ -589,10 +585,11 @@ struct Main
         else if ( isLocal() )
         {
             netplayConfig = config.getAs<NetplayConfig>();
+            initialConfig.flags = netplayConfig.flags; // For consistency
         }
         else
         {
-            ASSERT ( !"This shouldn't happen!" );
+            LOG_AND_THROW_STRING ( !"This shouldn't happen!" );
         }
     }
 
@@ -603,6 +600,29 @@ struct Main
         ControllerManager::get().deinitialize();
         SocketManager::get().deinitialize();
         TimerManager::get().deinitialize();
+    }
+
+    // Determine the ClientType from the address and config
+    static ClientType getClientType ( const IpAddrPort& address, const Serializable& config )
+    {
+        if ( config.getMsgType() == MsgType::InitialConfig )
+        {
+            if ( address.addr.empty() )
+                return ClientType::Host;
+            else
+                return ClientType::Client;
+        }
+        else if ( config.getMsgType() == MsgType::NetplayConfig )
+        {
+            if ( config.getAs<NetplayConfig>().isBroadcast() )
+                return ClientType::Broadcast;
+            else
+                return ClientType::Offline;
+        }
+        else
+        {
+            LOG_AND_THROW_STRING ( !"This shouldn't happen!" );
+        }
     }
 };
 
@@ -661,11 +681,14 @@ struct DummyMain : public Main
 };
 
 
-static void updateExternalIpAddress ( uint16_t port, bool training )
+static void updateExternalIpAddress ( uint16_t port, const ConfigOptions& opt )
 {
     if ( externaIpAddress.address.empty() || externaIpAddress.address == "unknown" )
     {
-        ui.display ( toString ( "Hosting on port %u%s\n", port, ( training ? " (training mode)" : "" ) )
+        ui.display ( toString ( "%s on port %u%s\n",
+                                ( opt.isBroadcast() ? "Broadcasting" : "Hosting" ),
+                                port,
+                                ( opt.isTraining() ? " (training mode)" : "" ) )
                      + ( externaIpAddress.address.empty()
                          ? "(Fetching external IP address...)"
                          : "(Could not find external IP address!)" ) );
@@ -674,8 +697,11 @@ static void updateExternalIpAddress ( uint16_t port, bool training )
     {
         setClipboard ( toString ( "%s:%u", externaIpAddress.address, port ) );
 
-        ui.display ( toString ( "Hosting at %s:%u%s\n(Address copied to clipboard)", \
-                                externaIpAddress.address, port, ( training ? " (training mode)" : "" ) ) );
+        ui.display ( toString ( "%s at %s:%u%s\n(Address copied to clipboard)",
+                                ( opt.isBroadcast() ? "Broadcasting" : "Hosting" ),
+                                externaIpAddress.address,
+                                port,
+                                ( opt.isTraining() ? " (training mode)" : "" ) ) );
     }
 }
 
@@ -696,7 +722,7 @@ static void runMain ( const IpAddrPort& address, const Serializable& config )
         }
         else
         {
-            ASSERT ( !"This shouldn't happen!" );
+            LOG_AND_THROW_STRING ( !"This shouldn't happen!" );
         }
     }
     catch ( const Exception& err )
@@ -813,12 +839,16 @@ int main ( int argc, char *argv[] )
             "Usage: " BINARY " [options] [address] [port]\n\nOptions:"
         },
 
-        { HELP,           0, "h",     "help", Arg::None,     "  --help, -h         Print usage and exit." },
-        { DUMMY,          0,  "",    "dummy", Arg::None,     "  --dummy            Run as a dummy application." },
-        { GTEST,          0,  "",    "gtest", Arg::None,     "  --gtest            Run unit tests and exit." },
-        { STDOUT,         0,  "",   "stdout", Arg::None,     "  --stdout           Output logs to stdout." },
-        { TRAINING,       0, "t", "training", Arg::None,     "  --training, -t     Training mode.\n" },
-        { DIRECTORY,      0, "d",      "dir", Arg::Required, "  --dir, -d          Specify game directory.\n" },
+        { HELP,           0, "h",      "help", Arg::None,     "  --help, -h         Print help and exit." },
+        { DIRECTORY,      0, "d",       "dir", Arg::Required, "  --dir, -d folder   Specify path to game folder.\n" },
+
+        { TRAINING,       0, "t",  "training", Arg::None,     "  --training, -t     Force training mode." },
+        { BROADCAST,      0, "b", "broadcast", Arg::None,     "  --broadcast, -b    Force broadcast mode." },
+        {
+            OFFLINE, 0, "o", "offline", Arg::OptionalNumeric,
+            "  --offline, -o [D]  Force offline mode.\n"
+            "                     D is the delay, default 0.\n"
+        },
         {
             NO_UI, 0, "n", "no-ui", Arg::None,
             "  --no-ui, -n        No UI, just quits after running once.\n"
@@ -832,6 +862,9 @@ int main ( int argc, char *argv[] )
             "                     -sss means build time must match.\n"
         },
 
+        { STDOUT,  0, "",  "stdout", Arg::None, 0 }, // Output logs to stdout
+        { GTEST,   0, "",   "gtest", Arg::None, 0 }, // Run unit tests and exit
+        { DUMMY,   0, "",   "dummy", Arg::None, 0 }, // Client mode with fake inputs
         { NO_FORK, 0, "", "no-fork", Arg::None, 0 }, // Don't fork when inside Wine, ie running wineconosle
 
         {
@@ -909,7 +942,8 @@ int main ( int argc, char *argv[] )
     // Initialize config
     ui.initialize();
     ui.initialConfig.localVersion = LocalVersion;
-    ui.initialConfig.isTraining = ( bool ) opt[TRAINING];
+    ui.initialConfig.flags |= ( opt[TRAINING] ? ConfigOptions::Training : 0 );
+    ui.initialConfig.flags |= ( opt[BROADCAST] ? ConfigOptions::Broadcast : 0 );
 
     // Check if we should run in dummy mode
     RunFuncPtr run = ( opt[DUMMY] ? runDummy : runMain );
@@ -918,10 +952,27 @@ int main ( int argc, char *argv[] )
     for ( Option *it = opt[UNKNOWN]; it; it = it->next() )
         ui.sessionMessage += toString ( "Unknown option: '%s'\n", it->name );
 
+    // Non-options 1 and 2 are the IP address and port
     for ( int i = 2; i < parser.nonOptionsCount(); ++i )
         ui.sessionMessage += toString ( "Non-option (%d): '%s'\n", i, parser.nonOption ( i ) );
 
-    // Non-options 1 and 2 are the IP address and port
+    if ( opt[OFFLINE] )
+    {
+        NetplayConfig netplayConfig;
+        netplayConfig.flags = ( ConfigOptions::Offline | ( opt[TRAINING] ? ConfigOptions::Training : 0 ) );
+        netplayConfig.delay = 0;
+        netplayConfig.hostPlayer = 1;
+
+        if ( opt[OFFLINE].arg )
+        {
+            uint32_t delay = 0;
+            stringstream ss ( opt[OFFLINE].arg );
+            if ( ( ss >> delay ) && ( delay < 0xFF ) )
+                netplayConfig.delay = delay;
+        }
+
+        run ( "", netplayConfig );
+    }
     if ( parser.nonOptionsCount() == 1 )
     {
         run ( parser.nonOption ( 0 ), ui.initialConfig );
