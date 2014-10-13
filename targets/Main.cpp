@@ -39,9 +39,6 @@ static MainUi ui;
 // External IP address query tool
 ExternalIpAddress externaIpAddress ( 0 );
 
-// Update the status message
-static void updateStatusMessage ( uint16_t port, const ConfigOptions& opt );
-
 
 struct Main
         : public CommonMain
@@ -246,7 +243,7 @@ struct Main
         {
             externaIpAddress.owner = this;
             externaIpAddress.start();
-            updateStatusMessage ( address.port, initialConfig );
+            updateStatusMessage();
         }
         else
         {
@@ -287,7 +284,7 @@ struct Main
         {
             externaIpAddress.owner = this;
             externaIpAddress.start();
-            updateStatusMessage ( netplayConfig.broadcastPort, initialConfig );
+            updateStatusMessage();
         }
 
         // Open the game immediately
@@ -515,7 +512,7 @@ struct Main
 
             case MsgType::NetplayConfig:
                 netplayConfig = msg->getAs<NetplayConfig>();
-                updateStatusMessage ( netplayConfig.broadcastPort, initialConfig );
+                updateStatusMessage();
                 return;
 
             default:
@@ -550,15 +547,13 @@ struct Main
     virtual void foundExternalIpAddress ( ExternalIpAddress *extIpAddr, const string& address ) override
     {
         LOG ( "External IP address: '%s'", address );
-
-        updateStatusMessage ( isBroadcast() ? netplayConfig.broadcastPort : this->address.port, initialConfig );
+        updateStatusMessage();
     }
 
     virtual void unknownExternalIpAddress ( ExternalIpAddress *extIpAddr ) override
     {
         LOG ( "Unknown external IP address!" );
-
-        updateStatusMessage ( isBroadcast() ? netplayConfig.broadcastPort : this->address.port, initialConfig );
+        updateStatusMessage();
     }
 
     // KeyboardManager callback
@@ -601,6 +596,8 @@ struct Main
         TimerManager::get().deinitialize();
     }
 
+private:
+
     // Determine the ClientType from the address and config
     static ClientType getClientType ( const IpAddrPort& address, const Serializable& config )
     {
@@ -621,6 +618,38 @@ struct Main
         else
         {
             LOG_AND_THROW_STRING ( !"This shouldn't happen!" );
+        }
+    }
+
+    // Update the UI status message
+    void updateStatusMessage() const
+    {
+        const uint16_t port = ( isBroadcast() ? netplayConfig.broadcastPort : address.port );
+        const ConfigOptions opt = ( isBroadcast() ? netplayConfig.flags : initialConfig.flags );
+
+        if ( port == 0 && opt.isBroadcast() )
+        {
+            ui.display ( "Starting game..." );
+        }
+        else if ( externaIpAddress.address.empty() || externaIpAddress.address == "unknown" )
+        {
+            ui.display ( toString ( "%s on port %u%s\n",
+                                    ( opt.isBroadcast() ? "Broadcasting" : "Hosting" ),
+                                    port,
+                                    ( opt.isTraining() ? " (training mode)" : "" ) )
+                         + ( externaIpAddress.address.empty()
+                             ? "(Fetching external IP address...)"
+                             : "(Could not find external IP address!)" ) );
+        }
+        else
+        {
+            setClipboard ( toString ( "%s:%u", externaIpAddress.address, port ) );
+
+            ui.display ( toString ( "%s at %s:%u%s\n(Address copied to clipboard)",
+                                    ( opt.isBroadcast() ? "Broadcasting" : "Hosting" ),
+                                    externaIpAddress.address,
+                                    port,
+                                    ( opt.isTraining() ? " (training mode)" : "" ) ) );
         }
     }
 };
@@ -678,35 +707,6 @@ struct DummyMain : public Main
         fakeInputs.inputs.fill ( 0 );
     }
 };
-
-
-static void updateStatusMessage ( uint16_t port, const ConfigOptions& opt )
-{
-    if ( port == 0 && opt.isBroadcast() )
-    {
-        ui.display ( "Starting game..." );
-    }
-    else if ( externaIpAddress.address.empty() || externaIpAddress.address == "unknown" )
-    {
-        ui.display ( toString ( "%s on port %u%s\n",
-                                ( opt.isBroadcast() ? "Broadcasting" : "Hosting" ),
-                                port,
-                                ( opt.isTraining() ? " (training mode)" : "" ) )
-                     + ( externaIpAddress.address.empty()
-                         ? "(Fetching external IP address...)"
-                         : "(Could not find external IP address!)" ) );
-    }
-    else
-    {
-        setClipboard ( toString ( "%s:%u", externaIpAddress.address, port ) );
-
-        ui.display ( toString ( "%s at %s:%u%s\n(Address copied to clipboard)",
-                                ( opt.isBroadcast() ? "Broadcasting" : "Hosting" ),
-                                externaIpAddress.address,
-                                port,
-                                ( opt.isTraining() ? " (training mode)" : "" ) ) );
-    }
-}
 
 
 static void runMain ( const IpAddrPort& address, const Serializable& config )

@@ -53,6 +53,8 @@ struct ConfigOptions
 
     uint8_t flags = 0;
 
+    ConfigOptions ( uint8_t flags = 0 ) : flags ( flags ) {}
+
     bool isTraining() const { return ( flags & Training ); }
     bool isBroadcast() const { return ( flags & Broadcast ); }
     bool isOffline() const { return ( flags & Offline ); }
