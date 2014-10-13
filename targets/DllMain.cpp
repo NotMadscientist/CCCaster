@@ -530,6 +530,19 @@ struct Main
 
                     netMan.setRemotePlayer ( remotePlayer );
                 }
+                else if ( isBroadcast() )
+                {
+                    LOG ( "broadcastPort=%u", netMan.config.broadcastPort );
+
+                    serverCtrlSocket = TcpSocket::listen ( this, netMan.config.broadcastPort );
+
+                    if ( netMan.config.broadcastPort != serverCtrlSocket->address.port )
+                    {
+                        netMan.config.broadcastPort = serverCtrlSocket->address.port;
+                        netMan.config.invalidate();
+                        procMan.ipcSend ( REF_PTR ( netMan.config ) );
+                    }
+                }
 
                 LOG ( "delay=%d; rollback=%d; training=%d; offline=%d; hostPlayer=%d; localPlayer=%d; remotePlayer=%d",
                       netMan.config.delay, netMan.config.rollback, netMan.config.isTraining(),
@@ -537,6 +550,9 @@ struct Main
                 break;
 
             case MsgType::SocketShareData:
+                if ( isLocal() )
+                    LOG_AND_THROW_STRING ( "Invalid clientType=%s!", clientType );
+
                 switch ( clientType.value )
                 {
                     case ClientType::Host:

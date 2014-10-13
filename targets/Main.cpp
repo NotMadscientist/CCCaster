@@ -39,8 +39,8 @@ static MainUi ui;
 // External IP address query tool
 ExternalIpAddress externaIpAddress ( 0 );
 
-// Update the status of the external IP address
-static void updateExternalIpAddress ( uint16_t port, const ConfigOptions& opt );
+// Update the status message
+static void updateStatusMessage ( uint16_t port, const ConfigOptions& opt );
 
 
 struct Main
@@ -246,40 +246,28 @@ struct Main
         {
             externaIpAddress.owner = this;
             externaIpAddress.start();
-            updateExternalIpAddress ( address.port, initialConfig );
+            updateStatusMessage ( address.port, initialConfig );
         }
         else
         {
             ui.display ( toString ( "Connecting to %s", address ) );
         }
 
-#if 0
-        if ( isHost() )
-        {
-            serverCtrlSocket = UdpSocket::listen ( this, address.port );
-            serverDataSocket = UdpSocket::listen ( this, address.port + 1 );
-        }
-        else
-        {
-            ctrlSocket = UdpSocket::connect ( this, address );
-            dataSocket = UdpSocket::connect ( this, { address.addr, uint16_t ( address.port + 1 ) } );
-            LOG ( "ctrlSocket=%08x", ctrlSocket );
-            LOG ( "dataSocket=%08x", dataSocket );
-        }
-#else
         if ( isHost() )
         {
             serverCtrlSocket = TcpSocket::listen ( this, address.port );
             serverDataSocket = UdpSocket::listen ( this, address.port );
+
+            address.port = serverCtrlSocket->address.port;
         }
         else
         {
             ctrlSocket = TcpSocket::connect ( this, address );
             dataSocket = UdpSocket::connect ( this, address );
+
             LOG ( "ctrlSocket=%08x", ctrlSocket );
             LOG ( "dataSocket=%08x", dataSocket );
         }
-#endif
 
         EventManager::get().start();
 
@@ -299,7 +287,7 @@ struct Main
         {
             externaIpAddress.owner = this;
             externaIpAddress.start();
-            updateExternalIpAddress ( netplayConfig.broadcastPort, initialConfig );
+            updateStatusMessage ( netplayConfig.broadcastPort, initialConfig );
         }
 
         // Open the game immediately
@@ -516,13 +504,24 @@ struct Main
 
     virtual void ipcReadEvent ( const MsgPtr& msg ) override
     {
-        if ( !msg.get() || msg->getMsgType() != MsgType::ErrorMessage )
-        {
-            LOG ( "Unexpected '%s'", msg );
+        if ( !msg.get() )
             return;
-        }
 
-        ui.sessionError = msg->getAs<ErrorMessage>().error;
+        switch ( msg->getMsgType() )
+        {
+            case MsgType::ErrorMessage:
+                ui.sessionError = msg->getAs<ErrorMessage>().error;
+                return;
+
+            case MsgType::NetplayConfig:
+                netplayConfig = msg->getAs<NetplayConfig>();
+                updateStatusMessage ( netplayConfig.broadcastPort, initialConfig );
+                return;
+
+            default:
+                LOG ( "Unexpected ipcReadEvent ( '%s' )", msg );
+                return;
+        }
     }
 
     // ControllerManager callbacks
@@ -552,14 +551,14 @@ struct Main
     {
         LOG ( "External IP address: '%s'", address );
 
-        updateExternalIpAddress ( isBroadcast() ? netplayConfig.broadcastPort : this->address.port, initialConfig );
+        updateStatusMessage ( isBroadcast() ? netplayConfig.broadcastPort : this->address.port, initialConfig );
     }
 
     virtual void unknownExternalIpAddress ( ExternalIpAddress *extIpAddr ) override
     {
         LOG ( "Unknown external IP address!" );
 
-        updateExternalIpAddress ( isBroadcast() ? netplayConfig.broadcastPort : this->address.port, initialConfig );
+        updateStatusMessage ( isBroadcast() ? netplayConfig.broadcastPort : this->address.port, initialConfig );
     }
 
     // KeyboardManager callback
@@ -681,9 +680,13 @@ struct DummyMain : public Main
 };
 
 
-static void updateExternalIpAddress ( uint16_t port, const ConfigOptions& opt )
+static void updateStatusMessage ( uint16_t port, const ConfigOptions& opt )
 {
-    if ( externaIpAddress.address.empty() || externaIpAddress.address == "unknown" )
+    if ( port == 0 && opt.isBroadcast() )
+    {
+        ui.display ( "Starting game..." );
+    }
+    else if ( externaIpAddress.address.empty() || externaIpAddress.address == "unknown" )
     {
         ui.display ( toString ( "%s on port %u%s\n",
                                 ( opt.isBroadcast() ? "Broadcasting" : "Hosting" ),
@@ -973,7 +976,25 @@ int main ( int argc, char *argv[] )
 
         run ( "", netplayConfig );
     }
-    if ( parser.nonOptionsCount() == 1 )
+    else if ( opt[BROADCAST] )
+    {
+        NetplayConfig netplayConfig;
+        netplayConfig.flags = ( ConfigOptions::Broadcast | ( opt[TRAINING] ? ConfigOptions::Training : 0 ) );
+        netplayConfig.delay = 0;
+        netplayConfig.hostPlayer = 1;
+
+        stringstream ss;
+        if ( parser.nonOptionsCount() == 1 )
+            ss << parser.nonOption ( 0 );
+        else if ( parser.nonOptionsCount() == 2 )
+            ss << parser.nonOption ( 1 );
+
+        if ( ! ( ss >> netplayConfig.broadcastPort ) )
+            netplayConfig.broadcastPort = 0;
+
+        run ( "", netplayConfig );
+    }
+    else if ( parser.nonOptionsCount() == 1 )
     {
         run ( parser.nonOption ( 0 ), ui.initialConfig );
     }
