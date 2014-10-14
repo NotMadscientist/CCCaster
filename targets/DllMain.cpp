@@ -444,10 +444,10 @@ struct Main
         if ( !msg.get() )
             return;
 
-        switch ( clientType.value )
+        switch ( clientMode.value )
         {
-            case ClientType::Host:
-            case ClientType::Client:
+            case ClientMode::Host:
+            case ClientMode::Client:
                 switch ( msg->getMsgType() )
                 {
                     case MsgType::CharaSelectLoaded:
@@ -474,7 +474,7 @@ struct Main
                 }
                 break;
 
-            case ClientType::Broadcast:
+            case ClientMode::Broadcast:
                 break;
 
             default:
@@ -501,12 +501,12 @@ struct Main
 
         switch ( msg->getMsgType() )
         {
-            case MsgType::ClientType:
-                if ( clientType != ClientType::Unknown )
+            case MsgType::ClientMode:
+                if ( clientMode != ClientMode::Unknown )
                     break;
 
-                clientType = msg->getAs<ClientType>();
-                LOG ( "clientType=%s", clientType );
+                clientMode = msg->getAs<ClientMode>();
+                LOG ( "clientMode=%s", clientMode );
                 break;
 
             case MsgType::NetplayConfig:
@@ -558,11 +558,11 @@ struct Main
 
             case MsgType::SocketShareData:
                 if ( isLocal() )
-                    LOG_AND_THROW_STRING ( "Invalid clientType=%s!", clientType );
+                    LOG_AND_THROW_STRING ( "Invalid clientMode=%s!", clientMode );
 
-                switch ( clientType.value )
+                switch ( clientMode.value )
                 {
-                    case ClientType::Host:
+                    case ClientMode::Host:
                         if ( !serverCtrlSocket )
                         {
                             serverCtrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
@@ -591,7 +591,7 @@ struct Main
                         }
                         break;
 
-                    case ClientType::Client:
+                    case ClientMode::Client:
                         if ( !ctrlSocket )
                         {
                             ctrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
@@ -610,8 +610,8 @@ struct Main
                 break;
 
             case MsgType::EndOfMessages:
-                if ( clientType == ClientType::Unknown )
-                    LOG_AND_THROW_STRING ( "Unknown clientType!" );
+                if ( clientMode == ClientMode::Unknown )
+                    LOG_AND_THROW_STRING ( "Unknown clientMode!" );
 
                 if ( netMan.config.delay == 0xFF )
                     LOG_AND_THROW_STRING ( "Uninitalized netMan.config!" );

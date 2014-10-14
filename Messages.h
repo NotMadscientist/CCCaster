@@ -30,9 +30,9 @@ struct ErrorMessage : public SerializableSequence
 };
 
 
-struct ClientType : public SerializableSequence
+struct ClientMode : public SerializableSequence
 {
-    ENUM_MESSAGE_BOILERPLATE ( ClientType, Host, Client, Broadcast, Offline )
+    ENUM_MESSAGE_BOILERPLATE ( ClientMode, Host, Client, Spectate, Broadcast, Offline )
 };
 
 

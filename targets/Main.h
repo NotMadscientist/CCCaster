@@ -20,7 +20,7 @@ struct CommonMain
         , public Controller::Owner
         , public Timer::Owner
 {
-    ClientType clientType;
+    ClientMode clientMode;
 
     ProcessManager procMan;
 
@@ -31,12 +31,13 @@ struct CommonMain
 
     CommonMain() : procMan ( this ) {}
 
-    CommonMain ( const ClientType& clientType ) : clientType ( clientType ), procMan ( this ) {}
+    CommonMain ( const ClientMode& clientMode ) : clientMode ( clientMode ), procMan ( this ) {}
 
-    bool isHost() const { return ( clientType == ClientType::Host ); }
-    bool isClient() const { return ( clientType == ClientType::Client ); }
-    bool isBroadcast() const { return ( clientType == ClientType::Broadcast ); }
-    bool isOffline() const { return ( clientType == ClientType::Offline ); }
-    bool isNetplay() const { return ( clientType == ClientType::Host || clientType == ClientType::Client ); }
-    bool isLocal() const { return ( clientType == ClientType::Broadcast || clientType == ClientType::Offline ); }
+    bool isHost() const { return ( clientMode == ClientMode::Host ); }
+    bool isClient() const { return ( clientMode == ClientMode::Client ); }
+    bool isSpectate() const { return ( clientMode == ClientMode::Spectate ); }
+    bool isBroadcast() const { return ( clientMode == ClientMode::Broadcast ); }
+    bool isOffline() const { return ( clientMode == ClientMode::Offline ); }
+    bool isNetplay() const { return ( clientMode == ClientMode::Host || clientMode == ClientMode::Client ); }
+    bool isLocal() const { return ( clientMode == ClientMode::Broadcast || clientMode == ClientMode::Offline ); }
 };

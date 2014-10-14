@@ -28,7 +28,7 @@ using namespace option;
 
 // Set of command line options
 enum CommandLineOptions
-{ UNKNOWN, HELP, DUMMY, GTEST, STDOUT, NO_FORK, NO_UI, STRICT_VERSION, TRAINING, BROADCAST, OFFLINE, DIRECTORY };
+{ UNKNOWN, HELP, DUMMY, UNIT_TEST, STDOUT, NO_FORK, NO_UI, STRICT_VERSION, TRAINING, BROADCAST, OFFLINE, DIRECTORY };
 
 // Active command line options
 static vector<Option> opt;
@@ -428,10 +428,10 @@ struct Main
     // ProcessManager callbacks
     virtual void ipcConnectEvent() override
     {
-        ASSERT ( clientType != ClientType::Unknown );
+        ASSERT ( clientMode != ClientMode::Unknown );
         ASSERT ( netplayConfig.delay != 0xFF );
 
-        procMan.ipcSend ( REF_PTR ( clientType ) );
+        procMan.ipcSend ( REF_PTR ( clientMode ) );
         procMan.ipcSend ( REF_PTR ( netplayConfig ) );
 
         if ( !isLocal() )
@@ -543,7 +543,7 @@ struct Main
 
     // Constructor
     Main ( const IpAddrPort& address, const Serializable& config )
-        : CommonMain ( getClientType ( address, config ) )
+        : CommonMain ( getClientMode ( address, config ) )
     {
         if ( isNetplay() )
         {
@@ -576,22 +576,22 @@ struct Main
 
 private:
 
-    // Determine the ClientType from the address and config
-    static ClientType getClientType ( const IpAddrPort& address, const Serializable& config )
+    // Determine the ClientMode from the address and config
+    static ClientMode getClientMode ( const IpAddrPort& address, const Serializable& config )
     {
         if ( config.getMsgType() == MsgType::InitialConfig )
         {
             if ( address.addr.empty() )
-                return ClientType::Host;
+                return ClientMode::Host;
             else
-                return ClientType::Client;
+                return ClientMode::Client;
         }
         else if ( config.getMsgType() == MsgType::NetplayConfig )
         {
             if ( config.getAs<NetplayConfig>().isBroadcast() )
-                return ClientType::Broadcast;
+                return ClientMode::Broadcast;
             else
-                return ClientType::Offline;
+                return ClientMode::Offline;
         }
         else
         {
@@ -843,10 +843,10 @@ int main ( int argc, char *argv[] )
             "                     -sss means build time must match.\n"
         },
 
-        { STDOUT,  0, "",  "stdout", Arg::None, 0 }, // Output logs to stdout
-        { GTEST,   0, "",   "gtest", Arg::None, 0 }, // Run unit tests and exit
-        { DUMMY,   0, "",   "dummy", Arg::None, 0 }, // Client mode with fake inputs
-        { NO_FORK, 0, "", "no-fork", Arg::None, 0 }, // Don't fork when inside Wine, ie running wineconosle
+        { STDOUT,    0, "",    "stdout", Arg::None, 0 }, // Output logs to stdout
+        { UNIT_TEST, 0, "", "unit-test", Arg::None, 0 }, // Run unit tests and exit
+        { DUMMY,     0, "",     "dummy", Arg::None, 0 }, // Client mode with fake inputs
+        { NO_FORK,   0, "",   "no-fork", Arg::None, 0 }, // Don't fork when inside Wine, ie running wineconsole
 
         {
             UNKNOWN, 0, "", "", Arg::None,
@@ -895,7 +895,7 @@ int main ( int argc, char *argv[] )
         Logger::get().initialize ( LOG_FILE );
 
     // Run the unit test suite and exit
-    if ( opt[GTEST] )
+    if ( opt[UNIT_TEST] )
     {
         int result = RunAllTests ( argc, argv );
         Logger::get().deinitialize();
