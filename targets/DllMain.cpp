@@ -421,19 +421,26 @@ struct Main
     // Socket callbacks
     void acceptEvent ( Socket *serverSocket ) override
     {
+        LOG ( "acceptEvent ( %08x )", serverSocket );
+
+        // TODO proper queueing of potential spectators
     }
 
     void connectEvent ( Socket *socket ) override
     {
+        LOG ( "connectEvent ( %08x )", socket );
     }
 
     void disconnectEvent ( Socket *socket ) override
     {
+        LOG ( "disconnectEvent ( %08x )", socket );
         EventManager::get().stop();
     }
 
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
     {
+        LOG ( "readEvent ( %08x, %s, %s )", socket, msg, address );
+
         if ( !msg.get() )
             return;
 
@@ -474,7 +481,7 @@ struct Main
                 break;
         }
 
-        LOG ( "Unexpected '%s'", msg );
+        LOG ( "Unexpected '%s' from socket=%08x", msg, socket );
     }
 
     // ProcessManager callbacks

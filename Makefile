@@ -69,6 +69,8 @@ LD_FLAGS += -lSDL2 -lSDL2main -lws2_32 -lwinmm -lwinpthread -ldinput8 -lgdi32 -l
 # DEFINES += -DLOGGER_MUTEXED
 # DEFINES += -DJLIB_MUTEXED
 
+DEPLOY=1
+
 
 all: debug
 
@@ -234,7 +236,7 @@ post-build: main-build
 	@echo
 	@echo ========== Post-build ==========
 	@echo
-	if [ -s scripts/deploy ]; then scripts/deploy; fi;
+	if [ $(DEPLOY) = 1 ] && [ -s scripts/deploy ]; then scripts/deploy; fi;
 
 
 debug: post-build

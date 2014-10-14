@@ -19,9 +19,9 @@ using namespace option;
 
 #define LOG_FILE FOLDER "debug.log"
 
-#define PING_INTERVAL ( 100 )
+#define PING_INTERVAL ( 1000/60 )
 
-#define NUM_PINGS ( 5 )
+#define NUM_PINGS ( 10 )
 
 #define STOP_EVENTS_DELAY ( 1000 )
 
@@ -333,8 +333,6 @@ struct Main
     {
         LOG ( "acceptEvent ( %08x )", serverSocket );
 
-        // TODO proper queueing of potential spectators
-
         if ( serverSocket == serverCtrlSocket.get() )
         {
             ctrlSocket = serverCtrlSocket->accept ( this );
@@ -360,8 +358,6 @@ struct Main
 
             initialConfig.invalidate();
             ctrlSocket->send ( REF_PTR ( initialConfig ) );
-
-            // TOOD version check
         }
     }
 
@@ -373,7 +369,7 @@ struct Main
         ASSERT ( dataSocket.get() != 0 );
         ASSERT ( socket == ctrlSocket.get() || socket == dataSocket.get() );
 
-        if ( dataSocket->isConnected() )
+        if ( socket == dataSocket.get() )
             startPinging();
 
         if ( ctrlSocket->isConnected() && dataSocket->isConnected() )
@@ -386,65 +382,47 @@ struct Main
     virtual void disconnectEvent ( Socket *socket ) override
     {
         LOG ( "disconnectEvent ( %08x )", socket );
-
-        if ( socket == ctrlSocket.get() || socket == dataSocket.get() )
-        {
-            EventManager::get().stop();
-            return;
-        }
+        EventManager::get().stop();
     }
 
     virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
     {
+        LOG ( "readEvent ( %08x, %s, %s )", socket, msg, address );
+
         if ( !msg.get() )
             return;
 
-        if ( socket == ctrlSocket.get() )
+        switch ( msg->getMsgType() )
         {
-            switch ( msg->getMsgType() )
-            {
-                case MsgType::InitialConfig:
-                    gotInitialConfig ( msg->getAs<InitialConfig>() );
-                    return;
+            case MsgType::InitialConfig:
+                gotInitialConfig ( msg->getAs<InitialConfig>() );
+                return;
 
-                case MsgType::PingStats:
-                    gotPingStats ( msg->getAs<PingStats>() );
-                    return;
+            case MsgType::PingStats:
+                gotPingStats ( msg->getAs<PingStats>() );
+                return;
 
-                case MsgType::NetplayConfig:
-                    netplayConfig = msg->getAs<NetplayConfig>();
+            case MsgType::NetplayConfig:
+                netplayConfig = msg->getAs<NetplayConfig>(); // Intentional fall through
 
-                case MsgType::ConfirmConfig:
-                    startGame();
-                    return;
+            case MsgType::ConfirmConfig:
+                startGame();
+                return;
 
-                case MsgType::ErrorMessage:
-                    ui.sessionError = msg->getAs<ErrorMessage>().error;
-                    EventManager::get().stop();
-                    return;
+            case MsgType::ErrorMessage:
+                ui.sessionError = msg->getAs<ErrorMessage>().error;
+                EventManager::get().stop();
+                return;
 
-                default:
-                    LOG ( "Unexpected '%s' from ctrlSocket=%08x", msg, socket );
-                    return;
-            }
+            case MsgType::Ping:
+                pinger.gotPong ( msg );
+                return;
+
+            default:
+                break;
         }
-        else if ( socket == dataSocket.get() )
-        {
-            switch ( msg->getMsgType() )
-            {
-                case MsgType::Ping:
-                    pinger.gotPong ( msg );
-                    return;
 
-                default:
-                    LOG ( "Unexpected '%s' from dataSocket=%08x", msg, socket );
-                    return;
-            }
-        }
-        else
-        {
-            LOG ( "Unexpected '%s' from unknown socket=%08x", msg, socket );
-        }
+        LOG ( "Unexpected '%s' from socket=%08x", msg, socket );
     }
 
     // ProcessManager callbacks
