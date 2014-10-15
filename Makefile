@@ -187,8 +187,10 @@ clean:
 	rm -f $(MAIN_OBJECTS) $(DLL_OBJECTS)
 	rm -rf $(FOLDER)
 
-clean-depend: clean
+clean-depend:
 	rm -f .depend .include
+
+clean-full: clean-depend clean
 
 check:
 	cppcheck --enable=all $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
