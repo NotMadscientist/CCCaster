@@ -187,6 +187,9 @@ clean:
 	rm -f $(MAIN_OBJECTS) $(DLL_OBJECTS)
 	rm -rf $(FOLDER)
 
+clean-depend: clean
+	rm -f .depend .include
+
 check:
 	cppcheck --enable=all $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
 
@@ -215,7 +218,7 @@ count:
 	@wc -l $(NON_GEN_SRCS) $(NON_GEN_HEADERS) | sort -nr | head -n 10 && echo '    ...'
 
 
-.PHONY: version protocol depend clean check trim format count deploy sdl sdl-release sdl-profile sdl-clean
+.PHONY: version protocol depend clean clean-depend check trim format count deploy sdl sdl-release sdl-profile sdl-clean
 
 
 ifeq (,$(findstring version,$(MAKECMDGOALS)))
