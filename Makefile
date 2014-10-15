@@ -23,9 +23,9 @@ BASE_CPP_SRCS = $(wildcard *.cpp) $(wildcard lib/*.cpp)
 MAIN_CPP_SRCS = $(wildcard targets/Main*.cpp) $(wildcard tests/*.cpp) $(BASE_CPP_SRCS)
 DLL_CPP_SRCS = $(wildcard targets/Dll*.cpp) $(BASE_CPP_SRCS)
 
-NON_GEN_SRCS = *.cpp targets/*.cpp tests/*.cpp lib/*.cpp
+NON_GEN_SRCS = *.cpp targets/*.cpp lib/*.cpp tests/*.cpp
 NON_GEN_HEADERS = \
-	$(filter-out lib/Version.local.h,$(filter-out lib/Protocol.%.h,$(wildcard lib/*.h tests/*.h targets/*.h *.h)))
+	$(filter-out lib/Version.local.h,$(filter-out lib/Protocol.%.h,$(wildcard *.h targets/*.h lib/*.h tests/*.h)))
 AUTOGEN_HEADERS = lib/Version.local.h lib/Protocol.*.h
 
 # Main program objects
@@ -102,9 +102,6 @@ $(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
 	$(ZIP) $(NAME).v$(VERSION).zip $^
 	$(GRANT)
 
-$(FOLDER):
-	@mkdir -p $(FOLDER)
-
 $(BINARY): $(MAIN_OBJECTS) res/icon.res
 	rm -f $(filter-out $(BINARY),$(wildcard $(NAME)*.exe))
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(MAIN_OBJECTS) res/icon.res $(LD_FLAGS)
@@ -113,14 +110,16 @@ $(BINARY): $(MAIN_OBJECTS) res/icon.res
 	$(CHMOD_X)
 	@echo
 
-$(DLL): $(DLL_OBJECTS) $(FOLDER)
+$(DLL): $(DLL_OBJECTS)
+	@mkdir -p $(FOLDER)
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(DLL_OBJECTS) -shared $(LD_FLAGS) -ld3dx9
 	@echo
 	$(STRIP) $@
 	$(GRANT)
 	@echo
 
-$(LAUNCHER): targets/Launcher.cpp $(FOLDER)
+$(LAUNCHER): targets/Launcher.cpp
+	@mkdir -p $(FOLDER)
 	$(CXX) -o $@ targets/Launcher.cpp -m32 -s -Os -O2 -Wall -static -mwindows
 	@echo
 	$(STRIP) $@
@@ -139,8 +138,6 @@ res/icon.res: res/icon.rc res/icon.ico
 	$(WINDRES) -F pe-i386 res/icon.rc -O coff -o $@
 
 
-CLEAN=`git status | grep "^nothing to commit, working directory clean$$" | sed -r s/.+clean$$/clean/g`
-
 define make_version
 @scripts/make_version $(VERSION) > lib/Version.local.h
 endef
@@ -149,15 +146,28 @@ define make_protocol
 @scripts/make_protocol $(NON_GEN_HEADERS)
 endef
 
+define make_depend
+@scripts/check_depend || ( echo "Regenerating .depend" \
+&& $(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp         *.h                                                       > .depend \
+&& $(CXX) $(CC_FLAGS) -std=c++11 -MM targets/*.cpp targets/*.h | sed -r "s/^([A-Za-z]+\.o\: )/targets\/\1/" >> .depend \
+&& $(CXX) $(CC_FLAGS) -std=c++11 -MM lib/*.cpp     lib/*.h     | sed -r "s/^([A-Za-z]+\.o\: )/lib\/\1/"     >> .depend \
+&& $(CXX) $(CC_FLAGS) -std=c++11 -MM tests/*.cpp   tests/*.h   | sed -r "s/^([A-Za-z]+\.o\: )/tests\/\1/"   >> .depend )
+endef
+
+
+version:
+	$(make_version)
+
+protocol:
+	$(make_protocol)
+
+depend: version protocol
+	$(make_depend)
 
 .depend: $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
 	$(make_version)
 	$(make_protocol)
-	@echo "Regenerating .depend"
-	@$(CXX) $(CC_FLAGS) -std=c++11 -MM *.cpp                                                       > $@
-	@$(CXX) $(CC_FLAGS) -std=c++11 -MM lib/*.cpp     | sed -r "s/^([A-Za-z]+\.o\: )/lib\/\1/"     >> $@
-	@$(CXX) $(CC_FLAGS) -std=c++11 -MM targets/*.cpp | sed -r "s/^([A-Za-z]+\.o\: )/targets\/\1/" >> $@
-	@$(CXX) $(CC_FLAGS) -std=c++11 -MM tests/*.cpp   | sed -r "s/^([A-Za-z]+\.o\: )/tests\/\1/"   >> $@
+	$(make_depend)
 
 
 sdl:
@@ -173,7 +183,7 @@ sdl-clean:
 
 
 clean:
-	rm -f $(AUTOGEN_HEADERS) .depend *.res *.exe *.dll *.zip *.o lib/*.o targets/*.o tests/*.o
+	rm -f $(AUTOGEN_HEADERS) *.res *.exe *.dll *.zip *.o targets/*.o lib/*.o tests/*.o
 	rm -f $(MAIN_OBJECTS) $(DLL_OBJECTS)
 	rm -rf $(FOLDER)
 
@@ -205,9 +215,12 @@ count:
 	@wc -l $(NON_GEN_SRCS) $(NON_GEN_HEADERS) | sort -nr | head -n 10 && echo '    ...'
 
 
-.PHONY: clean check trim format count deploy sdl sdl-release sdl-profile sdl-clean
+.PHONY: version protocol depend clean check trim format count deploy sdl sdl-release sdl-profile sdl-clean
 
 
+ifeq (,$(findstring version,$(MAKECMDGOALS)))
+ifeq (,$(findstring protocol,$(MAKECMDGOALS)))
+ifeq (,$(findstring depend,$(MAKECMDGOALS)))
 ifeq (,$(findstring clean,$(MAKECMDGOALS)))
 ifeq (,$(findstring check,$(MAKECMDGOALS)))
 ifeq (,$(findstring trim,$(MAKECMDGOALS)))
@@ -216,6 +229,9 @@ ifeq (,$(findstring count,$(MAKECMDGOALS)))
 ifeq (,$(findstring deploy,$(MAKECMDGOALS)))
 ifeq (,$(findstring sdl,$(MAKECMDGOALS)))
 -include .depend
+endif
+endif
+endif
 endif
 endif
 endif

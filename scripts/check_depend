@@ -1,0 +1,56 @@
+#!/bin/sh
+
+# Mirror the folder structure
+mkdir -p .deps/
+mkdir -p .deps/targets
+mkdir -p .deps/lib
+mkdir -p .deps/tests
+attrib +h .deps
+
+files="*.cpp *.h targets/*.cpp targets/*.h lib/*.cpp lib/*.h tests/*.cpp tests/*.h"
+
+# Check the file list
+ls -1 $files | sort > .deps/tmp
+diff > /dev/null 2>&1 .deps/tmp .deps/files
+
+# Regenerate if the file list changes
+if [ $? -ne 0 ]; then
+
+    echo Regenerating file list...
+
+    mv -f .deps/tmp .deps/files
+
+    for file in $files; do
+        grep "^#include" $file > .deps/$file
+    done
+
+    # Return changed
+    exit 1
+fi
+
+echo Checking dependencies...
+
+# Check each file for changes
+for file in $files; do
+
+    grep "^#include" $file > .deps/tmp
+    diff > /dev/null 2>&1 .deps/tmp .deps/$file
+
+    # Return changed on the first change
+    if [ $? -ne 0 ]; then
+
+        # echo Dependencies changed!
+
+        mv -f .deps/tmp .deps/$file
+        exit 1
+
+    fi
+
+done
+
+# echo Dependencies unchanged
+
+# Return unchanged
+rm -f .deps/tmp
+touch .depend
+exit 0
