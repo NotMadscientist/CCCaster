@@ -5,7 +5,7 @@ mkdir -p .deps/
 mkdir -p .deps/targets
 mkdir -p .deps/lib
 mkdir -p .deps/tests
-attrib +h .deps
+sh > /dev/null 2>&1 -c "attrib +h .deps"
 
 files="*.cpp *.h targets/*.cpp targets/*.h lib/*.cpp lib/*.h tests/*.cpp tests/*.h"
 
