@@ -191,6 +191,6 @@ void KeyboardManager::unhook()
 
 KeyboardManager& KeyboardManager::get()
 {
-    static KeyboardManager km;
-    return km;
+    static KeyboardManager instance;
+    return instance;
 }

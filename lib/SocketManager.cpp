@@ -179,6 +179,6 @@ void SocketManager::deinitialize()
 
 SocketManager& SocketManager::get()
 {
-    static SocketManager sm;
-    return sm;
+    static SocketManager instance;
+    return instance;
 }

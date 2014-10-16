@@ -176,6 +176,6 @@ void ControllerManager::deinitialize()
 
 ControllerManager& ControllerManager::get()
 {
-    static ControllerManager jm;
-    return jm;
+    static ControllerManager instance;
+    return instance;
 }

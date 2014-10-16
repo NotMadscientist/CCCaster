@@ -147,8 +147,8 @@ void EventManager::release()
 
 EventManager& EventManager::get()
 {
-    static EventManager em;
-    return em;
+    static EventManager instance;
+    return instance;
 }
 
 void EventManager::ReaperThread::run()

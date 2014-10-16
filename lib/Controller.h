@@ -11,15 +11,15 @@
           CONTROLLER, CONTROLLER->joystick, CONTROLLER->state, ## __VA_ARGS__ )
 
 
-#define BIT_UP          0x00000001u
-#define BIT_DOWN        0x00000002u
-#define BIT_LEFT        0x00000004u
-#define BIT_RIGHT       0x00000008u
+#define BIT_UP          ( 0x00000001u )
+#define BIT_DOWN        ( 0x00000002u )
+#define BIT_LEFT        ( 0x00000004u )
+#define BIT_RIGHT       ( 0x00000008u )
 
-#define MASK_X_AXIS     0x0000000Cu
-#define MASK_Y_AXIS     0x00000003u
-#define MASK_DIRS       0x0000000Fu
-#define MASK_BUTTONS    0xFFFFFFF0u
+#define MASK_X_AXIS     ( 0x0000000Cu )
+#define MASK_Y_AXIS     ( 0x00000003u )
+#define MASK_DIRS       ( 0x0000000Fu )
+#define MASK_BUTTONS    ( 0xFFFFFFF0u )
 
 
 // Forward declarations

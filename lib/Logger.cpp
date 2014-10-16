@@ -115,6 +115,6 @@ void Logger::log ( const char *file, int line, const char *func, const char *mes
 
 Logger& Logger::get()
 {
-    static Logger logger;
-    return logger;
+    static Logger instance;
+    return instance;
 }

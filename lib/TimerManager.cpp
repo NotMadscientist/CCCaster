@@ -150,6 +150,6 @@ void TimerManager::deinitialize()
 
 TimerManager& TimerManager::get()
 {
-    static TimerManager tm;
-    return tm;
+    static TimerManager instance;
+    return instance;
 }
