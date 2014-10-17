@@ -168,6 +168,7 @@ void ControllerManager::clear()
 {
     LOG ( "Clearing controllers" );
     joysticks.clear();
+    Controller::guidBitset.clear();
 }
 
 static bool compareControllerName ( Controller *a, Controller *b )
