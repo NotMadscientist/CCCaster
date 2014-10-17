@@ -4,6 +4,7 @@
 #include "Version.h"
 #include "ConsoleUi.h"
 #include "ProcessManager.h"
+#include "ControllerManager.h"
 
 using namespace std;
 
@@ -144,8 +145,33 @@ void MainUi::offline ( RunFuncPtr run )
     ui->pop();
 }
 
+void MainUi::doneMapping ( Controller *controller, uint32_t key )
+{
+    LOG ( "%s: controller=%08x; key=%08x", controller->name, controller, key );
+}
+
 void MainUi::controls()
 {
+    ControllerManager::get().check();
+
+    vector<Controller *> controllers = ControllerManager::get().getControllers();
+
+    vector<string> names;
+    names.reserve ( controllers.size() );
+    for ( Controller *c : controllers )
+        names.push_back ( c->name );
+
+    ui->pushRight ( new ConsoleUi::Menu ( "Controllers", names, "Cancel" ) );
+
+    for ( ;; )
+    {
+        ConsoleUi::Element *menu = ui->popUntilUserInput();
+
+        if ( menu->resultInt < 0 || menu->resultInt >= ( int ) controllers.size() )
+            break;
+    }
+
+    ui->pop();
 }
 
 void MainUi::settings()
@@ -169,6 +195,9 @@ void MainUi::initialize()
 
 void MainUi::main ( RunFuncPtr run )
 {
+    ControllerManager::get().initialize ( 0 );
+    ControllerManager::get().check();
+
     ui.reset ( new ConsoleUi ( uiTitle ) );
     ui->pushRight ( new ConsoleUi::Menu ( uiTitle,
     { "Netplay", "Spectate", "Broadcast", "Offline", "Controls", "Settings" }, "Quit" ) );
@@ -193,7 +222,7 @@ void MainUi::main ( RunFuncPtr run )
         int main = ui->popUntilUserInput()->resultInt;
 
         if ( main < 0 || main > 5 )
-            return;
+            break;
 
         if ( main < 4 )
         {
@@ -234,9 +263,14 @@ void MainUi::main ( RunFuncPtr run )
                 break;
 
             default:
-                return;
+                break;
         }
+
+        if ( main < 0 || main > 5 )
+            break;
     }
+
+    ControllerManager::get().deinitialize();
 }
 
 static int computeDelay ( const Statistics& latency )

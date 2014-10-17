@@ -4,7 +4,7 @@ files="*.cpp *.h targets/*.cpp targets/*.h lib/*.cpp lib/*.h tests/*.cpp tests/*
 
 # echo Checking dependencies...
 
-tail -n +1 -- `ls -1 $files | sort | paste -sd " "` | grep "^#include\|^==>" > tmp
+tail -n +1 -- `ls -1 $files | sort | paste -sd " "` | grep "^#include \"\|^==>" > tmp
 diff > /dev/null 2>&1 tmp .include
 
 if [ $? -ne 0 ]; then

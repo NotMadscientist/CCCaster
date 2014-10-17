@@ -3,17 +3,16 @@
 
 #include <SDL.h>
 
+#include <algorithm>
+
 using namespace std;
 
 
 #define MAX_EVENT_QUEUE 64
 
 
-void ControllerManager::check()
+void ControllerManager::doCheck()
 {
-    if ( !initialized )
-        return;
-
     // TODO update keyboard controller
 
     SDL_PumpEvents();
@@ -93,6 +92,11 @@ void ControllerManager::check()
                 if ( owner )
                     owner->attachedJoystick ( controller );
 
+                if ( guids.find ( controller->guid.guid ) == guids.end() )
+                    guids.insert ( controller->guid.guid );
+                else
+                    shouldReset = true;
+
                 // LOG ( "joysticks :%s", joysticks.empty() ? " (empty)" : "" );
                 // for ( const auto& kv : joysticks )
                 //     LOG ( "%d -> %08x", kv.first, kv.second.get() );
@@ -114,6 +118,11 @@ void ControllerManager::check()
                 if ( owner )
                     owner->detachedJoystick ( controller );
 
+                if ( controller->isOnlyGuid() )
+                    guids.erase ( controller->guid.guid );
+                else
+                    shouldReset = true;
+
                 SDL_JoystickClose ( controller->joystick );
                 joysticks.erase ( id );
 
@@ -134,16 +143,70 @@ void ControllerManager::check()
     }
 }
 
+void ControllerManager::check()
+{
+    if ( !initialized )
+        return;
+
+    doCheck();
+
+    // Workaround for SDL bug 2643
+    if ( shouldReset )
+    {
+        LOG ( "Resetting SDL!" );
+
+        deinitialize();
+        initialize ( owner );
+
+        doCheck();
+
+        shouldReset = false;
+    }
+}
+
 void ControllerManager::clear()
 {
     LOG ( "Clearing controllers" );
     joysticks.clear();
 }
 
+static bool compareControllerName ( Controller *a, Controller *b )
+{
+    return a->name < b->name;
+}
+
+vector<Controller *> ControllerManager::getJoysticks()
+{
+    vector<Controller *> controllers;
+    controllers.reserve ( joysticks.size() );
+
+    for ( auto& kv : joysticks )
+        controllers.push_back ( kv.second.get() );
+
+    sort ( controllers.begin(), controllers.end(), compareControllerName );
+    return controllers;
+}
+
+vector<Controller *> ControllerManager::getControllers()
+{
+    vector<Controller *> controllers;
+    controllers.reserve ( joysticks.size() + 1 );
+
+    controllers.push_back ( getKeyboard() );
+
+    for ( auto& kv : joysticks )
+        controllers.push_back ( kv.second.get() );
+
+    sort ( controllers.begin() + 1, controllers.end(), compareControllerName );
+    return controllers;
+}
+
 ControllerManager::ControllerManager() : keyboard ( Controller::Keyboard ) {}
 
 void ControllerManager::initialize ( Owner *owner )
 {
+    this->owner = owner;
+
     if ( initialized )
         return;
 
@@ -160,7 +223,6 @@ void ControllerManager::initialize ( Owner *owner )
         LOG_AND_THROW_ERROR ( err, "SDL_Init(SDL_INIT_JOYSTICK) failed" );
     }
 
-    this->owner = owner;
     initialized = true;
 }
 

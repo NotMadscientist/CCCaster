@@ -193,14 +193,14 @@ void Controller::joystickEvent ( const SDL_JoyButtonEvent& event )
     LOG_CONTROLLER ( this, "button=%d; value=%d; EVENT_JOY_BUTTON", event.button, ( event.state == SDL_PRESSED ) );
 }
 
-Controller::Controller ( KeyboardEnum )
+Controller::Controller ( KeyboardEnum ) : name ( "Keyboard" )
 {
     memset ( &guid, 0, sizeof ( guid ) );
 
     clearMapping();
 }
 
-Controller::Controller ( SDL_Joystick *joystick ) : joystick ( joystick )
+Controller::Controller ( SDL_Joystick *joystick ) : joystick ( joystick ), name ( SDL_JoystickName ( joystick ) )
 {
     SDL_JoystickGUID guid = SDL_JoystickGetGUID ( joystick );
     memcpy ( &this->guid.guid, guid.data, sizeof ( guid.data ) );
@@ -294,6 +294,16 @@ void Controller::clearMapping()
 
     for ( auto& v : deadzones )
         v = DEFAULT_DEADZONE;
+}
+
+inline static bool isPowerOfTwo ( uint32_t x )
+{
+    return ( x != 0 ) && ( ( x & ( x - 1 ) ) == 0 );
+}
+
+bool Controller::isOnlyGuid() const
+{
+    return isPowerOfTwo ( guidBitset[this->guid.guid] );
 }
 
 unordered_map<Guid, uint32_t> Controller::guidBitset;

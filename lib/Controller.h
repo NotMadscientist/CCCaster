@@ -7,8 +7,8 @@
 
 
 #define LOG_CONTROLLER(CONTROLLER, FORMAT, ...)                                                                 \
-    LOG ( "controller=%08x; joystick=%08x; state=%08x; " FORMAT,                                                \
-          CONTROLLER, CONTROLLER->joystick, CONTROLLER->state, ## __VA_ARGS__ )
+    LOG ( "%s: controller=%08x; joystick=%08x; state=%08x; " FORMAT,                                            \
+          CONTROLLER->name, CONTROLLER, CONTROLLER->joystick, CONTROLLER->state, ## __VA_ARGS__ )
 
 
 #define BIT_UP          ( 0x00000001u )
@@ -84,6 +84,9 @@ private:
 
 public:
 
+    // Controller name
+    const std::string name;
+
     // Basic destructor
     ~Controller();
 
@@ -103,6 +106,9 @@ public:
     // Indicates if this is a keyboard / joystick controller
     bool isKeyboard() const { return ( joystick == 0 ); }
     bool isJoystick() const { return ( joystick != 0 ); }
+
+    // Indicates if this is the only joystick with its guid
+    bool isOnlyGuid() const;
 
     friend class ControllerManager;
 };

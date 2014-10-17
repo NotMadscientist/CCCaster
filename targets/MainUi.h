@@ -3,6 +3,7 @@
 #include "Utilities.h"
 #include "Messages.h"
 #include "IpAddrPort.h"
+#include "Controller.h"
 
 #include <string>
 #include <memory>
@@ -14,7 +15,7 @@ typedef void ( * RunFuncPtr ) ( const IpAddrPort& address, const Serializable& c
 class ConsoleUi;
 
 
-class MainUi
+class MainUi : public Controller::Owner
 {
     std::shared_ptr<ConsoleUi> ui;
 
@@ -30,6 +31,8 @@ class MainUi
     void offline ( RunFuncPtr run );
     void controls();
     void settings();
+
+    void doneMapping ( Controller *controller, uint32_t key );
 
 public:
 
