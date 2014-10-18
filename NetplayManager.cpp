@@ -97,8 +97,8 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
 
     uint16_t input = getOffsetInput ( player );
 
-    // Disable pausing in-game
-    if ( !config.isTraining() )
+    // Disable pausing in online versus mode
+    if ( config.isVersus() && config.isOnline() )
         input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_START );
 
     return input;
@@ -106,7 +106,7 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
 
 uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
 {
-    bool hasUpDown = false;
+    bool hasUpDownInLast10f = false;
 
     for ( size_t i = 0; i < 10; ++i )
     {
@@ -117,7 +117,7 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
 
         if ( ( input & 2 ) || ( input & 8 ) )
         {
-            hasUpDown = true;
+            hasUpDownInLast10f = true;
             break;
         }
     }
@@ -126,10 +126,11 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
 
     // Don't allow pressing select until 10f after we have stopped moving the cursor. This is a work around
     // for the issue when select is pressed after the cursor moves, but before currentMenuIndex is updated.
-    if ( hasUpDown )
+    if ( hasUpDownInLast10f )
         input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
 
-    // Disable saving replay or returning to main menu
+    // Disable saving replay or returning to main menu, ie only allow first two options (once again and chara select)
+    // TODO handle replay saving somehow
     if ( currentMenuIndex >= 2 )
         input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
 

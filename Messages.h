@@ -55,8 +55,10 @@ struct ConfigOptions
 
     ConfigOptions ( uint8_t flags = 0 ) : flags ( flags ) {}
 
+    bool isVersus() const { return !isTraining(); }
     bool isTraining() const { return ( flags & Training ); }
     bool isBroadcast() const { return ( flags & Broadcast ); }
+    bool isOnline() const { return !isBroadcast() && !isOffline(); }
     bool isOffline() const { return ( flags & Offline ); }
 };
 

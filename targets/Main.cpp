@@ -82,7 +82,7 @@ struct Main
 
     virtual void userConfirmation()
     {
-        // Disable keepAlive during the initial limbo period
+        // Disable keepAlive because the UI blocks
         ctrlSocket->setKeepAlive ( 0 );
         dataSocket->setKeepAlive ( 0 );
 
@@ -92,7 +92,7 @@ struct Main
             serverDataSocket->setKeepAlive ( 0 );
         }
 
-        // Disable keyboard hooks
+        // Disable keyboard hooks for the UI
         KeyboardManager::get().unhook();
 
         pingStats.latency.merge ( pinger.getStats() );
@@ -111,7 +111,7 @@ struct Main
             }
 
             netplayConfig = ui.getNetplayConfig();
-
+            netplayConfig.invalidate();
             ctrlSocket->send ( REF_PTR ( netplayConfig ) );
 
             // Wait for ConfirmConfig before starting game
@@ -145,8 +145,8 @@ struct Main
 
         const Version RemoteVersion = this->initialConfig.remoteVersion;
 
-        LOG ( "Initial config: remoteVersion='%s'; commitId='%s'; buildTime='%s'; remoteName='%s'"
-              "; isTraining=%d; isBroadcast=%d", RemoteVersion, RemoteVersion.commitId, RemoteVersion.buildTime,
+        LOG ( "Initial config: remoteVersion='%s'; commitId='%s'; buildTime='%s'; remoteName='%s';"
+              "isTraining=%d; isBroadcast=%d", RemoteVersion, RemoteVersion.commitId, RemoteVersion.buildTime,
               this->initialConfig.remoteName, initialConfig.isTraining(), initialConfig.isBroadcast() );
 
         if ( this->initialConfig.remoteName.empty() )
@@ -221,7 +221,7 @@ struct Main
             netplayConfig.invalidate();
         }
 
-        // Remove sockets from the EventManager so messages get buffered.
+        // Remove sockets from the EventManager so messages get buffered by the OS while starting the game.
         // These are safe to call even if null or the socket is not a real fd.
         SocketManager::get().remove ( serverCtrlSocket.get() );
         SocketManager::get().remove ( serverDataSocket.get() );
@@ -403,7 +403,7 @@ struct Main
                 return;
 
             case MsgType::NetplayConfig:
-                netplayConfig = msg->getAs<NetplayConfig>(); // Intentional fall through
+                netplayConfig = msg->getAs<NetplayConfig>(); // Intentional fall through to startGame
 
             case MsgType::ConfirmConfig:
                 startGame();
@@ -451,13 +451,13 @@ struct Main
                 procMan.ipcSend ( serverCtrlSocket->share ( procMan.getProcessId() ) );
                 procMan.ipcSend ( serverDataSocket->share ( procMan.getProcessId() ) );
 
-                // We don't share UDP sockets since they will be included in the server's share data
                 if ( ctrlSocket->isTCP() )
                 {
                     procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
                 }
                 else
                 {
+                    // We don't share child UDP sockets since they will be included in the server socket's share data
                     ASSERT ( serverCtrlSocket->getAsUDP().getChildSockets().size() == 1 );
                     ASSERT ( serverCtrlSocket->getAsUDP().getChildSockets().begin()->second == ctrlSocket );
                 }

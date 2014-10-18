@@ -24,7 +24,7 @@ ENUM ( NetplayState, PreInitial, Initial, CharaSelect, Loading, Skippable, InGam
 
     Skippable -> { InGame (versus mode), RetryMenu }
 
-    InGame -> { Skippable, PauseMenu (broadcast / offline only) }
+    InGame -> { Skippable, PauseMenu (training / broadcast / offline only) }
 
     RetryMenu -> { Loading, CharaSelect }
 
@@ -33,6 +33,7 @@ ENUM ( NetplayState, PreInitial, Initial, CharaSelect, Loading, Skippable, InGam
 */
 
 
+// Class that manages netplay state and inputs
 class NetplayManager
 {
     // Netplay state
@@ -60,10 +61,10 @@ class NetplayManager
     // Data for previous games, each game starts after the Loading state
     std::vector<MsgPtr> games;
 
-    // The local player, ie the one where setInput is called each frame
+    // The local player, ie the one where setInput is called each frame locally
     uint8_t localPlayer = 1;
 
-    // The remote player, ie the one where setInputs gets called
+    // The remote player, ie the one where setInputs gets called for each input message
     uint8_t remotePlayer = 2;
 
     // Get the input for the specific netplay state
@@ -90,7 +91,7 @@ public:
     // Indicate which player is the remote player
     void setRemotePlayer ( uint8_t player );
 
-    // If inputs are ready for the current frame, if not then keep polling
+    // True if inputs are ready for the current frame, otherwise the caller should wait for more inputs
     bool areInputsReady() const;
 
     // Update the current netplay frame

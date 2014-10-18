@@ -15,7 +15,7 @@ using namespace std;
 #define CC_INTROSTATE_ADDR          ((char *)0x55D20B) // 1 bytes, intro state, 2 (intro), 1 (pre-game), 0 (in-game)
 #define CC_OUTROSTATE_ADDR          ((char *)0x563948) // 4 bytes, start from 2, goes to 3 (for timeouts?)
 
-#define CC_PLR_ARRAY_ADDR           ((char *)   ) // player info
+#define CC_PLR_ARRAY_ADDR           ((char *)0x555134) // player info
 #define CC_PLR_STRUCT_LEN           (2812)
 #define CC_PLR_STRUCT_HEADER        (12)               // stuff that doesn't change
 
