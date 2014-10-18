@@ -138,8 +138,11 @@ struct PerGameData : public SerializableSequence
     // The game start index, ie when this batch of inputs start
     uint32_t startIndex = 0;
 
-    // Character select data per player
-    std::array<uint8_t, 2> chara, color, moon;
+    // Character select data, indexed by player
+    std::array<uint32_t, 2> chara, moon, color;
+
+    // Selected stage
+    uint32_t stage = 0;
 
     // Mapping: index -> RngState
     std::unordered_map<uint32_t, RngState> rngStates;

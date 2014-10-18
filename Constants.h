@@ -27,7 +27,7 @@
 #define CC_SKIP_FRAMES_ADDR         ( ( uint32_t * ) 0x55D25C ) // Set to N to disable FPS limit for N frames
 #define CC_ROUND_TIMER_ADDR         ( ( uint32_t * ) 0x562A3C ) // Counts down from 4752, may stop
 #define CC_REAL_TIMER_ADDR          ( ( uint32_t * ) 0x562A40 ) // Counts up from 0 after round start
-#define CC_STAGE_SELECTOR_ADDR      ( ( uint32_t * ) 0x74FD98 ) // Currently selected stage, can be written to
+#define CC_STAGE_SELECTOR_ADDR      ( ( uint32_t * ) 0x74FD98 ) // Currently selected stage, can be assigned to directly
 #define CC_FPS_COUNTER_ADDR         ( ( uint32_t * ) 0x774A70 ) // Value of the displayed FPS counter
 #define CC_PERF_FREQ_ADDR           ( ( uint64_t * ) 0x774A80 ) // Value of QueryPerformanceFrequency for game FPS
 
@@ -64,13 +64,13 @@
 #define CC_GAME_MODE_INGAME         ( 1 )
 #define CC_GAME_MODE_RETRY          ( 5 )
 
-// Character select data, can be assigned directly to update the game state
-#define CC_P1_CHARACTER_ADDR        ( ( uint8_t * )  0x74D8F8 )
-#define CC_P1_MOON_ADDR             ( ( uint8_t * )  0x74D900 )
-#define CC_P1_COLOR_ADDR            ( ( uint8_t * )  0x74D904 )
-#define CC_P2_CHARACTER_ADDR        ( ( uint8_t * )  0x74D91C )
-#define CC_P2_MOON_ADDR             ( ( uint8_t * )  0x74D924 )
-#define CC_P2_COLOR_ADDR            ( ( uint8_t * )  0x74D928 )
+// Character select data, can be assigned to directly at the character select screen
+#define CC_P1_CHARA_SELECTOR_ADDR   ( ( uint32_t * ) 0x74D8F8 )
+#define CC_P1_MOON_SELECTOR_ADDR    ( ( uint32_t * ) 0x74D900 )
+#define CC_P1_COLOR_SELECTOR_ADDR   ( ( uint32_t * ) 0x74D904 )
+#define CC_P2_CHARA_SELECTOR_ADDR   ( ( uint32_t * ) 0x74D91C )
+#define CC_P2_MOON_SELECTOR_ADDR    ( ( uint32_t * ) 0x74D924 )
+#define CC_P2_COLOR_SELECTOR_ADDR   ( ( uint32_t * ) 0x74D928 )
 
 // Complete RNG state
 #define CC_RNGSTATE0_ADDR           ( ( uint32_t * ) 0x563778 )

@@ -231,11 +231,25 @@ void NetplayManager::setState ( NetplayState state )
                 PerGameData *game = new PerGameData ( getIndex() );
                 for ( uint8_t i = 0; i < 2; ++i )
                 {
-                    game->chara[i] = * ( i == 0 ? CC_P1_CHARACTER_ADDR : CC_P2_CHARACTER_ADDR );
-                    game->color[i] = * ( i == 0 ? CC_P1_COLOR_ADDR : CC_P2_COLOR_ADDR );
-                    game->moon[i]  = * ( i == 0 ? CC_P1_MOON_ADDR : CC_P2_MOON_ADDR );
+                    game->chara[i] = * ( i == 0 ? CC_P1_CHARA_SELECTOR_ADDR : CC_P2_CHARA_SELECTOR_ADDR );
+                    game->moon[i]  = * ( i == 0 ? CC_P1_MOON_SELECTOR_ADDR  : CC_P2_MOON_SELECTOR_ADDR  );
+                    game->color[i] = * ( i == 0 ? CC_P1_COLOR_SELECTOR_ADDR : CC_P2_COLOR_SELECTOR_ADDR );
+                    LOG ( "P%u: chara=%u; moon=%u; color=%u", i + 1, game->chara[i], game->moon[i], game->color[i] );
                 }
+
+                game->stage = *CC_STAGE_SELECTOR_ADDR;
+                LOG ( "stage=%u", game->stage );
+
                 games.push_back ( MsgPtr ( game ) );
+
+                // Clear old game data
+                if ( games.size() > MAX_GAMES_TO_KEEP )
+                {
+                    games[games.size() - MAX_GAMES_TO_KEEP - 1].reset();
+
+                    for ( uint32_t i = 0; i < games.size() - MAX_GAMES_TO_KEEP; ++i )
+                        ASSERT ( games[i].get() == 0 );
+                }
             }
 
             lastStartIndex = getIndex();
