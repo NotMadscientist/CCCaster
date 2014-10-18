@@ -203,17 +203,29 @@ void NetplayManager::setState ( NetplayState state )
         if ( this->state != NetplayState::Initial )
             ++indexedFrame.parts.index;
 
-        // Start of a new game
-        if ( state == NetplayState::Loading )
+        // Start of a new game, ie previous state is Loading state
+        if ( this->state == NetplayState::Loading )
         {
             // Clear old input data
-            inputs[0].clear ( lastLoadingIndex, getIndex() );
-            inputs[1].clear ( lastLoadingIndex, getIndex() );
-            lastLoadingIndex = getIndex();
+            inputs[0].clear ( lastStartIndex, getIndex() );
+            inputs[1].clear ( lastStartIndex, getIndex() );
+
+            for ( uint32_t i = 0; i < getIndex(); ++i )
+            {
+                ASSERT ( inputs[0].empty ( i ) == true );
+                ASSERT ( inputs[1].empty ( i ) == true );
+            }
+
+            // Clear old RNG states
+            for ( uint32_t i = lastStartIndex; i < rngStates.size(); ++i )
+                rngStates[i].reset();
+
+            for ( uint32_t i = 0; i < rngStates.size(); ++i )
+                ASSERT ( rngStates[i].get() == 0 );
 
             if ( !config.isOffline() )
             {
-                LOG ( "Start of new game" );
+                LOG ( "Start of a new game" );
 
                 // Save character select data
                 PerGameData *game = new PerGameData ( getIndex() );
@@ -225,6 +237,8 @@ void NetplayManager::setState ( NetplayState state )
                 }
                 games.push_back ( MsgPtr ( game ) );
             }
+
+            lastStartIndex = getIndex();
         }
     }
 
@@ -326,11 +340,11 @@ void NetplayManager::saveLastGame()
     ASSERT ( games.back().get() != 0 );
     ASSERT ( games.back()->getMsgType() == MsgType::PerGameData );
 
-    LOG ( "indexedFrame=[%s]; lastLoadingIndex=%u", indexedFrame, lastLoadingIndex );
+    LOG ( "indexedFrame=[%s]; lastStartIndex=%u", indexedFrame, lastStartIndex );
 
     PerGameData& game = games.back()->getAs<PerGameData>();
 
-    for ( uint32_t i = lastLoadingIndex; i < rngStates.size(); ++i )
+    for ( uint32_t i = lastStartIndex; i < rngStates.size(); ++i )
     {
         if ( !rngStates[i] )
             continue;
@@ -340,6 +354,5 @@ void NetplayManager::saveLastGame()
         ASSERT ( rngStates[i]->getMsgType() == MsgType::RngState );
 
         game.rngStates[i] = rngStates[i]->getAs<RngState>();
-        rngStates[i].reset();
     }
 }

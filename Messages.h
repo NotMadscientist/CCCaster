@@ -135,8 +135,8 @@ struct RngState : public SerializableSequence
 
 struct PerGameData : public SerializableSequence
 {
-    // The loading index, ie when this batch of inputs start
-    uint32_t loadingIndex = 0;
+    // The game start index, ie when this batch of inputs start
+    uint32_t startIndex = 0;
 
     // Character select data per player
     std::array<uint8_t, 2> chara, color, moon;
@@ -149,9 +149,9 @@ struct PerGameData : public SerializableSequence
 
     // TODO encapsulate training mode state
 
-    PerGameData ( uint32_t loadingIndex ) : loadingIndex ( loadingIndex ) {}
+    PerGameData ( uint32_t startIndex ) : startIndex ( startIndex ) {}
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( PerGameData, loadingIndex, chara, color, moon, rngStates, inputs );
+    PROTOCOL_MESSAGE_BOILERPLATE ( PerGameData, startIndex, chara, color, moon, rngStates, inputs );
 };
 
 

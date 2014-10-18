@@ -128,6 +128,16 @@ public:
         }
     }
 
+    bool empty() const { return inputs.empty(); }
+
+    bool empty ( size_t index ) const
+    {
+        if ( index + 1 > inputs.size() )
+            return false;
+
+        return inputs[index].empty();
+    }
+
     uint32_t getEndIndex() const { return inputs.size(); }
 
     uint32_t getEndFrame() const

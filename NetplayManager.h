@@ -52,8 +52,8 @@ class NetplayManager
     // Current netplay frame, frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime.
     IndexedFrame indexedFrame = { { 0, 0 } };
 
-    // Last loading index, ie the last index of inputs we are saving
-    uint32_t lastLoadingIndex = 0;
+    // Last game start index, ie the last index of inputs we are saving
+    uint32_t lastStartIndex = 0;
 
     // Mapping: player -> index -> frame -> input
     std::array<InputsContainer<uint16_t>, 2> inputs;
