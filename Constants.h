@@ -52,7 +52,7 @@
 
 #define CC_GAME_MODE_ADDR           ( ( uint32_t * ) 0x54EEE8 ) // Current game mode, constants below
 
-// List of game modes revelant to netplay
+// List of game modes relevant to netplay
 #define CC_GAME_MODE_STARTUP        ( 65535 )
 #define CC_GAME_MODE_OPENING        ( 3 )
 #define CC_GAME_MODE_TITLE          ( 2 )
@@ -63,6 +63,14 @@
 #define CC_GAME_MODE_LOADING        ( 8 )
 #define CC_GAME_MODE_INGAME         ( 1 )
 #define CC_GAME_MODE_RETRY          ( 5 )
+
+// Character select data, can be assigned directly to update the game state
+#define CC_P1_CHARACTER_ADDR        ( ( uint8_t * )  0x74D8F8 )
+#define CC_P1_MOON_ADDR             ( ( uint8_t * )  0x74D900 )
+#define CC_P1_COLOR_ADDR            ( ( uint8_t * )  0x74D904 )
+#define CC_P2_CHARACTER_ADDR        ( ( uint8_t * )  0x74D91C )
+#define CC_P2_MOON_ADDR             ( ( uint8_t * )  0x74D924 )
+#define CC_P2_COLOR_ADDR            ( ( uint8_t * )  0x74D928 )
 
 // Complete RNG state
 #define CC_RNGSTATE0_ADDR           ( ( uint32_t * ) 0x563778 )

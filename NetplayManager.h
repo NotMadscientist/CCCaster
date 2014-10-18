@@ -52,13 +52,17 @@ class NetplayManager
     // Current netplay frame, frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime.
     IndexedFrame indexedFrame = { { 0, 0 } };
 
-    // Last index we care about
-    uint32_t lastStartingIndex = 0;
+    // Last loading index, ie the last index of inputs we are saving
+    uint32_t lastLoadingIndex = 0;
 
     // Mapping: player -> index -> frame -> input
     std::array<InputsContainer<uint16_t>, 2> inputs;
 
-    // Data for previous games, each game starts after the Loading state
+    // Mapping: index -> RNG state (can be null)
+    std::vector<MsgPtr> rngStates;
+
+    // Data for previous games, each game starts just after the Loading state.
+    // Indexed by game number, NOT by transition index.
     std::vector<MsgPtr> games;
 
     // The local player, ie the one where setInput is called each frame locally
@@ -123,9 +127,9 @@ public:
     MsgPtr getBothInputs() const;
     void setBothInputs ( const BothInputs& bothInputs );
 
-    // Get / set the RNG state for the current index
-    MsgPtr getRngState() const;
-    void setRngState ( const RngState& rngState );
+    void saveRngState ( const RngState& rngState );
+
+    void saveLastGame();
 
     friend class ProcessManager;
 };

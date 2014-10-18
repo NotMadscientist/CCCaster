@@ -179,10 +179,10 @@ struct Main
                 netMan.setInput ( localPlayer, input );
 
                 if ( isLocal() )
-                    netMan.setInput ( remotePlayer, 0 );
+                    netMan.setInput ( remotePlayer, input );
 
                 if ( isBroadcast() )
-                    ; // TODO
+                    ; // TODO broadcast to spectators
                 else if ( !isOffline() )
                     dataSocket->send ( netMan.getInputs ( localPlayer ) );
 
@@ -244,7 +244,7 @@ struct Main
         {
             ASSERT ( nextRngState.get() != 0 );
             procMan.setRngState ( nextRngState->getAs<RngState>() );
-            netMan.setRngState ( nextRngState->getAs<RngState>() );
+            netMan.saveRngState ( nextRngState->getAs<RngState>() );
             nextRngState.reset();
             shouldSetRngState = false;
 
@@ -319,16 +319,26 @@ struct Main
 
         if ( state == NetplayState::CharaSelect || state == NetplayState::InGame )
         {
-            if ( isHost() )
+            MsgPtr msg;
+            if ( isHost() || isBroadcast() )
+                msg = procMan.getRngState();
+
+            switch ( clientMode.value )
             {
-                MsgPtr msg = procMan.getRngState();
-                ctrlSocket->send ( msg );
-                netMan.setRngState ( msg->getAs<RngState>() );
-            }
-            else if ( isClient() )
-            {
-                waitForRngState = ( nextRngState.get() == 0 );
-                shouldSetRngState = true;
+                case ClientMode::Host:
+                    ctrlSocket->send ( msg ); // Intentional fall through to saveRngState
+
+                case ClientMode::Broadcast:
+                    netMan.saveRngState ( msg->getAs<RngState>() );
+                    break;
+
+                case ClientMode::Client:
+                    waitForRngState = ( nextRngState.get() == 0 );
+                    shouldSetRngState = true;
+                    break;
+
+                default:
+                    break;
             }
         }
 
@@ -386,6 +396,8 @@ struct Main
 
         if ( current == CC_GAME_MODE_RETRY )
         {
+            // TODO do this earlier?
+            netMan.saveLastGame();
             netplayStateChanged ( NetplayState::RetryMenu );
             return;
         }

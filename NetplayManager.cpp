@@ -160,6 +160,16 @@ uint16_t NetplayManager::getDelayedInput ( uint8_t player, uint32_t frame ) cons
     return inputs[player - 1].get ( { getIndex(), frame - config.delay } );
 }
 
+void NetplayManager::setRemotePlayer ( uint8_t player )
+{
+    ASSERT ( player == 1 || player == 2 );
+
+    localPlayer = 3 - player;
+    remotePlayer = player;
+
+    inputs[player - 1].fillFakeInputs = ( config.rollback > 0 );
+}
+
 bool NetplayManager::areInputsReady() const
 {
     if ( state.value < NetplayState::CharaSelect )
@@ -181,7 +191,7 @@ void NetplayManager::setState ( NetplayState state )
     if ( state == this->state )
         return;
 
-    LOG ( "previous=%s; current=%s", this->state, state );
+    LOG ( "indexedFrame=[%s]; previous=%s; current=%s", indexedFrame, this->state, state );
 
     if ( state.value >= NetplayState::CharaSelect && state.value <= NetplayState::PauseMenu )
     {
@@ -193,18 +203,70 @@ void NetplayManager::setState ( NetplayState state )
         if ( this->state != NetplayState::Initial )
             ++indexedFrame.parts.index;
 
-        // Clear old input data
-        if ( this->state == NetplayState::Loading )
+        // Start of a new game
+        if ( state == NetplayState::Loading )
         {
-            // TODO save PerGameData
+            // Clear old input data
+            inputs[0].clear ( lastLoadingIndex, getIndex() );
+            inputs[1].clear ( lastLoadingIndex, getIndex() );
+            lastLoadingIndex = getIndex();
 
-            inputs[0].clear ( lastStartingIndex, getIndex() );
-            inputs[1].clear ( lastStartingIndex, getIndex() );
-            lastStartingIndex = getIndex();
+            if ( !config.isOffline() )
+            {
+                LOG ( "Start of new game" );
+
+                // Save character select data
+                PerGameData *game = new PerGameData ( getIndex() );
+                for ( uint8_t i = 0; i < 2; ++i )
+                {
+                    game->chara[i] = * ( i == 0 ? CC_P1_CHARACTER_ADDR : CC_P2_CHARACTER_ADDR );
+                    game->color[i] = * ( i == 0 ? CC_P1_COLOR_ADDR : CC_P2_COLOR_ADDR );
+                    game->moon[i]  = * ( i == 0 ? CC_P1_MOON_ADDR : CC_P2_MOON_ADDR );
+                }
+                games.push_back ( MsgPtr ( game ) );
+            }
         }
     }
 
     this->state = state;
+}
+
+uint16_t NetplayManager::getInput ( uint8_t player ) const
+{
+    ASSERT ( player == 1 || player == 2 );
+
+    switch ( state.value )
+    {
+        case NetplayState::PreInitial:
+            return getPreInitialInput ( player );
+
+        case NetplayState::Initial:
+            return getInitialInput ( player );
+
+        case NetplayState::CharaSelect:
+            return getCharaSelectInput ( player );
+
+        case NetplayState::Loading:
+        case NetplayState::Skippable:
+            // If the remote inputs index is ahead or if spectating, then we should mash to skip.
+            if ( ( inputs[remotePlayer - 1].getEndIndex() > getIndex() + 1 ) || config.isSpectate() )
+                RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
+
+            return getSkippableInput ( player );
+
+        case NetplayState::InGame:
+            return getInGameInput ( player );
+
+        case NetplayState::RetryMenu:
+            return getRetryMenuInput ( player );
+
+        case NetplayState::PauseMenu:
+            return getPauseMenuInput ( player );
+
+        default:
+            LOG_AND_THROW_STRING ( "Invalid state %s!", state );
+            return 0;
+    }
 }
 
 void NetplayManager::setInput ( uint8_t player, uint16_t input )
@@ -243,61 +305,41 @@ void NetplayManager::setBothInputs ( const BothInputs& bothInputs )
     // TODO
 }
 
-uint16_t NetplayManager::getInput ( uint8_t player ) const
+void NetplayManager::saveRngState ( const RngState& rngState )
 {
-    ASSERT ( player == 1 || player == 2 );
+    if ( config.isOffline() )
+        return;
 
-    switch ( state.value )
+    LOG ( "indexedFrame=[%s]", indexedFrame );
+
+    if ( getIndex() + 1 > rngStates.size() )
+        rngStates.resize ( getIndex() + 1 );
+
+    rngStates[getIndex()].reset ( new RngState ( rngState ) );
+}
+
+void NetplayManager::saveLastGame()
+{
+    if ( config.isOffline() )
+        return;
+
+    ASSERT ( games.back().get() != 0 );
+    ASSERT ( games.back()->getMsgType() == MsgType::PerGameData );
+
+    LOG ( "indexedFrame=[%s]; lastLoadingIndex=%u", indexedFrame, lastLoadingIndex );
+
+    PerGameData& game = games.back()->getAs<PerGameData>();
+
+    for ( uint32_t i = lastLoadingIndex; i < rngStates.size(); ++i )
     {
-        case NetplayState::PreInitial:
-            return getPreInitialInput ( player );
+        if ( !rngStates[i] )
+            continue;
 
-        case NetplayState::Initial:
-            return getInitialInput ( player );
+        LOG ( "rngState[%d]", i );
 
-        case NetplayState::CharaSelect:
-            return getCharaSelectInput ( player );
+        ASSERT ( rngStates[i]->getMsgType() == MsgType::RngState );
 
-        case NetplayState::Loading:
-        case NetplayState::Skippable:
-            // If the remote inputs index is ahead, then we should mash to skip
-            if ( inputs[remotePlayer - 1].getEndIndex() > getIndex() + 1 )
-                RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
-
-            return getSkippableInput ( player );
-
-        case NetplayState::InGame:
-            return getInGameInput ( player );
-
-        case NetplayState::RetryMenu:
-            return getRetryMenuInput ( player );
-
-        case NetplayState::PauseMenu:
-            return getPauseMenuInput ( player );
-
-        default:
-            LOG_AND_THROW_STRING ( "Invalid state %s!", state );
-            return 0;
+        game.rngStates[i] = rngStates[i]->getAs<RngState>();
+        rngStates[i].reset();
     }
-}
-
-MsgPtr NetplayManager::getRngState() const
-{
-    // TODO
-    return 0;
-}
-
-void NetplayManager::setRngState ( const RngState& rngState )
-{
-    // TODO
-}
-
-void NetplayManager::setRemotePlayer ( uint8_t player )
-{
-    ASSERT ( player == 1 || player == 2 );
-
-    localPlayer = 3 - player;
-    remotePlayer = player;
-
-    inputs[player - 1].fillFakeInputs = ( config.rollback > 0 );
 }

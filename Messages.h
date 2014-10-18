@@ -49,7 +49,7 @@ struct PingStats : public SerializableSequence
 
 struct ConfigOptions
 {
-    enum { Training = 0x01, Broadcast = 0x02, Offline = 0x04 };
+    enum { Training = 0x01, Spectate = 0x02, Broadcast = 0x04, Offline = 0x08 };
 
     uint8_t flags = 0;
 
@@ -57,9 +57,10 @@ struct ConfigOptions
 
     bool isVersus() const { return !isTraining(); }
     bool isTraining() const { return ( flags & Training ); }
+    bool isSpectate() const { return ( flags & Spectate ); }
     bool isBroadcast() const { return ( flags & Broadcast ); }
-    bool isOnline() const { return !isBroadcast() && !isOffline(); }
     bool isOffline() const { return ( flags & Offline ); }
+    bool isOnline() const { return !isSpectate() && !isBroadcast() && !isOffline(); }
 };
 
 
@@ -134,18 +135,23 @@ struct RngState : public SerializableSequence
 
 struct PerGameData : public SerializableSequence
 {
-    uint32_t startIndex = 0;
+    // The loading index, ie when this batch of inputs start
+    uint32_t loadingIndex = 0;
+
+    // Character select data per player
     std::array<uint8_t, 2> chara, color, moon;
 
     // Mapping: index -> RngState
     std::unordered_map<uint32_t, RngState> rngStates;
 
-    // Mapping: index -> player -> frame -> input
-    std::vector<std::array<std::vector<uint32_t>, 2>> inputs;
+    // Mapping: index offset -> player -> frame -> input
+    std::vector<std::array<std::vector<uint16_t>, 2>> inputs;
 
-    PerGameData ( uint32_t startIndex ) : startIndex ( startIndex ) {}
+    // TODO encapsulate training mode state
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( PerGameData, startIndex, chara, color, moon, rngStates, inputs );
+    PerGameData ( uint32_t loadingIndex ) : loadingIndex ( loadingIndex ) {}
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( PerGameData, loadingIndex, chara, color, moon, rngStates, inputs );
 };
 
 

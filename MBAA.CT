@@ -104,34 +104,6 @@
       <Address>0018FD50</Address>
     </CheatEntry>
     <CheatEntry>
-      <ID>221</ID>
-      <Description>"P1 chara"</Description>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>00555135</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>219</ID>
-      <Description>"P1 moon"</Description>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>0055513C</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>223</ID>
-      <Description>"P2 chara"</Description>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>00557947</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>224</ID>
-      <Description>"P2 moon"</Description>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>0055794E</Address>
-    </CheatEntry>
-    <CheatEntry>
       <ID>11</ID>
       <Description>"P1 seq (see framedisplay)"</Description>
       <Color>80000008</Color>
