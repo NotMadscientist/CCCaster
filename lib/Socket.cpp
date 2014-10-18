@@ -182,15 +182,7 @@ void Socket::init()
         else
         {
             addrInfo = getAddrInfo ( address.addr, address.port, true );
-
-            for ( res = addrInfo.get(); res; res = res->ai_next )
-            {
-                if ( !res )
-                    continue;
-
-                address.addr = getAddrFromSockAddr ( res->ai_addr );
-                break;
-            }
+            address.addr = getAddrFromSockAddr ( addrInfo->ai_addr );
         }
     }
 

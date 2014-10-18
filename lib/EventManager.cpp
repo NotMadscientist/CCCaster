@@ -92,11 +92,9 @@ bool EventManager::poll ( uint64_t timeout )
 
     LOG ( "Finished polling" );
 
-    LOG ( "Joining reaper thread" );
-
-    reaperThread.join();
-
-    LOG ( "Joined reaper thread" );
+    // LOG ( "Joining reaper thread" );
+    // reaperThread.join();
+    // LOG ( "Joined reaper thread" );
 
     return false;
 }
@@ -127,11 +125,9 @@ void EventManager::stop()
 
     running = false;
 
-    LOG ( "Joining reaper thread" );
-
-    reaperThread.join();
-
-    LOG ( "Joined reaper thread" );
+    // LOG ( "Joining reaper thread" );
+    // reaperThread.join();
+    // LOG ( "Joined reaper thread" );
 }
 
 void EventManager::release()
