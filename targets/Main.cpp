@@ -60,9 +60,9 @@ struct Main
 
         1 - Connect / accept ctrlSocket
 
-        2 - Both send InitialConfig (flags, dataPort, version, name)
+        2 - Both send and recv VersionConfig
 
-        3 - Both recv InitialConfig (update connecting message)
+        3 - Both send and recv InitialConfig
 
         4 - Connect / accept dataSocket
 
@@ -78,162 +78,12 @@ struct Main
 
     */
 
-    virtual void userConfirmation()
-    {
-        ASSERT ( ctrlSocket.get() != 0 );
-        ASSERT ( dataSocket.get() != 0 );
-        ASSERT ( ctrlSocket->isConnected() == true );
-        ASSERT ( dataSocket->isConnected() == true );
-
-        // Disable keepAlive because the UI blocks
-        ctrlSocket->setKeepAlive ( 0 );
-        dataSocket->setKeepAlive ( 0 );
-
-        if ( isHost() )
-        {
-            serverCtrlSocket->setKeepAlive ( 0 );
-            serverDataSocket->setKeepAlive ( 0 );
-        }
-
-        // Disable keyboard hooks for the UI
-        KeyboardManager::get().unhook();
-
-        pingStats.latency.merge ( pinger.getStats() );
-        pingStats.packetLoss = ( pingStats.packetLoss + pinger.getPacketLoss() ) / 2;
-
-        LOG ( "Merged stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
-              pingStats.latency.getMean(), pingStats.latency.getWorst(),
-              pingStats.latency.getStdErr(), pingStats.latency.getStdDev(), pingStats.packetLoss );
-
-        if ( isHost() )
-        {
-            if ( !ui.accepted ( initialConfig, pingStats ) )
-            {
-                EventManager::get().stop();
-                return;
-            }
-
-            netplayConfig = ui.getNetplayConfig();
-            netplayConfig.invalidate();
-            ctrlSocket->send ( REF_PTR ( netplayConfig ) );
-
-            // Wait for ConfirmConfig before starting game
-        }
-        else
-        {
-            if ( !ui.connected ( initialConfig, pingStats ) )
-            {
-                EventManager::get().stop();
-                return;
-            }
-
-            ctrlSocket->send ( new ConfirmConfig() );
-
-            // Wait for NetplayConfig before starting game
-        }
-    }
-
-    virtual void gotInitialConfig ( const InitialConfig& initialConfig )
-    {
-        this->initialConfig.remoteVersion = initialConfig.localVersion;
-        this->initialConfig.remoteName = initialConfig.localName;
-
-        const Version RemoteVersion = this->initialConfig.remoteVersion;
-
-        LOG ( "Initial config:"
-              "dataPort=%u; remoteVersion='%s'; commitId='%s'; buildTime='%s';"
-              "remoteName='%s'; isTraining=%d; isBroadcast=%d",
-              initialConfig.dataPort, RemoteVersion, RemoteVersion.commitId, RemoteVersion.buildTime,
-              this->initialConfig.remoteName, initialConfig.isTraining(), initialConfig.isBroadcast() );
-
-        if ( this->initialConfig.remoteName.empty() )
-            this->initialConfig.remoteName = ctrlSocket->address.addr;
-
-        if ( !LocalVersion.similar ( RemoteVersion, 1 + opt[STRICT_VERSION].count() ) )
-        {
-            string local = toString ( "%s.%s", LocalVersion.major(), LocalVersion.minor() );
-            string remote = toString ( "%s.%s", RemoteVersion.major(), RemoteVersion.minor() );
-
-            if ( opt[STRICT_VERSION].count() >= 1 )
-            {
-                local += LocalVersion.suffix();
-                remote += RemoteVersion.suffix();
-            }
-
-            if ( opt[STRICT_VERSION].count() >= 2 )
-            {
-                local += " " + LocalVersion.commitId;
-                remote += " " + RemoteVersion.commitId;
-            }
-
-            if ( opt[STRICT_VERSION].count() >= 3 )
-            {
-                local += " " + LocalVersion.buildTime;
-                remote += " " + RemoteVersion.buildTime;
-            }
-
-            ui.sessionError = "Incompatible versions:\n" + local + "\n" + remote;
-            ctrlSocket->send ( new ErrorMessage ( ui.sessionError ) );
-            delayedStop();
-            return;
-        }
-
-        if ( isHost() )
-        {
-            ui.display ( this->initialConfig.getAcceptMessage ( "connecting" ) );
-        }
-        else
-        {
-            this->initialConfig.flags = initialConfig.flags;
-            this->initialConfig.dataPort = initialConfig.dataPort;
-
-            dataSocket = UdpSocket::connect ( this, { address.addr, this->initialConfig.dataPort } );
-
-            LOG ( "dataSocket=%08x", dataSocket );
-
-            ui.display ( this->initialConfig.getConnectMessage ( "Connecting" ) );
-        }
-    }
-
-    virtual void gotPingStats ( const PingStats& pingStats )
-    {
-        LOG ( "Remote stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
-              pingStats.latency.getMean(), pingStats.latency.getWorst(),
-              pingStats.latency.getStdErr(), pingStats.latency.getStdDev(), pingStats.packetLoss );
-
-        this->pingStats = pingStats;
-
-        if ( isHost() )
-            userConfirmation();
-        else
-            pinger.start();
-    }
-
-    virtual void startGame()
-    {
-        if ( isNetplay() )
-        {
-            netplayConfig.flags = initialConfig.flags;
-            netplayConfig.invalidate();
-        }
-
-        // Remove sockets from the EventManager so messages get buffered by the OS while starting the game.
-        // These are safe to call even if null or the socket is not a real fd.
-        SocketManager::get().remove ( serverCtrlSocket.get() );
-        SocketManager::get().remove ( serverDataSocket.get() );
-        SocketManager::get().remove ( ctrlSocket.get() );
-        SocketManager::get().remove ( dataSocket.get() );
-
-        // Open the game wait and for callback to ipcConnectEvent
-        procMan.openGame();
-    }
-
     virtual void startNetplay()
     {
         TimerManager::get().initialize();
         SocketManager::get().initialize();
         ControllerManager::get().initialize ( this );
-        // KeyboardManager::get().hook ( this, ui.getConsoleWindow(), { VK_ESCAPE } );
+        KeyboardManager::get().hook ( this, ui.getConsoleWindow(), { VK_ESCAPE } );
 
         if ( isHost() )
         {
@@ -297,6 +147,158 @@ struct Main
         stopTimer->start ( STOP_EVENTS_DELAY );
     }
 
+    virtual void gotVersionConfig ( const VersionConfig& versionConfig )
+    {
+        const Version RemoteVersion = versionConfig.version;
+
+        LOG ( "RemoteVersion: '%s'; commitId='%s'; buildTime='%s';",
+              RemoteVersion, RemoteVersion.commitId, RemoteVersion.buildTime );
+
+        if ( LocalVersion.similar ( RemoteVersion, 1 + opt[STRICT_VERSION].count() ) )
+        {
+            initialConfig.invalidate();
+            ctrlSocket->send ( REF_PTR ( initialConfig ) );
+            return;
+        }
+
+        string local = toString ( "%s.%s", LocalVersion.major(), LocalVersion.minor() );
+        string remote = toString ( "%s.%s", RemoteVersion.major(), RemoteVersion.minor() );
+
+        if ( opt[STRICT_VERSION].count() >= 1 )
+        {
+            local += LocalVersion.suffix();
+            remote += RemoteVersion.suffix();
+        }
+
+        if ( opt[STRICT_VERSION].count() >= 2 )
+        {
+            local += " " + LocalVersion.commitId;
+            remote += " " + RemoteVersion.commitId;
+        }
+
+        if ( opt[STRICT_VERSION].count() >= 3 )
+        {
+            local += " " + LocalVersion.buildTime;
+            remote += " " + RemoteVersion.buildTime;
+        }
+
+        ui.sessionError = "Incompatible versions:\n" + local + "\n" + remote;
+        ctrlSocket->send ( new ErrorMessage ( ui.sessionError ) );
+        delayedStop();
+    }
+
+    virtual void gotInitialConfig ( const InitialConfig& initialConfig )
+    {
+        LOG ( "Initial config: flags=%02x; dataPort=%u; remoteName='%s'",
+              initialConfig.flags, initialConfig.dataPort, initialConfig.localName );
+
+        this->initialConfig.remoteName = initialConfig.localName;
+        if ( this->initialConfig.remoteName.empty() )
+            this->initialConfig.remoteName = ctrlSocket->address.addr;
+
+        if ( isHost() )
+        {
+            ui.display ( this->initialConfig.getAcceptMessage ( "connecting" ) );
+        }
+        else
+        {
+            this->initialConfig.flags = initialConfig.flags;
+            this->initialConfig.dataPort = initialConfig.dataPort;
+
+            dataSocket = UdpSocket::connect ( this, { address.addr, this->initialConfig.dataPort } );
+
+            LOG ( "dataSocket=%08x", dataSocket );
+
+            ui.display ( this->initialConfig.getConnectMessage ( "Connecting" ) );
+        }
+    }
+
+    virtual void gotPingStats ( const PingStats& pingStats )
+    {
+        LOG ( "Remote stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
+              pingStats.latency.getMean(), pingStats.latency.getWorst(),
+              pingStats.latency.getStdErr(), pingStats.latency.getStdDev(), pingStats.packetLoss );
+
+        this->pingStats = pingStats;
+
+        if ( isHost() )
+            userConfirmation();
+        else
+            pinger.start();
+    }
+
+    virtual void userConfirmation()
+    {
+        ASSERT ( ctrlSocket.get() != 0 );
+        ASSERT ( dataSocket.get() != 0 );
+        ASSERT ( ctrlSocket->isConnected() == true );
+        ASSERT ( dataSocket->isConnected() == true );
+
+        // Disable keepAlive because the UI blocks
+        ctrlSocket->setKeepAlive ( 0 );
+        dataSocket->setKeepAlive ( 0 );
+
+        if ( isHost() )
+        {
+            serverCtrlSocket->setKeepAlive ( 0 );
+            serverDataSocket->setKeepAlive ( 0 );
+        }
+
+        // Disable keyboard hooks for the UI
+        KeyboardManager::get().unhook();
+
+        pingStats.latency.merge ( pinger.getStats() );
+        pingStats.packetLoss = ( pingStats.packetLoss + pinger.getPacketLoss() ) / 2;
+
+        LOG ( "Merged stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
+              pingStats.latency.getMean(), pingStats.latency.getWorst(),
+              pingStats.latency.getStdErr(), pingStats.latency.getStdDev(), pingStats.packetLoss );
+
+        if ( isHost() )
+        {
+            if ( !ui.accepted ( initialConfig, pingStats ) )
+            {
+                EventManager::get().stop();
+                return;
+            }
+
+            netplayConfig = ui.getNetplayConfig();
+            netplayConfig.invalidate();
+
+            ctrlSocket->send ( REF_PTR ( netplayConfig ) );
+
+            // Wait for ConfirmConfig before starting game
+        }
+        else
+        {
+            if ( !ui.connected ( initialConfig, pingStats ) )
+            {
+                EventManager::get().stop();
+                return;
+            }
+
+            ctrlSocket->send ( new ConfirmConfig() );
+
+            // Wait for NetplayConfig before starting game
+        }
+    }
+
+    virtual void startGame()
+    {
+        if ( isNetplay() )
+            netplayConfig.flags = initialConfig.flags;
+
+        // Remove sockets from the EventManager so messages get buffered by the OS while starting the game.
+        // These are safe to call even if null or the socket is not a real fd.
+        SocketManager::get().remove ( serverCtrlSocket.get() );
+        SocketManager::get().remove ( serverDataSocket.get() );
+        SocketManager::get().remove ( ctrlSocket.get() );
+        SocketManager::get().remove ( dataSocket.get() );
+
+        // Open the game wait and for callback to ipcConnectEvent
+        procMan.openGame();
+    }
+
     // Pinger callbacks
     virtual void sendPing ( Pinger *pinger, const MsgPtr& ping ) override
     {
@@ -333,9 +335,8 @@ struct Main
             serverDataSocket = UdpSocket::listen ( this, address.port ); // TODO choose a different port if UDP tunnel
 
             initialConfig.dataPort = serverDataSocket->address.port;
-            initialConfig.invalidate();
 
-            ctrlSocket->send ( REF_PTR ( initialConfig ) );
+            ctrlSocket->send ( new VersionConfig ( initialConfig.flags ) );
         }
         else if ( serverSocket == serverDataSocket.get() )
         {
@@ -363,9 +364,7 @@ struct Main
             ASSERT ( ctrlSocket.get() != 0 );
             ASSERT ( ctrlSocket->isConnected() == true );
 
-            initialConfig.invalidate();
-
-            ctrlSocket->send ( REF_PTR ( initialConfig ) );
+            ctrlSocket->send ( new VersionConfig ( initialConfig.flags ) );
         }
         else if ( socket == dataSocket.get() )
         {
@@ -393,6 +392,10 @@ struct Main
 
         switch ( msg->getMsgType() )
         {
+            case MsgType::VersionConfig:
+                gotVersionConfig ( msg->getAs<VersionConfig>() );
+                return;
+
             case MsgType::InitialConfig:
                 gotInitialConfig ( msg->getAs<InitialConfig>() );
                 return;
@@ -429,6 +432,8 @@ struct Main
     {
         ASSERT ( clientMode != ClientMode::Unknown );
         ASSERT ( netplayConfig.delay != 0xFF );
+
+        netplayConfig.invalidate();
 
         procMan.ipcSend ( REF_PTR ( clientMode ) );
         procMan.ipcSend ( REF_PTR ( netplayConfig ) );
@@ -921,7 +926,6 @@ int main ( int argc, char *argv[] )
 
     // Initialize config
     ui.initialize();
-    ui.initialConfig.localVersion = LocalVersion;
     ui.initialConfig.flags |= ( opt[TRAINING] ? ConfigOptions::Training : 0 );
     ui.initialConfig.flags |= ( opt[BROADCAST] ? ConfigOptions::Broadcast : 0 );
 

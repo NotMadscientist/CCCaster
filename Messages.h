@@ -64,10 +64,19 @@ struct ConfigOptions
 };
 
 
+struct VersionConfig : public SerializableSequence, public ConfigOptions
+{
+    Version version = LocalVersion;
+
+    VersionConfig ( uint8_t flags ) : ConfigOptions ( flags ) {}
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( VersionConfig, flags, version )
+};
+
+
 struct InitialConfig : public SerializableSequence, public ConfigOptions
 {
     uint16_t dataPort = 0;
-    Version localVersion, remoteVersion;
     std::string localName, remoteName;
 
     std::string getConnectMessage ( const std::string& verb ) const
@@ -84,13 +93,11 @@ struct InitialConfig : public SerializableSequence, public ConfigOptions
     {
         flags = 0;
         dataPort = 0;
-        localVersion = LocalVersion;
-        remoteVersion.clear();
         localName.clear();
         remoteName.clear();
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( InitialConfig, flags, dataPort, localVersion, remoteVersion, localName, remoteName )
+    PROTOCOL_MESSAGE_BOILERPLATE ( InitialConfig, flags, dataPort, localName, remoteName )
 };
 
 

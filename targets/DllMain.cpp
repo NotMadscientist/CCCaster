@@ -443,7 +443,23 @@ struct Main
     {
         LOG ( "acceptEvent ( %08x )", serverSocket );
 
-        // TODO proper queueing of potential spectators
+        if ( serverSocket == serverCtrlSocket.get() )
+        {
+            SocketPtr specSocket = serverCtrlSocket->accept ( this );
+
+            LOG ( "specSocket=%08x", specSocket );
+            ASSERT ( specSocket->isConnected() == true );
+
+            ctrlSocket->send ( new VersionConfig ( netMan.config.flags ) );
+
+            // TODO queue and timeout potential spectators
+        }
+        else
+        {
+            LOG ( "Unexpected acceptEvent from serverSocket=%08x", serverSocket );
+            serverSocket->accept ( 0 ).reset();
+            return;
+        }
     }
 
     void connectEvent ( Socket *socket ) override
@@ -467,6 +483,11 @@ struct Main
         switch ( clientMode.value )
         {
             case ClientMode::Host:
+                if ( msg->getMsgType() == MsgType::VersionConfig )
+                {
+
+                } // Intentional fall through since Client processes the same messages
+
             case ClientMode::Client:
                 switch ( msg->getMsgType() )
                 {
