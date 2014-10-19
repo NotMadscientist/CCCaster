@@ -20,6 +20,8 @@ using namespace std;
 
 #define RESEND_INPUTS_INTERVAL 100
 
+#define STOP_EVENTS_DELAY ( 1000 )
+
 #define LOG_SYNC(FORMAT, ...)                                                                                   \
     LOG_TO ( syncLog, "[%u] %s [%s] %s " FORMAT,                                                                \
              *CC_GAME_MODE_ADDR, gameModeStr ( *CC_GAME_MODE_ADDR ),                                            \
@@ -405,6 +407,12 @@ struct Main
         LOG_AND_THROW_STRING ( "Unknown game mode! previous=%u; current=%u", previous, current );
     }
 
+    void delayedStop()
+    {
+        stopTimer.reset ( new Timer ( this ) );
+        stopTimer->start ( STOP_EVENTS_DELAY );
+    }
+
     // ChangeMonitor callback
     void hasChanged ( Variable var, uint32_t previous, uint32_t current ) override
     {
@@ -672,10 +680,19 @@ struct Main
     // Timer callback
     void timerExpired ( Timer *timer ) override
     {
-        ASSERT ( timer == resendTimer.get() );
-
-        dataSocket->send ( netMan.getInputs ( localPlayer ) );
-        resendTimer->start ( RESEND_INPUTS_INTERVAL );
+        if ( timer == resendTimer.get() )
+        {
+            dataSocket->send ( netMan.getInputs ( localPlayer ) );
+            resendTimer->start ( RESEND_INPUTS_INTERVAL );
+        }
+        else if ( timer == stopTimer.get() )
+        {
+            appState = AppState::Stopping;
+        }
+        else
+        {
+            ASSERT ( !"This shouldn't happen!" );
+        }
     }
 
     // DLL callback
@@ -745,24 +762,45 @@ extern "C" void callback()
     catch ( const Exception& err )
     {
         LOG ( "Stopping due to exception: %s", err );
-        appState = AppState::Stopping;
+
         if ( main )
+        {
             main->procMan.ipcSend ( new ErrorMessage ( "Error: " + err.str() ) );
+            main->delayedStop();
+        }
+        else
+        {
+            appState = AppState::Stopping;
+        }
     }
 #ifdef NDEBUG
     catch ( const std::exception& err )
     {
         LOG ( "Stopping due to std::exception: %s", err.what() );
-        appState = AppState::Stopping;
+
         if ( main )
+        {
             main->procMan.ipcSend ( new ErrorMessage ( string ( "Error: " ) + err.what() ) );
+            main->delayedStop();
+        }
+        else
+        {
+            appState = AppState::Stopping;
+        }
     }
     catch ( ... )
     {
         LOG ( "Stopping due to unknown exception!" );
-        appState = AppState::Stopping;
+
         if ( main )
+        {
             main->procMan.ipcSend ( new ErrorMessage ( "Unknown error!" ) );
+            main->delayedStop();
+        }
+        else
+        {
+            appState = AppState::Stopping;
+        }
     }
 #endif
 

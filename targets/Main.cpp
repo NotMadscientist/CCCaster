@@ -58,8 +58,6 @@ struct Main
 
     PingStats pingStats;
 
-    TimerPtr stopTimer;
-
     /* Connect procedure
 
         1 - Connect / accept sockets

@@ -28,6 +28,8 @@ struct CommonMain
 
     SocketPtr serverDataSocket, dataSocket;
 
+    TimerPtr stopTimer;
+
 
     CommonMain() : procMan ( this ) {}
 

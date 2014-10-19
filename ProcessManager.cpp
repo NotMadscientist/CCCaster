@@ -85,6 +85,8 @@ void ProcessManager::acceptEvent ( Socket *serverSocket )
 
     ASSERT ( ipcSocket->address.addr == "127.0.0.1" );
 
+    LOG ( "ipcSocket=%08x", ipcSocket );
+
     ipcSocket->send ( new IpcConnected() );
 }
 
@@ -276,6 +278,8 @@ void ProcessManager::openGame()
     LOG ( "ipcHost='%s'", ipcHost );
 
     ipcSocket = TcpSocket::connect ( this, ipcHost );
+
+    LOG ( "ipcSocket=%08x", ipcSocket );
 
     if ( !ReadFile ( pipe, &processId, sizeof ( processId ), &bytes, 0 ) )
     {
