@@ -335,7 +335,7 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
         }
 
         netplayConfig.delay = menu->resultInt;
-        netplayConfig.hostPlayer = 1;
+        netplayConfig.hostPlayer = 1; // TODO randomize
         ret = true;
         break;
     }

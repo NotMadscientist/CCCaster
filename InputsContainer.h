@@ -133,7 +133,7 @@ public:
     bool empty ( size_t index ) const
     {
         if ( index + 1 > inputs.size() )
-            return false;
+            return true;
 
         return inputs[index].empty();
     }
