@@ -117,3 +117,7 @@ public:
         LOG ( "%s; " FORMAT, EXCEPTION, ## __VA_ARGS__ );                                                           \
         throw EXCEPTION;                                                                                            \
     } while ( 0 )
+
+
+#define ASSERT_IMPOSSIBLE           ASSERT ( !"This shouldn't happen!" )
+#define LOG_AND_THROW_IMPOSSIBLE    LOG_AND_THROW_STRING ( !"This shouldn't happen!" )

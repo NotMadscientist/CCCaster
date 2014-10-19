@@ -66,6 +66,7 @@ struct ConfigOptions
 
 struct InitialConfig : public SerializableSequence, public ConfigOptions
 {
+    uint16_t dataPort = 0;
     Version localVersion, remoteVersion;
     std::string localName, remoteName;
 
@@ -82,13 +83,14 @@ struct InitialConfig : public SerializableSequence, public ConfigOptions
     void clear()
     {
         flags = 0;
+        dataPort = 0;
         localVersion = LocalVersion;
         remoteVersion.clear();
         localName.clear();
         remoteName.clear();
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( InitialConfig, flags, localVersion, remoteVersion, localName, remoteName )
+    PROTOCOL_MESSAGE_BOILERPLATE ( InitialConfig, flags, dataPort, localVersion, remoteVersion, localName, remoteName )
 };
 
 

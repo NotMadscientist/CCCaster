@@ -52,34 +52,39 @@ struct Main
 
     NetplayConfig netplayConfig;
 
-    bool shouldPing = false;
-
     Pinger pinger;
 
     PingStats pingStats;
 
     /* Connect procedure
 
-        1 - Connect / accept sockets
+        1 - Connect / accept ctrlSocket
 
-        2 - Both send InitialConfig (version, name, flags)
+        2 - Both send InitialConfig (flags, dataPort, version, name)
 
         3 - Both recv InitialConfig (update connecting message)
 
-        4 - Host pings, then sends PingStats
+        4 - Connect / accept dataSocket
 
-        5 - Client waits for PingStats, then pings, then sends PingStats
+        5 - Host pings, then sends PingStats
 
-        6 - Both merge PingStats and wait for user confirmation
+        6 - Client waits for PingStats, then pings, then sends PingStats
 
-        7 - Host sends NetplayConfig and waits for ConfirmConfig before starting
+        7 - Both merge PingStats and wait for user confirmation
 
-        8 - Client send ConfirmConfig and waits for NetplayConfig before starting
+        8 - Host sends NetplayConfig and waits for ConfirmConfig before starting
+
+        9 - Client send ConfirmConfig and waits for NetplayConfig before starting
 
     */
 
     virtual void userConfirmation()
     {
+        ASSERT ( ctrlSocket.get() != 0 );
+        ASSERT ( dataSocket.get() != 0 );
+        ASSERT ( ctrlSocket->isConnected() == true );
+        ASSERT ( dataSocket->isConnected() == true );
+
         // Disable keepAlive because the UI blocks
         ctrlSocket->setKeepAlive ( 0 );
         dataSocket->setKeepAlive ( 0 );
@@ -128,14 +133,6 @@ struct Main
         }
     }
 
-    virtual void startPinging()
-    {
-        if ( !shouldPing || pinger.isPinging() || !dataSocket || !dataSocket->isConnected() )
-            return;
-
-        pinger.start();
-    }
-
     virtual void gotInitialConfig ( const InitialConfig& initialConfig )
     {
         this->initialConfig.remoteVersion = initialConfig.localVersion;
@@ -143,8 +140,10 @@ struct Main
 
         const Version RemoteVersion = this->initialConfig.remoteVersion;
 
-        LOG ( "Initial config: remoteVersion='%s'; commitId='%s'; buildTime='%s'; remoteName='%s';"
-              "isTraining=%d; isBroadcast=%d", RemoteVersion, RemoteVersion.commitId, RemoteVersion.buildTime,
+        LOG ( "Initial config:"
+              "dataPort=%u; remoteVersion='%s'; commitId='%s'; buildTime='%s';"
+              "remoteName='%s'; isTraining=%d; isBroadcast=%d",
+              initialConfig.dataPort, RemoteVersion, RemoteVersion.commitId, RemoteVersion.buildTime,
               this->initialConfig.remoteName, initialConfig.isTraining(), initialConfig.isBroadcast() );
 
         if ( this->initialConfig.remoteName.empty() )
@@ -182,12 +181,16 @@ struct Main
         if ( isHost() )
         {
             ui.display ( this->initialConfig.getAcceptMessage ( "connecting" ) );
-            shouldPing = true;
-            startPinging();
         }
         else
         {
             this->initialConfig.flags = initialConfig.flags;
+            this->initialConfig.dataPort = initialConfig.dataPort;
+
+            dataSocket = UdpSocket::connect ( this, { address.addr, this->initialConfig.dataPort } );
+
+            LOG ( "dataSocket=%08x", dataSocket );
+
             ui.display ( this->initialConfig.getConnectMessage ( "Connecting" ) );
         }
     }
@@ -201,14 +204,9 @@ struct Main
         this->pingStats = pingStats;
 
         if ( isHost() )
-        {
             userConfirmation();
-        }
         else
-        {
-            shouldPing = true;
-            startPinging();
-        }
+            pinger.start();
     }
 
     virtual void startGame()
@@ -235,7 +233,7 @@ struct Main
         TimerManager::get().initialize();
         SocketManager::get().initialize();
         ControllerManager::get().initialize ( this );
-        KeyboardManager::get().hook ( this, ui.getConsoleWindow(), { VK_ESCAPE } );
+        // KeyboardManager::get().hook ( this, ui.getConsoleWindow(), { VK_ESCAPE } );
 
         if ( isHost() )
         {
@@ -251,17 +249,12 @@ struct Main
         if ( isHost() )
         {
             serverCtrlSocket = TcpSocket::listen ( this, address.port );
-            serverDataSocket = UdpSocket::listen ( this, address.port );
-
-            address.port = serverCtrlSocket->address.port;
+            address.port = serverCtrlSocket->address.port; // Update port in case it was initially 0
         }
         else
         {
             ctrlSocket = TcpSocket::connect ( this, address );
-            dataSocket = UdpSocket::connect ( this, address );
-
             LOG ( "ctrlSocket=%08x", ctrlSocket );
-            LOG ( "dataSocket=%08x", dataSocket );
         }
 
         EventManager::get().start();
@@ -319,7 +312,6 @@ struct Main
         LOG ( "Local stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
               stats.getMean(), stats.getWorst(), stats.getStdErr(), stats.getStdDev(), packetLoss );
 
-        shouldPing = false;
         ctrlSocket->send ( new PingStats ( stats, packetLoss ) );
 
         if ( isClient() )
@@ -334,13 +326,25 @@ struct Main
         if ( serverSocket == serverCtrlSocket.get() )
         {
             ctrlSocket = serverCtrlSocket->accept ( this );
+
             LOG ( "ctrlSocket=%08x", ctrlSocket );
+            ASSERT ( ctrlSocket->isConnected() == true );
+
+            serverDataSocket = UdpSocket::listen ( this, address.port ); // TODO choose a different port if UDP tunnel
+
+            initialConfig.dataPort = serverDataSocket->address.port;
+            initialConfig.invalidate();
+
+            ctrlSocket->send ( REF_PTR ( initialConfig ) );
         }
         else if ( serverSocket == serverDataSocket.get() )
         {
             dataSocket = serverDataSocket->accept ( this );
+
             LOG ( "dataSocket=%08x", dataSocket );
-            startPinging();
+            ASSERT ( dataSocket->isConnected() == true );
+
+            pinger.start();
         }
         else
         {
@@ -348,32 +352,29 @@ struct Main
             serverSocket->accept ( 0 ).reset();
             return;
         }
-
-        if ( ctrlSocket && dataSocket )
-        {
-            ASSERT ( ctrlSocket->isConnected() == true );
-            ASSERT ( dataSocket->isConnected() == true );
-
-            initialConfig.invalidate();
-            ctrlSocket->send ( REF_PTR ( initialConfig ) );
-        }
     }
 
     virtual void connectEvent ( Socket *socket ) override
     {
         LOG ( "connectEvent ( %08x )", socket );
 
-        ASSERT ( ctrlSocket.get() != 0 );
-        ASSERT ( dataSocket.get() != 0 );
-        ASSERT ( socket == ctrlSocket.get() || socket == dataSocket.get() );
-
-        if ( socket == dataSocket.get() )
-            startPinging();
-
-        if ( ctrlSocket->isConnected() && dataSocket->isConnected() )
+        if ( socket == ctrlSocket.get() )
         {
+            ASSERT ( ctrlSocket.get() != 0 );
+            ASSERT ( ctrlSocket->isConnected() == true );
+
             initialConfig.invalidate();
+
             ctrlSocket->send ( REF_PTR ( initialConfig ) );
+        }
+        else if ( socket == dataSocket.get() )
+        {
+            ASSERT ( dataSocket.get() != 0 );
+            ASSERT ( dataSocket->isConnected() == true );
+        }
+        else
+        {
+            ASSERT_IMPOSSIBLE;
         }
     }
 
@@ -559,7 +560,7 @@ struct Main
         }
         else
         {
-            LOG_AND_THROW_STRING ( !"This shouldn't happen!" );
+            LOG_AND_THROW_IMPOSSIBLE;
         }
     }
 
@@ -593,7 +594,7 @@ private:
         }
         else
         {
-            LOG_AND_THROW_STRING ( !"This shouldn't happen!" );
+            LOG_AND_THROW_IMPOSSIBLE;
         }
     }
 
@@ -701,7 +702,7 @@ static void runMain ( const IpAddrPort& address, const Serializable& config )
         }
         else
         {
-            LOG_AND_THROW_STRING ( !"This shouldn't happen!" );
+            LOG_AND_THROW_IMPOSSIBLE;
         }
     }
     catch ( const Exception& err )

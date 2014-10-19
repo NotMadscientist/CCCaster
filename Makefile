@@ -1,4 +1,4 @@
-VERSION = 3.0alpha
+VERSION = 2.1alpha
 NAME = cccaster
 
 # Main programs

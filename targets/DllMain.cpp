@@ -691,7 +691,7 @@ struct Main
         }
         else
         {
-            ASSERT ( !"This shouldn't happen!" );
+            ASSERT_IMPOSSIBLE;
         }
     }
 
