@@ -5,7 +5,6 @@
 #include "Constants.h"
 #include "Pinger.h"
 #include "ExternalIpAddress.h"
-#include "KeyboardManager.h"
 
 #include <optionparser.h>
 #include <windows.h>
@@ -56,7 +55,7 @@ struct Main
 
     PingStats pingStats;
 
-    /* Connect procedure
+    /* Connect protocol
 
         1 - Connect / accept ctrlSocket
 
@@ -76,14 +75,21 @@ struct Main
 
         9 - Client send ConfirmConfig and waits for NetplayConfig before starting
 
+       Spectate protocol
+
+        1 - Connect / accept ctrlSocket
+
+        2 - Both send and recv VersionConfig
+
+        3 - Host sends SpectateConfig
+
+        4 - Client recvs SpectateConfig and waits for user confirmation
+
     */
 
     virtual void startNetplay()
     {
-        TimerManager::get().initialize();
-        SocketManager::get().initialize();
-        ControllerManager::get().initialize ( this );
-        KeyboardManager::get().hook ( this, ui.getConsoleWindow(), { VK_ESCAPE } );
+        AutoManager _ ( this, ui.getConsoleWindow(), { VK_ESCAPE } );
 
         if ( isHost() )
         {
@@ -108,18 +114,20 @@ struct Main
         }
 
         EventManager::get().start();
+    }
 
-        KeyboardManager::get().unhook();
-        ControllerManager::get().deinitialize();
-        SocketManager::get().deinitialize();
-        TimerManager::get().deinitialize();
+    virtual void startSpectate()
+    {
+        AutoManager _ ( this, ui.getConsoleWindow(), { VK_ESCAPE } );
+
+        // TODO
+
+        EventManager::get().start();
     }
 
     virtual void startLocal()
     {
-        TimerManager::get().initialize();
-        SocketManager::get().initialize();
-        ControllerManager::get().initialize ( this );
+        AutoManager _ ( this );
 
         if ( isBroadcast() )
         {
@@ -135,10 +143,6 @@ struct Main
 
         externaIpAddress.owner = 0;
         procMan.closeGame();
-
-        ControllerManager::get().deinitialize();
-        SocketManager::get().deinitialize();
-        TimerManager::get().deinitialize();
     }
 
     virtual void delayedStop()
@@ -151,7 +155,10 @@ struct Main
     {
         const Version RemoteVersion = versionConfig.version;
 
-        LOG ( "RemoteVersion: '%s'; commitId='%s'; buildTime='%s';",
+        LOG ( "VersionConfig:"
+              "isTraining=%d; isSpectate=%d; isBroadcast=%d;"
+              "version='%s'; commitId='%s'; buildTime='%s'",
+              versionConfig.isTraining(), versionConfig.isSpectate(), versionConfig.isBroadcast(),
               RemoteVersion, RemoteVersion.commitId, RemoteVersion.buildTime );
 
         if ( LocalVersion.similar ( RemoteVersion, 1 + opt[STRICT_VERSION].count() ) )
@@ -189,7 +196,7 @@ struct Main
 
     virtual void gotInitialConfig ( const InitialConfig& initialConfig )
     {
-        LOG ( "Initial config: flags=%02x; dataPort=%u; remoteName='%s'",
+        LOG ( "InitialConfig: flags=%02x; dataPort=%u; remoteName='%s'",
               initialConfig.flags, initialConfig.dataPort, initialConfig.localName );
 
         this->initialConfig.remoteName = initialConfig.localName;
@@ -215,7 +222,7 @@ struct Main
 
     virtual void gotPingStats ( const PingStats& pingStats )
     {
-        LOG ( "Remote stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
+        LOG ( "PingStats (remote): latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
               pingStats.latency.getMean(), pingStats.latency.getWorst(),
               pingStats.latency.getStdErr(), pingStats.latency.getStdDev(), pingStats.packetLoss );
 
@@ -250,7 +257,7 @@ struct Main
         pingStats.latency.merge ( pinger.getStats() );
         pingStats.packetLoss = ( pingStats.packetLoss + pinger.getPacketLoss() ) / 2;
 
-        LOG ( "Merged stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
+        LOG ( "PingStats (merged): latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
               pingStats.latency.getMean(), pingStats.latency.getWorst(),
               pingStats.latency.getStdErr(), pingStats.latency.getStdDev(), pingStats.packetLoss );
 
@@ -311,7 +318,7 @@ struct Main
     {
         ASSERT ( pinger == &this->pinger );
 
-        LOG ( "Local stats: latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
+        LOG ( "PingStats (local): latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
               stats.getMean(), stats.getWorst(), stats.getStdErr(), stats.getStdDev(), packetLoss );
 
         ctrlSocket->send ( new PingStats ( stats, packetLoss ) );
@@ -572,10 +579,7 @@ struct Main
     // Destructor
     virtual ~Main()
     {
-        KeyboardManager::get().unhook();
-        ControllerManager::get().deinitialize();
-        SocketManager::get().deinitialize();
-        TimerManager::get().deinitialize();
+        procMan.closeGame();
     }
 
 private:
@@ -700,6 +704,10 @@ static void runMain ( const IpAddrPort& address, const Serializable& config )
         if ( main.isNetplay() )
         {
             main.startNetplay();
+        }
+        else if ( main.isSpectate() )
+        {
+            main.startSpectate();
         }
         else if ( main.isLocal() )
         {

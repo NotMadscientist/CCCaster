@@ -450,7 +450,7 @@ struct Main
             LOG ( "specSocket=%08x", specSocket );
             ASSERT ( specSocket->isConnected() == true );
 
-            ctrlSocket->send ( new VersionConfig ( netMan.config.flags ) );
+            ctrlSocket->send ( new VersionConfig ( netMan.config.flags | ConfigOptions::Spectate ) );
 
             // TODO queue and timeout potential spectators
         }
