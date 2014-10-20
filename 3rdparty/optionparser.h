@@ -892,7 +892,7 @@ struct Arg
   //! @brief Returns ARG_OK if the argument is attached and ARG_IGNORE otherwise.
   static ArgStatus Optional(const Option& option, bool)
   {
-    if (option.arg != 0)
+    if (option.arg != 0 && option.arg[0] != 0)
       return ARG_OK;
     else
       return ARG_IGNORE;
@@ -900,8 +900,8 @@ struct Arg
 
   static ArgStatus OptionalNumeric(const Option& option, bool msg)
   {
-    if (option.arg != 0)
-      return Numeric(option, msg);
+    if (Numeric(option, false) == ARG_OK)
+      return ARG_OK;
     else
       return ARG_IGNORE;
   }

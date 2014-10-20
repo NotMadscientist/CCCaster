@@ -497,9 +497,9 @@ struct Main
                 switch ( msg->getMsgType() )
                 {
                     case MsgType::CharaSelectLoaded:
-                        // Once both sides have loaded up to character select for the first time
                         if ( !remoteCharaSelectLoaded )
                         {
+                            // If both sides have loaded up to character select
                             if ( netMan.getState().value >= NetplayState::CharaSelect )
                                 bothCharaSelectLoaded();
                             remoteCharaSelectLoaded = true;
