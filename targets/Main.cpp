@@ -117,7 +117,7 @@ struct Main
         else
         {
             ctrlSocket = TcpSocket::connect ( this, address );
-            LOG ( "ctrlSocket=%08x", ctrlSocket );
+            LOG ( "ctrlSocket=%08x", ctrlSocket.get() );
         }
 
         EventManager::get().start();
@@ -131,7 +131,7 @@ struct Main
 
         ctrlSocket = TcpSocket::connect ( this, address );
 
-        LOG ( "ctrlSocket=%08x", ctrlSocket );
+        LOG ( "ctrlSocket=%08x", ctrlSocket.get() );
 
         EventManager::get().start();
     }
@@ -165,8 +165,8 @@ struct Main
     {
         const Version RemoteVersion = versionConfig.version;
 
-        LOG ( "VersionConfig:"
-              "isTraining=%d; isSpectate=%d; isBroadcast=%d;"
+        LOG ( "VersionConfig: "
+              "isTraining=%d; isSpectate=%d; isBroadcast=%d; "
               "version='%s'; commitId='%s'; buildTime='%s'",
               versionConfig.isTraining(), versionConfig.isSpectate(), versionConfig.isBroadcast(),
               RemoteVersion, RemoteVersion.commitId, RemoteVersion.buildTime );
@@ -217,7 +217,7 @@ struct Main
                 return;
             }
 
-            LOG_AND_THROW_STRING ( !"Unimplemented!" ); // TODO
+            LOG_AND_THROW_STRING ( "Unimplemented!" ); // TODO
         }
 
         if ( isHost() )
@@ -264,7 +264,7 @@ struct Main
 
             dataSocket = UdpSocket::connect ( this, { address.addr, this->initialConfig.dataPort } );
 
-            LOG ( "dataSocket=%08x", dataSocket );
+            LOG ( "dataSocket=%08x", dataSocket.get() );
 
             ui.display ( this->initialConfig.getConnectMessage ( "Connecting" ) );
         }
@@ -291,7 +291,7 @@ struct Main
 
         if ( isSpectate() )
         {
-            LOG_AND_THROW_STRING ( !"Unimplemented!" ); // TODO
+            LOG_AND_THROW_STRING ( "Unimplemented!" ); // TODO
             return;
         }
 
@@ -392,7 +392,7 @@ struct Main
         {
             SocketPtr newSocket = serverCtrlSocket->accept ( this );
 
-            LOG ( "newSocket=%08x", newSocket );
+            LOG ( "newSocket=%08x", newSocket.get() );
 
             ASSERT ( newSocket != 0 );
             ASSERT ( newSocket->isConnected() == true );
@@ -405,7 +405,7 @@ struct Main
         {
             dataSocket = serverDataSocket->accept ( this );
 
-            LOG ( "dataSocket=%08x", dataSocket );
+            LOG ( "dataSocket=%08x", dataSocket.get() );
 
             ASSERT ( dataSocket != 0 );
             ASSERT ( dataSocket->isConnected() == true );

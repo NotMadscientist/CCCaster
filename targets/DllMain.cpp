@@ -447,7 +447,7 @@ struct Main
         {
             SocketPtr newSocket = serverCtrlSocket->accept ( this );
 
-            LOG ( "newSocket=%08x", newSocket );
+            LOG ( "newSocket=%08x", newSocket.get() );
 
             ASSERT ( newSocket != 0 );
             ASSERT ( newSocket->isConnected() == true );
@@ -486,7 +486,7 @@ struct Main
 
         if ( msg->getMsgType() == MsgType::VersionConfig )
         {
-            LOG_AND_THROW_STRING ( !"Unimplemented!" ); // TODO
+            LOG_AND_THROW_STRING ( "Unimplemented!" ); // TODO
             return;
         }
 
@@ -644,7 +644,7 @@ struct Main
                         break;
 
                     case ClientMode::Spectate:
-                        LOG_AND_THROW_STRING ( !"Unimplemented!" ); // TODO
+                        LOG_AND_THROW_STRING ( "Unimplemented!" ); // TODO
                         break;
 
                     default:
@@ -676,6 +676,9 @@ struct Main
                         if ( !serverDataSocket )
                             LOG_AND_THROW_STRING ( "Uninitalized serverDataSocket!" );
                     }
+
+                    LOG ( "ctrlSocket=%08x", ctrlSocket.get() );
+                    LOG ( "dataSocket=%08x", dataSocket.get() );
                 }
 
                 netplayStateChanged ( NetplayState::Initial );
