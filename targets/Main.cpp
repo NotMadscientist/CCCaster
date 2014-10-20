@@ -202,6 +202,12 @@ struct Main
             return;
         }
 
+        if ( isClient() && versionConfig.isSpectate() )
+        {
+            clientMode = ClientMode::Spectate;
+            initialConfig.flags |= ConfigOptions::Spectate;
+        }
+
         if ( isSpectate() )
         {
             if ( !versionConfig.isSpectate() )

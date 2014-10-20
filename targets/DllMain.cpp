@@ -452,7 +452,7 @@ struct Main
             ASSERT ( newSocket != 0 );
             ASSERT ( newSocket->isConnected() == true );
 
-            newSocket->send ( new VersionConfig ( netMan.config.flags ) );
+            newSocket->send ( new VersionConfig ( netMan.config.flags | ConfigOptions::Spectate ) );
 
             specSockets[newSocket.get()] = newSocket;
         }
