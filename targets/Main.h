@@ -14,6 +14,7 @@
 #include "Messages.h"
 
 #include <unordered_set>
+#include <unordered_map>
 
 
 struct CommonMain
@@ -30,6 +31,8 @@ struct CommonMain
     SocketPtr serverCtrlSocket, ctrlSocket;
 
     SocketPtr serverDataSocket, dataSocket;
+
+    std::unordered_map<Socket *, SocketPtr> specSockets;
 
     TimerPtr stopTimer;
 

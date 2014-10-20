@@ -27,7 +27,10 @@ using namespace option;
 
 // Set of command line options
 enum CommandLineOptions
-{ UNKNOWN, HELP, DUMMY, UNIT_TEST, STDOUT, NO_FORK, NO_UI, STRICT_VERSION, TRAINING, BROADCAST, OFFLINE, DIRECTORY };
+{
+    UNKNOWN, HELP, DUMMY, UNIT_TEST, STDOUT, NO_FORK, NO_UI, STRICT_VERSION,
+    TRAINING, BROADCAST, SPECTATE, OFFLINE, DIRECTORY
+};
 
 // Active command line options
 static vector<Option> opt;
@@ -49,11 +52,15 @@ struct Main
 
     InitialConfig initialConfig;
 
+    SpectateConfig spectateConfig;
+
     NetplayConfig netplayConfig;
 
     Pinger pinger;
 
     PingStats pingStats;
+
+    bool broadcastPortReady = false;
 
     /* Connect protocol
 
@@ -120,7 +127,11 @@ struct Main
     {
         AutoManager _ ( this, ui.getConsoleWindow(), { VK_ESCAPE } );
 
-        // TODO
+        ui.display ( toString ( "Connecting to %s", address ) );
+
+        ctrlSocket = TcpSocket::connect ( this, address );
+
+        LOG ( "ctrlSocket=%08x", ctrlSocket );
 
         EventManager::get().start();
     }
@@ -133,7 +144,6 @@ struct Main
         {
             externaIpAddress.owner = this;
             externaIpAddress.start();
-            updateStatusMessage();
         }
 
         // Open the game immediately
@@ -151,7 +161,7 @@ struct Main
         stopTimer->start ( STOP_EVENTS_DELAY );
     }
 
-    virtual void gotVersionConfig ( const VersionConfig& versionConfig )
+    virtual void gotVersionConfig ( Socket *socket, const VersionConfig& versionConfig )
     {
         const Version RemoteVersion = versionConfig.version;
 
@@ -161,37 +171,71 @@ struct Main
               versionConfig.isTraining(), versionConfig.isSpectate(), versionConfig.isBroadcast(),
               RemoteVersion, RemoteVersion.commitId, RemoteVersion.buildTime );
 
-        if ( LocalVersion.similar ( RemoteVersion, 1 + opt[STRICT_VERSION].count() ) )
+        if ( !LocalVersion.similar ( RemoteVersion, 1 + opt[STRICT_VERSION].count() ) )
         {
-            initialConfig.invalidate();
-            ctrlSocket->send ( REF_PTR ( initialConfig ) );
+            string local = toString ( "%s.%s", LocalVersion.major(), LocalVersion.minor() );
+            string remote = toString ( "%s.%s", RemoteVersion.major(), RemoteVersion.minor() );
+
+            if ( opt[STRICT_VERSION].count() >= 1 )
+            {
+                local += LocalVersion.suffix();
+                remote += RemoteVersion.suffix();
+            }
+
+            if ( opt[STRICT_VERSION].count() >= 2 )
+            {
+                local += " " + LocalVersion.commitId;
+                remote += " " + RemoteVersion.commitId;
+            }
+
+            if ( opt[STRICT_VERSION].count() >= 3 )
+            {
+                local += " " + LocalVersion.buildTime;
+                remote += " " + RemoteVersion.buildTime;
+            }
+
+            ui.sessionError = "Incompatible versions:\n" + local + "\n" + remote;
+            socket->send ( new ErrorMessage ( ui.sessionError ) );
+
+            if ( !versionConfig.isSpectate() )
+                delayedStop();
             return;
         }
 
-        string local = toString ( "%s.%s", LocalVersion.major(), LocalVersion.minor() );
-        string remote = toString ( "%s.%s", RemoteVersion.major(), RemoteVersion.minor() );
-
-        if ( opt[STRICT_VERSION].count() >= 1 )
+        if ( isSpectate() )
         {
-            local += LocalVersion.suffix();
-            remote += RemoteVersion.suffix();
+            if ( !versionConfig.isSpectate() )
+            {
+                ui.sessionError = "Not in a game yet, cannot spectate!";
+                EventManager::get().stop();
+                return;
+            }
+
+            LOG_AND_THROW_STRING ( !"Unimplemented!" ); // TODO
         }
 
-        if ( opt[STRICT_VERSION].count() >= 2 )
+        if ( isHost() )
         {
-            local += " " + LocalVersion.commitId;
-            remote += " " + RemoteVersion.commitId;
+            if ( versionConfig.isSpectate() )
+                return;
+
+            serverDataSocket = UdpSocket::listen ( this, address.port ); // TODO choose a different port if UDP tunnel
+            initialConfig.dataPort = serverDataSocket->address.port;
+
+            ctrlSocket = specSockets[socket];
+            specSockets.erase ( socket );
+
+            ASSERT ( ctrlSocket.get() != 0 );
+            ASSERT ( ctrlSocket->isConnected() == true );
         }
 
-        if ( opt[STRICT_VERSION].count() >= 3 )
-        {
-            local += " " + LocalVersion.buildTime;
-            remote += " " + RemoteVersion.buildTime;
-        }
+        initialConfig.invalidate();
+        ctrlSocket->send ( REF_PTR ( initialConfig ) );
+    }
 
-        ui.sessionError = "Incompatible versions:\n" + local + "\n" + remote;
-        ctrlSocket->send ( new ErrorMessage ( ui.sessionError ) );
-        delayedStop();
+    virtual void gotSpectateConfig ( const SpectateConfig spectateConfig )
+    {
+        userConfirmation();
     }
 
     virtual void gotInitialConfig ( const InitialConfig& initialConfig )
@@ -236,6 +280,15 @@ struct Main
 
     virtual void userConfirmation()
     {
+        // Disable keyboard hooks for the UI
+        KeyboardManager::get().unhook();
+
+        if ( isSpectate() )
+        {
+            LOG_AND_THROW_STRING ( !"Unimplemented!" ); // TODO
+            return;
+        }
+
         ASSERT ( ctrlSocket.get() != 0 );
         ASSERT ( dataSocket.get() != 0 );
         ASSERT ( ctrlSocket->isConnected() == true );
@@ -250,9 +303,6 @@ struct Main
             serverCtrlSocket->setKeepAlive ( 0 );
             serverDataSocket->setKeepAlive ( 0 );
         }
-
-        // Disable keyboard hooks for the UI
-        KeyboardManager::get().unhook();
 
         pingStats.latency.merge ( pinger.getStats() );
         pingStats.packetLoss = ( pingStats.packetLoss + pinger.getPacketLoss() ) / 2;
@@ -334,22 +384,24 @@ struct Main
 
         if ( serverSocket == serverCtrlSocket.get() )
         {
-            ctrlSocket = serverCtrlSocket->accept ( this );
+            SocketPtr newSocket = serverCtrlSocket->accept ( this );
 
-            LOG ( "ctrlSocket=%08x", ctrlSocket );
-            ASSERT ( ctrlSocket->isConnected() == true );
+            LOG ( "newSocket=%08x", newSocket );
 
-            serverDataSocket = UdpSocket::listen ( this, address.port ); // TODO choose a different port if UDP tunnel
+            ASSERT ( newSocket != 0 );
+            ASSERT ( newSocket->isConnected() == true );
 
-            initialConfig.dataPort = serverDataSocket->address.port;
+            newSocket->send ( new VersionConfig ( initialConfig.flags ) );
 
-            ctrlSocket->send ( new VersionConfig ( initialConfig.flags ) );
+            specSockets[newSocket.get()] = newSocket;
         }
         else if ( serverSocket == serverDataSocket.get() )
         {
             dataSocket = serverDataSocket->accept ( this );
 
             LOG ( "dataSocket=%08x", dataSocket );
+
+            ASSERT ( dataSocket != 0 );
             ASSERT ( dataSocket->isConnected() == true );
 
             pinger.start();
@@ -358,7 +410,6 @@ struct Main
         {
             LOG ( "Unexpected acceptEvent from serverSocket=%08x", serverSocket );
             serverSocket->accept ( 0 ).reset();
-            return;
         }
     }
 
@@ -387,7 +438,11 @@ struct Main
     virtual void disconnectEvent ( Socket *socket ) override
     {
         LOG ( "disconnectEvent ( %08x )", socket );
-        EventManager::get().stop();
+
+        if ( socket == ctrlSocket.get() || socket == dataSocket.get() )
+            EventManager::get().stop();
+        else
+            specSockets.erase ( socket );
     }
 
     virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
@@ -400,7 +455,11 @@ struct Main
         switch ( msg->getMsgType() )
         {
             case MsgType::VersionConfig:
-                gotVersionConfig ( msg->getAs<VersionConfig>() );
+                gotVersionConfig ( socket, msg->getAs<VersionConfig>() );
+                return;
+
+            case MsgType::SpectateConfig:
+                gotSpectateConfig ( msg->getAs<SpectateConfig>() );
                 return;
 
             case MsgType::InitialConfig:
@@ -438,11 +497,23 @@ struct Main
     virtual void ipcConnectEvent() override
     {
         ASSERT ( clientMode != ClientMode::Unknown );
+
+        procMan.ipcSend ( REF_PTR ( clientMode ) );
+
+        if ( isSpectate() )
+        {
+            procMan.ipcSend ( REF_PTR ( spectateConfig ) );
+
+            ASSERT ( ctrlSocket.get() != 0 );
+            ASSERT ( ctrlSocket->isConnected() == true );
+
+            procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
+            return;
+        }
+
         ASSERT ( netplayConfig.delay != 0xFF );
 
         netplayConfig.invalidate();
-
-        procMan.ipcSend ( REF_PTR ( clientMode ) );
         procMan.ipcSend ( REF_PTR ( netplayConfig ) );
 
         if ( !isLocal() )
@@ -501,6 +572,7 @@ struct Main
 
             case MsgType::NetplayConfig:
                 netplayConfig = msg->getAs<NetplayConfig>();
+                broadcastPortReady = true;
                 updateStatusMessage();
                 return;
 
@@ -565,6 +637,11 @@ struct Main
             pinger.pingInterval = PING_INTERVAL;
             pinger.numPings = NUM_PINGS;
         }
+        else if ( isSpectate() )
+        {
+            this->address = address;
+            this->initialConfig = config.getAs<InitialConfig>();
+        }
         else if ( isLocal() )
         {
             netplayConfig = config.getAs<NetplayConfig>();
@@ -591,6 +668,8 @@ private:
         {
             if ( address.addr.empty() )
                 return ClientMode::Host;
+            else if ( config.getAs<InitialConfig>().isSpectate() )
+                return ClientMode::Spectate;
             else
                 return ClientMode::Client;
         }
@@ -610,17 +689,16 @@ private:
     // Update the UI status message
     void updateStatusMessage() const
     {
+        if ( isBroadcast() && !broadcastPortReady )
+            return;
+
         const uint16_t port = ( isBroadcast() ? netplayConfig.broadcastPort : address.port );
         const ConfigOptions opt = ( isBroadcast() ? netplayConfig.flags : initialConfig.flags );
 
-        if ( port == 0 && opt.isBroadcast() )
-        {
-            ui.display ( "Starting game..." );
-        }
-        else if ( externaIpAddress.address.empty() || externaIpAddress.address == "unknown" )
+        if ( externaIpAddress.address.empty() || externaIpAddress.address == "unknown" )
         {
             ui.display ( toString ( "%s on port %u%s\n",
-                                    ( opt.isBroadcast() ? "Broadcasting" : "Hosting" ),
+                                    ( isBroadcast() ? "Broadcasting" : "Hosting" ),
                                     port,
                                     ( opt.isTraining() ? " (training mode)" : "" ) )
                          + ( externaIpAddress.address.empty()
@@ -632,7 +710,7 @@ private:
             setClipboard ( toString ( "%s:%u", externaIpAddress.address, port ) );
 
             ui.display ( toString ( "%s at %s:%u%s\n(Address copied to clipboard)",
-                                    ( opt.isBroadcast() ? "Broadcasting" : "Hosting" ),
+                                    ( isBroadcast() ? "Broadcasting" : "Hosting" ),
                                     externaIpAddress.address,
                                     port,
                                     ( opt.isTraining() ? " (training mode)" : "" ) ) );
@@ -837,6 +915,7 @@ int main ( int argc, char *argv[] )
 
         { TRAINING,       0, "t",  "training", Arg::None,     "  --training, -t     Force training mode." },
         { BROADCAST,      0, "b", "broadcast", Arg::None,     "  --broadcast, -b    Force broadcast mode." },
+        { SPECTATE,       0, "s",  "spectate", Arg::None,     "  --spectate, -s     Force spectator mode." },
         {
             OFFLINE, 0, "o", "offline", Arg::OptionalNumeric,
             "  --offline, -o [D]  Force offline mode.\n"
@@ -848,11 +927,11 @@ int main ( int argc, char *argv[] )
             "                     Should be used with address and/or port.\n"
         },
         {
-            STRICT_VERSION, 0, "s", "strict", Arg::None,
-            "  --strict, -s       Strict version match, can be stacked up to 3 times.\n"
-            "                     -s means version suffix must match.\n"
-            "                     -ss means commit ID must match.\n"
-            "                     -sss means build time must match.\n"
+            STRICT_VERSION, 0, "S", "strict", Arg::None,
+            "  --strict, -S       Strict version match, can be stacked up to 3 times.\n"
+            "                     -S means version suffix must match.\n"
+            "                     -SS means commit ID must match.\n"
+            "                     -SSS means build time must match.\n"
         },
 
         { STDOUT,    0, "",    "stdout", Arg::None, 0 }, // Output logs to stdout
@@ -936,6 +1015,7 @@ int main ( int argc, char *argv[] )
     ui.initialize();
     ui.initialConfig.flags |= ( opt[TRAINING] ? ConfigOptions::Training : 0 );
     ui.initialConfig.flags |= ( opt[BROADCAST] ? ConfigOptions::Broadcast : 0 );
+    ui.initialConfig.flags |= ( opt[SPECTATE] ? ConfigOptions::Spectate : 0 );
 
     // Check if we should run in dummy mode
     RunFuncPtr run = ( opt[DUMMY] ? runDummy : runMain );

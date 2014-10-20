@@ -74,6 +74,13 @@ struct VersionConfig : public SerializableSequence, public ConfigOptions
 };
 
 
+struct SpectateConfig : public SerializableSequence, public ConfigOptions
+{
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig, flags )
+};
+
+
 struct InitialConfig : public SerializableSequence, public ConfigOptions
 {
     uint16_t dataPort = 0;

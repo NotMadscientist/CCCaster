@@ -42,6 +42,9 @@ void MainUi::netplay ( RunFuncPtr run )
             continue;
         }
 
+        if ( address.addr.empty() && !gameMode() )
+            continue;
+
         run ( address, initialConfig );
 
         // TODO better way to do this?
@@ -64,7 +67,37 @@ void MainUi::spectate ( RunFuncPtr run )
                                             "Enter/paste <ip>:<port> to spectate:" ),
     { 1, 0 } ); // Expand width
 
-    // TODO implement me
+    for ( ;; )
+    {
+        ConsoleUi::Element *menu = ui->popUntilUserInput();
+
+        if ( menu->resultStr.empty() )
+            break;
+
+        try
+        {
+            address = menu->resultStr;
+        }
+        catch ( const Exception& err )
+        {
+            ui->pushBelow ( new ConsoleUi::TextBox ( err.str() ), { 1, 0 } ); // Expand width
+            continue;
+        }
+
+        initialConfig.flags |= ConfigOptions::Spectate;
+
+        run ( address, initialConfig );
+
+        // TODO better way to do this?
+        while ( !ui->top()->requiresUser )
+            ui->pop();
+
+        if ( !sessionError.empty() )
+        {
+            ui->pushBelow ( new ConsoleUi::TextBox ( sessionError ), { 1, 0 } ); // Expand width
+            sessionError.clear();
+        }
+    }
 
     ui->pop();
 }
@@ -90,10 +123,15 @@ void MainUi::broadcast ( RunFuncPtr run )
             continue;
         }
 
+        if ( !gameMode() )
+            continue;
+
         netplayConfig.clear();
         netplayConfig.flags = ( initialConfig.flags | ConfigOptions::Broadcast );
         netplayConfig.delay = 0;
         netplayConfig.broadcastPort = menu->resultInt;
+
+        ui->pushInFront ( new ConsoleUi::TextBox ( "Starting game..." ), { 1, 0 }, true ); // Expand width and clear
 
         run ( "", netplayConfig );
 
@@ -113,6 +151,8 @@ void MainUi::broadcast ( RunFuncPtr run )
 
 void MainUi::offline ( RunFuncPtr run )
 {
+    uint8_t delay = 0;
+
     ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter delay:", 0, false, 3 ) );
 
     for ( ;; )
@@ -130,19 +170,38 @@ void MainUi::offline ( RunFuncPtr run )
             continue;
         }
 
-        netplayConfig.clear();
-        netplayConfig.flags = ( initialConfig.flags | ConfigOptions::Offline );
-        netplayConfig.delay = menu->resultInt;
-        netplayConfig.hostPlayer = 1;
+        delay = menu->resultInt;
 
-        // TODO remove me testing
-        // netplayConfig.rollback = 30;
-
-        run ( "", netplayConfig );
-        break;
+        if ( gameMode() )
+            break;
     }
 
     ui->pop();
+
+    netplayConfig.clear();
+    netplayConfig.flags = ( initialConfig.flags | ConfigOptions::Offline );
+    netplayConfig.delay = delay;
+    netplayConfig.hostPlayer = 1;
+
+    // TODO remove me testing
+    // netplayConfig.rollback = 30;
+
+    ui->pushRight ( new ConsoleUi::TextBox ( "Starting game..." ), { 1, 0 } ); // Expand width
+
+    run ( "", netplayConfig );
+}
+
+bool MainUi::gameMode()
+{
+    ui->pushBelow ( new ConsoleUi::Menu ( "Mode", { "Versus", "Training" }, "Cancel" ) );
+    int mode = ui->popUntilUserInput()->resultInt;
+    ui->pop();
+
+    if ( mode < 0 || mode > 1 )
+        return false;
+
+    initialConfig.flags = ( mode == 1 ? ConfigOptions::Training : 0 );
+    return true;
 }
 
 void MainUi::doneMapping ( Controller *controller, uint32_t key )
@@ -224,18 +283,6 @@ void MainUi::main ( RunFuncPtr run )
         if ( main < 0 || main > 5 )
             break;
 
-        if ( main < 4 )
-        {
-            ui->pushRight ( new ConsoleUi::Menu ( "Mode", { "Versus", "Training" }, "Cancel" ) );
-            int mode = ui->popUntilUserInput()->resultInt;
-            ui->pop();
-
-            if ( mode < 0 || mode > 1 )
-                continue;
-
-            initialConfig.flags = ( mode == 1 ? ConfigOptions::Training : 0 );
-        }
-
         switch ( main )
         {
             case 0:
@@ -265,9 +312,6 @@ void MainUi::main ( RunFuncPtr run )
             default:
                 break;
         }
-
-        if ( main < 0 || main > 5 )
-            break;
     }
 
     ControllerManager::get().deinitialize();

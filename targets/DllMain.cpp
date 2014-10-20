@@ -445,14 +445,16 @@ struct Main
 
         if ( serverSocket == serverCtrlSocket.get() )
         {
-            SocketPtr specSocket = serverCtrlSocket->accept ( this );
+            SocketPtr newSocket = serverCtrlSocket->accept ( this );
 
-            LOG ( "specSocket=%08x", specSocket );
-            ASSERT ( specSocket->isConnected() == true );
+            LOG ( "newSocket=%08x", newSocket );
 
-            ctrlSocket->send ( new VersionConfig ( netMan.config.flags | ConfigOptions::Spectate ) );
+            ASSERT ( newSocket != 0 );
+            ASSERT ( newSocket->isConnected() == true );
 
-            // TODO queue and timeout potential spectators
+            newSocket->send ( new VersionConfig ( netMan.config.flags ) );
+
+            specSockets[newSocket.get()] = newSocket;
         }
         else
         {
@@ -470,7 +472,9 @@ struct Main
     void disconnectEvent ( Socket *socket ) override
     {
         LOG ( "disconnectEvent ( %08x )", socket );
-        EventManager::get().stop();
+
+        if ( socket == ctrlSocket.get() || socket == dataSocket.get() )
+            EventManager::get().stop();
     }
 
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
@@ -480,14 +484,15 @@ struct Main
         if ( !msg.get() )
             return;
 
+        if ( msg->getMsgType() == MsgType::VersionConfig )
+        {
+            LOG_AND_THROW_STRING ( !"Unimplemented!" ); // TODO
+            return;
+        }
+
         switch ( clientMode.value )
         {
             case ClientMode::Host:
-                if ( msg->getMsgType() == MsgType::VersionConfig )
-                {
-
-                } // Intentional fall through since Client processes the same messages
-
             case ClientMode::Client:
                 switch ( msg->getMsgType() )
                 {
@@ -513,9 +518,6 @@ struct Main
                     default:
                         break;
                 }
-                break;
-
-            case ClientMode::Broadcast:
                 break;
 
             default:
@@ -584,12 +586,11 @@ struct Main
 
                     serverCtrlSocket = TcpSocket::listen ( this, netMan.config.broadcastPort );
 
-                    if ( netMan.config.broadcastPort != serverCtrlSocket->address.port )
-                    {
-                        netMan.config.broadcastPort = serverCtrlSocket->address.port;
-                        netMan.config.invalidate();
-                        procMan.ipcSend ( REF_PTR ( netMan.config ) );
-                    }
+                    // Update the broadcast port and send over IPC
+                    netMan.config.broadcastPort = serverCtrlSocket->address.port;
+                    netMan.config.invalidate();
+
+                    procMan.ipcSend ( REF_PTR ( netMan.config ) );
                 }
 
                 LOG ( "delay=%d; rollback=%d; training=%d; offline=%d; hostPlayer=%d; localPlayer=%d; remotePlayer=%d",
@@ -598,9 +599,6 @@ struct Main
                 break;
 
             case MsgType::SocketShareData:
-                if ( isLocal() )
-                    LOG_AND_THROW_STRING ( "Invalid clientMode=%s!", clientMode );
-
                 switch ( clientMode.value )
                 {
                     case ClientMode::Host:
@@ -645,7 +643,12 @@ struct Main
                         }
                         break;
 
+                    case ClientMode::Spectate:
+                        LOG_AND_THROW_STRING ( !"Unimplemented!" ); // TODO
+                        break;
+
                     default:
+                        LOG_AND_THROW_STRING ( "Invalid clientMode=%s!", clientMode );
                         break;
                 }
                 break;
