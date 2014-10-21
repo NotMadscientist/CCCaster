@@ -206,6 +206,9 @@ struct Main
         netMan.clearLastChangedFrame();
 
         // Broadcast inputs to spectators once every NUM_INPUTS frames
+        // TODO need to keep track of last valid frame to broadcast,
+        //      ie when both local and remote inputs are ready
+        // TODO only broadcast to spectators who actually want to spectate
         if ( netMan.getFrame() % NUM_INPUTS == NUM_INPUTS - 1 )
         {
             MsgPtr msgBothInputs = netMan.getBothInputs();
