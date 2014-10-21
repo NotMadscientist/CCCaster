@@ -74,6 +74,12 @@ uint16_t NetplayManager::getInitialInput ( uint8_t player ) const
 
 uint16_t NetplayManager::getCharaSelectInput ( uint8_t player ) const
 {
+    if ( config.isSpectate() )
+    {
+        // TODO automatically select character
+        return 0;
+    }
+
     uint16_t input = getDelayedInput ( player );
 
     // Prevent exiting character select
@@ -281,8 +287,8 @@ uint16_t NetplayManager::getInput ( uint8_t player ) const
 
         case NetplayState::Loading:
         case NetplayState::Skippable:
-            // If the remote inputs index is ahead or if spectating, then we should mash to skip.
-            if ( ( inputs[remotePlayer - 1].getEndIndex() > getIndex() + 1 ) || config.isSpectate() )
+            // If spectating or the remote inputs index is ahead, then we should mash to skip.
+            if ( config.isSpectate() || ( inputs[remotePlayer - 1].getEndIndex() > getIndex() + 1 ) )
                 RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
 
             return getSkippableInput ( player );
@@ -330,13 +336,22 @@ void NetplayManager::setInputs ( uint8_t player, const PlayerInputs& playerInput
 
 MsgPtr NetplayManager::getBothInputs() const
 {
-    // TODO
-    return 0;
+    BothInputs *bothInputs = new BothInputs ( indexedFrame );
+
+    inputs[0].get ( bothInputs->getStartIndexedFrame(), &bothInputs->inputs[0][0], bothInputs->size() );
+    inputs[1].get ( bothInputs->getStartIndexedFrame(), &bothInputs->inputs[1][0], bothInputs->size() );
+
+    return MsgPtr ( bothInputs );
 }
 
 void NetplayManager::setBothInputs ( const BothInputs& bothInputs )
 {
-    // TODO
+    // Only keep remote inputs at most 1 transition index old
+    if ( bothInputs.getIndex() + 1 < getIndex() )
+        return;
+
+    inputs[0].set ( bothInputs.getStartIndexedFrame(), &bothInputs.inputs[0][0], bothInputs.size() );
+    inputs[1].set ( bothInputs.getStartIndexedFrame(), &bothInputs.inputs[1][0], bothInputs.size() );
 }
 
 void NetplayManager::saveRngState ( const RngState& rngState )

@@ -4,7 +4,7 @@
 #include "GoBackN.h"
 
 
-#define DEFAULT_KEEP_ALIVE 1000
+#define DEFAULT_KEEP_ALIVE ( 1000 )
 
 
 struct UdpConnect : public SerializableSequence

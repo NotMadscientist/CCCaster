@@ -115,7 +115,7 @@ struct Main
 
                 if ( isSpectate() )
                 {
-                    // TODO
+                    // TODO spectator controls
                     break;
                 }
 
@@ -205,6 +205,14 @@ struct Main
         // Clear the last changed frame before we get new inputs
         netMan.clearLastChangedFrame();
 
+        // Broadcast inputs to spectators once every NUM_INPUTS frames
+        if ( netMan.getFrame() % NUM_INPUTS == NUM_INPUTS - 1 )
+        {
+            MsgPtr msgBothInputs = netMan.getBothInputs();
+            for ( const auto& kv : specSockets )
+                kv.first->send ( msgBothInputs );
+        }
+
         for ( ;; )
         {
             // Poll until we are ready to run
@@ -219,7 +227,19 @@ struct Main
                 break;
 
             // Check if we should wait for anything
-            if ( netMan.areInputsReady() && !waitForRngState )
+            const bool shouldWait = ( !netMan.areInputsReady() || waitForRngState );
+
+            // Just wait or continue in spectate mode
+            if ( isSpectate() )
+            {
+                if ( shouldWait )
+                    continue;
+                else
+                    break;
+            }
+
+            // Stop resending inputs if we're ready
+            if ( !shouldWait )
             {
                 resendTimer.reset();
                 break;
@@ -309,6 +329,11 @@ struct Main
         dataSocket->setKeepAlive ( DEFAULT_KEEP_ALIVE );
     }
 
+    void saveAndSendRngState()
+    {
+        // TODO
+    }
+
     void netplayStateChanged ( NetplayState state )
     {
         // Log the RNG state whenever NetplayState changes
@@ -327,20 +352,24 @@ struct Main
 
         if ( state == NetplayState::CharaSelect || state == NetplayState::InGame )
         {
-            MsgPtr msg;
-            if ( isHost() || isBroadcast() )
-                msg = procMan.getRngState();
+            // TODO clean up how this is implemented; all modes can send RNG state,
+            //      but only Client and Spectate MUST wait and receive RNG state first
+
+            MsgPtr msgRngState;
+            if ( isHost() || isBroadcast() || isSpectate() )
+                msgRngState = procMan.getRngState();
 
             switch ( clientMode.value )
             {
                 case ClientMode::Host:
-                    ctrlSocket->send ( msg ); // Intentional fall through to saveRngState
+                    ctrlSocket->send ( msgRngState ); // Intentional fall through to saveRngState
 
                 case ClientMode::Broadcast:
-                    netMan.saveRngState ( msg->getAs<RngState>() );
+                    netMan.saveRngState ( msgRngState->getAs<RngState>() );
                     break;
 
                 case ClientMode::Client:
+                case ClientMode::Spectate:
                     waitForRngState = ( nextRngState.get() == 0 );
                     shouldSetRngState = true;
                     break;
@@ -514,6 +543,23 @@ struct Main
 
                     case MsgType::PlayerInputs:
                         netMan.setInputs ( remotePlayer, msg->getAs<PlayerInputs>() );
+                        return;
+
+                    case MsgType::RngState:
+                        nextRngState = msg;
+                        waitForRngState = false;
+                        return;
+
+                    default:
+                        break;
+                }
+                break;
+
+            case ClientMode::Spectate:
+                switch ( msg->getMsgType() )
+                {
+                    case MsgType::BothInputs:
+                        netMan.setBothInputs ( msg->getAs<BothInputs>() );
                         return;
 
                     case MsgType::RngState:
