@@ -20,7 +20,7 @@ using namespace std;
 UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, const Type& type, bool isRaw )
     : Socket ( IpAddrPort ( "", port ), Protocol::UDP, isRaw )
     , type ( type )
-    , gbn ( this, isConnectionLess() ? 0 : DEFAULT_KEEP_ALIVE )
+    , gbn ( this, DEFAULT_SEND_INTERVAL, isConnectionLess() ? 0 : DEFAULT_KEEP_ALIVE )
 {
     this->owner = owner;
     this->state = State::Listening;
@@ -31,7 +31,7 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, const Type& type, bo
 UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, const Type& type, bool isRaw )
     : Socket ( address, Protocol::UDP, isRaw )
     , type ( type )
-    , gbn ( this, isConnectionLess() ? 0 : DEFAULT_KEEP_ALIVE )
+    , gbn ( this, DEFAULT_SEND_INTERVAL, isConnectionLess() ? 0 : DEFAULT_KEEP_ALIVE )
 {
     this->owner = owner;
     this->state = ( isConnectionLess() ? State::Connected : State::Connecting );
@@ -45,7 +45,7 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, const Ty
 UdpSocket::UdpSocket ( Socket::Owner *owner, const SocketShareData& data )
     : Socket ( data.address, Protocol::UDP )
     , type ( ( Type::Enum ) data.udpType )
-    , gbn ( this, 0 )
+    , gbn ( this )
 {
     ASSERT ( data.protocol == Protocol::UDP );
 
@@ -109,7 +109,7 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const SocketShareData& data )
 UdpSocket::UdpSocket ( ChildSocketEnum, UdpSocket *parentSocket, const IpAddrPort& address )
     : Socket ( address, Protocol::UDP )
     , type ( Type::Child )
-    , gbn ( this, parentSocket->getKeepAlive() )
+    , gbn ( this, parentSocket->getSendInterval(), parentSocket->getKeepAlive() )
     , parentSocket ( parentSocket )
 {
     this->state = State::Connecting;

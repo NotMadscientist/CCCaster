@@ -118,6 +118,10 @@ public:
     bool send ( SerializableSequence *message, const IpAddrPort& address = IpAddrPort() ) override;
     bool send ( const MsgPtr& msg, const IpAddrPort& address = IpAddrPort() ) override;
 
+    // Get/set the interval to send packets, should be non-zero
+    virtual uint64_t getSendInterval() const { return gbn.getSendInterval(); }
+    virtual void setSendInterval ( uint64_t interval ) { if ( !isConnectionLess() ) gbn.setSendInterval ( interval ); }
+
     // Get/set the timeout for keep alive packets, 0 to disable
     uint64_t getKeepAlive() const { return gbn.getKeepAlive(); }
     void setKeepAlive ( uint64_t timeout ) { if ( !isConnectionLess() ) gbn.setKeepAlive ( timeout ); }

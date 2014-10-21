@@ -374,15 +374,15 @@ TEST ( GoBackN, Timeout )
         }
 
         TestSocket ( uint16_t port )
-            : socket ( UdpSocket::bind ( this, port ) )
-            , gbn ( this, 1000 ), timer ( this ), properTimeout ( false ), stage ( 0 )
+            : socket ( UdpSocket::bind ( this, port ) ), gbn ( this, DEFAULT_SEND_INTERVAL, 1000 )
+            , timer ( this ), properTimeout ( false ), stage ( 0 )
         {
             timer.start ( 1000 );
         }
 
         TestSocket ( const string& address, uint16_t port )
-            : socket ( UdpSocket::bind ( this, IpAddrPort ( address, port ) ) )
-            , address ( address, port ), gbn ( this, 1000 ), timer ( this ), properTimeout ( false ), stage ( 0 )
+            : socket ( UdpSocket::bind ( this, IpAddrPort ( address, port ) ) ), address ( address, port )
+            , gbn ( this, DEFAULT_SEND_INTERVAL, 1000 ), timer ( this ), properTimeout ( false ), stage ( 0 )
         {
             timer.start ( 1000 );
         }

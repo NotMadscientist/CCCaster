@@ -6,6 +6,9 @@
 #include <list>
 
 
+#define DEFAULT_SEND_INTERVAL ( 50 )
+
+
 struct AckSequence : public SerializableSequence
 {
     AckSequence ( uint32_t sequence ) : SerializableSequence ( sequence ) {}
@@ -79,6 +82,9 @@ private:
     // Buffer for accumulating split messages
     std::string recvBuffer;
 
+    // The interval to send packets, should be non-zero
+    uint64_t interval = DEFAULT_SEND_INTERVAL;
+
     // The timeout for keep alive packets, 0 to disable
     uint64_t keepAlive = 0;
 
@@ -98,7 +104,7 @@ public:
 
     // Basic constructors
     GoBackN ( const GoBackN& other ) { *this = other; }
-    GoBackN ( Owner *owner, uint64_t timeout = 0 );
+    GoBackN ( Owner *owner, uint64_t interval = DEFAULT_SEND_INTERVAL, uint64_t timeout = 0 );
     GoBackN ( Owner *owner, const GoBackN& state );
     GoBackN& operator= ( const GoBackN& other );
 
@@ -108,6 +114,10 @@ public:
 
     // Receive a message from the raw socket
     void recvRaw ( const MsgPtr& msg );
+
+    // Get/set the interval to send packets, should be non-zero
+    uint64_t getSendInterval() const { return interval; }
+    void setSendInterval ( uint64_t interval );
 
     // Get/set the timeout for keep alive packets, 0 to disable
     uint64_t getKeepAlive() const { return keepAlive; }

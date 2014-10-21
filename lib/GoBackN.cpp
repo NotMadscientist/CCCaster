@@ -9,8 +9,6 @@
 using namespace std;
 
 
-#define SEND_INTERVAL ( 50 )
-
 #define MTU ( 256 )
 
 
@@ -69,7 +67,7 @@ void GoBackN::timerExpired ( Timer *timer )
         }
     }
 
-    sendTimer->start ( SEND_INTERVAL );
+    sendTimer->start ( interval );
 }
 
 void GoBackN::checkAndStartTimer()
@@ -78,7 +76,7 @@ void GoBackN::checkAndStartTimer()
         sendTimer.reset ( new Timer ( this ) );
 
     if ( !sendTimer->isStarted() )
-        sendTimer->start ( SEND_INTERVAL );
+        sendTimer->start ( interval );
 }
 
 void GoBackN::sendGoBackN ( SerializableSequence *message )
@@ -131,7 +129,7 @@ void GoBackN::recvRaw ( const MsgPtr& msg )
     if ( keepAlive )
     {
         // Refresh keep alive count down
-        countDown = ( keepAlive / SEND_INTERVAL );
+        countDown = ( keepAlive / interval );
 
         LOG ( "this=%08x; keepAlive=%llu; countDown=%d", this, keepAlive, countDown );
 
@@ -213,10 +211,20 @@ void GoBackN::recvRaw ( const MsgPtr& msg )
     owner->recvGoBackN ( this, msg );
 }
 
+void GoBackN::setSendInterval ( uint64_t interval )
+{
+    ASSERT ( interval > 0 );
+
+    this->interval = interval;
+    countDown = ( keepAlive / interval );
+
+    LOG ( "interval=%llu; countDown=%d", interval, countDown );
+}
+
 void GoBackN::setKeepAlive ( uint64_t timeout )
 {
     keepAlive = timeout;
-    countDown = ( timeout / SEND_INTERVAL );
+    countDown = ( timeout / interval );
 
     LOG ( "keepAlive=%llu; countDown=%d", keepAlive, countDown );
 }
@@ -232,11 +240,16 @@ void GoBackN::reset()
     recvBuffer.clear();
 }
 
-GoBackN::GoBackN ( Owner *owner, uint64_t timeout )
+GoBackN::GoBackN ( Owner *owner, uint64_t interval, uint64_t timeout )
     : owner ( owner )
     , sendListPos ( sendList.end() )
+    , interval ( interval )
     , keepAlive ( timeout )
-    , countDown ( timeout / SEND_INTERVAL ) {}
+{
+    ASSERT ( interval > 0 );
+
+    countDown = timeout / interval;
+}
 
 GoBackN::GoBackN ( Owner *owner, const GoBackN& state ) : owner ( owner ), sendListPos ( sendList.end() )
 {
@@ -249,8 +262,11 @@ GoBackN& GoBackN::operator= ( const GoBackN& other )
     recvSequence = other.recvSequence;
     ackSequence = other.ackSequence;
     sendList = other.sendList;
+    interval = other.interval;
     keepAlive = other.keepAlive;
     countDown = other.keepAlive;
+
+    ASSERT ( interval > 0 );
 
     return *this;
 }

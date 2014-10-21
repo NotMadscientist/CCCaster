@@ -28,7 +28,7 @@ using namespace option;
 // Set of command line options
 enum CommandLineOptions
 {
-    UNKNOWN, HELP, DUMMY, UNIT_TEST, STDOUT, NO_FORK, NO_UI, STRICT_VERSION,
+    UNKNOWN, HELP, DUMMY, UNIT_TESTS, STDOUT, NO_FORK, NO_UI, STRICT_VERSION,
     TRAINING, BROADCAST, SPECTATE, OFFLINE, DIRECTORY
 };
 
@@ -967,10 +967,10 @@ int main ( int argc, char *argv[] )
             "                     -SSS means build time must match.\n"
         },
 
-        { STDOUT,    0, "",    "stdout", Arg::None, 0 }, // Output logs to stdout
-        { UNIT_TEST, 0, "", "unit-test", Arg::None, 0 }, // Run unit tests and exit
-        { DUMMY,     0, "",     "dummy", Arg::None, 0 }, // Client mode with fake inputs
-        { NO_FORK,   0, "",   "no-fork", Arg::None, 0 }, // Don't fork when inside Wine, ie running wineconsole
+        { STDOUT,     0, "",     "stdout", Arg::None, 0 }, // Output logs to stdout
+        { UNIT_TESTS, 0, "", "unit-tests", Arg::None, 0 }, // Run unit tests and exit
+        { DUMMY,      0, "",      "dummy", Arg::None, 0 }, // Client mode with fake inputs
+        { NO_FORK,    0, "",    "no-fork", Arg::None, 0 }, // Don't fork when inside Wine, ie running wineconsole
 
         {
             UNKNOWN, 0, "", "", Arg::None,
@@ -1019,7 +1019,7 @@ int main ( int argc, char *argv[] )
         Logger::get().initialize ( LOG_FILE );
 
     // Run the unit test suite and exit
-    if ( opt[UNIT_TEST] )
+    if ( opt[UNIT_TESTS] )
     {
         int result = RunAllTests ( argc, argv );
         Logger::get().deinitialize();
