@@ -113,6 +113,12 @@ struct Main
                 // Check for changes to controller state
                 ControllerManager::get().check();
 
+                if ( isSpectate() )
+                {
+                    // TODO
+                    break;
+                }
+
                 // Input testing code
                 static bool randomize = false;
                 static uint16_t input = 0;
@@ -486,7 +492,7 @@ struct Main
 
         if ( msg->getMsgType() == MsgType::VersionConfig )
         {
-            LOG_AND_THROW_STRING ( "Unimplemented!" ); // TODO
+            socket->send ( new SpectateConfig ( netMan.config ) );
             return;
         }
 
@@ -559,12 +565,12 @@ struct Main
                 netMan.config = msg->getAs<NetplayConfig>();
 
                 if ( netMan.config.delay == 0xFF )
-                    LOG_AND_THROW_STRING ( "netMan.config.delay=%d is invalid!", netMan.config.delay );
+                    LOG_AND_THROW_STRING ( "NetplayConfig: delay=%d is invalid!", netMan.config.delay );
 
                 if ( !isLocal() )
                 {
                     if ( netMan.config.hostPlayer != 1 && netMan.config.hostPlayer != 2 )
-                        LOG_AND_THROW_STRING ( "netMan.config.hostPlayer=%d is invalid!", netMan.config.hostPlayer );
+                        LOG_AND_THROW_STRING ( "NetplayConfig: hostPlayer=%d is invalid!", netMan.config.hostPlayer );
 
                     // Determine the player numbers
                     if ( isHost() )
@@ -582,7 +588,9 @@ struct Main
                 }
                 else if ( isBroadcast() )
                 {
-                    LOG ( "broadcastPort=%u", netMan.config.broadcastPort );
+                    ASSERT ( netMan.config.isBroadcast() == true );
+
+                    LOG ( "NetplayConfig: broadcastPort=%u", netMan.config.broadcastPort );
 
                     serverCtrlSocket = TcpSocket::listen ( this, netMan.config.broadcastPort );
 
@@ -593,9 +601,11 @@ struct Main
                     procMan.ipcSend ( REF_PTR ( netMan.config ) );
                 }
 
-                LOG ( "delay=%d; rollback=%d; training=%d; offline=%d; hostPlayer=%d; localPlayer=%d; remotePlayer=%d",
-                      netMan.config.delay, netMan.config.rollback, netMan.config.isTraining(),
-                      netMan.config.isOffline(), netMan.config.hostPlayer, localPlayer, remotePlayer );
+                LOG ( "NetplayConfig: flags={ %s }; delay=%d; rollback=%d; training=%d; offline=%d; "
+                      "hostPlayer=%d; localPlayer=%d; remotePlayer=%d",
+                      netMan.config.flagString(), netMan.config.delay, netMan.config.rollback,
+                      netMan.config.isTraining(), netMan.config.isOffline(),
+                      netMan.config.hostPlayer, localPlayer, remotePlayer );
                 break;
 
             case MsgType::SocketShareData:
@@ -644,7 +654,13 @@ struct Main
                         break;
 
                     case ClientMode::Spectate:
-                        LOG_AND_THROW_STRING ( "Unimplemented!" ); // TODO
+                        ctrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
+
+                        ASSERT ( ctrlSocket->isConnected() == true );
+
+                        LOG ( "ctrlSocket=%08x", ctrlSocket.get() );
+
+                        netplayStateChanged ( NetplayState::Initial );
                         break;
 
                     default:

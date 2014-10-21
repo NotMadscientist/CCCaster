@@ -131,8 +131,6 @@ void MainUi::broadcast ( RunFuncPtr run )
         netplayConfig.delay = 0;
         netplayConfig.broadcastPort = menu->resultInt;
 
-        ui->pushInFront ( new ConsoleUi::TextBox ( "Starting game..." ), { 1, 0 }, true ); // Expand width and clear
-
         run ( "", netplayConfig );
 
         // TODO better way to do this?
@@ -185,8 +183,6 @@ void MainUi::offline ( RunFuncPtr run )
 
     // TODO remove me testing
     // netplayConfig.rollback = 30;
-
-    ui->pushRight ( new ConsoleUi::TextBox ( "Starting game..." ), { 1, 0 } ); // Expand width
 
     run ( "", netplayConfig );
 }
@@ -348,7 +344,14 @@ void MainUi::display ( const string& message )
     if ( !ui )
         ui.reset ( new ConsoleUi ( uiTitle ) );
 
-    ui->pushInFront ( new ConsoleUi::TextBox ( message ), { 1, 0 }, true ); // Expand width and clear
+    if ( ui->empty() || !ui->top()->requiresUser )
+        ui->pushInFront ( new ConsoleUi::TextBox ( message ), { 1, 0 }, true ); // Expand width and clear
+    else if ( !ui->top()->expandWidth() )
+        ui->pushRight ( new ConsoleUi::TextBox ( message ), { 1, 0 } ); // Expand width
+    else if ( !ui->top()->expandHeight() )
+        ui->pushBelow ( new ConsoleUi::TextBox ( message ), { 1, 0 } ); // Expand width
+    else
+        ASSERT_IMPOSSIBLE;
 }
 
 bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pingStats )
@@ -404,6 +407,32 @@ bool MainUi::connected ( const InitialConfig& initialConfig, const PingStats& pi
     ui->pushInFront ( new ConsoleUi::TextBox (
                           initialConfig.getConnectMessage ( "Connected" ) + "\n"
                           + formatStats ( pingStats ) ), { 1, 0 }, true ); // Expand width and clear
+
+    ui->pushBelow ( new ConsoleUi::Menu ( "Continue?", { "Yes" }, "No" ) );
+
+    ret = ( ui->popUntilUserInput()->resultInt == 0 );
+
+    ui->pop();
+    ui->pop();
+
+    return ret;
+}
+
+bool MainUi::spectate ( const SpectateConfig& spectateConfig )
+{
+    bool ret = false;
+
+    ASSERT ( ui.get() != 0 );
+
+    string text;
+    if ( spectateConfig.isBroadcast() )
+        text = "Spectating a broadcast (0 delay)";
+    else
+        text = toString ( "Spectating %s vs %s (%u delay%s)",
+                          spectateConfig.names[0], spectateConfig.names[1], spectateConfig.delay,
+                          spectateConfig.rollback ? toString ( ", %u rollback)", spectateConfig.rollback ) : "" );
+
+    ui->pushInFront ( new ConsoleUi::TextBox ( text ), { 1, 0 }, true ); // Expand width and clear
 
     ui->pushBelow ( new ConsoleUi::Menu ( "Continue?", { "Yes" }, "No" ) );
 

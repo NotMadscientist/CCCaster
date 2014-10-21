@@ -55,6 +55,25 @@ struct ConfigOptions
 
     ConfigOptions ( uint8_t flags = 0 ) : flags ( flags ) {}
 
+    std::string flagString() const
+    {
+        std::string str;
+
+        if ( flags & Training )
+            str += "Training";
+
+        if ( flags & Spectate )
+            str += std::string ( str.empty() ? "" : ", " ) + "Spectate";
+
+        if ( flags & Broadcast )
+            str += std::string ( str.empty() ? "" : ", " ) + "Broadcast";
+
+        if ( flags & Offline )
+            str += std::string ( str.empty() ? "" : ", " ) + "Offline";
+
+        return str;
+    }
+
     bool isVersus() const { return !isTraining(); }
     bool isTraining() const { return ( flags & Training ); }
     bool isSpectate() const { return ( flags & Spectate ); }
@@ -71,13 +90,6 @@ struct VersionConfig : public SerializableSequence, public ConfigOptions
     VersionConfig ( uint8_t flags ) : ConfigOptions ( flags ) {}
 
     PROTOCOL_MESSAGE_BOILERPLATE ( VersionConfig, flags, version )
-};
-
-
-struct SpectateConfig : public SerializableSequence, public ConfigOptions
-{
-
-    PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig, flags )
 };
 
 
@@ -114,21 +126,52 @@ struct NetplayConfig : public SerializableSequence, public ConfigOptions
     uint8_t hostPlayer = 0;
     uint16_t broadcastPort = 0;
 
+    std::array<std::string, 2> names;
+
     uint8_t getOffset() const
     {
+        ASSERT ( delay != 0xFF );
+
         if ( delay < rollback )
             return 0;
         else
             return delay - rollback;
     }
 
-    void clear()
+    void setNames ( const std::string& localName, const std::string& remoteName )
     {
-        flags = rollback = hostPlayer = broadcastPort = 0;
-        delay = 0xFF;
+        ASSERT ( hostPlayer == 1 || hostPlayer == 2 );
+
+        names[hostPlayer - 1] = localName;
+        names[2 - hostPlayer] = remoteName;
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( NetplayConfig, flags, delay, rollback, hostPlayer, broadcastPort )
+    void clear()
+    {
+        flags = rollback = hostPlayer = 0;
+        delay = 0xFF;
+        broadcastPort = 0;
+        names[0].clear();
+        names[1].clear();
+    }
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( NetplayConfig, flags, delay, rollback, hostPlayer, broadcastPort, names )
+};
+
+
+struct SpectateConfig : public SerializableSequence, public ConfigOptions
+{
+    uint8_t delay = 0xFF, rollback = 0;
+
+    std::array<std::string, 2> names;
+
+    SpectateConfig ( const NetplayConfig& netplayConfig )
+        : ConfigOptions ( netplayConfig.flags )
+        , delay ( netplayConfig.delay )
+        , rollback ( netplayConfig.rollback )
+        , names ( netplayConfig.names ) {}
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig, flags, delay, rollback, names )
 };
 
 

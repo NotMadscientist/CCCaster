@@ -54,6 +54,8 @@ public:
 
     bool connected ( const InitialConfig& initialConfig, const PingStats& pingStats );
 
+    bool spectate ( const SpectateConfig& spectateConfig );
+
     const ConfigSettings& getConfig() const { return config; }
 
     const NetplayConfig& getNetplayConfig() const { return netplayConfig; }

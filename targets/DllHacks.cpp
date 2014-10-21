@@ -103,6 +103,9 @@ void initializePreLoadHacks()
 
     for ( const Asm& hack : detectRoundStart )
         WRITE_ASM_HACK ( hack );
+
+    // TODO find an alternative because this doesn't work on Wine
+    // WRITE_ASM_HACK ( disableFpsLimit );
 }
 
 void initializePostLoadHacks()

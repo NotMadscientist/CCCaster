@@ -54,6 +54,12 @@ public:
         // Output string
         std::string resultStr;
 
+        // True if the element fills the width of the screen.
+        bool expandWidth() const { return expand.X; }
+
+        // True if the element fills the height of the screen.
+        bool expandHeight() const { return expand.X; }
+
     protected:
 
         // Basic constructor
@@ -406,6 +412,12 @@ public:
             return 0;
 
         return stack.top().get();
+    }
+
+    // True if there are no elements
+    bool empty() const
+    {
+        return stack.empty();
     }
 
     // Clear the screen

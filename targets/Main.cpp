@@ -52,6 +52,8 @@ struct Main
 
     InitialConfig initialConfig;
 
+    bool initialConfigReceived = false;
+
     SpectateConfig spectateConfig;
 
     NetplayConfig netplayConfig;
@@ -68,7 +70,7 @@ struct Main
 
         2 - Both send and recv VersionConfig
 
-        3 - Both send and recv InitialConfig
+        3 - Both send and recv InitialConfig, then repeat to update names
 
         4 - Connect / accept dataSocket
 
@@ -147,12 +149,8 @@ struct Main
         }
 
         // Open the game immediately
-        procMan.openGame();
-
+        startGame();
         EventManager::get().start();
-
-        externaIpAddress.owner = 0;
-        procMan.closeGame();
     }
 
     virtual void delayedStop()
@@ -165,11 +163,8 @@ struct Main
     {
         const Version RemoteVersion = versionConfig.version;
 
-        LOG ( "VersionConfig: "
-              "isTraining=%d; isSpectate=%d; isBroadcast=%d; "
-              "version='%s'; commitId='%s'; buildTime='%s'",
-              versionConfig.isTraining(), versionConfig.isSpectate(), versionConfig.isBroadcast(),
-              RemoteVersion, RemoteVersion.commitId, RemoteVersion.buildTime );
+        LOG ( "VersionConfig: flags={ %s }; version='%s'; commitId='%s'; buildTime='%s'",
+              versionConfig.flagString(), RemoteVersion, RemoteVersion.commitId, RemoteVersion.buildTime );
 
         if ( !LocalVersion.similar ( RemoteVersion, 1 + opt[STRICT_VERSION].count() ) )
         {
@@ -214,10 +209,10 @@ struct Main
             {
                 ui.sessionError = "Not in a game yet, cannot spectate!";
                 EventManager::get().stop();
-                return;
             }
 
-            LOG_AND_THROW_STRING ( "Unimplemented!" ); // TODO
+            // Wait for SpectateConfig
+            return;
         }
 
         if ( isHost() )
@@ -241,17 +236,34 @@ struct Main
 
     virtual void gotSpectateConfig ( const SpectateConfig spectateConfig )
     {
+        LOG ( "SpectateConfig: flags={ %s }; delay=%u; rollback=%u; names={ '%s', '%s' }", spectateConfig.flagString(),
+              spectateConfig.delay, spectateConfig.rollback, spectateConfig.names[0], spectateConfig.names[1] );
+
+        this->spectateConfig = spectateConfig;
+
         userConfirmation();
     }
 
     virtual void gotInitialConfig ( const InitialConfig& initialConfig )
     {
-        LOG ( "InitialConfig: flags=%02x; dataPort=%u; remoteName='%s'",
-              initialConfig.flags, initialConfig.dataPort, initialConfig.localName );
+        if ( !initialConfigReceived )
+        {
+            LOG ( "InitialConfig: flags={ %s }, dataPort=%u; remoteName='%s'",
+                  initialConfig.flagString(), initialConfig.dataPort, initialConfig.localName );
 
-        this->initialConfig.remoteName = initialConfig.localName;
-        if ( this->initialConfig.remoteName.empty() )
-            this->initialConfig.remoteName = ctrlSocket->address.addr;
+            initialConfigReceived = true;
+
+            this->initialConfig.remoteName = initialConfig.localName;
+            if ( this->initialConfig.remoteName.empty() )
+                this->initialConfig.remoteName = ctrlSocket->address.addr;
+            this->initialConfig.invalidate();
+
+            ctrlSocket->send ( REF_PTR ( this->initialConfig ) );
+            return;
+        }
+
+        // Update our real localName when we receive the 2nd InitialConfig
+        this->initialConfig.localName = initialConfig.remoteName;
 
         if ( isHost() )
         {
@@ -289,26 +301,26 @@ struct Main
         // Disable keyboard hooks for the UI
         KeyboardManager::get().unhook();
 
-        if ( isSpectate() )
-        {
-            LOG_AND_THROW_STRING ( "Unimplemented!" ); // TODO
-            return;
-        }
-
         ASSERT ( ctrlSocket.get() != 0 );
-        ASSERT ( dataSocket.get() != 0 );
         ASSERT ( ctrlSocket->isConnected() == true );
-        ASSERT ( dataSocket->isConnected() == true );
 
         // Disable keepAlive because the UI blocks
         ctrlSocket->setKeepAlive ( 0 );
-        dataSocket->setKeepAlive ( 0 );
 
-        if ( isHost() )
+        if ( isSpectate() )
         {
-            serverCtrlSocket->setKeepAlive ( 0 );
-            serverDataSocket->setKeepAlive ( 0 );
+            if ( !ui.spectate ( spectateConfig ) )
+                EventManager::get().stop();
+            else
+                startGame();
+            return;
         }
+
+        ASSERT ( dataSocket.get() != 0 );
+        ASSERT ( dataSocket->isConnected() == true );
+
+        // Disable keepAlive because the UI blocks
+        dataSocket->setKeepAlive ( 0 );
 
         pingStats.latency.merge ( pinger.getStats() );
         pingStats.packetLoss = ( pingStats.packetLoss + pinger.getPacketLoss() ) / 2;
@@ -319,6 +331,13 @@ struct Main
 
         if ( isHost() )
         {
+            ASSERT ( serverCtrlSocket.get() != 0 );
+            ASSERT ( serverDataSocket.get() != 0 );
+
+            // Disable keepAlive because the UI blocks
+            serverCtrlSocket->setKeepAlive ( 0 );
+            serverDataSocket->setKeepAlive ( 0 );
+
             if ( !ui.accepted ( initialConfig, pingStats ) )
             {
                 EventManager::get().stop();
@@ -331,6 +350,7 @@ struct Main
             ctrlSocket->send ( REF_PTR ( netplayConfig ) );
 
             // Wait for ConfirmConfig before starting game
+            ui.display ( "Waiting for client confirmation..." );
         }
         else
         {
@@ -343,11 +363,14 @@ struct Main
             ctrlSocket->send ( new ConfirmConfig() );
 
             // Wait for NetplayConfig before starting game
+            ui.display ( "Waiting for host to choose delay..." );
         }
     }
 
     virtual void startGame()
     {
+        ui.display ( "Starting game..." );
+
         if ( isNetplay() )
             netplayConfig.flags = initialConfig.flags;
 
@@ -358,7 +381,7 @@ struct Main
         SocketManager::get().remove ( ctrlSocket.get() );
         SocketManager::get().remove ( dataSocket.get() );
 
-        // Open the game wait and for callback to ipcConnectEvent
+        // Open the game and wait for callback to ipcConnectEvent
         procMan.openGame();
     }
 
@@ -519,6 +542,7 @@ struct Main
 
         ASSERT ( netplayConfig.delay != 0xFF );
 
+        netplayConfig.setNames ( initialConfig.localName, initialConfig.remoteName );
         netplayConfig.invalidate();
         procMan.ipcSend ( REF_PTR ( netplayConfig ) );
 
@@ -558,6 +582,8 @@ struct Main
         }
 
         procMan.ipcSend ( new EndOfMessages() );
+
+        ui.display ( "Game started" );
     }
 
     virtual void ipcDisconnectEvent() override
@@ -663,6 +689,7 @@ struct Main
     virtual ~Main()
     {
         procMan.closeGame();
+        externaIpAddress.owner = 0;
     }
 
 private:

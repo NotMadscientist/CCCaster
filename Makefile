@@ -185,12 +185,12 @@ sdl-clean:
 clean:
 	rm -f $(AUTOGEN_HEADERS) *.res *.exe *.dll *.zip *.o targets/*.o lib/*.o tests/*.o
 	rm -f $(MAIN_OBJECTS) $(DLL_OBJECTS)
-	rm -rf $(FOLDER)
 
 clean-depend:
 	rm -f .depend .include
 
 clean-full: clean-depend clean
+	rm -rf $(FOLDER)
 
 check:
 	cppcheck --enable=all $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
