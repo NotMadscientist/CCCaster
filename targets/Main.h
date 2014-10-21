@@ -32,7 +32,7 @@ struct CommonMain
 
     SocketPtr serverDataSocket, dataSocket;
 
-    std::unordered_map<Socket *, SocketPtr> specSockets;
+    std::unordered_map<Socket *, SocketPtr> pendingSockets;
 
     TimerPtr stopTimer;
 

@@ -223,8 +223,8 @@ struct Main
             serverDataSocket = UdpSocket::listen ( this, address.port ); // TODO choose a different port if UDP tunnel
             initialConfig.dataPort = serverDataSocket->address.port;
 
-            ctrlSocket = specSockets[socket];
-            specSockets.erase ( socket );
+            ctrlSocket = pendingSockets[socket];
+            pendingSockets.erase ( socket );
 
             ASSERT ( ctrlSocket.get() != 0 );
             ASSERT ( ctrlSocket->isConnected() == true );
@@ -310,9 +310,13 @@ struct Main
         if ( isSpectate() )
         {
             if ( !ui.spectate ( spectateConfig ) )
+            {
                 EventManager::get().stop();
-            else
-                startGame();
+                return;
+            }
+
+            ctrlSocket->send ( new ConfirmConfig() );
+            startGame();
             return;
         }
 
@@ -422,7 +426,7 @@ struct Main
 
             newSocket->send ( new VersionConfig ( initialConfig.flags ) );
 
-            specSockets[newSocket.get()] = newSocket;
+            pendingSockets[newSocket.get()] = newSocket;
         }
         else if ( serverSocket == serverDataSocket.get() )
         {
@@ -471,7 +475,7 @@ struct Main
         if ( socket == ctrlSocket.get() || socket == dataSocket.get() )
             EventManager::get().stop();
         else
-            specSockets.erase ( socket );
+            pendingSockets.erase ( socket );
     }
 
     virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override

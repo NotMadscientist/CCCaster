@@ -88,6 +88,9 @@ struct Main
     // Also used as a flag to indicate re-run mode, 0:0 means not re-running.
     IndexedFrame rerunStopFrame = { { 0, 0 } };
 
+    // Spectator sockets
+    unordered_map<Socket *, SocketPtr> specSockets;
+
 
     void frameStepNormal()
     {
@@ -208,8 +211,7 @@ struct Main
         // Broadcast inputs to spectators once every NUM_INPUTS frames
         // TODO need to keep track of last valid frame to broadcast,
         //      ie when both local and remote inputs are ready
-        // TODO only broadcast to spectators who actually want to spectate
-        if ( netMan.getFrame() % NUM_INPUTS == NUM_INPUTS - 1 )
+        if ( !specSockets.empty() && netMan.getFrame() % NUM_INPUTS == NUM_INPUTS - 1 )
         {
             MsgPtr msgBothInputs = netMan.getBothInputs();
             for ( const auto& kv : specSockets )
@@ -492,7 +494,7 @@ struct Main
 
             newSocket->send ( new VersionConfig ( netMan.config.flags | ConfigOptions::Spectate ) );
 
-            specSockets[newSocket.get()] = newSocket;
+            pendingSockets[newSocket.get()] = newSocket;
         }
         else
         {
@@ -522,10 +524,22 @@ struct Main
         if ( !msg.get() )
             return;
 
-        if ( msg->getMsgType() == MsgType::VersionConfig )
+        switch ( msg->getMsgType() )
         {
-            socket->send ( new SpectateConfig ( netMan.config ) );
-            return;
+            case MsgType::VersionConfig:
+                socket->send ( new SpectateConfig ( netMan.config ) );
+                return;
+
+            case MsgType::ConfirmConfig:
+                if ( pendingSockets.find ( socket ) == pendingSockets.end() )
+                    break;
+
+                specSockets[socket] = pendingSockets[socket];
+                pendingSockets.erase ( socket );
+                return;
+
+            default:
+                break;
         }
 
         switch ( clientMode.value )
