@@ -18,6 +18,7 @@ typedef struct _WSAPROTOCOL_INFOA WSAPROTOCOL_INFO;
 class Socket;
 class TcpSocket;
 class UdpSocket;
+class SmartSocket;
 struct SocketShareData;
 
 typedef std::shared_ptr<Socket> SocketPtr;
@@ -48,7 +49,7 @@ public:
     };
 
     // Socket protocol
-    ENUM ( Protocol, TCP, UDP );
+    ENUM ( Protocol, TCP, UDP, Smart );
 
     // Connection state
     ENUM ( State, Listening, Connecting, Connected, Disconnected );
@@ -126,6 +127,7 @@ public:
     // Socket state query functions
     bool isTCP() const { return ( protocol == Protocol::TCP ); }
     bool isUDP() const { return ( protocol == Protocol::UDP ); }
+    bool isSmart() const { return ( protocol == Protocol::Smart ); }
     virtual State getState() const { return state; }
     virtual bool isConnecting() const { return isClient() && ( state == State::Connecting ); }
     virtual bool isConnected() const { return isClient() && ( state == State::Connected ); }
@@ -135,8 +137,8 @@ public:
     virtual const IpAddrPort& getRemoteAddress() const { if ( isServer() ) return NullAddress; return address; }
 
     // Send raw bytes directly, a return value of false indicates socket is disconnected
-    bool send ( const char *buffer, size_t len );
-    bool send ( const char *buffer, size_t len, const IpAddrPort& address );
+    virtual bool send ( const char *buffer, size_t len );
+    virtual bool send ( const char *buffer, size_t len, const IpAddrPort& address );
 
     // Accept a new socket
     virtual SocketPtr accept ( Owner *owner ) = 0;
@@ -160,6 +162,8 @@ public:
     const TcpSocket& getAsTCP() const;
     UdpSocket& getAsUDP();
     const UdpSocket& getAsUDP() const;
+    SmartSocket& getAsSmart();
+    const SmartSocket& getAsSmart() const;
 
     friend class SocketManager;
 };

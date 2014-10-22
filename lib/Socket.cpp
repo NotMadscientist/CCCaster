@@ -2,6 +2,7 @@
 #include "Socket.h"
 #include "TcpSocket.h"
 #include "UdpSocket.h"
+#include "SmartSocket.h"
 #include "Logger.h"
 #include "Utilities.h"
 
@@ -576,4 +577,16 @@ const UdpSocket& Socket::getAsUDP() const
 {
     ASSERT ( typeid ( *this ) == typeid ( UdpSocket ) );
     return *static_cast<const UdpSocket *> ( this );
+}
+
+SmartSocket& Socket::getAsSmart()
+{
+    ASSERT ( typeid ( *this ) == typeid ( SmartSocket ) );
+    return *static_cast<SmartSocket *> ( this );
+}
+
+const SmartSocket& Socket::getAsSmart() const
+{
+    ASSERT ( typeid ( *this ) == typeid ( SmartSocket ) );
+    return *static_cast<const SmartSocket *> ( this );
 }
