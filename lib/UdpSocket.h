@@ -23,7 +23,7 @@ public:
     ENUM ( Type, ConnectionLess, Client, Server, Child );
 
     // UDP socket type constant
-    const Type type = Type::Unknown;
+    Type type = Type::Unknown;
 
 private:
 
@@ -121,12 +121,22 @@ public:
     bool send ( const MsgPtr& msg, const IpAddrPort& address = IpAddrPort() ) override;
 
     // Get/set the interval to send packets, should be non-zero
-    virtual uint64_t getSendInterval() const { return gbn.getSendInterval(); }
-    virtual void setSendInterval ( uint64_t interval ) { if ( !isConnectionLess() ) gbn.setSendInterval ( interval ); }
+    uint64_t getSendInterval() const { return gbn.getSendInterval(); }
+    void setSendInterval ( uint64_t interval ) { if ( !isConnectionLess() ) gbn.setSendInterval ( interval ); }
 
     // Get/set the timeout for keep alive packets, 0 to disable
     uint64_t getKeepAlive() const { return gbn.getKeepAlive(); }
     void setKeepAlive ( uint64_t timeout ) { if ( !isConnectionLess() ) gbn.setKeepAlive ( timeout ); }
+
+    // Listen for connections.
+    // Can only be used on a non-raw, connection-less socket, where address.addr is empty.
+    // Changes the type to a UDP server socket.
+    void listen();
+
+    // Connect to the address.
+    // Can only be used on a non-raw, connection-less socket, where address.addr is NOT empty.
+    // Changes the type to a UDP client socket.
+    void connect();
 
     // Reset the state of the GoBackN instance
     void resetGbnState() { gbn.reset(); }

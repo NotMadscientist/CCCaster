@@ -322,7 +322,8 @@ struct Main
         ASSERT ( ctrlSocket->isConnected() == true );
 
         // Disable keepAlive because the UI blocks
-        ctrlSocket->setKeepAlive ( 0 );
+        if ( ctrlSocket->isUDP() )
+            ctrlSocket->getAsUDP().setKeepAlive ( 0 );
 
         if ( clientMode.isSpectate() )
         {
@@ -341,7 +342,7 @@ struct Main
         ASSERT ( dataSocket->isConnected() == true );
 
         // Disable keepAlive because the UI blocks
-        dataSocket->setKeepAlive ( 0 );
+        dataSocket->getAsUDP().setKeepAlive ( 0 );
 
         pingStats.latency.merge ( pinger.getStats() );
         pingStats.packetLoss = ( pingStats.packetLoss + pinger.getPacketLoss() ) / 2;
@@ -356,8 +357,9 @@ struct Main
             ASSERT ( serverDataSocket.get() != 0 );
 
             // Disable keepAlive because the UI blocks
-            serverCtrlSocket->setKeepAlive ( 0 );
-            serverDataSocket->setKeepAlive ( 0 );
+            if ( serverCtrlSocket->isUDP() )
+                serverCtrlSocket->getAsUDP().setKeepAlive ( 0 );
+            serverDataSocket->getAsUDP().setKeepAlive ( 0 );
 
             if ( !ui.accepted ( initialConfig, pingStats ) )
             {

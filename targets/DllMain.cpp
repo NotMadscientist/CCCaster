@@ -326,8 +326,9 @@ struct Main
         LOG ( "Character select loaded for both sides" );
 
         // Now we can re-enable keepAlive
-        ctrlSocket->setKeepAlive ( DEFAULT_KEEP_ALIVE );
-        dataSocket->setKeepAlive ( DEFAULT_KEEP_ALIVE );
+        if ( ctrlSocket->isUDP() )
+            ctrlSocket->getAsUDP().setKeepAlive ( DEFAULT_KEEP_ALIVE );
+        dataSocket->getAsUDP().setKeepAlive ( DEFAULT_KEEP_ALIVE );
     }
 
     void netplayStateChanged ( NetplayState state )

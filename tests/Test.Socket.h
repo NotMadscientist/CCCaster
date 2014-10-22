@@ -44,7 +44,7 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
     {
         timer.start ( timeout );
         if ( keepAlive )
-            ( ( UdpSocket * ) socket.get() )->setKeepAlive ( keepAlive );
+            socket->getAsUDP().setKeepAlive ( keepAlive );
     }
 
     BaseTestSocket ( const string& address, uint16_t port )
@@ -52,7 +52,7 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
     {
         timer.start ( timeout );
         if ( keepAlive )
-            ( ( UdpSocket * ) socket.get() )->setKeepAlive ( keepAlive );
+            socket->getAsUDP().setKeepAlive ( keepAlive );
     }
 };
 
