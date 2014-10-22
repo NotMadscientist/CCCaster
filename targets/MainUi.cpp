@@ -42,8 +42,17 @@ void MainUi::netplay ( RunFuncPtr run )
             continue;
         }
 
-        if ( address.addr.empty() && !gameMode() )
-            continue;
+        if ( address.addr.empty() )
+        {
+            if ( !gameMode() )
+                continue;
+
+            initialConfig.mode.value = ClientMode::Host;
+        }
+        else
+        {
+            initialConfig.mode.value = ClientMode::Client;
+        }
 
         run ( address, initialConfig );
 
@@ -84,7 +93,7 @@ void MainUi::spectate ( RunFuncPtr run )
             continue;
         }
 
-        initialConfig.flags |= ConfigOptions::Spectate;
+        initialConfig.mode.value = ClientMode::Spectate;
 
         run ( address, initialConfig );
 
@@ -127,8 +136,10 @@ void MainUi::broadcast ( RunFuncPtr run )
             continue;
 
         netplayConfig.clear();
-        netplayConfig.flags = ( initialConfig.flags | ConfigOptions::Broadcast );
+        netplayConfig.mode.value = ClientMode::Broadcast;
+        netplayConfig.mode.flags = initialConfig.mode.flags;
         netplayConfig.delay = 0;
+        netplayConfig.hostPlayer = 1;
         netplayConfig.broadcastPort = menu->resultInt;
 
         run ( "", netplayConfig );
@@ -177,7 +188,8 @@ void MainUi::offline ( RunFuncPtr run )
     ui->pop();
 
     netplayConfig.clear();
-    netplayConfig.flags = ( initialConfig.flags | ConfigOptions::Offline );
+    netplayConfig.mode.value = ClientMode::Offline;
+    netplayConfig.mode.flags = initialConfig.mode.flags;
     netplayConfig.delay = delay;
     netplayConfig.hostPlayer = 1;
 
@@ -196,7 +208,7 @@ bool MainUi::gameMode()
     if ( mode < 0 || mode > 1 )
         return false;
 
-    initialConfig.flags = ( mode == 1 ? ConfigOptions::Training : 0 );
+    initialConfig.mode.flags = ( mode == 1 ? ClientMode::Training : 0 );
     return true;
 }
 
@@ -425,7 +437,7 @@ bool MainUi::spectate ( const SpectateConfig& spectateConfig )
     ASSERT ( ui.get() != 0 );
 
     string text;
-    if ( spectateConfig.isBroadcast() )
+    if ( spectateConfig.mode.isBroadcast() )
         text = "Spectating a broadcast (0 delay)";
     else
         text = toString ( "Spectating %s vs %s (%u delay%s)",

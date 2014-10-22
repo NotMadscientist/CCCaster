@@ -135,7 +135,7 @@ public:
     }
 
     // Get / set the game RNG state
-    MsgPtr getRngState() const;
+    MsgPtr getRngState ( uint32_t index ) const;
     void setRngState ( const RngState& rngState );
 
     // Allocate / deallocate memory for saving game states

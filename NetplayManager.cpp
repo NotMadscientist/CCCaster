@@ -38,7 +38,7 @@ uint16_t NetplayManager::getInitialInput ( uint8_t player ) const
     uint16_t direction = 0;
     uint16_t buttons = 0;
 
-    if ( config.isTraining() )
+    if ( config.mode.isTraining() )
     {
         if ( !gameModeSelected )
         {
@@ -74,7 +74,7 @@ uint16_t NetplayManager::getInitialInput ( uint8_t player ) const
 
 uint16_t NetplayManager::getCharaSelectInput ( uint8_t player ) const
 {
-    if ( config.isSpectate() )
+    if ( config.mode.isSpectate() )
     {
         // TODO automatically select character
         return 0;
@@ -103,8 +103,8 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
 
     uint16_t input = getOffsetInput ( player );
 
-    // Disable pausing in online versus mode
-    if ( config.isVersus() && config.isOnline() )
+    // Disable pausing in netplay versus mode
+    if ( config.mode.isNetplay() && config.mode.isVersus() )
         input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_START );
 
     return input;
@@ -176,17 +176,6 @@ void NetplayManager::setRemotePlayer ( uint8_t player )
     inputs[player - 1].fillFakeInputs = ( config.rollback > 0 );
 }
 
-bool NetplayManager::areInputsReady() const
-{
-    if ( state.value < NetplayState::CharaSelect )
-        return true;
-
-    if ( isRollbackState() && state == NetplayState::InGame )
-        return ( inputs[remotePlayer - 1].getEndIndexedFrame().value + config.rollback > indexedFrame.value + 1 );
-
-    return ( inputs[remotePlayer - 1].getEndIndexedFrame().value > indexedFrame.value + 1 + config.delay );
-}
-
 void NetplayManager::updateFrame()
 {
     indexedFrame.parts.frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime;
@@ -231,7 +220,7 @@ void NetplayManager::setState ( NetplayState state )
             for ( uint32_t i = 0; i < rngStates.size(); ++i )
                 ASSERT ( rngStates[i].get() == 0 );
 
-            if ( !config.isOffline() )
+            if ( !config.mode.isOffline() )
             {
                 LOG ( "Start of a new game" );
 
@@ -288,7 +277,7 @@ uint16_t NetplayManager::getInput ( uint8_t player ) const
         case NetplayState::Loading:
         case NetplayState::Skippable:
             // If spectating or the remote inputs index is ahead, then we should mash to skip.
-            if ( config.isSpectate() || ( inputs[remotePlayer - 1].getEndIndex() > getIndex() + 1 ) )
+            if ( config.mode.isSpectate() || ( inputs[remotePlayer - 1].getEndIndex() > getIndex() + 1 ) )
                 RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
 
             return getSkippableInput ( player );
@@ -354,9 +343,33 @@ void NetplayManager::setBothInputs ( const BothInputs& bothInputs )
     inputs[1].set ( bothInputs.getStartIndexedFrame(), &bothInputs.inputs[1][0], bothInputs.size() );
 }
 
-void NetplayManager::saveRngState ( const RngState& rngState )
+bool NetplayManager::areInputsReady() const
 {
-    if ( config.isOffline() )
+    if ( state.value < NetplayState::CharaSelect )
+        return true;
+
+    if ( isRollbackState() && state == NetplayState::InGame )
+        return ( inputs[remotePlayer - 1].getEndIndexedFrame().value + config.rollback > indexedFrame.value + 1 );
+
+    return ( inputs[remotePlayer - 1].getEndIndexedFrame().value > indexedFrame.value + 1 + config.delay );
+}
+
+MsgPtr NetplayManager::getRngState() const
+{
+    if ( config.mode.isOffline() )
+        return 0;
+
+    LOG ( "indexedFrame=[%s]", indexedFrame );
+
+    if ( getIndex() + 1 > rngStates.size() )
+        return 0;
+
+    return rngStates[getIndex()];
+}
+
+void NetplayManager::setRngState ( const RngState& rngState )
+{
+    if ( config.mode.isOffline() || rngState.index == 0 )
         return;
 
     LOG ( "indexedFrame=[%s]", indexedFrame );
@@ -367,9 +380,21 @@ void NetplayManager::saveRngState ( const RngState& rngState )
     rngStates[getIndex()].reset ( new RngState ( rngState ) );
 }
 
+bool NetplayManager::isRngStateReady ( bool shouldSetRngState ) const
+{
+    if ( !shouldSetRngState
+            || config.mode.isHost() || config.mode.isBroadcast() || config.mode.isOffline()
+            || state.value < NetplayState::CharaSelect )
+    {
+        return true;
+    }
+
+    return ( rngStates.size() > getIndex() );
+}
+
 void NetplayManager::saveLastGame()
 {
-    if ( config.isOffline() )
+    if ( config.mode.isOffline() )
         return;
 
     ASSERT ( games.back().get() != 0 );

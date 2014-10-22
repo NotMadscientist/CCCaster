@@ -75,13 +75,7 @@ struct Main
     // Timer for resending inputs while waiting
     TimerPtr resendTimer;
 
-    // The RNG state for the next netplay state
-    MsgPtr nextRngState;
-
-    // Indicates if we should wait for the next RNG state before continuing
-    bool waitForRngState = false;
-
-    // Indicates if we should set the game's RNG state with nextRngState
+    // Indicates if we should set the game's RNG state from netMan
     bool shouldSetRngState = false;
 
     // Frame to stop on, when re-running the game due to rollback.
@@ -116,7 +110,7 @@ struct Main
                 // Check for changes to controller state
                 ControllerManager::get().check();
 
-                if ( isSpectate() )
+                if ( clientMode.isSpectate() )
                 {
                     // TODO spectator controls
                     break;
@@ -189,14 +183,12 @@ struct Main
                 // Commit inputs to netMan and send them to remote
                 netMan.setInput ( localPlayer, input );
 
-                if ( isLocal() )
+                // TODO implement P2 inputs
+                if ( clientMode.isLocal() )
                     netMan.setInput ( remotePlayer, input );
 
-                if ( isBroadcast() )
-                    ; // TODO broadcast to spectators
-                else if ( !isOffline() )
+                if ( clientMode.isNetplay() )
                     dataSocket->send ( netMan.getInputs ( localPlayer ) );
-
                 break;
             }
 
@@ -208,16 +200,6 @@ struct Main
         // Clear the last changed frame before we get new inputs
         netMan.clearLastChangedFrame();
 
-        // Broadcast inputs to spectators once every NUM_INPUTS frames
-        // TODO need to keep track of last valid frame to broadcast,
-        //      ie when both local and remote inputs are ready
-        if ( !specSockets.empty() && netMan.getFrame() % NUM_INPUTS == NUM_INPUTS - 1 )
-        {
-            MsgPtr msgBothInputs = netMan.getBothInputs();
-            for ( const auto& kv : specSockets )
-                kv.first->send ( msgBothInputs );
-        }
-
         for ( ;; )
         {
             // Poll until we are ready to run
@@ -227,24 +209,25 @@ struct Main
                 return;
             }
 
-            // Don't need wait for inputs in local modes
-            if ( isLocal() )
+            // Don't need to wait for anything in local modes
+            if ( clientMode.isLocal() )
                 break;
 
-            // Check if we should wait for anything
-            const bool shouldWait = ( !netMan.areInputsReady() || waitForRngState );
+            // Check if we are ready to continue running, ie not waiting on inputs or RNG state
+            const bool ready = ( netMan.areInputsReady() && netMan.isRngStateReady ( shouldSetRngState ) );
 
-            // Just wait or continue in spectate mode
-            if ( isSpectate() )
+            // Don't resend inputs in spectator mode
+            if ( clientMode.isSpectate() )
             {
-                if ( shouldWait )
-                    continue;
-                else
+                if ( ready )
                     break;
+
+                // Just keep polling if not ready
+                continue;
             }
 
             // Stop resending inputs if we're ready
-            if ( !shouldWait )
+            if ( ready )
             {
                 resendTimer.reset();
                 break;
@@ -275,19 +258,32 @@ struct Main
         // Update the RNG state if necessary
         if ( shouldSetRngState )
         {
-            ASSERT ( nextRngState.get() != 0 );
-            procMan.setRngState ( nextRngState->getAs<RngState>() );
-            netMan.saveRngState ( nextRngState->getAs<RngState>() );
-            nextRngState.reset();
             shouldSetRngState = false;
 
+            MsgPtr msgRngState = netMan.getRngState();
+
+            ASSERT ( msgRngState.get() != 0 );
+
+            procMan.setRngState ( msgRngState->getAs<RngState>() );
+
             // Log the RNG state after we set it
-            LOG_SYNC ( "RngState: %s", procMan.getRngState()->getAs<RngState>().dump() );
+            LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
+        }
+
+        // Broadcast inputs to spectators once every NUM_INPUTS frames
+        if ( !specSockets.empty() && netMan.getFrame() % NUM_INPUTS == NUM_INPUTS - 1 )
+        {
+            MsgPtr msgBothInputs = netMan.getBothInputs();
+
+            ASSERT ( msgBothInputs.get() != 0 );
+
+            for ( const auto& kv : specSockets )
+                kv.first->send ( msgBothInputs );
         }
 
         // Log the RNG state once every 5 seconds
         if ( netMan.getFrame() % ( 5 * 60 ) == 0 )
-            LOG_SYNC ( "RngState: %s", procMan.getRngState()->getAs<RngState>().dump() );
+            LOG_SYNC ( "RngState: %s", procMan.getRngState ( netMan.getIndex() )->getAs<RngState>().dump() );
 
         // Log inputs every frame
         LOG_SYNC ( "Inputs: %04x %04x", netMan.getInput ( 1 ), netMan.getInput ( 2 ) );
@@ -334,15 +330,10 @@ struct Main
         dataSocket->setKeepAlive ( DEFAULT_KEEP_ALIVE );
     }
 
-    void saveAndSendRngState()
-    {
-        // TODO
-    }
-
     void netplayStateChanged ( NetplayState state )
     {
         // Log the RNG state whenever NetplayState changes
-        LOG_SYNC ( "RngState: %s", procMan.getRngState()->getAs<RngState>().dump() );
+        LOG_SYNC ( "RngState: %s", procMan.getRngState ( netMan.getIndex() + 1 )->getAs<RngState>().dump() );
 
         if ( netMan.getState() != NetplayState::InGame && state == NetplayState::InGame )
         {
@@ -357,25 +348,32 @@ struct Main
 
         if ( state == NetplayState::CharaSelect || state == NetplayState::InGame )
         {
-            // TODO clean up how this is implemented; all modes can send RNG state,
-            //      but only Client and Spectate MUST wait and receive RNG state first
-
             MsgPtr msgRngState;
-            if ( isHost() || isBroadcast() || isSpectate() )
-                msgRngState = procMan.getRngState();
+
+            if ( clientMode.isHost() || clientMode.isBroadcast() )
+            {
+                msgRngState = procMan.getRngState ( netMan.getIndex() + 1 );
+
+                // Log the RNG state when the host sends it
+                LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
+            }
 
             switch ( clientMode.value )
             {
                 case ClientMode::Host:
-                    ctrlSocket->send ( msgRngState ); // Intentional fall through to saveRngState
+                    ASSERT ( msgRngState.get() != 0 );
+
+                    ctrlSocket->send ( msgRngState ); // Intentional fall through to Broadcast
 
                 case ClientMode::Broadcast:
-                    netMan.saveRngState ( msgRngState->getAs<RngState>() );
+                    ASSERT ( msgRngState.get() != 0 );
+
+                    for ( const auto& kv : specSockets )
+                        kv.first->send ( msgRngState );
                     break;
 
                 case ClientMode::Client:
                 case ClientMode::Spectate:
-                    waitForRngState = ( nextRngState.get() == 0 );
                     shouldSetRngState = true;
                     break;
 
@@ -385,10 +383,6 @@ struct Main
         }
 
         netMan.setState ( state );
-
-        // Log the RNG state when the host sends it
-        if ( ( state == NetplayState::CharaSelect || state == NetplayState::InGame ) && isHost() )
-            LOG_SYNC ( "RngState: %s", procMan.getRngState()->getAs<RngState>().dump() );
     }
 
     void gameModeChanged ( uint32_t previous, uint32_t current )
@@ -409,7 +403,7 @@ struct Main
         if ( current == CC_GAME_MODE_CHARA_SELECT )
         {
             // Once both sides have loaded up to character select for the first time
-            if ( !isLocal() && netMan.getState() == NetplayState::Initial )
+            if ( !clientMode.isLocal() && netMan.getState() == NetplayState::Initial )
             {
                 if ( remoteCharaSelectLoaded )
                     bothCharaSelectLoaded();
@@ -429,7 +423,7 @@ struct Main
         if ( current == CC_GAME_MODE_INGAME )
         {
             // Versus mode in-game starts with character intros, which is a skippable state
-            if ( !netMan.config.isTraining() )
+            if ( !netMan.config.mode.isTraining() )
                 netplayStateChanged ( NetplayState::Skippable );
             else
                 netplayStateChanged ( NetplayState::InGame );
@@ -492,7 +486,7 @@ struct Main
             ASSERT ( newSocket != 0 );
             ASSERT ( newSocket->isConnected() == true );
 
-            newSocket->send ( new VersionConfig ( netMan.config.flags | ConfigOptions::Spectate ) );
+            newSocket->send ( new VersionConfig ( clientMode, ClientMode::GameStarted ) );
 
             pendingSockets[newSocket.get()] = newSocket;
         }
@@ -514,7 +508,13 @@ struct Main
         LOG ( "disconnectEvent ( %08x )", socket );
 
         if ( socket == ctrlSocket.get() || socket == dataSocket.get() )
+        {
             EventManager::get().stop();
+            return;
+        }
+
+        pendingSockets.erase ( socket );
+        specSockets.erase ( socket );
     }
 
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
@@ -527,7 +527,10 @@ struct Main
         switch ( msg->getMsgType() )
         {
             case MsgType::VersionConfig:
-                socket->send ( new SpectateConfig ( netMan.config ) );
+                if ( !LocalVersion.similar ( msg->getAs<VersionConfig>().version ) )
+                    socket->disconnect();
+                else
+                    socket->send ( new SpectateConfig ( netMan.config ) );
                 return;
 
             case MsgType::ConfirmConfig:
@@ -536,6 +539,13 @@ struct Main
 
                 specSockets[socket] = pendingSockets[socket];
                 pendingSockets.erase ( socket );
+                return;
+
+            case MsgType::RngState:
+                netMan.setRngState ( msg->getAs<RngState>() );
+
+                for ( const auto& kv : specSockets )
+                    kv.first->send ( msg );
                 return;
 
             default:
@@ -562,11 +572,6 @@ struct Main
                         netMan.setInputs ( remotePlayer, msg->getAs<PlayerInputs>() );
                         return;
 
-                    case MsgType::RngState:
-                        nextRngState = msg;
-                        waitForRngState = false;
-                        return;
-
                     default:
                         break;
                 }
@@ -577,11 +582,6 @@ struct Main
                 {
                     case MsgType::BothInputs:
                         netMan.setBothInputs ( msg->getAs<BothInputs>() );
-                        return;
-
-                    case MsgType::RngState:
-                        nextRngState = msg;
-                        waitForRngState = false;
                         return;
 
                     default:
@@ -630,13 +630,13 @@ struct Main
                 if ( netMan.config.delay == 0xFF )
                     LOG_AND_THROW_STRING ( "NetplayConfig: delay=%d is invalid!", netMan.config.delay );
 
-                if ( !isLocal() )
+                if ( !clientMode.isLocal() )
                 {
                     if ( netMan.config.hostPlayer != 1 && netMan.config.hostPlayer != 2 )
                         LOG_AND_THROW_STRING ( "NetplayConfig: hostPlayer=%d is invalid!", netMan.config.hostPlayer );
 
                     // Determine the player numbers
-                    if ( isHost() )
+                    if ( clientMode.isHost() )
                     {
                         localPlayer = netMan.config.hostPlayer;
                         remotePlayer = ( 3 - netMan.config.hostPlayer );
@@ -649,9 +649,9 @@ struct Main
 
                     netMan.setRemotePlayer ( remotePlayer );
                 }
-                else if ( isBroadcast() )
+                else if ( clientMode.isBroadcast() )
                 {
-                    ASSERT ( netMan.config.isBroadcast() == true );
+                    ASSERT ( netMan.config.mode.isBroadcast() == true );
 
                     LOG ( "NetplayConfig: broadcastPort=%u", netMan.config.broadcastPort );
 
@@ -666,8 +666,8 @@ struct Main
 
                 LOG ( "NetplayConfig: flags={ %s }; delay=%d; rollback=%d; training=%d; offline=%d; "
                       "hostPlayer=%d; localPlayer=%d; remotePlayer=%d",
-                      netMan.config.flagString(), netMan.config.delay, netMan.config.rollback,
-                      netMan.config.isTraining(), netMan.config.isOffline(),
+                      netMan.config.mode.flagString(), netMan.config.delay, netMan.config.rollback,
+                      netMan.config.mode.isTraining(), netMan.config.mode.isOffline(),
                       netMan.config.hostPlayer, localPlayer, remotePlayer );
                 break;
 
@@ -739,7 +739,7 @@ struct Main
                 if ( netMan.config.delay == 0xFF )
                     LOG_AND_THROW_STRING ( "Uninitalized netMan.config!" );
 
-                if ( !isLocal() )
+                if ( !clientMode.isLocal() )
                 {
                     if ( !ctrlSocket || !ctrlSocket->isConnected() )
                         LOG_AND_THROW_STRING ( "Uninitalized ctrlSocket!" );
@@ -747,7 +747,7 @@ struct Main
                     if ( !dataSocket || !dataSocket->isConnected() )
                         LOG_AND_THROW_STRING ( "Uninitalized dataSocket!" );
 
-                    if ( isHost() )
+                    if ( clientMode.isHost() )
                     {
                         if ( !serverCtrlSocket )
                             LOG_AND_THROW_STRING ( "Uninitalized serverCtrlSocket!" );
@@ -808,10 +808,8 @@ struct Main
         if ( appState != AppState::Polling )
             return;
 
-        // First check if the world timer changed, if not, poll for events once and return
-        if ( !worldTimerMoniter.check() )
-            if ( !EventManager::get().poll ( pollTimeout ) )
-                appState = AppState::Stopping;
+        // Check if the world timer changed, this calls hasChanged if changed
+        worldTimerMoniter.check();
     }
 
     // Constructor

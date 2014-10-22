@@ -9,7 +9,7 @@
 #include <memory>
 
 
-// The function to run the game with the provided connection address or config
+// The function to run the game with the provided options
 typedef void ( * RunFuncPtr ) ( const IpAddrPort& address, const Serializable& config );
 
 class ConsoleUi;

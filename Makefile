@@ -69,7 +69,7 @@ LD_FLAGS += -lSDL2 -lSDL2main -lws2_32 -lwinmm -lwinpthread -ldinput8 -lgdi32 -l
 # DEFINES += -DLOGGER_MUTEXED
 # DEFINES += -DJLIB_MUTEXED
 
-DEPLOY=1
+INSTALL=1
 
 
 all: debug
@@ -220,9 +220,6 @@ count:
 	@wc -l $(NON_GEN_SRCS) $(NON_GEN_HEADERS) | sort -nr | head -n 10 && echo '    ...'
 
 
-.PHONY: version protocol depend clean clean-depend check trim format count deploy sdl sdl-release sdl-profile sdl-clean
-
-
 ifeq (,$(findstring version,$(MAKECMDGOALS)))
 ifeq (,$(findstring protocol,$(MAKECMDGOALS)))
 ifeq (,$(findstring depend,$(MAKECMDGOALS)))
@@ -231,7 +228,7 @@ ifeq (,$(findstring check,$(MAKECMDGOALS)))
 ifeq (,$(findstring trim,$(MAKECMDGOALS)))
 ifeq (,$(findstring format,$(MAKECMDGOALS)))
 ifeq (,$(findstring count,$(MAKECMDGOALS)))
-ifeq (,$(findstring deploy,$(MAKECMDGOALS)))
+ifeq (,$(findstring install,$(MAKECMDGOALS)))
 ifeq (,$(findstring sdl,$(MAKECMDGOALS)))
 -include .depend
 endif
@@ -257,7 +254,7 @@ post-build: main-build
 	@echo
 	@echo ========== Post-build ==========
 	@echo
-	if [ $(DEPLOY) = 1 ] && [ -s scripts/deploy ]; then scripts/deploy; fi;
+	if [ $(INSTALL) = 1 ] && [ -s ./scripts/install ]; then ./scripts/install; fi;
 
 
 debug: post-build

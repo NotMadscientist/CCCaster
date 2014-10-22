@@ -56,9 +56,9 @@ void ProcessManager::writeGameInput ( uint8_t player, uint16_t direction, uint16
     }
 }
 
-MsgPtr ProcessManager::getRngState() const
+MsgPtr ProcessManager::getRngState ( uint32_t index ) const
 {
-    RngState *rngState = new RngState();
+    RngState *rngState = new RngState ( index );
 
     rngState->rngState0 = *CC_RNGSTATE0_ADDR;
     rngState->rngState1 = *CC_RNGSTATE1_ADDR;

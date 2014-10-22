@@ -9,7 +9,9 @@
 
 struct UdpConnect : public SerializableSequence
 {
-    ENUM_MESSAGE_BOILERPLATE ( UdpConnect, Request, Reply, Final )
+    ENUM_VALUE ( UdpConnect, Request, Reply, Final )
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( UdpConnect, value )
 };
 
 

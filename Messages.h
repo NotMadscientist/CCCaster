@@ -32,7 +32,46 @@ struct ErrorMessage : public SerializableSequence
 
 struct ClientMode : public SerializableSequence
 {
-    ENUM_MESSAGE_BOILERPLATE ( ClientMode, Host, Client, Spectate, Broadcast, Offline )
+    ENUM_VALUE ( ClientMode, Host, Client, Spectate, Broadcast, Offline )
+
+    enum { Training = 0x01, GameStarted = 0x02 };
+
+    uint8_t flags = 0;
+
+    ClientMode ( Enum value, uint8_t flags = 0 ) : value ( value ), flags ( flags ) {}
+
+    bool isHost() const { return ( value == Host ); }
+    bool isClient() const { return ( value == Client ); }
+    bool isSpectate() const { return ( value == Spectate ); }
+    bool isBroadcast() const { return ( value == Broadcast ); }
+    bool isOffline() const { return ( value == Offline ); }
+    bool isNetplay() const { return ( value == Host || value == Client ); }
+    bool isLocal() const { return ( value == Broadcast || value == Offline ); }
+
+    bool isVersus() const { return !isTraining(); }
+    bool isTraining() const { return ( flags & Training ); }
+    bool isGameStarted() const { return ( flags & GameStarted ); }
+
+    std::string flagString() const
+    {
+        std::string str;
+
+        if ( flags & Training )
+            str += "Training";
+
+        if ( flags & GameStarted )
+            str += std::string ( str.empty() ? "" : ", " ) + "GameStarted";
+
+        return str;
+    }
+
+    void clear()
+    {
+        value = Unknown;
+        flags =  0;
+    }
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( ClientMode, value, flags )
 };
 
 
@@ -47,60 +86,26 @@ struct PingStats : public SerializableSequence
 };
 
 
-struct ConfigOptions
+struct VersionConfig : public SerializableSequence
 {
-    enum { Training = 0x01, Spectate = 0x02, Broadcast = 0x04, Offline = 0x08 };
-
-    uint8_t flags = 0;
-
-    ConfigOptions ( uint8_t flags = 0 ) : flags ( flags ) {}
-
-    std::string flagString() const
-    {
-        std::string str;
-
-        if ( flags & Training )
-            str += "Training";
-
-        if ( flags & Spectate )
-            str += std::string ( str.empty() ? "" : ", " ) + "Spectate";
-
-        if ( flags & Broadcast )
-            str += std::string ( str.empty() ? "" : ", " ) + "Broadcast";
-
-        if ( flags & Offline )
-            str += std::string ( str.empty() ? "" : ", " ) + "Offline";
-
-        return str;
-    }
-
-    bool isVersus() const { return !isTraining(); }
-    bool isTraining() const { return ( flags & Training ); }
-    bool isSpectate() const { return ( flags & Spectate ); }
-    bool isBroadcast() const { return ( flags & Broadcast ); }
-    bool isOffline() const { return ( flags & Offline ); }
-    bool isOnline() const { return !isSpectate() && !isBroadcast() && !isOffline(); }
-};
-
-
-struct VersionConfig : public SerializableSequence, public ConfigOptions
-{
+    ClientMode mode;
     Version version = LocalVersion;
 
-    VersionConfig ( uint8_t flags ) : ConfigOptions ( flags ) {}
+    VersionConfig ( const ClientMode& mode, uint8_t flags = 0 ) : mode ( mode.value, mode.flags | flags ) {}
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( VersionConfig, flags, version )
+    PROTOCOL_MESSAGE_BOILERPLATE ( VersionConfig, mode, version )
 };
 
 
-struct InitialConfig : public SerializableSequence, public ConfigOptions
+struct InitialConfig : public SerializableSequence
 {
+    ClientMode mode;
     uint16_t dataPort = 0;
     std::string localName, remoteName;
 
     std::string getConnectMessage ( const std::string& verb ) const
     {
-        return toString ( "%s to %s%s", verb, remoteName, ( isTraining() ? " (training mode)" : "" ) );
+        return toString ( "%s to %s%s", verb, remoteName, ( mode.isTraining() ? " (training mode)" : "" ) );
     }
 
     std::string getAcceptMessage ( const std::string& verb ) const
@@ -110,18 +115,19 @@ struct InitialConfig : public SerializableSequence, public ConfigOptions
 
     void clear()
     {
-        flags = 0;
+        mode.clear();
         dataPort = 0;
         localName.clear();
         remoteName.clear();
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( InitialConfig, flags, dataPort, localName, remoteName )
+    PROTOCOL_MESSAGE_BOILERPLATE ( InitialConfig, mode, dataPort, localName, remoteName )
 };
 
 
-struct NetplayConfig : public SerializableSequence, public ConfigOptions
+struct NetplayConfig : public SerializableSequence
 {
+    ClientMode mode;
     uint8_t delay = 0xFF, rollback = 0;
     uint8_t hostPlayer = 0;
     uint16_t broadcastPort = 0;
@@ -148,47 +154,52 @@ struct NetplayConfig : public SerializableSequence, public ConfigOptions
 
     void clear()
     {
-        flags = rollback = hostPlayer = 0;
+        mode.clear();
+        rollback = hostPlayer = 0;
         delay = 0xFF;
         broadcastPort = 0;
         names[0].clear();
         names[1].clear();
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( NetplayConfig, flags, delay, rollback, hostPlayer, broadcastPort, names )
+    PROTOCOL_MESSAGE_BOILERPLATE ( NetplayConfig, mode, delay, rollback, hostPlayer, broadcastPort, names )
 };
 
 
-struct SpectateConfig : public SerializableSequence, public ConfigOptions
+struct SpectateConfig : public SerializableSequence
 {
+    ClientMode mode;
     uint8_t delay = 0xFF, rollback = 0;
 
     std::array<std::string, 2> names;
 
     SpectateConfig ( const NetplayConfig& netplayConfig )
-        : ConfigOptions ( netplayConfig.flags )
-        , delay ( netplayConfig.delay )
-        , rollback ( netplayConfig.rollback )
-        , names ( netplayConfig.names ) {}
+        : mode ( netplayConfig.mode ), delay ( netplayConfig.delay )
+        , rollback ( netplayConfig.rollback ), names ( netplayConfig.names ) {}
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig, flags, delay, rollback, names )
+    PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig, mode, delay, rollback, names )
 };
 
 
 struct RngState : public SerializableSequence
 {
+    uint32_t index = 0;
+
     uint32_t rngState0 = 0, rngState1 = 0, rngState2 = 0;
     std::array<char, CC_RNGSTATE3_SIZE> rngState3;
 
+    RngState ( uint32_t index ) : index ( index ) {}
+
     std::string dump() const
     {
-        return toBase64 ( &rngState0, sizeof ( rngState0 ) )
-               + " " + toBase64 ( &rngState1, sizeof ( rngState1 ) )
-               + " " + toBase64 ( &rngState2, sizeof ( rngState2 ) )
-               + " " + toBase64 ( &rngState3[0], rngState3.size() );
+        return toString ( "index=%u; { ", index )
+               + toBase64 ( &rngState0, sizeof ( rngState0 ) ) + " "
+               + toBase64 ( &rngState1, sizeof ( rngState1 ) ) + " "
+               + toBase64 ( &rngState2, sizeof ( rngState2 ) ) + " "
+               + toBase64 ( &rngState3[0], rngState3.size() ) + " }";
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( RngState, rngState0, rngState1, rngState2, rngState3 );
+    PROTOCOL_MESSAGE_BOILERPLATE ( RngState, index, rngState0, rngState1, rngState2, rngState3 );
 };
 
 

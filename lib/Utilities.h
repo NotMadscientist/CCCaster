@@ -35,6 +35,18 @@
         bool operator!= ( Enum other ) const { return value != other; }                                         \
     }
 
+#define ENUM_VALUE(NAME, ...)                                                                                   \
+    enum Enum : uint8_t { Unknown = 0, __VA_ARGS__ } value = Unknown;                                           \
+    NAME ( Enum value ) : value ( value ) {}                                                                    \
+    std::string str() const override {                                                                          \
+        static const std::vector<std::string> list = split ( "Unknown, " #__VA_ARGS__, ", " );                  \
+        return #NAME "::" + list[value];                                                                        \
+    }                                                                                                           \
+    bool operator== ( const NAME& other ) const { return value == other.value; }                                \
+    bool operator!= ( const NAME& other ) const { return value != other.value; }                                \
+    bool operator== ( Enum other ) const { return value == other; }                                             \
+    bool operator!= ( Enum other ) const { return value != other; }
+
 
 // Better enum type with autogen strings
 struct BetterEnum

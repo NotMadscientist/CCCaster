@@ -100,7 +100,7 @@ struct Main
     {
         AutoManager _ ( this, ui.getConsoleWindow(), { VK_ESCAPE } );
 
-        if ( isHost() )
+        if ( clientMode.isHost() )
         {
             externaIpAddress.owner = this;
             externaIpAddress.start();
@@ -111,7 +111,7 @@ struct Main
             ui.display ( toString ( "Connecting to %s", address ) );
         }
 
-        if ( isHost() )
+        if ( clientMode.isHost() )
         {
             serverCtrlSocket = TcpSocket::listen ( this, address.port );
             address.port = serverCtrlSocket->address.port; // Update port in case it was initially 0
@@ -142,7 +142,7 @@ struct Main
     {
         AutoManager _ ( this );
 
-        if ( isBroadcast() )
+        if ( clientMode.isBroadcast() )
         {
             externaIpAddress.owner = this;
             externaIpAddress.start();
@@ -163,8 +163,9 @@ struct Main
     {
         const Version RemoteVersion = versionConfig.version;
 
-        LOG ( "VersionConfig: flags={ %s }; version='%s'; commitId='%s'; buildTime='%s'",
-              versionConfig.flagString(), RemoteVersion, RemoteVersion.commitId, RemoteVersion.buildTime );
+        LOG ( "VersionConfig: mode=%s; flags={ %s }; version='%s'; commitId='%s'; buildTime='%s'",
+              versionConfig.mode, versionConfig.mode.flagString(),
+              RemoteVersion, RemoteVersion.commitId, RemoteVersion.buildTime );
 
         if ( !LocalVersion.similar ( RemoteVersion, 1 + opt[STRICT_VERSION].count() ) )
         {
@@ -192,20 +193,18 @@ struct Main
             ui.sessionError = "Incompatible versions:\n" + local + "\n" + remote;
             socket->send ( new ErrorMessage ( ui.sessionError ) );
 
-            if ( !versionConfig.isSpectate() )
+            if ( !versionConfig.mode.isSpectate() )
                 delayedStop();
             return;
         }
 
-        if ( isClient() && versionConfig.isSpectate() )
-        {
-            clientMode = ClientMode::Spectate;
-            initialConfig.flags |= ConfigOptions::Spectate;
-        }
+        // Switch to spectate mode if the game is already started
+        if ( clientMode.isClient() && versionConfig.mode.isGameStarted() )
+            clientMode.value = ClientMode::Spectate;
 
-        if ( isSpectate() )
+        if ( clientMode.isSpectate() )
         {
-            if ( !versionConfig.isSpectate() )
+            if ( !versionConfig.mode.isGameStarted() )
             {
                 ui.sessionError = "Not in a game yet, cannot spectate!";
                 EventManager::get().stop();
@@ -215,9 +214,9 @@ struct Main
             return;
         }
 
-        if ( isHost() )
+        if ( clientMode.isHost() )
         {
-            if ( versionConfig.isSpectate() )
+            if ( versionConfig.mode.isSpectate() ) // Ignore spectators, since the game is not loaded
                 return;
 
             serverDataSocket = UdpSocket::listen ( this, address.port ); // TODO choose a different port if UDP tunnel
@@ -236,7 +235,8 @@ struct Main
 
     virtual void gotSpectateConfig ( const SpectateConfig spectateConfig )
     {
-        LOG ( "SpectateConfig: flags={ %s }; delay=%u; rollback=%u; names={ '%s', '%s' }", spectateConfig.flagString(),
+        LOG ( "SpectateConfig: mode=%s; flags={ %s }; delay=%u; rollback=%u; names={ '%s', '%s' }",
+              spectateConfig.mode, spectateConfig.mode.flagString(),
               spectateConfig.delay, spectateConfig.rollback, spectateConfig.names[0], spectateConfig.names[1] );
 
         this->spectateConfig = spectateConfig;
@@ -248,8 +248,9 @@ struct Main
     {
         if ( !initialConfigReceived )
         {
-            LOG ( "InitialConfig: flags={ %s }, dataPort=%u; remoteName='%s'",
-                  initialConfig.flagString(), initialConfig.dataPort, initialConfig.localName );
+            LOG ( "InitialConfig: mode=%s; flags={ %s }; dataPort=%u; localName='%s'; remoteName='%s'",
+                  initialConfig.mode, initialConfig.mode.flagString(),
+                  initialConfig.dataPort, initialConfig.localName, initialConfig.remoteName );
 
             initialConfigReceived = true;
 
@@ -265,13 +266,13 @@ struct Main
         // Update our real localName when we receive the 2nd InitialConfig
         this->initialConfig.localName = initialConfig.remoteName;
 
-        if ( isHost() )
+        if ( clientMode.isHost() )
         {
             ui.display ( this->initialConfig.getAcceptMessage ( "connecting" ) );
         }
         else
         {
-            this->initialConfig.flags = initialConfig.flags;
+            this->initialConfig.mode.flags = initialConfig.mode.flags;
             this->initialConfig.dataPort = initialConfig.dataPort;
 
             dataSocket = UdpSocket::connect ( this, { address.addr, this->initialConfig.dataPort } );
@@ -290,10 +291,26 @@ struct Main
 
         this->pingStats = pingStats;
 
-        if ( isHost() )
+        if ( clientMode.isHost() )
             userConfirmation();
         else
             pinger.start();
+    }
+
+    virtual void gotNetplayConfig ( const NetplayConfig& netplayConfig )
+    {
+        if ( !clientMode.isClient() )
+        {
+            LOG ( "Unexpected 'NetplayConfig'" );
+            return;
+        }
+
+        this->netplayConfig.mode.flags = netplayConfig.mode.flags;
+        this->netplayConfig.delay = netplayConfig.delay;
+        this->netplayConfig.rollback = netplayConfig.rollback;
+        this->netplayConfig.hostPlayer = netplayConfig.hostPlayer;
+
+        startGame();
     }
 
     virtual void userConfirmation()
@@ -307,7 +324,7 @@ struct Main
         // Disable keepAlive because the UI blocks
         ctrlSocket->setKeepAlive ( 0 );
 
-        if ( isSpectate() )
+        if ( clientMode.isSpectate() )
         {
             if ( !ui.spectate ( spectateConfig ) )
             {
@@ -333,7 +350,7 @@ struct Main
               pingStats.latency.getMean(), pingStats.latency.getWorst(),
               pingStats.latency.getStdErr(), pingStats.latency.getStdDev(), pingStats.packetLoss );
 
-        if ( isHost() )
+        if ( clientMode.isHost() )
         {
             ASSERT ( serverCtrlSocket.get() != 0 );
             ASSERT ( serverDataSocket.get() != 0 );
@@ -375,8 +392,8 @@ struct Main
     {
         ui.display ( "Starting game..." );
 
-        if ( isNetplay() )
-            netplayConfig.flags = initialConfig.flags;
+        if ( clientMode.isNetplay() )
+            netplayConfig.mode.flags = initialConfig.mode.flags;
 
         // Remove sockets from the EventManager so messages get buffered by the OS while starting the game.
         // These are safe to call even if null or the socket is not a real fd.
@@ -406,7 +423,7 @@ struct Main
 
         ctrlSocket->send ( new PingStats ( stats, packetLoss ) );
 
-        if ( isClient() )
+        if ( clientMode.isClient() )
             userConfirmation();
     }
 
@@ -424,7 +441,7 @@ struct Main
             ASSERT ( newSocket != 0 );
             ASSERT ( newSocket->isConnected() == true );
 
-            newSocket->send ( new VersionConfig ( initialConfig.flags ) );
+            newSocket->send ( new VersionConfig ( clientMode ) );
 
             pendingSockets[newSocket.get()] = newSocket;
         }
@@ -455,7 +472,7 @@ struct Main
             ASSERT ( ctrlSocket.get() != 0 );
             ASSERT ( ctrlSocket->isConnected() == true );
 
-            ctrlSocket->send ( new VersionConfig ( initialConfig.flags ) );
+            ctrlSocket->send ( new VersionConfig ( clientMode ) );
         }
         else if ( socket == dataSocket.get() )
         {
@@ -473,9 +490,12 @@ struct Main
         LOG ( "disconnectEvent ( %08x )", socket );
 
         if ( socket == ctrlSocket.get() || socket == dataSocket.get() )
+        {
             EventManager::get().stop();
-        else
-            pendingSockets.erase ( socket );
+            return;
+        }
+
+        pendingSockets.erase ( socket );
     }
 
     virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
@@ -504,7 +524,8 @@ struct Main
                 return;
 
             case MsgType::NetplayConfig:
-                netplayConfig = msg->getAs<NetplayConfig>(); // Intentional fall through to startGame
+                gotNetplayConfig ( msg->getAs<NetplayConfig>() );
+                return;
 
             case MsgType::ConfirmConfig:
                 startGame();
@@ -533,7 +554,7 @@ struct Main
 
         procMan.ipcSend ( REF_PTR ( clientMode ) );
 
-        if ( isSpectate() )
+        if ( clientMode.isSpectate() )
         {
             procMan.ipcSend ( REF_PTR ( spectateConfig ) );
 
@@ -550,14 +571,14 @@ struct Main
         netplayConfig.invalidate();
         procMan.ipcSend ( REF_PTR ( netplayConfig ) );
 
-        if ( !isLocal() )
+        if ( !clientMode.isLocal() )
         {
             ASSERT ( ctrlSocket.get() != 0 );
             ASSERT ( ctrlSocket->isConnected() == true );
             ASSERT ( dataSocket.get() != 0 );
             ASSERT ( dataSocket->isConnected() == true );
 
-            if ( isHost() )
+            if ( clientMode.isHost() )
             {
                 ASSERT ( serverCtrlSocket.get() != 0 );
                 ASSERT ( serverDataSocket.get() != 0 );
@@ -662,26 +683,35 @@ struct Main
 
     // Constructor
     Main ( const IpAddrPort& address, const Serializable& config )
-        : CommonMain ( getClientMode ( address, config ) )
+        : CommonMain ( config.getMsgType() == MsgType::InitialConfig
+                       ? config.getAs<InitialConfig>().mode
+                       : config.getAs<NetplayConfig>().mode )
+        , address ( address )
     {
-        if ( isNetplay() )
+        LOG ( "clientMode=%s; flags={ %s }; address='%s'; config=%s",
+              clientMode, clientMode.flagString(), address, config.getMsgType() );
+
+        if ( clientMode.isNetplay() )
         {
-            this->address = address;
-            this->initialConfig = config.getAs<InitialConfig>();
+            ASSERT ( config.getMsgType() == MsgType::InitialConfig );
+
+            initialConfig = config.getAs<InitialConfig>();
 
             pinger.owner = this;
             pinger.pingInterval = PING_INTERVAL;
             pinger.numPings = NUM_PINGS;
         }
-        else if ( isSpectate() )
+        else if ( clientMode.isSpectate() )
         {
-            this->address = address;
-            this->initialConfig = config.getAs<InitialConfig>();
+            ASSERT ( config.getMsgType() == MsgType::InitialConfig );
+
+            initialConfig = config.getAs<InitialConfig>();
         }
-        else if ( isLocal() )
+        else if ( clientMode.isLocal() )
         {
+            ASSERT ( config.getMsgType() == MsgType::NetplayConfig );
+
             netplayConfig = config.getAs<NetplayConfig>();
-            initialConfig.flags = netplayConfig.flags; // For consistency
         }
         else
         {
@@ -698,46 +728,20 @@ struct Main
 
 private:
 
-    // Determine the ClientMode from the address and config
-    static ClientMode getClientMode ( const IpAddrPort& address, const Serializable& config )
-    {
-        if ( config.getMsgType() == MsgType::InitialConfig )
-        {
-            if ( address.addr.empty() )
-                return ClientMode::Host;
-            else if ( config.getAs<InitialConfig>().isSpectate() )
-                return ClientMode::Spectate;
-            else
-                return ClientMode::Client;
-        }
-        else if ( config.getMsgType() == MsgType::NetplayConfig )
-        {
-            if ( config.getAs<NetplayConfig>().isBroadcast() )
-                return ClientMode::Broadcast;
-            else
-                return ClientMode::Offline;
-        }
-        else
-        {
-            LOG_AND_THROW_IMPOSSIBLE;
-        }
-    }
-
     // Update the UI status message
     void updateStatusMessage() const
     {
-        if ( isBroadcast() && !broadcastPortReady )
+        if ( clientMode.isBroadcast() && !broadcastPortReady )
             return;
 
-        const uint16_t port = ( isBroadcast() ? netplayConfig.broadcastPort : address.port );
-        const ConfigOptions opt = ( isBroadcast() ? netplayConfig.flags : initialConfig.flags );
+        const uint16_t port = ( clientMode.isBroadcast() ? netplayConfig.broadcastPort : address.port );
 
         if ( externaIpAddress.address.empty() || externaIpAddress.address == "unknown" )
         {
             ui.display ( toString ( "%s on port %u%s\n",
-                                    ( isBroadcast() ? "Broadcasting" : "Hosting" ),
+                                    ( clientMode.isBroadcast() ? "Broadcasting" : "Hosting" ),
                                     port,
-                                    ( opt.isTraining() ? " (training mode)" : "" ) )
+                                    ( clientMode.isTraining() ? " (training mode)" : "" ) )
                          + ( externaIpAddress.address.empty()
                              ? "(Fetching external IP address...)"
                              : "(Could not find external IP address!)" ) );
@@ -747,65 +751,11 @@ private:
             setClipboard ( toString ( "%s:%u", externaIpAddress.address, port ) );
 
             ui.display ( toString ( "%s at %s:%u%s\n(Address copied to clipboard)",
-                                    ( isBroadcast() ? "Broadcasting" : "Hosting" ),
+                                    ( clientMode.isBroadcast() ? "Broadcasting" : "Hosting" ),
                                     externaIpAddress.address,
                                     port,
-                                    ( opt.isTraining() ? " (training mode)" : "" ) ) );
+                                    ( clientMode.isTraining() ? " (training mode)" : "" ) ) );
         }
-    }
-};
-
-
-struct DummyMain : public Main
-{
-    PlayerInputs fakeInputs;
-
-    void startGame() override
-    {
-        // Don't start the game when in dummy mode
-    }
-
-    // Socket callback
-    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
-    {
-        if ( !msg.get() )
-            return;
-
-        switch ( msg->getMsgType() )
-        {
-            case MsgType::CharaSelectLoaded:
-                LOG ( "Character select loaded for both sides" );
-
-                // Pretend we also just loaded character select
-                ctrlSocket->send ( new CharaSelectLoaded() );
-
-                // Now we can re-enable keepAlive
-                ctrlSocket->setKeepAlive ( DEFAULT_KEEP_ALIVE );
-                dataSocket->setKeepAlive ( DEFAULT_KEEP_ALIVE );
-                break;
-
-            case MsgType::PlayerInputs:
-                // Reply with fake inputs
-                fakeInputs.indexedFrame =
-                {
-                    msg->getAs<PlayerInputs>().getIndex(),
-                    msg->getAs<PlayerInputs>().getFrame() + netplayConfig.delay * 2
-                };
-                fakeInputs.invalidate();
-                dataSocket->send ( REF_PTR ( fakeInputs ) );
-                break;
-
-            default:
-                Main::readEvent ( socket, msg, address );
-                break;
-        }
-    }
-
-    // Constructor
-    DummyMain ( const IpAddrPort& address, const InitialConfig& initialConfig )
-        : Main ( address, initialConfig ), fakeInputs ( { 0, 0 } )
-    {
-        fakeInputs.inputs.fill ( 0 );
     }
 };
 
@@ -816,15 +766,15 @@ static void runMain ( const IpAddrPort& address, const Serializable& config )
 
     try
     {
-        if ( main.isNetplay() )
+        if ( main.clientMode.isNetplay() )
         {
             main.startNetplay();
         }
-        else if ( main.isSpectate() )
+        else if ( main.clientMode.isSpectate() )
         {
             main.startSpectate();
         }
-        else if ( main.isLocal() )
+        else if ( main.clientMode.isLocal() )
         {
             main.startLocal();
         }
@@ -852,30 +802,7 @@ static void runMain ( const IpAddrPort& address, const Serializable& config )
 
 static void runDummy ( const IpAddrPort& address, const Serializable& config )
 {
-    ASSERT ( address.empty() == false );
-    ASSERT ( address.addr.empty() == false );
-    ASSERT ( config.getMsgType() == MsgType::InitialConfig );
-
-    DummyMain main ( address, config.getAs<InitialConfig>() );
-
-    try
-    {
-        main.startNetplay();
-    }
-    catch ( const Exception& err )
-    {
-        ui.sessionError = toString ( "Error: %s", err );
-    }
-#ifdef NDEBUG
-    catch ( const std::exception& err )
-    {
-        ui.sessionError = toString ( "Error: %s", err.what() );
-    }
-    catch ( ... )
-    {
-        ui.sessionError = "Unknown error!";
-    }
-#endif
+    // TODO unimplemented
 }
 
 
@@ -1050,9 +977,10 @@ int main ( int argc, char *argv[] )
 
     // Initialize config
     ui.initialize();
-    ui.initialConfig.flags |= ( opt[TRAINING] ? ConfigOptions::Training : 0 );
-    ui.initialConfig.flags |= ( opt[BROADCAST] ? ConfigOptions::Broadcast : 0 );
-    ui.initialConfig.flags |= ( opt[SPECTATE] ? ConfigOptions::Spectate : 0 );
+    ui.initialConfig.mode.flags |= ( opt[TRAINING] ? ClientMode::Training : 0 );
+
+    if ( opt[SPECTATE] )
+        ui.initialConfig.mode.value = ClientMode::Spectate;
 
     // Check if we should run in dummy mode
     RunFuncPtr run = ( opt[DUMMY] ? runDummy : runMain );
@@ -1068,7 +996,8 @@ int main ( int argc, char *argv[] )
     if ( opt[OFFLINE] )
     {
         NetplayConfig netplayConfig;
-        netplayConfig.flags = ( ConfigOptions::Offline | ( opt[TRAINING] ? ConfigOptions::Training : 0 ) );
+        netplayConfig.mode.value = ClientMode::Offline;
+        netplayConfig.mode.flags = ui.initialConfig.mode.flags;
         netplayConfig.delay = 0;
         netplayConfig.hostPlayer = 1;
 
@@ -1076,6 +1005,7 @@ int main ( int argc, char *argv[] )
         {
             uint32_t delay = 0;
             stringstream ss ( opt[OFFLINE].arg );
+
             if ( ( ss >> delay ) && ( delay < 0xFF ) )
                 netplayConfig.delay = delay;
         }
@@ -1085,7 +1015,8 @@ int main ( int argc, char *argv[] )
     else if ( opt[BROADCAST] )
     {
         NetplayConfig netplayConfig;
-        netplayConfig.flags = ( ConfigOptions::Broadcast | ( opt[TRAINING] ? ConfigOptions::Training : 0 ) );
+        netplayConfig.mode.value = ClientMode::Broadcast;
+        netplayConfig.mode.flags = ui.initialConfig.mode.flags;
         netplayConfig.delay = 0;
         netplayConfig.hostPlayer = 1;
 
@@ -1102,11 +1033,21 @@ int main ( int argc, char *argv[] )
     }
     else if ( parser.nonOptionsCount() == 1 )
     {
-        run ( parser.nonOption ( 0 ), ui.initialConfig );
+        IpAddrPort address = parser.nonOption ( 0 );
+
+        if ( ui.initialConfig.mode.value == ClientMode::Unknown )
+            ui.initialConfig.mode.value = ( address.addr.empty() ? ClientMode::Host : ClientMode::Client );
+
+        run ( address, ui.initialConfig );
     }
     else if ( parser.nonOptionsCount() == 2 )
     {
-        run ( string ( parser.nonOption ( 0 ) ) + ":" + parser.nonOption ( 1 ), ui.initialConfig );
+        IpAddrPort address = string ( parser.nonOption ( 0 ) ) + ":" + parser.nonOption ( 1 );
+
+        if ( ui.initialConfig.mode.value == ClientMode::Unknown )
+            ui.initialConfig.mode.value = ( address.addr.empty() ? ClientMode::Host : ClientMode::Client );
+
+        run ( address, ui.initialConfig );
     }
     else if ( opt[NO_UI] )
     {
