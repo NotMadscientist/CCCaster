@@ -47,9 +47,6 @@ public:
         virtual void readEvent ( Socket *socket, const char *buffer, size_t len, const IpAddrPort& address ) {};
     };
 
-    // Raw socket type flag
-    const bool isRaw = false;
-
     // Socket protocol
     ENUM ( Protocol, TCP, UDP );
 
@@ -63,6 +60,9 @@ public:
 
     // Socket protocol
     const Protocol protocol;
+
+    // Raw socket type flag
+    const bool isRaw = false;
 
     // Socket owner
     Owner *owner = 0;
@@ -96,6 +96,19 @@ protected:
     // Read protocol message callback, must be implemented, only called if NOT isRaw
     virtual void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) = 0;
 
+    // Initialize the socket fd with the provided address and protocol
+    void init();
+
+    // Reset the read buffer to its initial size
+    void resetBuffer();
+
+    // Free the read buffer
+    void freeBuffer();
+
+    // Read raw bytes directly, blocking call, a return value of false indicates socket is disconnected
+    bool recv ( char *buffer, size_t& len );
+    bool recv ( char *buffer, size_t& len, IpAddrPort& address );
+
 public:
 
     // Create a socket from SocketShareData
@@ -109,9 +122,6 @@ public:
 
     // Completely disconnect the socket
     virtual void disconnect();
-
-    // Initialize a socket with the provided address and protocol
-    void init();
 
     // Socket state query functions
     bool isTCP() const { return ( protocol == Protocol::TCP ); }
@@ -127,10 +137,6 @@ public:
     // Send raw bytes directly, a return value of false indicates socket is disconnected
     bool send ( const char *buffer, size_t len );
     bool send ( const char *buffer, size_t len, const IpAddrPort& address );
-
-    // Read raw bytes directly, a return value of false indicates socket is disconnected
-    bool recv ( char *buffer, size_t& len );
-    bool recv ( char *buffer, size_t& len, IpAddrPort& address );
 
     // Accept a new socket
     virtual SocketPtr accept ( Owner *owner ) = 0;

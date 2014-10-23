@@ -32,8 +32,9 @@ using namespace std;
 
 
 Socket::Socket ( const IpAddrPort& address, Protocol protocol, bool isRaw )
-    : isRaw ( isRaw ), address ( address ), protocol ( protocol ), readBuffer ( READ_BUFFER_SIZE, ( char ) 0 )
+    : address ( address ), protocol ( protocol ), isRaw ( isRaw )
 {
+    resetBuffer();
 }
 
 Socket::~Socket()
@@ -46,10 +47,11 @@ void Socket::disconnect()
     if ( fd )
         closesocket ( fd );
 
-    fd = readPos = packetLoss = 0;
-    state = State::Disconnected;
     owner = 0;
-    readBuffer.clear();
+    state = State::Disconnected;
+    fd = 0;
+    freeBuffer();
+    packetLoss = checkSumFail = 0;
 }
 
 void Socket::init()
@@ -335,6 +337,20 @@ bool Socket::recv ( char *buffer, size_t& len, IpAddrPort& address )
     return true;
 }
 
+void Socket::resetBuffer()
+{
+    readBuffer.reserve ( READ_BUFFER_SIZE );
+    readBuffer.resize ( READ_BUFFER_SIZE, ( char ) 0 );
+    readPos = 0;
+}
+
+void Socket::freeBuffer()
+{
+    readBuffer.clear();
+    readBuffer.shrink_to_fit();
+    readPos = 0;
+}
+
 void Socket::readEvent()
 {
     char *bufferStart = &readBuffer[readPos];
@@ -394,9 +410,7 @@ void Socket::readEvent()
     if ( readPos >= sizeof ( MsgType ) && ! ::Protocol::checkMsgType ( * ( MsgType * ) &readBuffer[0] ) )
     {
         LOG ( "Clearing invalid buffer!" );
-        readBuffer.clear();
-        readBuffer.resize ( READ_BUFFER_SIZE, ( char ) 0 );
-        readPos = 0;
+        resetBuffer();
         return;
     }
 
@@ -411,6 +425,7 @@ void Socket::readEvent()
             // Erase the consumed bytes (shifting the array)
             ASSERT ( consumed <= readPos );
             readBuffer.erase ( 0, consumed );
+            readBuffer.reserve ( READ_BUFFER_SIZE );
             readBuffer.resize ( READ_BUFFER_SIZE, ( char ) 0 );
             readPos -= consumed;
         }

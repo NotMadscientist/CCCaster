@@ -36,7 +36,7 @@ public:
     // Create a socket from SocketShareData
     static SocketPtr shared ( Socket::Owner *owner, const SocketShareData& data );
 
-    // Virtual destructor
+    // Destructor
     ~TcpSocket() override;
 
     // Completely disconnect the socket
