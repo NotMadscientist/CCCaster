@@ -63,7 +63,7 @@ public:
     const Protocol protocol;
 
     // Raw socket type flag
-    const bool isRaw = false;
+    bool isRaw = false;
 
     // Socket owner
     Owner *owner = 0;

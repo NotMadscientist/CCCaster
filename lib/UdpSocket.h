@@ -129,13 +129,13 @@ public:
     void setKeepAlive ( uint64_t timeout ) { if ( !isConnectionLess() ) gbn.setKeepAlive ( timeout ); }
 
     // Listen for connections.
-    // Can only be used on a non-raw, connection-less socket, where address.addr is empty.
-    // Changes the type to a UDP server socket.
+    // Can only be used on a connection-less socket, where address.addr is empty.
+    // Changes the type to a message-based, UDP server socket.
     void listen();
 
     // Connect to the address.
-    // Can only be used on a non-raw, connection-less socket, where address.addr is NOT empty.
-    // Changes the type to a UDP client socket.
+    // Can only be used on a connection-less socket, where address.addr is NOT empty.
+    // Changes the type to a message-based, UDP client socket.
     void connect();
 
     // Reset the state of the GoBackN instance

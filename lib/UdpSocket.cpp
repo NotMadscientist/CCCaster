@@ -481,12 +481,14 @@ void UdpSocket::listen()
     if ( type == Type::Server )
         return;
 
-    ASSERT ( isRaw == false );
+    resetBuffer();
+
     ASSERT ( address.addr.empty() == true );
     ASSERT ( parentSocket == 0 );
     ASSERT ( childSockets.empty() == true );
     ASSERT ( acceptedSocket.get() == 0 );
 
+    isRaw = false;
     type = Type::Server;
     gbn.setSendInterval ( DEFAULT_SEND_INTERVAL );
     gbn.setKeepAlive ( DEFAULT_KEEP_ALIVE );
@@ -498,12 +500,14 @@ void UdpSocket::connect()
     if ( type == Type::Client )
         return;
 
-    ASSERT ( isRaw == false );
+    resetBuffer();
+
     ASSERT ( address.addr.empty() == false );
     ASSERT ( parentSocket == 0 );
     ASSERT ( childSockets.empty() == true );
     ASSERT ( acceptedSocket.get() == 0 );
 
+    isRaw = false;
     type = Type::Client;
     state = State::Connecting;
     gbn.setSendInterval ( DEFAULT_SEND_INTERVAL );
