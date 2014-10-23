@@ -6,29 +6,39 @@
 
 class SmartSocket : public Socket, public Socket::Owner, public Timer::Owner
 {
+    // The backing socket
+    SocketPtr backingSocket;
+
+    // The socket that connects to the relay server
     SocketPtr vpsSocket;
 
-    SocketPtr tcpSocket;
+    // The UDP tunnel socket
+    SocketPtr tunSocket;
 
-    SocketPtr udpSocket;
-
+    // The initial connect timer
     TimerPtr connectTimer;
 
+    // The UDP tunnel send timer
+    TimerPtr sendTimer;
+
+    // Unused base socket callback
     void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) override {}
 
+    // Socket callbacks
     void acceptEvent ( Socket *serverSocket ) override;
     void connectEvent ( Socket *socket ) override;
     void disconnectEvent ( Socket *socket ) override;
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override;
     void readEvent ( Socket *socket, const char *buffer, size_t len, const IpAddrPort& address ) override;
 
+    // Timer callback
     void timerExpired ( Timer *timer ) override;
 
     // Construct a server socket
-    SmartSocket ( Socket::Owner *owner, uint16_t port );
+    SmartSocket ( Socket::Owner *owner, Socket::Protocol protocol, uint16_t port );
 
     // Construct a client socket
-    SmartSocket ( Socket::Owner *owner, const IpAddrPort& address );
+    SmartSocket ( Socket::Owner *owner, Socket::Protocol protocol, const IpAddrPort& address );
 
 public:
 
