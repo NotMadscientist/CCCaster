@@ -184,7 +184,7 @@ void Socket::init()
         }
         else
         {
-            addrInfo = getAddrInfo ( address.addr, address.port, true );
+            addrInfo = address.getAddrInfo();
             address.addr = getAddrFromSockAddr ( addrInfo->ai_addr );
         }
     }

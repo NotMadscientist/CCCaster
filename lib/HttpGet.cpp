@@ -32,9 +32,9 @@ HttpGet::HttpGet ( Owner *owner, const string& url ) : owner ( owner ), url ( ur
 
 void HttpGet::start()
 {
-    LOG ( "Connecting to: %s", host );
+    LOG ( "Connecting to: '%s:80'", host );
 
-    socket = TcpSocket::connect ( this, host + ":80", true );
+    socket = TcpSocket::connect ( this, host + ":80", true ); // Raw socket
 }
 
 void HttpGet::connectEvent ( Socket *socket )
