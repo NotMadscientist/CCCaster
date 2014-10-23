@@ -6,10 +6,10 @@
 
 class SmartSocket : public Socket, public Socket::Owner, public Timer::Owner
 {
-    // The backing socket
+    // The backing socket, ie the first socket that tries to connect directly
     SocketPtr backingSocket;
 
-    // The socket that connects to the relay server
+    // The socket that connects to the notification and tunnel server
     SocketPtr vpsSocket;
 
     // The UDP tunnel socket

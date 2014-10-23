@@ -18,6 +18,24 @@ using namespace std;
 
 const IpAddrPort vpsAddress = "23.95.23.238:3939";
 
+/* Tunnel protocol
+
+    1 - Host connects a TCP socket to the server and sends its hosting port.
+        Host should maintain the socket connection; reconnect and resend if needed.
+
+    2 - Client starts sending a null-terminated address string ("<ip>:<port>") to the server over UDP
+
+    3 - Server recvs the address and sends the client UDP info to the host
+
+    4 - Host starts sending empty UDP packets to the server
+
+    5 - Server starts sending the host UDP info to the client
+
+    6 - Host and client both start sending empty packets over the tunnel to keep it alive
+
+    7 - Host and client can now connect over the UDP tunnel
+
+*/
 
 SmartSocket::SmartSocket ( Socket::Owner *owner, Socket::Protocol protocol, uint16_t port )
     : Socket ( IpAddrPort ( "", port ), Protocol::Smart, false )
