@@ -62,7 +62,7 @@ struct AutoManager
                   uint8_t options = 0 )                     // Keyboard event hooking options
         : AutoManager ( main )
     {
-        KeyboardManager::get().hook ( main, window, keys, options );
+        // KeyboardManager::get().hook ( main, window, keys, options );
     }
 
     ~AutoManager()

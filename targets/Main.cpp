@@ -39,8 +39,8 @@ static vector<Option> opt;
 // Main UI instance
 static MainUi ui;
 
-// External IP address query tool
-ExternalIpAddress externaIpAddress ( 0 );
+// The last error message
+static string lastError;
 
 
 struct Main
@@ -48,7 +48,10 @@ struct Main
         , public Pinger::Owner
         , public ExternalIpAddress::Owner
         , public KeyboardManager::Owner
+        , public Thread
 {
+    ExternalIpAddress externaIpAddress;
+
     InitialConfig initialConfig;
 
     bool initialConfigReceived = false;
@@ -62,6 +65,16 @@ struct Main
     PingStats pingStats;
 
     bool broadcastPortReady = false;
+
+    bool finalConfigReceived = false;
+
+    bool userConfirmed = false;
+
+    Mutex uiMutex;
+
+    CondVar uiCondVar;
+
+    SocketPtr uiSendSocket, uiRecvSocket;
 
     /* Connect protocol
 
@@ -97,13 +110,49 @@ struct Main
 
     */
 
+    virtual void run() override
+    {
+        try
+        {
+            if ( clientMode.isNetplay() )
+            {
+                startNetplay();
+            }
+            else if ( clientMode.isSpectate() )
+            {
+                startSpectate();
+            }
+            else if ( clientMode.isLocal() )
+            {
+                startLocal();
+            }
+            else
+            {
+                ASSERT_IMPOSSIBLE;
+            }
+        }
+        catch ( const Exception& err )
+        {
+            lastError = toString ( "Error: %s", err );
+        }
+#ifdef NDEBUG
+        catch ( const std::exception& err )
+        {
+            lastError = toString ( "Error: %s", err.what() );
+        }
+        catch ( ... )
+        {
+            lastError = "Unknown error!";
+        }
+#endif
+    }
+
     virtual void startNetplay()
     {
         AutoManager _ ( this, ui.getConsoleWindow(), { VK_ESCAPE } );
 
         if ( clientMode.isHost() )
         {
-            externaIpAddress.owner = this;
             externaIpAddress.start();
             updateStatusMessage();
         }
@@ -146,12 +195,12 @@ struct Main
 
         if ( clientMode.isBroadcast() )
         {
-            externaIpAddress.owner = this;
             externaIpAddress.start();
         }
 
         // Open the game immediately
         startGame();
+
         EventManager::get().start();
     }
 
@@ -159,6 +208,13 @@ struct Main
     {
         stopTimer.reset ( new Timer ( this ) );
         stopTimer->start ( STOP_EVENTS_DELAY );
+    }
+
+    virtual void stop()
+    {
+        EventManager::get().stop();
+        LOCK ( uiMutex );
+        uiCondVar.signal();
     }
 
     virtual void gotVersionConfig ( Socket *socket, const VersionConfig& versionConfig )
@@ -192,8 +248,8 @@ struct Main
                 remote += " " + RemoteVersion.buildTime;
             }
 
-            ui.sessionError = "Incompatible versions:\n" + local + "\n" + remote;
-            socket->send ( new ErrorMessage ( ui.sessionError ) );
+            lastError = "Incompatible versions:\n" + local + "\n" + remote;
+            socket->send ( new ErrorMessage ( lastError ) );
 
             if ( !versionConfig.mode.isSpectate() )
                 delayedStop();
@@ -208,8 +264,8 @@ struct Main
         {
             if ( !versionConfig.mode.isGameStarted() )
             {
-                ui.sessionError = "Not in a game yet, cannot spectate!";
-                EventManager::get().stop();
+                lastError = "Not in a game yet, cannot spectate!";
+                stop();
             }
 
             // Wait for SpectateConfig
@@ -243,17 +299,13 @@ struct Main
 
         this->spectateConfig = spectateConfig;
 
-        userConfirmation();
+        getUserConfirmation();
     }
 
     virtual void gotInitialConfig ( const InitialConfig& initialConfig )
     {
         if ( !initialConfigReceived )
         {
-            LOG ( "InitialConfig: mode=%s; flags={ %s }; dataPort=%u; localName='%s'; remoteName='%s'",
-                  initialConfig.mode, initialConfig.mode.flagString(),
-                  initialConfig.dataPort, initialConfig.localName, initialConfig.remoteName );
-
             initialConfigReceived = true;
 
             this->initialConfig.remoteName = initialConfig.localName;
@@ -267,6 +319,10 @@ struct Main
 
         // Update our real localName when we receive the 2nd InitialConfig
         this->initialConfig.localName = initialConfig.remoteName;
+
+        LOG ( "InitialConfig: mode=%s; flags={ %s }; dataPort=%u; localName='%s'; remoteName='%s'",
+              initialConfig.mode, initialConfig.mode.flagString(),
+              initialConfig.dataPort, initialConfig.localName, initialConfig.remoteName );
 
         if ( clientMode.isHost() )
         {
@@ -294,9 +350,106 @@ struct Main
         this->pingStats = pingStats;
 
         if ( clientMode.isHost() )
-            userConfirmation();
+            getUserConfirmation();
         else
             pinger.start();
+    }
+
+    virtual void getUserConfirmation()
+    {
+        // DllMain will reconnect the dataSockets
+        dataSocket.reset();
+        serverDataSocket.reset();
+
+        // Disable keyboard hooks for the UI
+        KeyboardManager::get().unhook();
+
+        if ( clientMode.isNetplay() )
+        {
+            pingStats.latency.merge ( pinger.getStats() );
+            pingStats.packetLoss = ( pingStats.packetLoss + pinger.getPacketLoss() ) / 2;
+
+            LOG ( "PingStats (merged): latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
+                  pingStats.latency.getMean(), pingStats.latency.getWorst(),
+                  pingStats.latency.getStdErr(), pingStats.latency.getStdDev(), pingStats.packetLoss );
+        }
+
+        uiRecvSocket = UdpSocket::bind ( this, 0 );
+        uiSendSocket = UdpSocket::bind ( 0, { "127.0.0.1", uiRecvSocket->address.port } );
+
+        LOCK ( uiMutex );
+        uiCondVar.signal();
+    }
+
+    virtual void waitForUserConfirmation()
+    {
+        LOCK ( uiMutex );
+        uiCondVar.wait ( uiMutex );
+
+        if ( !EventManager::get().isRunning() )
+            return;
+
+        switch ( clientMode.value )
+        {
+            case ClientMode::Spectate:
+                userConfirmed = ui.spectate ( spectateConfig );
+                break;
+
+            case ClientMode::Host:
+                userConfirmed = ui.accepted ( initialConfig, pingStats );
+                break;
+
+            case ClientMode::Client:
+                userConfirmed = ui.connected ( initialConfig, pingStats );
+                break;
+
+            default:
+                ASSERT_IMPOSSIBLE;
+                break;
+        }
+
+        uiSendSocket->send ( NullMsg );
+    }
+
+    virtual void gotUserConfirmation()
+    {
+        uiRecvSocket.reset();
+        uiSendSocket.reset();
+
+        if ( !userConfirmed )
+        {
+            stop();
+            return;
+        }
+
+        switch ( clientMode.value )
+        {
+            case ClientMode::Spectate:
+                ctrlSocket->send ( new ConfirmConfig() );
+                startGame();
+                break;
+
+            case ClientMode::Host:
+                netplayConfig = ui.getNetplayConfig();
+                netplayConfig.invalidate();
+
+                ctrlSocket->send ( netplayConfig );
+
+                ui.display ( "Waiting for client confirmation..." );
+                startGameIfReady();
+                break;
+
+            case ClientMode::Client:
+                ctrlSocket->send ( new ConfirmConfig() );
+
+                ui.display ( "Waiting for host to choose delay..." );
+                startGameIfReady();
+                break;
+
+            default:
+                ASSERT_IMPOSSIBLE;
+                break;
+        }
     }
 
     virtual void gotNetplayConfig ( const NetplayConfig& netplayConfig )
@@ -312,80 +465,20 @@ struct Main
         this->netplayConfig.rollback = netplayConfig.rollback;
         this->netplayConfig.hostPlayer = netplayConfig.hostPlayer;
 
-        startGame();
+        finalConfigReceived = true;
+        startGameIfReady();
     }
 
-    virtual void userConfirmation()
+    virtual void gotConfirmConfig()
     {
-        // DllMain will reconnect the dataSockets
-        serverDataSocket.reset();
-        dataSocket.reset();
+        finalConfigReceived = true;
+        startGameIfReady();
+    }
 
-        // Disable keyboard hooks for the UI
-        KeyboardManager::get().unhook();
-
-        ASSERT ( ctrlSocket.get() != 0 );
-        ASSERT ( ctrlSocket->isConnected() == true );
-
-        // Disable keepAlive because the UI blocks
-        if ( ctrlSocket->isUDP() )
-            ctrlSocket->getAsUDP().setKeepAlive ( 0 );
-
-        if ( clientMode.isSpectate() )
-        {
-            if ( !ui.spectate ( spectateConfig ) )
-            {
-                EventManager::get().stop();
-                return;
-            }
-
-            ctrlSocket->send ( new ConfirmConfig() );
+    virtual void startGameIfReady()
+    {
+        if ( userConfirmed && finalConfigReceived )
             startGame();
-            return;
-        }
-
-        pingStats.latency.merge ( pinger.getStats() );
-        pingStats.packetLoss = ( pingStats.packetLoss + pinger.getPacketLoss() ) / 2;
-
-        LOG ( "PingStats (merged): latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
-              pingStats.latency.getMean(), pingStats.latency.getWorst(),
-              pingStats.latency.getStdErr(), pingStats.latency.getStdDev(), pingStats.packetLoss );
-
-        if ( clientMode.isHost() )
-        {
-            ASSERT ( serverCtrlSocket.get() != 0 );
-
-            // Disable keepAlive because the UI blocks
-            if ( serverCtrlSocket->isUDP() )
-                serverCtrlSocket->getAsUDP().setKeepAlive ( 0 );
-
-            if ( !ui.accepted ( initialConfig, pingStats ) )
-            {
-                EventManager::get().stop();
-                return;
-            }
-
-            netplayConfig = ui.getNetplayConfig();
-            netplayConfig.invalidate();
-
-            ctrlSocket->send ( REF_PTR ( netplayConfig ) );
-
-            // Wait for ConfirmConfig before starting game
-            ui.display ( "Waiting for client confirmation..." );
-        }
-        else
-        {
-            if ( !ui.connected ( initialConfig, pingStats ) )
-            {
-                EventManager::get().stop();
-                return;
-            }
-
-            ctrlSocket->send ( new ConfirmConfig() );
-
-            // Wait for NetplayConfig before starting game
-            ui.display ( "Waiting for host to choose delay..." );
-        }
     }
 
     virtual void startGame()
@@ -424,7 +517,7 @@ struct Main
         ctrlSocket->send ( new PingStats ( stats, packetLoss ) );
 
         if ( clientMode.isClient() )
-            userConfirmation();
+            getUserConfirmation();
     }
 
     // Socket callbacks
@@ -490,16 +583,35 @@ struct Main
         LOG ( "disconnectEvent ( %08x )", socket );
 
         if ( socket == ctrlSocket.get() )
-            EventManager::get().stop();
+        {
+            lastError = "Disconnected!";
+            stop();
+        }
         else if ( socket == dataSocket.get() )
+        {
             dataSocket.reset();
+
+            if ( !pinger.isPinging() )
+                return;
+
+            lastError = "Disconnected!";
+            stop();
+        }
         else
+        {
             pendingSockets.erase ( socket );
+        }
     }
 
     virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
     {
         LOG ( "readEvent ( %08x, %s, %s )", socket, msg, address );
+
+        if ( socket == uiRecvSocket.get() && !msg.get() )
+        {
+            gotUserConfirmation();
+            return;
+        }
 
         if ( !msg.get() )
             return;
@@ -527,12 +639,12 @@ struct Main
                 return;
 
             case MsgType::ConfirmConfig:
-                startGame();
+                gotConfirmConfig();
                 return;
 
             case MsgType::ErrorMessage:
-                ui.sessionError = msg->getAs<ErrorMessage>().error;
-                EventManager::get().stop();
+                lastError = msg->getAs<ErrorMessage>().error;
+                stop();
                 return;
 
             case MsgType::Ping:
@@ -572,7 +684,7 @@ struct Main
 
     virtual void ipcDisconnectEvent() override
     {
-        EventManager::get().stop();
+        stop();
     }
 
     virtual void ipcReadEvent ( const MsgPtr& msg ) override
@@ -583,7 +695,7 @@ struct Main
         switch ( msg->getMsgType() )
         {
             case MsgType::ErrorMessage:
-                ui.sessionError = msg->getAs<ErrorMessage>().error;
+                lastError = msg->getAs<ErrorMessage>().error;
                 return;
 
             case MsgType::NetplayConfig:
@@ -616,8 +728,7 @@ struct Main
     virtual void timerExpired ( Timer *timer ) override
     {
         ASSERT ( timer == stopTimer.get() );
-
-        EventManager::get().stop();
+        stop();
     }
 
     // ExternalIpAddress callbacks
@@ -637,7 +748,7 @@ struct Main
     virtual void keyboardEvent ( int vkCode, bool isDown ) override
     {
         if ( vkCode == VK_ESCAPE )
-            EventManager::get().stop();
+            stop();
     }
 
     // Constructor
@@ -645,6 +756,7 @@ struct Main
         : CommonMain ( config.getMsgType() == MsgType::InitialConfig
                        ? config.getAs<InitialConfig>().mode
                        : config.getAs<NetplayConfig>().mode )
+        , externaIpAddress ( this )
     {
         LOG ( "clientMode=%s; flags={ %s }; address='%s'; config=%s",
               clientMode, clientMode.flagString(), address, config.getMsgType() );
@@ -682,8 +794,8 @@ struct Main
     // Destructor
     virtual ~Main()
     {
+        join();
         procMan.closeGame();
-        externaIpAddress.owner = 0;
     }
 
 private:
@@ -720,49 +832,21 @@ private:
 };
 
 
+
 static void runMain ( const IpAddrPort& address, const Serializable& config )
 {
     Main main ( address, config );
+    main.start();
+    main.waitForUserConfirmation();
 
-    try
-    {
-        if ( main.clientMode.isNetplay() )
-        {
-            main.startNetplay();
-        }
-        else if ( main.clientMode.isSpectate() )
-        {
-            main.startSpectate();
-        }
-        else if ( main.clientMode.isLocal() )
-        {
-            main.startLocal();
-        }
-        else
-        {
-            LOG_AND_THROW_IMPOSSIBLE;
-        }
-    }
-    catch ( const Exception& err )
-    {
-        ui.sessionError = toString ( "Error: %s", err );
-    }
-#ifdef NDEBUG
-    catch ( const std::exception& err )
-    {
-        ui.sessionError = toString ( "Error: %s", err.what() );
-    }
-    catch ( ... )
-    {
-        ui.sessionError = "Unknown error!";
-    }
-#endif
+    if ( !lastError.empty() )
+        ui.sessionError = lastError;
 }
 
 
 static void runDummy ( const IpAddrPort& address, const Serializable& config )
 {
-    // TODO unimplemented
+    ASSERT_UNIMPLEMENTED;
 }
 
 
@@ -777,7 +861,6 @@ static void deinitialize()
         return;
     deinitialized = true;
 
-    externaIpAddress.stop();
     EventManager::get().release();
     Logger::get().deinitialize();
     exit ( 0 );
@@ -947,11 +1030,11 @@ int main ( int argc, char *argv[] )
 
     // Warn on invalid command line options
     for ( Option *it = opt[UNKNOWN]; it; it = it->next() )
-        ui.sessionMessage += toString ( "Unknown option: '%s'\n", it->name );
+        lastError += toString ( "Unknown option: '%s'\n", it->name );
 
     // Non-options 1 and 2 are the IP address and port
     for ( int i = 2; i < parser.nonOptionsCount(); ++i )
-        ui.sessionMessage += toString ( "Non-option (%d): '%s'\n", i, parser.nonOption ( i ) );
+        lastError += toString ( "Non-option (%d): '%s'\n", i, parser.nonOption ( i ) );
 
     if ( opt[OFFLINE] )
     {
@@ -1015,8 +1098,16 @@ int main ( int argc, char *argv[] )
         return 0;
     }
 
-    if ( !opt[NO_UI] )
+    if ( opt[NO_UI] )
     {
+        if ( !lastError.empty() )
+            PRINT ( "%s", lastError );
+    }
+    else
+    {
+        if ( !lastError.empty() )
+            ui.sessionError = lastError;
+
         try
         {
             ui.main ( run );
@@ -1036,6 +1127,8 @@ int main ( int argc, char *argv[] )
         }
 #endif
     }
+
+    LOG ( "lastError='%s'", lastError );
 
     deinitialize();
     return 0;

@@ -636,22 +636,8 @@ struct Main
                     LOG_AND_THROW_STRING ( "NetplayConfig: delay=%d is invalid!", netMan.config.delay );
 
 
-                if ( !clientMode.isLocal() )
+                if ( clientMode.isNetplay() )
                 {
-                    if ( clientMode.isHost() )
-                    {
-                        serverDataSocket = UdpSocket::listen ( this, address.port );
-                        LOG ( "serverDataSocket=%08x", serverDataSocket.get() );
-                    }
-                    else if ( clientMode.isClient() )
-                    {
-                        dataSocket = UdpSocket::connect ( this, address );
-                        LOG ( "dataSocket=%08x", dataSocket.get() );
-                    }
-
-                    stopTimer.reset ( new Timer ( this ) );
-                    stopTimer->start ( 10000 );
-
                     if ( netMan.config.hostPlayer != 1 && netMan.config.hostPlayer != 2 )
                         LOG_AND_THROW_STRING ( "NetplayConfig: hostPlayer=%d is invalid!", netMan.config.hostPlayer );
 
@@ -668,6 +654,22 @@ struct Main
                     }
 
                     netMan.setRemotePlayer ( remotePlayer );
+
+                    if ( clientMode.isHost() )
+                    {
+                        serverDataSocket = UdpSocket::listen ( this, address.port );
+                        LOG ( "serverDataSocket=%08x", serverDataSocket.get() );
+                    }
+                    else if ( clientMode.isClient() )
+                    {
+                        dataSocket = UdpSocket::connect ( this, address );
+                        LOG ( "dataSocket=%08x", dataSocket.get() );
+                    }
+
+                    stopTimer.reset ( new Timer ( this ) );
+                    stopTimer->start ( 10000 );
+
+                    // Wait for dataSocket to be connected before changing to NetplayState::Initial
                 }
                 else if ( clientMode.isBroadcast() )
                 {
