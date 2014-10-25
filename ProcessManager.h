@@ -114,6 +114,7 @@ public:
     bool ipcConnected() const { return ( pipe && ipcSocket && ipcSocket->isClient() && connected ); }
 
     // Send a message over the IPC socket
+    bool ipcSend ( Serializable& msg ) { return ipcSend ( MsgPtr ( &msg, ignoreMsgPtr ) ); }
     bool ipcSend ( Serializable *msg ) { return ipcSend ( MsgPtr ( msg ) ); }
     bool ipcSend ( const MsgPtr& msg ) { if ( !ipcSocket ) return false; else return ipcSocket->send ( msg ); }
 

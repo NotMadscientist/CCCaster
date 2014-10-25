@@ -29,8 +29,6 @@
     void save ( cereal::BinaryOutputArchive& ar ) const override { ar ( __VA_ARGS__ ); }                    \
     void load ( cereal::BinaryInputArchive& ar ) override { ar ( __VA_ARGS__ ); }
 
-#define REF_PTR(VALUE) MsgPtr ( &VALUE, ignoreMsgPtr )
-
 
 // Top level message type, auto-generated
 enum class MsgType : uint8_t

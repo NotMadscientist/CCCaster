@@ -232,7 +232,7 @@ struct Main
         }
 
         initialConfig.invalidate();
-        ctrlSocket->send ( REF_PTR ( initialConfig ) );
+        ctrlSocket->send ( initialConfig );
     }
 
     virtual void gotSpectateConfig ( const SpectateConfig& spectateConfig )
@@ -261,7 +261,7 @@ struct Main
                 this->initialConfig.remoteName = ctrlSocket->address.addr;
             this->initialConfig.invalidate();
 
-            ctrlSocket->send ( REF_PTR ( this->initialConfig ) );
+            ctrlSocket->send ( this->initialConfig );
             return;
         }
 
@@ -551,12 +551,12 @@ struct Main
     {
         ASSERT ( clientMode != ClientMode::Unknown );
 
-        procMan.ipcSend ( REF_PTR ( clientMode ) );
+        procMan.ipcSend ( clientMode );
         procMan.ipcSend ( new IpAddrPort ( address.getAddrInfo()->ai_addr ) );
 
         if ( clientMode.isSpectate() )
         {
-            procMan.ipcSend ( REF_PTR ( spectateConfig ) );
+            procMan.ipcSend ( spectateConfig );
             return;
         }
 
@@ -565,7 +565,7 @@ struct Main
         netplayConfig.setNames ( initialConfig.localName, initialConfig.remoteName );
         netplayConfig.invalidate();
 
-        procMan.ipcSend ( REF_PTR ( netplayConfig ) );
+        procMan.ipcSend ( netplayConfig );
 
         ui.display ( "Game started" );
     }
@@ -675,7 +675,7 @@ struct Main
         }
         else
         {
-            LOG_AND_THROW_IMPOSSIBLE;
+            ASSERT_IMPOSSIBLE;
         }
     }
 

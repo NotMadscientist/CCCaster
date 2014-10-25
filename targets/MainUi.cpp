@@ -161,6 +161,7 @@ void MainUi::broadcast ( RunFuncPtr run )
 void MainUi::offline ( RunFuncPtr run )
 {
     uint8_t delay = 0;
+    bool good = false;
 
     ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter delay:", 0, false, 3 ) );
 
@@ -182,10 +183,16 @@ void MainUi::offline ( RunFuncPtr run )
         delay = menu->resultInt;
 
         if ( gameMode() )
+        {
+            good = true;
             break;
+        }
     }
 
     ui->pop();
+
+    if ( !good )
+        return;
 
     netplayConfig.clear();
     netplayConfig.mode.value = ClientMode::Offline;

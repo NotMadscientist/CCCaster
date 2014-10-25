@@ -64,6 +64,9 @@ public:
     // Stop the EventManager and release background threads, can be called on a different thread
     void release();
 
+    // Indicate the EventManager is running
+    bool isRunning() const { return running; }
+
     // Get the singleton instance
     static EventManager& get();
 };

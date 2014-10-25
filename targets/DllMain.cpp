@@ -623,7 +623,7 @@ struct Main
                 break;
 
             case MsgType::SpectateConfig:
-                ASSERT ( !"Unimplemented!" );
+                ASSERT_UNIMPLEMENTED;
                 break;
 
             case MsgType::NetplayConfig:
@@ -681,7 +681,13 @@ struct Main
                     netMan.config.broadcastPort = serverCtrlSocket->address.port;
                     netMan.config.invalidate();
 
-                    procMan.ipcSend ( REF_PTR ( netMan.config ) );
+                    procMan.ipcSend ( netMan.config );
+
+                    netplayStateChanged ( NetplayState::Initial );
+                }
+                else if ( clientMode.isOffline() )
+                {
+                    netplayStateChanged ( NetplayState::Initial );
                 }
 
                 LOG ( "NetplayConfig: flags={ %s }; delay=%d; rollback=%d; training=%d; offline=%d; "

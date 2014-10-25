@@ -19,7 +19,7 @@ using namespace std;
 
 #define GAME_START_INTERVAL     ( 1000 )
 
-#define GAME_START_ATTEMPTS     ( 10 )
+#define GAME_START_ATTEMPTS     ( 20 )
 
 #define PIPE_CONNECT_TIMEOUT    ( 5000 )
 
