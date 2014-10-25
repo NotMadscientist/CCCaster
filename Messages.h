@@ -259,7 +259,7 @@ struct PlayerInputs : public SerializableMessage, public BaseInputs
 };
 
 
-struct BothInputs : public SerializableMessage, public BaseInputs
+struct BothInputs : public SerializableSequence, public BaseInputs
 {
     // Represents the input range [frame - NUM_INPUTS + 1, frame + 1)
     std::array<std::array<uint16_t, NUM_INPUTS>, 2> inputs;
