@@ -93,27 +93,38 @@ void GoBackN::sendGoBackN ( const MsgPtr& msg )
     ASSERT ( sendList.empty() || sendList.back()->getAs<SerializableSequence>().getSequence() == sendSequence );
     ASSERT ( owner != 0 );
 
-    msg->getAs<SerializableSequence>().setSequence ( sendSequence + 1 );
-    string bytes = ::Protocol::encode ( msg );
-
-    if ( bytes.size() <= MTU )
+    if ( msg->getAs<SerializableSequence>().getSequence() != 0 )
     {
-        ++sendSequence;
-        owner->sendRaw ( this, msg );
-        sendList.push_back ( msg );
+        MsgPtr clone = msg->clone();
+        clone->getAs<SerializableSequence>().setSequence ( ++sendSequence );
+
+        owner->sendRaw ( this, clone );
+        sendList.push_back ( clone );
     }
     else
     {
-        const uint32_t count = ( bytes.size() / MTU ) + ( bytes.size() % MTU == 0 ? 0 : 1 );
+        msg->getAs<SerializableSequence>().setSequence ( sendSequence + 1 );
+        string bytes = ::Protocol::encode ( msg );
 
-        for ( uint32_t pos = 0, i = 0; pos < bytes.size(); pos += MTU, ++i )
+        if ( bytes.size() <= MTU )
         {
-            SplitMessage *splitMessage = new SplitMessage ( msg->getMsgType(), bytes.substr ( pos, MTU ), i, count );
-            splitMessage->setSequence ( ++sendSequence );
-
-            MsgPtr msg ( splitMessage );
+            ++sendSequence;
             owner->sendRaw ( this, msg );
             sendList.push_back ( msg );
+        }
+        else
+        {
+            const uint32_t count = ( bytes.size() / MTU ) + ( bytes.size() % MTU == 0 ? 0 : 1 );
+
+            for ( uint32_t pos = 0, i = 0; pos < bytes.size(); pos += MTU, ++i )
+            {
+                SplitMessage *splitMsg = new SplitMessage ( msg->getMsgType(), bytes.substr ( pos, MTU ), i, count );
+                splitMsg->setSequence ( ++sendSequence );
+
+                MsgPtr msg ( splitMsg );
+                owner->sendRaw ( this, msg );
+                sendList.push_back ( msg );
+            }
         }
     }
 
@@ -181,18 +192,18 @@ void GoBackN::recvRaw ( const MsgPtr& msg )
 
     if ( msg->getMsgType() == MsgType::SplitMessage )
     {
-        const SplitMessage& splitMessage = msg->getAs<SplitMessage>();
+        const SplitMessage& splitMsg = msg->getAs<SplitMessage>();
 
-        recvBuffer += splitMessage.bytes;
+        recvBuffer += splitMsg.bytes;
 
-        if ( splitMessage.isLastMessage() )
+        if ( splitMsg.isLastMessage() )
         {
             size_t consumed = 0;
             MsgPtr msg = ::Protocol::decode ( &recvBuffer[0], recvBuffer.size(), consumed );
 
-            if ( !msg || msg->getMsgType() != splitMessage.origMsgType || consumed != recvBuffer.size() )
+            if ( !msg || msg->getMsgType() != splitMsg.origMsgType || consumed != recvBuffer.size() )
             {
-                LOG ( "Failed to recreate '%s' from [ %u bytes ]", splitMessage.origMsgType, recvBuffer.size() );
+                LOG ( "Failed to recreate '%s' from [ %u bytes ]", splitMsg.origMsgType, recvBuffer.size() );
                 msg.reset();
             }
 

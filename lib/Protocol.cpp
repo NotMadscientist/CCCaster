@@ -1,4 +1,6 @@
 #include "Protocol.h"
+#include "Protocol.includes.h"
+#include "Protocol.clone.h"
 #include "Protocol.types.h"
 #include "Utilities.h"
 #include "Compression.h"
@@ -50,6 +52,7 @@ ENUM ( DecodeResult, Failed, NotCompressed, Compressed );
 
 // Decode with compression. Must manually update the value of consumed if the data was not compressed.
 DecodeResult decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, MsgType& type, string& msgData );
+
 
 string Protocol::encode ( Serializable *message )
 {
@@ -315,6 +318,7 @@ DecodeResult decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, M
     ss.rdbuf()->sgetn ( &msgData[0], remaining );
     return DecodeResult::NotCompressed;
 }
+
 
 ostream& operator<< ( ostream& os, MsgType type )
 {

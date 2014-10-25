@@ -13,13 +13,6 @@ echo 'LastType' >> $DIR/tmp
 
 diff $DIR/tmp $DIR/Protocol.enum.h 1> /dev/null 2>&1
 
-# grep --extended-regexp "public Serializable[A-Z]" "$@" \
-#   | sed -r \
-#     's/^(.+\.h):[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nMsgType \2::getMsgType() const { return MsgType::\2; }/' \
-#   > $DIR/tmp
-
-# diff $DIR/tmp $DIR/Protocol.types.h 1> /dev/null 2>&1
-
 if [ $? -ne 0 ]; then
 
   echo Regenerating protocol
@@ -28,7 +21,21 @@ if [ $? -ne 0 ]; then
 
   grep --extended-regexp "public Serializable[A-Z]" "$@" \
     | sed -r \
-      's/^(.+\.h):[a-z]+ ([A-Za-z]+) .+$$/#include "\1"\nMsgType \2::getMsgType() const { return MsgType::\2; }/' \
+      's/^(.+\.h):[a-z]+ ([A-Za-z]+) .+$$/#include "\1"/' \
+    | sort \
+    | uniq \
+    > $DIR/Protocol.includes.h
+
+  grep --extended-regexp "public Serializable[A-Z]" "$@" \
+    | sed -r \
+      's/^(.+\.h):[a-z]+ ([A-Za-z]+) .+$$/MsgPtr \2::clone() const { return MsgPtr ( new \2 ( *this ) ); }/' \
+    | sort \
+    | uniq \
+    > $DIR/Protocol.clone.h
+
+  grep --extended-regexp "public Serializable[A-Z]" "$@" \
+    | sed -r \
+      's/^(.+\.h):[a-z]+ ([A-Za-z]+) .+$$/MsgType \2::getMsgType() const { return MsgType::\2; }/' \
     | sort \
     | uniq \
     > $DIR/Protocol.types.h

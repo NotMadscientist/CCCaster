@@ -12,16 +12,19 @@
 
 #define EMPTY_MESSAGE_BOILERPLATE(NAME)                                                                     \
     NAME() {}                                                                                               \
+    MsgPtr clone() const override;                                                                          \
     MsgType getMsgType() const override;
 
 #define DECLARE_MESSAGE_BOILERPLATE(NAME)                                                                   \
     NAME() {}                                                                                               \
+    MsgPtr clone() const override;                                                                          \
     MsgType getMsgType() const override;                                                                    \
     void save ( cereal::BinaryOutputArchive& ar ) const override;                                           \
     void load ( cereal::BinaryInputArchive& ar ) override;
 
 #define PROTOCOL_MESSAGE_BOILERPLATE(NAME, ...)                                                             \
     NAME() {}                                                                                               \
+    MsgPtr clone() const override;                                                                          \
     MsgType getMsgType() const override;                                                                    \
     void save ( cereal::BinaryOutputArchive& ar ) const override { ar ( __VA_ARGS__ ); }                    \
     void load ( cereal::BinaryInputArchive& ar ) override { ar ( __VA_ARGS__ ); }
@@ -77,6 +80,9 @@ struct Serializable
     // Basic constructor and destructor
     Serializable();
     virtual ~Serializable() {}
+
+    // Return a clone
+    virtual MsgPtr clone() const = 0;
 
     // Get message and base types
     virtual MsgType getMsgType() const = 0;
