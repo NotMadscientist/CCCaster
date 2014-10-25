@@ -8,6 +8,7 @@
 
 #include <optionparser.h>
 #include <windows.h>
+#include <ws2tcpip.h>
 
 #include <exception>
 #include <vector>
@@ -48,8 +49,6 @@ struct Main
         , public ExternalIpAddress::Owner
         , public KeyboardManager::Owner
 {
-    IpAddrPort address;
-
     InitialConfig initialConfig;
 
     bool initialConfigReceived = false;
@@ -84,6 +83,8 @@ struct Main
 
         9 - Client send ConfirmConfig and waits for NetplayConfig before starting
 
+       10 - Reconnect dataSocket in-game, and also don't need ctrlSocket for host-client communications
+
        Spectate protocol
 
         1 - Connect / accept ctrlSocket
@@ -115,6 +116,7 @@ struct Main
         {
             serverCtrlSocket = TcpSocket::listen ( this, address.port );
             address.port = serverCtrlSocket->address.port; // Update port in case it was initially 0
+            LOG ( "serverCtrlSocket=%08x", serverCtrlSocket.get() );
         }
         else
         {
@@ -233,7 +235,7 @@ struct Main
         ctrlSocket->send ( REF_PTR ( initialConfig ) );
     }
 
-    virtual void gotSpectateConfig ( const SpectateConfig spectateConfig )
+    virtual void gotSpectateConfig ( const SpectateConfig& spectateConfig )
     {
         LOG ( "SpectateConfig: mode=%s; flags={ %s }; delay=%u; rollback=%u; names={ '%s', '%s' }",
               spectateConfig.mode, spectateConfig.mode.flagString(),
@@ -315,6 +317,10 @@ struct Main
 
     virtual void userConfirmation()
     {
+        // DllMain will reconnect the dataSockets
+        serverDataSocket.reset();
+        dataSocket.reset();
+
         // Disable keyboard hooks for the UI
         KeyboardManager::get().unhook();
 
@@ -338,12 +344,6 @@ struct Main
             return;
         }
 
-        ASSERT ( dataSocket.get() != 0 );
-        ASSERT ( dataSocket->isConnected() == true );
-
-        // Disable keepAlive because the UI blocks
-        dataSocket->getAsUDP().setKeepAlive ( 0 );
-
         pingStats.latency.merge ( pinger.getStats() );
         pingStats.packetLoss = ( pingStats.packetLoss + pinger.getPacketLoss() ) / 2;
 
@@ -354,12 +354,10 @@ struct Main
         if ( clientMode.isHost() )
         {
             ASSERT ( serverCtrlSocket.get() != 0 );
-            ASSERT ( serverDataSocket.get() != 0 );
 
             // Disable keepAlive because the UI blocks
             if ( serverCtrlSocket->isUDP() )
                 serverCtrlSocket->getAsUDP().setKeepAlive ( 0 );
-            serverDataSocket->getAsUDP().setKeepAlive ( 0 );
 
             if ( !ui.accepted ( initialConfig, pingStats ) )
             {
@@ -400,9 +398,7 @@ struct Main
         // Remove sockets from the EventManager so messages get buffered by the OS while starting the game.
         // These are safe to call even if null or the socket is not a real fd.
         SocketManager::get().remove ( serverCtrlSocket.get() );
-        SocketManager::get().remove ( serverDataSocket.get() );
         SocketManager::get().remove ( ctrlSocket.get() );
-        SocketManager::get().remove ( dataSocket.get() );
 
         // Open the game and wait for callback to ipcConnectEvent
         procMan.openGame();
@@ -412,6 +408,8 @@ struct Main
     virtual void sendPing ( Pinger *pinger, const MsgPtr& ping ) override
     {
         ASSERT ( pinger == &this->pinger );
+        ASSERT ( dataSocket.get() != 0 );
+        ASSERT ( dataSocket->isConnected() == true );
 
         dataSocket->send ( ping );
     }
@@ -491,13 +489,12 @@ struct Main
     {
         LOG ( "disconnectEvent ( %08x )", socket );
 
-        if ( socket == ctrlSocket.get() || socket == dataSocket.get() )
-        {
+        if ( socket == ctrlSocket.get() )
             EventManager::get().stop();
-            return;
-        }
-
-        pendingSockets.erase ( socket );
+        else if ( socket == dataSocket.get() )
+            dataSocket.reset();
+        else
+            pendingSockets.erase ( socket );
     }
 
     virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
@@ -555,15 +552,11 @@ struct Main
         ASSERT ( clientMode != ClientMode::Unknown );
 
         procMan.ipcSend ( REF_PTR ( clientMode ) );
+        procMan.ipcSend ( new IpAddrPort ( address.getAddrInfo()->ai_addr ) );
 
         if ( clientMode.isSpectate() )
         {
             procMan.ipcSend ( REF_PTR ( spectateConfig ) );
-
-            ASSERT ( ctrlSocket.get() != 0 );
-            ASSERT ( ctrlSocket->isConnected() == true );
-
-            procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
             return;
         }
 
@@ -571,44 +564,8 @@ struct Main
 
         netplayConfig.setNames ( initialConfig.localName, initialConfig.remoteName );
         netplayConfig.invalidate();
+
         procMan.ipcSend ( REF_PTR ( netplayConfig ) );
-
-        if ( !clientMode.isLocal() )
-        {
-            ASSERT ( ctrlSocket.get() != 0 );
-            ASSERT ( ctrlSocket->isConnected() == true );
-            ASSERT ( dataSocket.get() != 0 );
-            ASSERT ( dataSocket->isConnected() == true );
-
-            if ( clientMode.isHost() )
-            {
-                ASSERT ( serverCtrlSocket.get() != 0 );
-                ASSERT ( serverDataSocket.get() != 0 );
-                ASSERT ( serverDataSocket->getAsUDP().getChildSockets().size() == 1 );
-                ASSERT ( serverDataSocket->getAsUDP().getChildSockets().begin()->second == dataSocket );
-
-                procMan.ipcSend ( serverCtrlSocket->share ( procMan.getProcessId() ) );
-                procMan.ipcSend ( serverDataSocket->share ( procMan.getProcessId() ) );
-
-                if ( ctrlSocket->isTCP() )
-                {
-                    procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
-                }
-                else
-                {
-                    // We don't share child UDP sockets since they will be included in the server socket's share data
-                    ASSERT ( serverCtrlSocket->getAsUDP().getChildSockets().size() == 1 );
-                    ASSERT ( serverCtrlSocket->getAsUDP().getChildSockets().begin()->second == ctrlSocket );
-                }
-            }
-            else
-            {
-                procMan.ipcSend ( ctrlSocket->share ( procMan.getProcessId() ) );
-                procMan.ipcSend ( dataSocket->share ( procMan.getProcessId() ) );
-            }
-        }
-
-        procMan.ipcSend ( new EndOfMessages() );
 
         ui.display ( "Game started" );
     }
@@ -688,10 +645,11 @@ struct Main
         : CommonMain ( config.getMsgType() == MsgType::InitialConfig
                        ? config.getAs<InitialConfig>().mode
                        : config.getAs<NetplayConfig>().mode )
-        , address ( address )
     {
         LOG ( "clientMode=%s; flags={ %s }; address='%s'; config=%s",
               clientMode, clientMode.flagString(), address, config.getMsgType() );
+
+        this->address = address;
 
         if ( clientMode.isNetplay() )
         {

@@ -26,6 +26,8 @@ struct CommonMain
 {
     ClientMode clientMode;
 
+    IpAddrPort address;
+
     ProcessManager procMan;
 
     SocketPtr serverCtrlSocket, ctrlSocket;

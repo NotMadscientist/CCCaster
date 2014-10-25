@@ -147,9 +147,9 @@ public:
     virtual MsgPtr share ( int processId );
 
     // Send a protocol message, returning false indicates the socket is disconnected
-    virtual bool send ( SerializableMessage *message, const IpAddrPort& address = IpAddrPort() ) = 0;
-    virtual bool send ( SerializableSequence *message, const IpAddrPort& address = IpAddrPort() ) = 0;
-    virtual bool send ( const MsgPtr& msg, const IpAddrPort& address = IpAddrPort() ) = 0;
+    virtual bool send ( SerializableMessage *message, const IpAddrPort& address = NullAddress ) = 0;
+    virtual bool send ( SerializableSequence *message, const IpAddrPort& address = NullAddress ) = 0;
+    virtual bool send ( const MsgPtr& msg, const IpAddrPort& address = NullAddress ) = 0;
 
     // Set the packet loss for testing purposes
     void setPacketLoss ( uint8_t percentage ) { packetLoss = percentage; }

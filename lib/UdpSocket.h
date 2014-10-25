@@ -116,9 +116,9 @@ public:
     MsgPtr share ( int processId );
 
     // Send raw bytes directly, a return value of false indicates socket is disconnected
-    bool send ( SerializableMessage *message, const IpAddrPort& address = IpAddrPort() ) override;
-    bool send ( SerializableSequence *message, const IpAddrPort& address = IpAddrPort() ) override;
-    bool send ( const MsgPtr& msg, const IpAddrPort& address = IpAddrPort() ) override;
+    bool send ( SerializableMessage *message, const IpAddrPort& address = NullAddress ) override;
+    bool send ( SerializableSequence *message, const IpAddrPort& address = NullAddress ) override;
+    bool send ( const MsgPtr& msg, const IpAddrPort& address = NullAddress ) override;
 
     // Get/set the interval to send packets, should be non-zero
     uint64_t getSendInterval() const { return gbn.getSendInterval(); }

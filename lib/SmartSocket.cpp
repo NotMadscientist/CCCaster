@@ -3,8 +3,6 @@
 #include "UdpSocket.h"
 #include "Logger.h"
 
-#include <winsock2.h>
-#include <windows.h>
 #include <ws2tcpip.h>
 
 using namespace std;

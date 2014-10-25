@@ -321,16 +321,6 @@ struct Main
         procMan.writeGameInput ( remotePlayer, netMan.getInput ( remotePlayer ) );
     }
 
-    void bothCharaSelectLoaded()
-    {
-        LOG ( "Character select loaded for both sides" );
-
-        // Now we can re-enable keepAlive
-        if ( ctrlSocket->isUDP() )
-            ctrlSocket->getAsUDP().setKeepAlive ( DEFAULT_KEEP_ALIVE );
-        dataSocket->getAsUDP().setKeepAlive ( DEFAULT_KEEP_ALIVE );
-    }
-
     void netplayStateChanged ( NetplayState state )
     {
         // Log the RNG state whenever NetplayState changes
@@ -364,7 +354,7 @@ struct Main
                 case ClientMode::Host:
                     ASSERT ( msgRngState.get() != 0 );
 
-                    ctrlSocket->send ( msgRngState ); // Intentional fall through to Broadcast
+                    dataSocket->send ( msgRngState ); // Intentional fall through to Broadcast
 
                 case ClientMode::Broadcast:
                     ASSERT ( msgRngState.get() != 0 );
@@ -403,14 +393,6 @@ struct Main
 
         if ( current == CC_GAME_MODE_CHARA_SELECT )
         {
-            // Once both sides have loaded up to character select for the first time
-            if ( !clientMode.isLocal() && netMan.getState() == NetplayState::Initial )
-            {
-                if ( remoteCharaSelectLoaded )
-                    bothCharaSelectLoaded();
-                ctrlSocket->send ( new CharaSelectLoaded() );
-            }
-
             netplayStateChanged ( NetplayState::CharaSelect );
             return;
         }
@@ -491,6 +473,19 @@ struct Main
 
             pendingSockets[newSocket.get()] = newSocket;
         }
+        else if ( serverSocket == serverDataSocket.get() )
+        {
+            dataSocket = serverDataSocket->accept ( this );
+
+            LOG ( "dataSocket=%08x", dataSocket.get() );
+
+            ASSERT ( dataSocket != 0 );
+            ASSERT ( dataSocket->isConnected() == true );
+
+            netplayStateChanged ( NetplayState::Initial );
+
+            stopTimer.reset();
+        }
         else
         {
             LOG ( "Unexpected acceptEvent from serverSocket=%08x", serverSocket );
@@ -502,13 +497,20 @@ struct Main
     void connectEvent ( Socket *socket ) override
     {
         LOG ( "connectEvent ( %08x )", socket );
+
+        ASSERT ( dataSocket.get() != 0 );
+        ASSERT ( dataSocket->isConnected() == true );
+
+        netplayStateChanged ( NetplayState::Initial );
+
+        stopTimer.reset();
     }
 
     void disconnectEvent ( Socket *socket ) override
     {
         LOG ( "disconnectEvent ( %08x )", socket );
 
-        if ( socket == ctrlSocket.get() || socket == dataSocket.get() )
+        if ( socket == dataSocket.get() )
         {
             EventManager::get().stop();
             return;
@@ -559,16 +561,6 @@ struct Main
             case ClientMode::Client:
                 switch ( msg->getMsgType() )
                 {
-                    case MsgType::CharaSelectLoaded:
-                        if ( !remoteCharaSelectLoaded )
-                        {
-                            // If both sides have loaded up to character select
-                            if ( netMan.getState().value >= NetplayState::CharaSelect )
-                                bothCharaSelectLoaded();
-                            remoteCharaSelectLoaded = true;
-                        }
-                        return;
-
                     case MsgType::PlayerInputs:
                         netMan.setInputs ( remotePlayer, msg->getAs<PlayerInputs>() );
                         return;
@@ -622,6 +614,18 @@ struct Main
                 LOG ( "clientMode=%s", clientMode );
                 break;
 
+            case MsgType::IpAddrPort:
+                if ( !address.empty() )
+                    break;
+
+                address = msg->getAs<IpAddrPort>();
+                LOG ( "address='%s'", address );
+                break;
+
+            case MsgType::SpectateConfig:
+                ASSERT ( !"Unimplemented!" );
+                break;
+
             case MsgType::NetplayConfig:
                 if ( netMan.config.delay != 0xFF )
                     break;
@@ -631,8 +635,23 @@ struct Main
                 if ( netMan.config.delay == 0xFF )
                     LOG_AND_THROW_STRING ( "NetplayConfig: delay=%d is invalid!", netMan.config.delay );
 
+
                 if ( !clientMode.isLocal() )
                 {
+                    if ( clientMode.isHost() )
+                    {
+                        serverDataSocket = UdpSocket::listen ( this, address.port );
+                        LOG ( "serverDataSocket=%08x", serverDataSocket.get() );
+                    }
+                    else if ( clientMode.isClient() )
+                    {
+                        dataSocket = UdpSocket::connect ( this, address );
+                        LOG ( "dataSocket=%08x", dataSocket.get() );
+                    }
+
+                    stopTimer.reset ( new Timer ( this ) );
+                    stopTimer->start ( 10000 );
+
                     if ( netMan.config.hostPlayer != 1 && netMan.config.hostPlayer != 2 )
                         LOG_AND_THROW_STRING ( "NetplayConfig: hostPlayer=%d is invalid!", netMan.config.hostPlayer );
 
@@ -672,98 +691,6 @@ struct Main
                       netMan.config.hostPlayer, localPlayer, remotePlayer );
                 break;
 
-            case MsgType::SocketShareData:
-                switch ( clientMode.value )
-                {
-                    case ClientMode::Host:
-                        if ( !serverCtrlSocket )
-                        {
-                            serverCtrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
-
-                            if ( serverCtrlSocket->isUDP() )
-                            {
-                                ASSERT ( serverCtrlSocket->getAsUDP().getChildSockets().size() == 1 );
-                                ctrlSocket = serverCtrlSocket->getAsUDP().getChildSockets().begin()->second;
-                                ctrlSocket->owner = this;
-                                ASSERT ( ctrlSocket->isConnected() );
-                            }
-                        }
-                        else if ( !serverDataSocket )
-                        {
-                            serverDataSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
-
-                            ASSERT ( serverDataSocket->isUDP() == true );
-                            ASSERT ( serverDataSocket->getAsUDP().getChildSockets().size() == 1 );
-                            dataSocket = serverDataSocket->getAsUDP().getChildSockets().begin()->second;
-                            dataSocket->owner = this;
-                            ASSERT ( dataSocket->isConnected() );
-                        }
-                        else if ( !ctrlSocket )
-                        {
-                            ctrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
-                        }
-                        break;
-
-                    case ClientMode::Client:
-                        if ( !ctrlSocket )
-                        {
-                            ctrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
-                            ASSERT ( ctrlSocket->isConnected() == true );
-                        }
-                        else if ( !dataSocket )
-                        {
-                            dataSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
-                            ASSERT ( dataSocket->isConnected() == true );
-                        }
-                        break;
-
-                    case ClientMode::Spectate:
-                        ctrlSocket = Socket::shared ( this, msg->getAs<SocketShareData>() );
-
-                        ASSERT ( ctrlSocket->isConnected() == true );
-
-                        LOG ( "ctrlSocket=%08x", ctrlSocket.get() );
-
-                        netplayStateChanged ( NetplayState::Initial );
-                        break;
-
-                    default:
-                        LOG_AND_THROW_STRING ( "Invalid clientMode=%s!", clientMode );
-                        break;
-                }
-                break;
-
-            case MsgType::EndOfMessages:
-                if ( clientMode == ClientMode::Unknown )
-                    LOG_AND_THROW_STRING ( "Unknown clientMode!" );
-
-                if ( netMan.config.delay == 0xFF )
-                    LOG_AND_THROW_STRING ( "Uninitalized netMan.config!" );
-
-                if ( !clientMode.isLocal() )
-                {
-                    if ( !ctrlSocket || !ctrlSocket->isConnected() )
-                        LOG_AND_THROW_STRING ( "Uninitalized ctrlSocket!" );
-
-                    if ( !dataSocket || !dataSocket->isConnected() )
-                        LOG_AND_THROW_STRING ( "Uninitalized dataSocket!" );
-
-                    if ( clientMode.isHost() )
-                    {
-                        if ( !serverCtrlSocket )
-                            LOG_AND_THROW_STRING ( "Uninitalized serverCtrlSocket!" );
-
-                        if ( !serverDataSocket )
-                            LOG_AND_THROW_STRING ( "Uninitalized serverDataSocket!" );
-                    }
-
-                    LOG ( "ctrlSocket=%08x", ctrlSocket.get() );
-                    LOG ( "dataSocket=%08x", dataSocket.get() );
-                }
-
-                netplayStateChanged ( NetplayState::Initial );
-                break;
-
             default:
                 LOG ( "Unexpected '%s'", msg );
                 break;
@@ -794,6 +721,7 @@ struct Main
         }
         else if ( timer == stopTimer.get() )
         {
+            // TODO log and display WHY?
             appState = AppState::Stopping;
         }
         else

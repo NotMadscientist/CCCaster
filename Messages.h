@@ -15,11 +15,6 @@
 #include <array>
 
 
-struct EndOfMessages : public SerializableSequence { EMPTY_MESSAGE_BOILERPLATE ( EndOfMessages ) };
-struct CharaSelectLoaded : public SerializableSequence { EMPTY_MESSAGE_BOILERPLATE ( CharaSelectLoaded ) };
-struct ConfirmConfig : public SerializableSequence { EMPTY_MESSAGE_BOILERPLATE ( ConfirmConfig ) };
-
-
 struct ErrorMessage : public SerializableSequence
 {
     std::string error;
@@ -68,7 +63,7 @@ struct ClientMode : public SerializableSequence
     void clear()
     {
         value = Unknown;
-        flags =  0;
+        flags = 0;
     }
 
     PROTOCOL_MESSAGE_BOILERPLATE ( ClientMode, value, flags )
@@ -178,6 +173,12 @@ struct SpectateConfig : public SerializableSequence
         , rollback ( netplayConfig.rollback ), names ( netplayConfig.names ) {}
 
     PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig, mode, delay, rollback, names )
+};
+
+
+struct ConfirmConfig : public SerializableSequence
+{
+    EMPTY_MESSAGE_BOILERPLATE ( ConfirmConfig )
 };
 
 
