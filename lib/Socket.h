@@ -155,7 +155,7 @@ public:
     // Send a protocol message, returning false indicates the socket is disconnected
     virtual bool send ( SerializableMessage *message, const IpAddrPort& address = NullAddress ) = 0;
     virtual bool send ( SerializableSequence *message, const IpAddrPort& address = NullAddress ) = 0;
-    virtual bool send ( const MsgPtr& msg, const IpAddrPort& address = NullAddress ) = 0;
+    virtual bool send ( const MsgPtr& message, const IpAddrPort& address = NullAddress ) = 0;
     bool send ( Serializable& message, const IpAddrPort& address = NullAddress )
     {
         return send ( MsgPtr ( &message, ignoreMsgPtr ), address );

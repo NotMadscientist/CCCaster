@@ -52,8 +52,8 @@ public:
     // Accept a new socket
     SocketPtr accept ( Socket::Owner *owner ) override;
 
-    // Send raw bytes directly, a return value of false indicates socket is disconnected
+    // Send a protocol message, returning false indicates the socket is disconnected
     bool send ( SerializableMessage *message, const IpAddrPort& address = NullAddress ) override;
     bool send ( SerializableSequence *message, const IpAddrPort& address = NullAddress ) override;
-    bool send ( const MsgPtr& msg, const IpAddrPort& address = NullAddress ) override;
+    bool send ( const MsgPtr& message, const IpAddrPort& address = NullAddress ) override;
 };
