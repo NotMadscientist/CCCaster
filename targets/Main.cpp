@@ -801,6 +801,15 @@ struct Main
     {
         join();
         procMan.closeGame();
+
+        if ( !userConfirmed )
+            lastError.clear();
+
+        if ( !lastError.empty() )
+        {
+            LOG ( "lastError='%s'", lastError );
+            ui.sessionError = lastError;
+        }
     }
 
 private:
@@ -857,16 +866,6 @@ static void runMain ( const IpAddrPort& address, const Serializable& config )
     Main main ( address, config );
     main.start();
     main.waitForUserConfirmation();
-    main.join();
-
-    if ( !main.userConfirmed )
-        lastError.clear();
-
-    if ( !lastError.empty() )
-    {
-        LOG ( "lastError='%s'", lastError );
-        ui.sessionError = lastError;
-    }
 }
 
 
