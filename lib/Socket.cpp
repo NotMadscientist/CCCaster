@@ -97,7 +97,7 @@ void Socket::init()
 
             // SO_REUSEADDR can replace existing port binds
             // SO_EXCLUSIVEADDRUSE only replaces if not exact match
-            if ( setsockopt ( fd, SOL_SOCKET, SO_REUSEADDR, &yes, 1 ) == SOCKET_ERROR )
+            if ( setsockopt ( fd, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, &yes, 1 ) == SOCKET_ERROR )
             {
                 err = WSAGetLastError();
                 LOG_SOCKET ( this, "%s; setsockopt failed", err );
@@ -481,7 +481,7 @@ MsgPtr Socket::share ( int processId )
 
 void SocketShareData::save ( cereal::BinaryOutputArchive& ar ) const
 {
-    ar ( address, protocol, state, readBuffer, readPos,
+    ar ( address, protocol, isRaw, connectTimeout, state, readBuffer, readPos,
          info->dwServiceFlags1,
          info->dwServiceFlags2,
          info->dwServiceFlags3,
@@ -514,7 +514,7 @@ void SocketShareData::load ( cereal::BinaryInputArchive& ar )
 {
     info.reset ( new WSAPROTOCOL_INFO() );
 
-    ar ( address, protocol, state, readBuffer, readPos,
+    ar ( address, protocol, isRaw, connectTimeout, state, readBuffer, readPos,
          info->dwServiceFlags1,
          info->dwServiceFlags2,
          info->dwServiceFlags3,

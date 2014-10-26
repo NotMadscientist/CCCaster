@@ -7,6 +7,9 @@
 #include <memory>
 
 
+#define DEFAULT_CONNECT_TIMEOUT ( 2000 )
+
+
 #define LOG_SOCKET(SOCKET, FORMAT, ...)                                                                         \
     LOG ( "%s socket=%08x; fd=%08x; state=%s; address='%s'; " FORMAT,                                           \
           SOCKET->protocol, SOCKET, SOCKET->fd, SOCKET->state, SOCKET->address, ## __VA_ARGS__ )
@@ -64,6 +67,9 @@ public:
 
     // Raw socket type flag
     bool isRaw = false;
+
+    // Initial connect timeout
+    uint64_t connectTimeout = DEFAULT_CONNECT_TIMEOUT;
 
     // Socket owner
     Owner *owner = 0;
@@ -178,6 +184,8 @@ struct SocketShareData : public SerializableSequence
 {
     IpAddrPort address;
     Socket::Protocol protocol;
+    uint8_t isRaw = 0;
+    uint64_t connectTimeout = DEFAULT_CONNECT_TIMEOUT;
     Socket::State state;
     std::string readBuffer;
     size_t readPos = 0;

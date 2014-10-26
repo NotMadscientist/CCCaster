@@ -18,6 +18,7 @@ TcpSocket::TcpSocket ( Socket::Owner *owner, uint16_t port, bool isRaw )
 {
     this->owner = owner;
     this->state = State::Listening;
+
     Socket::init();
     SocketManager::get().add ( this );
 }
@@ -27,23 +28,32 @@ TcpSocket::TcpSocket ( Socket::Owner *owner, const IpAddrPort& address, bool isR
 {
     this->owner = owner;
     this->state = State::Connecting;
+
     Socket::init();
     SocketManager::get().add ( this );
+
+    connectTimer.reset ( new Timer ( this ) );
+    connectTimer->start ( connectTimeout );
 }
 
-TcpSocket::TcpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address ) : Socket ( address, Protocol::TCP )
+TcpSocket::TcpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address )
+    : Socket ( address, Protocol::TCP )
 {
     this->owner = owner;
     this->state = State::Connected;
     this->fd = fd;
+
     SocketManager::get().add ( this );
 }
 
-TcpSocket::TcpSocket ( Socket::Owner *owner, const SocketShareData& data ) : Socket ( data.address, Protocol::TCP )
+TcpSocket::TcpSocket ( Socket::Owner *owner, const SocketShareData& data )
+    : Socket ( data.address, Protocol::TCP, data.isRaw )
 {
     ASSERT ( data.protocol == Protocol::TCP );
 
     this->owner = owner;
+
+    this->connectTimeout = data.connectTimeout;
     this->state = data.state;
     this->readBuffer = data.readBuffer;
     this->readPos = data.readPos;
@@ -72,7 +82,10 @@ TcpSocket::~TcpSocket()
 void TcpSocket::disconnect()
 {
     SocketManager::get().remove ( this );
+
     Socket::disconnect();
+
+    connectTimer.reset();
 }
 
 SocketPtr TcpSocket::listen ( Socket::Owner *owner, uint16_t port, bool isRaw )
@@ -145,6 +158,7 @@ void TcpSocket::acceptEvent()
 void TcpSocket::connectEvent()
 {
     state = State::Connected;
+
     if ( owner )
         owner->connectEvent ( this );
 }
@@ -152,7 +166,9 @@ void TcpSocket::connectEvent()
 void TcpSocket::disconnectEvent()
 {
     Socket::Owner *owner = this->owner;
+
     disconnect();
+
     if ( owner )
         owner->disconnectEvent ( this );
 }
@@ -161,4 +177,16 @@ void TcpSocket::readEvent ( const MsgPtr& msg, const IpAddrPort& address )
 {
     if ( owner )
         owner->readEvent ( this, msg, address );
+}
+
+void TcpSocket::timerExpired ( Timer *timer )
+{
+    ASSERT ( timer == connectTimer.get() );
+
+    connectTimer.reset();
+
+    if ( isConnected() )
+        return;
+
+    disconnectEvent();
 }

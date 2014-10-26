@@ -143,6 +143,8 @@ struct Main
             lastError = "Unknown error!";
         }
 #endif
+
+        stop();
     }
 
     virtual void startNetplay()
@@ -163,11 +165,13 @@ struct Main
         {
             serverCtrlSocket = TcpSocket::listen ( this, address.port );
             address.port = serverCtrlSocket->address.port; // Update port in case it was initially 0
+
             LOG ( "serverCtrlSocket=%08x", serverCtrlSocket.get() );
         }
         else
         {
             ctrlSocket = TcpSocket::connect ( this, address );
+
             LOG ( "ctrlSocket=%08x", ctrlSocket.get() );
         }
 
@@ -270,8 +274,11 @@ struct Main
             if ( versionConfig.mode.isSpectate() ) // Ignore spectators, since the game is not loaded
                 return;
 
-            serverDataSocket = UdpSocket::listen ( this, address.port ); // TODO choose a different port if UDP tunnel
+            try { serverDataSocket = UdpSocket::listen ( this, address.port ); }
+            catch ( ... ) { serverDataSocket = UdpSocket::listen ( this, 0 ); }
             initialConfig.dataPort = serverDataSocket->address.port;
+
+            LOG ( "serverDataSocket=%08x", serverDataSocket.get() );
 
             ctrlSocket = pendingSockets[socket];
             pendingSockets.erase ( socket );
@@ -346,10 +353,6 @@ struct Main
 
     virtual void getUserConfirmation()
     {
-        // DllMain will reconnect the dataSockets
-        dataSocket.reset();
-        serverDataSocket.reset();
-
         // Disable keyboard hooks for the UI
         KeyboardManager::get().unhook();
 
@@ -475,15 +478,16 @@ struct Main
 
     virtual void startGame()
     {
+        // DllMain will reconnect any sockets
+        ctrlSocket.reset();
+        serverCtrlSocket.reset();
+        dataSocket.reset();
+        serverDataSocket.reset();
+
         ui.display ( "Starting game..." );
 
         if ( clientMode.isNetplay() )
             netplayConfig.mode.flags = initialConfig.mode.flags;
-
-        // Remove sockets from the EventManager so messages get buffered by the OS while starting the game.
-        // These are safe to call even if null or the socket is not a real fd.
-        SocketManager::get().remove ( serverCtrlSocket.get() );
-        SocketManager::get().remove ( ctrlSocket.get() );
 
         // Open the game and wait for callback to ipcConnectEvent
         procMan.openGame();
@@ -577,24 +581,22 @@ struct Main
         if ( socket == ctrlSocket.get() || socket == dataSocket.get() )
         {
             if ( socket == ctrlSocket.get() )
-            {
                 ctrlSocket.reset();
-            }
             else if ( socket == dataSocket.get() )
-            {
                 dataSocket.reset();
 
-                if ( !pinger.isPinging() )
-                    return;
+            if ( userConfirmed && finalConfigReceived )
+            {
+                stop();
             }
-
-            if ( clientMode.isHost() )
+            else if ( clientMode.isHost() )
             {
                 reset();
             }
             else
             {
-                lastError = "Disconnected!";
+                if ( lastError.empty() )
+                    lastError = ( initialConfigReceived ? "Disconnected!" : "Timed out!" );
                 stop();
             }
 
@@ -801,9 +803,6 @@ struct Main
     {
         join();
         procMan.closeGame();
-
-        if ( !userConfirmed )
-            lastError.clear();
 
         if ( !lastError.empty() )
         {

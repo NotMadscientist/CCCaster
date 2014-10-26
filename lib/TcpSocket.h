@@ -1,10 +1,17 @@
 #pragma once
 
 #include "Socket.h"
+#include "Timer.h"
 
 
-class TcpSocket : public Socket
+class TcpSocket : public Socket, public Timer::Owner
 {
+    // Connect timer
+    TimerPtr connectTimer;
+
+    // Timer callback
+    void timerExpired ( Timer *timer ) override;
+
     // Construct a server socket
     TcpSocket ( Socket::Owner *owner, uint16_t port, bool isRaw = false );
 
@@ -20,10 +27,10 @@ class TcpSocket : public Socket
 protected:
 
     // Socket event callbacks
-    virtual void acceptEvent() override;
-    virtual void connectEvent() override;
-    virtual void disconnectEvent() override;
-    virtual void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) override;
+    void acceptEvent() override;
+    void connectEvent() override;
+    void disconnectEvent() override;
+    void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) override;
 
 public:
 

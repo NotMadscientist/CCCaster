@@ -24,6 +24,7 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, const Type& type, bo
 {
     this->owner = owner;
     this->state = State::Listening;
+
     Socket::init();
     SocketManager::get().add ( this );
 }
@@ -31,10 +32,11 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, const Type& type, bo
 UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, const Type& type, bool isRaw )
     : Socket ( address, Protocol::UDP, isRaw )
     , type ( type )
-    , gbn ( this, DEFAULT_SEND_INTERVAL, isConnectionLess() ? 0 : DEFAULT_KEEP_ALIVE )
+    , gbn ( this, DEFAULT_SEND_INTERVAL, isConnectionLess() ? 0 : connectTimeout )
 {
     this->owner = owner;
     this->state = ( isConnectionLess() ? State::Connected : State::Connecting );
+
     Socket::init();
     SocketManager::get().add ( this );
 
@@ -43,13 +45,15 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, const Ty
 }
 
 UdpSocket::UdpSocket ( Socket::Owner *owner, const SocketShareData& data )
-    : Socket ( data.address, Protocol::UDP )
+    : Socket ( data.address, Protocol::UDP, data.isRaw )
     , type ( ( Type::Enum ) data.udpType )
     , gbn ( this )
 {
     ASSERT ( data.protocol == Protocol::UDP );
 
     this->owner = owner;
+
+    this->connectTimeout = data.connectTimeout;
     this->state = data.state;
     this->readBuffer = data.readBuffer;
     this->readPos = data.readPos;
@@ -136,6 +140,7 @@ void UdpSocket::disconnect()
         SocketManager::get().remove ( this );
 
     Socket::disconnect();
+
     gbn.reset();
     gbn.setKeepAlive ( 0 );
 
@@ -306,8 +311,11 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
                         case UdpConnect::Final:
                             // UdpConnect::Final means the client connected properly and is now accepted
                             state = State::Connected;
+
                             LOG_UDP_SOCKET ( this, "acceptEvent" );
+
                             parentSocket->acceptedSocket = parentSocket->childSockets[getRemoteAddress()];
+
                             if ( parentSocket->owner )
                                 parentSocket->owner->acceptEvent ( parentSocket );
                             break;
@@ -334,12 +342,17 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
         switch ( msg->getMsgType() )
         {
             case MsgType::UdpConnect:
+                // UdpConnect::Reply while connecting indicates this socket is now connected
                 if ( isConnecting() && msg->getAs<UdpConnect>().value == UdpConnect::Reply )
                 {
-                    // UdpConnect::Reply while connecting indicates this socket is now connected
                     state = State::Connected;
-                    send ( new UdpConnect ( UdpConnect::Final ) );
+
                     LOG_UDP_SOCKET ( this, "connectEvent" );
+
+                    send ( new UdpConnect ( UdpConnect::Final ) );
+
+                    gbn->setKeepAlive ( keepAlive );
+
                     if ( owner )
                         owner->connectEvent ( this );
                     return;

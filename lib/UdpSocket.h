@@ -33,6 +33,9 @@ private:
     // GoBackN instance
     GoBackN gbn;
 
+    // Timeout for keep alive packets
+    uint64_t keepAlive = DEFAULT_KEEP_ALIVE;
+
     // Parent socket
     UdpSocket *parentSocket = 0;
 
@@ -125,8 +128,8 @@ public:
     void setSendInterval ( uint64_t interval ) { if ( !isConnectionLess() ) gbn.setSendInterval ( interval ); }
 
     // Get/set the timeout for keep alive packets, 0 to disable
-    uint64_t getKeepAlive() const { return gbn.getKeepAlive(); }
-    void setKeepAlive ( uint64_t timeout ) { if ( !isConnectionLess() ) gbn.setKeepAlive ( timeout ); }
+    uint64_t getKeepAlive() const { return keepAlive; }
+    void setKeepAlive ( uint64_t timeout ) { if ( !isConnectionLess() ) gbn.setKeepAlive ( keepAlive = timeout ); }
 
     // Listen for connections.
     // Can only be used on a connection-less socket, where address.addr is empty.
