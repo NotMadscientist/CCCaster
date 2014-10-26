@@ -363,6 +363,8 @@ void MainUi::display ( const string& message )
     if ( !ui )
         ui.reset ( new ConsoleUi ( uiTitle ) );
 
+    // TODO fix this shit
+
     if ( ui->empty() || !ui->top()->requiresUser )
         ui->pushInFront ( new ConsoleUi::TextBox ( message ), { 1, 0 }, true ); // Expand width and clear
     else if ( !ui->top()->expandWidth() )

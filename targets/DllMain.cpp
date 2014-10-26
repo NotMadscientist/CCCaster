@@ -18,9 +18,11 @@ using namespace std;
 
 #define SYNC_LOG_FILE FOLDER "sync.log"
 
-#define RESEND_INPUTS_INTERVAL 100
+#define INITIAL_TIMEOUT ( 10000 )
 
-#define STOP_EVENTS_DELAY ( 1000 )
+#define DELAYED_STOP ( 500 )
+
+#define RESEND_INPUTS_INTERVAL ( 100 )
 
 #define LOG_SYNC(FORMAT, ...)                                                                                   \
     LOG_TO ( syncLog, "[%u] %s [%s] %s " FORMAT,                                                                \
@@ -84,6 +86,9 @@ struct Main
 
     // Spectator sockets
     unordered_map<Socket *, SocketPtr> specSockets;
+
+    // Timer for the initial connect period, quits if timeout
+    TimerPtr stopTimer;
 
 
     void frameStepNormal()
@@ -427,7 +432,7 @@ struct Main
     void delayedStop()
     {
         stopTimer.reset ( new Timer ( this ) );
-        stopTimer->start ( STOP_EVENTS_DELAY );
+        stopTimer->start ( DELAYED_STOP );
     }
 
     // ChangeMonitor callback
@@ -512,7 +517,8 @@ struct Main
 
         if ( socket == dataSocket.get() )
         {
-            EventManager::get().stop();
+            main->procMan.ipcSend ( new ErrorMessage ( "Disconnected!" ) );
+            delayedStop();
             return;
         }
 
@@ -667,7 +673,7 @@ struct Main
                     }
 
                     stopTimer.reset ( new Timer ( this ) );
-                    stopTimer->start ( 10000 );
+                    stopTimer->start ( INITIAL_TIMEOUT );
 
                     // Wait for dataSocket to be connected before changing to NetplayState::Initial
                 }

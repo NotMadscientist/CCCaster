@@ -37,6 +37,16 @@ void Pinger::start()
     pinging = true;
 }
 
+void Pinger::stop()
+{
+    LOG ( "Stop pinging" );
+
+    pingTimer.reset();
+    pingCount = 0;
+    stats.reset();
+    pinging = false;
+}
+
 void Pinger::gotPong ( const MsgPtr& ping )
 {
     ASSERT ( ping.get() != 0 );
@@ -75,8 +85,7 @@ void Pinger::timerExpired ( Timer *timer )
         if ( owner )
             owner->donePinging ( this, stats, packetLoss );
 
-        pingTimer.reset();
-        pinging = false;
+        stop();
         return;
     }
 

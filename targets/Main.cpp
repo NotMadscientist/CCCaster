@@ -23,8 +23,6 @@ using namespace option;
 
 #define NUM_PINGS ( 10 )
 
-#define STOP_EVENTS_DELAY ( 1000 )
-
 
 // Set of command line options
 enum CommandLineOptions
@@ -204,12 +202,6 @@ struct Main
         EventManager::get().start();
     }
 
-    virtual void delayedStop()
-    {
-        stopTimer.reset ( new Timer ( this ) );
-        stopTimer->start ( STOP_EVENTS_DELAY );
-    }
-
     virtual void stop()
     {
         EventManager::get().stop();
@@ -325,11 +317,7 @@ struct Main
               initialConfig.mode, initialConfig.mode.flagString(),
               initialConfig.dataPort, initialConfig.localName, initialConfig.remoteName );
 
-        if ( clientMode.isHost() )
-        {
-            ui.display ( this->initialConfig.getAcceptMessage ( "connecting" ) );
-        }
-        else
+        if ( clientMode.isClient() )
         {
             this->initialConfig.mode.flags = initialConfig.mode.flags;
             this->initialConfig.dataPort = initialConfig.dataPort;
@@ -417,8 +405,11 @@ struct Main
         uiRecvSocket.reset();
         uiSendSocket.reset();
 
-        if ( !userConfirmed )
+        if ( !userConfirmed || !ctrlSocket || !ctrlSocket->isConnected() )
         {
+            if ( !ctrlSocket || !ctrlSocket->isConnected() )
+                lastError = "Disconnected!";
+
             stop();
             return;
         }
@@ -583,25 +574,34 @@ struct Main
     {
         LOG ( "disconnectEvent ( %08x )", socket );
 
-        if ( socket == ctrlSocket.get() )
+        if ( socket == ctrlSocket.get() || socket == dataSocket.get() )
         {
-            lastError = "Disconnected!";
-            stop();
-        }
-        else if ( socket == dataSocket.get() )
-        {
-            dataSocket.reset();
+            if ( socket == ctrlSocket.get() )
+            {
+                ctrlSocket.reset();
+            }
+            else if ( socket == dataSocket.get() )
+            {
+                dataSocket.reset();
 
-            if ( !pinger.isPinging() )
-                return;
+                if ( !pinger.isPinging() )
+                    return;
+            }
 
-            lastError = "Disconnected!";
-            stop();
+            if ( clientMode.isHost() )
+            {
+                reset();
+            }
+            else
+            {
+                lastError = "Disconnected!";
+                stop();
+            }
+
+            return;
         }
-        else
-        {
-            pendingSockets.erase ( socket );
-        }
+
+        pendingSockets.erase ( socket );
     }
 
     virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
@@ -690,6 +690,7 @@ struct Main
 
     virtual void ipcDisconnectEvent() override
     {
+        lastError = "Game closed!";
         stop();
     }
 
@@ -733,8 +734,6 @@ struct Main
     // Timer callback
     virtual void timerExpired ( Timer *timer ) override
     {
-        ASSERT ( timer == stopTimer.get() );
-        stop();
     }
 
     // ExternalIpAddress callbacks
@@ -835,6 +834,20 @@ private:
                                     ( clientMode.isTraining() ? " (training mode)" : "" ) ) );
         }
     }
+
+    // Reset state
+    void reset()
+    {
+        initialConfig.dataPort = 0;
+        initialConfig.remoteName.clear();
+        initialConfigReceived = false;
+        netplayConfig.clear();
+        pinger.stop();
+        pingStats.clear();
+        broadcastPortReady = false;
+        finalConfigReceived = false;
+        userConfirmed = false;
+    }
 };
 
 
@@ -844,9 +857,16 @@ static void runMain ( const IpAddrPort& address, const Serializable& config )
     Main main ( address, config );
     main.start();
     main.waitForUserConfirmation();
+    main.join();
+
+    if ( !main.userConfirmed )
+        lastError.clear();
 
     if ( !lastError.empty() )
+    {
+        LOG ( "lastError='%s'", lastError );
         ui.sessionError = lastError;
+    }
 }
 
 

@@ -77,6 +77,12 @@ struct PingStats : public SerializableSequence
 
     PingStats ( const Statistics& latency, uint8_t packetLoss ) : latency ( latency ), packetLoss ( packetLoss ) {}
 
+    void clear()
+    {
+        latency.reset();
+        packetLoss = 0;
+    }
+
     PROTOCOL_MESSAGE_BOILERPLATE ( PingStats, latency, packetLoss )
 };
 

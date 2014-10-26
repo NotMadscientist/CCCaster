@@ -36,8 +36,6 @@ struct CommonMain
 
     std::unordered_map<Socket *, SocketPtr> pendingSockets;
 
-    TimerPtr stopTimer;
-
 
     CommonMain() : procMan ( this ) {}
 
