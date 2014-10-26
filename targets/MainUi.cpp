@@ -465,10 +465,7 @@ bool MainUi::spectate ( const SpectateConfig& spectateConfig )
     return ret;
 }
 
-const void *MainUi::getConsoleWindow() const
+const void *MainUi::getConsoleWindow()
 {
-    if ( !ui )
-        return 0;
-
-    return ui->getConsoleWindow();
+    return ConsoleUi::getConsoleWindow();
 }

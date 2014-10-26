@@ -147,7 +147,7 @@ struct Main
 
     virtual void startNetplay()
     {
-        AutoManager _ ( this, ui.getConsoleWindow(), { VK_ESCAPE } );
+        AutoManager _ ( this, MainUi::getConsoleWindow(), { VK_ESCAPE } );
 
         if ( clientMode.isHost() )
         {
@@ -176,7 +176,7 @@ struct Main
 
     virtual void startSpectate()
     {
-        AutoManager _ ( this, ui.getConsoleWindow(), { VK_ESCAPE } );
+        AutoManager _ ( this, MainUi::getConsoleWindow(), { VK_ESCAPE } );
 
         ui.display ( toString ( "Connecting to %s", address ) );
 

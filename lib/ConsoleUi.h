@@ -109,9 +109,6 @@ private:
     // UI elements stack
     std::stack<ElementPtr> stack;
 
-    // Console window handle
-    void *consoleWindow = 0;
-
     // Initialize the element and push it onto the stack
     void initalizeAndPush ( Element *element, const COORD& expand );
 
@@ -427,5 +424,5 @@ public:
     }
 
     // Get console window handle
-    const void *getConsoleWindow() const { return consoleWindow; }
+    static const void *getConsoleWindow();
 };
