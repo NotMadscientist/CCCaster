@@ -84,9 +84,10 @@ struct PingStats : public SerializableSequence
 struct VersionConfig : public SerializableSequence
 {
     ClientMode mode;
-    Version version = LocalVersion;
+    Version version;
 
-    VersionConfig ( const ClientMode& mode, uint8_t flags = 0 ) : mode ( mode.value, mode.flags | flags ) {}
+    VersionConfig ( const ClientMode& mode, uint8_t flags = 0 )
+        : mode ( mode.value, mode.flags | flags ), version ( LocalVersion ) {}
 
     PROTOCOL_MESSAGE_BOILERPLATE ( VersionConfig, mode, version )
 };

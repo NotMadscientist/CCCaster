@@ -221,9 +221,13 @@ struct Main
     {
         const Version RemoteVersion = versionConfig.version;
 
-        LOG ( "VersionConfig: mode=%s; flags={ %s }; version='%s'; commitId='%s'; buildTime='%s'",
-              versionConfig.mode, versionConfig.mode.flagString(),
+        LOG ( "LocalVersion='%s'; commitId='%s'; buildTime='%s'",
+              LocalVersion, LocalVersion.commitId, LocalVersion.buildTime );
+
+        LOG ( "RemoteVersion='%s'; commitId='%s'; buildTime='%s'",
               RemoteVersion, RemoteVersion.commitId, RemoteVersion.buildTime );
+
+        LOG ( "VersionConfig: mode=%s; flags={ %s }", versionConfig.mode, versionConfig.mode.flagString() );
 
         if ( !LocalVersion.similar ( RemoteVersion, 1 + opt[STRICT_VERSION].count() ) )
         {
@@ -250,9 +254,6 @@ struct Main
 
             lastError = "Incompatible versions:\n" + local + "\n" + remote;
             socket->send ( new ErrorMessage ( lastError ) );
-
-            if ( !versionConfig.mode.isSpectate() )
-                delayedStop();
             return;
         }
 
@@ -616,43 +617,48 @@ struct Main
         if ( !msg.get() )
             return;
 
-        switch ( msg->getMsgType() )
+        if ( msg->getMsgType() == MsgType::VersionConfig
+                && ( ( clientMode.isHost() && !ctrlSocket ) || clientMode.isClient() ) )
         {
-            case MsgType::VersionConfig:
-                gotVersionConfig ( socket, msg->getAs<VersionConfig>() );
-                return;
+            gotVersionConfig ( socket, msg->getAs<VersionConfig>() );
+            return;
+        }
+        else if ( ctrlSocket )
+        {
+            switch ( msg->getMsgType() )
+            {
+                case MsgType::SpectateConfig:
+                    gotSpectateConfig ( msg->getAs<SpectateConfig>() );
+                    return;
 
-            case MsgType::SpectateConfig:
-                gotSpectateConfig ( msg->getAs<SpectateConfig>() );
-                return;
+                case MsgType::InitialConfig:
+                    gotInitialConfig ( msg->getAs<InitialConfig>() );
+                    return;
 
-            case MsgType::InitialConfig:
-                gotInitialConfig ( msg->getAs<InitialConfig>() );
-                return;
+                case MsgType::PingStats:
+                    gotPingStats ( msg->getAs<PingStats>() );
+                    return;
 
-            case MsgType::PingStats:
-                gotPingStats ( msg->getAs<PingStats>() );
-                return;
+                case MsgType::NetplayConfig:
+                    gotNetplayConfig ( msg->getAs<NetplayConfig>() );
+                    return;
 
-            case MsgType::NetplayConfig:
-                gotNetplayConfig ( msg->getAs<NetplayConfig>() );
-                return;
+                case MsgType::ConfirmConfig:
+                    gotConfirmConfig();
+                    return;
 
-            case MsgType::ConfirmConfig:
-                gotConfirmConfig();
-                return;
+                case MsgType::ErrorMessage:
+                    lastError = msg->getAs<ErrorMessage>().error;
+                    stop();
+                    return;
 
-            case MsgType::ErrorMessage:
-                lastError = msg->getAs<ErrorMessage>().error;
-                stop();
-                return;
+                case MsgType::Ping:
+                    pinger.gotPong ( msg );
+                    return;
 
-            case MsgType::Ping:
-                pinger.gotPong ( msg );
-                return;
-
-            default:
-                break;
+                default:
+                    break;
+            }
         }
 
         LOG ( "Unexpected '%s' from socket=%08x", msg, socket );
