@@ -205,8 +205,11 @@ bool UdpSocket::send ( SerializableSequence *message, const IpAddrPort& address 
 
 bool UdpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
 {
-    if ( isConnectionLess() )
+    if ( isConnectionLess() || !msg.get() )
+    {
+        gbn.delayKeepAliveOnce();
         return sendRaw ( msg, address );
+    }
 
     switch ( msg->getBaseType().value )
     {

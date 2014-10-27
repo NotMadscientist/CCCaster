@@ -6,6 +6,9 @@
 
 class SmartSocket : public Socket, public Socket::Owner, public Timer::Owner
 {
+    // Child UDP socket enum type for choosing the right constructor
+    enum ChildSocketEnum { ChildSocket };
+
     // Socket that tries to listen / connect directly
     SocketPtr directSocket;
 
@@ -15,11 +18,17 @@ class SmartSocket : public Socket, public Socket::Owner, public Timer::Owner
     // Timeout for tunnel server matching
     TimerPtr matchTimer;
 
+    // Integer that matches the host to the client
+    uint32_t matchId = 0;
+
     // UDP tunnel socket
     SocketPtr tunSocket;
 
     // UDP tunnel send timer
     TimerPtr sendTimer;
+
+    // Address of the UDP tunnel
+    IpAddrPort tunAddress;
 
     // Unused base socket callback
     void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) override {}
@@ -34,7 +43,7 @@ class SmartSocket : public Socket, public Socket::Owner, public Timer::Owner
     // Timer callback
     void timerExpired ( Timer *timer ) override;
 
-    void gotMatch();
+    void gotMatch ( uint32_t matchId );
 
     void gotUdpInfo ( const IpAddrPort& address );
 
@@ -43,6 +52,9 @@ class SmartSocket : public Socket, public Socket::Owner, public Timer::Owner
 
     // Construct a client socket
     SmartSocket ( Socket::Owner *owner, const IpAddrPort& address, Socket::Protocol protocol );
+
+    // Construct a child UDP socket from the parent socket
+    UdpSocket ( ChildSocketEnum, SmartSocket *parentSocket, const IpAddrPort& address );
 
 public:
 

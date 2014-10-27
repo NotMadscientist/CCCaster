@@ -148,7 +148,7 @@ void GoBackN::recvRaw ( const MsgPtr& msg )
     }
 
     // Ignore null keep alive messages
-    if ( !msg )
+    if ( !msg.get() )
         return;
 
     // Filter non-sequential messages
@@ -201,7 +201,7 @@ void GoBackN::recvRaw ( const MsgPtr& msg )
             size_t consumed = 0;
             MsgPtr msg = ::Protocol::decode ( &recvBuffer[0], recvBuffer.size(), consumed );
 
-            if ( !msg || msg->getMsgType() != splitMsg.origMsgType || consumed != recvBuffer.size() )
+            if ( !msg.get() || msg->getMsgType() != splitMsg.origMsgType || consumed != recvBuffer.size() )
             {
                 LOG ( "Failed to recreate '%s' from [ %u bytes ]", splitMsg.origMsgType, recvBuffer.size() );
                 msg.reset();

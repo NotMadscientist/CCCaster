@@ -935,7 +935,7 @@ int main ( int argc, char *argv[] )
 
         PRINT ( "%s", msg );
 
-        if ( !msg )
+        if ( !msg.get() )
             break;
     }
 
