@@ -39,20 +39,20 @@ class SmartSocket : public Socket, public Socket::Owner, public Timer::Owner
     void gotUdpInfo ( const IpAddrPort& address );
 
     // Construct a server socket
-    SmartSocket ( Socket::Owner *owner, Socket::Protocol protocol, uint16_t port );
+    SmartSocket ( Socket::Owner *owner, uint16_t port, Socket::Protocol protocol );
 
     // Construct a client socket
-    SmartSocket ( Socket::Owner *owner, Socket::Protocol protocol, const IpAddrPort& address );
+    SmartSocket ( Socket::Owner *owner, const IpAddrPort& address, Socket::Protocol protocol );
 
 public:
 
     // Listen for connections on the given port.
     // Opens a regular server socket of the given protocol, but also listens for UDP tunnel connections.
-    static SocketPtr listen ( Socket::Owner *owner, Socket::Protocol protocol, uint16_t port );
+    static SocketPtr listen ( Socket::Owner *owner, uint16_t port, Socket::Protocol protocol );
 
     // Connect to the given address and port.
     // Tries to connect using the given protocol, with fallback to UDP tunnel.
-    static SocketPtr connect ( Socket::Owner *owner, Socket::Protocol protocol, const IpAddrPort& address );
+    static SocketPtr connect ( Socket::Owner *owner, const IpAddrPort& address, Socket::Protocol protocol );
 
     // Destructor
     ~SmartSocket() override;

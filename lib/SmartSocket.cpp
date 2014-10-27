@@ -39,7 +39,7 @@ const string infoString = "info";
 
 */
 
-SmartSocket::SmartSocket ( Socket::Owner *owner, Socket::Protocol protocol, uint16_t port )
+SmartSocket::SmartSocket ( Socket::Owner *owner, uint16_t port, Socket::Protocol protocol )
     : Socket ( owner, IpAddrPort ( "", port ), Protocol::Smart )
 {
     ASSERT ( protocol != Protocol::Smart );
@@ -57,7 +57,7 @@ SmartSocket::SmartSocket ( Socket::Owner *owner, Socket::Protocol protocol, uint
         directSocket = UdpSocket::listen ( this, port );
 }
 
-SmartSocket::SmartSocket ( Socket::Owner *owner, Socket::Protocol protocol, const IpAddrPort& address )
+SmartSocket::SmartSocket ( Socket::Owner *owner, const IpAddrPort& address, Socket::Protocol protocol )
     : Socket ( owner, address, Protocol::Smart )
 {
     ASSERT ( protocol != Protocol::Smart );
@@ -318,15 +318,15 @@ void SmartSocket::gotUdpInfo ( const IpAddrPort& address )
         tunSocket->getAsUDP().connect ( address );
 }
 
-SocketPtr SmartSocket::listen ( Socket::Owner *owner, Socket::Protocol protocol, uint16_t port )
+SocketPtr SmartSocket::listen ( Socket::Owner *owner, uint16_t port, Socket::Protocol protocol )
 {
-    return SocketPtr ( new SmartSocket ( owner, protocol, port ) );
+    return SocketPtr ( new SmartSocket ( owner, port, protocol ) );
 }
 
-SocketPtr SmartSocket::connect ( Socket::Owner *owner, Socket::Protocol protocol, const IpAddrPort& address )
+SocketPtr SmartSocket::connect ( Socket::Owner *owner, const IpAddrPort& address, Socket::Protocol protocol )
 {
     string addr = getAddrFromSockAddr ( address.getAddrInfo()->ai_addr ); // Resolve IP address first
-    return SocketPtr ( new SmartSocket ( owner, protocol, { addr, address.port } ) );
+    return SocketPtr ( new SmartSocket ( owner, { addr, address.port }, protocol ) );
 }
 
 SocketPtr SmartSocket::accept ( Socket::Owner *owner )

@@ -166,14 +166,14 @@ struct Main
 
         if ( clientMode.isHost() )
         {
-            serverCtrlSocket = SmartSocket::listen ( this, Socket::Protocol::TCP, address.port );
+            serverCtrlSocket = SmartSocket::listen ( this, address.port, Socket::Protocol::TCP );
             address.port = serverCtrlSocket->address.port; // Update port in case it was initially 0
 
             LOG ( "serverCtrlSocket=%08x", serverCtrlSocket.get() );
         }
         else
         {
-            ctrlSocket = SmartSocket::connect ( this, Socket::Protocol::TCP, address );
+            ctrlSocket = SmartSocket::connect ( this, address, Socket::Protocol::TCP );
 
             LOG ( "ctrlSocket=%08x", ctrlSocket.get() );
         }
@@ -187,7 +187,7 @@ struct Main
 
         ui.display ( toString ( "Connecting to %s", address ) );
 
-        ctrlSocket = SmartSocket::connect ( this, Socket::Protocol::TCP, address );
+        ctrlSocket = SmartSocket::connect ( this, address, Socket::Protocol::TCP );
 
         LOG ( "ctrlSocket=%08x", ctrlSocket.get() );
 
@@ -276,6 +276,7 @@ struct Main
             if ( versionConfig.mode.isSpectate() ) // Ignore spectators, since the game is not loaded
                 return;
 
+            // TODO SmartSocket
             try { serverDataSocket = UdpSocket::listen ( this, address.port ); }
             catch ( ... ) { serverDataSocket = UdpSocket::listen ( this, 0 ); }
             initialConfig.dataPort = serverDataSocket->address.port;
