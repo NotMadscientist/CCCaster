@@ -251,8 +251,7 @@ struct Main
                 remote += " " + RemoteVersion.buildTime;
             }
 
-            lastError = "Incompatible versions:\n" + local + "\n" + remote;
-            socket->send ( new ErrorMessage ( lastError ) );
+            socket->send ( new ErrorMessage ( "Incompatible versions:\n" + local + "\n" + remote ) );
             return;
         }
 
@@ -695,7 +694,8 @@ struct Main
 
     virtual void ipcDisconnectEvent() override
     {
-        lastError = "Game closed!";
+        if ( lastError.empty() )
+            lastError = "Game closed!";
         stop();
     }
 

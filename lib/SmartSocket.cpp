@@ -84,6 +84,7 @@ void SmartSocket::disconnect()
 
     directSocket.reset();
     vpsSocket.reset();
+    matchTimer.reset();
     tunSocket.reset();
     sendTimer.reset();
 }
@@ -100,6 +101,8 @@ void SmartSocket::connectEvent ( Socket *socket )
 {
     if ( socket == directSocket.get() || socket == tunSocket.get() )
     {
+        this->state = State::Connected;
+
         if ( owner )
             owner->connectEvent ( this );
     }
@@ -140,10 +143,9 @@ void SmartSocket::disconnectEvent ( Socket *socket )
     {
         LOG_SMART_SOCKET ( this, "Tunnel socket disconnected" );
 
-        tunSocket.reset();
-
         if ( isServer() )
         {
+            tunSocket.reset();
             sendTimer.reset();
             return;
         }
@@ -157,10 +159,17 @@ void SmartSocket::disconnectEvent ( Socket *socket )
     }
     else if ( socket == vpsSocket.get() )
     {
-        // TODO reconnect but throttle attempts
-        // vpsSocket = TcpSocket::connect ( this, vpsAddress, true );
+        // TODO reconnect but throttle attempts over a time period in case the VPS is down
+        // vpsSocket = TcpSocket::connect ( this, vpsAddress, true ); // Raw socket
 
         LOG_SMART_SOCKET ( this, "vpsSocket disconnected" );
+
+        Socket::Owner *owner = this->owner;
+
+        disconnect();
+
+        if ( owner )
+            owner->disconnectEvent ( this );
     }
     else
     {
@@ -170,6 +179,8 @@ void SmartSocket::disconnectEvent ( Socket *socket )
 
 void SmartSocket::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
 {
+    if ( owner )
+        owner->readEvent ( this, msg, address );
 }
 
 void SmartSocket::readEvent ( Socket *socket, const char *buffer, size_t len, const IpAddrPort& address )
@@ -242,10 +253,9 @@ void SmartSocket::timerExpired ( Timer *timer )
 {
     if ( timer == matchTimer.get() )
     {
-        matchTimer.reset();
-
         if ( isServer() )
         {
+            matchTimer.reset();
             tunSocket.reset();
             sendTimer.reset();
             return;

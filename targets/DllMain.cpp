@@ -23,7 +23,7 @@ using namespace std;
 
 #define INITIAL_TIMEOUT ( 10000 )
 
-#define DELAYED_STOP ( 500 )
+#define DELAYED_STOP ( 100 )
 
 #define RESEND_INPUTS_INTERVAL ( 100 )
 
@@ -216,6 +216,9 @@ struct Main
                 appState = AppState::Stopping;
                 return;
             }
+
+            if ( appState == AppState::Stopping )
+                return;
 
             // Don't need to wait for anything in local modes
             if ( clientMode.isLocal() )
@@ -738,7 +741,6 @@ struct Main
         }
         else if ( timer == stopTimer.get() )
         {
-            // TODO log and display WHY?
             appState = AppState::Stopping;
         }
         else
