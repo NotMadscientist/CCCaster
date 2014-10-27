@@ -48,7 +48,10 @@ public:
         virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) = 0;
 
         // Socket raw data read event (only called if isRaw)
-        virtual void readEvent ( Socket *socket, const char *buffer, size_t len, const IpAddrPort& address ) {};
+        virtual void readEvent ( Socket *socket, const char *buffer, size_t len, const IpAddrPort& address ) {}
+
+        // SmartSocket callback
+        virtual void switchedToUdpTunnel ( Socket *socket ) {}
     };
 
     // Socket protocol

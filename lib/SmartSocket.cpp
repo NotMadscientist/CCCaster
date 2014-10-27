@@ -133,11 +133,14 @@ void SmartSocket::disconnectEvent ( Socket *socket )
 {
     if ( socket == directSocket.get() )
     {
-        LOG_SMART_SOCKET ( this, "Switching to UDP tunnel" );
+        LOG_SMART_SOCKET ( this, "Switch to UDP tunnel" );
 
         directSocket.reset();
 
         vpsSocket = TcpSocket::connect ( this, vpsAddress, true );
+
+        if ( owner )
+            owner->switchedToUdpTunnel ( this );
     }
     else if ( socket == tunSocket.get() )
     {

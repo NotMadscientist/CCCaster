@@ -669,6 +669,11 @@ struct Main
         LOG ( "Unexpected '%s' from socket=%08x", msg, socket );
     }
 
+    virtual void switchedToUdpTunnel ( Socket *socket ) override
+    {
+        ui.display ( toString ( "Connecting to %s (UDP tunnel)", address ) );
+    }
+
     // ProcessManager callbacks
     virtual void ipcConnectEvent() override
     {
