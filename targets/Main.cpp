@@ -166,14 +166,14 @@ struct Main
 
         if ( clientMode.isHost() )
         {
-            serverCtrlSocket = TcpSocket::listen ( this, address.port );
+            serverCtrlSocket = SmartSocket::listen ( this, Socket::Protocol::TCP, address.port );
             address.port = serverCtrlSocket->address.port; // Update port in case it was initially 0
 
             LOG ( "serverCtrlSocket=%08x", serverCtrlSocket.get() );
         }
         else
         {
-            ctrlSocket = TcpSocket::connect ( this, address );
+            ctrlSocket = SmartSocket::connect ( this, Socket::Protocol::TCP, address );
 
             LOG ( "ctrlSocket=%08x", ctrlSocket.get() );
         }
@@ -187,7 +187,7 @@ struct Main
 
         ui.display ( toString ( "Connecting to %s", address ) );
 
-        ctrlSocket = TcpSocket::connect ( this, address );
+        ctrlSocket = SmartSocket::connect ( this, Socket::Protocol::TCP, address );
 
         LOG ( "ctrlSocket=%08x", ctrlSocket.get() );
 

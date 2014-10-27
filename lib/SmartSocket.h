@@ -6,19 +6,19 @@
 
 class SmartSocket : public Socket, public Socket::Owner, public Timer::Owner
 {
-    // The backing socket, ie the first socket that tries to connect directly
-    SocketPtr backingSocket;
+    // Socket that tries to listen / connect directly
+    SocketPtr directSocket;
 
-    // The socket that connects to the notification and tunnel server
+    // Socket that connects to the notification and tunnel server
     SocketPtr vpsSocket;
 
-    // The UDP tunnel socket
+    // Timeout for tunnel server matching
+    TimerPtr matchTimer;
+
+    // UDP tunnel socket
     SocketPtr tunSocket;
 
-    // The initial connect timer
-    TimerPtr connectTimer;
-
-    // The UDP tunnel send timer
+    // UDP tunnel send timer
     TimerPtr sendTimer;
 
     // Unused base socket callback
@@ -33,6 +33,10 @@ class SmartSocket : public Socket, public Socket::Owner, public Timer::Owner
 
     // Timer callback
     void timerExpired ( Timer *timer ) override;
+
+    void gotMatch();
+
+    void gotUdpInfo ( const IpAddrPort& address );
 
     // Construct a server socket
     SmartSocket ( Socket::Owner *owner, Socket::Protocol protocol, uint16_t port );
@@ -58,6 +62,10 @@ public:
 
     // Accept a new socket
     SocketPtr accept ( Socket::Owner *owner ) override;
+
+    // Send raw bytes directly, a return value of false indicates socket is disconnected
+    bool send ( const char *buffer, size_t len );
+    bool send ( const char *buffer, size_t len, const IpAddrPort& address );
 
     // Send a protocol message, returning false indicates the socket is disconnected
     bool send ( SerializableMessage *message, const IpAddrPort& address = NullAddress ) override;

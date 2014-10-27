@@ -29,7 +29,7 @@ struct ClientMode : public SerializableSequence
 {
     ENUM_VALUE ( ClientMode, Host, Client, Spectate, Broadcast, Offline )
 
-    enum { Training = 0x01, GameStarted = 0x02 };
+    enum { Training = 0x01, GameStarted = 0x02, UdpTunnel = 0x04 };
 
     uint8_t flags = 0;
 
@@ -46,6 +46,7 @@ struct ClientMode : public SerializableSequence
     bool isVersus() const { return !isTraining(); }
     bool isTraining() const { return ( flags & Training ); }
     bool isGameStarted() const { return ( flags & GameStarted ); }
+    bool isUdpTunnel() const { return ( flags & UdpTunnel ); }
 
     std::string flagString() const
     {
@@ -56,6 +57,9 @@ struct ClientMode : public SerializableSequence
 
         if ( flags & GameStarted )
             str += std::string ( str.empty() ? "" : ", " ) + "GameStarted";
+
+        if ( flags & UdpTunnel )
+            str += std::string ( str.empty() ? "" : ", " ) + "UdpTunnel";
 
         return str;
     }
