@@ -140,6 +140,7 @@ public:
     // Can only be used on a connection-less socket, where address.addr is NOT empty.
     // Changes the type to a message-based, UDP client socket.
     void connect();
+    void connect ( const IpAddrPort& address ) { this->address = address; connect(); }
 
     // Reset the state of the GoBackN instance
     void resetGbnState() { gbn.reset(); }

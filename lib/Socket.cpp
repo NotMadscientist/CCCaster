@@ -352,8 +352,23 @@ void Socket::freeBuffer()
     readPos = 0;
 }
 
+void Socket::consumeBuffer ( size_t bytes )
+{
+    if ( bytes == 0 )
+        return;
+
+    // Erase the consumed bytes (shifting the array)
+    ASSERT ( bytes <= readPos );
+    readBuffer.erase ( 0, bytes );
+    readBuffer.reserve ( READ_BUFFER_SIZE );
+    readBuffer.resize ( READ_BUFFER_SIZE, ( char ) 0 );
+    readPos -= bytes;
+}
+
 void Socket::readEvent()
 {
+    ASSERT ( readPos < readBuffer.size() );
+
     char *bufferStart = &readBuffer[readPos];
     size_t bufferLen = readBuffer.size() - readPos;
 
@@ -367,7 +382,7 @@ void Socket::readEvent()
 
     if ( !success )
     {
-        // Disconnect the socket if an error occured during read
+        // Disconnect the socket if an error occurred during read
         LOG_SOCKET ( this, "disconnect due to read error" );
         if ( isTCP() )
             disconnectEvent();
@@ -408,6 +423,7 @@ void Socket::readEvent()
     if ( bufferLen <= 256 )
         LOG ( "Base64 : %s", toBase64 ( bufferStart, bufferLen ) );
 
+    // Check if the first byte is a valid message type
     if ( readPos >= sizeof ( MsgType ) && ! ::Protocol::checkMsgType ( * ( MsgType * ) &readBuffer[0] ) )
     {
         LOG ( "Clearing invalid buffer!" );
@@ -418,24 +434,15 @@ void Socket::readEvent()
     // Try to decode as many messages from the buffer as possible
     for ( ;; )
     {
-        size_t consumed;
-        MsgPtr msg = ::Protocol::decode ( &readBuffer[0], readPos, consumed );
-
-        if ( consumed )
-        {
-            // Erase the consumed bytes (shifting the array)
-            ASSERT ( consumed <= readPos );
-            readBuffer.erase ( 0, consumed );
-            readBuffer.reserve ( READ_BUFFER_SIZE );
-            readBuffer.resize ( READ_BUFFER_SIZE, ( char ) 0 );
-            readPos -= consumed;
-        }
+        size_t consumedBytes = 0;
+        MsgPtr msg = ::Protocol::decode ( &readBuffer[0], readPos, consumedBytes );
+        consumeBuffer ( consumedBytes );
 
         // Abort if a message could not be decoded
         if ( !msg.get() )
             return;
 
-        LOG ( "Decoded [ %u bytes ] to '%s'; %u bytes remaining in buffer", consumed, msg, readPos );
+        LOG ( "Decoded [ %u bytes ] to '%s'; %u bytes remaining in buffer", consumedBytes, msg, readPos );
         readEvent ( msg, address );
 
         // Abort if the socket is de-allocated

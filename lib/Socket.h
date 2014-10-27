@@ -82,8 +82,12 @@ protected:
     // Underlying socket fd
     int fd = 0;
 
-    // Socket read buffer and position
+    // Socket read buffer
     std::string readBuffer;
+
+    // The position for the next read event.
+    // In raw mode, this should be manually updated, otherwise each read will at the same position.
+    // In message mode, this is automatically managed, and is only reset when a decode fails.
     size_t readPos = 0;
 
     // Packet loss percentage for testing purposes
@@ -111,6 +115,9 @@ protected:
 
     // Free the read buffer
     void freeBuffer();
+
+    // Consume bytes from the front of the buffer
+    void consumeBuffer ( size_t bytes );
 
     // Read raw bytes directly, blocking call, a return value of false indicates socket is disconnected
     bool recv ( char *buffer, size_t& len );
