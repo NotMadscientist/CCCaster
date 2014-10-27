@@ -5,6 +5,9 @@
 #include "Constants.h"
 #include "Pinger.h"
 #include "ExternalIpAddress.h"
+#include "TcpSocket.h"
+#include "UdpSocket.h"
+#include "SmartSocket.h"
 
 #include <optionparser.h>
 #include <windows.h>

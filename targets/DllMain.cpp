@@ -5,6 +5,9 @@
 #include "AsmHacks.h"
 #include "NetplayManager.h"
 #include "ChangeMonitor.h"
+#include "TcpSocket.h"
+#include "UdpSocket.h"
+#include "SmartSocket.h"
 
 #include <windows.h>
 
@@ -87,7 +90,7 @@ struct Main
     // Spectator sockets
     unordered_map<Socket *, SocketPtr> specSockets;
 
-    // Timer for the initial connect period, quits if timeout
+    // Timer to stop events
     TimerPtr stopTimer;
 
 

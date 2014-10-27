@@ -32,8 +32,8 @@ using namespace std;
     } while ( 0 )
 
 
-Socket::Socket ( const IpAddrPort& address, Protocol protocol, bool isRaw )
-    : address ( address ), protocol ( protocol ), isRaw ( isRaw )
+Socket::Socket ( Owner *owner, const IpAddrPort& address, Protocol protocol, bool isRaw )
+    : owner ( owner ), address ( address ), protocol ( protocol ), isRaw ( isRaw )
 {
     resetBuffer();
 }
@@ -488,7 +488,7 @@ MsgPtr Socket::share ( int processId )
 
 void SocketShareData::save ( cereal::BinaryOutputArchive& ar ) const
 {
-    ar ( address, protocol, isRaw, connectTimeout, state, readBuffer, readPos,
+    ar ( address, protocol, isRaw, connectTimeout, readBuffer, readPos, state,
          info->dwServiceFlags1,
          info->dwServiceFlags2,
          info->dwServiceFlags3,
@@ -521,7 +521,7 @@ void SocketShareData::load ( cereal::BinaryInputArchive& ar )
 {
     info.reset ( new WSAPROTOCOL_INFO() );
 
-    ar ( address, protocol, isRaw, connectTimeout, state, readBuffer, readPos,
+    ar ( address, protocol, isRaw, connectTimeout, readBuffer, readPos, state,
          info->dwServiceFlags1,
          info->dwServiceFlags2,
          info->dwServiceFlags3,

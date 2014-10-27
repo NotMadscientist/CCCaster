@@ -18,11 +18,10 @@ using namespace std;
 
 
 UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, const Type& type, bool isRaw )
-    : Socket ( IpAddrPort ( "", port ), Protocol::UDP, isRaw )
+    : Socket ( owner, IpAddrPort ( "", port ), Protocol::UDP, isRaw )
     , type ( type )
     , gbn ( this, DEFAULT_SEND_INTERVAL, isConnectionLess() ? 0 : DEFAULT_KEEP_ALIVE )
 {
-    this->owner = owner;
     this->state = State::Listening;
 
     Socket::init();
@@ -30,11 +29,10 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, const Type& type, bo
 }
 
 UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, const Type& type, bool isRaw )
-    : Socket ( address, Protocol::UDP, isRaw )
+    : Socket ( owner, address, Protocol::UDP, isRaw )
     , type ( type )
     , gbn ( this, DEFAULT_SEND_INTERVAL, isConnectionLess() ? 0 : connectTimeout )
 {
-    this->owner = owner;
     this->state = ( isConnectionLess() ? State::Connected : State::Connecting );
 
     Socket::init();
@@ -45,13 +43,11 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, const Ty
 }
 
 UdpSocket::UdpSocket ( Socket::Owner *owner, const SocketShareData& data )
-    : Socket ( data.address, Protocol::UDP, data.isRaw )
+    : Socket ( owner, data.address, Protocol::UDP, data.isRaw )
     , type ( ( Type::Enum ) data.udpType )
     , gbn ( this )
 {
     ASSERT ( data.protocol == Protocol::UDP );
-
-    this->owner = owner;
 
     this->connectTimeout = data.connectTimeout;
     this->state = data.state;
@@ -111,7 +107,7 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const SocketShareData& data )
 }
 
 UdpSocket::UdpSocket ( ChildSocketEnum, UdpSocket *parentSocket, const IpAddrPort& address )
-    : Socket ( address, Protocol::UDP )
+    : Socket ( 0, address, Protocol::UDP )
     , type ( Type::Child )
     , gbn ( this, parentSocket->getSendInterval(), parentSocket->getKeepAlive() )
     , parentSocket ( parentSocket )
@@ -120,7 +116,7 @@ UdpSocket::UdpSocket ( ChildSocketEnum, UdpSocket *parentSocket, const IpAddrPor
 }
 
 UdpSocket::UdpSocket ( ChildSocketEnum, UdpSocket *parentSocket, const IpAddrPort& address, const GoBackN& state )
-    : Socket ( address, Protocol::UDP )
+    : Socket ( 0, address, Protocol::UDP )
     , type ( Type::Child )
     , gbn ( this, state )
     , parentSocket ( parentSocket )

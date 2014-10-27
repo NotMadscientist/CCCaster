@@ -14,9 +14,8 @@ using namespace std;
 
 
 TcpSocket::TcpSocket ( Socket::Owner *owner, uint16_t port, bool isRaw )
-    : Socket ( IpAddrPort ( "", port ), Protocol::TCP, isRaw )
+    : Socket ( owner, IpAddrPort ( "", port ), Protocol::TCP, isRaw )
 {
-    this->owner = owner;
     this->state = State::Listening;
 
     Socket::init();
@@ -24,9 +23,8 @@ TcpSocket::TcpSocket ( Socket::Owner *owner, uint16_t port, bool isRaw )
 }
 
 TcpSocket::TcpSocket ( Socket::Owner *owner, const IpAddrPort& address, bool isRaw )
-    : Socket ( address, Protocol::TCP, isRaw )
+    : Socket ( owner, address, Protocol::TCP, isRaw )
 {
-    this->owner = owner;
     this->state = State::Connecting;
 
     Socket::init();
@@ -37,9 +35,8 @@ TcpSocket::TcpSocket ( Socket::Owner *owner, const IpAddrPort& address, bool isR
 }
 
 TcpSocket::TcpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address )
-    : Socket ( address, Protocol::TCP )
+    : Socket ( owner, address, Protocol::TCP )
 {
-    this->owner = owner;
     this->state = State::Connected;
     this->fd = fd;
 
@@ -47,7 +44,7 @@ TcpSocket::TcpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address )
 }
 
 TcpSocket::TcpSocket ( Socket::Owner *owner, const SocketShareData& data )
-    : Socket ( data.address, Protocol::TCP, data.isRaw )
+    : Socket ( owner, data.address, Protocol::TCP, data.isRaw )
 {
     ASSERT ( data.protocol == Protocol::TCP );
 

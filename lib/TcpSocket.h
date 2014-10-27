@@ -6,7 +6,7 @@
 
 class TcpSocket : public Socket, public Timer::Owner
 {
-    // Connect timer
+    // Timeout for initial connect
     TimerPtr connectTimer;
 
     // Timer callback
