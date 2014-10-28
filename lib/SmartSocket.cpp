@@ -113,13 +113,16 @@ SmartSocket::SmartSocket ( Socket::Owner *owner, uint16_t port, Socket::Protocol
 
     vpsSocket = TcpSocket::connect ( this, vpsAddress, true ); // Raw socket
 
-    tunSocket = UdpSocket::bind ( this, 0, true ); // Raw socket
+    tunSocket = UdpSocket::listen ( this, 0 );
 
-    // // Listen for direct connections in parallel
-    // if ( protocol == Protocol::TCP )
-    //     directSocket = TcpSocket::listen ( this, port );
-    // else
-    //     directSocket = UdpSocket::listen ( this, port );
+    // Listen for direct connections in parallel
+    if ( protocol == Protocol::TCP )
+        directSocket = TcpSocket::listen ( this, port );
+    else
+        directSocket = UdpSocket::listen ( this, port );
+
+    // Update address port
+    address.port = directSocket->address.port;
 }
 
 SmartSocket::SmartSocket ( Socket::Owner *owner, const IpAddrPort& address, Socket::Protocol protocol )
@@ -131,15 +134,11 @@ SmartSocket::SmartSocket ( Socket::Owner *owner, const IpAddrPort& address, Sock
 
     this->state = State::Connecting;
 
-#if 0
-    // Try to connect normally first
+    // Try to connect directly first
     if ( protocol == Protocol::TCP )
         directSocket = TcpSocket::connect ( this, address );
     else
         directSocket = UdpSocket::connect ( this, address );
-#else
-    vpsSocket = TcpSocket::connect ( this, vpsAddress, true );
-#endif
 }
 
 SmartSocket::~SmartSocket()
@@ -165,6 +164,8 @@ void SmartSocket::disconnect()
 void SmartSocket::acceptEvent ( Socket *serverSocket )
 {
     ASSERT ( serverSocket == directSocket.get() || serverSocket == tunSocket.get() );
+
+    isDirectAccept = ( serverSocket == directSocket.get() );
 
     if ( owner )
         owner->acceptEvent ( this );
@@ -257,12 +258,6 @@ void SmartSocket::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPor
 
 void SmartSocket::readEvent ( Socket *socket, const char *buffer, size_t len, const IpAddrPort& address )
 {
-    if ( socket == tunSocket.get() )
-    {
-        LOG ( "Read [ %u bytes ] from '%s' (tunSocket)", len, address );
-        return;
-    }
-
     ASSERT ( socket == vpsSocket.get() );
 
     vpsSocket->readPos += len;
@@ -364,9 +359,13 @@ void SmartSocket::timerExpired ( Timer *timer )
 
         auto it = pendingClients.find ( pendingTimers[timer] );
 
-        LOG_SMART_SOCKET ( this, "matchId=%u; address='%s'; Client timed out", it->first, it->second.address );
+        if ( it != pendingClients.end() )
+        {
+            LOG_SMART_SOCKET ( this, "matchId=%u; address='%s'; Client timed out", it->first, it->second.address );
 
-        pendingClients.erase ( it );
+            pendingClients.erase ( it );
+        }
+
         pendingTimers.erase ( timer );
 
         if ( pendingClients.empty() && pendingTimers.empty() )
@@ -396,7 +395,7 @@ void SmartSocket::gotMatch ( uint32_t matchId )
     {
         this->matchId = matchId;
 
-        tunSocket = UdpSocket::bind ( this, vpsAddress, true ); // Raw socket
+        tunSocket = UdpSocket::bind ( this, vpsAddress );
     }
 
     if ( sendTimer )
@@ -430,6 +429,11 @@ void SmartSocket::gotUdpInfo ( uint32_t matchId, const IpAddrPort& address )
         connectTimer.reset();
 
         this->tunAddress = address;
+
+        ASSERT ( tunSocket.get() != 0 );
+        ASSERT ( tunSocket->isUDP() == true );
+
+        tunSocket->getAsUDP().connect ( address );
     }
 }
 
@@ -446,13 +450,33 @@ SocketPtr SmartSocket::connect ( Socket::Owner *owner, const IpAddrPort& address
 
 SocketPtr SmartSocket::accept ( Socket::Owner *owner )
 {
-    if ( directSocket )
+    if ( isDirectAccept )
         return directSocket->accept ( owner );
 
-    if ( tunSocket )
-        return tunSocket->accept ( owner );
+    SocketPtr socket = tunSocket->accept ( owner );
 
-    return 0;
+    if ( !socket )
+        return 0;
+
+    auto it = pendingClients.begin();
+
+    for ( ; it != pendingClients.end(); ++it )
+    {
+        if ( it->second.address == socket->address )
+            break;
+    }
+
+    if ( it != pendingClients.end() )
+    {
+        pendingTimers.erase ( it->second.timer.get() );
+
+        pendingClients.erase ( it );
+
+        if ( pendingClients.empty() && pendingTimers.empty() )
+            sendTimer.reset();
+    }
+
+    return socket;
 }
 
 #define BOILERPLATE_SEND(...)                                                           \

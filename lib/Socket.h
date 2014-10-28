@@ -156,7 +156,8 @@ public:
     virtual bool send ( const char *buffer, size_t len );
     virtual bool send ( const char *buffer, size_t len, const IpAddrPort& address );
 
-    // Accept a new socket
+    // Accept a new socket, should not be called without an acceptEvent.
+    // Check socket implementation for specific behaviours.
     virtual SocketPtr accept ( Owner *owner ) = 0;
 
     // Get the data needed to share this socket with another process

@@ -51,6 +51,9 @@ class SmartSocket : public Socket, public Socket::Owner, public Timer::Owner
     // UDP tunnel send timer
     TimerPtr sendTimer;
 
+    // True if the acceptEvent is for directSocket
+    bool isDirectAccept = false;
+
     // Unused base socket callback
     void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) override {}
 

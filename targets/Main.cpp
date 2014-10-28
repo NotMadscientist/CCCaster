@@ -276,9 +276,8 @@ struct Main
             if ( versionConfig.mode.isSpectate() ) // Ignore spectators, since the game is not loaded
                 return;
 
-            // TODO SmartSocket
-            try { serverDataSocket = UdpSocket::listen ( this, address.port ); }
-            catch ( ... ) { serverDataSocket = UdpSocket::listen ( this, 0 ); }
+            try { serverDataSocket = SmartSocket::listen ( this, address.port, Socket::Protocol::UDP ); }
+            catch ( ... ) { serverDataSocket = SmartSocket::listen ( this, 0, Socket::Protocol::UDP ); }
             initialConfig.dataPort = serverDataSocket->address.port;
 
             LOG ( "serverDataSocket=%08x", serverDataSocket.get() );
@@ -332,7 +331,8 @@ struct Main
             this->initialConfig.mode.flags = initialConfig.mode.flags;
             this->initialConfig.dataPort = initialConfig.dataPort;
 
-            dataSocket = UdpSocket::connect ( this, { address.addr, this->initialConfig.dataPort } );
+            dataSocket = SmartSocket::connect (
+                             this, { address.addr, this->initialConfig.dataPort }, Socket::Protocol::UDP );
 
             LOG ( "dataSocket=%08x", dataSocket.get() );
 
@@ -526,6 +526,8 @@ struct Main
 
         if ( serverSocket == serverCtrlSocket.get() )
         {
+            LOG ( "serverCtrlSocket->accept ( this )" );
+
             SocketPtr newSocket = serverCtrlSocket->accept ( this );
 
             LOG ( "newSocket=%08x", newSocket.get() );
@@ -539,6 +541,8 @@ struct Main
         }
         else if ( serverSocket == serverDataSocket.get() )
         {
+            LOG ( "serverDataSocket->accept ( this )" );
+
             dataSocket = serverDataSocket->accept ( this );
 
             LOG ( "dataSocket=%08x", dataSocket.get() );
@@ -561,6 +565,8 @@ struct Main
 
         if ( socket == ctrlSocket.get() )
         {
+            LOG ( "ctrlSocket connected!" );
+
             ASSERT ( ctrlSocket.get() != 0 );
             ASSERT ( ctrlSocket->isConnected() == true );
 
@@ -568,6 +574,8 @@ struct Main
         }
         else if ( socket == dataSocket.get() )
         {
+            LOG ( "dataSocket connected!" );
+
             ASSERT ( dataSocket.get() != 0 );
             ASSERT ( dataSocket->isConnected() == true );
         }
@@ -584,9 +592,17 @@ struct Main
         if ( socket == ctrlSocket.get() || socket == dataSocket.get() )
         {
             if ( socket == ctrlSocket.get() )
+            {
+                LOG ( "ctrlSocket disconnected!" );
+
                 ctrlSocket.reset();
+            }
             else if ( socket == dataSocket.get() )
+            {
+                LOG ( "dataSocket disconnected!" );
+
                 dataSocket.reset();
+            }
 
             if ( userConfirmed && finalConfigReceived )
             {
@@ -671,6 +687,9 @@ struct Main
 
     virtual void switchedToUdpTunnel ( Socket *socket ) override
     {
+        if ( socket != ctrlSocket.get() )
+            return;
+
         ui.display ( toString ( "Connecting to %s (UDP tunnel)", address ) );
     }
 

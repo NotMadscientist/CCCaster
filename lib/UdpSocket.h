@@ -98,7 +98,7 @@ public:
     // Completely disconnect the socket
     void disconnect() override;
 
-    // Accept a new socket
+    // Accept a new socket, returns 0 if no socket to accept
     SocketPtr accept ( Socket::Owner *owner ) override;
 
     // If this UDP socket is backed by a real socket handle, and not proxy of another socket

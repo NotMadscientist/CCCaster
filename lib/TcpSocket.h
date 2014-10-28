@@ -49,7 +49,7 @@ public:
     // Completely disconnect the socket
     void disconnect() override;
 
-    // Accept a new socket
+    // Accept a new socket, HANGS if no socket to accept
     SocketPtr accept ( Socket::Owner *owner ) override;
 
     // Send a protocol message, returning false indicates the socket is disconnected
