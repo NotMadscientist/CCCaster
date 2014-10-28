@@ -72,11 +72,15 @@ void TimerManager::check()
             LOG ( "Expired timer %08x", timer );
 
             timer->delay = timer->expiry = 0;
-            timer->owner->timerExpired ( timer );
-        }
 
-        if ( allocatedTimers.find ( timer ) == allocatedTimers.end() )
-            continue;
+            if ( timer->owner )
+            {
+                timer->owner->timerExpired ( timer );
+
+                if ( allocatedTimers.find ( timer ) == allocatedTimers.end() )
+                    continue;
+            }
+        }
 
         if ( timer->delay > 0 )
         {
@@ -84,11 +88,14 @@ void TimerManager::check()
 
             timer->expiry = now + timer->delay;
             timer->delay = 0;
-
-            if ( timer->expiry < nextExpiry )
-                nextExpiry = timer->expiry;
         }
+
+        if ( timer->expiry < nextExpiry )
+            nextExpiry = timer->expiry;
     }
+
+    if ( nextExpiry < UINT64_MAX )
+        LOG ( "nextExpiry in %llu ms", nextExpiry - now );
 }
 
 void TimerManager::add ( Timer *timer )

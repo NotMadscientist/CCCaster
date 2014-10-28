@@ -16,9 +16,6 @@ Timer::~Timer()
 
 void Timer::start ( uint64_t delay )
 {
-    if ( delay == 0 )
-        return;
-
     this->delay = delay;
 }
 

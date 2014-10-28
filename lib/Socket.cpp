@@ -309,7 +309,7 @@ bool Socket::recv ( char *buffer, size_t& len )
 
     if ( recvBytes == SOCKET_ERROR )
     {
-        LOG_SOCKET ( this, "%s; recvfrom failed", WindowsException ( WSAGetLastError() ) );
+        LOG_SOCKET ( this, "%s; recv failed", WindowsException ( WSAGetLastError() ) );
         return false;
     }
 
@@ -329,7 +329,19 @@ bool Socket::recv ( char *buffer, size_t& len, IpAddrPort& address )
 
     if ( recvBytes == SOCKET_ERROR )
     {
-        LOG_SOCKET ( this, "%s; recvfrom failed", WindowsException ( WSAGetLastError() ) );
+        int error = WSAGetLastError();
+
+        LOG_SOCKET ( this, "%s; recvfrom failed", WindowsException ( error ) );
+
+        // WSAECONNRESET does not mean the UDP socket is dead, it just means Windows is reporting:
+        // http://en.wikipedia.org/wiki/Internet_Control_Message_Protocol#Destination_unreachable
+        if ( error == WSAECONNRESET )
+        {
+            len = 0;
+            address.clear();
+            return true;
+        }
+
         return false;
     }
 
