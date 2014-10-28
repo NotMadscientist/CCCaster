@@ -3,6 +3,8 @@
 #include "Socket.h"
 #include "Timer.h"
 
+#include <unordered_map>
+
 
 class SmartSocket : public Socket, public Socket::Owner, public Timer::Owner
 {
@@ -15,20 +17,39 @@ class SmartSocket : public Socket, public Socket::Owner, public Timer::Owner
     // Socket that connects to the notification and tunnel server
     SocketPtr vpsSocket;
 
-    // Timeout for tunnel server matching
-    TimerPtr matchTimer;
+    // Timeout for UDP tunnel match
+    TimerPtr connectTimer;
 
-    // Integer that matches the host to the client
+    // Integer that matches the server to the client
     uint32_t matchId = 0;
 
     // UDP tunnel socket
     SocketPtr tunSocket;
 
+    // Address of the server's UDP hole
+    IpAddrPort tunAddress;
+
+    // Connecting client data
+    struct TunnelClient
+    {
+        // Integer that matches the server to the client
+        uint32_t matchId = 0;
+
+        // Timeout for the connecting client
+        TimerPtr timer;
+
+        // Address of the client's UDP hole
+        IpAddrPort address;
+    };
+
+    // Connecting matchId -> client data
+    std::unordered_map<uint32_t, TunnelClient> pendingClients;
+
+    // Connecting client timer -> matchId
+    std::unordered_map<Timer *, uint32_t> pendingTimers;
+
     // UDP tunnel send timer
     TimerPtr sendTimer;
-
-    // Address of the UDP tunnel
-    IpAddrPort tunAddress;
 
     // Unused base socket callback
     void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) override {}
@@ -45,16 +66,13 @@ class SmartSocket : public Socket, public Socket::Owner, public Timer::Owner
 
     void gotMatch ( uint32_t matchId );
 
-    void gotUdpInfo ( const IpAddrPort& address );
+    void gotUdpInfo ( uint32_t matchId, const IpAddrPort& address );
 
     // Construct a server socket
     SmartSocket ( Socket::Owner *owner, uint16_t port, Socket::Protocol protocol );
 
     // Construct a client socket
     SmartSocket ( Socket::Owner *owner, const IpAddrPort& address, Socket::Protocol protocol );
-
-    // Construct a child UDP socket from the parent socket
-    UdpSocket ( ChildSocketEnum, SmartSocket *parentSocket, const IpAddrPort& address );
 
 public:
 

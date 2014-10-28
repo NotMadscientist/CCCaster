@@ -31,6 +31,8 @@ def nextMatchId():
 
     if currentMatchId == 0:
         currentMatchId = 1
+    else:
+        currentMatchId += 1
 
     while currentMatchId in matches:
         currentMatchId += 1
@@ -117,11 +119,15 @@ while True:
                     if ( 0 <= index <= 1 ) and ( matchId in matches ):
                         # if matching TCP socket is found, send UDP address once
                         if matches[matchId][index]:
-                            matches[matchId][index].send ( 'info%s:%u\0' % address )
+                            info = 'info' + struct.pack ( '<I', matchId ) + '%s:%u\0' % address
+
+                            matches[matchId][index].send ( info )
                             matches[matchId][index] = None
+
                         # remove the match once both have been sent
                         if ( not matches[matchId][0] ) and ( not matches[matchId][1] ):
                             del matches[matchId]
+                            print 'matches', matches.keys()
 
                     continue
                 except:

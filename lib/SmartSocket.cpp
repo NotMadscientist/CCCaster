@@ -36,17 +36,24 @@ struct Match
 
 struct UdpInfo
 {
-    static IpAddrPort decode ( const char *buffer, size_t len, size_t& consumed )
+    uint32_t matchId = 0;
+
+    IpAddrPort address;
+
+    UdpInfo() {}
+    UdpInfo ( uint32_t matchId, const string& address ) : matchId ( matchId ), address ( address ) {}
+
+    static UdpInfo decode ( const char *buffer, size_t len, size_t& consumed )
     {
         static const string header = "info";
 
-        if ( len < header.size() || string ( buffer, header.size() ) != header )
+        if ( len < header.size() + sizeof ( uint32_t ) || string ( buffer, header.size() ) != header )
         {
             consumed = 0;
-            return NullAddress;
+            return UdpInfo();
         }
 
-        const size_t start = header.size();
+        const size_t start = header.size() + sizeof ( uint32_t );
 
         size_t i, end = 0;
 
@@ -66,11 +73,11 @@ struct UdpInfo
         if ( end == 0 || i == 22 )
         {
             consumed = 0;
-            return NullAddress;
+            return UdpInfo();
         }
 
         consumed = end + 1;
-        return IpAddrPort ( string ( buffer + start, end - start ) );
+        return UdpInfo ( * ( uint32_t * ) &buffer[header.size()], string ( buffer + start, end - start ) );
     }
 };
 
@@ -105,6 +112,8 @@ SmartSocket::SmartSocket ( Socket::Owner *owner, uint16_t port, Socket::Protocol
     this->state = State::Listening;
 
     vpsSocket = TcpSocket::connect ( this, vpsAddress, true ); // Raw socket
+
+    tunSocket = UdpSocket::bind ( this, 0, true ); // Raw socket
 
     // // Listen for direct connections in parallel
     // if ( protocol == Protocol::TCP )
@@ -142,13 +151,15 @@ void SmartSocket::disconnect()
 {
     Socket::disconnect();
 
+    matchId = 0;
+    tunAddress.clear();
+
     directSocket.reset();
     vpsSocket.reset();
-    matchTimer.reset();
-    matchId = 0;
     tunSocket.reset();
+
     sendTimer.reset();
-    tunAddress.clear();
+    connectTimer.reset();
 }
 
 void SmartSocket::acceptEvent ( Socket *serverSocket )
@@ -164,7 +175,7 @@ void SmartSocket::connectEvent ( Socket *socket )
     if ( socket == directSocket.get() || socket == tunSocket.get() )
     {
         sendTimer.reset();
-        matchTimer.reset();
+        connectTimer.reset();
 
         this->state = State::Connected;
 
@@ -182,8 +193,8 @@ void SmartSocket::connectEvent ( Socket *socket )
             string buffer = address.str();
             vpsSocket->send ( &buffer[0], buffer.size() );
 
-            matchTimer.reset ( new Timer ( this ) );
-            matchTimer->start ( connectTimeout );
+            connectTimer.reset ( new Timer ( this ) );
+            connectTimer->start ( connectTimeout );
         }
 
         // Wait for callback to gotMatch
@@ -210,13 +221,6 @@ void SmartSocket::disconnectEvent ( Socket *socket )
     else if ( socket == tunSocket.get() )
     {
         LOG_SMART_SOCKET ( this, "Tunnel socket disconnected" );
-
-        if ( isServer() )
-        {
-            tunSocket.reset();
-            sendTimer.reset();
-            return;
-        }
 
         Socket::Owner *owner = this->owner;
 
@@ -253,6 +257,12 @@ void SmartSocket::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPor
 
 void SmartSocket::readEvent ( Socket *socket, const char *buffer, size_t len, const IpAddrPort& address )
 {
+    if ( socket == tunSocket.get() )
+    {
+        LOG ( "Read [ %u bytes ] from '%s' (tunSocket)", len, address );
+        return;
+    }
+
     ASSERT ( socket == vpsSocket.get() );
 
     vpsSocket->readPos += len;
@@ -262,7 +272,7 @@ void SmartSocket::readEvent ( Socket *socket, const char *buffer, size_t len, co
         LOG ( "Base64 : %s", toBase64 ( buffer, len ) );
 
     uint32_t id;
-    IpAddrPort addr;
+    UdpInfo info;
     size_t consumed;
 
     for ( ;; )
@@ -275,13 +285,13 @@ void SmartSocket::readEvent ( Socket *socket, const char *buffer, size_t len, co
 
             gotMatch ( id );
         }
-        else if ( ! ( addr = UdpInfo::decode ( &vpsSocket->readBuffer[0], vpsSocket->readPos, consumed ) ).empty() )
+        else if ( ( info = UdpInfo::decode ( &vpsSocket->readBuffer[0], vpsSocket->readPos, consumed ) ).matchId )
         {
-            LOG_SMART_SOCKET ( this, "gotUdpInfo ( '%s' )", addr );
+            LOG_SMART_SOCKET ( this, "gotUdpInfo ( %u, '%s' )", info.matchId, info.address );
 
             vpsSocket->consumeBuffer ( consumed );
 
-            gotUdpInfo ( addr );
+            gotUdpInfo ( info.matchId, info.address );
         }
         else
         {
@@ -293,16 +303,8 @@ void SmartSocket::readEvent ( Socket *socket, const char *buffer, size_t len, co
 
 void SmartSocket::timerExpired ( Timer *timer )
 {
-    if ( timer == matchTimer.get() )
+    if ( timer == connectTimer.get() )
     {
-        if ( isServer() )
-        {
-            matchTimer.reset();
-            tunSocket.reset();
-            sendTimer.reset();
-            return;
-        }
-
         LOG_SMART_SOCKET ( this, "No matching host found" );
 
         Socket::Owner *owner = this->owner;
@@ -314,24 +316,61 @@ void SmartSocket::timerExpired ( Timer *timer )
     }
     else if ( timer == sendTimer.get() )
     {
-        ASSERT ( tunSocket.get() != 0 );
-
-        ASSERT ( matchId != 0 );
-
-        if ( tunAddress.empty() )
+        if ( isServer() )
         {
-            char buffer[5];
-            buffer[0] = ( isServer() ? 0 : 1 );
-            ( * ( uint32_t * ) &buffer[1] ) = matchId;
+            for ( const auto& kv : pendingClients )
+            {
+                const TunnelClient& tunClient = kv.second;
 
-            tunSocket->send ( buffer, sizeof ( buffer ), vpsAddress );
+                if ( tunClient.address.empty() )
+                {
+                    ASSERT ( tunClient.matchId != 0 );
+
+                    char buffer[5];
+                    buffer[0] = ( isServer() ? 0 : 1 );
+                    ( * ( uint32_t * ) &buffer[1] ) = tunClient.matchId;
+
+                    tunSocket->send ( buffer, sizeof ( buffer ), vpsAddress );
+                }
+                else
+                {
+                    tunSocket->send ( NullMsg, tunClient.address );
+                }
+            }
         }
         else
         {
-            tunSocket->send ( NullMsg, tunAddress );
+            if ( tunAddress.empty() )
+            {
+                ASSERT ( matchId != 0 );
+
+                char buffer[5];
+                buffer[0] = ( isServer() ? 0 : 1 );
+                ( * ( uint32_t * ) &buffer[1] ) = matchId;
+
+                tunSocket->send ( buffer, sizeof ( buffer ), vpsAddress );
+            }
+            else
+            {
+                tunSocket->send ( NullMsg, tunAddress );
+            }
         }
 
         sendTimer->start ( SEND_INTERVAL );
+    }
+    else if ( pendingTimers.find ( timer ) != pendingTimers.end() )
+    {
+        ASSERT ( isServer() == true );
+
+        auto it = pendingClients.find ( pendingTimers[timer] );
+
+        LOG_SMART_SOCKET ( this, "matchId=%u; address='%s'; Client timed out", it->first, it->second.address );
+
+        pendingClients.erase ( it );
+        pendingTimers.erase ( timer );
+
+        if ( pendingClients.empty() && pendingTimers.empty() )
+            sendTimer.reset();
     }
     else
     {
@@ -341,48 +380,57 @@ void SmartSocket::timerExpired ( Timer *timer )
 
 void SmartSocket::gotMatch ( uint32_t matchId )
 {
-    // TODO properly handle child connections
-
-    if ( tunSocket )
-        return;
-
     ASSERT ( matchId != 0 );
 
-    this->matchId = matchId;
-
     if ( isServer() )
-        tunSocket = UdpSocket::bind ( this, address.port, true ); // Raw socket
+    {
+        TunnelClient tunClient;
+        tunClient.matchId = matchId;
+        tunClient.timer.reset ( new Timer ( this ) );
+        tunClient.timer->start ( connectTimeout );
+
+        pendingClients[matchId] = tunClient;
+        pendingTimers[tunClient.timer.get()] = matchId;
+    }
     else
+    {
+        this->matchId = matchId;
+
         tunSocket = UdpSocket::bind ( this, vpsAddress, true ); // Raw socket
+    }
+
+    if ( sendTimer )
+        return;
 
     sendTimer.reset ( new Timer ( this ) );
     sendTimer->start ( SEND_INTERVAL );
-
-    if ( !matchTimer )
-        matchTimer.reset ( new Timer ( this ) );
-
-    matchTimer->start ( connectTimeout );
 }
 
-void SmartSocket::gotUdpInfo ( const IpAddrPort& tunAddress )
+void SmartSocket::gotUdpInfo ( uint32_t matchId, const IpAddrPort& address )
 {
-    // TODO properly handle child connections
-
-    if ( !tunSocket )
-        return;
-
-    ASSERT ( tunAddress.empty() == false );
-
-    this->tunAddress = tunAddress;
-
-    matchTimer.reset();
-
-    ASSERT ( tunSocket->isUDP() == true );
+    ASSERT ( matchId != 0 );
+    ASSERT ( address.empty() == false );
 
     if ( isServer() )
-        tunSocket->getAsUDP().listen();
+    {
+        for ( auto& kv : pendingClients )
+        {
+            TunnelClient& tunClient = kv.second;
+
+            if ( tunClient.matchId == matchId )
+            {
+                tunClient.address = address;
+                tunClient.timer->start ( connectTimeout );
+                break;
+            }
+        }
+    }
     else
-        tunSocket->getAsUDP().connect ( tunAddress );
+    {
+        connectTimer.reset();
+
+        this->tunAddress = address;
+    }
 }
 
 SocketPtr SmartSocket::listen ( Socket::Owner *owner, uint16_t port, Socket::Protocol protocol )
