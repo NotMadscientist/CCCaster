@@ -87,7 +87,11 @@ public:
 #endif // DISABLE_LOGGING
 
 
-#ifndef RELEASE
+#ifdef DISABLE_ASSERTS
+
+#define ASSERT(...)
+
+#else
 
 #define ASSERT(ASSERTION)                                                                                           \
     do {                                                                                                            \
@@ -98,11 +102,7 @@ public:
         abort();                                                                                                    \
     } while ( 0 )
 
-#else
-
-#define ASSERT(...)
-
-#endif // RELEASE
+#endif // DISABLE_ASSERTS
 
 
 #define LOG_AND_THROW_STRING(FORMAT, ...)                                                                           \

@@ -66,6 +66,7 @@ LD_FLAGS += -lSDL2 -lSDL2main -lws2_32 -lwinmm -lwinpthread -ldinput8 -lgdi32 -l
 
 # Build options
 # DEFINES += -DDISABLE_LOGGING
+# DEFINES += -DDISABLE_ASSERTS
 # DEFINES += -DLOGGER_MUTEXED
 # DEFINES += -DJLIB_MUTEXED
 
@@ -79,16 +80,16 @@ target-debug: DEFINES += -D_GLIBCXX_DEBUG
 target-debug: CC_FLAGS += -ggdb3 -O0 -fno-inline
 target-debug: $(ARCHIVE)
 
-target-release: DEFINES += -DNDEBUG -DRELEASE -DDISABLE_LOGGING
+target-release: DEFINES += -DNDEBUG -DRELEASE -DDISABLE_LOGGING -DDISABLE_ASSERTS
 target-release: CC_FLAGS += -s -Os -O2 -fno-rtti
 target-release: $(ARCHIVE)
 
-target-release-logging: DEFINES += -DNDEBUG -DRELEASE
-target-release-logging:: CC_FLAGS += -s -Os -O2 -fno-rtti
+target-release-logging: DEFINES += -DRELEASE
+target-release-logging:: CC_FLAGS += -s -Os -O2
 target-release-logging:: $(ARCHIVE)
 
 target-profile: STRIP = touch
-target-profile: DEFINES += -DNDEBUG -DRELEASE
+target-profile: DEFINES += -DNDEBUG -DRELEASE -DDISABLE_LOGGING -DDISABLE_ASSERTS
 target-profile: CC_FLAGS += -O2 -fno-rtti -pg
 target-profile: LD_FLAGS += -pg -lgmon
 target-profile: $(ARCHIVE)
