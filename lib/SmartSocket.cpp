@@ -16,11 +16,46 @@ const IpAddrPort vpsAddress = "198.12.67.179:3939"; // vps.mi.ku.lc
 // const IpAddrPort vpsAddress = "23.95.23.238:3939"; // hatsune.mi.ku.lc
 
 
-struct Match
+/* Tunnel protocol
+
+    1 - Host opens a TCP socket to the server and sends its HostingPort.
+        Host should maintain the socket connection; reconnect and resend if needed.
+
+    2 - Client opens a TCP socket to the server and sends its ConnectionAddress.
+
+    2 - Server tries to matchmake:
+        If a matching host if found, the server sends MatchInfo to host AND client over TCP.
+        Otherwise disconnects the client if no matching host exists.
+
+    3 - On match, host and client both create a new UDP socket bound to any port,
+        and start repeatedly sending UdpData to the server's UDP port.
+
+    4 - Server recvs UdpData from the client and sends TunInfo ONCE to the host over TCP.
+        Server recvs UdpData from the host and sends TunInfo ONCE to the client over TCP.
+
+    5 - Host and client can now connect over the address specified in TunInfo.
+
+  Binary formats (little-endian):
+
+    HostingPort is a single uint16_t.
+
+    ConnectionAddress is NON-null-terminated string, eg. "<ip>:<port>".
+
+    MatchInfo is "MatchInfo" followed by the matchId.
+
+    UdpData is a uint8_t followed by the matchId. The uint8_t is a boolean flag indicating isClient.
+
+    TunInfo is "TunInfo" followed by the matchId, followed by a NULL-terminated address string (for easier parsing).
+
+    The matchId is always a uint32_t, and should be non-zero.
+
+*/
+
+struct MatchInfo
 {
     static uint32_t decode ( const char *buffer, size_t len, size_t& consumed )
     {
-        static const string header = "match";
+        static const string header = "MatchInfo";
 
         if ( len < header.size() + sizeof ( uint32_t ) || string ( buffer, header.size() ) != header )
         {
@@ -33,24 +68,36 @@ struct Match
     }
 };
 
+struct UdpData
+{
+    char buffer[5];
 
-struct UdpInfo
+    UdpData ( bool isClient, uint32_t matchId )
+    {
+        ASSERT ( matchId != 0 );
+
+        buffer[0] = ( char ) ( isClient ? 1 : 0 );
+        memcpy ( &buffer[1], ( char * ) &matchId, sizeof ( uint32_t ) );
+    }
+};
+
+struct TunInfo
 {
     uint32_t matchId = 0;
 
     IpAddrPort address;
 
-    UdpInfo() {}
-    UdpInfo ( uint32_t matchId, const string& address ) : matchId ( matchId ), address ( address ) {}
+    TunInfo() {}
+    TunInfo ( uint32_t matchId, const string& address ) : matchId ( matchId ), address ( address ) {}
 
-    static UdpInfo decode ( const char *buffer, size_t len, size_t& consumed )
+    static TunInfo decode ( const char *buffer, size_t len, size_t& consumed )
     {
-        static const string header = "info";
+        static const string header = "TunInfo";
 
         if ( len < header.size() + sizeof ( uint32_t ) || string ( buffer, header.size() ) != header )
         {
             consumed = 0;
-            return UdpInfo();
+            return TunInfo();
         }
 
         const size_t start = header.size() + sizeof ( uint32_t );
@@ -73,34 +120,13 @@ struct UdpInfo
         if ( end == 0 || i == 22 )
         {
             consumed = 0;
-            return UdpInfo();
+            return TunInfo();
         }
 
         consumed = end + 1;
-        return UdpInfo ( * ( uint32_t * ) &buffer[header.size()], string ( buffer + start, end - start ) );
+        return TunInfo ( * ( uint32_t * ) &buffer[header.size()], string ( buffer + start, end - start ) );
     }
 };
-
-
-/* Tunnel protocol
-
-    1 - Host opens a TCP socket to the server and sends its hosting port (uint16_t).
-        Host should maintain the socket connection; reconnect and resend if needed.
-
-    2 - Client opens a TCP socket to the server and sends an address string ("<ip>:<port>").
-
-    2 - Server tries to matchmake:
-        If a matching host if found, the server sends matchId to host AND client to signal match.
-        Otherwise disconnects the client if no matching host exists.
-
-    3 - On match, host and client both create a new UDP socket (bind any port),
-        and start sending match info to the server's UDP port.
-
-    4 - Server recvs UDP packets, and relays UDP address info to each side over TCP
-
-    5 - Host and client can now connect over the UDP tunnel
-
-*/
 
 SmartSocket::SmartSocket ( Socket::Owner *owner, uint16_t port, Socket::Protocol protocol )
     : Socket ( owner, IpAddrPort ( "", port ), Protocol::Smart )
@@ -267,12 +293,12 @@ void SmartSocket::readEvent ( Socket *socket, const char *buffer, size_t len, co
         LOG ( "Base64 : %s", toBase64 ( buffer, len ) );
 
     uint32_t id;
-    UdpInfo info;
+    TunInfo tun;
     size_t consumed;
 
     for ( ;; )
     {
-        if ( ( id = Match::decode ( &vpsSocket->readBuffer[0], vpsSocket->readPos, consumed ) ) )
+        if ( ( id = MatchInfo::decode ( &vpsSocket->readBuffer[0], vpsSocket->readPos, consumed ) ) )
         {
             LOG_SMART_SOCKET ( this, "gotMatch ( %u )", id );
 
@@ -280,13 +306,13 @@ void SmartSocket::readEvent ( Socket *socket, const char *buffer, size_t len, co
 
             gotMatch ( id );
         }
-        else if ( ( info = UdpInfo::decode ( &vpsSocket->readBuffer[0], vpsSocket->readPos, consumed ) ).matchId )
+        else if ( ( tun = TunInfo::decode ( &vpsSocket->readBuffer[0], vpsSocket->readPos, consumed ) ).matchId )
         {
-            LOG_SMART_SOCKET ( this, "gotUdpInfo ( %u, '%s' )", info.matchId, info.address );
+            LOG_SMART_SOCKET ( this, "gotTunInfo ( %u, '%s' )", tun.matchId, tun.address );
 
             vpsSocket->consumeBuffer ( consumed );
 
-            gotUdpInfo ( info.matchId, info.address );
+            gotTunInfo ( tun.matchId, tun.address );
         }
         else
         {
@@ -319,13 +345,8 @@ void SmartSocket::timerExpired ( Timer *timer )
 
                 if ( tunClient.address.empty() )
                 {
-                    ASSERT ( tunClient.matchId != 0 );
-
-                    char buffer[5];
-                    buffer[0] = ( isServer() ? 0 : 1 );
-                    memcpy ( &buffer[1], ( char * ) &tunClient.matchId, sizeof ( uint32_t ) );
-
-                    tunSocket->send ( buffer, sizeof ( buffer ), vpsAddress );
+                    UdpData data ( isClient(), tunClient.matchId );
+                    tunSocket->send ( data.buffer, sizeof ( data.buffer ), vpsAddress );
                 }
                 else
                 {
@@ -337,13 +358,8 @@ void SmartSocket::timerExpired ( Timer *timer )
         {
             if ( tunAddress.empty() )
             {
-                ASSERT ( matchId != 0 );
-
-                char buffer[5];
-                buffer[0] = ( isServer() ? 0 : 1 );
-                memcpy ( &buffer[1], ( char * ) &matchId, sizeof ( uint32_t ) );
-
-                tunSocket->send ( buffer, sizeof ( buffer ), vpsAddress );
+                UdpData data ( isClient(), matchId );
+                tunSocket->send ( data.buffer, sizeof ( data.buffer ), vpsAddress );
             }
             else
             {
@@ -405,7 +421,7 @@ void SmartSocket::gotMatch ( uint32_t matchId )
     sendTimer->start ( SEND_INTERVAL );
 }
 
-void SmartSocket::gotUdpInfo ( uint32_t matchId, const IpAddrPort& address )
+void SmartSocket::gotTunInfo ( uint32_t matchId, const IpAddrPort& address )
 {
     ASSERT ( matchId != 0 );
     ASSERT ( address.empty() == false );

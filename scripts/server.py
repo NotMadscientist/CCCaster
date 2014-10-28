@@ -119,9 +119,9 @@ while True:
                     if ( 0 <= index <= 1 ) and ( matchId in matches ):
                         # if matching TCP socket is found, send UDP address once
                         if matches[matchId][index]:
-                            info = 'info' + struct.pack ( '<I', matchId ) + '%s:%u\0' % address
+                            tunInfo = 'TunInfo' + struct.pack ( '<I', matchId ) + '%s:%u\0' % address
 
-                            matches[matchId][index].send ( info )
+                            matches[matchId][index].send ( tunInfo )
                             matches[matchId][index] = None
 
                         # remove the match once both have been sent
@@ -162,10 +162,10 @@ while True:
                         if data in hosts:
                             matchId = nextMatchId()
 
-                            match = 'match' + struct.pack ( '<I', matchId )
+                            matchInfo = 'MatchInfo' + struct.pack ( '<I', matchId )
 
-                            s.send ( match )
-                            hosts[data].send ( match )
+                            s.send ( matchInfo )
+                            hosts[data].send ( matchInfo )
 
                             matches[matchId] = [ s, hosts[data] ]
 

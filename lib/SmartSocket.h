@@ -67,9 +67,11 @@ class SmartSocket : public Socket, public Socket::Owner, public Timer::Owner
     // Timer callback
     void timerExpired ( Timer *timer ) override;
 
+    // Got a match from the tunnel server
     void gotMatch ( uint32_t matchId );
 
-    void gotUdpInfo ( uint32_t matchId, const IpAddrPort& address );
+    // Got the final tunnel info from the tunnel server
+    void gotTunInfo ( uint32_t matchId, const IpAddrPort& address );
 
     // Construct a server socket
     SmartSocket ( Socket::Owner *owner, uint16_t port, Socket::Protocol protocol );
