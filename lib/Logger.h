@@ -94,6 +94,7 @@ public:
         if ( ASSERTION )                                                                                            \
             break;                                                                                                  \
         LOG ( "Assertion '%s' failed", #ASSERTION );                                                                \
+        PRINT ( "Assertion '%s' failed", #ASSERTION );                                                              \
         abort();                                                                                                    \
     } while ( 0 )
 
