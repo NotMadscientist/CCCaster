@@ -1,3 +1,5 @@
+#ifndef RELEASE
+
 #include "EventManager.h"
 #include "TimerManager.h"
 #include "Timer.h"
@@ -65,3 +67,5 @@ TEST ( Timer, RepeatRandom )
 
     TimerManager::get().deinitialize();
 }
+
+#endif // RELEASE

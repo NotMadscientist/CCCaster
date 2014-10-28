@@ -1,3 +1,5 @@
+#ifndef RELEASE
+
 #include "Test.Socket.h"
 #include "UdpSocket.h"
 #include "Timer.h"
@@ -268,3 +270,5 @@ TEST ( UdpSocket, BindThenConnect )
     SocketManager::get().deinitialize();
     TimerManager::get().deinitialize();
 }
+
+#endif // RELEASE

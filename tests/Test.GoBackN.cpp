@@ -1,3 +1,5 @@
+#ifndef RELEASE
+
 #include "Test.Socket.h"
 #include "UdpSocket.h"
 #include "GoBackN.h"
@@ -405,3 +407,5 @@ TEST ( GoBackN, Timeout )
     SocketManager::get().deinitialize();
     TimerManager::get().deinitialize();
 }
+
+#endif // RELEASE

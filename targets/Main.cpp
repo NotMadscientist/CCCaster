@@ -950,12 +950,16 @@ int main ( int argc, char *argv[] )
             "Usage: " BINARY " [options] [address] [port]\n\nOptions:"
         },
 
-        { HELP,           0, "h",      "help", Arg::None,     "  --help, -h         Print help and exit." },
-        { DIRECTORY,      0, "d",       "dir", Arg::Required, "  --dir, -d folder   Specify path to game folder.\n" },
+        { HELP,           0, "h",       "help", Arg::None,     "  --help, -h         Print help and exit." },
+#ifndef RELEASE
+        { UNIT_TESTS,     0,  "", "unit-tests", Arg::None,     "  --unit-tests       Run unit tests and exit." },
+#endif
+        { DIRECTORY,      0, "d",        "dir", Arg::Required, "  --dir, -d folder   Specify path to game folder.\n" },
 
-        { TRAINING,       0, "t",  "training", Arg::None,     "  --training, -t     Force training mode." },
-        { BROADCAST,      0, "b", "broadcast", Arg::None,     "  --broadcast, -b    Force broadcast mode." },
-        { SPECTATE,       0, "s",  "spectate", Arg::None,     "  --spectate, -s     Force spectator mode." },
+
+        { TRAINING,       0, "t",   "training", Arg::None,     "  --training, -t     Force training mode." },
+        { BROADCAST,      0, "b",  "broadcast", Arg::None,     "  --broadcast, -b    Force broadcast mode." },
+        { SPECTATE,       0, "s",   "spectate", Arg::None,     "  --spectate, -s     Force spectator mode." },
         {
             OFFLINE, 0, "o", "offline", Arg::OptionalNumeric,
             "  --offline, -o [D]  Force offline mode.\n"
@@ -974,10 +978,9 @@ int main ( int argc, char *argv[] )
             "                     -SSS means build time must match.\n"
         },
 
-        { STDOUT,     0, "",     "stdout", Arg::None, 0 }, // Output logs to stdout
-        { UNIT_TESTS, 0, "", "unit-tests", Arg::None, 0 }, // Run unit tests and exit
-        { DUMMY,      0, "",      "dummy", Arg::None, 0 }, // Client mode with fake inputs
-        { NO_FORK,    0, "",    "no-fork", Arg::None, 0 }, // Don't fork when inside Wine, ie running wineconsole
+        { STDOUT,  0, "",  "stdout", Arg::None, 0 }, // Output logs to stdout
+        { DUMMY,   0, "",   "dummy", Arg::None, 0 }, // Client mode with fake inputs
+        { NO_FORK, 0, "", "no-fork", Arg::None, 0 }, // Don't fork when inside Wine, ie running wineconsole
 
         {
             UNKNOWN, 0, "", "", Arg::None,
@@ -1025,6 +1028,7 @@ int main ( int argc, char *argv[] )
     else
         Logger::get().initialize ( LOG_FILE );
 
+#ifndef RELEASE
     // Run the unit test suite and exit
     if ( opt[UNIT_TESTS] )
     {
@@ -1032,6 +1036,7 @@ int main ( int argc, char *argv[] )
         Logger::get().deinitialize();
         return result;
     }
+#endif
 
     // Fork and re-run under wineconsole, needed for proper JLib support
     if ( detectWine() && !opt[NO_FORK] )
