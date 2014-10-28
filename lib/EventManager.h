@@ -43,9 +43,6 @@ class EventManager
 
 public:
 
-    // Bit mask for which managers to check for events during poll/start
-    uint8_t checkBitMask = ( CHECK_TIMERS | CHECK_SOCKETS | CHECK_CONTROLLERS );
-
     // Add a thread to be joined on the reaper thread, aka garbage collected when it finishes
     void addThread ( const ThreadPtr& thread );
 

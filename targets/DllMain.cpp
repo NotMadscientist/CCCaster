@@ -801,8 +801,7 @@ extern "C" void callback()
             TimerManager::get().initialize();
             ControllerManager::get().initialize ( main.get() );
 
-            // Only poll timers and sockets; controllers state is only allowed to change once a frame
-            EventManager::get().checkBitMask = ( CHECK_TIMERS | CHECK_SOCKETS );
+            // Start polling now
             EventManager::get().startPolling();
             appState = AppState::Polling;
         }

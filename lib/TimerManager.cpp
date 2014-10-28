@@ -90,12 +90,9 @@ void TimerManager::check()
             timer->delay = 0;
         }
 
-        if ( timer->expiry < nextExpiry )
+        if ( timer->expiry > 0 && timer->expiry < nextExpiry )
             nextExpiry = timer->expiry;
     }
-
-    if ( nextExpiry < UINT64_MAX )
-        LOG ( "nextExpiry in %llu ms", nextExpiry - now );
 }
 
 void TimerManager::add ( Timer *timer )

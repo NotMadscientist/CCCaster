@@ -16,25 +16,21 @@ using namespace std;
 
 void EventManager::checkEvents ( uint64_t timeout )
 {
-    if ( checkBitMask & CHECK_TIMERS )
-    {
-        TimerManager::get().check();
+    TimerManager::get().check();
 
-        if ( TimerManager::get().getNextExpiry() != UINT64_MAX )
-            timeout = TimerManager::get().getNextExpiry() - TimerManager::get().getNow();
+    if ( !running )
+        return;
+
+    if ( TimerManager::get().getNextExpiry() != UINT64_MAX )
+    {
+        ASSERT ( TimerManager::get().getNextExpiry() > TimerManager::get().getNow() );
+
+        timeout = TimerManager::get().getNextExpiry() - TimerManager::get().getNow();
     }
 
-    if ( checkBitMask & CHECK_SOCKETS )
-    {
-        ASSERT ( timeout > 0 );
+    ASSERT ( timeout > 0 );
 
-        SocketManager::get().check ( timeout );
-    }
-
-    if ( checkBitMask & CHECK_CONTROLLERS )
-    {
-        ControllerManager::get().check();
-    }
+    SocketManager::get().check ( timeout );
 }
 
 void EventManager::eventLoop()
@@ -67,8 +63,6 @@ bool EventManager::poll ( uint64_t timeout )
 {
     if ( !running )
         return false;
-
-    // LOG ( "timeout=%llu", timeout );
 
     ASSERT ( timeout > 0 );
 
