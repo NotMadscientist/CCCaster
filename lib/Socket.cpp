@@ -218,6 +218,7 @@ bool Socket::send ( const char *buffer, size_t len )
 
     ASSERT ( isClient() == true );
     ASSERT ( fd != 0 );
+    ASSERT ( address.addr.empty() == false );
 
     size_t totalBytes = 0;
 
@@ -276,6 +277,7 @@ bool Socket::send ( const char *buffer, size_t len, const IpAddrPort& address )
 
     ASSERT ( isUDP() == true );
     ASSERT ( fd != 0 );
+    ASSERT ( address.addr.empty() == false );
 
     size_t totalBytes = 0;
 
