@@ -328,7 +328,7 @@ void SmartSocket::timerExpired ( Timer *timer )
 
                     char buffer[5];
                     buffer[0] = ( isServer() ? 0 : 1 );
-                    ( * ( uint32_t * ) &buffer[1] ) = tunClient.matchId;
+                    memcpy ( &buffer[1], ( char * ) &tunClient.matchId, sizeof ( uint32_t ) );
 
                     tunSocket->send ( buffer, sizeof ( buffer ), vpsAddress );
                 }
@@ -346,7 +346,7 @@ void SmartSocket::timerExpired ( Timer *timer )
 
                 char buffer[5];
                 buffer[0] = ( isServer() ? 0 : 1 );
-                ( * ( uint32_t * ) &buffer[1] ) = matchId;
+                memcpy ( &buffer[1], ( char * ) &matchId, sizeof ( uint32_t ) );
 
                 tunSocket->send ( buffer, sizeof ( buffer ), vpsAddress );
             }

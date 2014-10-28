@@ -131,7 +131,8 @@ void MemDumpPtr::save ( BinaryOutputArchive& ar ) const
 
 void MemDump::save ( BinaryOutputArchive& ar ) const
 {
-    ar ( ( uint32_t& ) addr );
+    uint32_t val = ( uint32_t ) addr;
+    ar ( val );
     MemDumpBase::save ( ar );
 }
 
@@ -168,14 +169,14 @@ void MemDumpList::load ( BinaryInputArchive& ar )
 
     for ( size_t i = 0; i < count; ++i )
     {
-        char *addr;
+        uint32_t addr;
         size_t size, ptrsCount;
-        ar ( ( uint32_t& ) addr, size, ptrsCount );
+        ar ( addr, size, ptrsCount );
 
         if ( ptrsCount )
-            append ( { addr, size, loadPtrs ( ptrsCount, ar ) } );
+            append ( { ( char * ) addr, size, loadPtrs ( ptrsCount, ar ) } );
         else
-            append ( { addr, size } );
+            append ( { ( char * ) addr, size } );
     }
 }
 
