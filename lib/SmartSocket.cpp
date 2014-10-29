@@ -446,14 +446,15 @@ void SmartSocket::gotTunInfo ( uint32_t matchId, const IpAddrPort& address )
     }
     else
     {
+        connectTimer.reset();
+        sendTimer.reset();
+
         this->tunAddress = address;
 
         ASSERT ( tunSocket.get() != 0 );
         ASSERT ( tunSocket->isUDP() == true );
 
         tunSocket->getAsUDP().connect ( address );
-
-        connectTimer->start ( connectTimeout );
     }
 }
 

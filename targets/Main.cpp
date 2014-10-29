@@ -352,6 +352,9 @@ struct Main
 
     virtual void getUserConfirmation()
     {
+        dataSocket.reset();
+        serverDataSocket.reset();
+
         // Disable keyboard hooks for the UI
         KeyboardManager::get().unhook();
 
@@ -488,8 +491,6 @@ struct Main
         // DllMain will reconnect any sockets
         ctrlSocket.reset();
         serverCtrlSocket.reset();
-        dataSocket.reset();
-        serverDataSocket.reset();
 
         ui.display ( "Starting game..." );
 
@@ -600,6 +601,17 @@ struct Main
 
         if ( socket == ctrlSocket.get() || socket == dataSocket.get() )
         {
+            if ( socket == ctrlSocket.get() || ( socket == dataSocket.get() && pinger.isPinging() ) )
+            {
+                if ( lastError.empty() )
+                    lastError = ( initialConfigReceived ? "Disconnected!" : "Timed out!" );
+                stop();
+            }
+            else if ( clientMode.isHost() )
+            {
+                reset();
+            }
+
             if ( socket == ctrlSocket.get() )
             {
                 LOG ( "ctrlSocket disconnected!" );
@@ -613,23 +625,10 @@ struct Main
                 dataSocket.reset();
             }
 
-            if ( userConfirmed && finalConfigReceived )
-            {
-                stop();
-            }
-            else if ( clientMode.isHost() )
-            {
-                reset();
-            }
-            else
-            {
-                if ( lastError.empty() )
-                    lastError = ( initialConfigReceived ? "Disconnected!" : "Timed out!" );
-                stop();
-            }
-
             return;
         }
+
+        LOG ( "pendingSockets.erase ( %08x )", socket );
 
         pendingSockets.erase ( socket );
     }
@@ -653,7 +652,7 @@ struct Main
             gotVersionConfig ( socket, msg->getAs<VersionConfig>() );
             return;
         }
-        else if ( ctrlSocket )
+        else if ( ctrlSocket ) // This means ctrlSocket is ready; shouldn't be ( socket == ctrlSocket.get() )
         {
             switch ( msg->getMsgType() )
             {
@@ -690,6 +689,8 @@ struct Main
                     break;
             }
         }
+
+        socket->send ( new ErrorMessage ( "Another client is currently connecting!" ) );
 
         LOG ( "Unexpected '%s' from socket=%08x", msg, socket );
     }
@@ -883,6 +884,8 @@ private:
     // Reset state
     void reset()
     {
+        LOG ( "Resetting!" );
+
         initialConfig.dataPort = 0;
         initialConfig.remoteName.clear();
         initialConfigReceived = false;
