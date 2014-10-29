@@ -43,8 +43,13 @@ void Pinger::stop()
 
     pingTimer.reset();
     pingCount = 0;
-    stats.reset();
     pinging = false;
+}
+
+void Pinger::clear()
+{
+    stats.reset();
+    packetLoss = 0;
 }
 
 void Pinger::gotPong ( const MsgPtr& ping )

@@ -342,10 +342,6 @@ struct Main
 
     virtual void gotPingStats ( const PingStats& pingStats )
     {
-        LOG ( "PingStats (remote): latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
-              pingStats.latency.getMean(), pingStats.latency.getWorst(),
-              pingStats.latency.getStdErr(), pingStats.latency.getStdDev(), pingStats.packetLoss );
-
         this->pingStats = pingStats;
 
         if ( clientMode.isHost() )
@@ -361,6 +357,14 @@ struct Main
 
         if ( clientMode.isNetplay() )
         {
+            LOG ( "PingStats (local): latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
+                  pinger.getStats().getMean(), pinger.getStats().getWorst(),
+                  pinger.getStats().getStdErr(), pinger.getStats().getStdDev(), pinger.getPacketLoss() );
+
+            LOG ( "PingStats (remote): latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
+                  pingStats.latency.getMean(), pingStats.latency.getWorst(),
+                  pingStats.latency.getStdErr(), pingStats.latency.getStdDev(), pingStats.packetLoss );
+
             pingStats.latency.merge ( pinger.getStats() );
             pingStats.packetLoss = ( pingStats.packetLoss + pinger.getPacketLoss() ) / 2;
 
@@ -499,9 +503,14 @@ struct Main
     // Pinger callbacks
     virtual void sendPing ( Pinger *pinger, const MsgPtr& ping ) override
     {
+        if ( !dataSocket || !dataSocket->isConnected() )
+        {
+            lastError = "Disconnected!";
+            stop();
+            return;
+        }
+
         ASSERT ( pinger == &this->pinger );
-        ASSERT ( dataSocket.get() != 0 );
-        ASSERT ( dataSocket->isConnected() == true );
 
         dataSocket->send ( ping );
     }
@@ -509,9 +518,6 @@ struct Main
     virtual void donePinging ( Pinger *pinger, const Statistics& stats, uint8_t packetLoss ) override
     {
         ASSERT ( pinger == &this->pinger );
-
-        LOG ( "PingStats (local): latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
-              stats.getMean(), stats.getWorst(), stats.getStdErr(), stats.getStdDev(), packetLoss );
 
         ctrlSocket->send ( new PingStats ( stats, packetLoss ) );
 
@@ -539,7 +545,7 @@ struct Main
 
             pendingSockets[newSocket.get()] = newSocket;
         }
-        else if ( serverSocket == serverDataSocket.get() )
+        else if ( serverSocket == serverDataSocket.get() && ctrlSocket && ctrlSocket->isConnected() )
         {
             LOG ( "serverDataSocket->accept ( this )" );
 
@@ -549,6 +555,9 @@ struct Main
 
             ASSERT ( dataSocket != 0 );
             ASSERT ( dataSocket->isConnected() == true );
+
+            pinger.clear();
+            pingStats.clear();
 
             pinger.start();
         }
@@ -878,8 +887,6 @@ private:
         initialConfig.remoteName.clear();
         initialConfigReceived = false;
         netplayConfig.clear();
-        pinger.stop();
-        pingStats.clear();
         broadcastPortReady = false;
         finalConfigReceived = false;
         userConfirmed = false;

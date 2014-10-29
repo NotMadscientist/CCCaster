@@ -429,7 +429,7 @@ void Socket::readEvent()
     // Handle zero byte packets
     if ( bufferLen == 0 )
     {
-        LOG ( "Decoded [ 0 bytes ] to 'NullMsg'" );
+        LOG ( "Decoded 'NullMsg' using [ 0 bytes ]" );
         readEvent ( NullMsg, address );
         return;
     }
@@ -456,7 +456,7 @@ void Socket::readEvent()
         if ( !msg.get() )
             return;
 
-        LOG ( "Decoded [ %u bytes ] to '%s'; %u bytes remaining in buffer", consumedBytes, msg, readPos );
+        LOG ( "Decoded '%s' using [ %u bytes ]; %u bytes remaining in buffer", msg, consumedBytes, readPos );
         readEvent ( msg, address );
 
         // Abort if the socket is de-allocated

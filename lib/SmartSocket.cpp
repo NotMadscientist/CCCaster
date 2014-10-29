@@ -18,10 +18,10 @@ const IpAddrPort vpsAddress = "198.12.67.179:3939"; // vps.mi.ku.lc
 
 /* Tunnel protocol
 
-    1 - Host opens a TCP socket to the server and sends its HostingPort.
+    1 - Host opens a TCP socket to the server and sends its TypedHostingPort.
         Host should maintain the socket connection; reconnect and resend if needed.
 
-    2 - Client opens a TCP socket to the server and sends its ConnectionAddress.
+    2 - Client opens a TCP socket to the server and sends its TypedConnectionAddress.
 
     2 - Server tries to matchmake:
         If a matching host if found, the server sends MatchInfo to host AND client over TCP.
@@ -37,9 +37,9 @@ const IpAddrPort vpsAddress = "198.12.67.179:3939"; // vps.mi.ku.lc
 
   Binary formats (little-endian):
 
-    HostingPort is a single uint16_t.
+    TypedHostingPort is a char followed by a single uint16_t. The char must by 'T' for TCP or 'U' for UDP.
 
-    ConnectionAddress is NON-null-terminated string, eg. "<ip>:<port>".
+    TypedConnectionAddress is a NON-null-terminated string, eg. "T<ip>:<port>". The first char is the socket type.
 
     MatchInfo is "MatchInfo" followed by the matchId.
 
@@ -213,11 +213,15 @@ void SmartSocket::connectEvent ( Socket *socket )
     {
         if ( isServer() )
         {
-            vpsSocket->send ( ( char * ) &address.port, sizeof ( uint16_t ) );
+            char buffer[3];
+            buffer[0] = ( directSocket->isTCP() ? 'T' : 'U' );
+            memcpy ( &buffer[1], ( char * ) &address.port, sizeof ( uint16_t ) );
+
+            vpsSocket->send ( buffer, sizeof ( buffer ) );
         }
         else
         {
-            string buffer = address.str();
+            string buffer = ( directSocket->isTCP() ? "T" : "U" ) + address.str();
             vpsSocket->send ( &buffer[0], buffer.size() );
 
             connectTimer.reset ( new Timer ( this ) );
@@ -234,18 +238,18 @@ void SmartSocket::connectEvent ( Socket *socket )
 
 void SmartSocket::disconnectEvent ( Socket *socket )
 {
-    if ( socket == directSocket.get() )
+    if ( socket == directSocket.get() && isConnecting() )
     {
         LOG_SMART_SOCKET ( this, "Switch to UDP tunnel" );
 
-        directSocket.reset();
+        directSocket->disconnect();
 
         vpsSocket = TcpSocket::connect ( this, vpsAddress, true );
 
         if ( owner )
             owner->switchedToUdpTunnel ( this );
     }
-    else if ( socket == tunSocket.get() )
+    else if ( ( socket == directSocket.get() && isConnected() ) || socket == tunSocket.get() )
     {
         LOG_SMART_SOCKET ( this, "Tunnel socket disconnected" );
 
@@ -442,14 +446,14 @@ void SmartSocket::gotTunInfo ( uint32_t matchId, const IpAddrPort& address )
     }
     else
     {
-        connectTimer.reset();
-
         this->tunAddress = address;
 
         ASSERT ( tunSocket.get() != 0 );
         ASSERT ( tunSocket->isUDP() == true );
 
         tunSocket->getAsUDP().connect ( address );
+
+        connectTimer->start ( connectTimeout );
     }
 }
 
@@ -499,9 +503,9 @@ SocketPtr SmartSocket::accept ( Socket::Owner *owner )
     do {                                                                                \
         if ( !isConnected() )                                                           \
             return false;                                                               \
-        if ( directSocket )                                                             \
+        if ( directSocket && directSocket->isConnected() )                              \
             return directSocket->send ( __VA_ARGS__ );                                  \
-        if ( tunSocket )                                                                \
+        if ( tunSocket && tunSocket->isConnected() )                                    \
             return tunSocket->send ( __VA_ARGS__ );                                     \
         return false;                                                                   \
     } while ( 0 )

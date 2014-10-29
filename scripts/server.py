@@ -142,14 +142,14 @@ while True:
                 print 'TCP data', repr ( data )
 
                 if data:
-                    if len ( data ) == 2:
-                        port = struct.unpack ( '<H', data ) [0]
+                    if len ( data ) == 3:
+                        socketType, port = struct.unpack ( '<cH', data )
 
-                        print 'port', port
+                        print 'type', [ 'TCP', 'UDP' ][socketType == 'UDP'], 'port', port
 
                         # port must be non-zero
-                        if port:
-                            address = '%s:%u' % ( addresses[s], port )
+                        if socketType and port:
+                            address = '%s%s:%u' % ( socketType, addresses[s], port )
 
                             hosts[address] = s
                             addresses[s] = address
@@ -157,7 +157,7 @@ while True:
                             print 'hosts', hosts.keys()
                             continue
 
-                    elif 2 < len ( data ) <= 21:
+                    elif 10 <= len ( data ) <= 22: # min data "T1.1.1.1:0", max data "T255.255.255.255:65535"
                         # if matching
                         if data in hosts:
                             matchId = nextMatchId()

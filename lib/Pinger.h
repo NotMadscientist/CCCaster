@@ -56,6 +56,8 @@ public:
 
     void stop();
 
+    void clear();
+
     void gotPong ( const MsgPtr& ping );
 
     const Statistics& getStats() const { return stats; }
