@@ -28,11 +28,7 @@ using namespace option;
 
 
 // Set of command line options
-enum CommandLineOptions
-{
-    UNKNOWN, HELP, DUMMY, UNIT_TESTS, STDOUT, NO_FORK, NO_UI, STRICT_VERSION,
-    TRAINING, BROADCAST, SPECTATE, OFFLINE, DIRECTORY
-};
+ENUM ( Options, Help, Dummy, Tests, Stdout, NoFork, NoUi, Strict, Training, Broadcast, Spectate, Offline, Dir );
 
 // Active command line options
 static vector<Option> opt;
@@ -44,8 +40,8 @@ static MainUi ui;
 static string lastError;
 
 
-struct Main
-        : public CommonMain
+struct MainApp
+        : public Main
         , public Pinger::Owner
         , public ExternalIpAddress::Owner
         , public KeyboardManager::Owner
@@ -228,24 +224,24 @@ struct Main
 
         LOG ( "VersionConfig: mode=%s; flags={ %s }", versionConfig.mode, versionConfig.mode.flagString() );
 
-        if ( !LocalVersion.similar ( RemoteVersion, 1 + opt[STRICT_VERSION].count() ) )
+        if ( !LocalVersion.similar ( RemoteVersion, 1 + opt[Options::Strict].count() ) )
         {
             string local = toString ( "%s.%s", LocalVersion.major(), LocalVersion.minor() );
             string remote = toString ( "%s.%s", RemoteVersion.major(), RemoteVersion.minor() );
 
-            if ( opt[STRICT_VERSION].count() >= 1 )
+            if ( opt[Options::Strict].count() >= 1 )
             {
                 local += LocalVersion.suffix();
                 remote += RemoteVersion.suffix();
             }
 
-            if ( opt[STRICT_VERSION].count() >= 2 )
+            if ( opt[Options::Strict].count() >= 2 )
             {
                 local += " " + LocalVersion.commitId;
                 remote += " " + RemoteVersion.commitId;
             }
 
-            if ( opt[STRICT_VERSION].count() >= 3 )
+            if ( opt[Options::Strict].count() >= 3 )
             {
                 local += " " + LocalVersion.buildTime;
                 remote += " " + RemoteVersion.buildTime;
@@ -797,10 +793,10 @@ struct Main
     }
 
     // Constructor
-    Main ( const IpAddrPort& address, const Serializable& config )
-        : CommonMain ( config.getMsgType() == MsgType::InitialConfig
-                       ? config.getAs<InitialConfig>().mode
-                       : config.getAs<NetplayConfig>().mode )
+    MainApp ( const IpAddrPort& address, const Serializable& config )
+        : Main ( config.getMsgType() == MsgType::InitialConfig
+                 ? config.getAs<InitialConfig>().mode
+                 : config.getAs<NetplayConfig>().mode )
         , externaIpAddress ( this )
     {
         LOG ( "clientMode=%s; flags={ %s }; address='%s'; config=%s",
@@ -837,7 +833,7 @@ struct Main
     }
 
     // Destructor
-    virtual ~Main()
+    virtual ~MainApp()
     {
         join();
         procMan.closeGame();
@@ -900,7 +896,7 @@ private:
 
 static void runMain ( const IpAddrPort& address, const Serializable& config )
 {
-    Main main ( address, config );
+    MainApp main ( address, config );
     main.start();
     main.waitForUserConfirmation();
 }
@@ -975,44 +971,44 @@ int main ( int argc, char *argv[] )
     static const Descriptor options[] =
     {
         {
-            UNKNOWN, 0, "", "", Arg::None,
+            Options::Unknown, 0, "", "", Arg::None,
             "Usage: " BINARY " [options] [address] [port]\n\nOptions:"
         },
 
-        { HELP,           0, "h",       "help", Arg::None,     "  --help, -h         Print help and exit." },
+        { Options::Help,      0, "h",      "help", Arg::None,     "  --help, -h         Print help and exit." },
 #ifndef RELEASE
-        { UNIT_TESTS,     0,  "", "unit-tests", Arg::None,     "  --unit-tests       Run unit tests and exit." },
+        { Options::Tests,     0,  "",     "tests", Arg::None,     "  --tests            Run unit tests and exit." },
 #endif
-        { DIRECTORY,      0, "d",        "dir", Arg::Required, "  --dir, -d folder   Specify path to game folder.\n" },
+        { Options::Dir,       0, "d",       "dir", Arg::Required, "  --dir, -d folder   Specify game folder.\n" },
 
 
-        { TRAINING,       0, "t",   "training", Arg::None,     "  --training, -t     Force training mode." },
-        { BROADCAST,      0, "b",  "broadcast", Arg::None,     "  --broadcast, -b    Force broadcast mode." },
-        { SPECTATE,       0, "s",   "spectate", Arg::None,     "  --spectate, -s     Force spectator mode." },
+        { Options::Training,  0, "t",  "training", Arg::None,     "  --training, -t     Force training mode." },
+        { Options::Broadcast, 0, "b", "broadcast", Arg::None,     "  --broadcast, -b    Force broadcast mode." },
+        { Options::Spectate,  0, "s",  "spectate", Arg::None,     "  --spectate, -s     Force spectator mode." },
         {
-            OFFLINE, 0, "o", "offline", Arg::OptionalNumeric,
+            Options::Offline, 0, "o", "offline", Arg::OptionalNumeric,
             "  --offline, -o [D]  Force offline mode.\n"
             "                     D is the delay, default 0.\n"
         },
         {
-            NO_UI, 0, "n", "no-ui", Arg::None,
+            Options::NoUi, 0, "n", "no-ui", Arg::None,
             "  --no-ui, -n        No UI, just quits after running once.\n"
             "                     Should be used with address and/or port.\n"
         },
         {
-            STRICT_VERSION, 0, "S", "strict", Arg::None,
+            Options::Strict, 0, "S", "strict", Arg::None,
             "  --strict, -S       Strict version match, can be stacked up to 3 times.\n"
             "                     -S means version suffix must match.\n"
             "                     -SS means commit ID must match.\n"
             "                     -SSS means build time must match.\n"
         },
 
-        { STDOUT,  0, "",  "stdout", Arg::None, 0 }, // Output logs to stdout
-        { DUMMY,   0, "",   "dummy", Arg::None, 0 }, // Client mode with fake inputs
-        { NO_FORK, 0, "", "no-fork", Arg::None, 0 }, // Don't fork when inside Wine, ie running wineconsole
+        { Options::Stdout, 0, "",  "stdout", Arg::None, 0 }, // Output logs to stdout
+        { Options::Dummy,  0, "",   "dummy", Arg::None, 0 }, // Client mode with fake inputs
+        { Options::NoFork, 0, "", "no-fork", Arg::None, 0 }, // Don't fork when inside Wine, ie running wineconsole
 
         {
-            UNKNOWN, 0, "", "", Arg::None,
+            Options::Unknown, 0, "", "", Arg::None,
             "Examples:\n"
             "  " BINARY " --unknown -- --this_is_no_option\n"
             "  " BINARY " -unk --plus -ppp file1 file2\n"
@@ -1039,7 +1035,7 @@ int main ( int argc, char *argv[] )
     if ( parser.error() )
         return -1;
 
-    if ( opt[HELP] )
+    if ( opt[Options::Help] )
     {
         printUsage ( cout, options );
         return 0;
@@ -1052,14 +1048,23 @@ int main ( int argc, char *argv[] )
     SetConsoleCtrlHandler ( consoleCtrl, TRUE );
 
     // Check if we should log to stdout
-    if ( opt[STDOUT] )
+    if ( opt[Options::Stdout] )
         Logger::get().initialize();
     else
         Logger::get().initialize ( LOG_FILE );
 
+    // Log parsed command line options
+    for ( size_t i = 0; i < opt.size(); ++i )
+    {
+        if ( opt[i] )
+            LOG ( "%s", Options ( ( Options::Enum ) i ) );
+        if ( opt[i].arg )
+            LOG ( "arg='%s'", opt[i].arg );
+    }
+
 #ifndef RELEASE
     // Run the unit test suite and exit
-    if ( opt[UNIT_TESTS] )
+    if ( opt[Options::Tests] )
     {
         int result = RunAllTests ( argc, argv );
         Logger::get().deinitialize();
@@ -1068,7 +1073,7 @@ int main ( int argc, char *argv[] )
 #endif
 
     // Fork and re-run under wineconsole, needed for proper JLib support
-    if ( detectWine() && !opt[NO_FORK] )
+    if ( detectWine() && !opt[Options::NoFork] )
     {
         string cmd = "wineconsole " + argv0 + " --no-fork";
 
@@ -1082,28 +1087,28 @@ int main ( int argc, char *argv[] )
         return system ( cmd.c_str() );
     }
 
-    if ( opt[DIRECTORY] && opt[DIRECTORY].arg )
-        ProcessManager::gameDir = opt[DIRECTORY].arg;
-
     // Initialize config
     ui.initialize();
-    ui.initialConfig.mode.flags |= ( opt[TRAINING] ? ClientMode::Training : 0 );
+    ui.initialConfig.mode.flags |= ( opt[Options::Training] ? ClientMode::Training : 0 );
 
-    if ( opt[SPECTATE] )
+    if ( opt[Options::Spectate] )
         ui.initialConfig.mode.value = ClientMode::Spectate;
 
+    if ( opt[Options::Dir] && opt[Options::Dir].arg )
+        ProcessManager::gameDir = opt[Options::Dir].arg;
+
     // Check if we should run in dummy mode
-    RunFuncPtr run = ( opt[DUMMY] ? runDummy : runMain );
+    RunFuncPtr run = ( opt[Options::Dummy] ? runDummy : runMain );
 
     // Warn on invalid command line options
-    for ( Option *it = opt[UNKNOWN]; it; it = it->next() )
+    for ( Option *it = opt[Options::Unknown]; it; it = it->next() )
         lastError += toString ( "Unknown option: '%s'\n", it->name );
 
     // Non-options 1 and 2 are the IP address and port
     for ( int i = 2; i < parser.nonOptionsCount(); ++i )
         lastError += toString ( "Non-option (%d): '%s'\n", i, parser.nonOption ( i ) );
 
-    if ( opt[OFFLINE] )
+    if ( opt[Options::Offline] )
     {
         NetplayConfig netplayConfig;
         netplayConfig.mode.value = ClientMode::Offline;
@@ -1111,10 +1116,10 @@ int main ( int argc, char *argv[] )
         netplayConfig.delay = 0;
         netplayConfig.hostPlayer = 1;
 
-        if ( opt[OFFLINE].arg )
+        if ( opt[Options::Offline].arg )
         {
             uint32_t delay = 0;
-            stringstream ss ( opt[OFFLINE].arg );
+            stringstream ss ( opt[Options::Offline].arg );
 
             if ( ( ss >> delay ) && ( delay < 0xFF ) )
                 netplayConfig.delay = delay;
@@ -1122,7 +1127,7 @@ int main ( int argc, char *argv[] )
 
         run ( "", netplayConfig );
     }
-    else if ( opt[BROADCAST] )
+    else if ( opt[Options::Broadcast] )
     {
         NetplayConfig netplayConfig;
         netplayConfig.mode.value = ClientMode::Broadcast;
@@ -1159,13 +1164,13 @@ int main ( int argc, char *argv[] )
 
         run ( address, ui.initialConfig );
     }
-    else if ( opt[NO_UI] )
+    else if ( opt[Options::NoUi] )
     {
         printUsage ( cout, options );
         return 0;
     }
 
-    if ( opt[NO_UI] )
+    if ( opt[Options::NoUi] )
     {
         if ( !lastError.empty() )
             PRINT ( "%s", lastError );

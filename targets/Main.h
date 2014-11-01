@@ -16,7 +16,7 @@
 #include <unordered_map>
 
 
-struct CommonMain
+struct Main
         : public ProcessManager::Owner
         , public Socket::Owner
         , public ControllerManager::Owner
@@ -36,9 +36,9 @@ struct CommonMain
     std::unordered_map<Socket *, SocketPtr> pendingSockets;
 
 
-    CommonMain() : procMan ( this ) {}
+    Main() : procMan ( this ) {}
 
-    CommonMain ( const ClientMode& clientMode ) : clientMode ( clientMode ), procMan ( this ) {}
+    Main ( const ClientMode& clientMode ) : clientMode ( clientMode ), procMan ( this ) {}
 };
 
 

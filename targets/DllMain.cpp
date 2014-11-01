@@ -44,8 +44,8 @@ extern string overlayText;
 static ENUM ( AppState, Uninitialized, Polling, Stopping, Deinitialized ) appState = AppState::Uninitialized;
 
 // Main application instance
-struct Main;
-static shared_ptr<Main> main;
+struct DllMain;
+static shared_ptr<DllMain> main;
 
 // Mutex for deinitialize()
 static Mutex deinitMutex;
@@ -54,8 +54,8 @@ static Mutex deinitMutex;
 ENUM ( Variable, WorldTime, GameMode, RoundStart );
 
 
-struct Main
-        : public CommonMain
+struct DllMain
+        : public Main
         , public RefChangeMonitor<Variable, uint32_t>::Owner
 {
     // NetplayManager instance
@@ -761,7 +761,7 @@ struct Main
     }
 
     // Constructor
-    Main() : worldTimerMoniter ( this, Variable::WorldTime, *CC_WORLD_TIMER_ADDR )
+    DllMain() : worldTimerMoniter ( this, Variable::WorldTime, *CC_WORLD_TIMER_ADDR )
     {
         // Timer and controller initialization is not done here because of threading issues
 
@@ -776,7 +776,7 @@ struct Main
     }
 
     // Destructor
-    ~Main()
+    ~DllMain()
     {
         syncLog.deinitialize();
 
@@ -866,6 +866,12 @@ extern "C" void callback()
     }
 }
 
+
+static inline void initializeDllMain()
+{
+    main.reset ( new DllMain() );
+}
+
 extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
 {
     switch ( reason )
@@ -879,8 +885,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
                 // It is safe to initialize sockets here
                 SocketManager::get().initialize();
                 initializePreLoadHacks();
-
-                main.reset ( new Main() );
+                initializeDllMain();
             }
             catch ( const Exception& err )
             {
