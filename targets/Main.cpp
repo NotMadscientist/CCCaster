@@ -202,15 +202,16 @@ int main ( int argc, char *argv[] )
         return system ( cmd.c_str() );
     }
 
+    // Initialize game dir first because ui.initialize() needs it
+    if ( opt[Options::Dir] && opt[Options::Dir].arg )
+        ProcessManager::gameDir = opt[Options::Dir].arg;
+
     // Initialize config
     ui.initialize();
     ui.initialConfig.mode.flags |= ( opt[Options::Training] ? ClientMode::Training : 0 );
 
     if ( opt[Options::Spectate] )
         ui.initialConfig.mode.value = ClientMode::Spectate;
-
-    if ( opt[Options::Dir] && opt[Options::Dir].arg )
-        ProcessManager::gameDir = opt[Options::Dir].arg;
 
     // Check if we should run in dummy mode
     RunFuncPtr run = ( opt[Options::Dummy] ? runDummy : runMain );
