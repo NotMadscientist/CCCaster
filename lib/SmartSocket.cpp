@@ -267,6 +267,12 @@ void SmartSocket::disconnectEvent ( Socket *socket )
 
         LOG_SMART_SOCKET ( this, "vpsSocket disconnected" );
 
+        if ( isServer() )
+        {
+            vpsSocket.reset();
+            return;
+        }
+
         Socket::Owner *owner = this->owner;
 
         disconnect();

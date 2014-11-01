@@ -35,7 +35,7 @@ struct MainApp
 
     InitialConfig initialConfig;
 
-    bool initialConfigReceived = false;
+    bool isInitialConfigReady = false;
 
     SpectateConfig spectateConfig;
 
@@ -45,9 +45,11 @@ struct MainApp
 
     PingStats pingStats;
 
-    bool broadcastPortReady = false;
+    bool isBroadcastPortReady = false;
 
-    bool finalConfigReceived = false;
+    bool isFinalConfigReady = false;
+
+    bool isWaitingForUser = false;
 
     bool userConfirmed = false;
 
@@ -256,6 +258,9 @@ struct MainApp
             if ( versionConfig.mode.isSpectate() ) // Ignore spectators, since the game is not loaded
                 return;
 
+            if ( pendingSockets.find ( socket ) == pendingSockets.end() )
+                return;
+
             try { serverDataSocket = SmartSocket::listen ( this, address.port, Socket::Protocol::UDP ); }
             catch ( ... ) { serverDataSocket = SmartSocket::listen ( this, 0, Socket::Protocol::UDP ); }
             initialConfig.dataPort = serverDataSocket->address.port;
@@ -286,9 +291,9 @@ struct MainApp
 
     void gotInitialConfig ( const InitialConfig& initialConfig )
     {
-        if ( !initialConfigReceived )
+        if ( !isInitialConfigReady )
         {
-            initialConfigReceived = true;
+            isInitialConfigReady = true;
 
             this->initialConfig.remoteName = initialConfig.localName;
             if ( this->initialConfig.remoteName.empty() )
@@ -358,6 +363,7 @@ struct MainApp
 
         uiRecvSocket = UdpSocket::bind ( this, 0 );
         uiSendSocket = UdpSocket::bind ( 0, { "127.0.0.1", uiRecvSocket->address.port } );
+        isWaitingForUser = true;
 
         LOCK ( uiMutex );
         uiCondVar.signal();
@@ -450,19 +456,19 @@ struct MainApp
         this->netplayConfig.rollback = netplayConfig.rollback;
         this->netplayConfig.hostPlayer = netplayConfig.hostPlayer;
 
-        finalConfigReceived = true;
+        isFinalConfigReady = true;
         startGameIfReady();
     }
 
     void gotConfirmConfig()
     {
-        finalConfigReceived = true;
+        isFinalConfigReady = true;
         startGameIfReady();
     }
 
     void startGameIfReady()
     {
-        if ( userConfirmed && finalConfigReceived )
+        if ( userConfirmed && isFinalConfigReady )
             startGame();
     }
 
@@ -537,9 +543,6 @@ struct MainApp
             ASSERT ( dataSocket != 0 );
             ASSERT ( dataSocket->isConnected() == true );
 
-            pinger.clear();
-            pingStats.clear();
-
             pinger.start();
         }
         else
@@ -581,30 +584,18 @@ struct MainApp
 
         if ( socket == ctrlSocket.get() || socket == dataSocket.get() )
         {
-            if ( socket == ctrlSocket.get() || ( socket == dataSocket.get() && pinger.isPinging() ) )
+            LOG ( "%s disconnected!", ( socket == ctrlSocket.get() ? "ctrlSocket" : "dataSocket" ) );
+
+            if ( clientMode.isHost() && !isWaitingForUser )
             {
-                if ( lastError.empty() )
-                    lastError = ( initialConfigReceived ? "Disconnected!" : "Timed out!" );
-                stop();
-            }
-            else if ( clientMode.isHost() )
-            {
-                reset();
+                resetHost();
+                return;
             }
 
-            if ( socket == ctrlSocket.get() )
-            {
-                LOG ( "ctrlSocket disconnected!" );
+            if ( lastError.empty() )
+                lastError = ( isInitialConfigReady ? "Disconnected!" : "Timed out!" );
 
-                ctrlSocket.reset();
-            }
-            else if ( socket == dataSocket.get() )
-            {
-                LOG ( "dataSocket disconnected!" );
-
-                dataSocket.reset();
-            }
-
+            stop();
             return;
         }
 
@@ -728,7 +719,7 @@ struct MainApp
 
             case MsgType::NetplayConfig:
                 netplayConfig = msg->getAs<NetplayConfig>();
-                broadcastPortReady = true;
+                isBroadcastPortReady = true;
                 updateStatusMessage();
                 return;
 
@@ -836,7 +827,7 @@ private:
     // Update the UI status message
     void updateStatusMessage() const
     {
-        if ( clientMode.isBroadcast() && !broadcastPortReady )
+        if ( clientMode.isBroadcast() && !isBroadcastPortReady )
             return;
 
         const uint16_t port = ( clientMode.isBroadcast() ? netplayConfig.broadcastPort : address.port );
@@ -863,18 +854,30 @@ private:
         }
     }
 
-    // Reset state
-    void reset()
+    // Reset hosting state
+    void resetHost()
     {
-        LOG ( "Resetting!" );
+        ASSERT ( clientMode.isHost() == true );
+
+        LOG ( "Resetting host!" );
+
+        ctrlSocket.reset();
+        dataSocket.reset();
+        serverDataSocket.reset();
 
         initialConfig.dataPort = 0;
         initialConfig.remoteName.clear();
-        initialConfigReceived = false;
+        isInitialConfigReady = false;
+
         netplayConfig.clear();
-        broadcastPortReady = false;
-        finalConfigReceived = false;
-        userConfirmed = false;
+
+        pinger.clear();
+        pingStats.clear();
+
+        uiSendSocket.reset();
+        uiRecvSocket.reset();
+
+        isBroadcastPortReady = isFinalConfigReady = isWaitingForUser = userConfirmed = false;
     }
 };
 

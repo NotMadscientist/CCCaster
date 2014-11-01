@@ -5,8 +5,6 @@
 #include "DllHacks.h"
 #include "NetplayManager.h"
 #include "ChangeMonitor.h"
-#include "TcpSocket.h"
-#include "UdpSocket.h"
 #include "SmartSocket.h"
 
 #include <windows.h>
@@ -667,12 +665,12 @@ struct DllMain
 
                     if ( clientMode.isHost() )
                     {
-                        serverDataSocket = UdpSocket::listen ( this, address.port );
+                        serverDataSocket = SmartSocket::listen ( this, address.port, Socket::Protocol::UDP );
                         LOG ( "serverDataSocket=%08x", serverDataSocket.get() );
                     }
                     else if ( clientMode.isClient() )
                     {
-                        dataSocket = UdpSocket::connect ( this, address );
+                        dataSocket = SmartSocket::connect ( this, address, Socket::Protocol::UDP );
                         LOG ( "dataSocket=%08x", dataSocket.get() );
                     }
 
@@ -687,7 +685,8 @@ struct DllMain
 
                     LOG ( "NetplayConfig: broadcastPort=%u", netMan.config.broadcastPort );
 
-                    serverCtrlSocket = TcpSocket::listen ( this, netMan.config.broadcastPort );
+                    serverCtrlSocket = SmartSocket::listen (
+                                           this, netMan.config.broadcastPort, Socket::Protocol::TCP  );
 
                     // Update the broadcast port and send over IPC
                     netMan.config.broadcastPort = serverCtrlSocket->address.port;

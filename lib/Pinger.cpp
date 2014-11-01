@@ -48,6 +48,8 @@ void Pinger::stop()
 
 void Pinger::clear()
 {
+    stop();
+
     stats.reset();
     packetLoss = 0;
 }
