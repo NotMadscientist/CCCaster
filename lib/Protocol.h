@@ -29,6 +29,10 @@
     void save ( cereal::BinaryOutputArchive& ar ) const override { ar ( __VA_ARGS__ ); }                    \
     void load ( cereal::BinaryInputArchive& ar ) override { ar ( __VA_ARGS__ ); }
 
+#define CEREAL_CLASS_BOILERPLATE(...)                                                                       \
+    void save ( cereal::BinaryOutputArchive& ar ) const { ar ( __VA_ARGS__ ); }                             \
+    void load ( cereal::BinaryInputArchive& ar ) { ar ( __VA_ARGS__ ); }
+
 
 // Top level message type, auto-generated
 enum class MsgType : uint8_t

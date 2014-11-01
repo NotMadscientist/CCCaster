@@ -12,8 +12,60 @@
 #include "IpAddrPort.h"
 #include "Messages.h"
 
+#include <vector>
+#include <string>
 #include <unordered_set>
 #include <unordered_map>
+
+
+// Set of command line options
+ENUM ( Options, Help, Dummy, Tests, Stdout, NoFork, NoUi, Strict, Training, Broadcast, Spectate, Offline, Dir );
+
+namespace option { class Option; }
+
+struct OptionsMessage : public SerializableSequence
+{
+    size_t operator[] ( const Options& opt ) const
+    {
+        auto it = options.find ( ( size_t ) opt.value );
+
+        if ( it == options.end() )
+            return 0;
+        else
+            return it->second.count;
+    }
+
+    const std::string& arg ( const Options& opt ) const
+    {
+        static const std::string EmptyString = "";
+
+        auto it = options.find ( ( size_t ) opt.value );
+
+        if ( it == options.end() )
+            return EmptyString;
+        else
+            return it->second.arg;
+    }
+
+    OptionsMessage ( const std::vector<option::Option>& opt );
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( OptionsMessage, options )
+
+private:
+
+    struct Opt
+    {
+        size_t count;
+        std::string arg;
+
+        Opt() {}
+        Opt ( size_t count, const std::string& arg = "" ) : count ( count ), arg ( arg ) {}
+
+        CEREAL_CLASS_BOILERPLATE ( count, arg )
+    };
+
+    std::unordered_map<size_t, Opt> options;
+};
 
 
 struct Main
@@ -23,6 +75,8 @@ struct Main
         , public Controller::Owner
         , public Timer::Owner
 {
+    OptionsMessage options;
+
     ClientMode clientMode;
 
     IpAddrPort address;
@@ -59,7 +113,7 @@ struct AutoManager
                   uint8_t options = 0 )                     // Keyboard event hooking options
         : AutoManager ( main )
     {
-        KeyboardManager::get().hook ( main, window, keys, options );
+        // KeyboardManager::get().hook ( main, window, keys, options );
     }
 
     ~AutoManager()

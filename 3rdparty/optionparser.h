@@ -549,10 +549,10 @@ public:
    *
    * Returns 0 when called for an unused/invalid option.
    */
-  int count()
+  int count() const
   {
     int c = (desc == 0 ? 0 : 1);
-    Option* p = first();
+    const Option* p = first();
     while (!p->isLast())
     {
       ++c;
@@ -598,6 +598,14 @@ public:
    * This method may be called on an unused/invalid option and will return a pointer to the
    * option itself.
    */
+  const Option* first() const
+  {
+    const Option* p = this;
+    while (!p->isFirst())
+      p = p->prev_;
+    return p;
+  }
+
   Option* first()
   {
     Option* p = this;
@@ -622,6 +630,11 @@ public:
    * Descriptor::type and all you have to do is check <code> last()->type() </code> to get
    * the state listed last on the command line.
    */
+  const Option* last() const
+  {
+    return first()->prevwrap();
+  }
+
   Option* last()
   {
     return first()->prevwrap();
@@ -635,6 +648,11 @@ public:
    * option with the same Descriptor::index that precedes this option on the command
    * line.
    */
+  const Option* prev() const
+  {
+    return isFirst() ? 0 : prev_;
+  }
+
   Option* prev()
   {
     return isFirst() ? 0 : prev_;
@@ -648,6 +666,11 @@ public:
    * option with the same Descriptor::index that precedes this option on the command
    * line.
    */
+  const Option* prevwrap() const
+  {
+    return untag(prev_);
+  }
+
   Option* prevwrap()
   {
     return untag(prev_);
@@ -661,6 +684,11 @@ public:
    * option with the same Descriptor::index that follows this option on the command
    * line.
    */
+  const Option* next() const
+  {
+    return isLast() ? 0 : next_;
+  }
+
   Option* next()
   {
     return isLast() ? 0 : next_;
@@ -674,6 +702,11 @@ public:
    * option with the same Descriptor::index that follows this option on the command
    * line.
    */
+  const Option* nextwrap() const
+  {
+    return untag(next_);
+  }
+
   Option* nextwrap()
   {
     return untag(next_);
@@ -811,9 +844,19 @@ private:
       ++namelen;
   }
 
+  static const Option* tag(const Option* ptr)
+  {
+    return (Option*) ((unsigned long long) ptr | 1);
+  }
+
   static Option* tag(Option* ptr)
   {
     return (Option*) ((unsigned long long) ptr | 1);
+  }
+
+  static const Option* untag(const Option* ptr)
+  {
+    return (Option*) ((unsigned long long) ptr & ~1ull);
   }
 
   static Option* untag(Option* ptr)
@@ -821,7 +864,7 @@ private:
     return (Option*) ((unsigned long long) ptr & ~1ull);
   }
 
-  static bool isTagged(Option* ptr)
+  static bool isTagged(const Option* ptr)
   {
     return ((unsigned long long) ptr & 1);
   }

@@ -27,12 +27,11 @@
             static const std::vector<std::string> list = split ( "Unknown, " #__VA_ARGS__, ", " );              \
             return #NAME "::" + list[value];                                                                    \
         }                                                                                                       \
-        void save ( cereal::BinaryOutputArchive& ar ) const override { ar ( value ); }                          \
-        void load ( cereal::BinaryInputArchive& ar ) override { ar ( value ); }                                 \
         bool operator== ( const NAME& other ) const { return value == other.value; }                            \
         bool operator!= ( const NAME& other ) const { return value != other.value; }                            \
         bool operator== ( Enum other ) const { return value == other; }                                         \
         bool operator!= ( Enum other ) const { return value != other; }                                         \
+        CEREAL_CLASS_BOILERPLATE ( value )                                                                      \
     }
 
 #define ENUM_VALUE(NAME, ...)                                                                                   \

@@ -2,7 +2,7 @@
 #include "Logger.h"
 #include "Utilities.h"
 #include "Thread.h"
-#include "AsmHacks.h"
+#include "DllHacks.h"
 #include "NetplayManager.h"
 #include "ChangeMonitor.h"
 #include "TcpSocket.h"
@@ -33,13 +33,6 @@ using namespace std;
              netMan.getIndexedFrame(), netMan.getState(), __VA_ARGS__ )
 
 
-// Declarations
-void initializePreLoadHacks();
-void initializePostLoadHacks();
-void deinitializeHacks();
-static void deinitialize();
-extern string overlayText;
-
 // Main application state
 static ENUM ( AppState, Uninitialized, Polling, Stopping, Deinitialized ) appState = AppState::Uninitialized;
 
@@ -49,6 +42,7 @@ static shared_ptr<DllMain> main;
 
 // Mutex for deinitialize()
 static Mutex deinitMutex;
+static void deinitialize();
 
 // Enum of variables to monitor
 ENUM ( Variable, WorldTime, GameMode, RoundStart );
@@ -618,6 +612,10 @@ struct DllMain
 
         switch ( msg->getMsgType() )
         {
+            case MsgType::OptionsMessage:
+                options = msg->getAs<OptionsMessage>();
+                break;
+
             case MsgType::ClientMode:
                 if ( clientMode != ClientMode::Unknown )
                     break;
@@ -786,88 +784,8 @@ struct DllMain
     }
 };
 
-extern "C" void callback()
-{
-    if ( appState == AppState::Deinitialized )
-        return;
 
-    try
-    {
-        if ( appState == AppState::Uninitialized )
-        {
-            initializePostLoadHacks();
-
-            // Joystick and timer must be initialized in the main thread
-            TimerManager::get().initialize();
-            ControllerManager::get().initialize ( main.get() );
-
-            // Start polling now
-            EventManager::get().startPolling();
-            appState = AppState::Polling;
-        }
-
-        ASSERT ( main.get() != 0 );
-
-        main->callback();
-    }
-    catch ( const Exception& err )
-    {
-        LOG ( "Stopping due to exception: %s", err );
-
-        if ( main )
-        {
-            main->procMan.ipcSend ( new ErrorMessage ( "Error: " + err.str() ) );
-            main->delayedStop();
-        }
-        else
-        {
-            appState = AppState::Stopping;
-        }
-    }
-#ifdef NDEBUG
-    catch ( const std::exception& err )
-    {
-        LOG ( "Stopping due to std::exception: %s", err.what() );
-
-        if ( main )
-        {
-            main->procMan.ipcSend ( new ErrorMessage ( string ( "Error: " ) + err.what() ) );
-            main->delayedStop();
-        }
-        else
-        {
-            appState = AppState::Stopping;
-        }
-    }
-    catch ( ... )
-    {
-        LOG ( "Stopping due to unknown exception!" );
-
-        if ( main )
-        {
-            main->procMan.ipcSend ( new ErrorMessage ( "Unknown error!" ) );
-            main->delayedStop();
-        }
-        else
-        {
-            appState = AppState::Stopping;
-        }
-    }
-#endif
-
-    if ( appState == AppState::Stopping )
-    {
-        LOG ( "Exiting" );
-
-        // Joystick must be deinitialized on the same thread it was initialized
-        ControllerManager::get().deinitialize();
-        deinitialize();
-        exit ( 0 );
-    }
-}
-
-
-static inline void initializeDllMain()
+static void initializeDllMain()
 {
     main.reset ( new DllMain() );
 }
@@ -904,7 +822,6 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
                 exit ( 0 );
             }
 #endif
-
             break;
 
         case DLL_PROCESS_DETACH:
@@ -934,4 +851,71 @@ static void deinitialize()
     deinitializeHacks();
 
     appState = AppState::Deinitialized;
+}
+
+static void stopDllMain ( const string& error )
+{
+    if ( main )
+    {
+        main->procMan.ipcSend ( new ErrorMessage ( error ) );
+        main->delayedStop();
+    }
+    else
+    {
+        appState = AppState::Stopping;
+    }
+}
+
+
+extern "C" void callback()
+{
+    if ( appState == AppState::Deinitialized )
+        return;
+
+    try
+    {
+        if ( appState == AppState::Uninitialized )
+        {
+            initializePostLoadHacks();
+
+            // Joystick and timer must be initialized in the main thread
+            TimerManager::get().initialize();
+            ControllerManager::get().initialize ( main.get() );
+
+            // Start polling now
+            EventManager::get().startPolling();
+            appState = AppState::Polling;
+        }
+
+        ASSERT ( main.get() != 0 );
+
+        main->callback();
+    }
+    catch ( const Exception& err )
+    {
+        LOG ( "Stopping due to exception: %s", err );
+        stopDllMain ( "Error: " + err.str() );
+    }
+#ifdef NDEBUG
+    catch ( const std::exception& err )
+    {
+        LOG ( "Stopping due to std::exception: %s", err.what() );
+        stopDllMain ( string ( "Error: " ) + err.what() );
+    }
+    catch ( ... )
+    {
+        LOG ( "Stopping due to unknown exception!" );
+        stopDllMain ( "Unknown error!" );
+    }
+#endif
+
+    if ( appState == AppState::Stopping )
+    {
+        LOG ( "Exiting" );
+
+        // Joystick must be deinitialized on the same thread it was initialized
+        ControllerManager::get().deinitialize();
+        deinitialize();
+        exit ( 0 );
+    }
 }
