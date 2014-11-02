@@ -12,9 +12,9 @@
 using namespace std;
 
 
-#define EPSILON_MILLISECONDS    50
-#define NUM_ITERATIONS          10
-#define MAX_DELAY_MILLISECONDS  2000
+#define EPSILON_MILLISECONDS    ( 50 )
+#define NUM_ITERATIONS          ( 10 )
+#define MAX_DELAY_MILLISECONDS  ( 2000 )
 
 
 TEST ( Timer, RepeatRandom )

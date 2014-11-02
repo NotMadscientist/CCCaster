@@ -109,7 +109,7 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const SocketShareData& data )
 UdpSocket::UdpSocket ( ChildSocketEnum, UdpSocket *parentSocket, const IpAddrPort& address )
     : Socket ( 0, address, Protocol::UDP )
     , type ( Type::Child )
-    , gbn ( this, parentSocket->getSendInterval(), parentSocket->getKeepAlive() )
+    , gbn ( this, parentSocket->getSendInterval(), parentSocket->connectTimeout )
     , parentSocket ( parentSocket )
 {
     this->state = State::Connecting;
@@ -314,6 +314,8 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
                             LOG_UDP_SOCKET ( this, "acceptEvent" );
 
                             parentSocket->acceptedSocket = parentSocket->childSockets[getRemoteAddress()];
+
+                            gbn->setKeepAlive ( keepAlive );
 
                             if ( parentSocket->owner )
                                 parentSocket->owner->acceptEvent ( parentSocket );

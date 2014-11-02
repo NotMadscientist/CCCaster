@@ -462,15 +462,26 @@ void SmartSocket::gotTunInfo ( uint32_t matchId, const IpAddrPort& address )
     }
 }
 
-SocketPtr SmartSocket::listen ( Socket::Owner *owner, uint16_t port, Socket::Protocol protocol )
+SocketPtr SmartSocket::listenTCP ( Socket::Owner *owner, uint16_t port )
 {
-    return SocketPtr ( new SmartSocket ( owner, port, protocol ) );
+    return SocketPtr ( new SmartSocket ( owner, port, Socket::Protocol::TCP ) );
 }
 
-SocketPtr SmartSocket::connect ( Socket::Owner *owner, const IpAddrPort& address, Socket::Protocol protocol )
+SocketPtr SmartSocket::listenUDP ( Socket::Owner *owner, uint16_t port )
+{
+    return SocketPtr ( new SmartSocket ( owner, port, Socket::Protocol::UDP ) );
+}
+
+SocketPtr SmartSocket::connectTCP ( Socket::Owner *owner, const IpAddrPort& address )
 {
     string addr = getAddrFromSockAddr ( address.getAddrInfo()->ai_addr ); // Resolve IP address first
-    return SocketPtr ( new SmartSocket ( owner, { addr, address.port }, protocol ) );
+    return SocketPtr ( new SmartSocket ( owner, { addr, address.port }, Socket::Protocol::TCP ) );
+}
+
+SocketPtr SmartSocket::connectUDP ( Socket::Owner *owner, const IpAddrPort& address )
+{
+    string addr = getAddrFromSockAddr ( address.getAddrInfo()->ai_addr ); // Resolve IP address first
+    return SocketPtr ( new SmartSocket ( owner, { addr, address.port }, Socket::Protocol::UDP ) );
 }
 
 SocketPtr SmartSocket::accept ( Socket::Owner *owner )

@@ -83,11 +83,13 @@ public:
 
     // Listen for connections on the given port.
     // Opens a regular server socket of the given protocol, but also listens for UDP tunnel connections.
-    static SocketPtr listen ( Socket::Owner *owner, uint16_t port, Socket::Protocol protocol );
+    static SocketPtr listenTCP ( Socket::Owner *owner, uint16_t port );
+    static SocketPtr listenUDP ( Socket::Owner *owner, uint16_t port );
 
     // Connect to the given address and port.
     // Tries to connect using the given protocol, with fallback to UDP tunnel.
-    static SocketPtr connect ( Socket::Owner *owner, const IpAddrPort& address, Socket::Protocol protocol );
+    static SocketPtr connectTCP ( Socket::Owner *owner, const IpAddrPort& address );
+    static SocketPtr connectUDP ( Socket::Owner *owner, const IpAddrPort& address );
 
     // Destructor
     ~SmartSocket() override;

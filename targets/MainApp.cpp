@@ -148,14 +148,14 @@ struct MainApp
 
         if ( clientMode.isHost() )
         {
-            serverCtrlSocket = SmartSocket::listen ( this, address.port, Socket::Protocol::TCP );
+            serverCtrlSocket = SmartSocket::listenTCP ( this, address.port );
             address.port = serverCtrlSocket->address.port; // Update port in case it was initially 0
 
             LOG ( "serverCtrlSocket=%08x", serverCtrlSocket.get() );
         }
         else
         {
-            ctrlSocket = SmartSocket::connect ( this, address, Socket::Protocol::TCP );
+            ctrlSocket = SmartSocket::connectTCP ( this, address );
 
             LOG ( "ctrlSocket=%08x", ctrlSocket.get() );
         }
@@ -169,7 +169,7 @@ struct MainApp
 
         ui.display ( toString ( "Connecting to %s", address ) );
 
-        ctrlSocket = SmartSocket::connect ( this, address, Socket::Protocol::TCP );
+        ctrlSocket = SmartSocket::connectTCP ( this, address );
 
         LOG ( "ctrlSocket=%08x", ctrlSocket.get() );
 
@@ -255,23 +255,26 @@ struct MainApp
 
         if ( clientMode.isHost() )
         {
-            if ( versionConfig.mode.isSpectate() ) // Ignore spectators, since the game is not loaded
+            if ( versionConfig.mode.isSpectate() )
+            {
+                socket->send ( new ErrorMessage ( "Not in a game yet, cannot spectate!" ) );
                 return;
+            }
 
-            if ( pendingSockets.find ( socket ) == pendingSockets.end() )
+            ctrlSocket = popPendingSocket ( socket );
+
+            if ( !ctrlSocket.get() )
                 return;
-
-            try { serverDataSocket = SmartSocket::listen ( this, address.port, Socket::Protocol::UDP ); }
-            catch ( ... ) { serverDataSocket = SmartSocket::listen ( this, 0, Socket::Protocol::UDP ); }
-            initialConfig.dataPort = serverDataSocket->address.port;
-
-            LOG ( "serverDataSocket=%08x", serverDataSocket.get() );
-
-            ctrlSocket = pendingSockets[socket];
-            pendingSockets.erase ( socket );
 
             ASSERT ( ctrlSocket.get() != 0 );
             ASSERT ( ctrlSocket->isConnected() == true );
+
+            try { serverDataSocket = SmartSocket::listenUDP ( this, address.port ); }
+            catch ( ... ) { serverDataSocket = SmartSocket::listenUDP ( this, 0 ); }
+
+            initialConfig.dataPort = serverDataSocket->address.port;
+
+            LOG ( "serverDataSocket=%08x", serverDataSocket.get() );
         }
 
         initialConfig.invalidate();
@@ -316,8 +319,7 @@ struct MainApp
             this->initialConfig.mode.flags = initialConfig.mode.flags;
             this->initialConfig.dataPort = initialConfig.dataPort;
 
-            dataSocket = SmartSocket::connect (
-                             this, { address.addr, this->initialConfig.dataPort }, Socket::Protocol::UDP );
+            dataSocket = SmartSocket::connectUDP ( this, { address.addr, this->initialConfig.dataPort } );
 
             LOG ( "dataSocket=%08x", dataSocket.get() );
 
@@ -530,9 +532,9 @@ struct MainApp
 
             newSocket->send ( new VersionConfig ( clientMode ) );
 
-            pendingSockets[newSocket.get()] = newSocket;
+            pushPendingSocket ( newSocket );
         }
-        else if ( serverSocket == serverDataSocket.get() && ctrlSocket && ctrlSocket->isConnected() )
+        else if ( serverSocket == serverDataSocket.get() && ctrlSocket && ctrlSocket->isConnected() && !dataSocket )
         {
             LOG ( "serverDataSocket->accept ( this )" );
 
@@ -599,9 +601,7 @@ struct MainApp
             return;
         }
 
-        LOG ( "pendingSockets.erase ( %08x )", socket );
-
-        pendingSockets.erase ( socket );
+        popPendingSocket ( socket );
     }
 
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
@@ -623,7 +623,7 @@ struct MainApp
             gotVersionConfig ( socket, msg->getAs<VersionConfig>() );
             return;
         }
-        else if ( ctrlSocket ) // This means ctrlSocket is ready; shouldn't be ( socket == ctrlSocket.get() )
+        else if ( ctrlSocket.get() != 0 )
         {
             switch ( msg->getMsgType() )
             {
@@ -746,6 +746,7 @@ struct MainApp
     // Timer callback
     void timerExpired ( Timer *timer ) override
     {
+        expirePendingSocketTimer ( timer );
     }
 
     // ExternalIpAddress callbacks

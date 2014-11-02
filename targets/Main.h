@@ -17,6 +17,8 @@
 #include <unordered_set>
 #include <unordered_map>
 
+#define DEFAULT_PENDING_TIMEOUT ( 10000 )
+
 
 // Set of command line options
 ENUM ( Options, Help, Dummy, Tests, Stdout, NoFork, NoUi, Strict, Training, Broadcast, Spectate, Offline, Dir );
@@ -87,12 +89,75 @@ struct Main
 
     SocketPtr serverDataSocket, dataSocket;
 
-    std::unordered_map<Socket *, SocketPtr> pendingSockets;
+    uint64_t pendingSocketTimeout = DEFAULT_PENDING_TIMEOUT;
+
+
+    void pushPendingSocket ( const SocketPtr& socket )
+    {
+        LOG ( "socket=%08x", socket.get() );
+
+        TimerPtr timer ( new Timer ( this ) );
+        timer->start ( pendingSocketTimeout );
+
+        pendingSockets[socket.get()] = socket;
+        pendingSocketTimers[socket.get()] = timer;
+        pendingTimerToSocket[timer.get()] = socket.get();
+    }
+
+    SocketPtr popPendingSocket ( Socket *socketPtr )
+    {
+        LOG ( "socket=%08x", socketPtr );
+
+        auto it = pendingSockets.find ( socketPtr );
+
+        if ( it == pendingSockets.end() )
+            return 0;
+
+        ASSERT ( pendingSocketTimers.find ( socketPtr ) != pendingSocketTimers.end() );
+
+        SocketPtr socket = it->second;
+        Timer *timerPtr = pendingSocketTimers[socketPtr].get();
+
+        ASSERT ( pendingTimerToSocket.find ( timerPtr ) != pendingTimerToSocket.end() );
+
+        pendingTimerToSocket.erase ( timerPtr );
+        pendingSocketTimers.erase ( socketPtr );
+        pendingSockets.erase ( socketPtr );
+
+        return socket;
+    }
+
+    void expirePendingSocketTimer ( Timer *timerPtr )
+    {
+        LOG ( "timer=%08x", timerPtr );
+
+        auto it = pendingTimerToSocket.find ( timerPtr );
+
+        if ( it == pendingTimerToSocket.end() )
+            return;
+
+        LOG ( "socket=%08x", it->second );
+
+        ASSERT ( pendingSockets.find ( it->second ) != pendingSockets.end() );
+        ASSERT ( pendingSocketTimers.find ( it->second ) != pendingSocketTimers.end() );
+
+        pendingSocketTimers.erase ( it->second );
+        pendingSockets.erase ( it->second );
+        pendingTimerToSocket.erase ( timerPtr );
+    }
 
 
     Main() : procMan ( this ) {}
 
     Main ( const ClientMode& clientMode ) : clientMode ( clientMode ), procMan ( this ) {}
+
+private:
+
+    std::unordered_map<Socket *, SocketPtr> pendingSockets;
+
+    std::unordered_map<Socket *, TimerPtr> pendingSocketTimers;
+
+    std::unordered_map<Timer *, Socket *> pendingTimerToSocket;
 };
 
 

@@ -465,6 +465,8 @@ struct DllMain
 
         if ( serverSocket == serverCtrlSocket.get() )
         {
+            LOG ( "serverCtrlSocket->accept ( this )" );
+
             SocketPtr newSocket = serverCtrlSocket->accept ( this );
 
             LOG ( "newSocket=%08x", newSocket.get() );
@@ -472,12 +474,14 @@ struct DllMain
             ASSERT ( newSocket != 0 );
             ASSERT ( newSocket->isConnected() == true );
 
-            newSocket->send ( new VersionConfig ( clientMode, ClientMode::GameStarted ) );
+            newSocket->send ( new VersionConfig ( clientMode ) );
 
-            pendingSockets[newSocket.get()] = newSocket;
+            pushPendingSocket ( newSocket );
         }
-        else if ( serverSocket == serverDataSocket.get() )
+        else if ( serverSocket == serverDataSocket.get() && !dataSocket )
         {
+            LOG ( "serverDataSocket->accept ( this )" );
+
             dataSocket = serverDataSocket->accept ( this );
 
             LOG ( "dataSocket=%08x", dataSocket.get() );
@@ -520,7 +524,10 @@ struct DllMain
             return;
         }
 
-        pendingSockets.erase ( socket );
+        popPendingSocket ( socket );
+
+        LOG ( "specSockets.erase ( %08x )", socket );
+
         specSockets.erase ( socket );
     }
 
@@ -541,12 +548,13 @@ struct DllMain
                 return;
 
             case MsgType::ConfirmConfig:
-                if ( pendingSockets.find ( socket ) == pendingSockets.end() )
-                    break;
+            {
+                SocketPtr newSocket = popPendingSocket ( socket );
 
-                specSockets[socket] = pendingSockets[socket];
-                pendingSockets.erase ( socket );
+                if ( newSocket )
+                    specSockets[socket] = newSocket;
                 return;
+            }
 
             case MsgType::RngState:
                 netMan.setRngState ( msg->getAs<RngState>() );
@@ -619,6 +627,7 @@ struct DllMain
                     break;
 
                 clientMode = msg->getAs<ClientMode>();
+                clientMode.flags |= ClientMode::GameStarted;
                 LOG ( "clientMode=%s", clientMode );
                 break;
 
@@ -665,12 +674,15 @@ struct DllMain
 
                     if ( clientMode.isHost() )
                     {
-                        serverDataSocket = SmartSocket::listen ( this, address.port, Socket::Protocol::UDP );
+                        serverCtrlSocket = SmartSocket::listenTCP ( this, address.port );
+                        LOG ( "serverCtrlSocket=%08x", serverCtrlSocket.get() );
+
+                        serverDataSocket = SmartSocket::listenUDP ( this, address.port );
                         LOG ( "serverDataSocket=%08x", serverDataSocket.get() );
                     }
                     else if ( clientMode.isClient() )
                     {
-                        dataSocket = SmartSocket::connect ( this, address, Socket::Protocol::UDP );
+                        dataSocket = SmartSocket::connectUDP ( this, address );
                         LOG ( "dataSocket=%08x", dataSocket.get() );
                     }
 
@@ -685,8 +697,8 @@ struct DllMain
 
                     LOG ( "NetplayConfig: broadcastPort=%u", netMan.config.broadcastPort );
 
-                    serverCtrlSocket = SmartSocket::listen (
-                                           this, netMan.config.broadcastPort, Socket::Protocol::TCP  );
+                    serverCtrlSocket = SmartSocket::listenTCP ( this, netMan.config.broadcastPort );
+                    LOG ( "serverCtrlSocket=%08x", serverCtrlSocket.get() );
 
                     // Update the broadcast port and send over IPC
                     netMan.config.broadcastPort = serverCtrlSocket->address.port;
@@ -742,7 +754,7 @@ struct DllMain
         }
         else
         {
-            ASSERT_IMPOSSIBLE;
+            expirePendingSocketTimer ( timer );
         }
     }
 

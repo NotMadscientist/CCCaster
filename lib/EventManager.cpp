@@ -11,7 +11,7 @@
 using namespace std;
 
 
-#define DEFAULT_TIMEOUT_MILLISECONDS 1000
+#define DEFAULT_TIMEOUT_MILLISECONDS ( 1000 )
 
 
 void EventManager::checkEvents ( uint64_t timeout )
