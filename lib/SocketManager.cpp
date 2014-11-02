@@ -61,6 +61,7 @@ void SocketManager::check ( uint64_t timeout )
     tv.tv_sec = timeout / 1000UL;
     tv.tv_usec = ( timeout * 1000UL ) % 1000000UL;
 
+    // Note: select should be called between timeBeginPeriod / timeEndPeriod to ensure accurate timeouts
     int count = select ( 0, &readFds, &writeFds, 0, &tv );
 
     if ( count == SOCKET_ERROR )

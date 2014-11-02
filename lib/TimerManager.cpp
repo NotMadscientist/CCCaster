@@ -20,6 +20,7 @@ void TimerManager::updateNow()
     }
     else
     {
+        // Note: timeGetTime should be called between timeBeginPeriod / timeEndPeriod to ensure accuracy
         now = timeGetTime();
     }
 }

@@ -32,7 +32,6 @@ ENUM ( NetplayState, PreInitial, Initial, CharaSelect, Loading, Skippable, InGam
 
 */
 
-
 // Class that manages netplay state and inputs
 class NetplayManager
 {
@@ -134,6 +133,7 @@ public:
     // True if the RNG state is ready for the current frame, otherwise the caller should wait for it
     bool isRngStateReady ( bool shouldSetRngState ) const;
 
+    // Save the data for the last game
     void saveLastGame();
 
     friend class ProcessManager;

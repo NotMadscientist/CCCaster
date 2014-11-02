@@ -37,15 +37,19 @@ void EventManager::eventLoop()
 {
     if ( TimerManager::get().isHiRes() )
     {
+        timeBeginPeriod ( 1 ); // for select, see comment in SocketManager
+
         while ( running )
         {
             Sleep ( 1 );
             checkEvents ( DEFAULT_TIMEOUT_MILLISECONDS );
         }
+
+        timeEndPeriod ( 1 ); // for select, see comment in SocketManager
     }
     else
     {
-        timeBeginPeriod ( 1 );
+        timeBeginPeriod ( 1 ); // for timeGetTime AND select
 
         while ( running )
         {
@@ -53,7 +57,7 @@ void EventManager::eventLoop()
             checkEvents ( DEFAULT_TIMEOUT_MILLISECONDS );
         }
 
-        timeEndPeriod ( 1 );
+        timeEndPeriod ( 1 ); // for timeGetTime AND select
     }
 }
 
@@ -70,6 +74,8 @@ bool EventManager::poll ( uint64_t timeout )
     uint64_t now = TimerManager::get().getNow();
     uint64_t end = now + timeout;
 
+    timeBeginPeriod ( 1 ); // for select, see comment in SocketManager
+
     while ( now < end )
     {
         checkEvents ( end - now );
@@ -80,6 +86,8 @@ bool EventManager::poll ( uint64_t timeout )
         TimerManager::get().updateNow();
         now = TimerManager::get().getNow();
     }
+
+    timeEndPeriod ( 1 ); // for select, see comment in SocketManager
 
     if ( running )
         return true;
