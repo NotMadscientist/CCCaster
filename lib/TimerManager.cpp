@@ -97,7 +97,7 @@ void TimerManager::check()
 
 void TimerManager::add ( Timer *timer )
 {
-    LOG ( "Adding timer %08x; delay='%llu ms'", timer, timer->delay );
+    LOG ( "Adding timer %08x", timer );
     allocatedTimers.insert ( timer );
     changed = true;
 }
