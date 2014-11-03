@@ -11,6 +11,9 @@ using namespace std;
 
 static const string uiTitle = "CCCaster " + LocalVersion.code;
 
+// Indent position of the pinging stats (must be a string)
+#define INDENT_STATS "12"
+
 // System sound prefix and default alert
 #define SYSTEM_ALERT_PREFEX "System"
 #define SYSTEM_DEFAULT_ALERT "SystemDefault"
@@ -341,22 +344,21 @@ static int computeDelay ( const Statistics& latency )
 static string formatStats ( const PingStats& pingStats )
 {
     return toString (
-               "Ping: %.2f ms \n"
+               "%-" INDENT_STATS "sPing: %.2f ms"
 #ifndef NDEBUG
-               "Worst: %.2f ms\n"
-               "StdErr: %.2f ms\n"
-               "StdDev: %.2f ms\n"
-               "Packet Loss: %d%%\n"
+               "\n%-" INDENT_STATS "sWorst: %.2f ms"
+               "\n%-" INDENT_STATS "sStdErr: %.2f ms"
+               "\n%-" INDENT_STATS "sStdDev: %.2f ms"
+               "\n%-" INDENT_STATS "sPacket Loss: %d%%"
 #endif
-               "Delay: %d\n",
-               pingStats.latency.getMean(),
+               , toString ( "Delay: %d", computeDelay ( pingStats.latency ) ), pingStats.latency.getMean()
 #ifndef NDEBUG
-               pingStats.latency.getWorst(),
-               pingStats.latency.getStdErr(),
-               pingStats.latency.getStdDev(),
-               pingStats.packetLoss,
+               , "", pingStats.latency.getWorst()
+               , "", pingStats.latency.getStdErr()
+               , "", pingStats.latency.getStdDev()
+               , "", pingStats.packetLoss
 #endif
-               computeDelay ( pingStats.latency ) );
+           );
 }
 
 void MainUi::display ( const string& message )
@@ -383,7 +385,7 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
     ASSERT ( ui.get() != 0 );
 
     ui->pushInFront ( new ConsoleUi::TextBox (
-                          initialConfig.getAcceptMessage ( "connected" ) + "\n"
+                          initialConfig.getAcceptMessage ( "connected" ) + "\n\n"
                           + formatStats ( pingStats ) ), { 1, 0 }, true ); // Expand width and clear
 
     ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger,
@@ -427,7 +429,7 @@ bool MainUi::connected ( const InitialConfig& initialConfig, const PingStats& pi
     ASSERT ( ui.get() != 0 );
 
     ui->pushInFront ( new ConsoleUi::TextBox (
-                          initialConfig.getConnectMessage ( "Connected" ) + "\n"
+                          initialConfig.getConnectMessage ( "Connected" ) + "\n\n"
                           + formatStats ( pingStats ) ), { 1, 0 }, true ); // Expand width and clear
 
     ui->pushBelow ( new ConsoleUi::Menu ( "Continue?", { "Yes" }, "No" ) );

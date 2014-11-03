@@ -32,8 +32,16 @@ void splitFormat ( const string& format, string& first, string& rest )
     }
 
     for ( ++i; i < format.size(); ++i )
-        if ( ! ( format[i] == '.' || isalnum ( format[i] ) ) )
+    {
+        if ( ! ( isalnum ( format[i] )
+                 || format[i] == '.'
+                 || format[i] == '-'
+                 || format[i] == '+'
+                 || format[i] == '#' ) )
+        {
             break;
+        }
+    }
 
     first = format.substr ( 0, i );
     rest = ( i < format.size() ? format.substr ( i ) : "" );
