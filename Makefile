@@ -25,7 +25,7 @@ DLL_CPP_SRCS = $(wildcard targets/Dll*.cpp) $(BASE_CPP_SRCS)
 
 NON_GEN_SRCS = *.cpp targets/*.cpp lib/*.cpp tests/*.cpp
 NON_GEN_HEADERS = \
-	$(filter-out lib/Version.local.h,$(filter-out lib/Protocol.%.h,$(wildcard *.h targets/*.h lib/*.h tests/*.h)))
+	$(filter-out lib/Version.local.h lib/Protocol.%.h,$(wildcard *.h targets/*.h lib/*.h tests/*.h))
 AUTOGEN_HEADERS = lib/Version.local.h lib/Protocol.*.h
 
 # Main program objects
@@ -216,7 +216,7 @@ format:
     --keep-one-line-blocks      \
     --align-pointer=name        \
     --align-reference=type      \
-    $(filter-out AsmHacks.h,$(NON_GEN_SRCS) $(NON_GEN_HEADERS))
+    $(filter-out CharacterNames.h AsmHacks.h,$(NON_GEN_SRCS) $(NON_GEN_HEADERS))
 
 count:
 	@wc -l $(NON_GEN_SRCS) $(NON_GEN_HEADERS) | sort -nr | head -n 10 && echo '    ...'

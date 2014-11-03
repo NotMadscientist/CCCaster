@@ -111,7 +111,7 @@ public:
     void disconnectPipe();
 
     // Indicates if the IPC pipe and socket are connected
-    bool ipcConnected() const { return ( pipe && ipcSocket && ipcSocket->isClient() && connected ); }
+    bool isConnected() const { return ( pipe && ipcSocket && ipcSocket->isClient() && connected ); }
 
     // Send a message over the IPC socket
     bool ipcSend ( Serializable& msg ) { return ipcSend ( MsgPtr ( &msg, ignoreMsgPtr ) ); }

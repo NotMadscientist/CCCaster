@@ -77,7 +77,7 @@ struct DllMain
 
     // Frame to stop on, when re-running the game due to rollback.
     // Also used as a flag to indicate re-run mode, 0:0 means not re-running.
-    IndexedFrame rerunStopFrame = { { 0, 0 } };
+    IndexedFrame rerunStopFrame = {{ 0, 0 }};
 
     // Spectator sockets
     unordered_map<Socket *, SocketPtr> specSockets;
@@ -541,11 +541,28 @@ struct DllMain
         switch ( msg->getMsgType() )
         {
             case MsgType::VersionConfig:
+            {
                 if ( !LocalVersion.similar ( msg->getAs<VersionConfig>().version ) )
+                {
                     socket->disconnect();
-                else
-                    socket->send ( new SpectateConfig ( netMan.config ) );
+                    return;
+                }
+
+                SpectateConfig *config = new SpectateConfig ( netMan.config );
+                MsgPtr msgPerGameData = netMan.getLastGame();
+
+                if ( msgPerGameData )
+                {
+                    for ( uint8_t i = 0; i < 2; ++i )
+                    {
+                        config->chara[i] = msgPerGameData->getAs<PerGameData>().chara[i];
+                        config->moon[i] = msgPerGameData->getAs<PerGameData>().moon[i];
+                    }
+                }
+
+                socket->send ( config );
                 return;
+            }
 
             case MsgType::ConfirmConfig:
             {

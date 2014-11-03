@@ -178,12 +178,14 @@ struct SpectateConfig : public SerializableSequence
     uint8_t delay = 0xFF, rollback = 0;
 
     std::array<std::string, 2> names;
+    std::array<uint32_t, 2> chara = {{ 0, 0 }};
+    std::array<char, 2> moon = {{ 0, 0 }};
 
     SpectateConfig ( const NetplayConfig& netplayConfig )
         : mode ( netplayConfig.mode ), delay ( netplayConfig.delay )
         , rollback ( netplayConfig.rollback ), names ( netplayConfig.names ) {}
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig, mode, delay, rollback, names )
+    PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig, mode, delay, rollback, names, chara, moon )
 };
 
 
@@ -221,7 +223,8 @@ struct PerGameData : public SerializableSequence
     uint32_t startIndex = 0;
 
     // Character select data, indexed by player
-    std::array<uint32_t, 2> chara, moon, color;
+    std::array<uint32_t, 2> chara = {{ 0, 0 }}, color = {{ 0, 0 }};
+    std::array<char, 2> moon = {{ 0, 0 }};
 
     // Selected stage
     uint32_t stage = 0;
@@ -242,7 +245,7 @@ struct PerGameData : public SerializableSequence
 
 struct BaseInputs
 {
-    IndexedFrame indexedFrame = { { 0, 0 } };
+    IndexedFrame indexedFrame = {{ 0, 0 }};
 
     uint32_t getIndex() const { return indexedFrame.parts.index; }
     uint32_t getFrame() const { return indexedFrame.parts.frame; }

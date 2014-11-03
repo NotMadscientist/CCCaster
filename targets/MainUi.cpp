@@ -262,6 +262,7 @@ void MainUi::initialize()
     // config.putInteger ( "joystickDeadzone", 25000 );
     config.putInteger ( "lastUsedPort", -1 );
     config.putInteger ( "spectatorCap", -1 );
+    config.putInteger ( "useFullCharacterName", 0 );
 
     initialConfig.clear();
     initialConfig.localName = config.getString ( "displayName" );
@@ -439,6 +440,10 @@ bool MainUi::connected ( const InitialConfig& initialConfig, const PingStats& pi
     return ret;
 }
 
+#include "CharacterNames.h"
+
+typedef const char * ( *CharaNameFunc ) ( uint32_t chara );
+
 bool MainUi::spectate ( const SpectateConfig& spectateConfig )
 {
     bool ret = false;
@@ -446,12 +451,30 @@ bool MainUi::spectate ( const SpectateConfig& spectateConfig )
     ASSERT ( ui.get() != 0 );
 
     string text;
+
     if ( spectateConfig.mode.isBroadcast() )
-        text = "Spectating a broadcast (0 delay)";
+        text = "Spectating a broadcast (0 delay)\n\n";
     else
-        text = toString ( "Spectating %s vs %s (%u delay%s)",
-                          spectateConfig.names[0], spectateConfig.names[1], spectateConfig.delay,
-                          spectateConfig.rollback ? toString ( ", %u rollback)", spectateConfig.rollback ) : "" );
+        text = toString ( "Spectating %s mode (%u delay%s)\n\n",
+                          ( spectateConfig.mode.isTraining() ? "training" : "versus" ), spectateConfig.delay,
+                          ( spectateConfig.rollback ? toString ( ", %u rollback", spectateConfig.rollback ) : "" ) );
+
+    if ( spectateConfig.chara[0] )
+    {
+        CharaNameFunc charaName = ( config.getInteger ( "useFullCharacterName" ) ? fullCharaName : shortCharaName );
+
+        text += toString ( ( spectateConfig.names[0].empty() ? "%s%c-%s" : "%s (%c-%s)" ),
+                           spectateConfig.names[0], spectateConfig.moon[0], charaName ( spectateConfig.chara[0] ) );
+
+        text += " vs ";
+
+        text += toString ( ( spectateConfig.names[1].empty() ? "%s%c-%s" : "%s (%c-%s)" ),
+                           spectateConfig.names[1], spectateConfig.moon[1], charaName ( spectateConfig.chara[1] ) );
+    }
+    else
+    {
+        text += "Selecting characters...";
+    }
 
     ui->pushInFront ( new ConsoleUi::TextBox ( text ), { 1, 0 }, true ); // Expand width and clear
 

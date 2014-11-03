@@ -134,7 +134,7 @@ void ProcessManager::timerExpired ( Timer *timer )
 {
     ASSERT ( timer == gameStartTimer.get() );
 
-    if ( gameStartCount >= GAME_START_ATTEMPTS && !ipcConnected() )
+    if ( gameStartCount >= GAME_START_ATTEMPTS && !isConnected() )
     {
         disconnectPipe();
 

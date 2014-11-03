@@ -49,7 +49,7 @@ class NetplayManager
 
     // Current transition index, incremented whenever the netplay state changes (after CharaSelect).
     // Current netplay frame, frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime.
-    IndexedFrame indexedFrame = { { 0, 0 } };
+    IndexedFrame indexedFrame = {{ 0, 0 }};
 
     // Last game start index, ie the last index of inputs we are saving
     uint32_t lastStartIndex = 0;
@@ -133,7 +133,8 @@ public:
     // True if the RNG state is ready for the current frame, otherwise the caller should wait for it
     bool isRngStateReady ( bool shouldSetRngState ) const;
 
-    // Save the data for the last game
+    // Get / save the data for the last game
+    MsgPtr getLastGame() const;
     void saveLastGame();
 
     friend class ProcessManager;

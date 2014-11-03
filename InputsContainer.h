@@ -17,7 +17,7 @@ class InputsContainer
     std::vector<std::vector<bool>> real;
 
     // Last frame of input that changed
-    IndexedFrame lastChangedFrame = { { UINT_MAX, UINT_MAX } };
+    IndexedFrame lastChangedFrame = {{ UINT_MAX, UINT_MAX }};
 
 public:
 
@@ -152,5 +152,5 @@ public:
 
     const IndexedFrame& getLastChangedFrame() const { return lastChangedFrame; }
 
-    void clearLastChangedFrame() { lastChangedFrame = { { UINT_MAX, UINT_MAX } }; }
+    void clearLastChangedFrame() { lastChangedFrame = {{ UINT_MAX, UINT_MAX }}; }
 };
