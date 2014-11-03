@@ -70,6 +70,7 @@ LD_FLAGS += -lSDL2 -lSDL2main -lws2_32 -lwinmm -lwinpthread -ldinput8 -lgdi32 -l
 # DEFINES += -DLOGGER_MUTEXED
 # DEFINES += -DJLIB_MUTEXED
 
+# Install after make, set to 0 to disable install after make
 INSTALL=1
 
 

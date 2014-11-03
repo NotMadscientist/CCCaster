@@ -6,6 +6,8 @@
 #include <unordered_map>
 
 
+// Socket class that tries to listen / connect over the desired protocol, but automatically falls back
+// to using UDP tunnel if the initial protocol fails. Queries a remote server for UDP tunnel data.
 class SmartSocket : public Socket, public Socket::Owner, public Timer::Owner
 {
     // Child UDP socket enum type for choosing the right constructor
