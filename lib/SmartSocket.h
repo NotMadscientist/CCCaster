@@ -13,6 +13,9 @@ class SmartSocket : public Socket, public Socket::Owner, public Timer::Owner
     // Child UDP socket enum type for choosing the right constructor
     enum ChildSocketEnum { ChildSocket };
 
+    // If direct socket was supposed to be TCP
+    bool isDirectTCP = false;
+
     // Socket that tries to listen / connect directly
     SocketPtr directSocket;
 
@@ -79,7 +82,7 @@ class SmartSocket : public Socket, public Socket::Owner, public Timer::Owner
     SmartSocket ( Socket::Owner *owner, uint16_t port, Socket::Protocol protocol );
 
     // Construct a client socket
-    SmartSocket ( Socket::Owner *owner, const IpAddrPort& address, Socket::Protocol protocol );
+    SmartSocket ( Socket::Owner *owner, const IpAddrPort& address, Socket::Protocol protocol, bool forceTunnel );
 
 public:
 
@@ -90,8 +93,8 @@ public:
 
     // Connect to the given address and port.
     // Tries to connect using the given protocol, with fallback to UDP tunnel.
-    static SocketPtr connectTCP ( Socket::Owner *owner, const IpAddrPort& address );
-    static SocketPtr connectUDP ( Socket::Owner *owner, const IpAddrPort& address );
+    static SocketPtr connectTCP ( Socket::Owner *owner, const IpAddrPort& address, bool forceTunnel = false );
+    static SocketPtr connectUDP ( Socket::Owner *owner, const IpAddrPort& address, bool forceTunnel = false );
 
     // Destructor
     ~SmartSocket() override;
@@ -101,6 +104,9 @@ public:
 
     // Accept a new socket
     SocketPtr accept ( Socket::Owner *owner ) override;
+
+    // If this client UDP socket is connected over the UDP tunnel
+    bool isTunnel() const;
 
     // Send raw bytes directly, a return value of false indicates socket is disconnected
     bool send ( const char *buffer, size_t len );

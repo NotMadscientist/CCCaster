@@ -25,7 +25,10 @@ void EventManager::checkEvents ( uint64_t timeout )
     {
         ASSERT ( TimerManager::get().getNextExpiry() > TimerManager::get().getNow() );
 
-        timeout = TimerManager::get().getNextExpiry() - TimerManager::get().getNow();
+        uint64_t newTimeout = TimerManager::get().getNextExpiry() - TimerManager::get().getNow();
+
+        if ( newTimeout < timeout )
+            newTimeout = timeout;
     }
 
     ASSERT ( timeout > 0 );

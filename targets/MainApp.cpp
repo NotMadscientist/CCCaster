@@ -319,7 +319,11 @@ struct MainApp
             this->initialConfig.mode.flags = initialConfig.mode.flags;
             this->initialConfig.dataPort = initialConfig.dataPort;
 
-            dataSocket = SmartSocket::connectUDP ( this, { address.addr, this->initialConfig.dataPort } );
+            ASSERT ( ctrlSocket.get() != 0 );
+            ASSERT ( ctrlSocket->isConnected() == true );
+
+            dataSocket = SmartSocket::connectUDP ( this, { address.addr, this->initialConfig.dataPort },
+                                                   ctrlSocket->getAsSmart().isTunnel() );
 
             LOG ( "dataSocket=%08x", dataSocket.get() );
 

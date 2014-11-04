@@ -542,8 +542,33 @@ struct DllMain
         {
             case MsgType::VersionConfig:
             {
-                if ( !LocalVersion.similar ( msg->getAs<VersionConfig>().version ) )
+                const Version RemoteVersion = msg->getAs<VersionConfig>().version;
+
+                if ( !LocalVersion.similar ( RemoteVersion, 1 + options[Options::Strict] ) )
                 {
+                    string local = toString ( "%s.%s", LocalVersion.major(), LocalVersion.minor() );
+                    string remote = toString ( "%s.%s", RemoteVersion.major(), RemoteVersion.minor() );
+
+                    if ( options[Options::Strict] >= 1 )
+                    {
+                        local += LocalVersion.suffix();
+                        remote += RemoteVersion.suffix();
+                    }
+
+                    if ( options[Options::Strict] >= 2 )
+                    {
+                        local += " " + LocalVersion.commitId;
+                        remote += " " + RemoteVersion.commitId;
+                    }
+
+                    if ( options[Options::Strict] >= 3 )
+                    {
+                        local += " " + LocalVersion.buildTime;
+                        remote += " " + RemoteVersion.buildTime;
+                    }
+
+                    LOG ( "Incompatible versions:\n%s\n%s", LocalVersion, RemoteVersion );
+
                     socket->disconnect();
                     return;
                 }
@@ -699,6 +724,9 @@ struct DllMain
                     }
                     else if ( clientMode.isClient() )
                     {
+                        serverCtrlSocket = SmartSocket::listenTCP ( this, 0 );
+                        LOG ( "serverCtrlSocket=%08x", serverCtrlSocket.get() );
+
                         dataSocket = SmartSocket::connectUDP ( this, address );
                         LOG ( "dataSocket=%08x", dataSocket.get() );
                     }

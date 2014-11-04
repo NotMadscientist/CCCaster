@@ -178,6 +178,7 @@ struct AutoManager
                   uint8_t options = 0 )                     // Keyboard event hooking options
         : AutoManager ( main )
     {
+        // TODO re-enable me
         // KeyboardManager::get().hook ( main, window, keys, options );
     }
 

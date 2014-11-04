@@ -127,7 +127,7 @@ struct TunInfo
 };
 
 SmartSocket::SmartSocket ( Socket::Owner *owner, uint16_t port, Socket::Protocol protocol )
-    : Socket ( owner, IpAddrPort ( "", port ), Protocol::Smart )
+    : Socket ( owner, IpAddrPort ( "", port ), Protocol::Smart ), isDirectTCP ( protocol == Protocol::TCP )
 {
     ASSERT ( protocol != Protocol::Smart );
 
@@ -139,8 +139,8 @@ SmartSocket::SmartSocket ( Socket::Owner *owner, uint16_t port, Socket::Protocol
 
     tunSocket = UdpSocket::listen ( this, 0 );
 
-    // Listen for direct connections in parallel
-    if ( protocol == Protocol::TCP )
+    // Listen for direct connections at the same time
+    if ( isDirectTCP )
         directSocket = TcpSocket::listen ( this, port );
     else
         directSocket = UdpSocket::listen ( this, port );
@@ -149,8 +149,8 @@ SmartSocket::SmartSocket ( Socket::Owner *owner, uint16_t port, Socket::Protocol
     address.port = directSocket->address.port;
 }
 
-SmartSocket::SmartSocket ( Socket::Owner *owner, const IpAddrPort& address, Socket::Protocol protocol )
-    : Socket ( owner, address, Protocol::Smart )
+SmartSocket::SmartSocket ( Socket::Owner *owner, const IpAddrPort& address, Socket::Protocol protocol, bool forceTun )
+    : Socket ( owner, address, Protocol::Smart ), isDirectTCP ( protocol == Protocol::TCP )
 {
     ASSERT ( protocol != Protocol::Smart );
 
@@ -158,8 +158,14 @@ SmartSocket::SmartSocket ( Socket::Owner *owner, const IpAddrPort& address, Sock
 
     this->state = State::Connecting;
 
+    if ( forceTun )
+    {
+        vpsSocket = TcpSocket::connect ( this, vpsAddress, true );
+        return;
+    }
+
     // Try to connect directly first
-    if ( protocol == Protocol::TCP )
+    if ( isDirectTCP )
         directSocket = TcpSocket::connect ( this, address );
     else
         directSocket = UdpSocket::connect ( this, address );
@@ -212,14 +218,15 @@ void SmartSocket::connectEvent ( Socket *socket )
         if ( isServer() )
         {
             char buffer[3];
-            buffer[0] = ( directSocket->isTCP() ? 'T' : 'U' );
+            buffer[0] = ( isDirectTCP ? 'T' : 'U' );
             memcpy ( &buffer[1], ( char * ) &address.port, sizeof ( uint16_t ) );
 
             vpsSocket->send ( buffer, sizeof ( buffer ) );
         }
         else
         {
-            string buffer = ( directSocket->isTCP() ? "T" : "U" ) + address.str();
+            const string buffer = ( isDirectTCP ? "T" : "U" ) + address.str();
+
             vpsSocket->send ( &buffer[0], buffer.size() );
 
             connectTimer.reset ( new Timer ( this ) );
@@ -240,7 +247,7 @@ void SmartSocket::disconnectEvent ( Socket *socket )
     {
         LOG_SMART_SOCKET ( this, "Switch to UDP tunnel" );
 
-        directSocket->disconnect();
+        directSocket.reset();
 
         vpsSocket = TcpSocket::connect ( this, vpsAddress, true );
 
@@ -350,29 +357,22 @@ void SmartSocket::timerExpired ( Timer *timer )
             for ( const auto& kv : pendingClients )
             {
                 const TunnelClient& tunClient = kv.second;
+                const UdpData data ( isClient(), tunClient.matchId );
 
-                if ( tunClient.address.empty() )
-                {
-                    UdpData data ( isClient(), tunClient.matchId );
-                    tunSocket->send ( data.buffer, sizeof ( data.buffer ), vpsAddress );
-                }
-                else
-                {
+                tunSocket->send ( data.buffer, sizeof ( data.buffer ), vpsAddress );
+
+                if ( !tunClient.address.empty() )
                     tunSocket->send ( NullMsg, tunClient.address );
-                }
             }
         }
         else
         {
-            if ( tunAddress.empty() )
-            {
-                UdpData data ( isClient(), matchId );
-                tunSocket->send ( data.buffer, sizeof ( data.buffer ), vpsAddress );
-            }
-            else
-            {
+            const UdpData data ( isClient(), matchId );
+
+            tunSocket->send ( data.buffer, sizeof ( data.buffer ), vpsAddress );
+
+            if ( !tunAddress.empty() )
                 tunSocket->send ( NullMsg, tunAddress );
-            }
         }
 
         sendTimer->start ( SEND_INTERVAL );
@@ -451,7 +451,6 @@ void SmartSocket::gotTunInfo ( uint32_t matchId, const IpAddrPort& address )
     else
     {
         connectTimer.reset();
-        sendTimer.reset();
 
         this->tunAddress = address;
 
@@ -472,21 +471,26 @@ SocketPtr SmartSocket::listenUDP ( Socket::Owner *owner, uint16_t port )
     return SocketPtr ( new SmartSocket ( owner, port, Socket::Protocol::UDP ) );
 }
 
-SocketPtr SmartSocket::connectTCP ( Socket::Owner *owner, const IpAddrPort& address )
+SocketPtr SmartSocket::connectTCP ( Socket::Owner *owner, const IpAddrPort& address, bool forceTunnel )
 {
     string addr = getAddrFromSockAddr ( address.getAddrInfo()->ai_addr ); // Resolve IP address first
-    return SocketPtr ( new SmartSocket ( owner, { addr, address.port }, Socket::Protocol::TCP ) );
+    return SocketPtr ( new SmartSocket ( owner, { addr, address.port }, Socket::Protocol::TCP, forceTunnel ) );
 }
 
-SocketPtr SmartSocket::connectUDP ( Socket::Owner *owner, const IpAddrPort& address )
+SocketPtr SmartSocket::connectUDP ( Socket::Owner *owner, const IpAddrPort& address, bool forceTunnel )
 {
     string addr = getAddrFromSockAddr ( address.getAddrInfo()->ai_addr ); // Resolve IP address first
-    return SocketPtr ( new SmartSocket ( owner, { addr, address.port }, Socket::Protocol::UDP ) );
+    return SocketPtr ( new SmartSocket ( owner, { addr, address.port }, Socket::Protocol::UDP, forceTunnel ) );
+}
+
+bool SmartSocket::isTunnel() const
+{
+    return ( isClient() && tunSocket && !tunSocket->getAsUDP().isConnectionLess() && tunSocket->isConnected() );
 }
 
 SocketPtr SmartSocket::accept ( Socket::Owner *owner )
 {
-    if ( isDirectAccept )
+    if ( isDirectAccept && directSocket )
         return directSocket->accept ( owner );
 
     SocketPtr socket = tunSocket->accept ( owner );
