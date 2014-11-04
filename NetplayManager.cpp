@@ -198,39 +198,39 @@ void NetplayManager::setState ( NetplayState state )
         if ( this->state != NetplayState::Initial )
             ++indexedFrame.parts.index;
 
-        // Start of a new game, entering loading state
-        if ( state == NetplayState::Loading && !config.mode.isOffline() )
-        {
-            LOG ( "Start of a new game" );
+        // // Start of a new game, entering loading state
+        // if ( state == NetplayState::Loading && !config.mode.isOffline() )
+        // {
+        //     LOG ( "Start of a new game" );
 
-            // Save character select data
-            PerGameData *game = new PerGameData ( getIndex() );
+        //     // Save character select data
+        //     PerGameData *game = new PerGameData ( getIndex() );
 
-            for ( uint8_t i = 0; i < 2; ++i )
-            {
-                game->chara[i] = * ( i == 0 ? CC_P1_CHARA_SELECTOR_ADDR : CC_P2_CHARA_SELECTOR_ADDR );
-                game->color[i] = * ( i == 0 ? CC_P1_COLOR_SELECTOR_ADDR : CC_P2_COLOR_SELECTOR_ADDR );
-                game->moon[i] = ( char ) * ( i == 0 ? CC_P1_MOON_SELECTOR_ADDR  : CC_P2_MOON_SELECTOR_ADDR  );
-                game->moon[i] = ( game->moon[i] == 0 ? 'C' : ( game->moon[i] == 1 ? 'F' : 'H' ) );
+        //     for ( uint8_t i = 0; i < 2; ++i )
+        //     {
+        //         game->chara[i] = * ( i == 0 ? CC_P1_CHARA_SELECTOR_ADDR : CC_P2_CHARA_SELECTOR_ADDR );
+        //         game->color[i] = ( char ) * ( i == 0 ? CC_P1_COLOR_SELECTOR_ADDR : CC_P2_COLOR_SELECTOR_ADDR );
+        //         game->moon[i] = ( char ) * ( i == 0 ? CC_P1_MOON_SELECTOR_ADDR  : CC_P2_MOON_SELECTOR_ADDR  );
+        //         game->moon[i] = ( game->moon[i] == 0 ? 'C' : ( game->moon[i] == 1 ? 'F' : 'H' ) );
 
-                LOG ( "P%u: chara=%u; color=%u; moon=%c", i + 1, game->chara[i], game->color[i], game->moon[i] );
-            }
+        //         LOG ( "P%u: chara=%u; color=%u; moon=%c", i + 1, game->chara[i], game->color[i], game->moon[i] );
+        //     }
 
-            game->stage = *CC_STAGE_SELECTOR_ADDR;
+        //     game->stage = *CC_STAGE_SELECTOR_ADDR;
 
-            LOG ( "stage=%u", game->stage );
+        //     LOG ( "stage=%u", game->stage );
 
-            games.push_back ( MsgPtr ( game ) );
+        //     games.push_back ( MsgPtr ( game ) );
 
-            // Clear old game data
-            if ( games.size() > MAX_GAMES_TO_KEEP )
-            {
-                games[games.size() - MAX_GAMES_TO_KEEP - 1].reset();
+        //     // Clear old game data
+        //     if ( games.size() > MAX_GAMES_TO_KEEP )
+        //     {
+        //         games[games.size() - MAX_GAMES_TO_KEEP - 1].reset();
 
-                for ( uint32_t i = 0; i < games.size() - MAX_GAMES_TO_KEEP; ++i )
-                    ASSERT ( games[i].get() == 0 );
-            }
-        }
+        //         for ( uint32_t i = 0; i < games.size() - MAX_GAMES_TO_KEEP; ++i )
+        //             ASSERT ( games[i].get() == 0 );
+        //     }
+        // }
 
         // Start of a new game, exiting loading state
         if ( this->state == NetplayState::Loading )
@@ -396,33 +396,35 @@ bool NetplayManager::isRngStateReady ( bool shouldSetRngState ) const
 
 MsgPtr NetplayManager::getLastGame() const
 {
-    if ( games.empty() )
-        return 0;
+    // if ( games.empty() )
+    //     return 0;
 
-    return games.back();
+    // return games.back();
+
+    return 0;
 }
 
 void NetplayManager::saveLastGame()
 {
-    if ( config.mode.isOffline() )
-        return;
+    // if ( config.mode.isOffline() )
+    //     return;
 
-    ASSERT ( games.back().get() != 0 );
-    ASSERT ( games.back()->getMsgType() == MsgType::PerGameData );
+    // ASSERT ( games.back().get() != 0 );
+    // ASSERT ( games.back()->getMsgType() == MsgType::PerGameData );
 
-    LOG ( "indexedFrame=[%s]; lastStartIndex=%u", indexedFrame, lastStartIndex );
+    // LOG ( "indexedFrame=[%s]; lastStartIndex=%u", indexedFrame, lastStartIndex );
 
-    PerGameData& game = games.back()->getAs<PerGameData>();
+    // PerGameData& game = games.back()->getAs<PerGameData>();
 
-    for ( uint32_t i = lastStartIndex; i < rngStates.size(); ++i )
-    {
-        if ( !rngStates[i] )
-            continue;
+    // for ( uint32_t i = lastStartIndex; i < rngStates.size(); ++i )
+    // {
+    //     if ( !rngStates[i] )
+    //         continue;
 
-        LOG ( "rngState[%d]", i );
+    //     LOG ( "rngState[%d]", i );
 
-        ASSERT ( rngStates[i]->getMsgType() == MsgType::RngState );
+    //     ASSERT ( rngStates[i]->getMsgType() == MsgType::RngState );
 
-        game.rngStates[i] = rngStates[i]->getAs<RngState>();
-    }
+    //     game.rngStates[i] = rngStates[i]->getAs<RngState>();
+    // }
 }

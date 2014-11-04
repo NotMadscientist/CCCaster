@@ -138,6 +138,7 @@ struct NetplayConfig : public SerializableSequence
     uint8_t hostPlayer = 0;
     uint16_t broadcastPort = 0;
 
+    // Player names
     std::array<std::string, 2> names;
 
     uint8_t getOffset() const
@@ -172,20 +173,30 @@ struct NetplayConfig : public SerializableSequence
 };
 
 
-struct SpectateConfig : public SerializableSequence
+struct GameConfig
+{
+    // Character select data, indexed by player
+    std::array<uint32_t, 2> chara = {{ 0, 0 }};
+    std::array<char, 2> moon = {{ 0, 0 }}, color = {{ 0, 0 }};
+
+    // Selected stage
+    uint32_t stage = 0;
+};
+
+
+struct SpectateConfig : public SerializableSequence, public GameConfig
 {
     ClientMode mode;
     uint8_t delay = 0xFF, rollback = 0;
 
+    // Player names
     std::array<std::string, 2> names;
-    std::array<uint32_t, 2> chara = {{ 0, 0 }};
-    std::array<char, 2> moon = {{ 0, 0 }};
 
-    SpectateConfig ( const NetplayConfig& netplayConfig )
-        : mode ( netplayConfig.mode ), delay ( netplayConfig.delay )
+    SpectateConfig ( const NetplayConfig& netplayConfig, const GameConfig& gameConfig )
+        : GameConfig ( gameConfig ), mode ( netplayConfig.mode ), delay ( netplayConfig.delay )
         , rollback ( netplayConfig.rollback ), names ( netplayConfig.names ) {}
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig, mode, delay, rollback, names, chara, moon )
+    PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig, chara, moon, color, stage, mode, delay, rollback, names )
 };
 
 
@@ -214,32 +225,6 @@ struct RngState : public SerializableSequence
     }
 
     PROTOCOL_MESSAGE_BOILERPLATE ( RngState, index, rngState0, rngState1, rngState2, rngState3 );
-};
-
-
-struct PerGameData : public SerializableSequence
-{
-    // The game start index, ie when this batch of inputs start
-    uint32_t startIndex = 0;
-
-    // Character select data, indexed by player
-    std::array<uint32_t, 2> chara = {{ 0, 0 }}, color = {{ 0, 0 }};
-    std::array<char, 2> moon = {{ 0, 0 }};
-
-    // Selected stage
-    uint32_t stage = 0;
-
-    // Mapping: index -> RngState
-    std::unordered_map<uint32_t, RngState> rngStates;
-
-    // Mapping: index offset -> player -> frame -> input
-    std::vector<std::array<std::vector<uint16_t>, 2>> inputs;
-
-    // TODO encapsulate training mode state
-
-    PerGameData ( uint32_t startIndex ) : startIndex ( startIndex ) {}
-
-    PROTOCOL_MESSAGE_BOILERPLATE ( PerGameData, startIndex, chara, color, moon, rngStates, inputs );
 };
 
 

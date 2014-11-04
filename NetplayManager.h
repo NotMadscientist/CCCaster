@@ -6,6 +6,12 @@
 #include <vector>
 
 
+// 16 bit input container
+struct InputsContainer16 : public SerializableSequence, public InputsContainer<uint16_t>
+{
+    PROTOCOL_MESSAGE_BOILERPLATE ( InputsContainer16, inputs );
+};
+
 // PreInitial: The period while we are preparing communication channels
 // Initial: The game starting phase
 // CharaSelect: Character select
@@ -55,14 +61,10 @@ class NetplayManager
     uint32_t lastStartIndex = 0;
 
     // Mapping: player -> index -> frame -> input
-    std::array<InputsContainer<uint16_t>, 2> inputs;
+    std::array<InputsContainer16, 2> inputs;
 
     // Mapping: index -> RNG state (can be null)
     std::vector<MsgPtr> rngStates;
-
-    // Data for previous games, each game starts just after the Loading state.
-    // Indexed by game number, NOT by transition index.
-    std::vector<MsgPtr> games;
 
     // The local player, ie the one where setInput is called each frame locally
     uint8_t localPlayer = 1;

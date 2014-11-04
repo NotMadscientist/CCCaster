@@ -573,19 +573,19 @@ struct DllMain
                     return;
                 }
 
-                SpectateConfig *config = new SpectateConfig ( netMan.config );
-                MsgPtr msgPerGameData = netMan.getLastGame();
+                // SpectateConfig *config = new SpectateConfig ( netMan.config );
+                // MsgPtr msgPerGameData = netMan.getLastGame();
 
-                if ( msgPerGameData )
-                {
-                    for ( uint8_t i = 0; i < 2; ++i )
-                    {
-                        config->chara[i] = msgPerGameData->getAs<PerGameData>().chara[i];
-                        config->moon[i] = msgPerGameData->getAs<PerGameData>().moon[i];
-                    }
-                }
+                // if ( msgPerGameData )
+                // {
+                //     for ( uint8_t i = 0; i < 2; ++i )
+                //     {
+                //         config->chara[i] = msgPerGameData->getAs<PerGameData>().chara[i];
+                //         config->moon[i] = msgPerGameData->getAs<PerGameData>().moon[i];
+                //     }
+                // }
 
-                socket->send ( config );
+                // socket->send ( config );
                 return;
             }
 
@@ -594,7 +594,13 @@ struct DllMain
                 SocketPtr newSocket = popPendingSocket ( socket );
 
                 if ( newSocket )
+                {
                     specSockets[socket] = newSocket;
+                    // rate limit newSocket if host or client
+                    // send over newSocket:
+                    //  - InputContainers
+                    //  - RngStates
+                }
                 return;
             }
 
@@ -694,7 +700,6 @@ struct DllMain
                 if ( netMan.config.delay == 0xFF )
                     LOG_AND_THROW_STRING ( "NetplayConfig: delay=%d is invalid!", netMan.config.delay );
 
-
                 if ( clientMode.isNetplay() )
                 {
                     if ( netMan.config.hostPlayer != 1 && netMan.config.hostPlayer != 2 )
@@ -726,6 +731,8 @@ struct DllMain
                     {
                         serverCtrlSocket = SmartSocket::listenTCP ( this, 0 );
                         LOG ( "serverCtrlSocket=%08x", serverCtrlSocket.get() );
+
+                        // TODO send serverCtrlSocket->address.port to the host
 
                         dataSocket = SmartSocket::connectUDP ( this, address );
                         LOG ( "dataSocket=%08x", dataSocket.get() );

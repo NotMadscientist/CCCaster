@@ -10,6 +10,8 @@
 template<typename T>
 class InputsContainer
 {
+protected:
+
     // Mapping: index -> frame -> input
     std::vector<std::vector<T>> inputs;
 
