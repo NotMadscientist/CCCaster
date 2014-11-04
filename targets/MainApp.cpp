@@ -59,6 +59,10 @@ struct MainApp
 
     SocketPtr uiSendSocket, uiRecvSocket;
 
+    bool isQueueing = false;
+
+    vector<MsgPtr> msgQueue;
+
     /* Connect protocol
 
         1 - Connect / accept ctrlSocket
@@ -198,6 +202,17 @@ struct MainApp
         uiCondVar.signal();
     }
 
+    void forwardMsgQueue()
+    {
+        if ( !procMan.isConnected() || msgQueue.empty() )
+            return;
+
+        for ( const MsgPtr& msg : msgQueue )
+            procMan.ipcSend ( msg );
+
+        msgQueue.clear();
+    }
+
     void gotVersionConfig ( Socket *socket, const VersionConfig& versionConfig )
     {
         const Version RemoteVersion = versionConfig.version;
@@ -283,9 +298,12 @@ struct MainApp
 
     void gotSpectateConfig ( const SpectateConfig& spectateConfig )
     {
-        LOG ( "SpectateConfig: mode=%s; flags={ %s }; delay=%u; rollback=%u; names={ '%s', '%s' }",
+        LOG ( "SpectateConfig: mode=%s; flags={ %s }; delay=%u; rollback=%u; names={ '%s', '%s' }"
+              "chara={ %u, %u }; moon={ %c, %c }; color= { %d, %d }; state=%u",
               spectateConfig.mode, spectateConfig.mode.flagString(),
-              spectateConfig.delay, spectateConfig.rollback, spectateConfig.names[0], spectateConfig.names[1] );
+              spectateConfig.delay, spectateConfig.rollback, spectateConfig.names[0], spectateConfig.names[1],
+              spectateConfig.chara[0], spectateConfig.chara[1], spectateConfig.moon[0], spectateConfig.moon[1],
+              ( int ) spectateConfig.color[0], ( int ) spectateConfig.color[1], spectateConfig.stage );
 
         this->spectateConfig = spectateConfig;
 
@@ -422,6 +440,7 @@ struct MainApp
         switch ( clientMode.value )
         {
             case ClientMode::Spectate:
+                isQueueing = true;
                 ctrlSocket->send ( new ConfirmConfig() );
                 startGame();
                 break;
@@ -629,6 +648,13 @@ struct MainApp
         }
         else if ( ctrlSocket.get() != 0 )
         {
+            if ( isQueueing )
+            {
+                msgQueue.push_back ( msg );
+                forwardMsgQueue();
+                return;
+            }
+
             switch ( msg->getMsgType() )
             {
                 case MsgType::SpectateConfig:
@@ -690,6 +716,7 @@ struct MainApp
         if ( clientMode.isSpectate() )
         {
             procMan.ipcSend ( spectateConfig );
+            forwardMsgQueue();
             return;
         }
 
