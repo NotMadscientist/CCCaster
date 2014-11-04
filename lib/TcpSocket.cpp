@@ -162,7 +162,7 @@ void TcpSocket::connectEvent()
 
 void TcpSocket::disconnectEvent()
 {
-    Socket::Owner *owner = this->owner;
+    Socket::Owner *const owner = this->owner;
 
     disconnect();
 

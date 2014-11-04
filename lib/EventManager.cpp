@@ -25,10 +25,10 @@ void EventManager::checkEvents ( uint64_t timeout )
     {
         ASSERT ( TimerManager::get().getNextExpiry() > TimerManager::get().getNow() );
 
-        uint64_t newTimeout = TimerManager::get().getNextExpiry() - TimerManager::get().getNow();
+        const uint64_t newTimeout = TimerManager::get().getNextExpiry() - TimerManager::get().getNow();
 
         if ( newTimeout < timeout )
-            newTimeout = timeout;
+            timeout = newTimeout;
     }
 
     ASSERT ( timeout > 0 );
@@ -75,7 +75,7 @@ bool EventManager::poll ( uint64_t timeout )
 
     TimerManager::get().updateNow();
     uint64_t now = TimerManager::get().getNow();
-    uint64_t end = now + timeout;
+    const uint64_t end = now + timeout;
 
     timeBeginPeriod ( 1 ); // for select, see comment in SocketManager
 

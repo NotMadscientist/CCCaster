@@ -377,7 +377,7 @@ void UdpSocket::timeoutGoBackN ( GoBackN *gbn )
 
     LOG_UDP_SOCKET ( this, "disconnectEvent" );
 
-    Socket::Owner *owner = this->owner;
+    Socket::Owner *const owner = this->owner;
 
     disconnect();
 

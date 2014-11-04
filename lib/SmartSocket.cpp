@@ -258,7 +258,7 @@ void SmartSocket::disconnectEvent ( Socket *socket )
     {
         LOG_SMART_SOCKET ( this, "Tunnel socket disconnected" );
 
-        Socket::Owner *owner = this->owner;
+        Socket::Owner *const owner = this->owner;
 
         disconnect();
 
@@ -278,7 +278,7 @@ void SmartSocket::disconnectEvent ( Socket *socket )
             return;
         }
 
-        Socket::Owner *owner = this->owner;
+        Socket::Owner *const owner = this->owner;
 
         disconnect();
 
@@ -343,7 +343,7 @@ void SmartSocket::timerExpired ( Timer *timer )
     {
         LOG_SMART_SOCKET ( this, "No matching host found" );
 
-        Socket::Owner *owner = this->owner;
+        Socket::Owner *const owner = this->owner;
 
         disconnect();
 
