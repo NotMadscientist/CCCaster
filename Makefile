@@ -86,8 +86,8 @@ target-release: CC_FLAGS += -s -Os -O2 -fno-rtti
 target-release: $(ARCHIVE)
 
 target-release-logging: DEFINES += -DRELEASE
-target-release-logging:: CC_FLAGS += -s -Os -O2
-target-release-logging:: $(ARCHIVE)
+target-release-logging: CC_FLAGS += -s -Os -O2
+target-release-logging: $(ARCHIVE)
 
 target-profile: STRIP = touch
 target-profile: DEFINES += -DNDEBUG -DRELEASE -DDISABLE_LOGGING -DDISABLE_ASSERTS
