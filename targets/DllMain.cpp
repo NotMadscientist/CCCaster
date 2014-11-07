@@ -75,6 +75,9 @@ struct DllMain
     // Spectator sockets
     unordered_map<Socket *, SocketPtr> specSockets;
 
+    // Initial connect timer
+    TimerPtr initialTimer;
+
 
     void frameStepNormal()
     {
@@ -208,6 +211,12 @@ struct DllMain
 
             // Check if we are ready to continue running, ie not waiting on inputs or RNG state
             const bool ready = ( netMan.areInputsReady() && netMan.isRngStateReady ( shouldSetRngState ) );
+
+            if ( !netMan.areInputsReady() )
+                LOG ( "Waiting for inputs..." );
+
+            if ( !netMan.isRngStateReady ( shouldSetRngState ) )
+                LOG ( "Waiting for RNG state..." );
 
             // Don't resend inputs in spectator mode
             if ( clientMode.isSpectate() )
@@ -481,7 +490,7 @@ struct DllMain
 
             netplayStateChanged ( NetplayState::Initial );
 
-            stopTimer.reset();
+            initialTimer.reset();
         }
         else
         {
@@ -500,7 +509,7 @@ struct DllMain
 
         netplayStateChanged ( NetplayState::Initial );
 
-        stopTimer.reset();
+        initialTimer.reset();
     }
 
     void disconnectEvent ( Socket *socket ) override
@@ -736,8 +745,8 @@ struct DllMain
                         LOG ( "dataSocket=%08x", dataSocket.get() );
                     }
 
-                    stopTimer.reset ( new Timer ( this ) );
-                    stopTimer->start ( DEFAULT_PENDING_TIMEOUT );
+                    initialTimer.reset ( new Timer ( this ) );
+                    initialTimer->start ( DEFAULT_PENDING_TIMEOUT );
 
                     // Wait for dataSocket to be connected before changing to NetplayState::Initial
                 }
@@ -797,6 +806,12 @@ struct DllMain
         {
             dataSocket->send ( netMan.getInputs ( localPlayer ) );
             resendTimer->start ( RESEND_INPUTS_INTERVAL );
+        }
+        else if ( timer == initialTimer.get() )
+        {
+            main->procMan.ipcSend ( new ErrorMessage ( "Disconnected!" ) );
+            delayedStop();
+            initialTimer.reset();
         }
         else if ( timer == stopTimer.get() )
         {

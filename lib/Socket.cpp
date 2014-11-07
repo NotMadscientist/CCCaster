@@ -45,6 +45,8 @@ Socket::~Socket()
 
 void Socket::disconnect()
 {
+    LOG_SOCKET ( this, "disconnected" );
+
     if ( fd )
         closesocket ( fd );
 

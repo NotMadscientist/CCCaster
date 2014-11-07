@@ -65,6 +65,8 @@ struct MainApp
 
     bool isDummyReady = false;
 
+    TimerPtr startTimer;
+
     /* Connect protocol
 
         1 - Connect / accept ctrlSocket
@@ -544,9 +546,9 @@ struct MainApp
 
     void startGame()
     {
-        // DllMain will reconnect any sockets
-        ctrlSocket.reset();
-        serverCtrlSocket.reset();
+        // Start game (and disconnect sockets) after a small delay since the final configs are still in flight
+        startTimer.reset ( new Timer ( this ) );
+        startTimer->start ( 1000 );
 
         if ( options[Options::Dummy] )
         {
@@ -570,9 +572,6 @@ struct MainApp
 
         if ( clientMode.isNetplay() )
             netplayConfig.mode.flags = initialConfig.mode.flags;
-
-        // Open the game and wait for callback to ipcConnectEvent
-        procMan.openGame();
     }
 
     // Pinger callbacks
@@ -689,10 +688,13 @@ struct MainApp
                 return;
             }
 
-            if ( lastError.empty() )
-                lastError = ( isInitialConfigReady ? "Disconnected!" : "Timed out!" );
+            if ( ! ( userConfirmed && isFinalConfigReady ) )
+            {
+                if ( lastError.empty() )
+                    lastError = ( isInitialConfigReady ? "Disconnected!" : "Timed out!" );
 
-            stop();
+                stop();
+            }
             return;
         }
 
@@ -855,9 +857,25 @@ struct MainApp
     void timerExpired ( Timer *timer ) override
     {
         if ( timer == stopTimer.get() )
+        {
             stop();
+        }
+        else if ( timer == startTimer.get() )
+        {
+            startTimer.reset();
+
+            // We must disconnect the sockets before the game process is created,
+            // otherwise Windows say conflicting ports EVEN if they are created later.
+            ctrlSocket.reset();
+            serverCtrlSocket.reset();
+
+            // Open the game and wait for callback to ipcConnectEvent
+            procMan.openGame();
+        }
         else
+        {
             expirePendingSocketTimer ( timer );
+        }
     }
 
     // ExternalIpAddress callbacks
