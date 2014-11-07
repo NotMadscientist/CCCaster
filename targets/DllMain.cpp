@@ -519,6 +519,13 @@ struct DllMain
 
         if ( socket == dataSocket.get() )
         {
+            if ( netMan.getState() == NetplayState::PreInitial )
+            {
+                dataSocket = SmartSocket::connectUDP ( this, address );
+                LOG ( "dataSocket=%08x", dataSocket.get() );
+                return;
+            }
+
             main->procMan.ipcSend ( new ErrorMessage ( "Disconnected!" ) );
             delayedStop();
             return;
@@ -696,6 +703,7 @@ struct DllMain
                     break;
 
                 netMan.config = msg->getAs<NetplayConfig>();
+                netMan.config.mode.value = clientMode.value;
 
                 if ( netMan.config.delay == 0xFF )
                     LOG_AND_THROW_STRING ( "NetplayConfig: delay=%d is invalid!", netMan.config.delay );
@@ -739,7 +747,7 @@ struct DllMain
                     }
 
                     stopTimer.reset ( new Timer ( this ) );
-                    stopTimer->start ( INITIAL_TIMEOUT );
+                    stopTimer->start ( DEFAULT_PENDING_TIMEOUT );
 
                     // Wait for dataSocket to be connected before changing to NetplayState::Initial
                 }
