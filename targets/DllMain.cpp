@@ -190,8 +190,8 @@ struct DllMain
                 break;
         }
 
-        // Clear the last changed frame before we get new inputs
-        netMan.clearLastChangedFrame();
+        // // Clear the last changed frame before we get new inputs
+        // netMan.clearLastChangedFrame();
 
         for ( ;; )
         {
@@ -243,19 +243,19 @@ struct DllMain
             }
         }
 
-        // Only do rollback related stuff while in-game
-        if ( netMan.getState() == NetplayState::InGame && netMan.isRollbackState()
-                && netMan.getLastChangedFrame().value < netMan.getIndexedFrame().value )
-        {
-            LOG_SYNC ( "Rollback: %s -> %s", netMan.getIndexedFrame(), netMan.getLastChangedFrame() );
+        // // Only do rollback related stuff while in-game
+        // if ( netMan.getState() == NetplayState::InGame && netMan.isRollbackState()
+        //         && netMan.getLastChangedFrame().value < netMan.getIndexedFrame().value )
+        // {
+        //     LOG_SYNC ( "Rollback: %s -> %s", netMan.getIndexedFrame(), netMan.getLastChangedFrame() );
 
-            // Indicate we're re-running (save the frame first)
-            rerunStopFrame = netMan.getIndexedFrame();
+        //     // Indicate we're re-running (save the frame first)
+        //     rerunStopFrame = netMan.getIndexedFrame();
 
-            // Reset the game state (this resets game state and netMan state)
-            procMan.loadState ( netMan.getLastChangedFrame(), netMan );
-            return;
-        }
+        //     // Reset the game state (this resets game state and netMan state)
+        //     procMan.loadState ( netMan.getLastChangedFrame(), netMan );
+        //     return;
+        // }
 
         // Update the RNG state if necessary
         if ( shouldSetRngState )

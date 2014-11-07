@@ -234,7 +234,6 @@ struct BaseInputs
 
     uint32_t getIndex() const { return indexedFrame.parts.index; }
     uint32_t getFrame() const { return indexedFrame.parts.frame; }
-    IndexedFrame getStartIndexedFrame() const { return { getIndex(), getStartFrame() }; }
 
     uint32_t getStartFrame() const
     {

@@ -57,13 +57,13 @@ class NetplayManager
     // Current netplay frame, frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime.
     IndexedFrame indexedFrame = {{ 0, 0 }};
 
-    // Last game start index, ie the last index of inputs we are saving
-    uint32_t lastStartIndex = 0;
+    // The starting index of the current game (starting from the loading state)
+    uint32_t startIndex = 0;
 
-    // Mapping: player -> index -> frame -> input
+    // Mapping: player -> index offset -> frame -> input
     std::array<InputsContainer16, 2> inputs;
 
-    // Mapping: index -> RNG state (can be null)
+    // Mapping: index offset -> RNG state (can be null)
     std::vector<MsgPtr> rngStates;
 
     // The local player, ie the one where setInput is called each frame locally
@@ -102,9 +102,9 @@ public:
     uint32_t getIndex() const { return indexedFrame.parts.index; }
     IndexedFrame getIndexedFrame() const { return indexedFrame; }
 
-    // Get / clear the last changed frame (for rollback)
-    const IndexedFrame& getLastChangedFrame() const { return inputs[remotePlayer - 1].getLastChangedFrame(); }
-    void clearLastChangedFrame() { inputs[remotePlayer - 1].clearLastChangedFrame(); }
+    // // Get / clear the last changed frame (for rollback)
+    // const IndexedFrame& getLastChangedFrame() const { return inputs[remotePlayer - 1].getLastChangedFrame(); }
+    // void clearLastChangedFrame() { inputs[remotePlayer - 1].clearLastChangedFrame(); }
 
     // Check if we are in a rollback state, with 10 frame initial buffer window
     bool isRollbackState() const { return ( config.rollback && getFrame() >= 10 ); }

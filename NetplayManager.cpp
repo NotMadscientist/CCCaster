@@ -154,7 +154,9 @@ uint16_t NetplayManager::getOffsetInput ( uint8_t player ) const
         return 0;
 
     ASSERT ( player == 1 || player == 2 );
-    return inputs[player - 1].get ( { getIndex(), getFrame() - config.getOffset() } );
+    ASSERT ( getIndex() >= startIndex );
+
+    return inputs[player - 1].get ( getIndex() - startIndex, getFrame() - config.getOffset() );
 }
 
 uint16_t NetplayManager::getDelayedInput ( uint8_t player, uint32_t frame ) const
@@ -163,7 +165,9 @@ uint16_t NetplayManager::getDelayedInput ( uint8_t player, uint32_t frame ) cons
         return 0;
 
     ASSERT ( player == 1 || player == 2 );
-    return inputs[player - 1].get ( { getIndex(), frame - config.delay } );
+    ASSERT ( getIndex() >= startIndex );
+
+    return inputs[player - 1].get ( getIndex() - startIndex, frame - config.delay );
 }
 
 void NetplayManager::setRemotePlayer ( uint8_t player )
@@ -190,7 +194,7 @@ void NetplayManager::setState ( NetplayState state )
 
     if ( state.value >= NetplayState::CharaSelect && state.value <= NetplayState::PauseMenu )
     {
-        // Count from frame=0 again
+        // Start counting from frame=0 again
         startWorldTime = *CC_WORLD_TIMER_ADDR;
         indexedFrame.parts.frame = 0;
 
@@ -232,29 +236,14 @@ void NetplayManager::setState ( NetplayState state )
         //     }
         // }
 
-        // Start of a new game, exiting loading state
-        if ( this->state == NetplayState::Loading )
+        if ( state == NetplayState::Loading )
         {
-            // Clear old input data.
-            // We use lastStartIndex - 1 here because in setInputs, we keep remote inputs
-            // up to 1 transition index old, so we need to clear an extra index here.
-            inputs[0].clear ( lastStartIndex ? lastStartIndex - 1 : 0, getIndex() );
-            inputs[1].clear ( lastStartIndex ? lastStartIndex - 1 : 0, getIndex() );
+            inputs[0].clear();
+            inputs[1].clear();
 
-            for ( uint32_t i = 0; i < getIndex(); ++i )
-            {
-                ASSERT ( inputs[0].empty ( i ) == true );
-                ASSERT ( inputs[1].empty ( i ) == true );
-            }
+            rngStates.clear();
 
-            // Clear old RNG states
-            for ( uint32_t i = lastStartIndex; i < rngStates.size(); ++i )
-                rngStates[i].reset();
-
-            for ( uint32_t i = 0; i < rngStates.size(); ++i )
-                ASSERT ( rngStates[i].get() == 0 );
-
-            lastStartIndex = getIndex();
+            startIndex = getIndex();
         }
     }
 
@@ -279,8 +268,11 @@ uint16_t NetplayManager::getInput ( uint8_t player ) const
         case NetplayState::Loading:
         case NetplayState::Skippable:
             // If spectating or the remote inputs index is ahead, then we should mash to skip.
-            if ( config.mode.isSpectate() || ( inputs[remotePlayer - 1].getEndIndex() > getIndex() + 1 ) )
+            if ( config.mode.isSpectate()
+                    || ( ( startIndex + inputs[remotePlayer - 1].getEndIndex() ) > getIndex() + 1 ) )
+            {
                 RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
+            }
 
             return getSkippableInput ( player );
 
@@ -302,7 +294,9 @@ uint16_t NetplayManager::getInput ( uint8_t player ) const
 void NetplayManager::setInput ( uint8_t player, uint16_t input )
 {
     ASSERT ( player == 1 || player == 2 );
-    inputs[player - 1].set ( indexedFrame, input );
+    ASSERT ( getIndex() >= startIndex );
+
+    inputs[player - 1].set ( getIndex() - startIndex, getFrame(), input );
 }
 
 MsgPtr NetplayManager::getInputs ( uint8_t player ) const
@@ -310,39 +304,55 @@ MsgPtr NetplayManager::getInputs ( uint8_t player ) const
     PlayerInputs *playerInputs = new PlayerInputs ( indexedFrame );
 
     ASSERT ( player == 1 || player == 2 );
-    inputs[player - 1].get ( playerInputs->getStartIndexedFrame(), &playerInputs->inputs[0], playerInputs->size() );
+    ASSERT ( playerInputs->getIndex() >= startIndex );
+
+    inputs[player - 1].get ( playerInputs->getIndex() - startIndex, playerInputs->getStartFrame(),
+                             &playerInputs->inputs[0], playerInputs->size() );
 
     return MsgPtr ( playerInputs );
 }
 
 void NetplayManager::setInputs ( uint8_t player, const PlayerInputs& playerInputs )
 {
-    // Only keep remote inputs at most 1 transition index old
-    if ( playerInputs.getIndex() + 1 < getIndex() )
+    // Only keep remote inputs at most 1 transition index old, but at least as new as the startIndex
+    if ( playerInputs.getIndex() + 1 < getIndex() || playerInputs.getIndex() < startIndex )
         return;
 
     ASSERT ( player == 1 || player == 2 );
-    inputs[player - 1].set ( playerInputs.getStartIndexedFrame(), &playerInputs.inputs[0], playerInputs.size() );
+    ASSERT ( playerInputs.getIndex() >= startIndex );
+
+    inputs[player - 1].set ( playerInputs.getIndex() - startIndex, playerInputs.getStartFrame(),
+                             &playerInputs.inputs[0], playerInputs.size() );
 }
 
 MsgPtr NetplayManager::getBothInputs() const
 {
     BothInputs *bothInputs = new BothInputs ( indexedFrame );
 
-    inputs[0].get ( bothInputs->getStartIndexedFrame(), &bothInputs->inputs[0][0], bothInputs->size() );
-    inputs[1].get ( bothInputs->getStartIndexedFrame(), &bothInputs->inputs[1][0], bothInputs->size() );
+    ASSERT ( bothInputs->getIndex() >= startIndex );
+
+    inputs[0].get ( bothInputs->getIndex() - startIndex, bothInputs->getStartFrame(),
+                    &bothInputs->inputs[0][0], bothInputs->size() );
+
+    inputs[1].get ( bothInputs->getIndex() - startIndex, bothInputs->getStartFrame(),
+                    &bothInputs->inputs[1][0], bothInputs->size() );
 
     return MsgPtr ( bothInputs );
 }
 
 void NetplayManager::setBothInputs ( const BothInputs& bothInputs )
 {
-    // Only keep remote inputs at most 1 transition index old
-    if ( bothInputs.getIndex() + 1 < getIndex() )
+    // Only keep remote inputs at most 1 transition index old, but at least as new as the startIndex
+    if ( bothInputs.getIndex() + 1 < getIndex() || bothInputs.getIndex() < startIndex )
         return;
 
-    inputs[0].set ( bothInputs.getStartIndexedFrame(), &bothInputs.inputs[0][0], bothInputs.size() );
-    inputs[1].set ( bothInputs.getStartIndexedFrame(), &bothInputs.inputs[1][0], bothInputs.size() );
+    ASSERT ( bothInputs.getIndex() >= startIndex );
+
+    inputs[0].set ( bothInputs.getIndex() - startIndex, bothInputs.getStartFrame(),
+                    &bothInputs.inputs[0][0], bothInputs.size() );
+
+    inputs[1].set ( bothInputs.getIndex() - startIndex, bothInputs.getStartFrame(),
+                    &bothInputs.inputs[1][0], bothInputs.size() );
 }
 
 bool NetplayManager::areInputsReady() const
@@ -351,9 +361,13 @@ bool NetplayManager::areInputsReady() const
         return true;
 
     if ( isRollbackState() && state == NetplayState::InGame )
-        return ( inputs[remotePlayer - 1].getEndIndexedFrame().value + config.rollback > indexedFrame.value + 1 );
+    {
+        return ( ( inputs[remotePlayer - 1].getEndIndexedFrame ( startIndex ).value + config.rollback )
+                 > indexedFrame.value + 1 );
+    }
 
-    return ( inputs[remotePlayer - 1].getEndIndexedFrame().value > indexedFrame.value + 1 + config.delay );
+    return ( inputs[remotePlayer - 1].getEndIndexedFrame ( startIndex ).value
+             > indexedFrame.value + 1 + config.delay );
 }
 
 MsgPtr NetplayManager::getRngState() const
@@ -363,23 +377,27 @@ MsgPtr NetplayManager::getRngState() const
 
     LOG ( "indexedFrame=[%s]", indexedFrame );
 
-    if ( getIndex() + 1 > rngStates.size() )
+    ASSERT ( getIndex() >= startIndex );
+
+    if ( getIndex() + 1 > startIndex + rngStates.size() )
         return 0;
 
-    return rngStates[getIndex()];
+    return rngStates[getIndex() - startIndex];
 }
 
 void NetplayManager::setRngState ( const RngState& rngState )
 {
-    if ( config.mode.isOffline() || rngState.index == 0 )
+    if ( config.mode.isOffline() || rngState.index == 0 || rngState.index < startIndex )
         return;
 
     LOG ( "indexedFrame=[%s]", indexedFrame );
 
-    if ( getIndex() + 1 > rngStates.size() )
-        rngStates.resize ( getIndex() + 1 );
+    ASSERT ( getIndex() >= startIndex );
 
-    rngStates[getIndex()].reset ( new RngState ( rngState ) );
+    if ( getIndex() + 1 > rngStates.size() + rngStates.size() )
+        rngStates.resize ( getIndex() + 1 - startIndex );
+
+    rngStates[getIndex() - startIndex].reset ( new RngState ( rngState ) );
 }
 
 bool NetplayManager::isRngStateReady ( bool shouldSetRngState ) const
@@ -391,7 +409,7 @@ bool NetplayManager::isRngStateReady ( bool shouldSetRngState ) const
         return true;
     }
 
-    return ( rngStates.size() > getIndex() );
+    return ( ( startIndex + rngStates.size() ) > getIndex() );
 }
 
 MsgPtr NetplayManager::getLastGame() const
@@ -412,11 +430,11 @@ void NetplayManager::saveLastGame()
     // ASSERT ( games.back().get() != 0 );
     // ASSERT ( games.back()->getMsgType() == MsgType::PerGameData );
 
-    // LOG ( "indexedFrame=[%s]; lastStartIndex=%u", indexedFrame, lastStartIndex );
+    // LOG ( "indexedFrame=[%s]; startIndex=%u", indexedFrame, startIndex );
 
     // PerGameData& game = games.back()->getAs<PerGameData>();
 
-    // for ( uint32_t i = lastStartIndex; i < rngStates.size(); ++i )
+    // for ( uint32_t i = startIndex; i < rngStates.size(); ++i )
     // {
     //     if ( !rngStates[i] )
     //         continue;
