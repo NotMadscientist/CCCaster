@@ -19,9 +19,7 @@ MainUi ui;
 string lastError;
 
 
-void runMain ( const IpAddrPort& address, const Serializable& config );
-
-void runDummy ( const IpAddrPort& address, const Serializable& config );
+void run ( const IpAddrPort& address, const Serializable& config );
 
 
 static void deinitialize()
@@ -213,9 +211,6 @@ int main ( int argc, char *argv[] )
 
     if ( opt[Options::Spectate] )
         ui.initialConfig.mode.value = ClientMode::Spectate;
-
-    // Check if we should run in dummy mode
-    RunFuncPtr run = ( opt[Options::Dummy] ? runDummy : runMain );
 
     // Warn on invalid command line opt
     for ( Option *it = opt[Options::Unknown]; it; it = it->next() )

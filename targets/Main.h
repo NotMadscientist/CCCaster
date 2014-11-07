@@ -17,11 +17,16 @@
 #include <unordered_set>
 #include <unordered_map>
 
-#define DEFAULT_PENDING_TIMEOUT ( 10000 )
 
+// Log file that contains all the data needed to keep games in sync
+#define SYNC_LOG_FILE FOLDER "sync.log"
+
+// Default pending socket timeout
+#define DEFAULT_PENDING_TIMEOUT ( 10000 )
 
 // Set of command line options
 ENUM ( Options, Help, Dummy, Tests, Stdout, NoFork, NoUi, Strict, Training, Broadcast, Spectate, Offline, Dir );
+
 
 namespace option { class Option; }
 
@@ -90,6 +95,10 @@ struct Main
     SocketPtr serverDataSocket, dataSocket;
 
     uint64_t pendingSocketTimeout = DEFAULT_PENDING_TIMEOUT;
+
+    TimerPtr stopTimer;
+
+    Logger syncLog;
 
 
     void pushPendingSocket ( const SocketPtr& socket )

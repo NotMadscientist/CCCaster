@@ -63,6 +63,8 @@ struct MainApp
 
     vector<MsgPtr> msgQueue;
 
+    bool isDummyReady = false;
+
     /* Connect protocol
 
         1 - Connect / accept ctrlSocket
@@ -491,6 +493,49 @@ struct MainApp
         startGameIfReady();
     }
 
+    void gotDummyMsg ( const MsgPtr& msg )
+    {
+        ASSERT ( options[Options::Dummy] );
+        ASSERT ( isDummyReady == true );
+        ASSERT ( msg.get() != 0 );
+
+        switch ( msg->getMsgType() )
+        {
+            case MsgType::RngState:
+                return;
+
+            case MsgType::PlayerInputs:
+            {
+                MsgPtr fakeInputs = msg->clone();
+
+                fakeInputs->getAs<PlayerInputs>().indexedFrame.parts.frame += 10;
+                fakeInputs->invalidate();
+
+                ASSERT ( dataSocket.get() != 0 );
+                ASSERT ( dataSocket->isConnected() == true );
+
+                dataSocket->send ( fakeInputs );
+                return;
+            }
+
+            case MsgType::BothInputs:
+                return;
+
+            case MsgType::InputsContainer16:
+                return;
+
+            case MsgType::ErrorMessage:
+                lastError = msg->getAs<ErrorMessage>().error;
+                stop();
+                return;
+
+            default:
+                break;
+        }
+
+        LOG ( "Unexpected '%s'", msg );
+    }
+
     void startGameIfReady()
     {
         if ( userConfirmed && isFinalConfigReady )
@@ -502,6 +547,24 @@ struct MainApp
         // DllMain will reconnect any sockets
         ctrlSocket.reset();
         serverCtrlSocket.reset();
+
+        if ( options[Options::Dummy] )
+        {
+            ASSERT ( clientMode.value == ClientMode::Client || clientMode.value == ClientMode::Spectate );
+
+            ui.display ( "Dummy is ready" );
+
+            isDummyReady = true;
+
+            dataSocket = SmartSocket::connectUDP ( this, address );
+            LOG ( "dataSocket=%08x", dataSocket.get() );
+
+            stopTimer.reset ( new Timer ( this ) );
+            stopTimer->start ( DEFAULT_PENDING_TIMEOUT );
+
+            syncLog.initialize ( SYNC_LOG_FILE, 0 );
+            return;
+        }
 
         ui.display ( "Starting game..." );
 
@@ -596,6 +659,8 @@ struct MainApp
 
             ASSERT ( dataSocket.get() != 0 );
             ASSERT ( dataSocket->isConnected() == true );
+
+            stopTimer.reset();
         }
         else
         {
@@ -609,6 +674,13 @@ struct MainApp
 
         if ( socket == ctrlSocket.get() || socket == dataSocket.get() )
         {
+            if ( isDummyReady && stopTimer )
+            {
+                dataSocket = SmartSocket::connectUDP ( this, address );
+                LOG ( "dataSocket=%08x", dataSocket.get() );
+                return;
+            }
+
             LOG ( "%s disconnected!", ( socket == ctrlSocket.get() ? "ctrlSocket" : "dataSocket" ) );
 
             if ( clientMode.isHost() && !isWaitingForUser )
@@ -644,6 +716,11 @@ struct MainApp
                 && ( ( clientMode.isHost() && !ctrlSocket ) || clientMode.isClient() ) )
         {
             gotVersionConfig ( socket, msg->getAs<VersionConfig>() );
+            return;
+        }
+        else if ( isDummyReady )
+        {
+            gotDummyMsg ( msg );
             return;
         }
         else if ( ctrlSocket.get() != 0 )
@@ -777,7 +854,10 @@ struct MainApp
     // Timer callback
     void timerExpired ( Timer *timer ) override
     {
-        expirePendingSocketTimer ( timer );
+        if ( timer == stopTimer.get() )
+            stop();
+        else
+            expirePendingSocketTimer ( timer );
     }
 
     // ExternalIpAddress callbacks
@@ -852,6 +932,8 @@ struct MainApp
             LOG ( "lastError='%s'", lastError );
             ui.sessionError = lastError;
         }
+
+        syncLog.deinitialize();
     }
 
 private:
@@ -914,14 +996,9 @@ private:
 };
 
 
-void runMain ( const IpAddrPort& address, const Serializable& config )
+void run ( const IpAddrPort& address, const Serializable& config )
 {
     MainApp main ( address, config );
     main.start();
     main.waitForUserConfirmation();
-}
-
-void runDummy ( const IpAddrPort& address, const Serializable& config )
-{
-    ASSERT_UNIMPLEMENTED;
 }

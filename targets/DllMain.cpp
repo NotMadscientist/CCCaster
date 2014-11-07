@@ -17,10 +17,6 @@ using namespace std;
 
 #define LOG_FILE FOLDER "dll.log"
 
-#define SYNC_LOG_FILE FOLDER "sync.log"
-
-#define INITIAL_TIMEOUT ( 10000 )
-
 #define DELAYED_STOP ( 100 )
 
 #define RESEND_INPUTS_INTERVAL ( 100 )
@@ -53,9 +49,6 @@ struct DllMain
     // NetplayManager instance
     NetplayManager netMan;
 
-    // Logs RNG state and inputs
-    Logger syncLog;
-
     // If remote has loaded up to character select
     bool remoteCharaSelectLoaded = false;
 
@@ -81,9 +74,6 @@ struct DllMain
 
     // Spectator sockets
     unordered_map<Socket *, SocketPtr> specSockets;
-
-    // Timer to stop events
-    TimerPtr stopTimer;
 
 
     void frameStepNormal()
