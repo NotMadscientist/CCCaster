@@ -388,9 +388,9 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
                           initialConfig.getAcceptMessage ( "connected" ) + "\n\n"
                           + formatStats ( pingStats ) ), { 1, 0 }, true ); // Expand width and clear
 
-    ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger,
-                                            "Enter delay:", computeDelay ( pingStats.latency ),
-                                            false, 3 ), { 1, 0 } ); // Expand width
+    ui->pushBelow ( new ConsoleUi::Prompt (
+                        ConsoleUi::PromptInteger, "Enter delay:",
+                        computeDelay ( pingStats.latency ), false, 3 ) );
 
     for ( ;; )
     {
