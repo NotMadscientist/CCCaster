@@ -546,10 +546,6 @@ struct MainApp
 
     void startGame()
     {
-        // Start game (and disconnect sockets) after a small delay since the final configs are still in flight
-        startTimer.reset ( new Timer ( this ) );
-        startTimer->start ( 1000 );
-
         if ( options[Options::Dummy] )
         {
             ASSERT ( clientMode.value == ClientMode::Client || clientMode.value == ClientMode::Spectate );
@@ -572,6 +568,10 @@ struct MainApp
 
         if ( clientMode.isNetplay() )
             netplayConfig.mode.flags = initialConfig.mode.flags;
+
+        // Start game (and disconnect sockets) after a small delay since the final configs are still in flight
+        startTimer.reset ( new Timer ( this ) );
+        startTimer->start ( 1000 );
     }
 
     // Pinger callbacks
@@ -688,7 +688,7 @@ struct MainApp
                 return;
             }
 
-            if ( ! ( userConfirmed && isFinalConfigReady ) )
+            if ( ! ( userConfirmed && isFinalConfigReady ) || isDummyReady )
             {
                 if ( lastError.empty() )
                     lastError = ( isInitialConfigReady ? "Disconnected!" : "Timed out!" );
