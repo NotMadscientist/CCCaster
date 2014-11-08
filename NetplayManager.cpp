@@ -394,7 +394,7 @@ void NetplayManager::setRngState ( const RngState& rngState )
 
     ASSERT ( getIndex() >= startIndex );
 
-    if ( getIndex() + 1 > rngStates.size() + rngStates.size() )
+    if ( getIndex() + 1 > startIndex + rngStates.size() )
         rngStates.resize ( getIndex() + 1 - startIndex );
 
     rngStates[getIndex() - startIndex].reset ( new RngState ( rngState ) );
