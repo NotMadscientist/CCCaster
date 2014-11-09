@@ -41,7 +41,7 @@ static Mutex deinitMutex;
 static void deinitialize();
 
 // Enum of variables to monitor
-ENUM ( Variable, WorldTime, GameMode, RoundStart );
+ENUM ( Variable, WorldTime, GameMode, RoundStart, SkippableFlag );
 
 
 struct DllMain
@@ -279,7 +279,8 @@ struct DllMain
                 kv.first->send ( msgBothInputs );
         }
 
-        // Log the RngState once every 5 seconds, this also logs whenever the frame becomes zero
+        // Log the RngState once every 5 seconds.
+        // This effectively also logs whenever the frame becomes zero, ie when the index is incremented.
         if ( dataSocket && dataSocket->isConnected() && netMan.getFrame() % ( 5 * 60 ) == 0 )
         {
             MsgPtr msgRngState = procMan.getRngState ( netMan.getIndex() );
@@ -351,6 +352,8 @@ struct DllMain
 
     void netplayStateChanged ( NetplayState state )
     {
+        ASSERT ( netMan.getState() != state );
+
         if ( netMan.getState() != NetplayState::InGame && state == NetplayState::InGame )
         {
             if ( netMan.isRollbackState() )
@@ -459,20 +462,22 @@ struct DllMain
                 break;
 
             case Variable::GameMode:
-                LOG ( "[%s]: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
-
+                LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
                 gameModeChanged ( previous, current );
-
-                LOG_SYNC ( "RngState: %s", procMan.getRngState ( netMan.getIndex() )->getAs<RngState>().dump() );
                 break;
 
             case Variable::RoundStart:
-                LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
-
                 // In-game happens after round start, when players can start moving
+                LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
                 netplayStateChanged ( NetplayState::InGame );
+                break;
 
-                LOG_SYNC ( "RngState: %s", procMan.getRngState ( netMan.getIndex() )->getAs<RngState>().dump() );
+            case Variable::SkippableFlag:
+                // When the SkippableFlag is set while InGame, we are in a Skippable state
+                if ( ! ( previous == 0 && current == 1 && netMan.getState() == NetplayState::InGame ) )
+                    break;
+                LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
+                netplayStateChanged ( NetplayState::Skippable );
                 break;
 
             default:
@@ -884,6 +889,7 @@ struct DllMain
 
         ChangeMonitor::get().addRef ( this, Variable ( Variable::GameMode ), *CC_GAME_MODE_ADDR );
         ChangeMonitor::get().addRef ( this, Variable ( Variable::RoundStart ), roundStartCounter );
+        ChangeMonitor::get().addRef ( this, Variable ( Variable::SkippableFlag ), *cC_SKIPPABLE_FLAG_ADDR );
 
         syncLog.initialize ( SYNC_LOG_FILE, 0 );
     }

@@ -30,6 +30,7 @@
 #define CC_STAGE_SELECTOR_ADDR      ( ( uint32_t * ) 0x74FD98 ) // Currently selected stage, can be assigned to directly
 #define CC_FPS_COUNTER_ADDR         ( ( uint32_t * ) 0x774A70 ) // Value of the displayed FPS counter
 #define CC_PERF_FREQ_ADDR           ( ( uint64_t * ) 0x774A80 ) // Value of QueryPerformanceFrequency for game FPS
+#define cC_SKIPPABLE_FLAG_ADDR      ( ( uint32_t * ) 0x74D99C ) // Flag that indicates a skippable state when in-game
 
 #define CC_PTR_TO_WRITE_INPUT_ADDR  ( ( char * ) 0x76E6AC )     // Pointer to the location to write game input
 #define CC_P1_OFFSET_DIRECTION      ( 0x18 )                    // Offset to write P1 direction input

@@ -187,8 +187,7 @@ void NetplayManager::updateFrame()
 
 void NetplayManager::setState ( NetplayState state )
 {
-    if ( state == this->state )
-        return;
+    ASSERT ( this->state != state );
 
     LOG ( "indexedFrame=[%s]; previous=%s; current=%s", indexedFrame, this->state, state );
 
@@ -394,7 +393,6 @@ bool NetplayManager::isRemoteInputReady() const
 
     ASSERT ( inputs[remotePlayer - 1].getEndFrame() >= 1 );
 
-    // This causes spontaneous RngState changes
     if ( ( inputs[remotePlayer - 1].getEndFrame() - 1 + config.delay ) < getFrame() )
     {
         LOG ( "remoteFrame = %u + %u delay = %u < localFrame=%u",
@@ -404,13 +402,6 @@ bool NetplayManager::isRemoteInputReady() const
 
         return false;
     }
-
-    // // This doesn't cause spontaneous RngState changes
-    // if ( inputs[remotePlayer - 1].getEndFrame() - 1 < getFrame() )
-    // {
-    //     LOG ( "remoteFrame%u < localFrame=%u", inputs[remotePlayer - 1].getEndFrame() - 1, getFrame() );
-    //     return false;
-    // }
 
     return true;
 }

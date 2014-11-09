@@ -750,6 +750,13 @@
         <Offset>38</Offset>
       </Offsets>
     </CheatEntry>
+    <CheatEntry>
+      <ID>247</ID>
+      <Description>"Partial skippable flag"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0074D99C</Address>
+    </CheatEntry>
   </CheatEntries>
   <CheatCodes>
     <CodeEntry>
