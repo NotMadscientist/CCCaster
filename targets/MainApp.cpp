@@ -67,6 +67,8 @@ struct MainApp
 
     TimerPtr startTimer;
 
+    IndexedFrame dummyFrame = {{ 0, 0 }};
+
     /* Connect protocol
 
         1 - Connect / accept ctrlSocket
@@ -508,15 +510,49 @@ struct MainApp
 
             case MsgType::PlayerInputs:
             {
-                MsgPtr fakeInputs = msg->clone();
+                // const PlayerInputs& remote = msg->getAs<PlayerInputs>();
 
-                fakeInputs->getAs<PlayerInputs>().indexedFrame.parts.frame += 10;
-                fakeInputs->invalidate();
+                // if ( remote.getEndIndexedFrame().value < dummyFrame.value )
+                //     return;
 
-                ASSERT ( dataSocket.get() != 0 );
-                ASSERT ( dataSocket->isConnected() == true );
+                // MsgPtr msgFakeInputs = remote.clone();
+                // PlayerInputs& local = msgFakeInputs->getAs<PlayerInputs>();
+                // local.invalidate();
 
-                dataSocket->send ( fakeInputs );
+                // ASSERT ( netplayConfig.hostPlayer == 1 || netplayConfig.hostPlayer == 2 );
+
+                // // if ( dummyFrame.parts.index == remote.getIndex() )
+                // {
+                //     local.indexedFrame.parts.frame += 10;
+
+                //     uint32_t start = dummyFrame.parts.frame;
+                //     if ( local.getEndFrame() - dummyFrame.parts.frame > NUM_INPUTS )
+                //         start = local.getStartFrame();
+                //     if ( remote.getEndFrame() - dummyFrame.parts.frame > NUM_INPUTS )
+                //         start = remote.getStartFrame();
+
+                //     for ( uint32_t i = start; i < local.getEndFrame() && i < remote.getEndFrame(); ++i )
+                //     {
+                //         const uint32_t j = ( i - remote.getStartFrame() );
+
+                //         // if ( netplayConfig.hostPlayer == 2 )
+                //         //     LOG_TO ( syncLog, "Inputs: %04x %04x", local.inputs[j], remote.inputs[j] );
+                //         // else
+                //         //     LOG_TO ( syncLog, "Inputs: %04x %04x", remote.inputs[j], local.inputs[j] );
+                //     }
+                // }
+                // // else
+                // // {
+                // //     for ( uint16_t& input : local.inputs )
+                // //         input = 0;
+                // // }
+
+                // ASSERT ( dataSocket.get() != 0 );
+                // ASSERT ( dataSocket->isConnected() == true );
+
+                // dataSocket->send ( msgFakeInputs );
+
+                // dummyFrame = remote.getEndIndexedFrame();
                 return;
             }
 

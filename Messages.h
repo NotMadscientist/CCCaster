@@ -6,6 +6,7 @@
 #include "Statistics.h"
 #include "Utilities.h"
 #include "Version.h"
+#include "Compression.h"
 
 #include <cereal/types/array.hpp>
 #include <cereal/types/vector.hpp>
@@ -13,6 +14,7 @@
 #include <cereal/types/unordered_map.hpp>
 
 #include <array>
+#include <cstring>
 
 
 struct ErrorMessage : public SerializableSequence
@@ -225,6 +227,29 @@ struct RngState : public SerializableSequence
     }
 
     PROTOCOL_MESSAGE_BOILERPLATE ( RngState, index, rngState0, rngState1, rngState2, rngState3 );
+};
+
+
+struct SyncHash : public SerializableSequence
+{
+    IndexedFrame indexedFrame = {{ 0, 0 }};
+
+    char hash[16];
+
+    SyncHash ( IndexedFrame indexedFrame, const RngState& rngState ) : indexedFrame ( indexedFrame )
+    {
+        getMD5 ( ( char * ) &rngState.rngState0, sizeof ( uint32_t ) * 3 + CC_RNGSTATE3_SIZE, hash );
+    }
+
+    bool operator== ( const SyncHash& other ) const
+    {
+        if ( indexedFrame.value != other.indexedFrame.value )
+            return false;
+
+        return ( memcmp ( hash, other.hash, sizeof ( hash ) ) == 0 );
+    }
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( SyncHash, indexedFrame.value, hash );
 };
 
 

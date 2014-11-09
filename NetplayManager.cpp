@@ -236,8 +236,11 @@ void NetplayManager::setState ( NetplayState state )
         //     }
         // }
 
+        // Start of a new game; entering loading state
         if ( state == NetplayState::Loading )
         {
+            LOG ( "Start of a new game" );
+
             inputs[0].clear();
             inputs[1].clear();
 
@@ -355,19 +358,61 @@ void NetplayManager::setBothInputs ( const BothInputs& bothInputs )
                     &bothInputs.inputs[1][0], bothInputs.size() );
 }
 
-bool NetplayManager::areInputsReady() const
+bool NetplayManager::isRemoteInputReady() const
 {
     if ( state.value < NetplayState::CharaSelect )
         return true;
 
-    if ( isRollbackState() && state == NetplayState::InGame )
+    // if ( isRollbackState() && state == NetplayState::InGame )
+    // {
+    //     return ( ( inputs[remotePlayer - 1].getEndIndexedFrame ( startIndex ).value + config.rollback )
+    //              > indexedFrame.value + 1 );
+    // }
+
+    if ( inputs[remotePlayer - 1].empty() )
     {
-        return ( ( inputs[remotePlayer - 1].getEndIndexedFrame ( startIndex ).value + config.rollback )
-                 > indexedFrame.value + 1 );
+        LOG ( "No remote inputs (index)" );
+        return false;
     }
 
-    return ( inputs[remotePlayer - 1].getEndIndexedFrame ( startIndex ).value
-             > indexedFrame.value + 1 + config.delay );
+    ASSERT ( inputs[remotePlayer - 1].getEndIndex() >= 1 );
+
+    if ( startIndex + inputs[remotePlayer - 1].getEndIndex() - 1 < getIndex() )
+    {
+        LOG ( "remoteIndex=%u < localIndex=%u", startIndex + inputs[remotePlayer - 1].getEndIndex() - 1, getIndex() );
+        return false;
+    }
+
+    if ( startIndex + inputs[remotePlayer - 1].getEndIndex() - 1 > getIndex() )
+        return true;
+
+    if ( inputs[remotePlayer - 1].getEndFrame() == 0 )
+    {
+        LOG ( "No remote inputs (frame)" );
+        return false;
+    }
+
+    ASSERT ( inputs[remotePlayer - 1].getEndFrame() >= 1 );
+
+    // This causes spontaneous RngState changes
+    if ( ( inputs[remotePlayer - 1].getEndFrame() - 1 + config.delay ) < getFrame() )
+    {
+        LOG ( "remoteFrame = %u + %u delay = %u < localFrame=%u",
+              inputs[remotePlayer - 1].getEndFrame() - 1, config.delay,
+              inputs[remotePlayer - 1].getEndFrame() - 1 + config.delay,
+              getFrame() );
+
+        return false;
+    }
+
+    // // This doesn't cause spontaneous RngState changes
+    // if ( inputs[remotePlayer - 1].getEndFrame() - 1 < getFrame() )
+    // {
+    //     LOG ( "remoteFrame%u < localFrame=%u", inputs[remotePlayer - 1].getEndFrame() - 1, getFrame() );
+    //     return false;
+    // }
+
+    return true;
 }
 
 MsgPtr NetplayManager::getRngState() const
@@ -409,7 +454,19 @@ bool NetplayManager::isRngStateReady ( bool shouldSetRngState ) const
         return true;
     }
 
-    return ( ( startIndex + rngStates.size() ) > getIndex() );
+    if ( rngStates.empty() )
+    {
+        LOG ( "No remote RngStates" );
+        return false;
+    }
+
+    if ( ( startIndex + rngStates.size() - 1 ) < getIndex() )
+    {
+        LOG ( "remoteIndex=%u < localIndex=%u", startIndex + rngStates.size() - 1, getIndex() );
+        return false;
+    }
+
+    return true;
 }
 
 MsgPtr NetplayManager::getLastGame() const

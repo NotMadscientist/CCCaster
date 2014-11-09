@@ -67,18 +67,18 @@ public:
     {
         // TODO refill inputs when faked inputs change
 
-        IndexedFrame f;
-        size_t i;
+        // IndexedFrame f;
+        // size_t i;
 
-        for ( i = 0, f = { index, frame }; i < n; ++i, ++f.parts.frame )
-        {
-            if ( get ( f.parts.index, f.parts.frame ) == t[i] )
-                continue;
+        // for ( i = 0, f = {{ frame, index }}; i < n; ++i, ++f.parts.frame )
+        // {
+        //     if ( get ( f.parts.index, f.parts.frame ) == t[i] )
+        //         continue;
 
-            // // Indicate changed if the input is different from the last known input
-            // lastChangedFrame.value = std::min ( lastChangedFrame.value, f.value );
-            break;
-        }
+        //     // Indicate changed if the input is different from the last known input
+        //     lastChangedFrame.value = std::min ( lastChangedFrame.value, f.value );
+        //     break;
+        // }
 
         resize ( index, frame, n, true );
 
@@ -133,11 +133,6 @@ public:
             return 0;
 
         return inputs.back().size();
-    }
-
-    IndexedFrame getEndIndexedFrame ( uint32_t indexOffset ) const
-    {
-        return { getEndIndex() + indexOffset, getEndFrame() };
     }
 
     // const IndexedFrame& getLastChangedFrame() const { return lastChangedFrame; }

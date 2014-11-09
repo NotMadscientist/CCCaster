@@ -72,7 +72,7 @@
 #define CC_P2_MOON_SELECTOR_ADDR    ( ( uint32_t * ) 0x74D924 )
 #define CC_P2_COLOR_SELECTOR_ADDR   ( ( uint32_t * ) 0x74D928 )
 
-// Complete RNG state
+// Complete RngState
 #define CC_RNGSTATE0_ADDR           ( ( uint32_t * ) 0x563778 )
 #define CC_RNGSTATE1_ADDR           ( ( uint32_t * ) 0x56377C )
 #define CC_RNGSTATE2_ADDR           ( ( uint32_t * ) 0x564068 )
@@ -92,7 +92,7 @@
 
 union IndexedFrame
 {
-    struct { uint32_t index, frame; } parts;
+    struct { uint32_t frame, index; } parts;
     uint64_t value;
 };
 

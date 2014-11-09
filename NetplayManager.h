@@ -63,7 +63,7 @@ class NetplayManager
     // Mapping: player -> index offset -> frame -> input
     std::array<InputsContainer16, 2> inputs;
 
-    // Mapping: index offset -> RNG state (can be null)
+    // Mapping: index offset -> RngState (can be null)
     std::vector<MsgPtr> rngStates;
 
     // The local player, ie the one where setInput is called each frame locally
@@ -125,14 +125,14 @@ public:
     MsgPtr getBothInputs() const;
     void setBothInputs ( const BothInputs& bothInputs );
 
-    // True if inputs are ready for the current frame, otherwise the caller should wait for more inputs
-    bool areInputsReady() const;
+    // True if remote input is ready for the current frame, otherwise the caller should wait for more input
+    bool isRemoteInputReady() const;
 
-    // Get / set the RNG state for some index
+    // Get / set the RngState for some index
     MsgPtr getRngState() const;
     void setRngState ( const RngState& rngState );
 
-    // True if the RNG state is ready for the current frame, otherwise the caller should wait for it
+    // True if the RngState is ready for the current frame, otherwise the caller should wait for it
     bool isRngStateReady ( bool shouldSetRngState ) const;
 
     // Get / save the data for the last game

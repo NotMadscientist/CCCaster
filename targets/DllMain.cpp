@@ -21,6 +21,8 @@ using namespace std;
 
 #define RESEND_INPUTS_INTERVAL ( 100 )
 
+// #define LOG_SYNC(FORMAT, ...) LOG_TO ( syncLog, "[%s] " FORMAT, netMan.getIndexedFrame(), __VA_ARGS__ )
+
 #define LOG_SYNC(FORMAT, ...)                                                                                   \
     LOG_TO ( syncLog, "[%u] %s [%s] %s " FORMAT,                                                                \
              *CC_GAME_MODE_ADDR, gameModeStr ( *CC_GAME_MODE_ADDR ),                                            \
@@ -65,7 +67,7 @@ struct DllMain
     // Timer for resending inputs while waiting
     TimerPtr resendTimer;
 
-    // Indicates if we should set the game's RNG state from netMan
+    // Indicates if we should set the game's RngState from netMan
     bool shouldSetRngState = false;
 
     // Frame to stop on, when re-running the game due to rollback.
@@ -77,6 +79,9 @@ struct DllMain
 
     // Initial connect timer
     TimerPtr initialTimer;
+
+    // Local and remote SyncHashes
+    list<MsgPtr> localSync, remoteSync;
 
 
     void frameStepNormal()
@@ -209,14 +214,8 @@ struct DllMain
             if ( clientMode.isLocal() )
                 break;
 
-            // Check if we are ready to continue running, ie not waiting on inputs or RNG state
-            const bool ready = ( netMan.areInputsReady() && netMan.isRngStateReady ( shouldSetRngState ) );
-
-            if ( !netMan.areInputsReady() )
-                LOG ( "Waiting for inputs..." );
-
-            if ( !netMan.isRngStateReady ( shouldSetRngState ) )
-                LOG ( "Waiting for RNG state..." );
+            // Check if we are ready to continue running, ie not waiting on remote input or RngState
+            const bool ready = ( netMan.isRemoteInputReady() && netMan.isRngStateReady ( shouldSetRngState ) );
 
             // Don't resend inputs in spectator mode
             if ( clientMode.isSpectate() )
@@ -257,7 +256,7 @@ struct DllMain
         //     return;
         // }
 
-        // Update the RNG state if necessary
+        // Update the RngState if necessary
         if ( shouldSetRngState )
         {
             shouldSetRngState = false;
@@ -267,9 +266,6 @@ struct DllMain
             ASSERT ( msgRngState.get() != 0 );
 
             procMan.setRngState ( msgRngState->getAs<RngState>() );
-
-            // Log the RNG state after we set it
-            LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
         }
 
         // Broadcast inputs to spectators once every NUM_INPUTS frames
@@ -283,9 +279,39 @@ struct DllMain
                 kv.first->send ( msgBothInputs );
         }
 
-        // Log the RNG state once every 5 seconds
-        if ( netMan.getFrame() % ( 5 * 60 ) == 0 )
-            LOG_SYNC ( "RngState: %s", procMan.getRngState ( netMan.getIndex() )->getAs<RngState>().dump() );
+        // Log the RngState once every 5 seconds, this also logs whenever the frame becomes zero
+        if ( dataSocket && dataSocket->isConnected() && netMan.getFrame() % ( 5 * 60 ) == 0 )
+        {
+            MsgPtr msgRngState = procMan.getRngState ( netMan.getIndex() );
+
+            LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
+
+            if ( options[Options::Check] )
+            {
+                MsgPtr msgSyncHash ( new SyncHash ( netMan.getIndexedFrame(), msgRngState->getAs<RngState>() ) );
+
+                dataSocket->send ( msgSyncHash );
+
+                localSync.push_back ( msgSyncHash );
+
+                while ( !localSync.empty() && !remoteSync.empty() )
+                {
+                    if ( localSync.front()->getAs<SyncHash>() == remoteSync.front()->getAs<SyncHash>() )
+                    {
+                        localSync.pop_front();
+                        remoteSync.pop_front();
+                        continue;
+                    }
+
+                    LOG_SYNC ( "Desync: local=[%s]; remote=[%s]",
+                               localSync.front()->getAs<SyncHash>().indexedFrame,
+                               remoteSync.front()->getAs<SyncHash>().indexedFrame );
+
+                    appState = AppState::Stopping;
+                    return;
+                }
+            }
+        }
 
         // Log inputs every frame
         LOG_SYNC ( "Inputs: %04x %04x", netMan.getInput ( 1 ), netMan.getInput ( 2 ) );
@@ -325,9 +351,6 @@ struct DllMain
 
     void netplayStateChanged ( NetplayState state )
     {
-        // Log the RNG state whenever NetplayState changes
-        LOG_SYNC ( "RngState: %s", procMan.getRngState ( netMan.getIndex() + 1 )->getAs<RngState>().dump() );
-
         if ( netMan.getState() != NetplayState::InGame && state == NetplayState::InGame )
         {
             if ( netMan.isRollbackState() )
@@ -342,14 +365,8 @@ struct DllMain
         if ( state == NetplayState::CharaSelect || state == NetplayState::InGame )
         {
             MsgPtr msgRngState;
-
             if ( clientMode.isHost() || clientMode.isBroadcast() )
-            {
                 msgRngState = procMan.getRngState ( netMan.getIndex() + 1 );
-
-                // Log the RNG state when the host sends it
-                LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
-            }
 
             switch ( clientMode.value )
             {
@@ -442,14 +459,20 @@ struct DllMain
                 break;
 
             case Variable::GameMode:
-                LOG ( "%s: previous=%u; current=%u",  var, previous, current );
+                LOG ( "[%s]: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
+
                 gameModeChanged ( previous, current );
+
+                LOG_SYNC ( "RngState: %s", procMan.getRngState ( netMan.getIndex() )->getAs<RngState>().dump() );
                 break;
 
             case Variable::RoundStart:
-                LOG ( "%s: previous=%u; current=%u", var, previous, current );
+                LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
+
                 // In-game happens after round start, when players can start moving
                 netplayStateChanged ( NetplayState::InGame );
+
+                LOG_SYNC ( "RngState: %s", procMan.getRngState ( netMan.getIndex() )->getAs<RngState>().dump() );
                 break;
 
             default:
@@ -617,6 +640,22 @@ struct DllMain
                     kv.first->send ( msg );
                 return;
 
+            case MsgType::SyncHash:
+                if ( !options[Options::Check] )
+                {
+                    options.set ( Options::Check, 1 );
+
+                    ASSERT ( localSync.empty() == true );
+                    ASSERT ( remoteSync.empty() == true );
+
+                    // Fake the first SyncHash when enabling --check for the first time
+                    dataSocket->send ( msg );
+                    return;
+                }
+
+                remoteSync.push_back ( msg );
+                return;
+
             default:
                 break;
         }
@@ -662,7 +701,7 @@ struct DllMain
 
     void ipcDisconnectEvent() override
     {
-        EventManager::get().stop();
+        appState = AppState::Stopping;
     }
 
     void ipcReadEvent ( const MsgPtr& msg ) override

@@ -25,7 +25,7 @@
 #define DEFAULT_PENDING_TIMEOUT ( 10000 )
 
 // Set of command line options
-ENUM ( Options, Help, Dummy, Tests, Stdout, NoFork, NoUi, Strict, Training, Broadcast, Spectate, Offline, Dir );
+ENUM ( Options, Help, Dummy, Tests, Stdout, NoFork, NoUi, Strict, Training, Broadcast, Spectate, Offline, Dir, Check );
 
 
 namespace option { class Option; }
@@ -40,6 +40,14 @@ struct OptionsMessage : public SerializableSequence
             return 0;
         else
             return it->second.count;
+    }
+
+    void set ( const Options& opt, size_t count )
+    {
+        if ( count == 0 )
+            options.erase ( opt.value );
+        else
+            options[opt.value] = count;
     }
 
     const std::string& arg ( const Options& opt ) const
