@@ -119,7 +119,7 @@ int main ( int argc, char *argv[] )
 
         { Options::Stdout, 0, "",  "stdout", Arg::None, 0 }, // Output logs to stdout
         { Options::Dummy,  0, "",   "dummy", Arg::None, 0 }, // Client mode with fake inputs
-        { Options::Check,  0, "",   "check", Arg::None, 0 }, // Check for desyncs via a hash
+        { Options::Check,  0, "",   "check", Arg::None, 0 }, // Check for desyncs by periodically sending hashes
         { Options::NoFork, 0, "", "no-fork", Arg::None, 0 }, // Don't fork when inside Wine, ie running wineconsole
 
         {

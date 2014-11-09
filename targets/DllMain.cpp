@@ -21,8 +21,6 @@ using namespace std;
 
 #define RESEND_INPUTS_INTERVAL ( 100 )
 
-// #define LOG_SYNC(FORMAT, ...) LOG_TO ( syncLog, "[%s] " FORMAT, netMan.getIndexedFrame(), __VA_ARGS__ )
-
 #define LOG_SYNC(FORMAT, ...)                                                                                   \
     LOG_TO ( syncLog, "[%u] %s [%s] %s " FORMAT,                                                                \
              *CC_GAME_MODE_ADDR, gameModeStr ( *CC_GAME_MODE_ADDR ),                                            \
@@ -287,6 +285,7 @@ struct DllMain
 
             LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
 
+            // Check for desyncs by periodically sending hashes
             if ( options[Options::Check] )
             {
                 MsgPtr msgSyncHash ( new SyncHash ( netMan.getIndexedFrame(), msgRngState->getAs<RngState>() ) );
