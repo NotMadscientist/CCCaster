@@ -193,13 +193,12 @@ void NetplayManager::setState ( NetplayState state )
 
     if ( state.value >= NetplayState::CharaSelect && state.value <= NetplayState::PauseMenu )
     {
+        // Increment the index
+        ++indexedFrame.parts.index;
+
         // Start counting from frame=0 again
         startWorldTime = *CC_WORLD_TIMER_ADDR;
         indexedFrame.parts.frame = 0;
-
-        // Increment the index
-        if ( this->state != NetplayState::Initial )
-            ++indexedFrame.parts.index;
 
         // // Start of a new game, entering loading state
         // if ( state == NetplayState::Loading && !config.mode.isOffline() )

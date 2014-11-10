@@ -594,7 +594,7 @@ struct MainApp
             LOG ( "dataSocket=%08x", dataSocket.get() );
 
             stopTimer.reset ( new Timer ( this ) );
-            stopTimer->start ( DEFAULT_PENDING_TIMEOUT );
+            stopTimer->start ( DEFAULT_PENDING_TIMEOUT * 2 );
 
             syncLog.initialize ( SYNC_LOG_FILE, 0 );
             return;
