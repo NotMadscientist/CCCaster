@@ -112,27 +112,28 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
 
 uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
 {
-    bool hasUpDownInLast10f = false;
+    bool hasUpDownInLast2f = false;
 
-    for ( size_t i = 0; i < 10; ++i )
+    for ( size_t i = 0; i < 2; ++i )
     {
         if ( i > getFrame() )
             break;
 
-        uint16_t input = getDelayedInput ( player, getFrame() - i );
+        uint16_t p1 = getDelayedInput ( 1, getFrame() - i );
+        uint16_t p2 = getDelayedInput ( 2, getFrame() - i );
 
-        if ( ( input & 2 ) || ( input & 8 ) )
+        if ( ( p1 & 2 ) || ( p1 & 8 ) || ( p2 & 2 ) || ( p2 & 8 ) )
         {
-            hasUpDownInLast10f = true;
+            hasUpDownInLast2f = true;
             break;
         }
     }
 
     uint16_t input = getDelayedInput ( player );
 
-    // Don't allow pressing select until 10f after we have stopped moving the cursor. This is a work around
+    // Don't allow pressing select until 2f after we have stopped moving the cursor. This is a work around
     // for the issue when select is pressed after the cursor moves, but before currentMenuIndex is updated.
-    if ( hasUpDownInLast10f )
+    if ( hasUpDownInLast2f )
         input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
 
     // Disable saving replay or returning to main menu, ie only allow first two options (once again and chara select)
