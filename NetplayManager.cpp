@@ -381,6 +381,7 @@ bool NetplayManager::isRemoteInputReady() const
         return false;
     }
 
+    // If remote index is ahead, we must be in an older state, so we don't need to wait for inputs
     if ( startIndex + inputs[remotePlayer - 1].getEndIndex() - 1 > getIndex() )
         return true;
 
@@ -425,19 +426,19 @@ void NetplayManager::setRngState ( const RngState& rngState )
     if ( config.mode.isOffline() || rngState.index == 0 || rngState.index < startIndex )
         return;
 
-    LOG ( "indexedFrame=[%s]", indexedFrame );
+    LOG ( "indexedFrame=[%s]; rngState.index=%u", indexedFrame, rngState.index );
 
-    ASSERT ( getIndex() >= startIndex );
+    ASSERT ( rngState.index >= startIndex );
 
-    if ( getIndex() + 1 > startIndex + rngStates.size() )
-        rngStates.resize ( getIndex() + 1 - startIndex );
+    if ( rngState.index + 1 > startIndex + rngStates.size() )
+        rngStates.resize ( rngState.index + 1 - startIndex );
 
-    rngStates[getIndex() - startIndex].reset ( new RngState ( rngState ) );
+    rngStates[rngState.index - startIndex].reset ( new RngState ( rngState ) );
 }
 
-bool NetplayManager::isRngStateReady ( bool shouldSetRngState ) const
+bool NetplayManager::isRngStateReady ( bool shouldSyncRngState ) const
 {
-    if ( !shouldSetRngState
+    if ( !shouldSyncRngState
             || config.mode.isHost() || config.mode.isBroadcast() || config.mode.isOffline()
             || state.value < NetplayState::CharaSelect )
     {

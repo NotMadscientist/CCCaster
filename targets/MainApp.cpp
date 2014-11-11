@@ -509,52 +509,7 @@ struct MainApp
                 return;
 
             case MsgType::PlayerInputs:
-            {
-                // const PlayerInputs& remote = msg->getAs<PlayerInputs>();
-
-                // if ( remote.getEndIndexedFrame().value < dummyFrame.value )
-                //     return;
-
-                // MsgPtr msgFakeInputs = remote.clone();
-                // PlayerInputs& local = msgFakeInputs->getAs<PlayerInputs>();
-                // local.invalidate();
-
-                // ASSERT ( netplayConfig.hostPlayer == 1 || netplayConfig.hostPlayer == 2 );
-
-                // // if ( dummyFrame.parts.index == remote.getIndex() )
-                // {
-                //     local.indexedFrame.parts.frame += 10;
-
-                //     uint32_t start = dummyFrame.parts.frame;
-                //     if ( local.getEndFrame() - dummyFrame.parts.frame > NUM_INPUTS )
-                //         start = local.getStartFrame();
-                //     if ( remote.getEndFrame() - dummyFrame.parts.frame > NUM_INPUTS )
-                //         start = remote.getStartFrame();
-
-                //     for ( uint32_t i = start; i < local.getEndFrame() && i < remote.getEndFrame(); ++i )
-                //     {
-                //         const uint32_t j = ( i - remote.getStartFrame() );
-
-                //         // if ( netplayConfig.hostPlayer == 2 )
-                //         //     LOG_TO ( syncLog, "Inputs: %04x %04x", local.inputs[j], remote.inputs[j] );
-                //         // else
-                //         //     LOG_TO ( syncLog, "Inputs: %04x %04x", remote.inputs[j], local.inputs[j] );
-                //     }
-                // }
-                // // else
-                // // {
-                // //     for ( uint16_t& input : local.inputs )
-                // //         input = 0;
-                // // }
-
-                // ASSERT ( dataSocket.get() != 0 );
-                // ASSERT ( dataSocket->isConnected() == true );
-
-                // dataSocket->send ( msgFakeInputs );
-
-                // dummyFrame = remote.getEndIndexedFrame();
                 return;
-            }
 
             case MsgType::BothInputs:
                 return;

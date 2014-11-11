@@ -1,7 +1,9 @@
 #!/bin/sh
 
-sed -n '/NetplayState::CharaSelect/,$p' ~/MBAACC/cccaster/sync.log | grep -F RngState > tmpsync1
-sed -n '/NetplayState::CharaSelect/,$p' ~/MBAACC/cccaster2/sync.log | grep -F RngState > tmpsync2
+START='NetplayState::CharaSelect'
+
+sed -n '/$START/,$p' ~/MBAACC/cccaster/sync.log | grep -F RngState > tmpsync1
+sed -n '/$START/,$p' ~/MBAACC/cccaster2/sync.log | grep -F RngState > tmpsync2
 
 diff tmpsync1 tmpsync2
 

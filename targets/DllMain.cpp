@@ -22,9 +22,9 @@ using namespace std;
 #define RESEND_INPUTS_INTERVAL ( 100 )
 
 #define LOG_SYNC(FORMAT, ...)                                                                                   \
-    LOG_TO ( syncLog, "[%u] %s [%s] %s " FORMAT,                                                                \
-             *CC_GAME_MODE_ADDR, gameModeStr ( *CC_GAME_MODE_ADDR ),                                            \
-             netMan.getIndexedFrame(), netMan.getState(), __VA_ARGS__ )
+    LOG_TO ( syncLog, "%s [%u] %s [%s] " FORMAT,                                                                \
+             gameModeStr ( *CC_GAME_MODE_ADDR ), *CC_GAME_MODE_ADDR,                                            \
+             netMan.getState(), netMan.getIndexedFrame(), __VA_ARGS__ )
 
 
 // Main application state
@@ -65,8 +65,8 @@ struct DllMain
     // Timer for resending inputs while waiting
     TimerPtr resendTimer;
 
-    // Indicates if we should set the game's RngState from netMan
-    bool shouldSetRngState = false;
+    // Indicates if we should sync the game RngState on this frame
+    bool shouldSyncRngState = false;
 
     // Frame to stop on, when re-running the game due to rollback.
     // Also used as a flag to indicate re-run mode, 0:0 means not re-running.
@@ -123,7 +123,7 @@ struct DllMain
                         uint16_t direction = ( rand() % 10 );
 
                         // Reduce the chances of moving the cursor at retry menu
-                        if ( netMan.getState().value == NetplayState::RetryMenu && ( netMan.getFrame() % 10 ) )
+                        if ( netMan.getState().value == NetplayState::RetryMenu && ( rand() % 2 ) )
                             direction = 0;
 
                         uint16_t buttons = ( rand() % 0x1000 );
@@ -185,6 +185,24 @@ struct DllMain
 
                 if ( clientMode.isNetplay() )
                     dataSocket->send ( netMan.getInputs ( localPlayer ) );
+
+                if ( shouldSyncRngState && ( clientMode.isHost() || clientMode.isBroadcast() ) )
+                {
+                    shouldSyncRngState = false;
+
+                    MsgPtr msgRngState = procMan.getRngState ( netMan.getIndex() );
+
+                    netMan.setRngState ( msgRngState->getAs<RngState>() );
+
+                    dataSocket->send ( msgRngState );
+
+                    if ( clientMode.isBroadcast() )
+                    {
+                        for ( const auto& kv : specSockets )
+                            kv.first->send ( msgRngState );
+                    }
+                }
+
                 break;
             }
 
@@ -213,7 +231,7 @@ struct DllMain
                 break;
 
             // Check if we are ready to continue running, ie not waiting on remote input or RngState
-            const bool ready = ( netMan.isRemoteInputReady() && netMan.isRngStateReady ( shouldSetRngState ) );
+            const bool ready = ( netMan.isRemoteInputReady() && netMan.isRngStateReady ( shouldSyncRngState ) );
 
             // Don't resend inputs in spectator mode
             if ( clientMode.isSpectate() )
@@ -255,9 +273,9 @@ struct DllMain
         // }
 
         // Update the RngState if necessary
-        if ( shouldSetRngState )
+        if ( shouldSyncRngState )
         {
-            shouldSetRngState = false;
+            shouldSyncRngState = false;
 
             MsgPtr msgRngState = netMan.getRngState();
 
@@ -364,34 +382,11 @@ struct DllMain
                 procMan.deallocateStates();
         }
 
-        if ( state == NetplayState::CharaSelect || state == NetplayState::InGame )
+        if ( state == NetplayState::CharaSelect
+                || ( netMan.getState() == NetplayState::Loading && state == NetplayState::Skippable ) )
         {
-            MsgPtr msgRngState;
-            if ( clientMode.isHost() || clientMode.isBroadcast() )
-                msgRngState = procMan.getRngState ( netMan.getIndex() + 1 );
-
-            switch ( clientMode.value )
-            {
-                case ClientMode::Host:
-                    ASSERT ( msgRngState.get() != 0 );
-
-                    dataSocket->send ( msgRngState ); // Intentional fall through to Broadcast
-
-                case ClientMode::Broadcast:
-                    ASSERT ( msgRngState.get() != 0 );
-
-                    for ( const auto& kv : specSockets )
-                        kv.first->send ( msgRngState );
-                    break;
-
-                case ClientMode::Client:
-                case ClientMode::Spectate:
-                    shouldSetRngState = true;
-                    break;
-
-                default:
-                    break;
-            }
+            if ( !clientMode.isOffline() )
+                shouldSyncRngState = true;
         }
 
         netMan.setState ( state );

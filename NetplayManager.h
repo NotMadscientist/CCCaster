@@ -133,7 +133,7 @@ public:
     void setRngState ( const RngState& rngState );
 
     // True if the RngState is ready for the current frame, otherwise the caller should wait for it
-    bool isRngStateReady ( bool shouldSetRngState ) const;
+    bool isRngStateReady ( bool shouldSyncRngState ) const;
 
     // Get / save the data for the last game
     MsgPtr getLastGame() const;
