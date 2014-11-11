@@ -143,6 +143,9 @@ struct NetplayConfig : public SerializableSequence
     // Player names
     std::array<std::string, 2> names;
 
+    // Session ID
+    std::string sessionId;
+
     uint8_t getOffset() const
     {
         ASSERT ( delay != 0xFF );
@@ -169,9 +172,10 @@ struct NetplayConfig : public SerializableSequence
         broadcastPort = 0;
         names[0].clear();
         names[1].clear();
+        sessionId.clear();
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( NetplayConfig, mode, delay, rollback, hostPlayer, broadcastPort, names )
+    PROTOCOL_MESSAGE_BOILERPLATE ( NetplayConfig, mode, delay, rollback, hostPlayer, broadcastPort, names, sessionId )
 };
 
 
@@ -194,11 +198,14 @@ struct SpectateConfig : public SerializableSequence, public GameConfig
     // Player names
     std::array<std::string, 2> names;
 
+    // Session ID
+    std::string sessionId;
+
     SpectateConfig ( const NetplayConfig& netplayConfig, const GameConfig& gameConfig )
         : GameConfig ( gameConfig ), mode ( netplayConfig.mode ), delay ( netplayConfig.delay )
-        , rollback ( netplayConfig.rollback ), names ( netplayConfig.names ) {}
+        , rollback ( netplayConfig.rollback ), names ( netplayConfig.names ), sessionId ( netplayConfig.sessionId ) {}
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig, chara, moon, color, stage, mode, delay, rollback, names )
+    PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig, chara, moon, color, stage, mode, delay, rollback, names, sessionId )
 };
 
 

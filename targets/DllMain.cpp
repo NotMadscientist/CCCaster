@@ -304,7 +304,7 @@ struct DllMain
             LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
 
             // Check for desyncs by periodically sending hashes
-            if ( options[Options::Check] )
+            if ( options[Options::CheckSync] )
             {
                 MsgPtr msgSyncHash ( new SyncHash ( netMan.getIndexedFrame(), msgRngState->getAs<RngState>() ) );
 
@@ -640,9 +640,9 @@ struct DllMain
                 return;
 
             case MsgType::SyncHash:
-                if ( !options[Options::Check] )
+                if ( !options[Options::CheckSync] )
                 {
-                    options.set ( Options::Check, 1 );
+                    options.set ( Options::CheckSync, 1 );
 
                     ASSERT ( localSync.empty() == true );
                     ASSERT ( remoteSync.empty() == true );
@@ -712,6 +712,10 @@ struct DllMain
         {
             case MsgType::OptionsMessage:
                 options = msg->getAs<OptionsMessage>();
+                Logger::get().sessionId = options.arg ( Options::SessionId );
+                Logger::get().initialize ( options.arg ( Options::AppDir ) + LOG_FILE );
+                syncLog.sessionId = options.arg ( Options::SessionId );
+                syncLog.initialize ( options.arg ( Options::AppDir ) + SYNC_LOG_FILE, LOG_VERSION );
                 break;
 
             case MsgType::ClientMode:
@@ -720,7 +724,7 @@ struct DllMain
 
                 clientMode = msg->getAs<ClientMode>();
                 clientMode.flags |= ClientMode::GameStarted;
-                LOG ( "clientMode=%s", clientMode );
+                LOG ( "%s: flags={ %s }", clientMode, clientMode.flagString() );
                 break;
 
             case MsgType::IpAddrPort:
@@ -740,7 +744,7 @@ struct DllMain
                     break;
 
                 netMan.config = msg->getAs<NetplayConfig>();
-                netMan.config.mode.value = clientMode.value;
+                netMan.config.mode = clientMode;
 
                 if ( netMan.config.delay == 0xFF )
                     LOG_AND_THROW_STRING ( "NetplayConfig: delay=%d is invalid!", netMan.config.delay );
@@ -779,7 +783,7 @@ struct DllMain
 
                         // TODO send serverCtrlSocket->address.port to the host
 
-                        dataSocket = SmartSocket::connectUDP ( this, address );
+                        dataSocket = SmartSocket::connectUDP ( this, address, clientMode.isUdpTunnel() );
                         LOG ( "dataSocket=%08x", dataSocket.get() );
                     }
 
@@ -884,8 +888,6 @@ struct DllMain
         ChangeMonitor::get().addRef ( this, Variable ( Variable::GameMode ), *CC_GAME_MODE_ADDR );
         ChangeMonitor::get().addRef ( this, Variable ( Variable::RoundStart ), roundStartCounter );
         ChangeMonitor::get().addRef ( this, Variable ( Variable::SkippableFlag ), *cC_SKIPPABLE_FLAG_ADDR );
-
-        syncLog.initialize ( SYNC_LOG_FILE, 0 );
     }
 
     // Destructor
@@ -910,8 +912,8 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
     switch ( reason )
     {
         case DLL_PROCESS_ATTACH:
-            Logger::get().initialize ( LOG_FILE );
-            LOG ( "DLL_PROCESS_ATTACH" );
+            // Logger::get().initialize ( LOG_FILE );
+            // LOG ( "DLL_PROCESS_ATTACH" );
 
             try
             {
@@ -922,18 +924,18 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
             }
             catch ( const Exception& err )
             {
-                LOG ( "Aborting due to exception: %s", err );
+                // LOG ( "Aborting due to exception: %s", err );
                 exit ( 0 );
             }
 #ifdef NDEBUG
             catch ( const std::exception& err )
             {
-                LOG ( "Aborting due to std::exception: %s", err.what() );
+                // LOG ( "Aborting due to std::exception: %s", err.what() );
                 exit ( 0 );
             }
             catch ( ... )
             {
-                LOG ( "Aborting due to unknown exception!" );
+                // LOG ( "Aborting due to unknown exception!" );
                 exit ( 0 );
             }
 #endif

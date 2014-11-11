@@ -37,6 +37,9 @@ class Logger
 
 public:
 
+    // Session ID
+    std::string sessionId;
+
     // Basic constructor
     Logger() {}
 

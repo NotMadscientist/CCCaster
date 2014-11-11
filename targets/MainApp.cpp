@@ -23,6 +23,8 @@ extern MainUi ui;
 
 extern string lastError;
 
+extern string appDir;
+
 
 struct MainApp
         : public Main
@@ -153,7 +155,10 @@ struct MainApp
         }
         else
         {
-            ui.display ( toString ( "Connecting to %s", address ) );
+            if ( options[Options::Tunnel] )
+                ui.display ( toString ( "Connecting to %s (UDP tunnel)", address ) );
+            else
+                ui.display ( toString ( "Connecting to %s", address ) );
         }
 
         if ( clientMode.isHost() )
@@ -165,7 +170,7 @@ struct MainApp
         }
         else
         {
-            ctrlSocket = SmartSocket::connectTCP ( this, address );
+            ctrlSocket = SmartSocket::connectTCP ( this, address, options[Options::Tunnel] );
 
             LOG ( "ctrlSocket=%08x", ctrlSocket.get() );
         }
@@ -179,7 +184,7 @@ struct MainApp
 
         ui.display ( toString ( "Connecting to %s", address ) );
 
-        ctrlSocket = SmartSocket::connectTCP ( this, address );
+        ctrlSocket = SmartSocket::connectTCP ( this, address, options[Options::Tunnel] );
 
         LOG ( "ctrlSocket=%08x", ctrlSocket.get() );
 
@@ -453,7 +458,15 @@ struct MainApp
 
             case ClientMode::Host:
                 netplayConfig = ui.getNetplayConfig();
+                netplayConfig.sessionId.clear();
                 netplayConfig.invalidate();
+
+                for ( int i = 0; i < 10; ++i )
+                {
+                    netplayConfig.sessionId += ( 'A' + ( rand() % 26 ) );
+                    netplayConfig.sessionId += ( 'a' + ( rand() % 26 ) );
+                    netplayConfig.sessionId += ( '0' + ( rand() % 10 ) );
+                }
 
                 ctrlSocket->send ( netplayConfig );
 
@@ -486,6 +499,7 @@ struct MainApp
         this->netplayConfig.delay = netplayConfig.delay;
         this->netplayConfig.rollback = netplayConfig.rollback;
         this->netplayConfig.hostPlayer = netplayConfig.hostPlayer;
+        this->netplayConfig.sessionId = netplayConfig.sessionId;
 
         isFinalConfigReady = true;
         startGameIfReady();
@@ -537,6 +551,13 @@ struct MainApp
 
     void startGame()
     {
+        if ( clientMode.isSpectate() )
+            options.set ( Options::SessionId, 1, spectateConfig.sessionId );
+        else
+            options.set ( Options::SessionId, 1, netplayConfig.sessionId );
+
+        LOG ( "SessionId '%s'", options.arg ( Options::SessionId ) );
+
         if ( options[Options::Dummy] )
         {
             ASSERT ( clientMode.value == ClientMode::Client || clientMode.value == ClientMode::Spectate );
@@ -545,17 +566,21 @@ struct MainApp
 
             isDummyReady = true;
 
-            dataSocket = SmartSocket::connectUDP ( this, address );
+            dataSocket = SmartSocket::connectUDP ( this, address, ctrlSocket->getAsSmart().isTunnel() );
             LOG ( "dataSocket=%08x", dataSocket.get() );
 
             stopTimer.reset ( new Timer ( this ) );
             stopTimer->start ( DEFAULT_PENDING_TIMEOUT * 2 );
 
-            syncLog.initialize ( SYNC_LOG_FILE, 0 );
+            syncLog.sessionId = netplayConfig.sessionId;
+            syncLog.initialize ( appDir + SYNC_LOG_FILE, LOG_VERSION );
             return;
         }
 
         ui.display ( "Starting game..." );
+
+        if ( clientMode.isClient() && ctrlSocket->isSmart() && ctrlSocket->getAsSmart().isTunnel() )
+            clientMode.flags |= ClientMode::UdpTunnel;
 
         if ( clientMode.isNetplay() )
             netplayConfig.mode.flags = initialConfig.mode.flags;
@@ -890,17 +915,20 @@ struct MainApp
     }
 
     // Constructor
-    MainApp ( const IpAddrPort& address, const Serializable& config )
+    MainApp ( const IpAddrPort& addr, const Serializable& config )
         : Main ( config.getMsgType() == MsgType::InitialConfig
                  ? config.getAs<InitialConfig>().mode
                  : config.getAs<NetplayConfig>().mode )
         , externaIpAddress ( this )
     {
         LOG ( "clientMode=%s; flags={ %s }; address='%s'; config=%s",
-              clientMode, clientMode.flagString(), address, config.getMsgType() );
+              clientMode, clientMode.flagString(), addr, config.getMsgType() );
 
-        this->options = opt;
-        this->address = address;
+        options = opt;
+        address = addr;
+
+        if ( !appDir.empty() )
+            options.set ( Options::AppDir, 1, appDir );
 
         if ( clientMode.isNetplay() )
         {

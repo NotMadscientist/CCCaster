@@ -18,9 +18,37 @@ MainUi ui;
 
 string lastError;
 
+string appDir;
+
 
 void run ( const IpAddrPort& address, const Serializable& config );
 
+
+static void initAppDir()
+{
+    char buffer[4096];
+
+    appDir.clear();
+
+    if ( GetModuleFileName ( 0, buffer, sizeof ( buffer ) ) )
+    {
+        appDir = buffer;
+        appDir = appDir.substr ( 0, appDir.find_last_of ( "/\\" ) );
+
+        if ( detectWine() )
+        {
+            replace ( appDir.begin(), appDir.end(), '\\', '/' );
+            if ( !appDir.empty() && appDir.back() != '/' )
+                appDir += '/';
+        }
+        else
+        {
+            replace ( appDir.begin(), appDir.end(), '/', '\\' );
+            if ( !appDir.empty() && appDir.back() != '\\' )
+                appDir += '\\';
+        }
+    }
+}
 
 static void deinitialize()
 {
@@ -93,22 +121,26 @@ int main ( int argc, char *argv[] )
 #ifndef RELEASE
         { Options::Tests,     0,  "",     "tests", Arg::None,     "  --tests            Run unit tests and exit." },
 #endif
-        { Options::Dir,       0, "d",       "dir", Arg::Required, "  --dir, -d folder   Specify game folder.\n" },
+        { Options::GameDir,   0, "d",       "dir", Arg::Required, "  --dir, -d folder   Specify game folder.\n" },
 
+        { Options::Tunnel,    0, "T",    "tunnel", Arg::None,     "  --tunnel, -T       Connect via UDP tunnel.\n" },
 
         { Options::Training,  0, "t",  "training", Arg::None,     "  --training, -t     Force training mode." },
         { Options::Broadcast, 0, "b", "broadcast", Arg::None,     "  --broadcast, -b    Force broadcast mode." },
         { Options::Spectate,  0, "s",  "spectate", Arg::None,     "  --spectate, -s     Force spectator mode." },
+
         {
             Options::Offline, 0, "o", "offline", Arg::OptionalNumeric,
             "  --offline, -o [D]  Force offline mode.\n"
             "                     D is the delay, default 0.\n"
         },
+
         {
             Options::NoUi, 0, "n", "no-ui", Arg::None,
             "  --no-ui, -n        No UI, just quits after running once.\n"
             "                     Should be used with address and/or port.\n"
         },
+
         {
             Options::Strict, 0, "S", "strict", Arg::None,
             "  --strict, -S       Strict version match, can be stacked up to 3 times.\n"
@@ -117,10 +149,10 @@ int main ( int argc, char *argv[] )
             "                     -SSS means build time must match.\n"
         },
 
-        { Options::Stdout, 0, "",  "stdout", Arg::None, 0 }, // Output logs to stdout
-        { Options::Dummy,  0, "",   "dummy", Arg::None, 0 }, // Client mode with fake inputs
-        { Options::Check,  0, "",   "check", Arg::None, 0 }, // Check for desyncs by periodically sending hashes
-        { Options::NoFork, 0, "", "no-fork", Arg::None, 0 }, // Don't fork when inside Wine, ie running wineconsole
+        { Options::Stdout,    0, "",  "stdout", Arg::None, 0 }, // Output logs to stdout
+        { Options::Dummy,     0, "",   "dummy", Arg::None, 0 }, // Client mode with fake inputs
+        { Options::CheckSync, 0, "",   "check", Arg::None, 0 }, // Check for desyncs by periodically sending hashes
+        { Options::NoFork,    0, "", "no-fork", Arg::None, 0 }, // Don't fork when inside Wine, ie running wineconsole
 
         {
             Options::Unknown, 0, "", "", Arg::None,
@@ -162,11 +194,16 @@ int main ( int argc, char *argv[] )
     signal ( SIGTERM, signalHandler );
     SetConsoleCtrlHandler ( consoleCtrl, TRUE );
 
-    // Check if we should log to stdout
+    // Initialize the main application directory
+    initAppDir();
+
+    // Initialize logging
     if ( opt[Options::Stdout] )
         Logger::get().initialize();
     else
-        Logger::get().initialize ( LOG_FILE );
+        Logger::get().initialize ( appDir + LOG_FILE );
+
+    LOG ( "Running from: %s", appDir );
 
     // Log parsed command line opt
     for ( size_t i = 0; i < opt.size(); ++i )
@@ -203,8 +240,8 @@ int main ( int argc, char *argv[] )
     }
 
     // Initialize game dir first because ui.initialize() needs it
-    if ( opt[Options::Dir] && opt[Options::Dir].arg )
-        ProcessManager::gameDir = opt[Options::Dir].arg;
+    if ( opt[Options::GameDir] && opt[Options::GameDir].arg )
+        ProcessManager::gameDir = opt[Options::GameDir].arg;
 
     // Initialize config
     ui.initialize();

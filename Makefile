@@ -100,7 +100,7 @@ debugger: $(DEBUGGER)
 
 $(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
 	@echo
-	rm -f $(filter-out $(ARCHIVE),$(wildcard $(NAME)*.zip))
+	rm -f $(filter-out %.log,$(filter-out $(ARCHIVE),$(wildcard $(NAME)*.zip)))
 	$(ZIP) $(NAME).v$(VERSION).zip $^
 	$(GRANT)
 
