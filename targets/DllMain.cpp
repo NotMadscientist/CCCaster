@@ -194,13 +194,11 @@ struct DllMain
 
                     netMan.setRngState ( msgRngState->getAs<RngState>() );
 
-                    dataSocket->send ( msgRngState );
+                    if ( clientMode.isHost() )
+                        dataSocket->send ( msgRngState );
 
-                    if ( clientMode.isBroadcast() )
-                    {
-                        for ( const auto& kv : specSockets )
-                            kv.first->send ( msgRngState );
-                    }
+                    for ( const auto& kv : specSockets )
+                        kv.first->send ( msgRngState );
                 }
 
                 break;

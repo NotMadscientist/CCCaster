@@ -458,15 +458,8 @@ struct MainApp
 
             case ClientMode::Host:
                 netplayConfig = ui.getNetplayConfig();
-                netplayConfig.sessionId.clear();
+                netplayConfig.sessionId = generateSessionId();
                 netplayConfig.invalidate();
-
-                for ( int i = 0; i < 10; ++i )
-                {
-                    netplayConfig.sessionId += ( 'A' + ( rand() % 26 ) );
-                    netplayConfig.sessionId += ( 'a' + ( rand() % 26 ) );
-                    netplayConfig.sessionId += ( '0' + ( rand() % 10 ) );
-                }
 
                 ctrlSocket->send ( netplayConfig );
 
@@ -551,7 +544,9 @@ struct MainApp
 
     void startGame()
     {
-        if ( clientMode.isSpectate() )
+        if ( clientMode.isLocal() )
+            options.set ( Options::SessionId, 1, generateSessionId() );
+        else if ( clientMode.isSpectate() )
             options.set ( Options::SessionId, 1, spectateConfig.sessionId );
         else
             options.set ( Options::SessionId, 1, netplayConfig.sessionId );
@@ -1029,6 +1024,20 @@ private:
         uiRecvSocket.reset();
 
         isBroadcastPortReady = isFinalConfigReady = isWaitingForUser = userConfirmed = false;
+    }
+
+    static string generateSessionId()
+    {
+        string sessionId;
+
+        for ( int i = 0; i < 10; ++i )
+        {
+            sessionId += ( 'A' + ( rand() % 26 ) );
+            sessionId += ( 'a' + ( rand() % 26 ) );
+            sessionId += ( '0' + ( rand() % 10 ) );
+        }
+
+        return sessionId;
     }
 };
 
