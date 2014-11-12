@@ -39,7 +39,8 @@ void Logger::initialize ( const string& name, uint32_t options )
                   LocalVersion.major().c_str(), LocalVersion.minor().c_str(), LocalVersion.suffix().c_str() );
         fprintf ( fd, "CommitId '%s' { isCustom=%d }\n", LocalVersion.commitId.c_str(), LocalVersion.isCustom() );
         fprintf ( fd, "BuildTime '%s'\n", LocalVersion.buildTime.c_str() );
-        fprintf ( fd, "SessionId '%s'\n", sessionId.c_str() );
+        if ( !sessionId.empty() )
+            fprintf ( fd, "SessionId '%s'\n", sessionId.c_str() );
         fflush ( fd );
     }
 }
