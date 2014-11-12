@@ -285,7 +285,7 @@ void MainUi::controls()
 void MainUi::settings()
 {
     static const vector<string> options =
-    { "Alert on connect", "Display name", "CPU priority", "Show full character name" };
+    { "Alert on connect", "Display name", MBAA_EXE " CPU priority", "Show full character name" };
 
     ui->pushRight ( new ConsoleUi::Menu ( "Settings", options, "Cancel" ) );
 
@@ -300,8 +300,9 @@ void MainUi::settings()
         {
             case 0:
             {
-                ui->pushRight ( new ConsoleUi::Menu ( "Alert when connected?",
-                { "Focus window", "Play a sound", "Do both", "Don't alert" }, "Cancel" ) );
+                ui->pushInFront ( new ConsoleUi::Menu ( "Alert when connected?",
+                { "Focus window", "Play a sound", "Do both", "Don't alert" }, "Cancel" ),
+                { 0, 0 }, true ); // Don't expand but clear
 
                 ui->top<ConsoleUi::Menu>()->setPosition ( ( config.getInteger ( "alertOnConnect" ) + 3 ) % 4 );
                 ui->popUntilUserInput();
@@ -360,9 +361,37 @@ void MainUi::settings()
                 break;
 
             case 2:
+                ui->pushInFront ( new ConsoleUi::Menu ( "Start " MBAA_EXE " with high CPU priority?",
+                { "Yes", "No" }, "Cancel" ),
+                { 0, 0 }, true ); // Don't expand but clear
+
+                ui->top<ConsoleUi::Menu>()->setPosition ( ( config.getInteger ( "highCpuPriority" ) + 1 ) % 2 );
+                ui->popUntilUserInput();
+
+                if ( ui->top()->resultInt >= 0 || ui->top()->resultInt >= 1 )
+                {
+                    config.putInteger ( "highCpuPriority", ( ui->top()->resultInt + 1 ) % 2 );
+                    saveConfig();
+                }
+
+                ui->pop();
                 break;
 
             case 3:
+                ui->pushInFront ( new ConsoleUi::Menu ( "Show full character names when spectating?",
+                { "Yes", "No" }, "Cancel" ),
+                { 0, 0 }, true ); // Don't expand but clear
+
+                ui->top<ConsoleUi::Menu>()->setPosition ( ( config.getInteger ( "showFullCharacterName" ) + 1 ) % 2 );
+                ui->popUntilUserInput();
+
+                if ( ui->top()->resultInt >= 0 || ui->top()->resultInt >= 1 )
+                {
+                    config.putInteger ( "showFullCharacterName", ( ui->top()->resultInt + 1 ) % 2 );
+                    saveConfig();
+                }
+
+                ui->pop();
                 break;
 
             default:
