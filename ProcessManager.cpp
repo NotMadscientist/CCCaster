@@ -188,9 +188,9 @@ void ProcessManager::openGame ( const string& appDir, bool highPriority )
     string command;
 
     if ( !gameDir.empty() )
-        command = "cd " + gameDir + " && ";
+        command = "cd \"" + gameDir + "\" && ";
 
-    command += appDir + LAUNCHER " " MBAA_EXE " " + appDir + HOOK_DLL;
+    command += "\"" + appDir + LAUNCHER "\" \"" + gameDir + MBAA_EXE "\" \"" + appDir + HOOK_DLL "\"";
 
     if ( highPriority )
         command += " --high";
@@ -202,7 +202,7 @@ void ProcessManager::openGame ( const string& appDir, bool highPriority )
 
     LOG ( "Running: %s", command );
 
-    int returnCode = system ( command.c_str() );
+    int returnCode = system ( ( "\"" + command + "\"" ).c_str() );
 
     LOG ( "returnCode=%d", returnCode );
 

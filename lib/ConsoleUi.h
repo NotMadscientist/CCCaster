@@ -337,9 +337,15 @@ public:
             else
             {
                 if ( cc->ScanString ( scanPos, resultStr, size.X - paddedBorders.size() ) )
+                {
                     LOG ( "resultStr='%s'", resultStr );
+                    resultInt = 0;
+                }
                 else
+                {
                     resultStr.clear();
+                    resultInt = INT_MIN;
+                }
             }
         }
 
@@ -359,7 +365,7 @@ public:
 
         void setInitial ( const std::string& initial )
         {
-            if ( !isIntegerPrompt )
+            if ( isIntegerPrompt )
                 return;
 
             resultStr = initial;
