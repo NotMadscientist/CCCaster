@@ -439,10 +439,7 @@ public:
     // Pop the non user input elements from the top of the stack
     void popNonUserInput()
     {
-        if ( stack.empty() )
-            return;
-
-        while ( !top()->requiresUser )
+        while ( !stack.empty() && !top()->requiresUser )
             pop();
     }
 

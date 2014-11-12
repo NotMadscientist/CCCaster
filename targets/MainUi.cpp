@@ -542,12 +542,12 @@ static string formatStats ( const PingStats& pingStats )
            );
 }
 
-void MainUi::display ( const string& message )
+void MainUi::display ( const string& message, bool replace )
 {
     if ( !ui )
         ui.reset ( new ConsoleUi ( uiTitle ) );
 
-    if ( ui->empty() || !ui->top()->requiresUser || ui->top() != mainMenu )
+    if ( replace && ( ui->empty() || !ui->top()->requiresUser || ui->top() != mainMenu ) )
         ui->pushInFront ( new ConsoleUi::TextBox ( message ), { 1, 0 }, true ); // Expand width and clear
     else if ( ui->top()->expandWidth() )
         ui->pushBelow ( new ConsoleUi::TextBox ( message ), { 1, 0 } ); // Expand width
@@ -604,6 +604,8 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
             continue;
         }
 
+        // TODO select rollback
+
         netplayConfig.delay = menu->resultInt;
         netplayConfig.hostPlayer = 1; // TODO randomize
         ret = true;
@@ -611,16 +613,23 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
     }
 
     ui->pop();
-    ui->pop();
+
+    if ( ret )
+    {
+        ui->pushBelow ( new ConsoleUi::TextBox ( toString ( "Using %u delay%s",
+                        netplayConfig.delay,
+                        ( netplayConfig.rollback ? toString ( ", %u rollback", netplayConfig.rollback ) : "" ) ) ),
+        { 1, 0 } ); // Expand width
+
+        ui->pushBelow ( new ConsoleUi::TextBox ( "Waiting for client..." ), { 1, 0 } ); // Expand width
+    }
 
     return ret;
 }
 
-bool MainUi::connected ( const InitialConfig& initialConfig, const PingStats& pingStats )
+void MainUi::connected ( const InitialConfig& initialConfig, const PingStats& pingStats )
 {
     alertUser();
-
-    bool ret = false;
 
     ASSERT ( ui.get() != 0 );
 
@@ -628,25 +637,26 @@ bool MainUi::connected ( const InitialConfig& initialConfig, const PingStats& pi
                           initialConfig.getConnectMessage ( "Connected" ) + "\n\n"
                           + formatStats ( pingStats ) ), { 1, 0 }, true ); // Expand width and clear
 
-    ui->pushBelow ( new ConsoleUi::Menu ( "Continue?", { "Yes" }, "No" ) );
+    ui->pushBelow ( new ConsoleUi::TextBox ( "Waiting for host to choose delay..." ), { 1, 0 } ); // Expand width
+}
 
-    ret = ( ui->popUntilUserInput()->resultInt == 0 );
+void MainUi::connected ( const NetplayConfig& netplayConfig )
+{
+    ASSERT ( ui.get() != 0 );
 
-    ui->pop();
-    ui->pop();
-
-    return ret;
+    ui->pushInFront ( new ConsoleUi::TextBox ( toString ( "Host chose %u delay%s",
+                      netplayConfig.delay,
+                      ( netplayConfig.rollback ? toString ( ", %u rollback", netplayConfig.rollback ) : "" ) ) ),
+    { 1, 0 }, true ); // Expand width and clear
 }
 
 #include "CharacterNames.h"
 
 typedef const char * ( *CharaNameFunc ) ( uint32_t chara );
 
-bool MainUi::spectate ( const SpectateConfig& spectateConfig )
+void MainUi::spectate ( const SpectateConfig& spectateConfig )
 {
     alertUser();
-
-    bool ret = false;
 
     ASSERT ( ui.get() != 0 );
 
@@ -677,11 +687,18 @@ bool MainUi::spectate ( const SpectateConfig& spectateConfig )
     }
 
     ui->pushInFront ( new ConsoleUi::TextBox ( text ), { 1, 0 }, true ); // Expand width and clear
+}
+
+bool MainUi::confirm()
+{
+    bool ret = false;
+
+    ASSERT ( ui.get() != 0 );
+
     ui->pushBelow ( new ConsoleUi::Menu ( "Continue?", { "Yes" }, "No" ) );
 
     ret = ( ui->popUntilUserInput()->resultInt == 0 );
 
-    ui->pop();
     ui->pop();
 
     return ret;

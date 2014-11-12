@@ -89,7 +89,7 @@ struct MainApp
 
         8 - Host sends NetplayConfig and waits for ConfirmConfig before starting
 
-        9 - Client send ConfirmConfig and waits for NetplayConfig before starting
+        9 - Client confirms NetplayConfig and sends ConfirmConfig before starting
 
        10 - Reconnect dataSocket in-game, and also don't need ctrlSocket for host-client communications
 
@@ -307,20 +307,6 @@ struct MainApp
         ctrlSocket->send ( initialConfig );
     }
 
-    void gotSpectateConfig ( const SpectateConfig& spectateConfig )
-    {
-        LOG ( "SpectateConfig: mode=%s; flags={ %s }; delay=%u; rollback=%u; names={ '%s', '%s' }"
-              "chara={ %u, %u }; moon={ %c, %c }; color= { %d, %d }; state=%u",
-              spectateConfig.mode, spectateConfig.mode.flagString(),
-              spectateConfig.delay, spectateConfig.rollback, spectateConfig.names[0], spectateConfig.names[1],
-              spectateConfig.chara[0], spectateConfig.chara[1], spectateConfig.moon[0], spectateConfig.moon[1],
-              ( int ) spectateConfig.color[0], ( int ) spectateConfig.color[1], spectateConfig.stage );
-
-        this->spectateConfig = spectateConfig;
-
-        getUserConfirmation();
-    }
-
     void gotInitialConfig ( const InitialConfig& initialConfig )
     {
         if ( !isInitialConfigReady )
@@ -365,36 +351,84 @@ struct MainApp
         this->pingStats = pingStats;
 
         if ( clientMode.isHost() )
+        {
+            mergePingStats();
             getUserConfirmation();
+        }
         else
+        {
             pinger.start();
+        }
     }
 
-    void getUserConfirmation()
+    void mergePingStats()
     {
         dataSocket.reset();
         serverDataSocket.reset();
 
+        LOG ( "PingStats (local): latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
+              pinger.getStats().getMean(), pinger.getStats().getWorst(),
+              pinger.getStats().getStdErr(), pinger.getStats().getStdDev(), pinger.getPacketLoss() );
+
+        LOG ( "PingStats (remote): latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
+              pingStats.latency.getMean(), pingStats.latency.getWorst(),
+              pingStats.latency.getStdErr(), pingStats.latency.getStdDev(), pingStats.packetLoss );
+
+        pingStats.latency.merge ( pinger.getStats() );
+        pingStats.packetLoss = ( pingStats.packetLoss + pinger.getPacketLoss() ) / 2;
+
+        LOG ( "PingStats (merged): latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
+              pingStats.latency.getMean(), pingStats.latency.getWorst(),
+              pingStats.latency.getStdErr(), pingStats.latency.getStdDev(), pingStats.packetLoss );
+    }
+
+    void gotSpectateConfig ( const SpectateConfig& spectateConfig )
+    {
+        if ( !clientMode.isSpectate() )
+        {
+            LOG ( "Unexpected 'SpectateConfig'" );
+            return;
+        }
+
+        LOG ( "SpectateConfig: mode=%s; flags={ %s }; delay=%u; rollback=%u; names={ '%s', '%s' }"
+              "chara={ %u, %u }; moon={ %c, %c }; color= { %d, %d }; state=%u",
+              spectateConfig.mode, spectateConfig.mode.flagString(),
+              spectateConfig.delay, spectateConfig.rollback, spectateConfig.names[0], spectateConfig.names[1],
+              spectateConfig.chara[0], spectateConfig.chara[1], spectateConfig.moon[0], spectateConfig.moon[1],
+              ( int ) spectateConfig.color[0], ( int ) spectateConfig.color[1], spectateConfig.stage );
+
+        this->spectateConfig = spectateConfig;
+
+        ui.spectate ( spectateConfig );
+
+        getUserConfirmation();
+    }
+
+    void gotNetplayConfig ( const NetplayConfig& netplayConfig )
+    {
+        if ( !clientMode.isClient() )
+        {
+            LOG ( "Unexpected 'NetplayConfig'" );
+            return;
+        }
+
+        this->netplayConfig.mode.flags = netplayConfig.mode.flags;
+        this->netplayConfig.delay = netplayConfig.delay;
+        this->netplayConfig.rollback = netplayConfig.rollback;
+        this->netplayConfig.hostPlayer = netplayConfig.hostPlayer;
+        this->netplayConfig.sessionId = netplayConfig.sessionId;
+
+        isFinalConfigReady = true;
+
+        ui.connected ( netplayConfig );
+
+        getUserConfirmation();
+    }
+
+    void getUserConfirmation()
+    {
         // Disable keyboard hooks for the UI
         KeyboardManager::get().unhook();
-
-        if ( clientMode.isNetplay() )
-        {
-            LOG ( "PingStats (local): latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
-                  pinger.getStats().getMean(), pinger.getStats().getWorst(),
-                  pinger.getStats().getStdErr(), pinger.getStats().getStdDev(), pinger.getPacketLoss() );
-
-            LOG ( "PingStats (remote): latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
-                  pingStats.latency.getMean(), pingStats.latency.getWorst(),
-                  pingStats.latency.getStdErr(), pingStats.latency.getStdDev(), pingStats.packetLoss );
-
-            pingStats.latency.merge ( pinger.getStats() );
-            pingStats.packetLoss = ( pingStats.packetLoss + pinger.getPacketLoss() ) / 2;
-
-            LOG ( "PingStats (merged): latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
-                  pingStats.latency.getMean(), pingStats.latency.getWorst(),
-                  pingStats.latency.getStdErr(), pingStats.latency.getStdDev(), pingStats.packetLoss );
-        }
 
         uiRecvSocket = UdpSocket::bind ( this, 0 );
         uiSendSocket = UdpSocket::bind ( 0, { "127.0.0.1", uiRecvSocket->address.port } );
@@ -414,16 +448,13 @@ struct MainApp
 
         switch ( clientMode.value )
         {
-            case ClientMode::Spectate:
-                userConfirmed = ui.spectate ( spectateConfig );
-                break;
-
             case ClientMode::Host:
                 userConfirmed = ui.accepted ( initialConfig, pingStats );
                 break;
 
             case ClientMode::Client:
-                userConfirmed = ui.connected ( initialConfig, pingStats );
+            case ClientMode::Spectate:
+                userConfirmed = ui.confirm();
                 break;
 
             default:
@@ -457,21 +488,17 @@ struct MainApp
                 break;
 
             case ClientMode::Host:
+                KeyboardManager::get().hook ( this, MainUi::getConsoleWindow(), { VK_ESCAPE } ); // Waiting again
                 netplayConfig = ui.getNetplayConfig();
                 netplayConfig.sessionId = generateSessionId();
                 netplayConfig.invalidate();
-
                 ctrlSocket->send ( netplayConfig );
-
-                ui.display ( "Waiting for client confirmation..." );
-                startGameIfReady();
                 break;
 
             case ClientMode::Client:
                 ctrlSocket->send ( new ConfirmConfig() );
-
-                ui.display ( "Waiting for host to choose delay..." );
-                startGameIfReady();
+                ASSERT ( isFinalConfigReady == true );
+                startGame();
                 break;
 
             default:
@@ -480,28 +507,16 @@ struct MainApp
         }
     }
 
-    void gotNetplayConfig ( const NetplayConfig& netplayConfig )
+    void gotConfirmConfig()
     {
-        if ( !clientMode.isClient() )
+        if ( !userConfirmed )
         {
-            LOG ( "Unexpected 'NetplayConfig'" );
+            LOG ( "Unexpected 'ConfirmConfig'" );
             return;
         }
 
-        this->netplayConfig.mode.flags = netplayConfig.mode.flags;
-        this->netplayConfig.delay = netplayConfig.delay;
-        this->netplayConfig.rollback = netplayConfig.rollback;
-        this->netplayConfig.hostPlayer = netplayConfig.hostPlayer;
-        this->netplayConfig.sessionId = netplayConfig.sessionId;
-
         isFinalConfigReady = true;
-        startGameIfReady();
-    }
-
-    void gotConfirmConfig()
-    {
-        isFinalConfigReady = true;
-        startGameIfReady();
+        startGame();
     }
 
     void gotDummyMsg ( const MsgPtr& msg )
@@ -542,12 +557,6 @@ struct MainApp
         LOG ( "Unexpected '%s'", msg );
     }
 
-    void startGameIfReady()
-    {
-        if ( userConfirmed && isFinalConfigReady )
-            startGame();
-    }
-
     void startGame()
     {
         if ( clientMode.isLocal() )
@@ -563,7 +572,7 @@ struct MainApp
         {
             ASSERT ( clientMode.value == ClientMode::Client || clientMode.value == ClientMode::Spectate );
 
-            ui.display ( "Dummy is ready" );
+            ui.display ( "Dummy is ready", false ); // Don't replace last message
 
             isDummyReady = true;
 
@@ -578,7 +587,7 @@ struct MainApp
             return;
         }
 
-        ui.display ( "Starting game..." );
+        ui.display ( "Starting game...", !clientMode.isClient() ); // Don't replace last message if client
 
         if ( clientMode.isClient() && ctrlSocket->isSmart() && ctrlSocket->getAsSmart().isTunnel() )
             clientMode.flags |= ClientMode::UdpTunnel;
@@ -613,7 +622,10 @@ struct MainApp
         ctrlSocket->send ( new PingStats ( stats, packetLoss ) );
 
         if ( clientMode.isClient() )
-            getUserConfirmation();
+        {
+            mergePingStats();
+            ui.connected ( initialConfig, pingStats );
+        }
     }
 
     // Socket callbacks

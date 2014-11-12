@@ -52,13 +52,17 @@ public:
 
     void main ( RunFuncPtr run );
 
-    void display ( const std::string& message );
+    void display ( const std::string& message, bool replace = true );
 
     bool accepted ( const InitialConfig& initialConfig, const PingStats& pingStats );
 
-    bool connected ( const InitialConfig& initialConfig, const PingStats& pingStats );
+    void connected ( const InitialConfig& initialConfig, const PingStats& pingStats );
 
-    bool spectate ( const SpectateConfig& spectateConfig );
+    void connected ( const NetplayConfig& netplayConfig );
+
+    void spectate ( const SpectateConfig& spectateConfig );
+
+    bool confirm();
 
     const ConfigSettings& getConfig() const { return config; }
 
