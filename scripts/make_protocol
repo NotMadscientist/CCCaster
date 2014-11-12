@@ -28,7 +28,8 @@ if [ $? -ne 0 ]; then
 
   grep --extended-regexp "public Serializable[A-Z]" "$@" | grep --invert-match "no-clone" \
     | sed -r \
-      's/^(.+\.h):[a-z]+ ([A-Za-z0-9]+) .+$$/MsgPtr \2::clone() const { return MsgPtr ( new \2 ( *this ) ); }/' \
+      's/^(.+\.h):[a-z]+ ([A-Za-z0-9]+) .+$$/\
+MsgPtr \2::clone() const { MsgPtr msg ( new \2 ( *this ) ); msg->invalidate(); return msg; }/' \
     | sort \
     | uniq \
     > $DIR/Protocol.clone.h
