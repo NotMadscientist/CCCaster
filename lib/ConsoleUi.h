@@ -305,13 +305,13 @@ public:
         void initialize() override
         {
             ASSERT ( ( size_t ) size.X >= title.size() + paddedBorders.size() );
-            ASSERT ( ( size_t ) size.Y > bordersTitleHeight );
+            ASSERT ( ( size_t ) size.Y > bordersHeight + ( title.empty() ? 0 : 2 ) );
 
             if ( !expand.X )
                 size.X = title.size() + paddedBorders.size();
 
             // Prompts are NEVER expanded vertically
-            size.Y = 1 + bordersTitleHeight;
+            size.Y = 1 + bordersHeight + ( title.empty() ? 0 : 2 );
         }
 
         void show() override
@@ -320,10 +320,14 @@ public:
 
             CharacterBox::Draw ( pos, pos + size, '*' );
             ConsoleCore *cc = ConsoleCore::GetInstance();
-            cc->Prints ( " " + title + " ", false, 0, pos.X + 1, pos.Y + 1 );
-            cc->Prints ( std::string ( size.X - borders.size(), '*' ), false, 0, pos.X + 1, pos.Y + 2 );
 
-            COORD scanPos = { short ( pos.X + 2 ), short ( pos.Y + 3 ) };
+            if ( !title.empty() )
+            {
+                cc->Prints ( " " + title + " ", false, 0, pos.X + 1, pos.Y + 1 );
+                cc->Prints ( std::string ( size.X - borders.size(), '*' ), false, 0, pos.X + 1, pos.Y + 2 );
+            }
+
+            COORD scanPos = { short ( pos.X + 2 ), short ( pos.Y + ( title.empty() ? 1 : 3 ) ) };
             cc->CursorPosition ( &scanPos );
 
             if ( isIntegerPrompt )
@@ -371,10 +375,10 @@ public:
             resultStr = initial;
         }
 
-        Prompt ( PromptTypeString, const std::string& title )
+        Prompt ( PromptTypeString, const std::string& title = "" )
             : title ( title ), isIntegerPrompt ( false ) {}
 
-        Prompt ( PromptTypeInteger, const std::string& title )
+        Prompt ( PromptTypeInteger, const std::string& title = "" )
             : title ( title ), isIntegerPrompt ( true ) {}
     };
 

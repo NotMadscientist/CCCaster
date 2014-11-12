@@ -6,6 +6,8 @@
 #include "ProcessManager.h"
 #include "ControllerManager.h"
 
+#include <mmsystem.h>
+
 using namespace std;
 
 
@@ -14,9 +16,8 @@ static const string uiTitle = "CCCaster " + LocalVersion.code;
 // Indent position of the pinging stats (must be a string)
 #define INDENT_STATS "12"
 
-// System sound prefix and default alert
+// System sound prefix
 #define SYSTEM_ALERT_PREFEX "System"
-#define SYSTEM_DEFAULT_ALERT "SystemDefault"
 
 // Config file
 #define CONFIG_FILE FOLDER "config.ini"
@@ -231,9 +232,6 @@ void MainUi::offline ( RunFuncPtr run )
     netplayConfig.delay = delay;
     netplayConfig.hostPlayer = 1;
 
-    // TODO remove me testing
-    // netplayConfig.rollback = 30;
-
     run ( "", netplayConfig );
 
     ui->popNonUserInput();
@@ -242,7 +240,10 @@ void MainUi::offline ( RunFuncPtr run )
 bool MainUi::gameMode()
 {
     ui->pushBelow ( new ConsoleUi::Menu ( "Mode", { "Versus", "Training" }, "Cancel" ) );
-    int mode = ui->popUntilUserInput()->resultInt;
+    ui->popUntilUserInput ( true ); // Clear popped since we should clear any messages
+
+    int mode = ui->top()->resultInt;
+
     ui->pop();
 
     if ( mode < 0 || mode > 1 )
@@ -272,7 +273,7 @@ void MainUi::controls()
 
     for ( ;; )
     {
-        ConsoleUi::Element *menu = ui->popUntilUserInput();
+        ConsoleUi::Element *menu = ui->popUntilUserInput ( true ); // Clear popped since we don't care about messages
 
         if ( menu->resultInt < 0 || menu->resultInt >= ( int ) controllers.size() )
             break;
@@ -283,19 +284,105 @@ void MainUi::controls()
 
 void MainUi::settings()
 {
+    static const vector<string> options =
+    { "Alert on connect", "Display name", "CPU priority", "Show full character name" };
+
+    ui->pushRight ( new ConsoleUi::Menu ( "Settings", options, "Cancel" ) );
+
+    for ( ;; )
+    {
+        ConsoleUi::Element *menu = ui->popUntilUserInput ( true ); // Clear popped since we don't care about messages
+
+        if ( menu->resultInt < 0 || menu->resultInt >= ( int ) options.size() )
+            break;
+
+        switch ( menu->resultInt )
+        {
+            case 0:
+            {
+                ui->pushRight ( new ConsoleUi::Menu ( "Alert when connected?",
+                { "Focus window", "Play a sound", "Do both", "Don't alert" }, "Cancel" ) );
+
+                ui->top<ConsoleUi::Menu>()->setPosition ( ( config.getInteger ( "alertOnConnect" ) + 3 ) % 4 );
+                ui->popUntilUserInput();
+
+                int alertType = ui->top()->resultInt;
+
+                ui->pop();
+
+                if ( alertType < 0 || alertType > 3 )
+                    break;
+
+                config.putInteger ( "alertOnConnect", ( alertType + 1 ) % 4 );
+                saveConfig();
+
+                if ( alertType == 0 || alertType == 3 )
+                    break;
+
+                ui->pushInFront ( new ConsoleUi::TextBox (
+                                      "Enter/paste/drag a .wav file here:\n"
+                                      "(Leave blank to use SystemDefault)" ),
+                { 1, 0 }, true ); // Expand width and clear
+
+                ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::PromptString ), { 1, 0 } ); // Expand width
+
+                ui->top<ConsoleUi::Prompt>()->setInitial ( config.getString ( "alertWavFile" ) );
+                ui->popUntilUserInput();
+
+                if ( ui->top()->resultInt == 0 )
+                {
+                    if ( ui->top()->resultStr.empty() )
+                        config.putString ( "alertWavFile", "SystemDefault" );
+                    else
+                        config.putString ( "alertWavFile", ui->top()->resultStr );
+                    saveConfig();
+                }
+
+                ui->pop();
+                ui->pop();
+                break;
+            }
+
+            case 1:
+                ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptString,
+                                  "Enter name to show when connecting:" ), { 1, 0 }, true ); // Expand width and clear
+
+                ui->top<ConsoleUi::Prompt>()->setInitial ( config.getString ( "displayName" ) );
+                ui->popUntilUserInput();
+
+                if ( ui->top()->resultInt == 0 )
+                {
+                    config.putString ( "displayName", ui->top()->resultStr );
+                    saveConfig();
+                }
+
+                ui->pop();
+                break;
+
+            case 2:
+                break;
+
+            case 3:
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    ui->pop();
 }
 
 void MainUi::initialize()
 {
     // Defaults settings
     config.putInteger ( "alertOnConnect", 3 );
-    config.putString ( "alertWavFile", SYSTEM_DEFAULT_ALERT );
+    config.putString ( "alertWavFile", "SystemDefault" );
     config.putString ( "displayName", ProcessManager::fetchGameUserName() );
     config.putInteger ( "highCpuPriority", 1 );
+    config.putInteger ( "showFullCharacterName", 0 );
     config.putInteger ( "lastUsedPort", -1 );
     config.putInteger ( "lastMainMenuPosition", 0 );
-    // config.putInteger ( "spectatorCap", -1 );
-    config.putInteger ( "showFullCharacterName", 0 );
 
     // Override with user configuration
     config.load ( CONFIG_FILE );
@@ -324,12 +411,14 @@ void MainUi::main ( RunFuncPtr run )
     ControllerManager::get().initialize ( 0 );
     ControllerManager::get().check();
 
+    static const vector<string> options = { "Netplay", "Spectate", "Broadcast", "Offline", "Controls", "Settings" };
+
     ui.reset ( new ConsoleUi ( uiTitle ) );
-    ui->pushRight ( new ConsoleUi::Menu ( uiTitle,
-    { "Netplay", "Spectate", "Broadcast", "Offline", "Controls", "Settings" }, "Quit" ) );
+    ui->pushRight ( new ConsoleUi::Menu ( uiTitle, options, "Quit" ) );
 
     mainMenu = ui->top<ConsoleUi::Menu>();
     mainMenu->setEscape ( false );
+    mainMenu->setPosition ( config.getInteger ( "lastMainMenuPosition" ) - 1 );
 
     for ( ;; )
     {
@@ -347,24 +436,23 @@ void MainUi::main ( RunFuncPtr run )
 
         // Update cached UI state
         initialConfig.localName = config.getString ( "displayName" );
-        mainMenu->setPosition ( config.getInteger ( "lastMainMenuPosition" ) - 1 );
         if ( address.empty() )
             address.port = config.getInteger ( "lastUsedPort" );
 
-        int main = ui->popUntilUserInput()->resultInt;
+        int mainSelection = ui->popUntilUserInput()->resultInt;
 
-        if ( main < 0 || main > 5 )
+        if ( mainSelection < 0 || mainSelection >= ( int ) options.size() )
             break;
 
         ui->clearRight();
 
-        if ( main >= 0 && main <= 3 )
+        if ( mainSelection >= 0 && mainSelection <= 3 )
         {
-            config.putInteger ( "lastMainMenuPosition", main + 1 );
+            config.putInteger ( "lastMainMenuPosition", mainSelection + 1 );
             saveConfig();
         }
 
-        switch ( main )
+        switch ( mainSelection )
         {
             case 0:
                 netplay ( run );
@@ -436,8 +524,28 @@ void MainUi::display ( const string& message )
         ui->pushRight ( new ConsoleUi::TextBox ( message ), { 1, 0 } ); // Expand width
 }
 
+void MainUi::alertUser()
+{
+    int alert = config.getInteger ( "alertOnConnect" );
+
+    if ( alert & 1 )
+        SetForegroundWindow ( ( HWND ) getConsoleWindow() );
+
+    if ( alert & 2 )
+    {
+        string buffer = config.getString ( "alertWavFile" );
+
+        if ( buffer.find ( SYSTEM_ALERT_PREFEX ) == 0 )
+            PlaySound ( TEXT ( buffer.c_str() ), 0, SND_ALIAS | SND_ASYNC );
+        else
+            PlaySound ( TEXT ( buffer.c_str() ), 0, SND_FILENAME | SND_ASYNC | SND_NODEFAULT );
+    }
+}
+
 bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pingStats )
 {
+    alertUser();
+
     bool ret = false;
 
     ASSERT ( ui.get() != 0 );
@@ -454,7 +562,7 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
 
     for ( ;; )
     {
-        ConsoleUi::Element *menu = ui->popUntilUserInput();
+        ConsoleUi::Element *menu = ui->popUntilUserInput ( true ); // Clear popped since we don't care about messages
 
         if ( menu->resultInt < 0 )
             break;
@@ -475,15 +583,12 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
     ui->pop();
 
     return ret;
-
-    // netplayConfig.delay = 4;
-    // // netplayConfig.rollback = 30;
-    // netplayConfig.hostPlayer = 1;
-    // return true;
 }
 
 bool MainUi::connected ( const InitialConfig& initialConfig, const PingStats& pingStats )
 {
+    alertUser();
+
     bool ret = false;
 
     ASSERT ( ui.get() != 0 );
@@ -508,6 +613,8 @@ typedef const char * ( *CharaNameFunc ) ( uint32_t chara );
 
 bool MainUi::spectate ( const SpectateConfig& spectateConfig )
 {
+    alertUser();
+
     bool ret = false;
 
     ASSERT ( ui.get() != 0 );
@@ -539,7 +646,6 @@ bool MainUi::spectate ( const SpectateConfig& spectateConfig )
     }
 
     ui->pushInFront ( new ConsoleUi::TextBox ( text ), { 1, 0 }, true ); // Expand width and clear
-
     ui->pushBelow ( new ConsoleUi::Menu ( "Continue?", { "Yes" }, "No" ) );
 
     ret = ( ui->popUntilUserInput()->resultInt == 0 );

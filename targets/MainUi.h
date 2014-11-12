@@ -38,6 +38,8 @@ class MainUi : public Controller::Owner
 
     void saveConfig();
 
+    void alertUser();
+
 public:
 
     InitialConfig initialConfig;
