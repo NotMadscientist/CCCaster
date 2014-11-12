@@ -193,7 +193,7 @@ public:
 
     public:
 
-        TextBox ( const std::string& text ) : Element ( false ), text ( text ) {}
+        TextBox ( const std::string& text ) : Element ( false ), text ( trim ( text, "\n" ) ) {}
     };
 
     // Scrollable menu
@@ -255,6 +255,15 @@ public:
         {
             LOG ( "title='%s'; pos=%s; size=%s", title, pos, size );
 
+            ASSERT ( menu.Count() > 0 );
+
+            if ( position < 0 )
+                position = 0;
+            else if ( position >= ( int ) menu.Count() )
+                position = menu.Count() - 1;
+
+            menu.SelectedItem ( position );
+
             if ( ( resultInt = menu.Show() ) == 0 )
             {
                 resultInt = menu.SelectedValue();
@@ -264,6 +273,9 @@ public:
         }
 
     public:
+
+        // Initial menu position
+        int position = 0;
 
         Menu ( const std::string& title, const std::vector<std::string>& items, const std::string& lastItem = "" )
             : title ( title ), items ( items ), lastItem ( lastItem )

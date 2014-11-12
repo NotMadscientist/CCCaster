@@ -18,8 +18,11 @@ static const string uiTitle = "CCCaster " + LocalVersion.code;
 #define SYSTEM_ALERT_PREFEX "System"
 #define SYSTEM_DEFAULT_ALERT "SystemDefault"
 
+// Config file
+#define CONFIG_FILE FOLDER "config.ini"
 
-static ConsoleUi::Element *mainMenu = 0;
+
+static ConsoleUi::Menu *mainMenu = 0;
 
 
 void MainUi::netplay ( RunFuncPtr run )
@@ -52,6 +55,9 @@ void MainUi::netplay ( RunFuncPtr run )
 
         if ( address.addr.empty() )
         {
+            config.putInteger ( "lastUsedPort", address.port );
+            saveConfig();
+
             if ( !gameMode() )
                 continue;
 
@@ -79,7 +85,8 @@ void MainUi::netplay ( RunFuncPtr run )
 void MainUi::spectate ( RunFuncPtr run )
 {
     ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptString,
-                                            "Enter/paste <ip>:<port> to spectate:" ),
+                                            "Enter/paste <ip>:<port> to spectate:",
+                                            ( !address.addr.empty() ? address.str() : "" ) ),
     { 1, 0 } ); // Expand width
 
     for ( ;; )
@@ -125,7 +132,7 @@ void MainUi::broadcast ( RunFuncPtr run )
 {
     ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger,
                                             "Enter/paste <port> to broadcast:",
-                                            INT_MIN, false, 5 ),
+                                            address.port, false, 5 ),
     { 1, 0 } ); // Expand width
 
     for ( ;; )
@@ -151,7 +158,10 @@ void MainUi::broadcast ( RunFuncPtr run )
         netplayConfig.mode.flags = initialConfig.mode.flags;
         netplayConfig.delay = 0;
         netplayConfig.hostPlayer = 1;
-        netplayConfig.broadcastPort = menu->resultInt;
+        netplayConfig.broadcastPort = address.port = menu->resultInt;
+
+        config.putInteger ( "lastUsedPort", address.port );
+        saveConfig();
 
         run ( "", netplayConfig );
 
@@ -265,18 +275,36 @@ void MainUi::settings()
 
 void MainUi::initialize()
 {
+    // Defaults settings
     config.putInteger ( "alertOnConnect", 3 );
     config.putString ( "alertWavFile", SYSTEM_DEFAULT_ALERT );
-    config.putInteger ( "autoRehostOnError", 5 );
     config.putString ( "displayName", ProcessManager::fetchGameUserName() );
-    // config.putInteger ( "highCpuPriority", 1 );
-    // config.putInteger ( "joystickDeadzone", 25000 );
+    config.putInteger ( "highCpuPriority", 1 );
     config.putInteger ( "lastUsedPort", -1 );
-    config.putInteger ( "spectatorCap", -1 );
-    config.putInteger ( "useFullCharacterName", 0 );
+    config.putInteger ( "lastMainMenuPosition", 0 );
+    // config.putInteger ( "spectatorCap", -1 );
+    config.putInteger ( "showFullCharacterName", 0 );
 
+    // Override with user configuration
+    config.load ( CONFIG_FILE );
+
+    // Save config after loading (this creates the config file on the first time)
+    saveConfig();
+
+    // Reset the initial config
     initialConfig.clear();
     initialConfig.localName = config.getString ( "displayName" );
+}
+
+void MainUi::saveConfig()
+{
+    if ( config.save ( CONFIG_FILE ) )
+        return;
+
+    LOG ( "Failed to save: %s", CONFIG_FILE );
+
+    if ( sessionError.find ( "Failed to save config file:" ) == std::string::npos )
+        sessionError += toString ( "\nFailed to save config file: %s", CONFIG_FILE );
 }
 
 void MainUi::main ( RunFuncPtr run )
@@ -288,7 +316,7 @@ void MainUi::main ( RunFuncPtr run )
     ui->pushRight ( new ConsoleUi::Menu ( uiTitle,
     { "Netplay", "Spectate", "Broadcast", "Offline", "Controls", "Settings" }, "Quit" ) );
 
-    mainMenu = ui->top();
+    mainMenu = ( ConsoleUi::Menu * ) ui->top();
 
     for ( ;; )
     {
@@ -304,13 +332,22 @@ void MainUi::main ( RunFuncPtr run )
         sessionError.clear();
         sessionMessage.clear();
 
-        // Update UI internal state here
+        // Update cached UI state
         initialConfig.localName = config.getString ( "displayName" );
+        mainMenu->position = ( config.getInteger ( "lastMainMenuPosition" ) - 1 );
+        if ( address.empty() )
+            address.port = config.getInteger ( "lastUsedPort" );
 
         int main = ui->popUntilUserInput()->resultInt;
 
         if ( main < 0 || main > 5 )
             break;
+
+        if ( main >= 0 && main <= 3 )
+        {
+            config.putInteger ( "lastMainMenuPosition", main + 1 );
+            saveConfig();
+        }
 
         switch ( main )
         {

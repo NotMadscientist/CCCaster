@@ -162,7 +162,7 @@ void ProcessManager::timerExpired ( Timer *timer )
         return;
 }
 
-void ProcessManager::openGame()
+void ProcessManager::openGame ( const string& appDir, bool highPriority )
 {
     LOG ( "Opening pipe" );
 
@@ -182,48 +182,35 @@ void ProcessManager::openGame()
         LOG_AND_THROW_ERROR ( err, "CreateNamedPipe failed" );
     }
 
-    LOG ( "Running " MBAA_EXE );
-
-    char buffer[4096];
-    _getcwd ( buffer, sizeof ( buffer ) - 1 );
-
-    string cwd = buffer;
-
-    LOG ( "Working dir: %s", cwd );
-
-    if ( !gameDir.empty() && ( gameDir.back() == '/' || gameDir.back() == '\\' ) )
-        gameDir.resize ( gameDir.size() - 1 );
-
-    LOG ( "Game dir: %s", gameDir );
+    LOG ( "appDir='%s'", appDir );
+    LOG ( "gameDir='%s'", gameDir );
 
     string command;
 
+    if ( !gameDir.empty() )
+        command = "cd " + gameDir + " && ";
+
+    command += appDir + LAUNCHER " " MBAA_EXE " " + appDir + HOOK_DLL;
+
+    if ( highPriority )
+        command += " --high";
+
     if ( detectWine() )
-    {
-        command = "cd " + gameDir + " && " + cwd + "/" LAUNCHER " " MBAA_EXE " " + cwd + "/" + HOOK_DLL " &";
-
         replace ( command.begin(), command.end(), '\\', '/' );
-    }
     else
+        replace ( command.begin(), command.end(), '/', '\\' );
+
+    LOG ( "Running: %s", command );
+
+    int returnCode = system ( command.c_str() );
+
+    LOG ( "returnCode=%d", returnCode );
+
+    if ( returnCode < 0 )
     {
-        command = "@start > nul 2>&1 \"\"";
-        if ( !gameDir.empty() )
-            command += " /d\"" + gameDir + "\"";
-        command += " " + cwd + "\\" + LAUNCHER " ";
-        if ( !gameDir.empty() )
-            command += gameDir + "\\";
-        command += MBAA_EXE " " + cwd + "\\" + HOOK_DLL;
-
-        auto begin = command.begin();
-        if ( !gameDir.empty() )
-            begin = command.begin() + ( command.find ( "/d" ) + 2 );
-
-        replace ( begin, command.end(), '/', '\\' );
+        LOG_AND_THROW_STRING ( "Failed to start and/or hook " MBAA_EXE );
+        return;
     }
-
-    LOG ( "Command: %s", command );
-
-    system ( command.c_str() );
 
     LOG ( "Connecting pipe" );
 
@@ -392,13 +379,7 @@ ProcessManager::~ProcessManager()
 
 string ProcessManager::fetchGameUserName()
 {
-    if ( !gameDir.empty() && ( gameDir.back() == '/' || gameDir.back() == '\\' ) )
-        gameDir.resize ( gameDir.size() - 1 );
-
-    string path;
-    if ( !gameDir.empty() )
-        path = gameDir + ( detectWine() ? "/" : "\\" );
-    path += CC_NETWORK_CONFIG_FILE;
+    string path = gameDir + CC_NETWORK_CONFIG_FILE;
 
     if ( detectWine() )
         replace ( path.begin(), path.end(), '\\', '/' );

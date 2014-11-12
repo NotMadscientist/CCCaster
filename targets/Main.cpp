@@ -251,7 +251,11 @@ int main ( int argc, char *argv[] )
 
     // Initialize game dir first because ui.initialize() needs it
     if ( opt[Options::GameDir] && opt[Options::GameDir].arg )
+    {
         ProcessManager::gameDir = opt[Options::GameDir].arg;
+        if ( ProcessManager::gameDir.back() != '/' && ProcessManager::gameDir.back() != '\\' )
+            ProcessManager::gameDir += '/';
+    }
 
     // Initialize config
     ui.initialize();

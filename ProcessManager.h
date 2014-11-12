@@ -103,7 +103,7 @@ public:
     ~ProcessManager();
 
     // Open / close the game from the EXE side
-    void openGame();
+    void openGame ( const std::string& appDir, bool highPriority = false );
     void closeGame();
 
     // Connect / disconnect the IPC pipe and socket from the DLL side

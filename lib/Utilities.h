@@ -6,7 +6,7 @@
 #include <type_traits>
 #include <cstdio>
 #include <iostream>
-#include <unordered_map>
+#include <map>
 #include <cctype>
 #include <algorithm>
 
@@ -198,8 +198,8 @@ inline void clamp ( T& value, T min, T max )
 class ConfigSettings
 {
     enum class Type : uint8_t { String, Integer };
-    std::unordered_map<std::string, std::string> settings;
-    std::unordered_map<std::string, Type> types;
+    std::map<std::string, std::string> settings;
+    std::map<std::string, Type> types;
 
 public:
     std::string getString ( const std::string& key ) const;

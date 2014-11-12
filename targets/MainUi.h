@@ -36,6 +36,8 @@ class MainUi : public Controller::Owner
 
     void doneMapping ( Controller *controller, uint32_t key );
 
+    void saveConfig();
+
 public:
 
     InitialConfig initialConfig;

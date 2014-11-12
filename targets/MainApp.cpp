@@ -881,7 +881,7 @@ struct MainApp
             serverCtrlSocket.reset();
 
             // Open the game and wait for callback to ipcConnectEvent
-            procMan.openGame();
+            procMan.openGame ( appDir, ui.getConfig().getInteger ( "highCpuPriority" ) );
         }
         else
         {

@@ -57,7 +57,7 @@ bool getbase ( HANDLE hnd, DWORD *address, WORD *orig_code )
 }
 
 // Based on the phook code included with ReplayEx.
-bool hook ( const string& exe_path, const string& dll_path )
+bool hook ( const string& exe_path, const string& dll_path, bool high_priority )
 {
     // Initialize process
     STARTUPINFO si;
@@ -81,7 +81,12 @@ bool hook ( const string& exe_path, const string& dll_path )
         return false;
     }
 
-    if ( !CreateProcess ( exe_path.c_str(), 0, 0, 0, TRUE, CREATE_SUSPENDED, 0, 0, &si, &pi ) )
+    DWORD flags = CREATE_SUSPENDED;
+
+    if ( high_priority )
+        flags |= HIGH_PRIORITY_CLASS;
+
+    if ( !CreateProcess ( exe_path.c_str(), 0, 0, 0, TRUE, flags, 0, 0, &si, &pi ) )
     {
         // MessageBox ( 0, "Could not create process.", "launcher error", MB_OK );
         return false;
@@ -128,16 +133,16 @@ bool hook ( const string& exe_path, const string& dll_path )
     FlushInstructionCache ( pi.hProcess, ( void * ) address, 2 );
     ResumeThread ( pi.hThread );
 
-    return false;
+    return true;
 }
 
 int main ( int argc, char *argv[] )
 {
     // Create process and hook library.
-    if ( argc > 2 && hook ( argv[1], argv[2] ) )
+    if ( argc > 2 && hook ( argv[1], argv[2], ( argc > 3 && string ( argv[3] ) == "--high" ) ) )
         return 0;
 
     // MessageBox ( 0, "Could not hook into MBAA.exe\n\nDo you have GameGuard or something running?",
     //              "launcher error", MB_OK | MB_ICONEXCLAMATION);
-    return 1;
+    return -1;
 }
