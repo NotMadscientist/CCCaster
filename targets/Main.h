@@ -26,8 +26,12 @@
 
 // Set of command line options
 ENUM ( Options,
-       Help, Dummy, Tests, Stdout, NoFork, NoUi, Strict, AppDir, GameDir, CheckSync, Tunnel, SessionId,
-       Training, Broadcast, Spectate, Offline );
+       // Regular options
+       Help, GameDir, Tunnel, Training, Broadcast, Spectate, Offline, NoUi, Tournament,
+       // Debug options
+       Tests, Stdout, FakeUi, Dummy, CheckSync, Strict,
+       // Special options
+       NoFork, AppDir, SessionId );
 
 
 namespace option { class Option; }

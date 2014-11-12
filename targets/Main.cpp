@@ -114,25 +114,23 @@ int main ( int argc, char *argv[] )
     {
         {
             Options::Unknown, 0, "", "", Arg::None,
-            "Usage: " BINARY " [options] [address] [port]\n\nOptions:"
+            "Usage: " BINARY " [options] [address] [port]\n"
+            "\n"
+            "Options:"
         },
 
-        { Options::Help,      0, "h",      "help", Arg::None,     "  --help, -h         Print help and exit." },
-#ifndef RELEASE
-        { Options::Tests,     0,  "",     "tests", Arg::None,     "  --tests            Run unit tests and exit." },
-#endif
+        { Options::Help,      0, "h",      "help", Arg::None,     "  --help, -h         Print help and exit.\n" },
         { Options::GameDir,   0, "d",       "dir", Arg::Required, "  --dir, -d folder   Specify game folder.\n" },
-
         { Options::Tunnel,    0, "T",    "tunnel", Arg::None,     "  --tunnel, -T       Connect via UDP tunnel.\n" },
 
         { Options::Training,  0, "t",  "training", Arg::None,     "  --training, -t     Force training mode." },
         { Options::Broadcast, 0, "b", "broadcast", Arg::None,     "  --broadcast, -b    Force broadcast mode." },
-        { Options::Spectate,  0, "s",  "spectate", Arg::None,     "  --spectate, -s     Force spectator mode." },
+        { Options::Spectate,  0, "s",  "spectate", Arg::None,     "  --spectate, -s     Force spectator mode.\n" },
 
         {
             Options::Offline, 0, "o", "offline", Arg::OptionalNumeric,
-            "  --offline, -o [D]  Force offline mode.\n"
-            "                     D is the delay, default 0.\n"
+            "  --offline, -o D    Force offline mode.\n"
+            "                     D is the optional delay, defaults to 0.\n"
         },
 
         {
@@ -142,17 +140,28 @@ int main ( int argc, char *argv[] )
         },
 
         {
+            Options::Tournament, 0, "", "tournament", Arg::None,
+            "  --tournament       Tournament mode, forces just --offline and --no-ui.\n"
+        },
+
+#ifndef RELEASE
+        { Options::Unknown,   0,  "",       "", Arg::None,        "Debug options:" },
+        { Options::Tests,     0,  "",  "tests", Arg::None,        "  --tests            Run unit tests and exit." },
+        { Options::Stdout,    0,  "", "stdout", Arg::None,        "  --stdout,          Output logs to stdout"},
+        { Options::FakeUi,    0, "F",   "fake", Arg::None,        "  --fake, -F         Fake UI mode" },
+        { Options::Dummy,     0, "D",  "dummy", Arg::None,        "  --dummy, -D        Client mode with fake inputs" },
+        { Options::CheckSync, 0, "C",  "check", Arg::None,        "  --check, -C        Check for desyncs\n" },
+
+        {
             Options::Strict, 0, "S", "strict", Arg::None,
             "  --strict, -S       Strict version match, can be stacked up to 3 times.\n"
             "                     -S means version suffix must match.\n"
             "                     -SS means commit ID must match.\n"
             "                     -SSS means build time must match.\n"
         },
+#endif
 
-        { Options::Stdout,    0, "",  "stdout", Arg::None, 0 }, // Output logs to stdout
-        { Options::Dummy,     0, "",   "dummy", Arg::None, 0 }, // Client mode with fake inputs
-        { Options::CheckSync, 0, "",   "check", Arg::None, 0 }, // Check for desyncs by periodically sending hashes
-        { Options::NoFork,    0, "", "no-fork", Arg::None, 0 }, // Don't fork when inside Wine, ie running wineconsole
+        { Options::NoFork, 0, "", "no-fork", Arg::None, 0 }, // Don't fork when inside Wine, ie when under wineconsole
 
         {
             Options::Unknown, 0, "", "", Arg::None,
