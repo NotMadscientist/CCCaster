@@ -269,7 +269,7 @@ void MainUi::controls()
     for ( Controller *c : controllers )
         names.push_back ( c->name );
 
-    ui->pushRight ( new ConsoleUi::Menu ( "Controllers", names, "Cancel" ) );
+    ui->pushRight ( new ConsoleUi::Menu ( "Controllers", names, "Back" ) );
 
     for ( ;; )
     {
@@ -285,9 +285,9 @@ void MainUi::controls()
 void MainUi::settings()
 {
     static const vector<string> options =
-    { "Alert on connect", "Display name", MBAA_EXE " CPU priority", "Show full character name" };
+    { "Alert on connect", "Display name", "Show full character name", "Game CPU priority" };
 
-    ui->pushRight ( new ConsoleUi::Menu ( "Settings", options, "Cancel" ) );
+    ui->pushRight ( new ConsoleUi::Menu ( "Settings", options, "Back" ) );
 
     for ( ;; )
     {
@@ -361,7 +361,24 @@ void MainUi::settings()
                 break;
 
             case 2:
-                ui->pushInFront ( new ConsoleUi::Menu ( "Start " MBAA_EXE " with high CPU priority?",
+                ui->pushInFront ( new ConsoleUi::Menu ( "Show full character names when spectating?",
+                { "Yes", "No" }, "Cancel" ),
+                { 0, 0 }, true ); // Don't expand but clear
+
+                ui->top<ConsoleUi::Menu>()->setPosition ( ( config.getInteger ( "fullCharacterName" ) + 1 ) % 2 );
+                ui->popUntilUserInput();
+
+                if ( ui->top()->resultInt >= 0 || ui->top()->resultInt >= 1 )
+                {
+                    config.putInteger ( "fullCharacterName", ( ui->top()->resultInt + 1 ) % 2 );
+                    saveConfig();
+                }
+
+                ui->pop();
+                break;
+
+            case 3:
+                ui->pushInFront ( new ConsoleUi::Menu ( "Start game with high CPU priority?",
                 { "Yes", "No" }, "Cancel" ),
                 { 0, 0 }, true ); // Don't expand but clear
 
@@ -371,23 +388,6 @@ void MainUi::settings()
                 if ( ui->top()->resultInt >= 0 || ui->top()->resultInt >= 1 )
                 {
                     config.putInteger ( "highCpuPriority", ( ui->top()->resultInt + 1 ) % 2 );
-                    saveConfig();
-                }
-
-                ui->pop();
-                break;
-
-            case 3:
-                ui->pushInFront ( new ConsoleUi::Menu ( "Show full character names when spectating?",
-                { "Yes", "No" }, "Cancel" ),
-                { 0, 0 }, true ); // Don't expand but clear
-
-                ui->top<ConsoleUi::Menu>()->setPosition ( ( config.getInteger ( "showFullCharacterName" ) + 1 ) % 2 );
-                ui->popUntilUserInput();
-
-                if ( ui->top()->resultInt >= 0 || ui->top()->resultInt >= 1 )
-                {
-                    config.putInteger ( "showFullCharacterName", ( ui->top()->resultInt + 1 ) % 2 );
                     saveConfig();
                 }
 
@@ -404,12 +404,14 @@ void MainUi::settings()
 
 void MainUi::initialize()
 {
-    // Defaults settings
+    // Configurable settings
     config.putInteger ( "alertOnConnect", 3 );
     config.putString ( "alertWavFile", "SystemDefault" );
     config.putString ( "displayName", ProcessManager::fetchGameUserName() );
+    config.putInteger ( "fullCharacterName", 0 );
     config.putInteger ( "highCpuPriority", 1 );
-    config.putInteger ( "showFullCharacterName", 0 );
+
+    // Cached UI state
     config.putInteger ( "lastUsedPort", -1 );
     config.putInteger ( "lastMainMenuPosition", 0 );
 
