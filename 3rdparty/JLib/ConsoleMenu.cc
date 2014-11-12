@@ -31,7 +31,7 @@ ConsoleMenu::ConsoleMenu(COORD origin, ConsoleFormat format
     ,m_selectionFormat(selectionFormat)
     ,m_longestItem(0)
     ,m_selected(m_items.end())
-    ,m_enableEscape(false)
+    ,m_enableEscape(true)
     ,m_enableDelete(0)
 {
 }
@@ -266,12 +266,12 @@ BOOL ConsoleMenu::SelectedItem(int position)
     return TRUE;
 }
 
-void ConsoleMenu::EscapeKey(bool enableEscape)
+void ConsoleMenu::EnableEscape(bool enableEscape)
 {
     m_enableEscape = enableEscape;
 }
 
-void ConsoleMenu::DeleteItems(int enableDelete)
+void ConsoleMenu::EnableDelete(int enableDelete)
 {
     m_enableDelete = enableDelete;
 }

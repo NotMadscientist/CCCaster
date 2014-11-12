@@ -94,7 +94,7 @@ void ConsoleUi::initalizeAndPush ( ConsoleUi::Element *element, const COORD& exp
     element->expand = expand;
     element->initialize();
 
-    stack.push ( ConsoleUi::ElementPtr ( element ) );
+    stack.push_back ( ConsoleUi::ElementPtr ( element ) );
 
     if ( !element->requiresUser )
         element->show();
@@ -104,7 +104,7 @@ void ConsoleUi::pushRight ( ConsoleUi::Element *element, const COORD& expand )
 {
     if ( !stack.empty() )
     {
-        element->pos = { short ( stack.top()->pos.X + stack.top()->size.X ), stack.top()->pos.Y };
+        element->pos = { short ( stack.back()->pos.X + stack.back()->size.X ), stack.back()->pos.Y };
         element->size = MAX_SCREEN_SIZE;
         element->size -= element->pos;
     }
@@ -116,7 +116,7 @@ void ConsoleUi::pushBelow ( ConsoleUi::Element *element, const COORD& expand )
 {
     if ( !stack.empty() )
     {
-        element->pos = { stack.top()->pos.X, short ( stack.top()->pos.Y + stack.top()->size.Y ) };
+        element->pos = { stack.back()->pos.X, short ( stack.back()->pos.Y + stack.back()->size.Y ) };
         element->pos.Y -= 1; // Merge horizontal borders
         element->size = MAX_SCREEN_SIZE;
         element->size -= element->pos;
@@ -129,7 +129,7 @@ void ConsoleUi::pushInFront ( ConsoleUi::Element *element, const COORD& expand )
 {
     if ( !stack.empty() )
     {
-        element->pos = stack.top()->pos;
+        element->pos = stack.back()->pos;
         element->size = MAX_SCREEN_SIZE;
         element->size -= element->pos;
     }

@@ -28,11 +28,11 @@ static ConsoleUi::Menu *mainMenu = 0;
 void MainUi::netplay ( RunFuncPtr run )
 {
     ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptString,
-                                            "Enter/paste <ip>:<port> to join or <port> to host:",
-                                            ( ( address.addr.empty() && !address.empty() )
-                                                    ? address.str().substr ( 1 )
-                                                    : address.str() ) ),
+                                            "Enter/paste <ip>:<port> to join or <port> to host:" ),
     { 1, 0 } ); // Expand width
+
+    ui->top<ConsoleUi::Prompt>()
+    ->setInitial ( ( address.addr.empty() && !address.empty() ) ? address.str().substr ( 1 ) : address.str() );
 
     for ( ;; )
     {
@@ -85,9 +85,9 @@ void MainUi::netplay ( RunFuncPtr run )
 void MainUi::spectate ( RunFuncPtr run )
 {
     ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptString,
-                                            "Enter/paste <ip>:<port> to spectate:",
-                                            ( !address.addr.empty() ? address.str() : "" ) ),
-    { 1, 0 } ); // Expand width
+                                            "Enter/paste <ip>:<port> to spectate:" ), { 1, 0 } ); // Expand width
+
+    ui->top<ConsoleUi::Prompt>()->setInitial ( !address.addr.empty() ? address.str() : "" );
 
     for ( ;; )
     {
@@ -133,9 +133,11 @@ void MainUi::spectate ( RunFuncPtr run )
 void MainUi::broadcast ( RunFuncPtr run )
 {
     ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger,
-                                            "Enter/paste <port> to broadcast:",
-                                            ( address.port ? address.port : INT_MIN ), false, 5 ),
-    { 1, 0 } ); // Expand width
+                                            "Enter/paste <port> to broadcast:" ), { 1, 0 } ); // Expand width
+
+    ui->top<ConsoleUi::Prompt>()->allowNegative = false;
+    ui->top<ConsoleUi::Prompt>()->maxDigits = 5;
+    ui->top<ConsoleUi::Prompt>()->setInitial ( address.port ? address.port : INT_MIN );
 
     for ( ;; )
     {
@@ -150,7 +152,7 @@ void MainUi::broadcast ( RunFuncPtr run )
 
         if ( menu->resultInt > 0xFFFF )
         {
-            ui->pushBelow ( new ConsoleUi::TextBox ( "Port must be less than 65536!" ) );
+            ui->pushBelow ( new ConsoleUi::TextBox ( "Port can't be greater than 65535!" ), { 1, 0 } ); // Expand width
             continue;
         }
 
@@ -183,10 +185,14 @@ void MainUi::broadcast ( RunFuncPtr run )
 
 void MainUi::offline ( RunFuncPtr run )
 {
+    ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter delay:" ) );
+
+    ui->top<ConsoleUi::Prompt>()->allowNegative = false;
+    ui->top<ConsoleUi::Prompt>()->maxDigits = 3;
+    ui->top<ConsoleUi::Prompt>()->setInitial ( 0 );
+
     uint8_t delay = 0;
     bool good = false;
-
-    ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter delay:", 0, false, 3 ) );
 
     for ( ;; )
     {
@@ -195,11 +201,13 @@ void MainUi::offline ( RunFuncPtr run )
         if ( menu->resultInt == INT_MIN )
             break;
 
+        ui->clearBelow ( false );
+
         ASSERT ( menu->resultInt >= 0 );
 
         if ( menu->resultInt >= 0xFF )
         {
-            ui->pushBelow ( new ConsoleUi::TextBox ( "Delay must be less than 255!" ) );
+            ui->pushBelow ( new ConsoleUi::TextBox ( "Delay can't be greater than 254!" ) );
             continue;
         }
 
@@ -320,7 +328,8 @@ void MainUi::main ( RunFuncPtr run )
     ui->pushRight ( new ConsoleUi::Menu ( uiTitle,
     { "Netplay", "Spectate", "Broadcast", "Offline", "Controls", "Settings" }, "Quit" ) );
 
-    mainMenu = ( ConsoleUi::Menu * ) ui->top();
+    mainMenu = ui->top<ConsoleUi::Menu>();
+    mainMenu->setEscape ( false );
 
     for ( ;; )
     {
@@ -338,7 +347,7 @@ void MainUi::main ( RunFuncPtr run )
 
         // Update cached UI state
         initialConfig.localName = config.getString ( "displayName" );
-        mainMenu->position = ( config.getInteger ( "lastMainMenuPosition" ) - 1 );
+        mainMenu->setPosition ( config.getInteger ( "lastMainMenuPosition" ) - 1 );
         if ( address.empty() )
             address.port = config.getInteger ( "lastUsedPort" );
 
@@ -437,9 +446,11 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
                           initialConfig.getAcceptMessage ( "connected" ) + "\n\n"
                           + formatStats ( pingStats ) ), { 1, 0 }, true ); // Expand width and clear
 
-    ui->pushBelow ( new ConsoleUi::Prompt (
-                        ConsoleUi::PromptInteger, "Enter delay:",
-                        computeDelay ( pingStats.latency ), false, 3 ) );
+    ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter delay:" ) );
+
+    ui->top<ConsoleUi::Prompt>()->allowNegative = false;
+    ui->top<ConsoleUi::Prompt>()->maxDigits = 3;
+    ui->top<ConsoleUi::Prompt>()->setInitial ( computeDelay ( pingStats.latency ) );
 
     for ( ;; )
     {
@@ -450,7 +461,7 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
 
         if ( menu->resultInt >= 0xFF )
         {
-            ui->pushBelow ( new ConsoleUi::TextBox ( "Delay must be less than 255!" ), { 1, 0 } ); // Expand width
+            ui->pushBelow ( new ConsoleUi::TextBox ( "Delay can't be greater than 254!" ) );
             continue;
         }
 

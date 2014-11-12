@@ -8,7 +8,6 @@
 
 #include <memory>
 #include <vector>
-#include <stack>
 #include <climits>
 #include <algorithm>
 #include <sstream>
@@ -109,7 +108,7 @@ private:
     typedef std::shared_ptr<Element> ElementPtr;
 
     // UI elements stack
-    std::stack<ElementPtr> stack;
+    std::vector<ElementPtr> stack;
 
     // Initialize the element and push it onto the stack
     void initalizeAndPush ( Element *element, const COORD& expand );
@@ -247,7 +246,6 @@ public:
             size.Y = items.size() + ( lastItem.empty() ? 0 : 1 ) + bordersTitleHeight;
 
             menu.Origin ( pos );
-            menu.EscapeKey ( true );
             menu.Scrollable ( true );
         }
 
@@ -256,13 +254,6 @@ public:
             LOG ( "title='%s'; pos=%s; size=%s", title, pos, size );
 
             ASSERT ( menu.Count() > 0 );
-
-            if ( position < 0 )
-                position = 0;
-            else if ( position >= ( int ) menu.Count() )
-                position = menu.Count() - 1;
-
-            menu.SelectedItem ( position );
 
             if ( ( resultInt = menu.Show() ) == 0 )
             {
@@ -274,8 +265,25 @@ public:
 
     public:
 
-        // Initial menu position
-        int position = 0;
+        void setPosition ( int position )
+        {
+            if ( position < 0 )
+                position = 0;
+            else if ( position >= ( int ) menu.Count() )
+                position = menu.Count() - 1;
+
+            menu.SelectedItem ( position );
+        }
+
+        void setEscape ( bool enabled )
+        {
+            menu.EnableEscape ( enabled );
+        }
+
+        void setDelete ( int enabled )
+        {
+            menu.EnableDelete ( enabled );
+        }
 
         Menu ( const std::string& title, const std::vector<std::string>& items, const std::string& lastItem = "" )
             : title ( title ), items ( items ), lastItem ( lastItem )
@@ -291,8 +299,6 @@ public:
     {
         std::string title;
         bool isIntegerPrompt = false;
-        bool allowNegative = true;
-        size_t maxDigits = 9;
 
     protected:
 
@@ -339,18 +345,31 @@ public:
 
     public:
 
-        Prompt ( PromptTypeString, const std::string& title, const std::string& initial = "" )
-            : title ( title ), isIntegerPrompt ( false )
+        bool allowNegative = true;
+
+        size_t maxDigits = 9;
+
+        void setInitial ( int initial )
         {
+            if ( !isIntegerPrompt )
+                return;
+
+            resultInt = initial;
+        }
+
+        void setInitial ( const std::string& initial )
+        {
+            if ( !isIntegerPrompt )
+                return;
+
             resultStr = initial;
         }
 
-        Prompt ( PromptTypeInteger, const std::string& title, int initial = INT_MIN,
-                 bool allowNegative = true, size_t maxDigits = 9 )
-            : title ( title ), isIntegerPrompt ( true ), allowNegative ( allowNegative ), maxDigits ( maxDigits )
-        {
-            resultInt = initial;
-        }
+        Prompt ( PromptTypeString, const std::string& title )
+            : title ( title ), isIntegerPrompt ( false ) {}
+
+        Prompt ( PromptTypeInteger, const std::string& title )
+            : title ( title ), isIntegerPrompt ( true ) {}
     };
 
     // Basic constructor
@@ -377,7 +396,7 @@ public:
         ASSERT ( stack.empty() == false );
 
         clearTop();
-        stack.pop();
+        stack.pop_back();
     }
 
     // Pop and show until we reach an element that requires user interaction, then return element.
@@ -389,22 +408,22 @@ public:
 
         while ( !stack.empty() )
         {
-            if ( stack.top()->requiresUser )
+            if ( stack.back()->requiresUser )
             {
-                stack.top()->show();
+                stack.back()->show();
                 break;
             }
 
             if ( clearPoppedElements )
                 pop();
             else
-                stack.pop();
+                stack.pop_back();
         }
 
         ASSERT ( stack.empty() == false );
-        ASSERT ( stack.top().get() != 0 );
+        ASSERT ( stack.back().get() != 0 );
 
-        return stack.top().get();
+        return stack.back().get();
     }
 
     // Pop the non user input elements from the top of the stack
@@ -418,12 +437,16 @@ public:
     }
 
     // Get the top element
-    Element *top() const
+    template<typename T = Element>
+    T *top() const
     {
         if ( stack.empty() )
             return 0;
 
-        return stack.top().get();
+        ASSERT ( stack.back().get() != 0 );
+        ASSERT ( typeid ( T ) == typeid ( Element ) || typeid ( *stack.back().get() ) == typeid ( T ) );
+
+        return ( T * ) stack.back().get();
     }
 
     // True if there are no elements
@@ -441,19 +464,34 @@ public:
     // Clear the top element (visually)
     void clearTop() const
     {
-        if ( stack.empty() )
+        if ( stack.empty() || stack.size() == 1 )
+        {
             ConsoleCore::GetInstance()->ClearScreen();
+        }
+        else if ( top()->pos.X == stack[stack.size() - 2]->pos.X            // If the top element is just underneath
+                  && top()->pos.Y > stack[stack.size() - 2]->pos.Y          // another element that is at least the
+                  && top()->size.X <= stack[stack.size() - 2]->size.X )     // same width, preserve the border
+        {
+            CharacterBox::Draw ( { top()->pos.X, short ( top()->pos.Y + 1 ) }, MAX_SCREEN_SIZE, ' ' );
+        }
         else
+        {
             CharacterBox::Draw ( top()->pos, MAX_SCREEN_SIZE, ' ' );
+        }
     }
 
     // Clear below the top element (visually)
-    void clearBelow() const
+    void clearBelow ( bool preserveBorder = true ) const
     {
         if ( stack.empty() )
+        {
             ConsoleCore::GetInstance()->ClearScreen();
+        }
         else
-            CharacterBox::Draw ( { top()->pos.X, short ( top()->pos.Y + top()->size.Y ) }, MAX_SCREEN_SIZE, ' ' );
+        {
+            const COORD pos = { top()->pos.X, short ( top()->pos.Y + top()->size.Y - ( preserveBorder ? 0 : 1 ) ) };
+            CharacterBox::Draw ( pos, MAX_SCREEN_SIZE, ' ' );
+        }
     }
 
     // Clear to the right of the top element (visually)

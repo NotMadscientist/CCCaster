@@ -224,11 +224,11 @@ public:
     BOOL SelectedItem(int position);
 
     // Enable the escape key
-    void EscapeKey(bool enableEscape);
+    void EnableEscape(bool enableEscape);
 
     // Enable deleting items
     // 1 for just delete/BS, 2 for delete/BS/left/right
-    void DeleteItems(int enableDelete);
+    void EnableDelete(int enableDelete);
 
 protected:
     //      Selection

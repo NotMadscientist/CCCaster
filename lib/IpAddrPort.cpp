@@ -93,7 +93,7 @@ IpAddrPort::IpAddrPort ( const string& addrPort ) : addr ( addrPort ), port ( 0 
     stringstream ss ( addr.substr ( i + 1 ) );
 
     if ( ! ( ss >> port ) )
-        throw Exception ( "Invalid port!" );
+        throw Exception ( "Port can't be greater than 65535!" );
 
     for ( ; i >= 0; --i )
         if ( isalnum ( addr[i] ) )
