@@ -96,6 +96,8 @@ void MainUi::spectate ( RunFuncPtr run )
         if ( menu->resultStr.empty() )
             break;
 
+        ui->clearBelow();
+
         try
         {
             address = menu->resultStr;
@@ -132,7 +134,7 @@ void MainUi::broadcast ( RunFuncPtr run )
 {
     ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger,
                                             "Enter/paste <port> to broadcast:",
-                                            address.port, false, 5 ),
+                                            ( address.port ? address.port : INT_MIN ), false, 5 ),
     { 1, 0 } ); // Expand width
 
     for ( ;; )
@@ -141,6 +143,8 @@ void MainUi::broadcast ( RunFuncPtr run )
 
         if ( menu->resultInt == INT_MIN )
             break;
+
+        ui->clearBelow();
 
         ASSERT ( menu->resultInt >= 0 );
 
@@ -342,6 +346,8 @@ void MainUi::main ( RunFuncPtr run )
 
         if ( main < 0 || main > 5 )
             break;
+
+        ui->clearRight();
 
         if ( main >= 0 && main <= 3 )
         {
