@@ -21,7 +21,8 @@ string lastError;
 string appDir;
 
 
-void run ( const IpAddrPort& address, const Serializable& config );
+void runMain ( const IpAddrPort& address, const Serializable& config );
+void runFake ( const IpAddrPort& address, const Serializable& config );
 
 
 static void initAppDir()
@@ -258,6 +259,8 @@ int main ( int argc, char *argv[] )
 
     if ( opt[Options::Spectate] )
         ui.initialConfig.mode.value = ClientMode::Spectate;
+
+    RunFuncPtr run = ( opt[Options::FakeUi] ? runFake : runMain );
 
     // Warn on invalid command line opt
     for ( Option *it = opt[Options::Unknown]; it; it = it->next() )

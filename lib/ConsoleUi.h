@@ -16,6 +16,8 @@
 
 #define ORIGIN ( ( COORD ) { 0, 0 } )
 
+#define MAX_SCREEN_SIZE ( ( COORD ) { short ( MAXSCREENX ), short ( MAXSCREENY ) } )
+
 // unselected colour
 // selected colour
 // outline colour
@@ -111,15 +113,6 @@ private:
 
     // Initialize the element and push it onto the stack
     void initalizeAndPush ( Element *element, const COORD& expand );
-
-    // Clear the top element (visually)
-    void clearTop() const
-    {
-        if ( stack.empty() )
-            ConsoleCore::GetInstance()->ClearScreen();
-        else
-            CharacterBox::Draw ( top()->pos, { short ( MAXSCREENX ), short ( MAXSCREENY ) }, ' ' );
-    }
 
 public:
 
@@ -402,6 +395,16 @@ public:
         return stack.top().get();
     }
 
+    // Pop the non user input elements from the top of the stack
+    void popNonUserInput()
+    {
+        if ( stack.empty() )
+            return;
+
+        while ( !top()->requiresUser )
+            pop();
+    }
+
     // Get the top element
     Element *top() const
     {
@@ -421,6 +424,33 @@ public:
     void clear()
     {
         ConsoleCore::GetInstance()->ClearScreen();
+    }
+
+    // Clear the top element (visually)
+    void clearTop() const
+    {
+        if ( stack.empty() )
+            ConsoleCore::GetInstance()->ClearScreen();
+        else
+            CharacterBox::Draw ( top()->pos, MAX_SCREEN_SIZE, ' ' );
+    }
+
+    // Clear below the top element (visually)
+    void clearBelow() const
+    {
+        if ( stack.empty() )
+            ConsoleCore::GetInstance()->ClearScreen();
+        else
+            CharacterBox::Draw ( { top()->pos.X, short ( top()->pos.Y + top()->size.Y ) }, MAX_SCREEN_SIZE, ' ' );
+    }
+
+    // Clear to the right of the top element (visually)
+    void clearRight() const
+    {
+        if ( stack.empty() )
+            ConsoleCore::GetInstance()->ClearScreen();
+        else
+            CharacterBox::Draw ( { short ( top()->pos.X + top()->size.X ), top()->pos.Y }, MAX_SCREEN_SIZE, ' ' );
     }
 
     // Get console window handle

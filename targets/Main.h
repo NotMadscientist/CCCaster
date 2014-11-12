@@ -202,7 +202,7 @@ struct AutoManager
         : AutoManager ( main )
     {
         // TODO re-enable me
-        // KeyboardManager::get().hook ( main, window, keys, options );
+        KeyboardManager::get().hook ( main, window, keys, options );
     }
 
     ~AutoManager()

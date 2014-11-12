@@ -156,9 +156,9 @@ struct MainApp
         else
         {
             if ( options[Options::Tunnel] )
-                ui.display ( toString ( "Connecting to %s (UDP tunnel)", address ) );
+                ui.display ( toString ( "Trying %s (UDP tunnel)", address ) );
             else
-                ui.display ( toString ( "Connecting to %s", address ) );
+                ui.display ( toString ( "Trying %s", address ) );
         }
 
         if ( clientMode.isHost() )
@@ -182,7 +182,7 @@ struct MainApp
     {
         AutoManager _ ( this, MainUi::getConsoleWindow(), { VK_ESCAPE } );
 
-        ui.display ( toString ( "Connecting to %s", address ) );
+        ui.display ( toString ( "Trying %s", address ) );
 
         ctrlSocket = SmartSocket::connectTCP ( this, address, options[Options::Tunnel] );
 
@@ -791,7 +791,7 @@ struct MainApp
         if ( socket != ctrlSocket.get() )
             return;
 
-        ui.display ( toString ( "Connecting to %s (UDP tunnel)", address ) );
+        ui.display ( toString ( "Trying %s (UDP tunnel)", address ) );
     }
 
     // ProcessManager callbacks
@@ -1042,9 +1042,16 @@ private:
 };
 
 
-void run ( const IpAddrPort& address, const Serializable& config )
+void runMain ( const IpAddrPort& address, const Serializable& config )
 {
+    lastError.clear();
+
     MainApp main ( address, config );
+
     main.start();
     main.waitForUserConfirmation();
+}
+
+void runFake ( const IpAddrPort& address, const Serializable& config )
+{
 }

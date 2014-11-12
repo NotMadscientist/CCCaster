@@ -19,11 +19,14 @@ static const string uiTitle = "CCCaster " + LocalVersion.code;
 #define SYSTEM_DEFAULT_ALERT "SystemDefault"
 
 
+static ConsoleUi::Element *mainMenu = 0;
+
+
 void MainUi::netplay ( RunFuncPtr run )
 {
     ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptString,
                                             "Enter/paste <ip>:<port> to join or <port> to host:",
-                                            ( address.addr.empty() && !address.empty()
+                                            ( ( address.addr.empty() && !address.empty() )
                                                     ? address.str().substr ( 1 )
                                                     : address.str() ) ),
     { 1, 0 } ); // Expand width
@@ -34,6 +37,8 @@ void MainUi::netplay ( RunFuncPtr run )
 
         if ( menu->resultStr.empty() )
             break;
+
+        ui->clearBelow();
 
         try
         {
@@ -59,9 +64,7 @@ void MainUi::netplay ( RunFuncPtr run )
 
         run ( address, initialConfig );
 
-        // TODO better way to do this?
-        while ( !ui->top()->requiresUser )
-            ui->pop();
+        ui->popNonUserInput();
 
         if ( !sessionError.empty() )
         {
@@ -96,13 +99,17 @@ void MainUi::spectate ( RunFuncPtr run )
             continue;
         }
 
+        if ( address.addr.empty() )
+        {
+            ui->pushBelow ( new ConsoleUi::TextBox ( "Invalid IP address!" ), { 1, 0 } ); // Expand width
+            continue;
+        }
+
         initialConfig.mode.value = ClientMode::Spectate;
 
         run ( address, initialConfig );
 
-        // TODO better way to do this?
-        while ( !ui->top()->requiresUser )
-            ui->pop();
+        ui->popNonUserInput();
 
         if ( !sessionError.empty() )
         {
@@ -118,7 +125,8 @@ void MainUi::broadcast ( RunFuncPtr run )
 {
     ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger,
                                             "Enter/paste <port> to broadcast:",
-                                            INT_MIN, false, 5 ) );
+                                            INT_MIN, false, 5 ),
+    { 1, 0 } ); // Expand width
 
     for ( ;; )
     {
@@ -147,9 +155,7 @@ void MainUi::broadcast ( RunFuncPtr run )
 
         run ( "", netplayConfig );
 
-        // TODO better way to do this?
-        while ( !ui->top()->requiresUser )
-            ui->pop();
+        ui->popNonUserInput();
 
         if ( !sessionError.empty() )
         {
@@ -207,6 +213,8 @@ void MainUi::offline ( RunFuncPtr run )
     // netplayConfig.rollback = 30;
 
     run ( "", netplayConfig );
+
+    ui->popNonUserInput();
 }
 
 bool MainUi::gameMode()
@@ -280,16 +288,18 @@ void MainUi::main ( RunFuncPtr run )
     ui->pushRight ( new ConsoleUi::Menu ( uiTitle,
     { "Netplay", "Spectate", "Broadcast", "Offline", "Controls", "Settings" }, "Quit" ) );
 
+    mainMenu = ui->top();
+
     for ( ;; )
     {
         ui->clear();
 
         if ( !sessionError.empty() && !sessionMessage.empty() )
-            ui->pushRight ( new ConsoleUi::TextBox ( sessionError + "\n" + sessionMessage ) );
+            ui->pushRight ( new ConsoleUi::TextBox ( sessionError + "\n" + sessionMessage ), { 1, 0 } ); // Expand width
         else if ( !sessionError.empty() )
-            ui->pushRight ( new ConsoleUi::TextBox ( sessionError ) );
+            ui->pushRight ( new ConsoleUi::TextBox ( sessionError ), { 1, 0 } ); // Expand width
         else if ( !sessionMessage.empty() )
-            ui->pushRight ( new ConsoleUi::TextBox ( sessionMessage ) );
+            ui->pushRight ( new ConsoleUi::TextBox ( sessionMessage ), { 1, 0 } ); // Expand width
 
         sessionError.clear();
         sessionMessage.clear();
@@ -366,16 +376,12 @@ void MainUi::display ( const string& message )
     if ( !ui )
         ui.reset ( new ConsoleUi ( uiTitle ) );
 
-    // TODO fix this shit
-
-    if ( ui->empty() || !ui->top()->requiresUser )
+    if ( ui->empty() || !ui->top()->requiresUser || ui->top() != mainMenu )
         ui->pushInFront ( new ConsoleUi::TextBox ( message ), { 1, 0 }, true ); // Expand width and clear
-    else if ( !ui->top()->expandWidth() )
-        ui->pushRight ( new ConsoleUi::TextBox ( message ), { 1, 0 } ); // Expand width
-    else if ( !ui->top()->expandHeight() )
+    else if ( ui->top()->expandWidth() )
         ui->pushBelow ( new ConsoleUi::TextBox ( message ), { 1, 0 } ); // Expand width
     else
-        ASSERT_IMPOSSIBLE;
+        ui->pushRight ( new ConsoleUi::TextBox ( message ), { 1, 0 } ); // Expand width
 }
 
 bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pingStats )
