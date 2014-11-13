@@ -560,22 +560,24 @@ void WindowedMenu::Fill(char fill)
 DWORD WindowedMenu::Show()
 {
     DWORD result = BADMENU;
+
     if(Count() == 0)
         return result;
+
     if(!m_scrollable)
         return ShowNoScroll();
 
-    UINT lengthOfLongestString = LongestItem();
-    COORD ulWindow = Origin(),
-        brWindow = {Origin().X + lengthOfLongestString+2,Origin().Y + MaxToShow()+4}
-        ,menuItemOrigin = {Origin().X+1,Origin().Y+3}
-        ,oldOrigin;
+    COORD ulWindow = Origin(), brWindow = {Origin().X+LongestItem()+2,Origin().Y+MaxToShow()+(m_title.empty()?2:4)};
 
     CharacterWindow wnd(ulWindow,brWindow,m_title,WindowColor(),ClientColor(),Fill());
     wnd.Draw();
+
+    COORD oldOrigin = Origin(), menuItemOrigin = {Origin().X+1,Origin().Y+(m_title.empty()?1:3)};
+
     oldOrigin = Origin(menuItemOrigin);
     result = ScrollingMenu::Show();
     Origin(oldOrigin);
+
     return result;
 }
 unsigned WindowedMenu::LongestItem() const
@@ -585,20 +587,20 @@ unsigned WindowedMenu::LongestItem() const
 DWORD WindowedMenu::ShowNoScroll()
 {
     DWORD result = BADMENU;
+
     if(Count() == 0)
         return result;
-    COORD oldOrigin = Origin()
-        ,menuItemOrigin = {Origin().X+1,Origin().Y+3};
 
-    UINT lengthOfLongestString = LongestItem();
+    COORD ulWindow = Origin(), brWindow = {Origin().X+LongestItem()+2,Origin().Y+Count()+(m_title.empty()?2:4)};
 
-    COORD ulWindow = Origin(),
-        brWindow = {Origin().X + lengthOfLongestString+2,Origin().Y + Count()+4};
     CharacterWindow wnd(ulWindow,brWindow,m_title,WindowColor(),ClientColor(),Fill());
     wnd.Draw();
 
-    Origin(menuItemOrigin);
+    COORD oldOrigin = Origin(), menuItemOrigin = {Origin().X+1,Origin().Y+(m_title.empty()?1:3)};
+
+    oldOrigin = Origin(menuItemOrigin);
     result = ConsoleMenu::Show();
     Origin(oldOrigin);
+
     return result;
 }

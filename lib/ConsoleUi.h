@@ -101,8 +101,6 @@ private:
 
     static const size_t bordersHeight = 2; // 2 borders
 
-    static const size_t bordersTitleHeight = 4; // 3 borders + title
-
     static const size_t maxMenuItems = 9 + 26; // 1-9 and A-Z
 
     typedef std::shared_ptr<Element> ElementPtr;
@@ -217,10 +215,11 @@ public:
         void initialize() override
         {
             ASSERT ( ( size_t ) size.X >= minMenuItem.size() + paddedBorders.size() );
-            ASSERT ( ( size_t ) size.Y > bordersTitleHeight );
+            ASSERT ( ( size_t ) size.Y > bordersHeight + ( title.empty() ? 0 : 2 ) );
             ASSERT ( items.size() <= maxMenuItems );
 
-            menu.Title ( " " + shortenWithEllipsis ( title ) + " " );
+            if ( !title.empty() )
+                menu.Title ( " " + shortenWithEllipsis ( title ) + " " );
 
             for ( size_t i = 0; i < items.size(); ++i )
             {
@@ -238,12 +237,12 @@ public:
                 menu.Append ( " " + shortenWithEllipsis ( lastItem ) + " ", items.size() );
             }
 
-            // Limit the menu vertial display size
-            menu.MaxToShow ( std::min ( ( size_t ) size.Y - bordersTitleHeight, menu.Count() ) );
+            // Limit the menu vertical display size
+            menu.MaxToShow ( std::min ( ( size_t ) size.Y - bordersHeight - ( title.empty() ? 0 : 2 ), menu.Count() ) );
 
             // Menus are NEVER expanded
             size.X = std::max ( menu.LongestItem() + borders.size(), title.size() + borders.size() );
-            size.Y = items.size() + ( lastItem.empty() ? 0 : 1 ) + bordersTitleHeight;
+            size.Y = bordersHeight + ( title.empty() ? 0 : 2 ) + items.size() + ( lastItem.empty() ? 0 : 1 );
 
             menu.Origin ( pos );
             menu.Scrollable ( true );
@@ -288,6 +287,9 @@ public:
         Menu ( const std::string& title, const std::vector<std::string>& items, const std::string& lastItem = "" )
             : title ( title ), items ( items ), lastItem ( lastItem )
             , menu ( pos, items.size(), title, THEME ) {}
+
+        Menu ( const std::vector<std::string>& items, const std::string& lastItem = "" )
+            : Menu ( "", items, lastItem ) {}
     };
 
     // Prompt types
