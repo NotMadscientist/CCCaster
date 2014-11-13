@@ -16,6 +16,9 @@ using namespace std;
 
 void EventManager::checkEvents ( uint64_t timeout )
 {
+    ASSERT ( TimerManager::get().isInitialized() == true );
+    ASSERT ( SocketManager::get().isInitialized() == true );
+
     TimerManager::get().check();
 
     if ( !running )

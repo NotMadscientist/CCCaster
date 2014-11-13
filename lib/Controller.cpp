@@ -2,6 +2,7 @@
 #include "Logger.h"
 
 #include <SDL.h>
+#include <windows.h>
 
 #include <cstdlib>
 
@@ -10,15 +11,79 @@ using namespace std;
 
 #define DEFAULT_DEADZONE    25000
 
-#define EVENT_KEYBOARD      0
-#define EVENT_JOY_AXIS      1
-#define EVENT_JOY_HAT       2
-#define EVENT_JOY_BUTTON    3
+#define EVENT_JOY_AXIS      0
+#define EVENT_JOY_HAT       1
+#define EVENT_JOY_BUTTON    2
 
 #define AXIS_CENTERED       0
 #define AXIS_POSITIVE       1
 #define AXIS_NEGATIVE       2
 
+
+static string getVKeyName ( int vkCode )
+{
+    uint32_t scanCode = MapVirtualKey ( vkCode, MAPVK_VK_TO_VSC );
+
+    // MapVirtualKey strips the extended bit for some keys
+    switch ( vkCode )
+    {
+#include "KeyboardMappings.h"
+
+        case VK_LEFT:
+        case VK_UP:
+        case VK_RIGHT:
+        case VK_DOWN:
+        case VK_END:
+        case VK_HOME:
+        case VK_INSERT:
+        case VK_DELETE:
+            scanCode |= 0x100; // Set extended bit
+            break;
+
+        default:
+            break;
+    }
+
+    char name[4096];
+
+    if ( GetKeyNameText ( scanCode << 16, name, sizeof ( name ) ) > 0 )
+        return name;
+    else
+        return toString ( "Key Code %d", vkCode );
+}
+
+void Controller::keyboardEvent ( int vkCode, bool isDown )
+{
+    if ( !isDown )
+        return;
+
+    Owner *owner = this->owner;
+    uint32_t key = 0;
+
+    if ( vkCode != VK_ESCAPE )
+    {
+        size_t bit = 0xFFFFFFFF;
+
+        for ( size_t i = 0; i < 32; ++i )
+        {
+            if ( bit > 32 && keyToMap & ( 1u << i ) )
+                bit = i;
+
+            if ( keyboard[i] == vkCode )
+                keyboard[i] = 0;
+        }
+
+        ASSERT ( bit < 32 );
+
+        keyboard[bit] = vkCode;
+        key = keyToMap;
+    }
+
+    cancelMapping();
+
+    if ( owner )
+        owner->doneMapping ( this, key );
+}
 
 void Controller::joystickEvent ( const SDL_JoyAxisEvent& event )
 {
@@ -49,9 +114,13 @@ void Controller::joystickEvent ( const SDL_JoyAxisEvent& event )
             LOG_CONTROLLER ( this, "Mapped axis%d %s to %08x",
                              event.axis, ( activeValue == AXIS_POSITIVE ? "+" : "-" ), keyToMap );
 
-            if ( owner != 0 )
-                owner->doneMapping ( this, keyToMap );
+            Owner *owner = this->owner;
+            uint32_t key = keyToMap;
+
             cancelMapping();
+
+            if ( owner )
+                owner->doneMapping ( this, key );
         }
 
         // Otherwise ignore already active mappings
@@ -124,9 +193,13 @@ void Controller::joystickEvent ( const SDL_JoyHatEvent& event )
             LOG_CONTROLLER ( this, "Mapped hat%d %d to %08x",
                              event.hat, ConvertHatToNumPad ( activeValue ), keyToMap );
 
-            if ( owner != 0 )
-                owner->doneMapping ( this, keyToMap );
+            Owner *owner = this->owner;
+            uint32_t key = keyToMap;
+
             cancelMapping();
+
+            if ( owner )
+                owner->doneMapping ( this, key );
         }
 
         // Otherwise ignore already active mappings
@@ -167,9 +240,13 @@ void Controller::joystickEvent ( const SDL_JoyButtonEvent& event )
 
             LOG_CONTROLLER ( this, "Mapped button%d to %08x", event.button, keyToMap );
 
-            if ( owner != 0 )
-                owner->doneMapping ( this, keyToMap );
+            Owner *owner = this->owner;
+            uint32_t key = keyToMap;
+
             cancelMapping();
+
+            if ( owner )
+                owner->doneMapping ( this, key );
         }
 
         // Otherwise ignore already active mappings
@@ -198,6 +275,8 @@ Controller::Controller ( KeyboardEnum ) : name ( "Keyboard" )
     memset ( &guid, 0, sizeof ( guid ) );
 
     clearMapping();
+
+    // TODO get default keyboard mappings from game
 }
 
 Controller::Controller ( SDL_Joystick *joystick ) : joystick ( joystick ), name ( SDL_JoystickName ( joystick ) )
@@ -228,6 +307,9 @@ Controller::Controller ( SDL_Joystick *joystick ) : joystick ( joystick ), name 
     }
 
     clearMapping();
+
+    for ( auto& v : deadzones )
+        v = DEFAULT_DEADZONE;
 
     // Default axis mappings
     mappings[EVENT_JOY_AXIS][0][0] = MASK_X_AXIS;
@@ -264,7 +346,29 @@ Controller::~Controller()
     guidBitset[guid.guid] &= ~ ( 1u << guid.index );
 }
 
-void Controller::startMapping ( Owner *owner, uint32_t key )
+string Controller::getMapping ( uint32_t key ) const
+{
+    if ( isKeyboard() )
+    {
+        size_t i;
+
+        for ( i = 0; i < 32; ++i )
+            if ( key & ( 1u << i ) )
+                break;
+
+        ASSERT ( i < 32 );
+
+        if ( keyboard[i] )
+            return getVKeyName ( keyboard[i] );
+        else
+            return "";
+    }
+
+    // TODO joystick
+    return "";
+}
+
+void Controller::startMapping ( Owner *owner, uint32_t key, const void *window )
 {
     cancelMapping();
 
@@ -272,10 +376,15 @@ void Controller::startMapping ( Owner *owner, uint32_t key )
 
     this->owner = owner;
     keyToMap = key;
+
+    if ( isKeyboard() )
+        KeyboardManager::get().hook ( this, window );
 }
 
 void Controller::cancelMapping()
 {
+    KeyboardManager::get().unhook();
+
     owner = 0;
     keyToMap = 0;
 
@@ -285,15 +394,17 @@ void Controller::cancelMapping()
                 c = 0;
 }
 
-void Controller::clearMapping()
+void Controller::clearMapping ( uint32_t keys )
 {
+    for ( size_t i = 0; i < 32; ++i )
+        if ( keys & ( 1u << i ) )
+            keyboard[i] = 0;
+
     for ( auto& a : mappings )
         for ( auto& b : a )
             for ( auto& c : b )
-                c = 0;
-
-    for ( auto& v : deadzones )
-        v = DEFAULT_DEADZONE;
+                if ( c & keys )
+                    c = 0;
 }
 
 inline static bool isPowerOfTwo ( uint32_t x )

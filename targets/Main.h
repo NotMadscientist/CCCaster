@@ -186,6 +186,12 @@ private:
 
 struct AutoManager
 {
+    AutoManager()
+    {
+        TimerManager::get().initialize();
+        SocketManager::get().initialize();
+    }
+
     template<typename T>
     AutoManager ( T *main )
     {

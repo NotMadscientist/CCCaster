@@ -1,10 +1,9 @@
+#include "Main.h"
 #include "MainUi.h"
 #include "Logger.h"
 #include "Utilities.h"
 #include "Version.h"
 #include "ConsoleUi.h"
-#include "ProcessManager.h"
-#include "ControllerManager.h"
 
 #include <mmsystem.h>
 
@@ -256,6 +255,11 @@ bool MainUi::gameMode()
 void MainUi::doneMapping ( Controller *controller, uint32_t key )
 {
     LOG ( "%s: controller=%08x; key=%08x", controller->name, controller, key );
+
+    isMapping = false;
+    mappedKey = key;
+
+    EventManager::get().stop();
 }
 
 void MainUi::controls()
@@ -277,6 +281,70 @@ void MainUi::controls()
 
         if ( menu->resultInt < 0 || menu->resultInt >= ( int ) controllers.size() )
             break;
+
+        Controller& controller = *controllers[menu->resultInt];
+
+        static const vector<uint32_t> bits =
+        {
+            BIT_UP,
+            BIT_DOWN,
+            BIT_LEFT,
+            BIT_RIGHT,
+            CC_BUTTON_A << 8,
+            CC_BUTTON_B << 8,
+            CC_BUTTON_C << 8,
+            CC_BUTTON_D << 8,
+            CC_BUTTON_E << 8,
+            CC_BUTTON_AB << 8,
+            CC_BUTTON_START << 8,
+            CC_BUTTON_FN1 << 8,
+            CC_BUTTON_FN2 << 8,
+            CC_BUTTON_SELECT << 8,
+            CC_BUTTON_CANCEL << 8,
+        };
+
+        ui->clearTop();
+
+        int position = ( controller.isKeyboard() ? 0 : 4 );
+
+        for ( ;; )
+        {
+            vector<string> mappings ( bits.size() );
+            for ( size_t i = 0; i < bits.size(); ++i )
+                mappings[i] = controller.getMapping ( bits[i] );
+
+            // TODO show more info at the top
+            ui->pushInFront ( new ConsoleUi::Menu ( controller.name, mappings, "Back" ) );
+            ui->top<ConsoleUi::Menu>()->setPosition ( position );
+
+            position = ui->popUntilUserInput()->resultInt;
+
+            if ( position < 0 || position >= ( int ) mappings.size() )
+            {
+                ui->pop();
+                break;
+            }
+
+            AutoManager _;
+
+            isMapping = true;
+            controller.startMapping ( this, bits[position], getConsoleWindow() );
+
+            if ( controller.isKeyboard() )
+            {
+                EventManager::get().start();
+            }
+            else
+            {
+                while ( isMapping )
+                {
+                    ControllerManager::get().check();
+                    Sleep ( 1 );
+                }
+            }
+
+            ui->pop();
+        }
     }
 
     ui->pop();

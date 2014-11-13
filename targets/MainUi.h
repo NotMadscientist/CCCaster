@@ -25,6 +25,9 @@ class MainUi : public Controller::Owner
 
     NetplayConfig netplayConfig;
 
+    bool isMapping = false;
+    uint32_t mappedKey = 0;
+
     void netplay ( RunFuncPtr run );
     void spectate ( RunFuncPtr run );
     void broadcast ( RunFuncPtr run );
