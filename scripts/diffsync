@@ -1,9 +1,7 @@
 #!/bin/sh
 
-START='NetplayState::CharaSelect'
-
-sed -n '/$START/,$p' $1 | grep -F RngState > tmpsync1
-sed -n '/$START/,$p' $2 | grep -F RngState > tmpsync2
+sed -n '/CharaSelect/,$p' $1 | grep -F RngState > tmpsync1
+sed -n '/CharaSelect/,$p' $2 | grep -F RngState > tmpsync2
 
 diff tmpsync1 tmpsync2
 
