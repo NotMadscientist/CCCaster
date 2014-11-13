@@ -370,7 +370,7 @@ bool NetplayManager::isRemoteInputReady() const
 
     if ( inputs[remotePlayer - 1].empty() )
     {
-        LOG ( "No remote inputs (index)" );
+        LOG ( "[%s] No remote inputs (index)", indexedFrame );
         return false;
     }
 
@@ -378,7 +378,8 @@ bool NetplayManager::isRemoteInputReady() const
 
     if ( startIndex + inputs[remotePlayer - 1].getEndIndex() - 1 < getIndex() )
     {
-        LOG ( "remoteIndex=%u < localIndex=%u", startIndex + inputs[remotePlayer - 1].getEndIndex() - 1, getIndex() );
+        LOG ( "[%s] remoteIndex=%u < localIndex=%u",
+              indexedFrame, startIndex + inputs[remotePlayer - 1].getEndIndex() - 1, getIndex() );
         return false;
     }
 
@@ -388,7 +389,7 @@ bool NetplayManager::isRemoteInputReady() const
 
     if ( inputs[remotePlayer - 1].getEndFrame() == 0 )
     {
-        LOG ( "No remote inputs (frame)" );
+        LOG ( "[%s] No remote inputs (frame)", indexedFrame );
         return false;
     }
 
@@ -396,7 +397,8 @@ bool NetplayManager::isRemoteInputReady() const
 
     if ( ( inputs[remotePlayer - 1].getEndFrame() - 1 + config.delay ) < getFrame() )
     {
-        LOG ( "remoteFrame = %u + %u delay = %u < localFrame=%u",
+        LOG ( "[%s] remoteFrame = %u + %u delay = %u < localFrame=%u",
+              indexedFrame,
               inputs[remotePlayer - 1].getEndFrame() - 1, config.delay,
               inputs[remotePlayer - 1].getEndFrame() - 1 + config.delay,
               getFrame() );
@@ -412,7 +414,7 @@ MsgPtr NetplayManager::getRngState() const
     if ( config.mode.isOffline() )
         return 0;
 
-    LOG ( "indexedFrame=[%s]", indexedFrame );
+    LOG ( "[%s]", indexedFrame );
 
     ASSERT ( getIndex() >= startIndex );
 
@@ -427,7 +429,7 @@ void NetplayManager::setRngState ( const RngState& rngState )
     if ( config.mode.isOffline() || rngState.index == 0 || rngState.index < startIndex )
         return;
 
-    LOG ( "indexedFrame=[%s]; rngState.index=%u", indexedFrame, rngState.index );
+    LOG ( "[%s] rngState.index=%u", indexedFrame, rngState.index );
 
     ASSERT ( rngState.index >= startIndex );
 
@@ -448,13 +450,13 @@ bool NetplayManager::isRngStateReady ( bool shouldSyncRngState ) const
 
     if ( rngStates.empty() )
     {
-        LOG ( "No remote RngStates" );
+        LOG ( "[%s] No remote RngStates", indexedFrame );
         return false;
     }
 
     if ( ( startIndex + rngStates.size() - 1 ) < getIndex() )
     {
-        LOG ( "remoteIndex=%u < localIndex=%u", startIndex + rngStates.size() - 1, getIndex() );
+        LOG ( "[%s] remoteIndex=%u < localIndex=%u", indexedFrame, startIndex + rngStates.size() - 1, getIndex() );
         return false;
     }
 
