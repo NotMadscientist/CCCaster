@@ -175,6 +175,9 @@ void KeyboardManager::hook ( Owner *owner,
                              const std::unordered_set<uint32_t>& keys,
                              uint8_t options )
 {
+    if ( keyboardThread )
+        return;
+
     LOG ( "Hooking keyboard manager" );
 
     this->owner = owner;
@@ -188,6 +191,8 @@ void KeyboardManager::hook ( Owner *owner,
 
     keyboardThread.reset ( new KeyboardThread() );
     keyboardThread->start();
+
+    LOG ( "Hooked keyboard manager" );
 }
 
 void KeyboardManager::unhook()
@@ -197,6 +202,8 @@ void KeyboardManager::unhook()
     keyboardThread.reset();
     sendSocket.reset();
     recvSocket.reset();
+
+    LOG ( "Unhooked keyboard manager" );
 }
 
 KeyboardManager& KeyboardManager::get()

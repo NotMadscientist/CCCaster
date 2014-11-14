@@ -126,7 +126,7 @@ void SocketManager::check ( uint64_t timeout )
 
 void SocketManager::add ( Socket *socket )
 {
-    LOG_SOCKET ( socket, "Added socket" );
+    LOG_SOCKET ( socket, "Adding socket" );
     allocatedSockets.insert ( socket );
     changed = true;
 }

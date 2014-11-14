@@ -289,6 +289,8 @@ struct MainApp
 
             ctrlSocket = popPendingSocket ( socket );
 
+            LOG ( "ctrlSocket=%08x", ctrlSocket.get() );
+
             if ( !ctrlSocket.get() )
                 return;
 
@@ -577,6 +579,7 @@ struct MainApp
             isDummyReady = true;
 
             dataSocket = SmartSocket::connectUDP ( this, address, ctrlSocket->getAsSmart().isTunnel() );
+
             LOG ( "dataSocket=%08x", dataSocket.get() );
 
             stopTimer.reset ( new Timer ( this ) );

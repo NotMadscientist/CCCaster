@@ -193,10 +193,8 @@ struct AutoManager
     }
 
     template<typename T>
-    AutoManager ( T *main )
+    AutoManager ( T *main ) : AutoManager()
     {
-        TimerManager::get().initialize();
-        SocketManager::get().initialize();
         ControllerManager::get().initialize ( main );
     }
 

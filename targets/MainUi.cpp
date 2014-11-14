@@ -265,6 +265,7 @@ void MainUi::doneMapping ( Controller *controller, uint32_t key )
 
 void MainUi::controls()
 {
+    ControllerManager::get().initialize ( 0 );
     ControllerManager::get().check();
 
     vector<Controller *> controllers = ControllerManager::get().getControllers();
@@ -341,17 +342,22 @@ void MainUi::controls()
 
             ui->top<ConsoleUi::Menu>()->overlayCurrentPosition ( bits[position].first + "..." );
 
-            AutoManager _;
-
-            isMapping = true;
-            controller.startMapping ( this, bits[position].second, getConsoleWindow() );
-
             if ( controller.isKeyboard() )
             {
+                AutoManager _;
+
+                isMapping = true;
+                controller.startMapping ( this, bits[position].second, getConsoleWindow() );
+
                 EventManager::get().start();
             }
             else
             {
+                AutoManager _;
+
+                isMapping = true;
+                controller.startMapping ( this, bits[position].second );
+
                 while ( isMapping )
                 {
                     ControllerManager::get().check();

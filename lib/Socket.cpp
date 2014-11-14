@@ -19,7 +19,7 @@ using namespace std;
 
 #define READ_BUFFER_SIZE ( 1024 * 4096 )
 
-#define SET_BLOCKING_MODE(VALUE)                                            \
+#define SET_NON_BLOCKING_MODE(VALUE)                                        \
     do {                                                                    \
         u_long flag = VALUE;                                                \
         if ( ioctlsocket ( fd, FIONBIO, &flag ) != 0 ) {                    \
@@ -107,22 +107,19 @@ void Socket::init()
             }
         }
 
+        SET_NON_BLOCKING_MODE ( 1 );
+
         if ( isClient() )
         {
             if ( isTCP() )
             {
-                SET_BLOCKING_MODE ( 1 );
-
                 if ( ::connect ( fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
                 {
                     int error = WSAGetLastError();
 
-                    // Sucessful non-blocking connect
+                    // Successful non-blocking connect
                     if ( error == WSAEWOULDBLOCK || error == WSAEINVAL )
-                    {
-                        SET_BLOCKING_MODE ( 0 );
                         break;
-                    }
 
                     err = error;
                     LOG_SOCKET ( this, "%s; connect failed", err );
