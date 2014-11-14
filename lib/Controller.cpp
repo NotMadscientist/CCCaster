@@ -51,24 +51,20 @@ void Controller::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExte
 
     if ( vkCode != VK_ESCAPE )
     {
-        size_t bit = 0xFFFFFFFF;
-
         for ( size_t i = 0; i < 32; ++i )
         {
-            if ( bit > 32 && keyToMap & ( 1u << i ) )
-                bit = i;
-
-            if ( keyCode[i] == vkCode )
+            if ( keyToMap & ( 1u << i ) )
+            {
+                keyCode[i] = vkCode;
+                keyName[i] = getVKeyName ( vkCode, scanCode, isExtended );
+            }
+            else if ( keyCode[i] == vkCode )
             {
                 keyCode[i] = 0;
                 keyName[i].clear();
             }
         }
 
-        ASSERT ( bit < 32 );
-
-        keyCode[bit] = vkCode;
-        keyName[bit] = getVKeyName ( vkCode, scanCode, isExtended );
         key = keyToMap;
     }
 
@@ -343,18 +339,11 @@ string Controller::getMapping ( uint32_t key ) const
 {
     if ( isKeyboard() )
     {
-        size_t i;
+        for ( size_t i = 0; i < 32; ++i )
+            if ( key & ( 1u << i ) && keyCode[i] )
+                return keyName[i];
 
-        for ( i = 0; i < 32; ++i )
-            if ( key & ( 1u << i ) )
-                break;
-
-        ASSERT ( i < 32 );
-
-        if ( keyCode[i] )
-            return keyName[i];
-        else
-            return "";
+        return "";
     }
 
     // TODO joystick

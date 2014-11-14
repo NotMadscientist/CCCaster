@@ -230,9 +230,9 @@ void ConfigSettings::putInteger ( const string& key, int i )
     types[key] = Type::Integer;
 }
 
-bool ConfigSettings::save ( const char *file ) const
+bool ConfigSettings::save ( const string& file ) const
 {
-    ofstream fout ( file );
+    ofstream fout ( file.c_str() );
     bool good = fout.good();
 
     if ( good )
@@ -247,9 +247,9 @@ bool ConfigSettings::save ( const char *file ) const
     return good;
 }
 
-bool ConfigSettings::load ( const char *file )
+bool ConfigSettings::load ( const string& file )
 {
-    ifstream fin ( file );
+    ifstream fin ( file.c_str() );
     bool good = fin.good();
 
     if ( good )

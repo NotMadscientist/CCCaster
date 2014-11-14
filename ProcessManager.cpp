@@ -187,18 +187,15 @@ void ProcessManager::openGame ( const string& appDir, bool highPriority )
 
     string command;
 
-    if ( !gameDir.empty() )
+    if ( gameDir.empty() )
+        command = "cd \"" + appDir + "\" && ";
+    else
         command = "cd \"" + gameDir + "\" && ";
 
     command += "\"" + appDir + LAUNCHER "\" \"" + MBAA_EXE "\" \"" + appDir + HOOK_DLL "\"";
 
     if ( highPriority )
         command += " --high";
-
-    if ( detectWine() )
-        replace ( command.begin(), command.end(), '\\', '/' );
-    else
-        replace ( command.begin(), command.end(), '/', '\\' );
 
     LOG ( "Running: %s", command );
 
@@ -380,11 +377,6 @@ ProcessManager::~ProcessManager()
 string ProcessManager::fetchGameUserName()
 {
     string path = gameDir + CC_NETWORK_CONFIG_FILE;
-
-    if ( detectWine() )
-        replace ( path.begin(), path.end(), '\\', '/' );
-    else
-        replace ( path.begin(), path.end(), '/', '\\' );
 
     LOG ( "Opening: %s", path );
 

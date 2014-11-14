@@ -84,7 +84,7 @@ int main ( int argc, char *argv[] )
     if ( argc > 1 )
     {
         exe = argv[1];
-        cwd = exe.substr ( 0, exe.find_last_of ( '/' ) );
+        cwd = exe.substr ( 0, exe.find_last_of ( "/\\" ) );
     }
 
     HANDLE process = 0;

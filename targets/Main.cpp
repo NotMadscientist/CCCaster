@@ -36,18 +36,10 @@ static void initAppDir()
         appDir = buffer;
         appDir = appDir.substr ( 0, appDir.find_last_of ( "/\\" ) );
 
-        if ( detectWine() )
-        {
-            replace ( appDir.begin(), appDir.end(), '\\', '/' );
-            if ( !appDir.empty() && appDir.back() != '/' )
-                appDir += '/';
-        }
-        else
-        {
-            replace ( appDir.begin(), appDir.end(), '/', '\\' );
-            if ( !appDir.empty() && appDir.back() != '\\' )
-                appDir += '\\';
-        }
+        replace ( appDir.begin(), appDir.end(), '/', '\\' );
+
+        if ( !appDir.empty() && appDir.back() != '\\' )
+            appDir += '\\';
     }
 }
 
@@ -253,8 +245,11 @@ int main ( int argc, char *argv[] )
     if ( opt[Options::GameDir] && opt[Options::GameDir].arg )
     {
         ProcessManager::gameDir = opt[Options::GameDir].arg;
-        if ( ProcessManager::gameDir.back() != '/' && ProcessManager::gameDir.back() != '\\' )
-            ProcessManager::gameDir += '/';
+
+        replace ( ProcessManager::gameDir.begin(), ProcessManager::gameDir.end(), '/', '\\' );
+
+        if ( ProcessManager::gameDir.back() != '\\' )
+            ProcessManager::gameDir += '\\';
     }
 
     // Initialize config

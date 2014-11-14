@@ -230,6 +230,9 @@ public:
     // 1 for just delete/BS, 2 for delete/BS/left/right
     void EnableDelete(int enableDelete);
 
+    // Get the position of the selection cursor
+    COORD CursorPosition() const;
+
 protected:
     //      Selection
     //  Sets the selected item.
@@ -249,8 +252,10 @@ protected:
     //  as a reference.  For example, Selection(Selection()++) will
     //  not advance the selected item to the next item in the list!
     Iterator Selection();
-private:
 
+    COORD m_cursorPosition;     // The position of the selection cursor.
+
+private:
     //      ConsoleMenu
     //  Not allowed to make menus like this.
     ConsoleMenu();

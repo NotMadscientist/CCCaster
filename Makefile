@@ -5,8 +5,8 @@ NAME = cccaster
 ARCHIVE = $(NAME).v$(VERSION).zip
 BINARY = $(NAME).v$(VERSION).exe
 FOLDER = $(NAME)
-DLL = $(FOLDER)/hook.dll
-LAUNCHER = $(FOLDER)/launcher.exe
+DLL = $(FOLDER)\\hook.dll
+LAUNCHER = $(FOLDER)\\launcher.exe
 DEBUGGER = debugger.exe
 MBAA_EXE = MBAA.exe
 
@@ -54,7 +54,7 @@ endif
 
 # Build flags
 DEFINES = -DWIN32_LEAN_AND_MEAN -D_M_IX86 -DNAMED_PIPE='"\\\\.\\pipe\\cccaster_pipe"' -DMBAA_EXE='"$(MBAA_EXE)"'
-DEFINES += -DBINARY='"$(BINARY)"' -DHOOK_DLL='"$(DLL)"' -DLAUNCHER='"$(LAUNCHER)"' -DFOLDER='"$(FOLDER)/"'
+DEFINES += -DBINARY='"$(BINARY)"' -DHOOK_DLL='"$(DLL)"' -DLAUNCHER='"$(LAUNCHER)"' -DFOLDER='"$(FOLDER)\\"'
 INCLUDES = -I$(CURDIR) -I$(CURDIR)/lib -I$(CURDIR)/tests -I$(CURDIR)/3rdparty -I$(CURDIR)/3rdparty/cereal/include
 INCLUDES += -I$(CURDIR)/3rdparty/gtest/include -I$(CURDIR)/3rdparty/SDL2/include
 INCLUDES += -I$(CURDIR)/3rdparty/minhook/include -I$(CURDIR)/3rdparty/d3dhook

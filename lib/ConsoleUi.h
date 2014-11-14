@@ -237,8 +237,11 @@ public:
                 menu.Append ( " " + shortenWithEllipsis ( lastItem ) + " ", items.size() );
             }
 
-            // Limit the menu vertical display size
-            menu.MaxToShow ( std::min ( ( size_t ) size.Y - bordersHeight - ( title.empty() ? 0 : 2 ), menu.Count() ) );
+            // TODO this is broken because WindowedMenu::SelectedItem doesn't work when the menu is scrolled off-screen
+            // // Limit the menu vertical display size
+            // menu.MaxToShow ( std::min ( size.Y - bordersHeight - ( title.empty() ? 0 : 2 ), menu.Count() ) );
+
+            ASSERT ( menu.Count() <= size.Y - bordersHeight - ( title.empty() ? 0 : 2 ) );
 
             // Menus are NEVER expanded
             size.X = std::max ( menu.LongestItem() + borders.size(), title.size() + borders.size() );
@@ -254,11 +257,19 @@ public:
 
             ASSERT ( menu.Count() > 0 );
 
-            if ( ( resultInt = menu.Show() ) == 0 )
+            resultInt = menu.Show();
+
+            if ( resultInt == 0 )
             {
                 resultInt = menu.SelectedValue();
                 resultStr = menu.SelectedText();
                 LOG ( "resultInt=%d; resultStr='%s'", resultInt, resultStr );
+            }
+            else if ( resultInt == USERDELETE )
+            {
+                resultInt = menu.SelectedValue();
+                resultStr.clear();
+                LOG ( "resultInt=%d; deleted", resultInt );
             }
         }
 
@@ -284,9 +295,18 @@ public:
             menu.EnableDelete ( enabled );
         }
 
+        void overlayCurrentPosition ( const std::string& text, bool selected = false )
+        {
+            const COORD pos = menu.CursorPosition();
+            const size_t i = menu.SelectedValue();
+
+            ConsoleCore::GetInstance()->Prints ( " " + shortenWithEllipsis ( items[i].substr ( 0, 4 ) + text ) + " ",
+                                                 false, ( selected ? &menu.SelectionFormat() : 0 ), pos.X, pos.Y );
+        }
+
         Menu ( const std::string& title, const std::vector<std::string>& items, const std::string& lastItem = "" )
             : title ( title ), items ( items ), lastItem ( lastItem )
-            , menu ( pos, items.size(), title, THEME ) {}
+            , menu ( pos, items.size() + ( lastItem.empty() ? 0 : 1 ), title, THEME ) {}
 
         Menu ( const std::vector<std::string>& items, const std::string& lastItem = "" )
             : Menu ( "", items, lastItem ) {}

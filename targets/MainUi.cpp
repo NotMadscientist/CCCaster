@@ -10,8 +10,6 @@
 using namespace std;
 
 
-static const string uiTitle = "CCCaster " + LocalVersion.code;
-
 // Indent position of the pinging stats (must be a string)
 #define INDENT_STATS "12"
 
@@ -21,6 +19,9 @@ static const string uiTitle = "CCCaster " + LocalVersion.code;
 // Config file
 #define CONFIG_FILE FOLDER "config.ini"
 
+extern string appDir;
+
+static const string uiTitle = "CCCaster " + LocalVersion.code;
 
 static ConsoleUi::Menu *mainMenu = 0;
 
@@ -284,23 +285,21 @@ void MainUi::controls()
 
         Controller& controller = *controllers[menu->resultInt];
 
-        static const vector<uint32_t> bits =
+        static const vector<pair<string, uint32_t>> bits =
         {
-            BIT_UP,
-            BIT_DOWN,
-            BIT_LEFT,
-            BIT_RIGHT,
-            CC_BUTTON_A << 8,
-            CC_BUTTON_B << 8,
-            CC_BUTTON_C << 8,
-            CC_BUTTON_D << 8,
-            CC_BUTTON_E << 8,
-            CC_BUTTON_AB << 8,
-            CC_BUTTON_START << 8,
-            CC_BUTTON_FN1 << 8,
-            CC_BUTTON_FN2 << 8,
-            CC_BUTTON_SELECT << 8,
-            CC_BUTTON_CANCEL << 8,
+            { "Up         : ",    BIT_UP },
+            { "Down       : ",  BIT_DOWN },
+            { "Left       : ",  BIT_LEFT },
+            { "Right      : ", BIT_RIGHT },
+            { "A (confirm): ", ( CC_BUTTON_A | CC_BUTTON_SELECT ) << 8 },
+            { "B (cancel) : ", ( CC_BUTTON_B | CC_BUTTON_CANCEL ) << 8 },
+            { "C          : ", CC_BUTTON_C << 8 },
+            { "D          : ", CC_BUTTON_D << 8 },
+            { "E          : ", CC_BUTTON_E << 8 },
+            { "A+B        : ", CC_BUTTON_AB << 8 },
+            { "Start      : ", CC_BUTTON_START << 8 },
+            { "FN1        : ", CC_BUTTON_FN1 << 8 },
+            { "FN2        : ", CC_BUTTON_FN2 << 8 },
         };
 
         ui->clearTop();
@@ -311,24 +310,41 @@ void MainUi::controls()
         {
             vector<string> mappings ( bits.size() );
             for ( size_t i = 0; i < bits.size(); ++i )
-                mappings[i] = controller.getMapping ( bits[i] );
+            {
+                string mapping = controller.getMapping ( bits[i].second );
+                mappings[i] = bits[i].first + ( mapping.empty() ? "   " : mapping );
+            }
 
             // TODO show more info at the top
             ui->pushInFront ( new ConsoleUi::Menu ( controller.name, mappings, "Back" ) );
             ui->top<ConsoleUi::Menu>()->setPosition ( position );
+            ui->top<ConsoleUi::Menu>()->setDelete ( 2 );
 
             position = ui->popUntilUserInput()->resultInt;
 
-            if ( position < 0 || position >= ( int ) mappings.size() )
+            if ( position < 0
+                    || position > ( int ) mappings.size()
+                    || ( position == ( int ) mappings.size() && !ui->top()->resultStr.empty() ) )
             {
                 ui->pop();
                 break;
             }
 
+            if ( ui->top()->resultStr.empty() )
+            {
+                if ( position < ( int ) mappings.size() )
+                    controller.clearMapping ( bits[position].second );
+
+                ui->pop();
+                continue;
+            }
+
+            ui->top<ConsoleUi::Menu>()->overlayCurrentPosition ( bits[position].first + "..." );
+
             AutoManager _;
 
             isMapping = true;
-            controller.startMapping ( this, bits[position], getConsoleWindow() );
+            controller.startMapping ( this, bits[position].second, getConsoleWindow() );
 
             if ( controller.isKeyboard() )
             {
@@ -344,6 +360,15 @@ void MainUi::controls()
             }
 
             ui->pop();
+
+            // Continue mapping
+            if ( mappedKey )
+            {
+                ++position;
+
+                if ( position < ( int ) mappings.size() )
+                    _ungetch ( RETURN_KEY );
+            }
         }
     }
 
@@ -484,7 +509,7 @@ void MainUi::initialize()
     config.putInteger ( "lastMainMenuPosition", 0 );
 
     // Override with user configuration
-    config.load ( CONFIG_FILE );
+    config.load ( appDir + CONFIG_FILE );
 
     // Save config after loading (this creates the config file on the first time)
     saveConfig();
@@ -496,13 +521,15 @@ void MainUi::initialize()
 
 void MainUi::saveConfig()
 {
-    if ( config.save ( CONFIG_FILE ) )
+    LOG ( "Saving: %s", appDir + CONFIG_FILE );
+
+    if ( config.save ( appDir + CONFIG_FILE ) )
         return;
 
-    LOG ( "Failed to save: %s", CONFIG_FILE );
+    LOG ( "Failed to save: %s", appDir + CONFIG_FILE );
 
     if ( sessionError.find ( "Failed to save config file:" ) == std::string::npos )
-        sessionError += toString ( "\nFailed to save config file: %s", CONFIG_FILE );
+        sessionError += toString ( "\nFailed to save config file: %s", appDir + CONFIG_FILE );
 }
 
 void MainUi::main ( RunFuncPtr run )

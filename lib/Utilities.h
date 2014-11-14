@@ -208,8 +208,8 @@ public:
     int getInteger ( const std::string& key ) const;
     void putInteger ( const std::string& key, int i );
 
-    bool save ( const char *file ) const;
-    bool load ( const char *file );
+    bool save ( const std::string& file ) const;
+    bool load ( const std::string& file );
 };
 
 

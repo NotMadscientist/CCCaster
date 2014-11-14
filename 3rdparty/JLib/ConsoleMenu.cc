@@ -166,9 +166,14 @@ DWORD ConsoleMenu::Show()
         for(;it != end; ++it)
         {
             if(it == m_selected)
+            {
+                m_cursorPosition = cursorOffset;
                 pCore->Prints(it->Text(),FALSE,&SelectionFormat(),cursorOffset.X,cursorOffset.Y);
+            }
             else
+            {
                 pCore->Prints(it->Text(),FALSE,&DisplayFormat(),cursorOffset.X,cursorOffset.Y);
+            }
             cursorOffset.X = m_origin.X;
             cursorOffset.Y++;
         }
@@ -276,6 +281,11 @@ void ConsoleMenu::EnableDelete(int enableDelete)
     m_enableDelete = enableDelete;
 }
 
+COORD ConsoleMenu::CursorPosition() const
+{
+    return m_cursorPosition;
+}
+
 void ConsoleMenu::Selection(ConsoleMenu::Iterator it)
 {
     m_selected = it;
@@ -355,9 +365,14 @@ DWORD ScrollingMenu::Show()
         {
             pCore->Prints(string(LongestItem(),' '),FALSE,&DisplayFormat(),cursorOffset.X,cursorOffset.Y);
             if(toDraw == Selection())
+            {
+                m_cursorPosition = cursorOffset;
                 pCore->Prints(toDraw->Text(),FALSE,&SelectionFormat(),cursorOffset.X,cursorOffset.Y);
+            }
             else
+            {
                 pCore->Prints(toDraw->Text(),FALSE,&DisplayFormat(),cursorOffset.X,cursorOffset.Y);
+            }
             cursorOffset.X = Origin().X;
             cursorOffset.Y++;
         }
