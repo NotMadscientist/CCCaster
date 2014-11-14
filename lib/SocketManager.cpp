@@ -101,24 +101,8 @@ void SocketManager::check ( uint64_t timeout )
             }
             else
             {
-                u_long numBytes;
-
-                if ( ioctlsocket ( socket->fd, FIONREAD, &numBytes ) != 0 )
-                {
-                    WindowsException err = WSAGetLastError();
-                    LOG_AND_THROW_ERROR ( err, "ioctlsocket failed" );
-                }
-
-                if ( socket->isTCP() && numBytes == 0 )
-                {
-                    LOG_SOCKET ( socket, "disconnectEvent" );
-                    socket->disconnectEvent();
-                }
-                else
-                {
-                    LOG_SOCKET ( socket, "readEvent" );
-                    socket->readEvent();
-                }
+                LOG_SOCKET ( socket, "readEvent" );
+                socket->readEvent();
             }
         }
     }

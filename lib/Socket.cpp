@@ -301,24 +301,25 @@ bool Socket::send ( const char *buffer, size_t len, const IpAddrPort& address )
     return true;
 }
 
-bool Socket::recv ( char *buffer, size_t& len )
+int Socket::recv ( char *buffer, size_t& len )
 {
     ASSERT ( isClient() == true );
+    ASSERT ( isTCP() == true );
     ASSERT ( fd != 0 );
 
     int recvBytes = ::recv ( fd, buffer, len, 0 );
 
+    if ( recvBytes == 0 )
+        return WSAECONNRESET;
+
     if ( recvBytes == SOCKET_ERROR )
-    {
-        LOG_SOCKET ( this, "%s; recv failed", WindowsException ( WSAGetLastError() ) );
-        return false;
-    }
+        return WSAGetLastError();
 
     len = recvBytes;
-    return true;
+    return 0;
 }
 
-bool Socket::recv ( char *buffer, size_t& len, IpAddrPort& address )
+int Socket::recvfrom ( char *buffer, size_t& len, IpAddrPort& address )
 {
     ASSERT ( isUDP() == true );
     ASSERT ( fd != 0 );
@@ -329,26 +330,11 @@ bool Socket::recv ( char *buffer, size_t& len, IpAddrPort& address )
     int recvBytes = ::recvfrom ( fd, buffer, len, 0, ( sockaddr * ) &sas, &saLen );
 
     if ( recvBytes == SOCKET_ERROR )
-    {
-        int error = WSAGetLastError();
-
-        LOG_SOCKET ( this, "%s; recvfrom failed", WindowsException ( error ) );
-
-        // WSAECONNRESET does not mean the UDP socket is dead, it just means Windows is reporting:
-        // http://en.wikipedia.org/wiki/Internet_Control_Message_Protocol#Destination_unreachable
-        if ( error == WSAECONNRESET )
-        {
-            len = 0;
-            address.clear();
-            return true;
-        }
-
-        return false;
-    }
+        return WSAGetLastError();
 
     len = recvBytes;
     address = ( sockaddr * ) &sas;
-    return true;
+    return 0;
 }
 
 void Socket::resetBuffer()
@@ -386,17 +372,29 @@ void Socket::readEvent()
     size_t bufferLen = readBuffer.size() - readPos;
 
     IpAddrPort address = getRemoteAddress();
-    bool success = false;
+    int error = 0;
 
     if ( isTCP() )
-        success = recv ( bufferStart, bufferLen );
+        error = Socket::recv ( bufferStart, bufferLen );
     else
-        success = recv ( bufferStart, bufferLen, address );
+        error = Socket::recvfrom ( bufferStart, bufferLen, address );
 
-    if ( !success )
+    if ( error )
     {
+        LOG_SOCKET ( this, "%s; %s failed", ( isTCP() ? "recv" : "recvfrom" ), WindowsException ( error ) );
+
+        // Skip blocking reads
+        if ( error == WSAEWOULDBLOCK )
+            return;
+
+        // WSAECONNRESET does not mean the UDP socket is dead, it just means Windows is reporting:
+        // http://en.wikipedia.org/wiki/Internet_Control_Message_Protocol#Destination_unreachable
+        if ( isUDP() && error == WSAECONNRESET )
+            return;
+
         // Disconnect the socket if an error occurred during read
         LOG_SOCKET ( this, "disconnect due to read error" );
+
         if ( isTCP() )
             disconnectEvent();
         else

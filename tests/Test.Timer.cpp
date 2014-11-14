@@ -1,6 +1,7 @@
 #ifndef RELEASE
 
 #include "EventManager.h"
+#include "SocketManager.h"
 #include "TimerManager.h"
 #include "Timer.h"
 
@@ -53,6 +54,7 @@ TEST ( Timer, RepeatRandom )
     };
 
     TimerManager::get().initialize();
+    SocketManager::get().initialize();
 
     TestTimer test;
 
@@ -65,6 +67,7 @@ TEST ( Timer, RepeatRandom )
     for ( bool valid : test.validTimers )
         EXPECT_TRUE ( valid );
 
+    SocketManager::get().deinitialize();
     TimerManager::get().deinitialize();
 }
 

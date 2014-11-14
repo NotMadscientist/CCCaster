@@ -206,6 +206,11 @@ void KeyboardManager::unhook()
     LOG ( "Unhooked keyboard manager" );
 }
 
+bool KeyboardManager::isHooked() const
+{
+    return ( keyboardThread.get() != 0 );
+}
+
 KeyboardManager& KeyboardManager::get()
 {
     static KeyboardManager instance;

@@ -53,6 +53,9 @@ public:
     // Unhook keyboard events
     void unhook();
 
+    // Indicates if the keyboard events are already hooked
+    bool isHooked() const;
+
     // Get the singleton instance
     static KeyboardManager& get();
 };

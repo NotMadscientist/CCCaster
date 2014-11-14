@@ -122,9 +122,9 @@ protected:
     // Initialize the socket fd with the provided address and protocol
     void init();
 
-    // Read raw bytes directly, blocking call, a return value of false indicates socket is disconnected
-    bool recv ( char *buffer, size_t& len );
-    bool recv ( char *buffer, size_t& len, IpAddrPort& address );
+    // Read raw bytes directly, 0 on success, otherwise returns the socket error code
+    int recv ( char *buffer, size_t& len );
+    int recvfrom ( char *buffer, size_t& len, IpAddrPort& address );
 
 public:
 
