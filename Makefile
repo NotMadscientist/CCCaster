@@ -5,8 +5,8 @@ NAME = cccaster
 ARCHIVE = $(NAME).v$(VERSION).zip
 BINARY = $(NAME).v$(VERSION).exe
 FOLDER = $(NAME)
-DLL = $(FOLDER)\\hook.dll
-LAUNCHER = $(FOLDER)\\launcher.exe
+DLL = hook.dll
+LAUNCHER = launcher.exe
 DEBUGGER = debugger.exe
 MBAA_EXE = MBAA.exe
 
@@ -53,8 +53,9 @@ endif
 
 
 # Build flags
-DEFINES = -DWIN32_LEAN_AND_MEAN -D_M_IX86 -DNAMED_PIPE='"\\\\.\\pipe\\cccaster_pipe"' -DMBAA_EXE='"$(MBAA_EXE)"'
-DEFINES += -DBINARY='"$(BINARY)"' -DHOOK_DLL='"$(DLL)"' -DLAUNCHER='"$(LAUNCHER)"' -DFOLDER='"$(FOLDER)\\"'
+DEFINES = -DWIN32_LEAN_AND_MEAN -D_M_IX86 -DNAMED_PIPE='"\\\\.\\pipe\\cccaster_pipe"'
+DEFINES += -DMBAA_EXE='"$(MBAA_EXE)"' -DBINARY='"$(BINARY)"' -DFOLDER='"$(FOLDER)\\"'
+DEFINES += -DHOOK_DLL='"$(FOLDER)\\$(DLL)"' -DLAUNCHER='"$(FOLDER)\\$(LAUNCHER)"'
 INCLUDES = -I$(CURDIR) -I$(CURDIR)/lib -I$(CURDIR)/tests -I$(CURDIR)/3rdparty -I$(CURDIR)/3rdparty/cereal/include
 INCLUDES += -I$(CURDIR)/3rdparty/gtest/include -I$(CURDIR)/3rdparty/SDL2/include
 INCLUDES += -I$(CURDIR)/3rdparty/minhook/include -I$(CURDIR)/3rdparty/d3dhook
@@ -98,7 +99,7 @@ target-profile: $(ARCHIVE)
 debugger: $(DEBUGGER)
 
 
-$(ARCHIVE): $(BINARY) $(DLL) $(LAUNCHER)
+$(ARCHIVE): $(BINARY) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER)
 	@echo
 	rm -f $(filter-out %.log,$(filter-out $(ARCHIVE),$(wildcard $(NAME)*.zip)))
 	$(ZIP) $(NAME).v$(VERSION).zip $^
@@ -112,7 +113,7 @@ $(BINARY): $(MAIN_OBJECTS) res/icon.res
 	$(CHMOD_X)
 	@echo
 
-$(DLL): $(DLL_OBJECTS)
+$(FOLDER)/$(DLL): $(DLL_OBJECTS)
 	@mkdir -p $(FOLDER)
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(DLL_OBJECTS) -shared $(LD_FLAGS) -ld3dx9
 	@echo
@@ -120,7 +121,7 @@ $(DLL): $(DLL_OBJECTS)
 	$(GRANT)
 	@echo
 
-$(LAUNCHER): targets/Launcher.cpp
+$(FOLDER)/$(LAUNCHER): targets/Launcher.cpp
 	@mkdir -p $(FOLDER)
 	$(CXX) -o $@ targets/Launcher.cpp -m32 -s -Os -O2 -Wall -static -mwindows
 	@echo
