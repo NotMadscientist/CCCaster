@@ -60,7 +60,8 @@ private:
     uint32_t state = 0;
 
     // Keyboard mappings: bit index -> virtual key code
-    int keyboard[32];
+    uint32_t keyCode[32];
+    std::string keyName[32];
 
     // Joystick mappings: event type -> axis/hat/button index -> axis/hat/button value -> mapped value
     //
@@ -85,7 +86,7 @@ private:
     static std::unordered_map<Guid, uint32_t> guidBitset;
 
     // Keyboard event callback
-    void keyboardEvent ( int vkCode, bool isDown );
+    void keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown );
 
     // Joystick event callbacks
     void joystickEvent ( const SDL_JoyAxisEvent& event );

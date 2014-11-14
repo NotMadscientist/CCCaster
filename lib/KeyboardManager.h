@@ -8,12 +8,15 @@
 
 struct KeyboardEvent : public SerializableMessage
 {
-    int vkCode = 0;
+    uint32_t vkCode = 0;
+    uint32_t scanCode = 0;
+    uint8_t isExtended = 0;
     uint8_t isDown = 0;
 
-    KeyboardEvent ( int vkCode, uint8_t isDown ) : vkCode ( vkCode ), isDown ( isDown ) {}
+    KeyboardEvent ( uint32_t vkCode, uint32_t scanCode, uint8_t isExtended, uint8_t isDown )
+        : vkCode ( vkCode ), scanCode ( scanCode ), isExtended ( isExtended ), isDown ( isDown ) {}
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( KeyboardEvent, vkCode, isDown )
+    PROTOCOL_MESSAGE_BOILERPLATE ( KeyboardEvent, vkCode, scanCode, isExtended, isDown )
 };
 
 
@@ -23,7 +26,7 @@ public:
 
     struct Owner
     {
-        virtual void keyboardEvent ( int vkCode, bool isDown ) = 0;
+        virtual void keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown ) = 0;
     };
 
     Owner *owner = 0;
@@ -43,9 +46,9 @@ public:
 
     // Hook keyboard events
     void hook ( Owner *owner,
-                const void *window = 0,                     // Window to match for keyboard events, 0 to match all
-                const std::unordered_set<int>& keys = {},   // VK codes to match for keyboard events, empty to match all
-                uint8_t options = 0 );
+                const void *window = 0,                         // Window to match for keyboard events, 0 to match all
+                const std::unordered_set<uint32_t>& keys = {},  // VK codes to match, empty to match all
+                uint8_t options = 0 );                          // Keyboard event hooking options
 
     // Unhook keyboard events
     void unhook();

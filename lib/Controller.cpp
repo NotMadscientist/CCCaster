@@ -20,39 +20,28 @@ using namespace std;
 #define AXIS_NEGATIVE       2
 
 
-static string getVKeyName ( int vkCode )
+static string getVKeyName ( uint32_t vkCode, uint32_t scanCode, bool isExtended )
 {
-    uint32_t scanCode = MapVirtualKey ( vkCode, MAPVK_VK_TO_VSC );
-
-    // MapVirtualKey strips the extended bit for some keys
     switch ( vkCode )
     {
 #include "KeyboardMappings.h"
 
-        case VK_LEFT:
-        case VK_UP:
-        case VK_RIGHT:
-        case VK_DOWN:
-        case VK_END:
-        case VK_HOME:
-        case VK_INSERT:
-        case VK_DELETE:
-            scanCode |= 0x100; // Set extended bit
-            break;
-
         default:
             break;
     }
+
+    if ( isExtended )
+        scanCode |= 0x100;
 
     char name[4096];
 
     if ( GetKeyNameText ( scanCode << 16, name, sizeof ( name ) ) > 0 )
         return name;
     else
-        return toString ( "Key Code %d", vkCode );
+        return toString ( "Key Code 0x%02X", vkCode );
 }
 
-void Controller::keyboardEvent ( int vkCode, bool isDown )
+void Controller::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown )
 {
     if ( !isDown )
         return;
@@ -69,13 +58,17 @@ void Controller::keyboardEvent ( int vkCode, bool isDown )
             if ( bit > 32 && keyToMap & ( 1u << i ) )
                 bit = i;
 
-            if ( keyboard[i] == vkCode )
-                keyboard[i] = 0;
+            if ( keyCode[i] == vkCode )
+            {
+                keyCode[i] = 0;
+                keyName[i].clear();
+            }
         }
 
         ASSERT ( bit < 32 );
 
-        keyboard[bit] = vkCode;
+        keyCode[bit] = vkCode;
+        keyName[bit] = getVKeyName ( vkCode, scanCode, isExtended );
         key = keyToMap;
     }
 
@@ -358,8 +351,8 @@ string Controller::getMapping ( uint32_t key ) const
 
         ASSERT ( i < 32 );
 
-        if ( keyboard[i] )
-            return getVKeyName ( keyboard[i] );
+        if ( keyCode[i] )
+            return keyName[i];
         else
             return "";
     }
@@ -389,22 +382,37 @@ void Controller::cancelMapping()
     keyToMap = 0;
 
     for ( auto& a : activeMappings )
+    {
         for ( auto& b : a )
+        {
             for ( auto& c : b )
                 c = 0;
+        }
+    }
 }
 
 void Controller::clearMapping ( uint32_t keys )
 {
     for ( size_t i = 0; i < 32; ++i )
+    {
         if ( keys & ( 1u << i ) )
-            keyboard[i] = 0;
+        {
+            keyCode[i] = 0;
+            keyName[i].clear();
+        }
+    }
 
     for ( auto& a : mappings )
+    {
         for ( auto& b : a )
+        {
             for ( auto& c : b )
+            {
                 if ( c & keys )
                     c = 0;
+            }
+        }
+    }
 }
 
 inline static bool isPowerOfTwo ( uint32_t x )

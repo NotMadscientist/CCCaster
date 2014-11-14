@@ -12,7 +12,7 @@ using namespace std;
 static const void *keyboardWindow = 0;
 
 // VK codes to match for keyboard events, empty to match all, NOT safe to modify when hooked!
-static unordered_set<int> keyboardKeys;
+static unordered_set<uint32_t> keyboardKeys;
 
 // Keyboard hook and message loop thread
 static ThreadPtr keyboardThread;
@@ -36,10 +36,6 @@ static LRESULT CALLBACK keyboardCallback ( int code, WPARAM wParam, LPARAM lPara
             case WM_KEYUP:
             case WM_SYSKEYUP:
             {
-                const int vkCode = ( int ) ( ( ( PKBDLLHOOKSTRUCT ) lParam )->vkCode );
-
-                // LOG ( "code=%d; wParam=%d; lParam=%d; vkCode=%d", code, wParam, lParam, vkCode );
-
                 // Ignore key if socket is unconnected
                 if ( !sendSocket || !sendSocket->isConnected() )
                     break;
@@ -48,12 +44,18 @@ static LRESULT CALLBACK keyboardCallback ( int code, WPARAM wParam, LPARAM lPara
                 if ( keyboardWindow && ( GetForegroundWindow() != keyboardWindow ) )
                     break;
 
+                const uint32_t vkCode = ( uint32_t ) ( ( ( PKBDLLHOOKSTRUCT ) lParam )->vkCode );
+
                 // Ignore key if the VK code is not matched
                 if ( !keyboardKeys.empty() && ( keyboardKeys.find ( vkCode ) == keyboardKeys.end() ) )
                     break;
 
+                const uint32_t scanCode = ( uint32_t ) ( ( ( PKBDLLHOOKSTRUCT ) lParam )->scanCode );
+                const bool isExtended = ( ( ( PKBDLLHOOKSTRUCT ) lParam )->flags & LLKHF_EXTENDED );
+                const bool isDown = ( wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN );
+
                 // Send KeyboardEvent message and return 1 to eat the keyboard event
-                sendSocket->send ( new KeyboardEvent ( vkCode, ( wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN ) ) );
+                sendSocket->send ( new KeyboardEvent ( vkCode, scanCode, isExtended, isDown ) );
                 return 1;
             }
 
@@ -157,13 +159,21 @@ void KeyboardManager::readEvent ( Socket *socket, const MsgPtr& msg, const IpAdd
         return;
     }
 
-    LOG ( "vkCode=%d; isDown=%d", msg->getAs<KeyboardEvent>().vkCode, msg->getAs<KeyboardEvent>().isDown );
+    const uint32_t vkCode = msg->getAs<KeyboardEvent>().vkCode;
+    const uint32_t scanCode = msg->getAs<KeyboardEvent>().scanCode;
+    const bool isExtended = msg->getAs<KeyboardEvent>().isExtended;
+    const bool isDown = msg->getAs<KeyboardEvent>().isDown;
+
+    LOG ( "vkCode=%u; scanCode=%u; isExtended=%u; isDown=%u", vkCode, scanCode, isExtended, isDown );
 
     if ( owner )
-        owner->keyboardEvent ( msg->getAs<KeyboardEvent>().vkCode, msg->getAs<KeyboardEvent>().isDown );
+        owner->keyboardEvent ( vkCode, scanCode, isExtended, isDown );
 }
 
-void KeyboardManager::hook ( Owner *owner, const void *window, const std::unordered_set<int>& keys, uint8_t options )
+void KeyboardManager::hook ( Owner *owner,
+                             const void *window,
+                             const std::unordered_set<uint32_t>& keys,
+                             uint8_t options )
 {
     LOG ( "Hooking keyboard manager" );
 

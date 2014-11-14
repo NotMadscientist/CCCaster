@@ -921,7 +921,7 @@ struct MainApp
     }
 
     // KeyboardManager callback
-    void keyboardEvent ( int vkCode, bool isDown ) override
+    void keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown ) override
     {
         if ( vkCode == VK_ESCAPE )
             stop();
