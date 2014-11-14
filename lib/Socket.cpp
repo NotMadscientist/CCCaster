@@ -241,7 +241,7 @@ bool Socket::send ( const char *buffer, size_t len )
         {
             WindowsException err = WSAGetLastError();
 
-            // Disconnect the socket if an error occured during send
+            // Disconnect the socket if an error occurred during send
             if ( isTCP() )
             {
                 LOG_SOCKET ( this, "%s; send failed", err );
