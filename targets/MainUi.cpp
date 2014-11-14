@@ -436,7 +436,7 @@ void MainUi::settings()
                 ui->top<ConsoleUi::Menu>()->setPosition ( ( config.getInteger ( "fullCharacterName" ) + 1 ) % 2 );
                 ui->popUntilUserInput();
 
-                if ( ui->top()->resultInt >= 0 || ui->top()->resultInt >= 1 )
+                if ( ui->top()->resultInt >= 0 && ui->top()->resultInt <= 1 )
                 {
                     config.putInteger ( "fullCharacterName", ( ui->top()->resultInt + 1 ) % 2 );
                     saveConfig();
@@ -453,7 +453,7 @@ void MainUi::settings()
                 ui->top<ConsoleUi::Menu>()->setPosition ( ( config.getInteger ( "highCpuPriority" ) + 1 ) % 2 );
                 ui->popUntilUserInput();
 
-                if ( ui->top()->resultInt >= 0 || ui->top()->resultInt >= 1 )
+                if ( ui->top()->resultInt >= 0 && ui->top()->resultInt <= 1 )
                 {
                     config.putInteger ( "highCpuPriority", ( ui->top()->resultInt + 1 ) % 2 );
                     saveConfig();
