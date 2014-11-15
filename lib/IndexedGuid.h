@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Utilities.h"
+#include "Protocol.h"
 
 #include <cstdint>
 #include <cstring>
@@ -8,17 +9,21 @@
 
 
 // Basic guid type
-struct Guid
+struct Guid : public SerializableSequence
 {
     uint8_t guid[16];
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( Guid, guid )
 };
 
 
 // Guid with an extra index property
-struct IndexedGuid
+struct IndexedGuid : public SerializableSequence
 {
     Guid guid;
     uint8_t index = 0;
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( IndexedGuid, guid, index )
 };
 
 

@@ -8,6 +8,14 @@
 #include <vector>
 
 
+struct ControllerMappings : public SerializableSequence
+{
+    std::unordered_map<IndexedGuid, MsgPtr> mappings;
+
+    DECLARE_MESSAGE_BOILERPLATE ( ControllerMappings )
+};
+
+
 class ControllerManager
 {
 public:
@@ -27,6 +35,7 @@ private:
 
     // Maps of joystick controller instances
     std::unordered_map<int, std::shared_ptr<Controller>> joysticks;
+    std::unordered_map<IndexedGuid, Controller *> joysticksByGuid;
 
     // Set of unique joystick guids, used to workaround SDL bug 2643
     std::unordered_set<Guid> guids;
@@ -61,6 +70,29 @@ public:
 
     // Get all the controllers, sorted by name, except the keyboard is first
     std::vector<Controller *> getControllers();
+
+    // Get the mappings for all controllers
+    MsgPtr getMappings()
+    {
+        ControllerMappings *msg = new ControllerMappings();
+
+        for ( Controller *c : getControllers() )
+            msg->mappings[c->getGuid()] = c->getMappings();
+
+        return MsgPtr ( msg );
+    }
+
+    // Set the mappings for all controllers
+    void setMappings ( const ControllerMappings& mappings )
+    {
+        for ( auto& kv : mappings.mappings )
+        {
+            if ( kv.second->getMsgType() == MsgType::KeyboardMappings )
+                keyboard.setMappings ( kv.second->getAs<KeyboardMappings>() );
+            else if ( joysticksByGuid.find ( kv.first ) != joysticksByGuid.end() )
+                joysticksByGuid[kv.first]->setMappings ( kv.second->getAs<JoystickMappings>() );
+        }
+    }
 
     // Initialize / deinitialize controller manager
     void initialize ( Owner *owner );

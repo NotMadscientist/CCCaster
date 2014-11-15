@@ -9,7 +9,7 @@
 
 #define LOG_CONTROLLER(CONTROLLER, FORMAT, ...)                                                                 \
     LOG ( "%s: controller=%08x; joystick=%08x; state=%08x; " FORMAT,                                            \
-          CONTROLLER->name, CONTROLLER, CONTROLLER->joystick, CONTROLLER->state, ## __VA_ARGS__ )
+          CONTROLLER->getName(), CONTROLLER, CONTROLLER->joystick, CONTROLLER->state, ## __VA_ARGS__ )
 
 
 #define BIT_UP          ( 0x00000001u )
@@ -31,6 +31,37 @@ struct SDL_JoyHatEvent;
 struct SDL_JoyButtonEvent;
 
 
+struct KeyboardMappings : public SerializableSequence
+{
+    // bit index -> virtual key code
+    uint32_t codes[32];
+
+    // bit index -> key name
+    std::string names[32];
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( KeyboardMappings, codes, names )
+};
+
+
+struct JoystickMappings : public SerializableSequence
+{
+    // event type -> axis/hat/button index -> axis/hat/button value -> mapped value
+    //
+    // The neutral axis/hat/button value is mapped to a bit mask of all the mapped values on the same index.
+    //
+    // Example:                                         Example:
+    //   Axis up      -> 0b0001                           Hat up      -> 0b0001   Hat left  -> 0b0100
+    //   Axis down    -> 0b0010                           Hat down    -> 0b0010   Hat right -> 0b1000
+    //
+    // Then:                                            Then:
+    //   Axis neutral -> 0b0011                           Hat neutral -> 0b1111
+    //
+    uint32_t mappings[3][256][16];
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( JoystickMappings, mappings )
+};
+
+
 class Controller : public KeyboardManager::Owner
 {
 public:
@@ -47,40 +78,29 @@ private:
     // Enum type for keyboard controller
     enum KeyboardEnum { Keyboard };
 
-    // Mapping tuple
-    struct Mapping { const uint8_t type, index, value; const uint32_t state; };
-
     // SDL joystick pointer, 0 for keyboard
     SDL_Joystick *joystick = 0;
 
-    // Controller unique identifier
-    IndexedGuid guid;
+    // Controller name
+    const std::string name;
 
     // Controller state
     uint32_t state = 0;
 
-    // Keyboard mappings: bit index -> virtual key code
-    uint32_t keyCode[32];
-    std::string keyName[32];
+    // Controller unique identifier
+    IndexedGuid guid;
 
-    // Joystick mappings: event type -> axis/hat/button index -> axis/hat/button value -> mapped value
-    //
-    // The neutral axis/hat/button value is mapped to a bit mask of all the mapped values on the same index.
-    //
-    // Example:                                         Example:
-    //   Axis up      -> 0b0001                           Hat up      -> 0b0001   Hat left  -> 0b0100
-    //   Axis down    -> 0b0010                           Hat down    -> 0b0010   Hat right -> 0b1000
-    //
-    // Then:                                            Then:
-    //   Axis neutral -> 0b0011                           Hat neutral -> 0b1111
-    //
-    uint32_t mappings[3][256][16];
+    // Keyboard mappings
+    KeyboardMappings keybd;
+
+    // Joystick mappings
+    JoystickMappings stick;
 
     // The current key to map to an event
     uint32_t keyToMap = 0;
 
-    // The currently active mappings for the above key
-    uint32_t activeMappings[3][256][16];
+    // The currently active joystick mappings for the above key
+    JoystickMappings active;
 
     // Guid mapped to a bitset of indices, used to determine a free index for a duplicate guid
     static std::unordered_map<Guid, uint32_t> guidBitset;
@@ -99,17 +119,39 @@ private:
 
 public:
 
-    // Controller name
-    const std::string name;
-
     // Joystick axis deadzones
     uint16_t deadzones[256];
 
     // Basic destructor
     ~Controller();
 
+    // Get the controller guid
+    const IndexedGuid& getGuid() const { return guid; }
+
+    // Get controller name with index
+    const std::string getName() const
+    {
+        if ( guid.index == 0 )
+            return name;
+        else
+            return toString ( "%s (%d)", name, guid.index + 1 );
+    }
+
     // Get the mapping for the given key as a human-readable string
     std::string getMapping ( uint32_t key ) const;
+
+    // Get the mappings for this controller
+    MsgPtr getMappings()
+    {
+        if ( isKeyboard() )
+            return MsgPtr ( &keybd, ignoreMsgPtr );
+        else
+            return MsgPtr ( &stick, ignoreMsgPtr );
+    }
+
+    // Set the mappings for this controller
+    void setMappings ( const KeyboardMappings& mappings ) { this->keybd = mappings; }
+    void setMappings ( const JoystickMappings& mappings ) { this->stick = mappings; }
 
     // Start / cancel mapping for the given key
     void startMapping ( Owner *owner, uint32_t key, const void *window = 0 );

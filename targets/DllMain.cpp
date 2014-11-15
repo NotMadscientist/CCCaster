@@ -81,6 +81,9 @@ struct DllMain
     // Local and remote SyncHashes
     list<MsgPtr> localSync, remoteSync;
 
+    // Controller mappings
+    ControllerMappings mappings;
+
 
     void frameStepNormal()
     {
@@ -138,7 +141,7 @@ struct DllMain
                         input = COMBINE_INPUT ( direction, buttons );
                     }
                 }
-                else
+                else if ( 0 )
                 {
                     uint16_t direction = 5, buttons = 0;
 
@@ -169,6 +172,23 @@ struct DllMain
                         // Sleep ( 1000 );
                         procMan.loadState ( { netMan.getIndex(), netMan.getFrame() - 10 }, netMan );
                     }
+
+                    input = COMBINE_INPUT ( direction, buttons );
+                }
+                else
+                {
+                    uint32_t state = ControllerManager::get().getKeyboard()->getState();
+                    uint16_t direction = 5, buttons = ( state & MASK_BUTTONS ) >> 8;
+
+                    if ( state & BIT_UP )
+                        direction = 8;
+                    else if ( state & BIT_DOWN )
+                        direction = 2;
+
+                    if ( state & BIT_LEFT )
+                        --direction;
+                    else if ( state & BIT_RIGHT )
+                        ++direction;
 
                     input = COMBINE_INPUT ( direction, buttons );
                 }
@@ -714,6 +734,11 @@ struct DllMain
                 Logger::get().initialize ( options.arg ( Options::AppDir ) + LOG_FILE );
                 syncLog.sessionId = options.arg ( Options::SessionId );
                 syncLog.initialize ( options.arg ( Options::AppDir ) + SYNC_LOG_FILE, LOG_VERSION );
+                break;
+
+            case MsgType::ControllerMappings:
+                mappings = msg->getAs<ControllerMappings>();
+                ControllerManager::get().setMappings ( mappings );
                 break;
 
             case MsgType::ClientMode:

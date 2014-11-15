@@ -43,7 +43,8 @@ static string getVKeyName ( uint32_t vkCode, uint32_t scanCode, bool isExtended 
 
 void Controller::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown )
 {
-    if ( !isDown )
+    // Only handle keyboard events for mapping
+    if ( !isDown && keyToMap != 0 )
         return;
 
     Owner *owner = this->owner;
@@ -51,17 +52,17 @@ void Controller::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExte
 
     if ( vkCode != VK_ESCAPE )
     {
-        for ( size_t i = 0; i < 32; ++i )
+        for ( uint8_t i = 0; i < 32; ++i )
         {
             if ( keyToMap & ( 1u << i ) )
             {
-                keyCode[i] = vkCode;
-                keyName[i] = getVKeyName ( vkCode, scanCode, isExtended );
+                keybd.codes[i] = vkCode;
+                keybd.names[i] = getVKeyName ( vkCode, scanCode, isExtended );
             }
-            else if ( keyCode[i] == vkCode )
+            else if ( keybd.codes[i] == vkCode )
             {
-                keyCode[i] = 0;
-                keyName[i].clear();
+                keybd.codes[i] = 0;
+                keybd.names[i].clear();
             }
         }
 
@@ -76,7 +77,7 @@ void Controller::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExte
 
 void Controller::joystickEvent ( const SDL_JoyAxisEvent& event )
 {
-    uint32_t *values = mappings[EVENT_JOY_AXIS][event.axis];
+    uint32_t *values = stick.mappings[EVENT_JOY_AXIS][event.axis];
 
     uint8_t value = 0;
     if ( abs ( event.value ) > deadzones[event.axis] )
@@ -84,7 +85,7 @@ void Controller::joystickEvent ( const SDL_JoyAxisEvent& event )
 
     if ( keyToMap != 0 )
     {
-        uint32_t *activeValues = activeMappings[EVENT_JOY_AXIS][event.axis];
+        uint32_t *activeValues = active.mappings[EVENT_JOY_AXIS][event.axis];
 
         uint8_t activeValue = 0;
 
@@ -98,6 +99,7 @@ void Controller::joystickEvent ( const SDL_JoyAxisEvent& event )
             // Done mapping if the axis returned to 0
             values[activeValue] = keyToMap;
 
+            // Set bit mask for neutral value
             values[AXIS_CENTERED] = ( values[AXIS_POSITIVE] | values[AXIS_NEGATIVE] );
 
             LOG_CONTROLLER ( this, "Mapped axis%d %s to %08x",
@@ -112,7 +114,7 @@ void Controller::joystickEvent ( const SDL_JoyAxisEvent& event )
                 owner->doneMapping ( this, key );
         }
 
-        // Otherwise ignore already active mappings
+        // Otherwise ignore already active joystick mappings
         if ( activeValue )
             return;
 
@@ -151,11 +153,11 @@ static int ConvertHatToNumPad ( int hat )
 
 void Controller::joystickEvent ( const SDL_JoyHatEvent& event )
 {
-    uint32_t *values = mappings[EVENT_JOY_HAT][event.hat];
+    uint32_t *values = stick.mappings[EVENT_JOY_HAT][event.hat];
 
     if ( keyToMap != 0 )
     {
-        uint32_t *activeValues = activeMappings[EVENT_JOY_HAT][event.hat];
+        uint32_t *activeValues = active.mappings[EVENT_JOY_HAT][event.hat];
 
         uint8_t activeValue = 0;
 
@@ -173,6 +175,7 @@ void Controller::joystickEvent ( const SDL_JoyHatEvent& event )
             // Done mapping if the hat is centered
             values[activeValue] = activeValues[activeValue];
 
+            // Set bit mask for centered value
             values[SDL_HAT_CENTERED] = 0;
             values[SDL_HAT_CENTERED] |= values[SDL_HAT_UP];
             values[SDL_HAT_CENTERED] |= values[SDL_HAT_RIGHT];
@@ -191,7 +194,7 @@ void Controller::joystickEvent ( const SDL_JoyHatEvent& event )
                 owner->doneMapping ( this, key );
         }
 
-        // Otherwise ignore already active mappings
+        // Otherwise ignore already active joystick mappings
         if ( activeValue )
             return;
 
@@ -218,14 +221,14 @@ void Controller::joystickEvent ( const SDL_JoyButtonEvent& event )
 {
     if ( keyToMap != 0 )
     {
-        uint32_t *activeStates = activeMappings[EVENT_JOY_BUTTON][event.button];
+        uint32_t *activeStates = active.mappings[EVENT_JOY_BUTTON][event.button];
         bool isActive = ( activeStates[SDL_PRESSED] );
 
         if ( event.state == SDL_RELEASED && isActive )
         {
             // Done mapping if the button was tapped
-            mappings[EVENT_JOY_BUTTON][event.button][SDL_PRESSED]
-                = mappings[EVENT_JOY_BUTTON][event.button][SDL_RELEASED] = keyToMap;
+            stick.mappings[EVENT_JOY_BUTTON][event.button][SDL_PRESSED]
+                = stick.mappings[EVENT_JOY_BUTTON][event.button][SDL_RELEASED] = keyToMap;
 
             LOG_CONTROLLER ( this, "Mapped button%d to %08x", event.button, keyToMap );
 
@@ -238,7 +241,7 @@ void Controller::joystickEvent ( const SDL_JoyButtonEvent& event )
                 owner->doneMapping ( this, key );
         }
 
-        // Otherwise ignore already active mappings
+        // Otherwise ignore already active joystick mappings
         if ( isActive )
             return;
 
@@ -246,7 +249,7 @@ void Controller::joystickEvent ( const SDL_JoyButtonEvent& event )
         return;
     }
 
-    uint32_t key = mappings[EVENT_JOY_BUTTON][event.button][event.state];
+    uint32_t key = stick.mappings[EVENT_JOY_BUTTON][event.button][event.state];
 
     if ( key == 0 )
         return;
@@ -282,7 +285,7 @@ Controller::Controller ( SDL_Joystick *joystick ) : joystick ( joystick ), name 
     }
     else
     {
-        for ( uint32_t i = 0; i < 32; ++i )
+        for ( uint8_t i = 0; i < 32; ++i )
         {
             if ( ( it->second & ( 1u << i ) ) == 0u )
             {
@@ -300,26 +303,26 @@ Controller::Controller ( SDL_Joystick *joystick ) : joystick ( joystick ), name 
     for ( auto& v : deadzones )
         v = DEFAULT_DEADZONE;
 
-    // Default axis mappings
-    mappings[EVENT_JOY_AXIS][0][0] = MASK_X_AXIS;
-    mappings[EVENT_JOY_AXIS][0][AXIS_POSITIVE] = BIT_RIGHT;
-    mappings[EVENT_JOY_AXIS][0][AXIS_NEGATIVE] = BIT_LEFT;
-    mappings[EVENT_JOY_AXIS][1][0] = MASK_Y_AXIS;
-    mappings[EVENT_JOY_AXIS][1][AXIS_POSITIVE] = BIT_DOWN; // SDL joystick Y-axis is inverted
-    mappings[EVENT_JOY_AXIS][1][AXIS_NEGATIVE] = BIT_UP;
-    mappings[EVENT_JOY_AXIS][2][0] = MASK_X_AXIS;
-    mappings[EVENT_JOY_AXIS][2][AXIS_POSITIVE] = BIT_RIGHT;
-    mappings[EVENT_JOY_AXIS][2][AXIS_NEGATIVE] = BIT_LEFT;
-    mappings[EVENT_JOY_AXIS][3][0] = MASK_Y_AXIS;
-    mappings[EVENT_JOY_AXIS][3][AXIS_POSITIVE] = BIT_DOWN; // SDL joystick Y-axis is inverted
-    mappings[EVENT_JOY_AXIS][3][AXIS_NEGATIVE] = BIT_UP;
+    // Default axis stick.mappings
+    stick.mappings[EVENT_JOY_AXIS][0][0] = MASK_X_AXIS;
+    stick.mappings[EVENT_JOY_AXIS][0][AXIS_POSITIVE] = BIT_RIGHT;
+    stick.mappings[EVENT_JOY_AXIS][0][AXIS_NEGATIVE] = BIT_LEFT;
+    stick.mappings[EVENT_JOY_AXIS][1][0] = MASK_Y_AXIS;
+    stick.mappings[EVENT_JOY_AXIS][1][AXIS_POSITIVE] = BIT_DOWN; // SDL joystick Y-axis is inverted
+    stick.mappings[EVENT_JOY_AXIS][1][AXIS_NEGATIVE] = BIT_UP;
+    stick.mappings[EVENT_JOY_AXIS][2][0] = MASK_X_AXIS;
+    stick.mappings[EVENT_JOY_AXIS][2][AXIS_POSITIVE] = BIT_RIGHT;
+    stick.mappings[EVENT_JOY_AXIS][2][AXIS_NEGATIVE] = BIT_LEFT;
+    stick.mappings[EVENT_JOY_AXIS][3][0] = MASK_Y_AXIS;
+    stick.mappings[EVENT_JOY_AXIS][3][AXIS_POSITIVE] = BIT_DOWN; // SDL joystick Y-axis is inverted
+    stick.mappings[EVENT_JOY_AXIS][3][AXIS_NEGATIVE] = BIT_UP;
 
-    // Default hat mappings
-    mappings[EVENT_JOY_HAT][0][SDL_HAT_CENTERED] = ( MASK_X_AXIS | MASK_Y_AXIS );
-    mappings[EVENT_JOY_HAT][0][SDL_HAT_UP]       = BIT_UP;
-    mappings[EVENT_JOY_HAT][0][SDL_HAT_RIGHT]    = BIT_RIGHT;
-    mappings[EVENT_JOY_HAT][0][SDL_HAT_DOWN]     = BIT_DOWN;
-    mappings[EVENT_JOY_HAT][0][SDL_HAT_LEFT]     = BIT_LEFT;
+    // Default hat stick.mappings
+    stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_CENTERED] = ( MASK_X_AXIS | MASK_Y_AXIS );
+    stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_UP]       = BIT_UP;
+    stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_RIGHT]    = BIT_RIGHT;
+    stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_DOWN]     = BIT_DOWN;
+    stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_LEFT]     = BIT_LEFT;
 }
 
 Controller::~Controller()
@@ -339,9 +342,9 @@ string Controller::getMapping ( uint32_t key ) const
 {
     if ( isKeyboard() )
     {
-        for ( size_t i = 0; i < 32; ++i )
-            if ( key & ( 1u << i ) && keyCode[i] )
-                return keyName[i];
+        for ( uint8_t i = 0; i < 32; ++i )
+            if ( key & ( 1u << i ) && keybd.codes[i] )
+                return keybd.names[i];
 
         return "";
     }
@@ -370,7 +373,7 @@ void Controller::cancelMapping()
     owner = 0;
     keyToMap = 0;
 
-    for ( auto& a : activeMappings )
+    for ( auto& a : active.mappings )
     {
         for ( auto& b : a )
         {
@@ -382,16 +385,16 @@ void Controller::cancelMapping()
 
 void Controller::clearMapping ( uint32_t keys )
 {
-    for ( size_t i = 0; i < 32; ++i )
+    for ( uint8_t i = 0; i < 32; ++i )
     {
         if ( keys & ( 1u << i ) )
         {
-            keyCode[i] = 0;
-            keyName[i].clear();
+            keybd.codes[i] = 0;
+            keybd.names[i].clear();
         }
     }
 
-    for ( auto& a : mappings )
+    for ( auto& a : stick.mappings )
     {
         for ( auto& b : a )
         {
@@ -411,7 +414,10 @@ inline static bool isPowerOfTwo ( uint32_t x )
 
 bool Controller::isOnlyGuid() const
 {
-    return isPowerOfTwo ( guidBitset[this->guid.guid] );
+    if ( isKeyboard() )
+        return true;
+    else
+        return isPowerOfTwo ( guidBitset[this->guid.guid] );
 }
 
 unordered_map<Guid, uint32_t> Controller::guidBitset;

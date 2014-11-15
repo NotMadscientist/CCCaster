@@ -255,7 +255,7 @@ bool MainUi::gameMode()
 
 void MainUi::doneMapping ( Controller *controller, uint32_t key )
 {
-    LOG ( "%s: controller=%08x; key=%08x", controller->name, controller, key );
+    LOG ( "%s: controller=%08x; key=%08x", controller->getName(), controller, key );
 
     isMapping = false;
     mappedKey = key;
@@ -273,7 +273,7 @@ void MainUi::controls()
     vector<string> names;
     names.reserve ( controllers.size() );
     for ( Controller *c : controllers )
-        names.push_back ( c->name );
+        names.push_back ( c->getName() );
 
     ui->pushRight ( new ConsoleUi::Menu ( "Controllers", names, "Back" ) );
 
@@ -317,7 +317,7 @@ void MainUi::controls()
             }
 
             // TODO show more info at the top
-            ui->pushInFront ( new ConsoleUi::Menu ( controller.name, mappings, "Back" ) );
+            ui->pushInFront ( new ConsoleUi::Menu ( controller.getName(), mappings, "Back" ) );
             ui->top<ConsoleUi::Menu>()->setPosition ( position );
             ui->top<ConsoleUi::Menu>()->setDelete ( 2 );
 

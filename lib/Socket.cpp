@@ -563,6 +563,8 @@ void SocketShareData::load ( cereal::BinaryInputArchive& ar )
 
     size_t consumed;
     gbnState = Protocol::decode ( &buffer[0], buffer.size(), consumed );
+
+    ASSERT ( consumed == buffer.size() );
 }
 
 SocketPtr Socket::shared ( Socket::Owner *owner, const SocketShareData& data )

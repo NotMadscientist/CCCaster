@@ -821,6 +821,7 @@ struct MainApp
         ASSERT ( clientMode != ClientMode::Unknown );
 
         procMan.ipcSend ( options );
+        procMan.ipcSend ( ControllerManager::get().getMappings() );
         procMan.ipcSend ( clientMode );
         procMan.ipcSend ( new IpAddrPort ( address.getAddrInfo()->ai_addr ) );
 

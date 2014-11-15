@@ -2,6 +2,7 @@
 #include "Logger.h"
 
 #include <SDL.h>
+#include <windows.h>
 
 #include <algorithm>
 
@@ -13,8 +14,19 @@ using namespace std;
 
 void ControllerManager::doCheck()
 {
-    // TODO update keyboard controller
+    // Update keyboard controller state
+    keyboard.state = 0;
 
+    for ( uint8_t i = 0; i < 32; ++i )
+    {
+        if ( !keyboard.keybd.codes[i] )
+            continue;
+
+        if ( GetKeyState ( keyboard.keybd.codes[i] ) & 0x80 )
+            keyboard.state |= ( 1u << i );
+    }
+
+    // Update SDL joystick events
     SDL_PumpEvents();
     SDL_Event events[MAX_EVENT_QUEUE];
 
@@ -88,6 +100,7 @@ void ControllerManager::doCheck()
                 LOG_CONTROLLER ( controller, "id=%d; SDL_JOYDEVICEADDED", id );
 
                 joysticks[id].reset ( controller );
+                joysticksByGuid[controller->getGuid()] = controller;
 
                 if ( owner )
                     owner->attachedJoystick ( controller );
@@ -124,6 +137,7 @@ void ControllerManager::doCheck()
                     shouldReset = true;
 
                 SDL_JoystickClose ( controller->joystick );
+                joysticksByGuid.erase ( controller->getGuid() );
                 joysticks.erase ( id );
 
                 // LOG ( "joysticks :%s", joysticks.empty() ? " (empty)" : "" );
@@ -168,12 +182,13 @@ void ControllerManager::clear()
 {
     LOG ( "Clearing controllers" );
     joysticks.clear();
+    joysticksByGuid.clear();
     Controller::guidBitset.clear();
 }
 
 static bool compareControllerName ( Controller *a, Controller *b )
 {
-    return a->name < b->name;
+    return a->getName() < b->getName();
 }
 
 vector<Controller *> ControllerManager::getJoysticks()
@@ -241,4 +256,31 @@ ControllerManager& ControllerManager::get()
 {
     static ControllerManager instance;
     return instance;
+}
+
+void ControllerMappings::save ( cereal::BinaryOutputArchive& ar ) const
+{
+    ar ( mappings.size() );
+
+    for ( const auto& kv : mappings )
+        ar ( kv.first, Protocol::encode ( kv.second ) );
+}
+
+void ControllerMappings::load ( cereal::BinaryInputArchive& ar )
+{
+    size_t count;
+    ar ( count );
+
+    IndexedGuid guid;
+    string buffer;
+    size_t consumed;
+
+    for ( size_t i = 0; i < count; ++i )
+    {
+        ar ( guid, buffer );
+
+        mappings[guid] = Protocol::decode ( &buffer[0], buffer.size(), consumed );
+
+        ASSERT ( consumed == buffer.size() );
+    }
 }
