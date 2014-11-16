@@ -84,6 +84,12 @@ struct DllMain
     // Controller mappings
     ControllerMappings mappings;
 
+    // Player 1 (local) and 2 (remote) controllers
+    Controller *controllers[2] = { ControllerManager::get().getKeyboard(), 0 };
+
+    // Local and remote inputs
+    uint16_t localInputs = 0, remoteInputs = 0;
+
 
     void frameStepNormal()
     {
@@ -115,9 +121,25 @@ struct DllMain
                     break;
                 }
 
-                // Input testing code
+                if ( controllers[0] )
+                    localInputs = convertInputState ( controllers[0]->getState() );
+
+#ifndef RELEASE
+                // Test rollback
+                if ( ( GetKeyState ( VK_F10 ) & 0x80 )
+                        && netMan.config.rollback
+                        && netMan.getState() == NetplayState::InGame
+                        && netMan.getFrame() > 60 )
+                {
+                    // Sleep ( 1000 );
+                    procMan.loadState ( { netMan.getIndex(), netMan.getFrame() - 10 }, netMan );
+                }
+
+                // Test random inputs
                 static bool randomize = false;
-                static uint16_t input = 0;
+
+                if ( GetKeyState ( VK_F11 ) & 0x80 ) randomize = true;
+                if ( GetKeyState ( VK_F12 ) & 0x80 ) randomize = false;
 
                 if ( randomize )
                 {
@@ -138,73 +160,24 @@ struct DllMain
                         if ( netMan.getState().value == NetplayState::CharaSelect )
                             buttons &= ~ ( CC_BUTTON_B | CC_BUTTON_CANCEL );
 
-                        input = COMBINE_INPUT ( direction, buttons );
+                        localInputs = COMBINE_INPUT ( direction, buttons );
                     }
                 }
-                else if ( 0 )
-                {
-                    uint16_t direction = 5, buttons = 0;
+#endif
 
-                    if ( GetKeyState ( 'P' ) & 0x80 )
-                        direction = 8;
-                    else if ( GetKeyState ( VK_OEM_1 ) & 0x80 )
-                        direction = 2;
-
-                    if ( GetKeyState ( 'L' ) & 0x80 )
-                        --direction;
-                    else if ( GetKeyState ( VK_OEM_7 ) & 0x80 )
-                        ++direction;
-
-                    if ( GetKeyState ( 'E' ) & 0x80 )       buttons = ( CC_BUTTON_A | CC_BUTTON_SELECT );
-                    if ( GetKeyState ( 'R' ) & 0x80 )       buttons = ( CC_BUTTON_B | CC_BUTTON_CANCEL );
-                    if ( GetKeyState ( 'T' ) & 0x80 )       buttons = CC_BUTTON_C;
-                    if ( GetKeyState ( VK_SPACE ) & 0x80 )  buttons = CC_BUTTON_D;
-                    if ( GetKeyState ( 'A' ) & 0x80 )       buttons = CC_BUTTON_E;
-                    if ( GetKeyState ( 'D' ) & 0x80 )       buttons = CC_BUTTON_FN2;
-                    if ( GetKeyState ( 'G' ) & 0x80 )       buttons = CC_BUTTON_FN1;
-                    if ( GetKeyState ( VK_F5 ) & 0x80 )     buttons = CC_BUTTON_START;
-
-                    if ( ( GetKeyState ( VK_F6 ) & 0x80 )
-                            && netMan.config.rollback
-                            && netMan.getState() == NetplayState::InGame
-                            && netMan.getFrame() > 60 )
-                    {
-                        // Sleep ( 1000 );
-                        procMan.loadState ( { netMan.getIndex(), netMan.getFrame() - 10 }, netMan );
-                    }
-
-                    input = COMBINE_INPUT ( direction, buttons );
-                }
-                else
-                {
-                    uint32_t state = ControllerManager::get().getKeyboard()->getState();
-                    uint16_t direction = 5, buttons = ( state & MASK_BUTTONS ) >> 8;
-
-                    if ( state & BIT_UP )
-                        direction = 8;
-                    else if ( state & BIT_DOWN )
-                        direction = 2;
-
-                    if ( state & BIT_LEFT )
-                        --direction;
-                    else if ( state & BIT_RIGHT )
-                        ++direction;
-
-                    input = COMBINE_INPUT ( direction, buttons );
-                }
-
-                if ( GetKeyState ( VK_F7 ) & 0x80 )         randomize = true;
-                if ( GetKeyState ( VK_F8 ) & 0x80 )         randomize = false;
-
-                // Commit inputs to netMan and send them to remote
-                netMan.setInput ( localPlayer, input );
-
-                // TODO implement P2 inputs
-                if ( clientMode.isLocal() )
-                    netMan.setInput ( remotePlayer, input );
+                netMan.setInput ( localPlayer, localInputs );
 
                 if ( clientMode.isNetplay() )
+                {
                     dataSocket->send ( netMan.getInputs ( localPlayer ) );
+                }
+                else if ( clientMode.isLocal() )
+                {
+                    if ( controllers[1] )
+                        remoteInputs = controllers[1]->getState();
+
+                    netMan.setInput ( remotePlayer, remoteInputs );
+                }
 
                 if ( shouldSyncRngState && ( clientMode.isHost() || clientMode.isBroadcast() ) )
                 {
@@ -220,7 +193,6 @@ struct DllMain
                     for ( const auto& kv : specSockets )
                         kv.first->send ( msgRngState );
                 }
-
                 break;
             }
 
@@ -590,24 +562,24 @@ struct DllMain
             {
                 const Version RemoteVersion = msg->getAs<VersionConfig>().version;
 
-                if ( !LocalVersion.similar ( RemoteVersion, 1 + options[Options::Strict] ) )
+                if ( !LocalVersion.similar ( RemoteVersion, 1 + options[Options::StrictVersion] ) )
                 {
                     string local = toString ( "%s.%s", LocalVersion.major(), LocalVersion.minor() );
                     string remote = toString ( "%s.%s", RemoteVersion.major(), RemoteVersion.minor() );
 
-                    if ( options[Options::Strict] >= 1 )
+                    if ( options[Options::StrictVersion] >= 1 )
                     {
                         local += LocalVersion.suffix();
                         remote += RemoteVersion.suffix();
                     }
 
-                    if ( options[Options::Strict] >= 2 )
+                    if ( options[Options::StrictVersion] >= 2 )
                     {
                         local += " " + LocalVersion.commitId;
                         remote += " " + RemoteVersion.commitId;
                     }
 
-                    if ( options[Options::Strict] >= 3 )
+                    if ( options[Options::StrictVersion] >= 3 )
                     {
                         local += " " + LocalVersion.buildTime;
                         remote += " " + RemoteVersion.buildTime;
@@ -922,6 +894,29 @@ struct DllMain
 
         // Timer and controller deinitialization is not done here because of threading issues
     }
+
+private:
+
+    static uint16_t convertInputState ( uint32_t state )
+    {
+        const uint16_t dirs = ( state & MASK_DIRS );
+        const uint16_t buttons = ( state & MASK_BUTTONS ) >> 8;
+
+        uint8_t direction = 5;
+
+        if ( dirs & BIT_UP )
+            direction = 8;
+        else if ( dirs & BIT_DOWN )
+            direction = 2;
+
+        if ( dirs & BIT_LEFT )
+            --direction;
+        else if ( dirs & BIT_RIGHT )
+            ++direction;
+
+        return COMBINE_INPUT ( direction, buttons );
+    }
+
 };
 
 

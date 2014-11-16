@@ -236,24 +236,24 @@ struct MainApp
 
         LOG ( "VersionConfig: mode=%s; flags={ %s }", versionConfig.mode, versionConfig.mode.flagString() );
 
-        if ( !LocalVersion.similar ( RemoteVersion, 1 + options[Options::Strict] ) )
+        if ( !LocalVersion.similar ( RemoteVersion, 1 + options[Options::StrictVersion] ) )
         {
             string local = toString ( "%s.%s", LocalVersion.major(), LocalVersion.minor() );
             string remote = toString ( "%s.%s", RemoteVersion.major(), RemoteVersion.minor() );
 
-            if ( options[Options::Strict] >= 1 )
+            if ( options[Options::StrictVersion] >= 1 )
             {
                 local += LocalVersion.suffix();
                 remote += RemoteVersion.suffix();
             }
 
-            if ( options[Options::Strict] >= 2 )
+            if ( options[Options::StrictVersion] >= 2 )
             {
                 local += " " + LocalVersion.commitId;
                 remote += " " + RemoteVersion.commitId;
             }
 
-            if ( options[Options::Strict] >= 3 )
+            if ( options[Options::StrictVersion] >= 3 )
             {
                 local += " " + LocalVersion.buildTime;
                 remote += " " + RemoteVersion.buildTime;

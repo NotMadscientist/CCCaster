@@ -146,7 +146,7 @@ int main ( int argc, char *argv[] )
         { Options::CheckSync, 0, "C",  "check", Arg::None,        "  --check, -C        Check for desyncs\n" },
 
         {
-            Options::Strict, 0, "S", "strict", Arg::None,
+            Options::StrictVersion, 0, "S", "strict", Arg::None,
             "  --strict, -S       Strict version match, can be stacked up to 3 times.\n"
             "                     -S means version suffix must match.\n"
             "                     -SS means commit ID must match.\n"

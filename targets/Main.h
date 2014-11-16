@@ -29,7 +29,7 @@ ENUM ( Options,
        // Regular options
        Help, GameDir, Tunnel, Training, Broadcast, Spectate, Offline, NoUi, Tournament,
        // Debug options
-       Tests, Stdout, FakeUi, Dummy, CheckSync, Strict,
+       Tests, Stdout, FakeUi, Dummy, CheckSync, StrictVersion,
        // Special options
        NoFork, AppDir, SessionId );
 
