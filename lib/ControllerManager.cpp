@@ -105,8 +105,8 @@ void ControllerManager::doCheck()
                 if ( owner )
                     owner->attachedJoystick ( controller );
 
-                if ( guids.find ( controller->guid.guid ) == guids.end() )
-                    guids.insert ( controller->guid.guid );
+                if ( guids.find ( controller->getGuid().guid ) == guids.end() )
+                    guids.insert ( controller->getGuid().guid );
                 else
                     shouldReset = true;
 
@@ -132,7 +132,7 @@ void ControllerManager::doCheck()
                     owner->detachedJoystick ( controller );
 
                 if ( controller->isOnlyGuid() )
-                    guids.erase ( controller->guid.guid );
+                    guids.erase ( controller->getGuid().guid );
                 else
                     shouldReset = true;
 
@@ -186,7 +186,7 @@ void ControllerManager::clear()
     Controller::guidBitset.clear();
 }
 
-static bool compareControllerName ( Controller *a, Controller *b )
+static bool compareControllerName ( const Controller *a, const Controller *b )
 {
     return a->getName() < b->getName();
 }
@@ -203,9 +203,35 @@ vector<Controller *> ControllerManager::getJoysticks()
     return controllers;
 }
 
+vector<const Controller *> ControllerManager::getJoysticks() const
+{
+    vector<const Controller *> controllers;
+    controllers.reserve ( joysticks.size() );
+
+    for ( auto& kv : joysticks )
+        controllers.push_back ( kv.second.get() );
+
+    sort ( controllers.begin(), controllers.end(), compareControllerName );
+    return controllers;
+}
+
 vector<Controller *> ControllerManager::getControllers()
 {
     vector<Controller *> controllers;
+    controllers.reserve ( joysticks.size() + 1 );
+
+    controllers.push_back ( getKeyboard() );
+
+    for ( auto& kv : joysticks )
+        controllers.push_back ( kv.second.get() );
+
+    sort ( controllers.begin() + 1, controllers.end(), compareControllerName );
+    return controllers;
+}
+
+vector<const Controller *> ControllerManager::getControllers() const
+{
+    vector<const Controller *> controllers;
     controllers.reserve ( joysticks.size() + 1 );
 
     controllers.push_back ( getKeyboard() );

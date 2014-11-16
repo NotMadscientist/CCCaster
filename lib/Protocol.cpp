@@ -12,6 +12,8 @@ using namespace cereal;
 // Useful options for debugging and testing
 // #define LOG_PROTOCOL
 // #define FORCE_COMPRESSION
+// #define DISABLE_UPDATE_MD5
+// #define DISABLE_CHECK_MD5
 
 
 /* Message binary structure:
@@ -54,6 +56,12 @@ ENUM ( DecodeResult, Failed, NotCompressed, Compressed );
 DecodeResult decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, MsgType& type, string& msgData );
 
 
+string Protocol::encode ( const Serializable& message )
+{
+    MsgPtr msg ( const_cast<Serializable *> ( &message ), ignoreMsgPtr );
+    return encode ( msg );
+}
+
 string Protocol::encode ( Serializable *message )
 {
     if ( !message )
@@ -77,7 +85,8 @@ string Protocol::encode ( const MsgPtr& msg )
     // Encode actual message data
     msg->save ( archive );
 
-    // Update MD5
+#ifndef DISABLE_UPDATE_MD5
+    // Update the MD5
     if ( msg->md5empty )
     {
         getMD5 ( ss.str(), msg->md5 );
@@ -90,8 +99,9 @@ string Protocol::encode ( const MsgPtr& msg )
         LOG ( "md5=[ %s ]", toBase64 ( msg->md5, sizeof ( msg->md5 ) ) );
 #endif
     }
+#endif
 
-    // Encode MD5 at end of message data
+    // Encode MD5 at the end of message data
     archive ( msg->md5 );
 
     // Encode with compression
@@ -194,6 +204,8 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
         dataSize = ( data.size() - remaining );
     }
 
+#ifndef DISABLE_UPDATE_MD5
+    // Check if the MD5 is correct
     if ( !checkMD5 ( &data[0], dataSize - sizeof ( msg->md5 ), msg->md5 ) )
     {
 #ifdef LOG_PROTOCOL
@@ -206,6 +218,7 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
 #endif
         return NullMsg;
     }
+#endif
 
     return msg;
 }

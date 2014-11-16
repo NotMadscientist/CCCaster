@@ -64,19 +64,22 @@ public:
 
     // Get the keyboard controller
     Controller *getKeyboard() { return &keyboard; }
+    const Controller *getKeyboard() const { return &keyboard; }
 
     // Get the list of joysticks sorted by name
     std::vector<Controller *> getJoysticks();
+    std::vector<const Controller *> getJoysticks() const;
 
     // Get all the controllers, sorted by name, except the keyboard is first
     std::vector<Controller *> getControllers();
+    std::vector<const Controller *> getControllers() const;
 
     // Get the mappings for all controllers
-    MsgPtr getMappings()
+    MsgPtr getMappings() const
     {
         ControllerMappings *msg = new ControllerMappings();
 
-        for ( Controller *c : getControllers() )
+        for ( const Controller *c : getControllers() )
             msg->mappings[c->getGuid()] = c->getMappings();
 
         return MsgPtr ( msg );

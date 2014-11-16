@@ -62,6 +62,7 @@ const MsgPtr NullMsg;
 struct Protocol
 {
     // Encode a message to a series of bytes
+    static std::string encode ( const Serializable& message );
     static std::string encode ( Serializable *message );
     static std::string encode ( const MsgPtr& msg );
 

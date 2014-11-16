@@ -5,6 +5,7 @@
 #include <windows.h>
 
 #include <cstdlib>
+#include <fstream>
 
 using namespace std;
 
@@ -41,9 +42,17 @@ static string getVKeyName ( uint32_t vkCode, uint32_t scanCode, bool isExtended 
         return toString ( "Key Code 0x%02X", vkCode );
 }
 
+
+unordered_map<Guid, uint32_t> Controller::guidBitset;
+
+
 void Controller::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown )
 {
-    // Only handle keyboard events for mapping
+    // Ignore keyboard events for joystick (except Esc)
+    if ( isJoystick() && vkCode != VK_ESCAPE )
+        return;
+
+    // Only use keyboard down events for mapping
     if ( !isDown && keyToMap != 0 )
         return;
 
@@ -264,7 +273,7 @@ void Controller::joystickEvent ( const SDL_JoyButtonEvent& event )
 
 Controller::Controller ( KeyboardEnum ) : name ( "Keyboard" )
 {
-    memset ( &guid, 0, sizeof ( guid ) );
+    memset ( &keybd.guid, 0, sizeof ( keybd.guid ) );
 
     clearMapping();
 
@@ -274,14 +283,14 @@ Controller::Controller ( KeyboardEnum ) : name ( "Keyboard" )
 Controller::Controller ( SDL_Joystick *joystick ) : joystick ( joystick ), name ( SDL_JoystickName ( joystick ) )
 {
     SDL_JoystickGUID guid = SDL_JoystickGetGUID ( joystick );
-    memcpy ( &this->guid.guid, guid.data, sizeof ( guid.data ) );
+    memcpy ( &stick.guid.guid, guid.data, sizeof ( guid.data ) );
 
-    auto it = guidBitset.find ( this->guid.guid );
+    auto it = guidBitset.find ( stick.guid.guid );
 
     if ( it == guidBitset.end() )
     {
-        this->guid.index = 0;
-        guidBitset[this->guid.guid] = 1u;
+        stick.guid.index = 0;
+        guidBitset[stick.guid.guid] = 1u;
     }
     else
     {
@@ -289,13 +298,13 @@ Controller::Controller ( SDL_Joystick *joystick ) : joystick ( joystick ), name 
         {
             if ( ( it->second & ( 1u << i ) ) == 0u )
             {
-                guidBitset[this->guid.guid] |= ( 1u << i );
-                this->guid.index = i;
+                guidBitset[stick.guid.guid] |= ( 1u << i );
+                stick.guid.index = i;
                 return;
             }
         }
 
-        LOG_AND_THROW_STRING ( "Too many duplicate guids for: '%s'", this->guid.guid );
+        LOG_AND_THROW_STRING ( "Too many duplicate guids for: '%s'", stick.guid.guid );
     }
 
     clearMapping();
@@ -303,7 +312,7 @@ Controller::Controller ( SDL_Joystick *joystick ) : joystick ( joystick ), name 
     for ( auto& v : deadzones )
         v = DEFAULT_DEADZONE;
 
-    // Default axis stick.mappings
+    // Default axis mappings
     stick.mappings[EVENT_JOY_AXIS][0][0] = MASK_X_AXIS;
     stick.mappings[EVENT_JOY_AXIS][0][AXIS_POSITIVE] = BIT_RIGHT;
     stick.mappings[EVENT_JOY_AXIS][0][AXIS_NEGATIVE] = BIT_LEFT;
@@ -317,7 +326,7 @@ Controller::Controller ( SDL_Joystick *joystick ) : joystick ( joystick ), name 
     stick.mappings[EVENT_JOY_AXIS][3][AXIS_POSITIVE] = BIT_DOWN; // SDL joystick Y-axis is inverted
     stick.mappings[EVENT_JOY_AXIS][3][AXIS_NEGATIVE] = BIT_UP;
 
-    // Default hat stick.mappings
+    // Default hat mappings
     stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_CENTERED] = ( MASK_X_AXIS | MASK_Y_AXIS );
     stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_UP]       = BIT_UP;
     stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_RIGHT]    = BIT_RIGHT;
@@ -327,15 +336,15 @@ Controller::Controller ( SDL_Joystick *joystick ) : joystick ( joystick ), name 
 
 Controller::~Controller()
 {
-    auto it = guidBitset.find ( guid.guid );
+    auto it = guidBitset.find ( stick.guid.guid );
 
     if ( it == guidBitset.end() )
         return;
 
-    if ( guid.index >= 32 )
+    if ( stick.guid.index >= 32 )
         return;
 
-    guidBitset[guid.guid] &= ~ ( 1u << guid.index );
+    guidBitset[stick.guid.guid] &= ~ ( 1u << stick.guid.index );
 }
 
 string Controller::getMapping ( uint32_t key ) const
@@ -364,6 +373,8 @@ void Controller::startMapping ( Owner *owner, uint32_t key, const void *window )
 
     if ( isKeyboard() )
         KeyboardManager::get().hook ( this, window );
+    else
+        KeyboardManager::get().hook ( this, window , { VK_ESCAPE } );
 }
 
 void Controller::cancelMapping()
@@ -417,7 +428,96 @@ bool Controller::isOnlyGuid() const
     if ( isKeyboard() )
         return true;
     else
-        return isPowerOfTwo ( guidBitset[this->guid.guid] );
+        return isPowerOfTwo ( guidBitset[stick.guid.guid] );
 }
 
-unordered_map<Guid, uint32_t> Controller::guidBitset;
+bool Controller::saveMappings ( const string& file ) const
+{
+    ofstream fout ( file.c_str(), ios::binary );
+    bool good = fout.good();
+
+    if ( good )
+    {
+        string buffer;
+
+        if ( isKeyboard() )
+        {
+            keybd.invalidate();
+            buffer = Protocol::encode ( keybd );
+        }
+        else
+        {
+            stick.invalidate();
+            buffer = Protocol::encode ( stick );
+        }
+
+        fout.write ( &buffer[0], buffer.size() );
+
+        good = fout.good();
+    }
+
+    fout.close();
+    return good;
+}
+
+bool Controller::loadMappings ( const string& file )
+{
+    ifstream fin ( file.c_str(), ios::binary );
+    bool good = fin.good();
+
+    if ( good )
+    {
+        stringstream ss;
+        ss << fin.rdbuf();
+
+        string buffer = ss.str();
+        size_t consumed;
+
+        MsgPtr msg = Protocol::decode ( &buffer[0], buffer.size(), consumed );
+
+        if ( !msg )
+        {
+            LOG ( "Failed to decode %u bytes", buffer.size() );
+            good = false;
+        }
+        else
+        {
+            if ( consumed != buffer.size() )
+                LOG ( "Warning: consumed bytes %u != buffer size %u", consumed, buffer.size() );
+
+            if ( isKeyboard() )
+            {
+                if ( msg->getAs<KeyboardMappings>().guid != keybd.guid )
+                    LOG ( "Guid mismatch: decoded %s != keyboard %s", msg->getAs<KeyboardMappings>().guid, keybd.guid );
+
+                if ( msg->getMsgType() != MsgType::KeyboardMappings )
+                {
+                    LOG ( "Invalid keyboard mapping type: %s", msg->getMsgType() );
+                    good = false;
+                }
+                else
+                {
+                    keybd = msg->getAs<KeyboardMappings>();
+                }
+            }
+            else // if ( isJoystick() )
+            {
+                if ( msg->getAs<JoystickMappings>().guid != stick.guid )
+                    LOG ( "Guid mismatch: decoded %s != joystick %s", msg->getAs<JoystickMappings>().guid, stick.guid );
+
+                if ( msg->getMsgType() != MsgType::JoystickMappings )
+                {
+                    LOG ( "Invalid joystick mapping type: %s", msg->getMsgType() );
+                    good = false;
+                }
+                else
+                {
+                    stick = msg->getAs<JoystickMappings>();
+                }
+            }
+        }
+    }
+
+    fin.close();
+    return good;
+}

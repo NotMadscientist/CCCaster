@@ -19,6 +19,9 @@ using namespace std;
 // Config file
 #define CONFIG_FILE FOLDER "config.ini"
 
+// Controller mapping file extension
+#define MAPPINGS_EXT ".mappings"
+
 extern string appDir;
 
 static const string uiTitle = "CCCaster " + LocalVersion.code;
@@ -257,7 +260,6 @@ void MainUi::doneMapping ( Controller *controller, uint32_t key )
 {
     LOG ( "%s: controller=%08x; key=%08x", controller->getName(), controller, key );
 
-    isMapping = false;
     mappedKey = key;
 
     EventManager::get().stop();
@@ -265,7 +267,6 @@ void MainUi::doneMapping ( Controller *controller, uint32_t key )
 
 void MainUi::controls()
 {
-    ControllerManager::get().initialize ( 0 );
     ControllerManager::get().check();
 
     vector<Controller *> controllers = ControllerManager::get().getControllers();
@@ -297,10 +298,10 @@ void MainUi::controls()
             { "C          : ", CC_BUTTON_C << 8 },
             { "D          : ", CC_BUTTON_D << 8 },
             { "E          : ", CC_BUTTON_E << 8 },
-            { "A+B        : ", CC_BUTTON_AB << 8 },
             { "Start      : ", CC_BUTTON_START << 8 },
             { "FN1        : ", CC_BUTTON_FN1 << 8 },
             { "FN2        : ", CC_BUTTON_FN2 << 8 },
+            { "A+B        : ", CC_BUTTON_AB << 8 },
         };
 
         ui->clearTop();
@@ -309,6 +310,8 @@ void MainUi::controls()
 
         for ( ;; )
         {
+            loadMappings ( controller );
+
             vector<string> mappings ( bits.size() );
             for ( size_t i = 0; i < bits.size(); ++i )
             {
@@ -337,35 +340,36 @@ void MainUi::controls()
                     controller.clearMapping ( bits[position].second );
 
                 ui->pop();
+                saveMappings ( controller );
                 continue;
             }
 
             ui->top<ConsoleUi::Menu>()->overlayCurrentPosition ( bits[position].first + "..." );
 
+            TimerManager::get().initialize();
+            SocketManager::get().initialize();
+
             if ( controller.isKeyboard() )
             {
-                AutoManager _;
-
-                isMapping = true;
                 controller.startMapping ( this, bits[position].second, getConsoleWindow() );
 
                 EventManager::get().start();
             }
             else
             {
-                AutoManager _;
+                controller.startMapping ( this, bits[position].second, getConsoleWindow() );
 
-                isMapping = true;
-                controller.startMapping ( this, bits[position].second );
+                EventManager::get().startPolling();
 
-                while ( isMapping )
-                {
+                while ( EventManager::get().poll ( 1 ) )
                     ControllerManager::get().check();
-                    Sleep ( 1 );
-                }
             }
 
+            SocketManager::get().deinitialize();
+            TimerManager::get().deinitialize();
+
             ui->pop();
+            saveMappings ( controller );
 
             // Continue mapping
             if ( mappedKey )
@@ -527,15 +531,41 @@ void MainUi::initialize()
 
 void MainUi::saveConfig()
 {
-    LOG ( "Saving: %s", appDir + CONFIG_FILE );
+    const string file = appDir + CONFIG_FILE;
 
-    if ( config.save ( appDir + CONFIG_FILE ) )
+    LOG ( "Saving: %s", file );
+
+    if ( config.save ( file ) )
         return;
 
-    LOG ( "Failed to save: %s", appDir + CONFIG_FILE );
+    const string msg = toString ( "Failed to save: %s", file );
 
-    if ( sessionError.find ( "Failed to save config file:" ) == std::string::npos )
-        sessionError += toString ( "\nFailed to save config file: %s", appDir + CONFIG_FILE );
+    LOG ( "%s", msg );
+
+    if ( sessionError.find ( msg ) == std::string::npos )
+        sessionError += toString ( "\n%s", msg );
+}
+
+void MainUi::saveMappings ( const Controller& controller )
+{
+    const string file = appDir + FOLDER + controller.getName() + MAPPINGS_EXT;
+
+    LOG ( "Saving: %s", file );
+
+    if ( controller.saveMappings ( file ) )
+        return;
+
+    const string msg = toString ( "Failed to save: %s", file );
+
+    LOG ( "%s", msg );
+
+    if ( sessionError.find ( msg ) == std::string::npos )
+        sessionError += toString ( "\n%s", msg );
+}
+
+void MainUi::loadMappings ( Controller& controller )
+{
+    controller.loadMappings ( appDir + FOLDER + controller.getName() + MAPPINGS_EXT );
 }
 
 void MainUi::main ( RunFuncPtr run )

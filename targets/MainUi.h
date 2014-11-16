@@ -25,7 +25,6 @@ class MainUi : public Controller::Owner
 
     NetplayConfig netplayConfig;
 
-    bool isMapping = false;
     uint32_t mappedKey = 0;
 
     void netplay ( RunFuncPtr run );
@@ -40,6 +39,9 @@ class MainUi : public Controller::Owner
     void doneMapping ( Controller *controller, uint32_t key );
 
     void saveConfig();
+
+    void saveMappings ( const Controller& controller );
+    void loadMappings ( Controller& controller );
 
     void alertUser();
 
