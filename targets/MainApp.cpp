@@ -206,9 +206,13 @@ struct MainApp
         EventManager::get().start();
     }
 
-    void stop()
+    void stop ( const string& error = "" )
     {
+        if ( !error.empty() )
+            lastError = error;
+
         EventManager::get().stop();
+
         LOCK ( uiMutex );
         uiCondVar.signal();
     }
@@ -238,14 +242,8 @@ struct MainApp
 
         if ( !LocalVersion.similar ( RemoteVersion, 1 + options[Options::StrictVersion] ) )
         {
-            string local = toString ( "%s.%s", LocalVersion.major(), LocalVersion.minor() );
-            string remote = toString ( "%s.%s", RemoteVersion.major(), RemoteVersion.minor() );
-
-            if ( options[Options::StrictVersion] >= 1 )
-            {
-                local += LocalVersion.suffix();
-                remote += RemoteVersion.suffix();
-            }
+            string local = LocalVersion.code;
+            string remote = RemoteVersion.code;
 
             if ( options[Options::StrictVersion] >= 2 )
             {
@@ -259,7 +257,10 @@ struct MainApp
                 remote += " " + RemoteVersion.buildTime;
             }
 
-            socket->send ( new ErrorMessage ( "Incompatible versions:\n" + local + "\n" + remote ) );
+            if ( clientMode.isHost() )
+                socket->send ( new ErrorMessage ( "Incompatible host version: " + local ) );
+            else
+                stop ( "Incompatible host version: " + remote );
             return;
         }
 
@@ -270,10 +271,7 @@ struct MainApp
         if ( clientMode.isSpectate() )
         {
             if ( !versionConfig.mode.isGameStarted() )
-            {
-                lastError = "Not in a game yet, cannot spectate!";
-                stop();
-            }
+                stop ( "Not in a game yet, cannot spectate!" );
 
             // Wait for SpectateConfig
             return;
@@ -548,8 +546,7 @@ struct MainApp
                 return;
 
             case MsgType::ErrorMessage:
-                lastError = msg->getAs<ErrorMessage>().error;
-                stop();
+                stop ( msg->getAs<ErrorMessage>().error );
                 return;
 
             default:
@@ -609,8 +606,7 @@ struct MainApp
     {
         if ( !dataSocket || !dataSocket->isConnected() )
         {
-            lastError = "Disconnected!";
-            stop();
+            stop ( "Disconnected!" );
             return;
         }
 
@@ -790,8 +786,7 @@ struct MainApp
                     return;
 
                 case MsgType::ErrorMessage:
-                    lastError = msg->getAs<ErrorMessage>().error;
-                    stop();
+                    stop ( lastError = msg->getAs<ErrorMessage>().error );
                     return;
 
                 case MsgType::Ping:

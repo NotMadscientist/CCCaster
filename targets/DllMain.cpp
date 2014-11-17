@@ -564,14 +564,8 @@ struct DllMain
 
                 if ( !LocalVersion.similar ( RemoteVersion, 1 + options[Options::StrictVersion] ) )
                 {
-                    string local = toString ( "%s.%s", LocalVersion.major(), LocalVersion.minor() );
-                    string remote = toString ( "%s.%s", RemoteVersion.major(), RemoteVersion.minor() );
-
-                    if ( options[Options::StrictVersion] >= 1 )
-                    {
-                        local += LocalVersion.suffix();
-                        remote += RemoteVersion.suffix();
-                    }
+                    string local = LocalVersion.code;
+                    string remote = RemoteVersion.code;
 
                     if ( options[Options::StrictVersion] >= 2 )
                     {
@@ -585,7 +579,7 @@ struct DllMain
                         remote += " " + RemoteVersion.buildTime;
                     }
 
-                    LOG ( "Incompatible versions:\n%s\n%s", LocalVersion, RemoteVersion );
+                    LOG ( "Incompatible versions:\nLocal version: %s\nRemote version: %s", local, remote );
 
                     socket->disconnect();
                     return;
