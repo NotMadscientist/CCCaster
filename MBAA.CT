@@ -757,6 +757,20 @@
       <VariableType>4 Bytes</VariableType>
       <Address>0074D99C</Address>
     </CheatEntry>
+    <CheatEntry>
+      <ID>248</ID>
+      <Description>"Training pause"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0x562A64</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>249</ID>
+      <Description>"Versus pause"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0x564B30</Address>
+    </CheatEntry>
   </CheatEntries>
   <CheatCodes>
     <CodeEntry>

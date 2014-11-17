@@ -1,6 +1,7 @@
 #include "Controller.h"
 #include "ControllerManager.h"
 #include "Logger.h"
+#include "Constants.h"
 
 #include <SDL.h>
 #include <windows.h>
@@ -60,7 +61,7 @@ void Controller::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExte
 
     if ( vkCode != VK_ESCAPE )
     {
-        clearMapping ( keyToMap );
+        doClearMapping ( keyToMap );
 
         const string name = getVKeyName ( vkCode, scanCode, isExtended );
 
@@ -124,7 +125,7 @@ void Controller::joystickEvent ( const SDL_JoyAxisEvent& event )
         // Done mapping if the axis returned to 0
         if ( value == 0 && activeValue )
         {
-            clearMapping ( keyToMap );
+            doClearMapping ( keyToMap );
 
             values[activeValue] = keyToMap;
 
@@ -204,7 +205,7 @@ void Controller::joystickEvent ( const SDL_JoyHatEvent& event )
         // Done mapping if the hat is centered
         if ( event.value == SDL_HAT_CENTERED && activeValue )
         {
-            clearMapping ( keyToMap );
+            doClearMapping ( keyToMap );
 
             values[activeValue] = activeValues[activeValue];
 
@@ -263,7 +264,7 @@ void Controller::joystickEvent ( const SDL_JoyButtonEvent& event )
         // Done mapping if the button was released
         if ( event.state == SDL_RELEASED && isActive )
         {
-            clearMapping ( keyToMap );
+            doClearMapping ( keyToMap );
 
             stick.mappings[EVENT_JOY_BUTTON][event.button][SDL_PRESSED]
                 = stick.mappings[EVENT_JOY_BUTTON][event.button][SDL_RELEASED] = keyToMap;
@@ -332,9 +333,7 @@ Controller::Controller ( KeyboardEnum ) : name ( "Keyboard" )
     namesWithIndex.insert ( keybd.name );
     origNameCount[name] = 1;
 
-    clearMapping();
-
-    // TODO get default keyboard mappings from game
+    doClearMapping();
 }
 
 Controller::Controller ( SDL_Joystick *joystick ) : name ( SDL_JoystickName ( joystick ) ), joystick ( joystick )
@@ -348,7 +347,7 @@ Controller::Controller ( SDL_Joystick *joystick ) : name ( SDL_JoystickName ( jo
     else
         ++it->second;
 
-    clearMapping();
+    doClearMapping();
 
     for ( auto& v : deadzones )
         v = DEFAULT_DEADZONE;
@@ -454,6 +453,71 @@ string Controller::getMapping ( uint32_t key ) const
     }
 }
 
+inline static uint8_t firstBitIndex ( uint32_t value )
+{
+    if ( value == 0 )
+        ASSERT_IMPOSSIBLE;
+
+    for ( uint8_t i = 0; i < 32; ++i )
+        if ( value & ( 1u << i ) )
+            return i;
+
+    ASSERT_IMPOSSIBLE;
+}
+
+void Controller::setMappings ( const array<char, 10>& config )
+{
+    static const array<uint32_t, 10> bits =
+    {
+        BIT_DOWN,
+        BIT_UP,
+        BIT_LEFT,
+        BIT_RIGHT,
+        ( CC_BUTTON_A | CC_BUTTON_SELECT ) << 8,
+        ( CC_BUTTON_B | CC_BUTTON_CANCEL ) << 8,
+        CC_BUTTON_C << 8,
+        CC_BUTTON_D << 8,
+        CC_BUTTON_E << 8,
+        CC_BUTTON_START << 8,
+    };
+
+    for ( uint8_t i = 0; i < 10; ++i )
+    {
+        const uint32_t vkCode = MapVirtualKey ( config[i], MAPVK_VSC_TO_VK_EX );
+        const string name = getVKeyName ( vkCode, config[i], false );
+
+        for ( uint8_t j = 0; j < 32; ++j )
+        {
+            if ( bits[i] & ( 1u << j ) )
+            {
+                keybd.codes[j] = vkCode;
+                keybd.names[j] = name;
+            }
+            else if ( keybd.codes[j] == vkCode )
+            {
+                keybd.codes[j] = 0;
+                keybd.names[j].clear();
+            }
+        }
+    }
+
+    ControllerManager::get().mappingsChanged ( this );
+}
+
+void Controller::setMappings ( const KeyboardMappings& mappings )
+{
+    keybd = mappings;
+
+    ControllerManager::get().mappingsChanged ( this );
+}
+
+void Controller::setMappings ( const JoystickMappings& mappings )
+{
+    stick = mappings;
+
+    ControllerManager::get().mappingsChanged ( this );
+}
+
 void Controller::startMapping ( Owner *owner, uint32_t key, const void *window )
 {
     cancelMapping();
@@ -486,7 +550,7 @@ void Controller::cancelMapping()
     }
 }
 
-void Controller::clearMapping ( uint32_t keys )
+void Controller::doClearMapping ( uint32_t keys )
 {
     for ( uint8_t i = 0; i < 32; ++i )
     {
@@ -514,6 +578,13 @@ void Controller::clearMapping ( uint32_t keys )
     }
 }
 
+void Controller::clearMapping ( uint32_t keys )
+{
+    doClearMapping ( keys );
+
+    ControllerManager::get().mappingsChanged ( this );
+}
+
 bool Controller::saveMappings ( const string& file ) const
 {
     ofstream fout ( file.c_str(), ios::binary );
@@ -526,8 +597,7 @@ bool Controller::saveMappings ( const string& file ) const
         if ( isKeyboard() )
             buffer = Protocol::encode ( keybd );
         else
-            stick.invalidate();
-        buffer = Protocol::encode ( stick );
+            buffer = Protocol::encode ( stick );
 
         fout.write ( &buffer[0], buffer.size() );
 

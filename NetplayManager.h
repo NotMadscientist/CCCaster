@@ -82,11 +82,15 @@ class NetplayManager
     uint16_t getPauseMenuInput ( uint8_t player ) const;
 
     // Get the input for the current frame taking into account delay and rollback
-    uint16_t getOffsetInput ( uint8_t player ) const;
+    uint16_t getOffsetInput ( uint8_t player ) const { return getOffsetInput ( player, getFrame() ); }
+    uint16_t getOffsetInput ( uint8_t player, uint32_t frame ) const;
 
     // Get the delayed input for the given frame
     uint16_t getDelayedInput ( uint8_t player ) const { return getDelayedInput ( player, getFrame() ); }
     uint16_t getDelayedInput ( uint8_t player, uint32_t frame ) const;
+
+    // Detect if up or down has been pressed by either player in the last 2 frames
+    bool hasUpDownInLast2f() const;
 
 public:
 

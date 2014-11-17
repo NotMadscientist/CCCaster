@@ -523,10 +523,8 @@ void MainUi::initialize()
     config.putInteger ( "lastUsedPort", -1 );
     config.putInteger ( "lastMainMenuPosition", 0 );
 
-    // Override with user configuration
-    config.load ( appDir + CONFIG_FILE );
-
-    // Save config after loading (this creates the config file on the first time)
+    // Load and save main config (this creates the config file on the first time)
+    loadConfig();
     saveConfig();
 
     // Reset the initial config
@@ -536,8 +534,16 @@ void MainUi::initialize()
     // Initialize controllers
     ControllerManager::get().initialize ( 0 );
     ControllerManager::get().check();
+
+    // Default keyboard mappings
+    ControllerManager::get().getKeyboard()->setMappings ( ProcessManager::fetchKeyboardConfig() );
+
+    // Load and save controller mappings
     for ( Controller *c : ControllerManager::get().getControllers() )
+    {
         loadMappings ( *c );
+        saveMappings ( *c );
+    }
 }
 
 void MainUi::saveConfig()
@@ -555,6 +561,18 @@ void MainUi::saveConfig()
 
     if ( sessionError.find ( msg ) == std::string::npos )
         sessionError += toString ( "\n%s", msg );
+}
+
+void MainUi::loadConfig()
+{
+    const string file = appDir + CONFIG_FILE;
+
+    LOG ( "Loading: %s", file );
+
+    if ( config.load ( file ) )
+        return;
+
+    LOG ( "Failed to load: %s", file );
 }
 
 void MainUi::saveMappings ( const Controller& controller )
@@ -576,7 +594,14 @@ void MainUi::saveMappings ( const Controller& controller )
 
 void MainUi::loadMappings ( Controller& controller )
 {
-    controller.loadMappings ( appDir + FOLDER + controller.getName() + MAPPINGS_EXT );
+    const string file = appDir + FOLDER + controller.getName() + MAPPINGS_EXT;
+
+    LOG ( "Loading: %s", file );
+
+    if ( controller.loadMappings ( file ) )
+        return;
+
+    LOG ( "Failed to load: %s", file );
 }
 
 void MainUi::main ( RunFuncPtr run )

@@ -8,6 +8,7 @@
 
 #include <memory>
 #include <stack>
+#include <array>
 
 
 #define COMBINE_INPUT(DIRECTION, BUTTONS)   uint16_t ( ( DIRECTION ) | ( ( BUTTONS ) << 4 ) )
@@ -97,6 +98,9 @@ public:
 
     // Get the user name from the game config
     static std::string fetchGameUserName();
+
+    // Get the keyboard config from the game binary
+    static std::array<char, 10> fetchKeyboardConfig();
 
     // Basic constructor / destructor
     ProcessManager ( Owner *owner );

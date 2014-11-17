@@ -174,7 +174,7 @@ struct DllMain
                 else if ( clientMode.isLocal() )
                 {
                     if ( controllers[1] )
-                        remoteInputs = controllers[1]->getState();
+                        remoteInputs = convertInputState ( controllers[1]->getState() );
 
                     netMan.setInput ( remotePlayer, remoteInputs );
                 }
@@ -714,9 +714,14 @@ struct DllMain
                 ControllerManager::get().check();
                 // TODO proper controller selection
                 if ( ControllerManager::get().getJoysticks().empty() )
+                {
                     controllers[0] = ControllerManager::get().getKeyboard();
+                }
                 else
+                {
                     controllers[0] = ControllerManager::get().getJoysticks() [0];
+                    controllers[1] = ControllerManager::get().getKeyboard();
+                }
                 break;
 
             case MsgType::ClientMode:

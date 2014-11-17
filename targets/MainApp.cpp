@@ -590,7 +590,8 @@ struct MainApp
             return;
         }
 
-        ui.display ( "Starting game...", !clientMode.isClient() ); // Don't replace last message if client
+        ui.display ( toString ( "Starting %s mode...", clientMode.isTraining() ? "training" : "versus" ),
+                     !clientMode.isClient() ); // Don't replace last message if client
 
         if ( clientMode.isClient() && ctrlSocket->isSmart() && ctrlSocket->getAsSmart().isTunnel() )
             clientMode.flags |= ClientMode::UdpTunnel;
@@ -839,7 +840,7 @@ struct MainApp
 
         procMan.ipcSend ( netplayConfig );
 
-        ui.display ( "Game started" );
+        ui.display ( toString ( "%s mode started", clientMode.isTraining() ? "Training" : "Versus" ) );
     }
 
     void ipcDisconnectEvent() override

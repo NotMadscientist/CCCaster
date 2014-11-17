@@ -17,6 +17,9 @@
 #define CC_NETWORK_CONFIG_FILE      "System\\NetConnect.dat"
 #define CC_NETWORK_USERNAME_KEY     "UserName"
 
+// Location of the keyboard config in the binary
+#define CC_KEYBOARD_CONFIG_OFFSET   ( 0x14D2C0 )
+
 #define CC_LOOP_START_ADDR          ( ( char * )     0x40D330 ) // Start of the main event loop
 #define CC_SCREEN_WIDTH_ADDR        ( ( uint32_t * ) 0x54D048 ) // The width of the main viewport
 #define CC_DAMAGE_LEVEL_ADDR        ( ( uint32_t * ) 0x553FCC ) // Default 2
@@ -27,6 +30,9 @@
 #define CC_SKIP_FRAMES_ADDR         ( ( uint32_t * ) 0x55D25C ) // Set to N to disable FPS limit for N frames
 #define CC_ROUND_TIMER_ADDR         ( ( uint32_t * ) 0x562A3C ) // Counts down from 4752, may stop
 #define CC_REAL_TIMER_ADDR          ( ( uint32_t * ) 0x562A40 ) // Counts up from 0 after round start
+#define CC_TRAINING_PAUSE_ADDR      ( ( uint32_t * ) 0x562A64 ) // 1 when paused
+#define CC_VERSUS_PAUSE_ADDR        ( ( uint32_t * ) 0x564B30 ) // 0xFFFFFFFF when paused
+
 #define CC_STAGE_SELECTOR_ADDR      ( ( uint32_t * ) 0x74FD98 ) // Currently selected stage, can be assigned to directly
 #define CC_FPS_COUNTER_ADDR         ( ( uint32_t * ) 0x774A70 ) // Value of the displayed FPS counter
 #define CC_PERF_FREQ_ADDR           ( ( uint64_t * ) 0x774A80 ) // Value of QueryPerformanceFrequency for game FPS

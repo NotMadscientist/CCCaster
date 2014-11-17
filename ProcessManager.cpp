@@ -376,12 +376,12 @@ ProcessManager::~ProcessManager()
 
 string ProcessManager::fetchGameUserName()
 {
-    string path = gameDir + CC_NETWORK_CONFIG_FILE;
+    const string file = gameDir + CC_NETWORK_CONFIG_FILE;
 
-    LOG ( "Opening: %s", path );
+    LOG ( "Reading: %s", file );
 
     string line, buffer;
-    ifstream fin ( path );
+    ifstream fin ( file );
 
     while ( getline ( fin, line ) )
     {
@@ -408,4 +408,19 @@ string ProcessManager::fetchGameUserName()
 
     fin.close();
     return buffer;
+}
+
+array<char, 10> ProcessManager::fetchKeyboardConfig()
+{
+    const string file = gameDir + MBAA_EXE;
+
+    LOG ( "Reading: %s", file );
+
+    array<char, 10> config;
+    ifstream fin ( file, ios::binary );
+
+    fin.seekg ( CC_KEYBOARD_CONFIG_OFFSET );
+    fin.read ( &config[0], config.size() );
+
+    return config;
 }

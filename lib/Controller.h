@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <string>
+#include <array>
 
 
 #define LOG_CONTROLLER(CONTROLLER, FORMAT, ...)                                                                 \
@@ -140,6 +141,9 @@ private:
     Controller ( KeyboardEnum );
     Controller ( SDL_Joystick *joystick );
 
+    // Clear this controller's mapping(s) without callback to ControllerManager
+    void doClearMapping ( uint32_t keys = 0xFFFFFFFF );
+
 public:
 
     // Joystick axis deadzones
@@ -173,8 +177,9 @@ public:
     }
 
     // Set the mappings for this controller
-    void setMappings ( const KeyboardMappings& mappings ) { keybd = mappings; }
-    void setMappings ( const JoystickMappings& mappings ) { stick = mappings; }
+    void setMappings ( const std::array<char, 10>& config );
+    void setMappings ( const KeyboardMappings& mappings );
+    void setMappings ( const JoystickMappings& mappings );
 
     // Start / cancel mapping for the given key
     void startMapping ( Owner *owner, uint32_t key, const void *window = 0 );

@@ -107,37 +107,32 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
     if ( config.mode.isNetplay() && config.mode.isVersus() )
         input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_START );
 
+    // If the pause menu is up
+    if ( * ( config.mode.isTraining() ? CC_TRAINING_PAUSE_ADDR : CC_VERSUS_PAUSE_ADDR ) )
+    {
+        // Don't allow pressing select until 2f after we have stopped moving the cursor. This is a work around
+        // for the issue when select is pressed after the cursor moves, but before currentMenuIndex is updated.
+        if ( hasUpDownInLast2f() )
+            input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
+
+        // Disable returning to main menu; 16 and 6 are the menu positions for training and versus mode respectively
+        if ( currentMenuIndex == ( config.mode.isTraining() ? 16 : 6 ) )
+            input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
+    }
+
     return input;
 }
 
 uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
 {
-    bool hasUpDownInLast2f = false;
-
-    for ( size_t i = 0; i < 2; ++i )
-    {
-        if ( i > getFrame() )
-            break;
-
-        uint16_t p1 = getDelayedInput ( 1, getFrame() - i );
-        uint16_t p2 = getDelayedInput ( 2, getFrame() - i );
-
-        if ( ( p1 & 2 ) || ( p1 & 8 ) || ( p2 & 2 ) || ( p2 & 8 ) )
-        {
-            hasUpDownInLast2f = true;
-            break;
-        }
-    }
-
     uint16_t input = getDelayedInput ( player );
 
     // Don't allow pressing select until 2f after we have stopped moving the cursor. This is a work around
     // for the issue when select is pressed after the cursor moves, but before currentMenuIndex is updated.
-    if ( hasUpDownInLast2f )
+    if ( hasUpDownInLast2f() )
         input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
 
-    // Disable saving replay or returning to main menu, ie only allow first two options (once again and chara select)
-    // TODO handle replay saving somehow
+    // Disable saving replay or returning to main menu; only allow first 2 options (once again and chara select)
     if ( currentMenuIndex >= 2 )
         input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
 
@@ -149,15 +144,15 @@ uint16_t NetplayManager::getPauseMenuInput ( uint8_t player ) const
     return 0;
 }
 
-uint16_t NetplayManager::getOffsetInput ( uint8_t player ) const
+uint16_t NetplayManager::getOffsetInput ( uint8_t player, uint32_t frame ) const
 {
-    if ( getFrame() < config.getOffset() )
+    if ( frame < config.getOffset() )
         return 0;
 
     ASSERT ( player == 1 || player == 2 );
     ASSERT ( getIndex() >= startIndex );
 
-    return inputs[player - 1].get ( getIndex() - startIndex, getFrame() - config.getOffset() );
+    return inputs[player - 1].get ( getIndex() - startIndex, frame - config.getOffset() );
 }
 
 uint16_t NetplayManager::getDelayedInput ( uint8_t player, uint32_t frame ) const
@@ -169,6 +164,28 @@ uint16_t NetplayManager::getDelayedInput ( uint8_t player, uint32_t frame ) cons
     ASSERT ( getIndex() >= startIndex );
 
     return inputs[player - 1].get ( getIndex() - startIndex, frame - config.delay );
+}
+
+bool NetplayManager::hasUpDownInLast2f() const
+{
+    for ( size_t i = 0; i < 2; ++i )
+    {
+        if ( i > getFrame() )
+            break;
+
+        const uint16_t p1 = ( state.value == NetplayState::InGame
+                              ? getOffsetInput ( 1, getFrame() - i )
+                              : getDelayedInput ( 1, getFrame() - i ) );
+
+        const uint16_t p2 = ( state.value == NetplayState::InGame
+                              ? getOffsetInput ( 2, getFrame() - i )
+                              : getDelayedInput ( 2, getFrame() - i ) );
+
+        if ( ( p1 & 2 ) || ( p1 & 8 ) || ( p2 & 2 ) || ( p2 & 8 ) )
+            return true;
+    }
+
+    return false;
 }
 
 void NetplayManager::setRemotePlayer ( uint8_t player )

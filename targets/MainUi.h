@@ -39,6 +39,7 @@ class MainUi : public Controller::Owner
     void doneMapping ( Controller *controller, uint32_t key );
 
     void saveConfig();
+    void loadConfig();
 
     void saveMappings ( const Controller& controller );
     void loadMappings ( Controller& controller );
