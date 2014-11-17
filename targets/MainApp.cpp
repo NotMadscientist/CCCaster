@@ -840,7 +840,7 @@ struct MainApp
 
         procMan.ipcSend ( netplayConfig );
 
-        ui.display ( toString ( "%s mode started", clientMode.isTraining() ? "Training" : "Versus" ) );
+        ui.display ( toString ( "Started %s mode", clientMode.isTraining() ? "training" : "versus" ) );
     }
 
     void ipcDisconnectEvent() override

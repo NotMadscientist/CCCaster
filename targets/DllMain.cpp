@@ -893,7 +893,7 @@ struct DllMain
 
         ChangeMonitor::get().addRef ( this, Variable ( Variable::GameMode ), *CC_GAME_MODE_ADDR );
         ChangeMonitor::get().addRef ( this, Variable ( Variable::RoundStart ), roundStartCounter );
-        ChangeMonitor::get().addRef ( this, Variable ( Variable::SkippableFlag ), *cC_SKIPPABLE_FLAG_ADDR );
+        ChangeMonitor::get().addRef ( this, Variable ( Variable::SkippableFlag ), *CC_SKIPPABLE_FLAG_ADDR );
     }
 
     // Destructor
@@ -1059,7 +1059,7 @@ extern "C" void callback()
     {
         LOG ( "Exiting" );
 
-        // Joystick must be deinitialized on the same thread it was initialized
+        // Joystick must be deinitialized on the main thread it was initialized
         ControllerManager::get().deinitialize();
         deinitialize();
         exit ( 0 );
