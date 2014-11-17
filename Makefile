@@ -25,8 +25,8 @@ DLL_CPP_SRCS = $(wildcard targets/Dll*.cpp) $(BASE_CPP_SRCS)
 
 NON_GEN_SRCS = *.cpp targets/*.cpp lib/*.cpp tests/*.cpp
 NON_GEN_HEADERS = \
-	$(filter-out lib/Version.local.h lib/Protocol.%.h,$(wildcard *.h targets/*.h lib/*.h tests/*.h))
-AUTOGEN_HEADERS = lib/Version.local.h lib/Protocol.*.h
+	$(filter-out lib/Version.%.h lib/Protocol.%.h,$(wildcard *.h targets/*.h lib/*.h tests/*.h))
+AUTOGEN_HEADERS = lib/Version.*.h lib/Protocol.*.h
 
 # Main program objects
 MAIN_OBJECTS = $(MAIN_CPP_SRCS:.cpp=.o) $(CONTRIB_CC_SRCS:.cc=.o) $(CONTRIB_C_SRCS:.c=.o)
@@ -187,7 +187,7 @@ sdl-clean:
 
 clean:
 	rm -f .depend .include
-	rm -f $(AUTOGEN_HEADERS) *.res *.exe *.dll *.zip *.o targets/*.o lib/*.o tests/*.o
+	rm -f $(AUTOGEN_HEADERS) *.res *.exe *.dll *.zip *.o targets/*.o lib/*.o tests/*.o $(FOLDER)/*.exe $(FOLDER)/*.dll
 	rm -f $(MAIN_OBJECTS) $(DLL_OBJECTS)
 
 clean-full: clean

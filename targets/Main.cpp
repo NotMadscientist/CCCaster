@@ -25,8 +25,10 @@ void runMain ( const IpAddrPort& address, const Serializable& config );
 void runFake ( const IpAddrPort& address, const Serializable& config );
 
 
-static void initAppDir()
+static bool initAndCheckAppDir()
 {
+    bool success = true;
+
     char buffer[4096];
 
     appDir.clear();
@@ -41,6 +43,35 @@ static void initAppDir()
         if ( !appDir.empty() && appDir.back() != '\\' )
             appDir += '\\';
     }
+
+    DWORD val = GetFileAttributes ( ( appDir + FOLDER ).c_str() );
+
+    if ( val == INVALID_FILE_ATTRIBUTES || ! ( val & FILE_ATTRIBUTE_DIRECTORY ) )
+    {
+        string folder = FOLDER;
+        folder.pop_back();
+
+        lastError += "\nMissing " + folder + " folder!";
+        success = false;
+    }
+
+    val = GetFileAttributes ( ( appDir + HOOK_DLL ).c_str() );
+
+    if ( val == INVALID_FILE_ATTRIBUTES )
+    {
+        lastError += "\nMissing " HOOK_DLL "!";
+        success = false;
+    }
+
+    val = GetFileAttributes ( ( appDir + LAUNCHER ).c_str() );
+
+    if ( val == INVALID_FILE_ATTRIBUTES )
+    {
+        lastError += "\nMissing " LAUNCHER "!";
+        success = false;
+    }
+
+    return success;
 }
 
 static void deinitialize()
@@ -196,8 +227,14 @@ int main ( int argc, char *argv[] )
     signal ( SIGTERM, signalHandler );
     SetConsoleCtrlHandler ( consoleCtrl, TRUE );
 
-    // Initialize the main application directory
-    initAppDir();
+    // Initialize the main application directory, this also does a sanity check
+    if ( !initAndCheckAppDir() )
+    {
+        PRINT ( "%s", trim ( lastError ) );
+        PRINT ( "Press any key to exit." );
+        getchar();
+        return -1;
+    }
 
     // Initialize logging
     if ( opt[Options::Stdout] )

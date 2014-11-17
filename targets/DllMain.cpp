@@ -88,7 +88,7 @@ struct DllMain
     Controller *controllers[2] = { 0, 0 };
 
     // Local and remote inputs
-    uint16_t localInputs = 0, remoteInputs = 0;
+    uint16_t localInput = 0, remoteInput = 0;
 
 
     void frameStepNormal()
@@ -122,7 +122,7 @@ struct DllMain
                 }
 
                 if ( controllers[0] )
-                    localInputs = convertInputState ( controllers[0]->getState() );
+                    localInput = convertInputState ( controllers[0]->getState() );
 
 #ifndef RELEASE
                 // Test rollback
@@ -160,12 +160,12 @@ struct DllMain
                         if ( netMan.getState().value == NetplayState::CharaSelect )
                             buttons &= ~ ( CC_BUTTON_B | CC_BUTTON_CANCEL );
 
-                        localInputs = COMBINE_INPUT ( direction, buttons );
+                        localInput = COMBINE_INPUT ( direction, buttons );
                     }
                 }
 #endif
 
-                netMan.setInput ( localPlayer, localInputs );
+                netMan.setInput ( localPlayer, localInput );
 
                 if ( clientMode.isNetplay() )
                 {
@@ -174,9 +174,9 @@ struct DllMain
                 else if ( clientMode.isLocal() )
                 {
                     if ( controllers[1] )
-                        remoteInputs = convertInputState ( controllers[1]->getState() );
+                        remoteInput = convertInputState ( controllers[1]->getState() );
 
-                    netMan.setInput ( remotePlayer, remoteInputs );
+                    netMan.setInput ( remotePlayer, remoteInput );
                 }
 
                 if ( shouldSyncRngState && ( clientMode.isHost() || clientMode.isBroadcast() ) )
