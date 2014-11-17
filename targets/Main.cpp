@@ -164,8 +164,8 @@ int main ( int argc, char *argv[] )
         },
 
         {
-            Options::Tournament, 0, "", "tournament", Arg::None,
-            "  --tournament       Tournament mode, forces just --offline and --no-ui.\n"
+            Options::Tourney, 0, "", "tourney", Arg::None,
+            "  --tourney          Tournament mode, forces just --offline and --no-ui.\n"
         },
 
 #ifndef RELEASE
@@ -291,7 +291,7 @@ int main ( int argc, char *argv[] )
 
     // Initialize config
     ui.initialize();
-    ui.initialConfig.mode.flags |= ( opt[Options::Training] ? ClientMode::Training : 0 );
+    ui.initialConfig.mode.flags |= ( opt[Options::Training] && !opt[Options::Tourney] ? ClientMode::Training : 0 );
 
     if ( opt[Options::Spectate] )
         ui.initialConfig.mode.value = ClientMode::Spectate;
@@ -306,7 +306,7 @@ int main ( int argc, char *argv[] )
     for ( int i = 2; i < parser.nonOptionsCount(); ++i )
         lastError += toString ( "Non-option (%d): '%s'\n", i, parser.nonOption ( i ) );
 
-    if ( opt[Options::Offline] )
+    if ( opt[Options::Offline] || opt[Options::Tourney] )
     {
         NetplayConfig netplayConfig;
         netplayConfig.mode.value = ClientMode::Offline;
@@ -314,7 +314,7 @@ int main ( int argc, char *argv[] )
         netplayConfig.delay = 0;
         netplayConfig.hostPlayer = 1;
 
-        if ( opt[Options::Offline].arg )
+        if ( opt[Options::Offline].arg && !opt[Options::Tourney] )
         {
             uint32_t delay = 0;
             stringstream ss ( opt[Options::Offline].arg );
@@ -368,7 +368,7 @@ int main ( int argc, char *argv[] )
         return 0;
     }
 
-    if ( opt[Options::NoUi] )
+    if ( opt[Options::NoUi] || opt[Options::Tourney] )
     {
         if ( !lastError.empty() )
             PRINT ( "%s", lastError );

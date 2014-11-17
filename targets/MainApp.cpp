@@ -943,6 +943,17 @@ struct MainApp
         if ( !appDir.empty() )
             options.set ( Options::AppDir, 1, appDir );
 
+        if ( options[Options::Tourney] )
+        {
+            clientMode.value = ClientMode::Offline;
+            clientMode.flags = 0;
+            options.set ( Options::Training, 0 );
+            options.set ( Options::Broadcast, 0 );
+            options.set ( Options::Spectate, 0 );
+            options.set ( Options::Offline, 1 );
+            options.set ( Options::NoUi, 1 );
+        }
+
         if ( clientMode.isNetplay() )
         {
             ASSERT ( config.getMsgType() == MsgType::InitialConfig );

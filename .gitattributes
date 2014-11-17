@@ -13,3 +13,7 @@ contrib/astyle binary
 # Text files
 *.txt text
 *.CT text
+
+# Readme files
+README.txt text eol=crlf
+ChangeLog.txt text eol=crlf

@@ -1,0 +1,80 @@
+v2.1:
+- Can host and connect without port forward
+- Proper Linux / Wine support
+- Command line options
+
+v2.0d:
+- Fixed a bug that sometimes causes weird inputs
+
+v2.0c:
+- Optimizations
+- Added a lite version:
+  Disables spectators (but can still spectate)
+  Can't cancel out of host or join
+  Everything else still works the same
+  Try this version if you get slow downs
+- Enables the disabled stages (thanks to Erkz for the memory locations)
+
+v2.0b:
+- Separate spectate only option, netplay option still works same as before
+- Display both player names when spectating
+
+v2.0a:
+- Fixed the freeze that happens when spectating training mode
+- Offline training mode reset button enhancement (like P4U)
+  Tap reset + left/right to go to either corner (with gap)
+  Hold reset + left/right makes player 1 go into the corner
+  Hold down reset to go to player 2 starting position
+
+v2.0:
+New features:
+- Replay saving works now
+- Brand new interface
+- Spectator mode
+- Broadcast offline versus mode or training mode
+- Netplay training mode
+- Offline training mode with delay
+- Better retry menu:
+  Each side chooses their own retry option independently
+  Can also manually save replays first
+  Only chooses once again if both sides chose once again
+  Note: once you make a selection, the game waits until the other side chooses something or exits
+- Notification when someone connects (can be disabled):
+  Can focus the caster window, otherwise it flashes on the taskbar
+  Can also play a chime sound, which can be customized
+- Starts the game with high CPU priority (can be disabled)
+Minor changes and bug fixes:
+- Better checksums, desyncs should rarely happen now
+- Can cancel a pending connection with ESC
+
+v1.1:
+- Not compatible with older versions!
+- Fixed the end of match crash issue
+- Fixed the rest of the control issues
+- Fixed possible desync issue
+
+v1.0f:
+- Fixed retry menu crash issue
+- Fixed manually setting delay
+- Increased timeout limit for non-ingame stuff, should make loading more stable
+
+v1.0e:
+- Better error messages for basic startup problems
+- Clear clipboard at the end of each host session
+- Fixed keyboard directions behaviour: MBAACC actually treats simultaneous left+right as left
+  and up+down as down for keyboard ONLY, if this happens on a controller you just get neutral.
+- Fixed AB and E macro behaviour: they should match the game exactly now. Remap if you use the AB macro
+
+v1.0d:
+- Fixed joystick controls again, remap by deleting cccaster.cfg if you have issues
+- IP and port is now copied to the clipboard on host
+
+v1.0c:
+- Fixed crash on Windows XP, this may also fix the Windows 8 crash (untested).
+- Increased timeout limit for the game, this should prevent crashes when loading / match over.
+- Added reading from clipboard
+
+v1.0b:
+- Fixed keyboard control issues, you need to remap for it to work.
+- There was a bug with version checking in v1.0a, so this version breaks compatibility.
+  You should update even if you don't play on keyboard
