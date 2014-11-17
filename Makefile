@@ -105,9 +105,9 @@ $(ARCHIVE): $(BINARY) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER)
 	$(ZIP) $(NAME).v$(VERSION).zip $^
 	$(GRANT)
 
-$(BINARY): $(MAIN_OBJECTS) res/icon.res
+$(BINARY): $(MAIN_OBJECTS)
 	rm -f $(filter-out $(BINARY),$(wildcard $(NAME)*.exe))
-	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(MAIN_OBJECTS) res/icon.res $(LD_FLAGS)
+	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(MAIN_OBJECTS) $(LD_FLAGS)
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
@@ -137,8 +137,8 @@ $(DEBUGGER): targets/Debugger.cpp lib/Utilities.cpp lib/Logger.cpp
 	$(CHMOD_X)
 	@echo
 
-res/icon.res: res/icon.rc res/icon.ico
-	$(WINDRES) -F pe-i386 res/icon.rc -O coff -o $@
+# res/icon.res: res/icon.rc res/icon.ico
+# 	$(WINDRES) -F pe-i386 res/icon.rc -O coff -o $@
 
 
 define make_version
