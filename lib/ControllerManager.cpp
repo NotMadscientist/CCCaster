@@ -100,23 +100,24 @@ void ControllerManager::doCheck()
                 LOG_CONTROLLER ( controller, "id=%d; SDL_JOYDEVICEADDED", id );
 
                 joysticks[id].reset ( controller );
-                joysticksByGuid[controller->getGuid()] = controller;
+                joysticksByName[controller->getName()] = controller;
+
+                auto it = mappings.mappings.find ( controller->getName() );
+                if ( it != mappings.mappings.end() && it->second->getMsgType() == MsgType::JoystickMappings )
+                    controller->setMappings ( it->second->getAs<JoystickMappings>() );
 
                 if ( owner )
                     owner->attachedJoystick ( controller );
 
-                if ( guids.find ( controller->getGuid().guid ) == guids.end() )
-                    guids.insert ( controller->getGuid().guid );
+                // Workaround SDL bug 2643
+                if ( uniqueNames.find ( controller->name ) == uniqueNames.end() )
+                    uniqueNames.insert ( controller->name );
                 else
                     shouldReset = true;
 
                 // LOG ( "joysticks :%s", joysticks.empty() ? " (empty)" : "" );
                 // for ( const auto& kv : joysticks )
                 //     LOG ( "%d -> %08x", kv.first, kv.second.get() );
-
-                // LOG ( "Controller::guidBitset :%s", Controller::guidBitset.empty() ? " (empty)" : "" );
-                // for ( const auto& kv : Controller::guidBitset )
-                //     LOG ( "'%s' -> %08x", kv.first, kv.second );
                 break;
             }
 
@@ -131,22 +132,18 @@ void ControllerManager::doCheck()
                 if ( owner )
                     owner->detachedJoystick ( controller );
 
-                if ( controller->isOnlyGuid() )
-                    guids.erase ( controller->getGuid().guid );
+                // Workaround SDL bug 2643
+                if ( controller->isUniqueName() )
+                    uniqueNames.erase ( controller->name );
                 else
                     shouldReset = true;
 
-                SDL_JoystickClose ( controller->joystick );
-                joysticksByGuid.erase ( controller->getGuid() );
+                joysticksByName.erase ( controller->getName() );
                 joysticks.erase ( id );
 
                 // LOG ( "joysticks :%s", joysticks.empty() ? " (empty)" : "" );
                 // for ( const auto& kv : joysticks )
                 //     LOG ( "%d -> %08x", kv.first, kv.second.get() );
-
-                // LOG ( "Controller::guidBitset :%s", Controller::guidBitset.empty() ? " (empty)" : "" );
-                // for ( const auto& kv : Controller::guidBitset )
-                //     LOG ( "'%s' -> %08x", kv.first, kv.second );
                 break;
             }
 
@@ -155,6 +152,14 @@ void ControllerManager::doCheck()
                 break;
         }
     }
+}
+
+void ControllerManager::mappingsChanged ( Controller *controller )
+{
+    LOG_CONTROLLER ( controller, "mappingsChanged" );
+
+    mappings.mappings[controller->getName()] = controller->getMappings();
+    mappings.invalidate();
 }
 
 void ControllerManager::check()
@@ -181,9 +186,9 @@ void ControllerManager::check()
 void ControllerManager::clear()
 {
     LOG ( "Clearing controllers" );
+
     joysticks.clear();
-    joysticksByGuid.clear();
-    Controller::guidBitset.clear();
+    joysticksByName.clear();
 }
 
 static bool compareControllerName ( const Controller *a, const Controller *b )
@@ -297,15 +302,15 @@ void ControllerMappings::load ( cereal::BinaryInputArchive& ar )
     size_t count;
     ar ( count );
 
-    IndexedGuid guid;
+    string name;
     string buffer;
     size_t consumed;
 
     for ( size_t i = 0; i < count; ++i )
     {
-        ar ( guid, buffer );
+        ar ( name, buffer );
 
-        mappings[guid] = Protocol::decode ( &buffer[0], buffer.size(), consumed );
+        mappings[name] = Protocol::decode ( &buffer[0], buffer.size(), consumed );
 
         ASSERT ( consumed == buffer.size() );
     }

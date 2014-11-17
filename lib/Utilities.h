@@ -259,3 +259,10 @@ inline T sorted ( const T& list, const F& compare )
 // Clipboard manipulation
 std::string getClipboard();
 void setClipboard ( const std::string& str );
+
+
+// True if x is a power of two
+inline bool isPowerOfTwo ( uint32_t x )
+{
+    return ( x != 0 ) && ( ( x & ( x - 1 ) ) == 0 );
+}

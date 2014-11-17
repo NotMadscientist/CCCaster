@@ -16,11 +16,20 @@ using namespace std;
 // System sound prefix
 #define SYSTEM_ALERT_PREFEX "System"
 
-// Config file
+// Main configuration file
 #define CONFIG_FILE FOLDER "config.ini"
 
-// Controller mapping file extension
+// Controller mappings file extension
 #define MAPPINGS_EXT ".mappings"
+
+// Run macro that deinitializes controllers, runs, then reinitializes controllers
+#define RUN(ADDRESS, CONFIG)                                                                    \
+    do {                                                                                        \
+        ControllerManager::get().deinitialize();                                                \
+        run ( ADDRESS, CONFIG );                                                                \
+        ControllerManager::get().initialize ( 0 );                                              \
+    } while ( 0 )
+
 
 extern string appDir;
 
@@ -72,7 +81,7 @@ void MainUi::netplay ( RunFuncPtr run )
             initialConfig.mode.value = ClientMode::Client;
         }
 
-        run ( address, initialConfig );
+        RUN ( address, initialConfig );
 
         ui->popNonUserInput();
 
@@ -120,7 +129,7 @@ void MainUi::spectate ( RunFuncPtr run )
 
         initialConfig.mode.value = ClientMode::Spectate;
 
-        run ( address, initialConfig );
+        RUN ( address, initialConfig );
 
         ui->popNonUserInput();
 
@@ -173,7 +182,7 @@ void MainUi::broadcast ( RunFuncPtr run )
         config.putInteger ( "lastUsedPort", address.port );
         saveConfig();
 
-        run ( "", netplayConfig );
+        RUN ( "", netplayConfig );
 
         ui->popNonUserInput();
 
@@ -235,7 +244,7 @@ void MainUi::offline ( RunFuncPtr run )
     netplayConfig.delay = delay;
     netplayConfig.hostPlayer = 1;
 
-    run ( "", netplayConfig );
+    RUN ( "", netplayConfig );
 
     ui->popNonUserInput();
 }
@@ -346,8 +355,7 @@ void MainUi::controls()
 
             ui->top<ConsoleUi::Menu>()->overlayCurrentPosition ( bits[position].first + "..." );
 
-            TimerManager::get().initialize();
-            SocketManager::get().initialize();
+            AutoManager _;
 
             if ( controller.isKeyboard() )
             {
@@ -364,9 +372,6 @@ void MainUi::controls()
                 while ( EventManager::get().poll ( 1 ) )
                     ControllerManager::get().check();
             }
-
-            SocketManager::get().deinitialize();
-            TimerManager::get().deinitialize();
 
             ui->pop();
             saveMappings ( controller );
@@ -527,6 +532,12 @@ void MainUi::initialize()
     // Reset the initial config
     initialConfig.clear();
     initialConfig.localName = config.getString ( "displayName" );
+
+    // Initialize controllers
+    ControllerManager::get().initialize ( 0 );
+    ControllerManager::get().check();
+    for ( Controller *c : ControllerManager::get().getControllers() )
+        loadMappings ( *c );
 }
 
 void MainUi::saveConfig()
@@ -570,9 +581,6 @@ void MainUi::loadMappings ( Controller& controller )
 
 void MainUi::main ( RunFuncPtr run )
 {
-    ControllerManager::get().initialize ( 0 );
-    ControllerManager::get().check();
-
     static const vector<string> options = { "Netplay", "Spectate", "Broadcast", "Offline", "Controls", "Settings" };
 
     ui.reset ( new ConsoleUi ( uiTitle ) );

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Controller.h"
+#include "Logger.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -10,7 +11,7 @@
 
 struct ControllerMappings : public SerializableSequence
 {
-    std::unordered_map<IndexedGuid, MsgPtr> mappings;
+    std::unordered_map<std::string, MsgPtr> mappings;
 
     DECLARE_MESSAGE_BOILERPLATE ( ControllerMappings )
 };
@@ -30,15 +31,18 @@ public:
 
 private:
 
+    // All controllers mappings
+    ControllerMappings mappings;
+
     // Keyboard controller instance
     Controller keyboard;
 
     // Maps of joystick controller instances
     std::unordered_map<int, std::shared_ptr<Controller>> joysticks;
-    std::unordered_map<IndexedGuid, Controller *> joysticksByGuid;
+    std::unordered_map<std::string, Controller *> joysticksByName;
 
-    // Set of unique joystick guids, used to workaround SDL bug 2643
-    std::unordered_set<Guid> guids;
+    // Set of unique joystick names, used to workaround SDL bug 2643
+    std::unordered_set<std::string> uniqueNames;
 
     // Flag to reinitialize joysticks, used to workaround SDL bug 2643
     bool shouldReset = false;
@@ -75,27 +79,26 @@ public:
     std::vector<const Controller *> getControllers() const;
 
     // Get the mappings for all controllers
-    MsgPtr getMappings() const
-    {
-        ControllerMappings *msg = new ControllerMappings();
-
-        for ( const Controller *c : getControllers() )
-            msg->mappings[c->getGuid()] = c->getMappings();
-
-        return MsgPtr ( msg );
-    }
+    MsgPtr getMappings() const { return MsgPtr ( const_cast<ControllerMappings *> ( &mappings ), ignoreMsgPtr ); }
 
     // Set the mappings for all controllers
     void setMappings ( const ControllerMappings& mappings )
     {
+        this->mappings = mappings;
+
         for ( auto& kv : mappings.mappings )
         {
+            LOG ( "name=%s", kv.first );
+
             if ( kv.second->getMsgType() == MsgType::KeyboardMappings )
                 keyboard.setMappings ( kv.second->getAs<KeyboardMappings>() );
-            else if ( joysticksByGuid.find ( kv.first ) != joysticksByGuid.end() )
-                joysticksByGuid[kv.first]->setMappings ( kv.second->getAs<JoystickMappings>() );
+            else if ( joysticksByName.find ( kv.first ) != joysticksByName.end() )
+                joysticksByName[kv.first]->setMappings ( kv.second->getAs<JoystickMappings>() );
         }
     }
+
+    // Indicate the mappings changed for a specific controller
+    void mappingsChanged ( Controller *controller );
 
     // Initialize / deinitialize controller manager
     void initialize ( Owner *owner );

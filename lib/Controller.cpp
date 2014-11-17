@@ -1,4 +1,5 @@
 #include "Controller.h"
+#include "ControllerManager.h"
 #include "Logger.h"
 
 #include <SDL.h>
@@ -6,6 +7,7 @@
 
 #include <cstdlib>
 #include <fstream>
+#include <limits>
 
 using namespace std;
 
@@ -43,9 +45,6 @@ static string getVKeyName ( uint32_t vkCode, uint32_t scanCode, bool isExtended 
 }
 
 
-unordered_map<Guid, uint32_t> Controller::guidBitset;
-
-
 void Controller::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown )
 {
     // Ignore keyboard events for joystick (except Esc)
@@ -61,12 +60,16 @@ void Controller::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExte
 
     if ( vkCode != VK_ESCAPE )
     {
+        clearMapping ( keyToMap );
+
+        const string name = getVKeyName ( vkCode, scanCode, isExtended );
+
         for ( uint8_t i = 0; i < 32; ++i )
         {
             if ( keyToMap & ( 1u << i ) )
             {
                 keybd.codes[i] = vkCode;
-                keybd.names[i] = getVKeyName ( vkCode, scanCode, isExtended );
+                keybd.names[i] = name;
             }
             else if ( keybd.codes[i] == vkCode )
             {
@@ -75,13 +78,28 @@ void Controller::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExte
             }
         }
 
+        keybd.invalidate();
         key = keyToMap;
+
+        LOG_CONTROLLER ( this, "Mapped key [0x%02X] %s to %08x ", vkCode, name, keyToMap );
     }
 
     cancelMapping();
 
+    ControllerManager::get().mappingsChanged ( this );
+
     if ( owner )
         owner->doneMapping ( this, key );
+}
+
+static char getAxisSign ( int index, int value )
+{
+    if ( value == 0 )
+        return '0';
+    else if ( index % 2 == 0 || index >= 4 )
+        return ( value == AXIS_POSITIVE ? '+' : '-' );
+    else
+        return ( value == AXIS_POSITIVE ? '-' : '+' ); // SDL joystick Y-axis is inverted
 }
 
 void Controller::joystickEvent ( const SDL_JoyAxisEvent& event )
@@ -103,21 +121,26 @@ void Controller::joystickEvent ( const SDL_JoyAxisEvent& event )
         else if ( activeValues[AXIS_NEGATIVE] )
             activeValue = AXIS_NEGATIVE;
 
+        // Done mapping if the axis returned to 0
         if ( value == 0 && activeValue )
         {
-            // Done mapping if the axis returned to 0
+            clearMapping ( keyToMap );
+
             values[activeValue] = keyToMap;
 
             // Set bit mask for neutral value
             values[AXIS_CENTERED] = ( values[AXIS_POSITIVE] | values[AXIS_NEGATIVE] );
 
-            LOG_CONTROLLER ( this, "Mapped axis%d %s to %08x",
-                             event.axis, ( activeValue == AXIS_POSITIVE ? "+" : "-" ), keyToMap );
+            stick.invalidate();
+
+            LOG_CONTROLLER ( this, "Mapped axis%d %c to %08x", event.axis, getAxisSign ( 0, value ), keyToMap );
 
             Owner *owner = this->owner;
-            uint32_t key = keyToMap;
+            const uint32_t key = keyToMap;
 
             cancelMapping();
+
+            ControllerManager::get().mappingsChanged ( this );
 
             if ( owner )
                 owner->doneMapping ( this, key );
@@ -136,11 +159,10 @@ void Controller::joystickEvent ( const SDL_JoyAxisEvent& event )
     if ( value != AXIS_CENTERED )
         state |= values[value];
 
-    LOG_CONTROLLER ( this, "axis=%d; value=%s; EVENT_JOY_AXIS",
-                     event.axis, ( value == 0 ? "0" : ( value == AXIS_POSITIVE ? "+" : "-" ) ) );
+    // LOG_CONTROLLER ( this, "axis=%d; value=%c; EVENT_JOY_AXIS", event.axis, getAxisSign ( 0, value ) );
 }
 
-static int ConvertHatToNumPad ( int hat )
+static int getHatNumPadDir ( int hat )
 {
     int dir = 5;
 
@@ -179,9 +201,11 @@ void Controller::joystickEvent ( const SDL_JoyHatEvent& event )
         else if ( activeValues[SDL_HAT_LEFT] )
             activeValue = SDL_HAT_LEFT;
 
+        // Done mapping if the hat is centered
         if ( event.value == SDL_HAT_CENTERED && activeValue )
         {
-            // Done mapping if the hat is centered
+            clearMapping ( keyToMap );
+
             values[activeValue] = activeValues[activeValue];
 
             // Set bit mask for centered value
@@ -191,13 +215,16 @@ void Controller::joystickEvent ( const SDL_JoyHatEvent& event )
             values[SDL_HAT_CENTERED] |= values[SDL_HAT_DOWN];
             values[SDL_HAT_CENTERED] |= values[SDL_HAT_LEFT];
 
-            LOG_CONTROLLER ( this, "Mapped hat%d %d to %08x",
-                             event.hat, ConvertHatToNumPad ( activeValue ), keyToMap );
+            stick.invalidate();
+
+            LOG_CONTROLLER ( this, "Mapped hat%d %d to %08x", event.hat, getHatNumPadDir ( activeValue ), keyToMap );
 
             Owner *owner = this->owner;
-            uint32_t key = keyToMap;
+            const uint32_t key = keyToMap;
 
             cancelMapping();
+
+            ControllerManager::get().mappingsChanged ( this );
 
             if ( owner )
                 owner->doneMapping ( this, key );
@@ -223,7 +250,7 @@ void Controller::joystickEvent ( const SDL_JoyHatEvent& event )
     else if ( event.value & SDL_HAT_RIGHT )
         state |= values[SDL_HAT_RIGHT];
 
-    LOG_CONTROLLER ( this, "hat=%d; value=%d; EVENT_JOY_HAT", event.hat, ConvertHatToNumPad ( event.value ) );
+    // LOG_CONTROLLER ( this, "hat=%d; value=%d; EVENT_JOY_HAT", event.hat, getHatNumPadDir ( event.value ) );
 }
 
 void Controller::joystickEvent ( const SDL_JoyButtonEvent& event )
@@ -231,20 +258,26 @@ void Controller::joystickEvent ( const SDL_JoyButtonEvent& event )
     if ( keyToMap != 0 )
     {
         uint32_t *activeStates = active.mappings[EVENT_JOY_BUTTON][event.button];
-        bool isActive = ( activeStates[SDL_PRESSED] );
+        const bool isActive = ( activeStates[SDL_PRESSED] );
 
+        // Done mapping if the button was released
         if ( event.state == SDL_RELEASED && isActive )
         {
-            // Done mapping if the button was tapped
+            clearMapping ( keyToMap );
+
             stick.mappings[EVENT_JOY_BUTTON][event.button][SDL_PRESSED]
                 = stick.mappings[EVENT_JOY_BUTTON][event.button][SDL_RELEASED] = keyToMap;
+
+            stick.invalidate();
 
             LOG_CONTROLLER ( this, "Mapped button%d to %08x", event.button, keyToMap );
 
             Owner *owner = this->owner;
-            uint32_t key = keyToMap;
+            const uint32_t key = keyToMap;
 
             cancelMapping();
+
+            ControllerManager::get().mappingsChanged ( this );
 
             if ( owner )
                 owner->doneMapping ( this, key );
@@ -268,44 +301,52 @@ void Controller::joystickEvent ( const SDL_JoyButtonEvent& event )
     else if ( event.state == SDL_PRESSED )
         state |= key;
 
-    LOG_CONTROLLER ( this, "button=%d; value=%d; EVENT_JOY_BUTTON", event.button, ( event.state == SDL_PRESSED ) );
+    // LOG_CONTROLLER ( this, "button=%d; value=%d; EVENT_JOY_BUTTON", event.button, ( event.state == SDL_PRESSED ) );
+}
+
+static unordered_set<std::string> namesWithIndex;
+
+static unordered_map<std::string, uint32_t> origNameCount;
+
+static string nextName ( const string& name )
+{
+    if ( namesWithIndex.find ( name ) == namesWithIndex.end() )
+        return name;
+
+    uint32_t index = 2;
+
+    while ( namesWithIndex.find ( toString ( "%s (%d)", name, index ) ) != namesWithIndex.end() )
+    {
+        if ( index == numeric_limits<uint32_t>::max() )
+            LOG_AND_THROW_STRING ( "Too many duplicate names for: '%s'", name );
+
+        ++index;
+    }
+
+    return toString ( "%s (%d)", name, index );
 }
 
 Controller::Controller ( KeyboardEnum ) : name ( "Keyboard" )
 {
-    memset ( &keybd.guid, 0, sizeof ( keybd.guid ) );
+    keybd.name = name;
+    namesWithIndex.insert ( keybd.name );
+    origNameCount[name] = 1;
 
     clearMapping();
 
     // TODO get default keyboard mappings from game
 }
 
-Controller::Controller ( SDL_Joystick *joystick ) : joystick ( joystick ), name ( SDL_JoystickName ( joystick ) )
+Controller::Controller ( SDL_Joystick *joystick ) : name ( SDL_JoystickName ( joystick ) ), joystick ( joystick )
 {
-    SDL_JoystickGUID guid = SDL_JoystickGetGUID ( joystick );
-    memcpy ( &stick.guid.guid, guid.data, sizeof ( guid.data ) );
+    stick.name = nextName ( name );
+    namesWithIndex.insert ( stick.name );
 
-    auto it = guidBitset.find ( stick.guid.guid );
-
-    if ( it == guidBitset.end() )
-    {
-        stick.guid.index = 0;
-        guidBitset[stick.guid.guid] = 1u;
-    }
+    auto it = origNameCount.find ( name );
+    if ( it == origNameCount.end() )
+        origNameCount[name] = 1;
     else
-    {
-        for ( uint8_t i = 0; i < 32; ++i )
-        {
-            if ( ( it->second & ( 1u << i ) ) == 0u )
-            {
-                guidBitset[stick.guid.guid] |= ( 1u << i );
-                stick.guid.index = i;
-                return;
-            }
-        }
-
-        LOG_AND_THROW_STRING ( "Too many duplicate guids for: '%s'", stick.guid.guid );
-    }
+        ++it->second;
 
     clearMapping();
 
@@ -336,15 +377,39 @@ Controller::Controller ( SDL_Joystick *joystick ) : joystick ( joystick ), name 
 
 Controller::~Controller()
 {
-    auto it = guidBitset.find ( stick.guid.guid );
+    if ( joystick )
+        SDL_JoystickClose ( joystick );
 
-    if ( it == guidBitset.end() )
-        return;
+    namesWithIndex.erase ( getName() );
 
-    if ( stick.guid.index >= 32 )
-        return;
+    uint32_t& count = origNameCount[name];
 
-    guidBitset[stick.guid.guid] &= ~ ( 1u << stick.guid.index );
+    if ( count > 1 )
+        --count;
+    else
+        origNameCount.erase ( name );
+}
+
+bool Controller::isUniqueName() const { return ( origNameCount[name] == 1 ); }
+
+static string getHatString ( int hat )
+{
+    if ( hat == SDL_HAT_CENTERED )
+        return "Centered";
+
+    string dir;
+
+    if ( hat & SDL_HAT_UP )
+        dir = "Up";
+    else if ( hat & SDL_HAT_DOWN )
+        dir = "Down";
+
+    if ( hat & SDL_HAT_LEFT )
+        dir += "Left";
+    else if ( hat & SDL_HAT_RIGHT )
+        dir += "Right";
+
+    return dir;
 }
 
 string Controller::getMapping ( uint32_t key ) const
@@ -357,9 +422,36 @@ string Controller::getMapping ( uint32_t key ) const
 
         return "";
     }
+    else
+    {
+        uint8_t type, index, value;
 
-    // TODO joystick
-    return "";
+        if ( stick.find ( key, type, index, value ) )
+        {
+            switch ( type )
+            {
+                case EVENT_JOY_AXIS:
+                    if ( index < 4 )
+                        return toString ( "%c %c-Axis", getAxisSign ( index, value ), ( index == 0 ? 'X' : 'Y' ) );
+                    else
+                        return toString ( "%c Axis (%u)", getAxisSign ( index, value ), index + 1 );
+
+                case EVENT_JOY_HAT:
+                    if ( index == 0 )
+                        return toString ( "POV %s", getHatString ( value ) );
+                    else
+                        return toString ( "POV (%u) %s", index + 1, getHatString ( value ) );
+
+                case EVENT_JOY_BUTTON:
+                    return toString ( "Button %u", index + 1 );
+
+                default:
+                    ASSERT_IMPOSSIBLE;
+            }
+        }
+
+        return "";
+    }
 }
 
 void Controller::startMapping ( Owner *owner, uint32_t key, const void *window )
@@ -402,6 +494,7 @@ void Controller::clearMapping ( uint32_t keys )
         {
             keybd.codes[i] = 0;
             keybd.names[i].clear();
+            keybd.invalidate();
         }
     }
 
@@ -412,23 +505,13 @@ void Controller::clearMapping ( uint32_t keys )
             for ( auto& c : b )
             {
                 if ( c & keys )
+                {
                     c = 0;
+                    stick.invalidate();
+                }
             }
         }
     }
-}
-
-inline static bool isPowerOfTwo ( uint32_t x )
-{
-    return ( x != 0 ) && ( ( x & ( x - 1 ) ) == 0 );
-}
-
-bool Controller::isOnlyGuid() const
-{
-    if ( isKeyboard() )
-        return true;
-    else
-        return isPowerOfTwo ( guidBitset[stick.guid.guid] );
 }
 
 bool Controller::saveMappings ( const string& file ) const
@@ -441,15 +524,10 @@ bool Controller::saveMappings ( const string& file ) const
         string buffer;
 
         if ( isKeyboard() )
-        {
-            keybd.invalidate();
             buffer = Protocol::encode ( keybd );
-        }
         else
-        {
             stick.invalidate();
-            buffer = Protocol::encode ( stick );
-        }
+        buffer = Protocol::encode ( stick );
 
         fout.write ( &buffer[0], buffer.size() );
 
@@ -487,9 +565,6 @@ bool Controller::loadMappings ( const string& file )
 
             if ( isKeyboard() )
             {
-                if ( msg->getAs<KeyboardMappings>().guid != keybd.guid )
-                    LOG ( "Guid mismatch: decoded %s != keyboard %s", msg->getAs<KeyboardMappings>().guid, keybd.guid );
-
                 if ( msg->getMsgType() != MsgType::KeyboardMappings )
                 {
                     LOG ( "Invalid keyboard mapping type: %s", msg->getMsgType() );
@@ -497,14 +572,18 @@ bool Controller::loadMappings ( const string& file )
                 }
                 else
                 {
+                    if ( msg->getAs<KeyboardMappings>().name != keybd.name )
+                    {
+                        LOG ( "Name mismatch: decoded '%s' != keyboard '%s'",
+                              msg->getAs<KeyboardMappings>().name, keybd.name );
+                    }
+
                     keybd = msg->getAs<KeyboardMappings>();
+                    ControllerManager::get().mappingsChanged ( this );
                 }
             }
             else // if ( isJoystick() )
             {
-                if ( msg->getAs<JoystickMappings>().guid != stick.guid )
-                    LOG ( "Guid mismatch: decoded %s != joystick %s", msg->getAs<JoystickMappings>().guid, stick.guid );
-
                 if ( msg->getMsgType() != MsgType::JoystickMappings )
                 {
                     LOG ( "Invalid joystick mapping type: %s", msg->getMsgType() );
@@ -512,7 +591,14 @@ bool Controller::loadMappings ( const string& file )
                 }
                 else
                 {
+                    if ( msg->getAs<JoystickMappings>().name != stick.name )
+                    {
+                        LOG ( "Name mismatch: decoded '%s' != joystick '%s'",
+                              msg->getAs<JoystickMappings>().name, stick.name );
+                    }
+
                     stick = msg->getAs<JoystickMappings>();
+                    ControllerManager::get().mappingsChanged ( this );
                 }
             }
         }

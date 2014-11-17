@@ -85,7 +85,7 @@ struct DllMain
     ControllerMappings mappings;
 
     // Player 1 (local) and 2 (remote) controllers
-    Controller *controllers[2] = { ControllerManager::get().getKeyboard(), 0 };
+    Controller *controllers[2] = { 0, 0 };
 
     // Local and remote inputs
     uint16_t localInputs = 0, remoteInputs = 0;
@@ -711,6 +711,12 @@ struct DllMain
             case MsgType::ControllerMappings:
                 mappings = msg->getAs<ControllerMappings>();
                 ControllerManager::get().setMappings ( mappings );
+                ControllerManager::get().check();
+                // TODO proper controller selection
+                if ( ControllerManager::get().getJoysticks().empty() )
+                    controllers[0] = ControllerManager::get().getKeyboard();
+                else
+                    controllers[0] = ControllerManager::get().getJoysticks() [0];
                 break;
 
             case MsgType::ClientMode:

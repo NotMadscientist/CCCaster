@@ -193,7 +193,7 @@ struct MainApp
 
     void startLocal()
     {
-        AutoManager _ ( this );
+        AutoManager _;
 
         if ( clientMode.isBroadcast() )
         {

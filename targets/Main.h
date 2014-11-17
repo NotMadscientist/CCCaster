@@ -193,17 +193,11 @@ struct AutoManager
     }
 
     template<typename T>
-    AutoManager ( T *main ) : AutoManager()
-    {
-        ControllerManager::get().initialize ( main );
-    }
-
-    template<typename T>
     AutoManager ( T *main,
-                  const void *window,                               // Window to match, 0 to match all
+                  const void *window = 0,                           // Window to match, 0 to match all
                   const std::unordered_set<uint32_t>& keys = {},    // VK codes to match, empty to match all
                   uint8_t options = 0 )                             // Keyboard event hooking options
-        : AutoManager ( main )
+        : AutoManager()
     {
         KeyboardManager::get().hook ( main, window, keys, options );
     }
@@ -211,7 +205,6 @@ struct AutoManager
     ~AutoManager()
     {
         KeyboardManager::get().unhook();
-        ControllerManager::get().deinitialize();
         SocketManager::get().deinitialize();
         TimerManager::get().deinitialize();
     }

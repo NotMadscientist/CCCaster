@@ -1,8 +1,8 @@
 #pragma once
 
-#include "IndexedGuid.h"
 #include "KeyboardManager.h"
 
+#include <unordered_set>
 #include <unordered_map>
 #include <string>
 
@@ -34,7 +34,7 @@ struct SDL_JoyButtonEvent;
 struct KeyboardMappings : public SerializableSequence
 {
     // Controller unique identifier
-    IndexedGuid guid;
+    std::string name;
 
     // bit index -> virtual key code
     uint32_t codes[32];
@@ -42,16 +42,16 @@ struct KeyboardMappings : public SerializableSequence
     // bit index -> key name
     std::string names[32];
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( KeyboardMappings, codes, names )
+    PROTOCOL_MESSAGE_BOILERPLATE ( KeyboardMappings, name, codes, names )
 };
 
 
 struct JoystickMappings : public SerializableSequence
 {
     // Controller unique identifier
-    IndexedGuid guid;
+    std::string name;
 
-    // event type -> axis/hat/button index -> axis/hat/button value -> mapped value
+    // event type -> axis/hat/button index -> axis/hat/button value -> mapped key
     //
     // The neutral axis/hat/button value is mapped to a bit mask of all the mapped values on the same index.
     //
@@ -64,7 +64,30 @@ struct JoystickMappings : public SerializableSequence
     //
     uint32_t mappings[3][256][16];
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( JoystickMappings, mappings )
+    // Find a 3-tuple mapping for the given key, returns false if none exist
+    bool find ( uint32_t key, uint8_t& type, uint8_t& index, uint8_t& value ) const
+    {
+        for ( uint8_t i = 0; i < 3; ++i )
+        {
+            for ( uint16_t j = 0; j < 256; ++j )
+            {
+                for ( uint8_t k = 1; k < 16; ++k ) // We skip value=0 since it is the neutral value
+                {
+                    if ( mappings[i][j][k] == key )
+                    {
+                        type = i;
+                        index = j;
+                        value = k;
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( JoystickMappings, name, mappings )
 };
 
 
@@ -84,11 +107,11 @@ private:
     // Enum type for keyboard controller
     enum KeyboardEnum { Keyboard };
 
+    // Original controller name
+    const std::string name;
+
     // SDL joystick pointer, 0 for keyboard
     SDL_Joystick *joystick = 0;
-
-    // Controller name
-    const std::string name;
 
     // Controller state
     uint32_t state = 0;
@@ -104,9 +127,6 @@ private:
 
     // The currently active joystick mappings for the above key
     JoystickMappings active;
-
-    // Guid mapped to a bitset of indices, used to determine a free index for a duplicate guid
-    static std::unordered_map<Guid, uint32_t> guidBitset;
 
     // Keyboard event callback
     void keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown );
@@ -128,23 +148,17 @@ public:
     // Basic destructor
     ~Controller();
 
-    // Get the controller guid
-    const IndexedGuid& getGuid() const
+    // Get controller name with index
+    const std::string& getName() const
     {
         if ( isKeyboard() )
-            return keybd.guid;
+            return keybd.name;
         else
-            return stick.guid;
+            return stick.name;
     }
 
-    // Get controller name with index
-    const std::string getName() const
-    {
-        if ( getGuid().index == 0 )
-            return name;
-        else
-            return toString ( "%s (%d)", name, getGuid().index + 1 );
-    }
+    // Indicates if this is the only controller with its original name
+    bool isUniqueName() const;
 
     // Get the mapping for the given key as a human-readable string
     std::string getMapping ( uint32_t key ) const;
@@ -153,9 +167,9 @@ public:
     MsgPtr getMappings() const
     {
         if ( isKeyboard() )
-            return MsgPtr ( const_cast<KeyboardMappings *> ( &keybd ), ignoreMsgPtr );
+            return keybd.clone();
         else
-            return MsgPtr ( const_cast<JoystickMappings *> ( &stick ), ignoreMsgPtr );
+            return stick.clone();
     }
 
     // Set the mappings for this controller
@@ -175,9 +189,6 @@ public:
     // Indicates if this is a keyboard / joystick controller
     bool isKeyboard() const { return ( joystick == 0 ); }
     bool isJoystick() const { return ( joystick != 0 ); }
-
-    // Indicates if this is the only joystick with its guid
-    bool isOnlyGuid() const;
 
     // Save / load mappings for this controller
     bool saveMappings ( const std::string& file ) const;

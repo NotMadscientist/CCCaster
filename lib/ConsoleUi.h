@@ -299,8 +299,10 @@ public:
         {
             const COORD pos = menu.CursorPosition();
             const size_t i = menu.SelectedValue();
+            const std::string padded = items[i].substr ( 0, 4 ) + text;
+            const std::string remaining = std::string ( items[i].substr ( 4 + text.size() ).size(), ' ' );
 
-            ConsoleCore::GetInstance()->Prints ( " " + shortenWithEllipsis ( items[i].substr ( 0, 4 ) + text ) + " ",
+            ConsoleCore::GetInstance()->Prints ( " " + shortenWithEllipsis ( padded + remaining ) + " ",
                                                  false, ( selected ? &menu.SelectionFormat() : 0 ), pos.X, pos.Y );
         }
 
