@@ -325,10 +325,6 @@ struct MainApp
         // Update our real localName when we receive the 2nd InitialConfig
         this->initialConfig.localName = initialConfig.remoteName;
 
-        LOG ( "InitialConfig: mode=%s; flags={ %s }; dataPort=%u; localName='%s'; remoteName='%s'",
-              initialConfig.mode, initialConfig.mode.flagString(),
-              initialConfig.dataPort, initialConfig.localName, initialConfig.remoteName );
-
         if ( clientMode.isClient() )
         {
             this->initialConfig.mode.flags = initialConfig.mode.flags;
@@ -344,6 +340,10 @@ struct MainApp
 
             ui.display ( this->initialConfig.getConnectMessage ( "Connecting" ) );
         }
+
+        LOG ( "InitialConfig: mode=%s; flags={ %s }; dataPort=%u; localName='%s'; remoteName='%s'",
+              initialConfig.mode, initialConfig.mode.flagString(),
+              initialConfig.dataPort, initialConfig.localName, initialConfig.remoteName );
     }
 
     void gotPingStats ( const PingStats& pingStats )
@@ -959,6 +959,9 @@ struct MainApp
             options.set ( Options::Offline, 1 );
             options.set ( Options::NoUi, 1 );
         }
+
+        if ( detectWine() )
+            clientMode.flags |= ClientMode::IsWine;
 
         if ( clientMode.isNetplay() )
         {

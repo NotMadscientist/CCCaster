@@ -88,6 +88,8 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
     // If the pause menu is up
     if ( * ( config.mode.isTraining() ? CC_TRAINING_PAUSE_ADDR : CC_VERSUS_PAUSE_ADDR ) )
     {
+        menuConfirmState = 2;
+
         // Don't allow pressing select until 2f after we have stopped moving the cursor. This is a work around
         // for the issue when select is pressed after the cursor moves, but before currentMenuIndex is updated.
         if ( hasUpDownInLast2f() )
@@ -95,6 +97,10 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
 
         // Disable returning to main menu; 16 and 6 are the menu positions for training and versus mode respectively
         if ( currentMenuIndex == ( config.mode.isTraining() ? 16 : 6 ) )
+            input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
+
+        // Disable returning to chara-select in Wine; 15 and 4 are the menu positions for training and versus mode
+        if ( config.mode.isWine() && currentMenuIndex == ( config.mode.isTraining() ? 15 : 4 ) )
             input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
     }
 

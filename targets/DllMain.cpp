@@ -479,8 +479,9 @@ struct DllMain
                 break;
 
             case Variable::SkippableFlag:
-                // When the SkippableFlag is set while InGame, we are in a Skippable state
-                if ( ! ( previous == 0 && current == 1 && netMan.getState() == NetplayState::InGame ) )
+                // When the SkippableFlag is set while InGame (not training mode), we are in a Skippable state
+                if ( clientMode.isTraining()
+                        || ! ( previous == 0 && current == 1 && netMan.getState() == NetplayState::InGame ) )
                     break;
                 LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
                 netplayStateChanged ( NetplayState::Skippable );
