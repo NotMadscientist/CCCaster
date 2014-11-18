@@ -90,6 +90,9 @@ struct DllMain
     // Local and remote inputs
     uint16_t localInput = 0, remoteInput = 0;
 
+    // If we have sent our local retry menu index
+    bool localRetryMenuIndexSent = false;
+
 
     void frameStepNormal()
     {
@@ -166,6 +169,18 @@ struct DllMain
 #endif
 
                 netMan.setInput ( localPlayer, localInput );
+
+                // Special retry menu behaviour, only select final option after both sides have selected
+                if ( netMan.getState().value == NetplayState::RetryMenu )
+                {
+                    MsgPtr msgMenuIndex = netMan.getRetryMenuIndex();
+                    if ( msgMenuIndex && !localRetryMenuIndexSent )
+                    {
+                        dataSocket->send ( msgMenuIndex );
+                        localRetryMenuIndexSent = true;
+                    }
+                    break;
+                }
 
                 if ( clientMode.isNetplay() )
                 {
@@ -377,6 +392,11 @@ struct DllMain
         {
             if ( !clientMode.isOffline() )
                 shouldSyncRngState = true;
+        }
+
+        if ( state == NetplayState::RetryMenu )
+        {
+            localRetryMenuIndexSent = false;
         }
 
         netMan.setState ( state );
@@ -651,6 +671,11 @@ struct DllMain
                 {
                     case MsgType::PlayerInputs:
                         netMan.setInputs ( remotePlayer, msg->getAs<PlayerInputs>() );
+                        return;
+
+                    case MsgType::MenuIndex:
+                        if ( netMan.getState() == NetplayState::RetryMenu )
+                            netMan.setRetryMenuIndex ( msg->getAs<MenuIndex>().index );
                         return;
 
                     default:

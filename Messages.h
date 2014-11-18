@@ -260,6 +260,18 @@ struct SyncHash : public SerializableSequence
 };
 
 
+struct MenuIndex : public SerializableSequence
+{
+    enum { Invalid = 0xFFFFFFFF };
+
+    uint32_t index = Invalid;
+
+    MenuIndex ( uint32_t index ) : index ( index ) {}
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( MenuIndex, index );
+};
+
+
 struct BaseInputs
 {
     IndexedFrame indexedFrame = {{ 0, 0 }};

@@ -44,10 +44,17 @@ class NetplayManager
     // Netplay state
     NetplayState state;
 
-    // Indicates the game mode has been selected at the main menu.
-    // This is used because currentMenuIndex will no longer point to the main menu after selecting versus.
-    // So we use a flag to indicate when the cursor is on the correct main menu index, and then mash through.
-    mutable bool gameModeSelected = false;
+    // State of the menu navigation input
+    mutable uint32_t targetMenuState = 0;
+
+    // Target menu index to navigate to
+    mutable uint32_t targetMenuIndex = MenuIndex::Invalid;
+
+    // Local retry menu selected index
+    mutable uint32_t localRetryMenuIndex = MenuIndex::Invalid;
+
+    // Remote retry menu selected index
+    mutable uint32_t remoteRetryMenuIndex = MenuIndex::Invalid;
 
     // The starting value of CC_WORLD_TIMER_ADDR, where frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime.
     // This is reset to the current world time whenever the netplay state changes, ie a state transition happens.
@@ -88,6 +95,9 @@ class NetplayManager
     // Get the delayed input for the given frame
     uint16_t getDelayedInput ( uint8_t player ) const { return getDelayedInput ( player, getFrame() ); }
     uint16_t getDelayedInput ( uint8_t player, uint32_t frame ) const;
+
+    // Get the input needed to navigate the menu
+    uint16_t getMenuNavInput() const;
 
     // Detect if up or down has been pressed by either player in the last 2 frames
     bool hasUpDownInLast2f() const;
@@ -142,6 +152,10 @@ public:
     // Get / save the data for the last game
     MsgPtr getLastGame() const;
     void saveLastGame();
+
+    // Get / set the retry menu index
+    MsgPtr getRetryMenuIndex() const;
+    void setRetryMenuIndex ( uint32_t index );
 
     friend class ProcessManager;
 };
