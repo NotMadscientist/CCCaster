@@ -98,7 +98,7 @@ void initializePreLoadHacks()
     for ( const Asm& hack : hijackControls )
         WRITE_ASM_HACK ( hack );
 
-    for ( const Asm& hack : copyMenuVariables )
+    for ( const Asm& hack : hijackMenu )
         WRITE_ASM_HACK ( hack );
 
     for ( const Asm& hack : detectRoundStart )

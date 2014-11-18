@@ -4,6 +4,8 @@
 
 uint32_t currentMenuIndex = 0;
 
+uint32_t menuConfirmState = 0;
+
 uint32_t *charaSelectModes[2] = { 0, 0 };
 
 uint32_t roundStartCounter = 0;

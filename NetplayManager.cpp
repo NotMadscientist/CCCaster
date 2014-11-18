@@ -24,6 +24,7 @@ uint16_t NetplayManager::getPreInitialInput ( uint8_t player ) const
     if ( ( *CC_GAME_MODE_ADDR ) == CC_GAME_MODE_MAIN )
         return 0;
 
+    menuConfirmState = 2;
     RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
 }
 
@@ -124,24 +125,27 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
     if ( currentMenuIndex > MAX_RETRY_MENU_INDEX )
         input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
 
-    // Special retry menu behaviour, only select final option after both sides have selected
-    if ( remoteRetryMenuIndex != MenuIndex::Invalid && localRetryMenuIndex != MenuIndex::Invalid )
+    if ( config.mode.isNetplay() )
     {
-        targetMenuState = 0;
-        targetMenuIndex = max ( localRetryMenuIndex, remoteRetryMenuIndex );
-        targetMenuIndex = min ( targetMenuIndex, MAX_RETRY_MENU_INDEX ); // Just in case...
-        input = 0;
-    }
-    else if ( localRetryMenuIndex != MenuIndex::Invalid )
-    {
-        input = 0;
-    }
-    else if ( input & COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT ) )
-    {
-        localRetryMenuIndex = currentMenuIndex;
-        input = 0;
+        // Special netplay retry menu behaviour, only select final option after both sides have selected
+        if ( remoteRetryMenuIndex != MenuIndex::Invalid && localRetryMenuIndex != MenuIndex::Invalid )
+        {
+            targetMenuState = 0;
+            targetMenuIndex = max ( localRetryMenuIndex, remoteRetryMenuIndex );
+            targetMenuIndex = min ( targetMenuIndex, MAX_RETRY_MENU_INDEX ); // Just in case...
+            input = 0;
+        }
+        else if ( localRetryMenuIndex != MenuIndex::Invalid )
+        {
+            input = 0;
+        }
+        else if ( menuConfirmState == 1 )
+        {
+            localRetryMenuIndex = currentMenuIndex;
+            input = 0;
 
-        LOG ( "localRetryMenuIndex=%u", localRetryMenuIndex );
+            LOG ( "localRetryMenuIndex=%u", localRetryMenuIndex );
+        }
     }
 
     return input;
@@ -213,6 +217,7 @@ uint16_t NetplayManager::getMenuNavInput() const
     }
     else if ( targetMenuState == 39 )                           // Mash final menu selection
     {
+        menuConfirmState = 2;
         RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
     }
     else if ( currentMenuIndex != targetMenuIndex )             // Keep navigating
@@ -332,6 +337,10 @@ void NetplayManager::setState ( NetplayState state )
             localRetryMenuIndex = MenuIndex::Invalid;
             remoteRetryMenuIndex = MenuIndex::Invalid;
         }
+
+        // Reset state variables
+        currentMenuIndex = 0;
+        menuConfirmState = 0;
     }
 
     this->state = state;
@@ -358,6 +367,7 @@ uint16_t NetplayManager::getInput ( uint8_t player ) const
             if ( config.mode.isSpectate()
                     || ( ( startIndex + inputs[remotePlayer - 1].getEndIndex() ) > getIndex() + 1 ) )
             {
+                menuConfirmState = 2;
                 RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
             }
 

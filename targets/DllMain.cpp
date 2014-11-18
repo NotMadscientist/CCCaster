@@ -170,20 +170,22 @@ struct DllMain
 
                 netMan.setInput ( localPlayer, localInput );
 
-                // Special retry menu behaviour, only select final option after both sides have selected
-                if ( netMan.getState().value == NetplayState::RetryMenu )
-                {
-                    MsgPtr msgMenuIndex = netMan.getRetryMenuIndex();
-                    if ( msgMenuIndex && !localRetryMenuIndexSent )
-                    {
-                        dataSocket->send ( msgMenuIndex );
-                        localRetryMenuIndexSent = true;
-                    }
-                    break;
-                }
-
                 if ( clientMode.isNetplay() )
                 {
+                    // Special netplay retry menu behaviour, only select final option after both sides have selected
+                    if ( netMan.getState().value == NetplayState::RetryMenu )
+                    {
+                        MsgPtr msgMenuIndex = netMan.getRetryMenuIndex();
+
+                        if ( msgMenuIndex && !localRetryMenuIndexSent )
+                        {
+                            dataSocket->send ( msgMenuIndex );
+                            localRetryMenuIndexSent = true;
+                        }
+
+                        break;
+                    }
+
                     dataSocket->send ( netMan.getInputs ( localPlayer ) );
                 }
                 else if ( clientMode.isLocal() )
