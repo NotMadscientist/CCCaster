@@ -539,6 +539,10 @@ struct MainApp
                 return;
             }
 
+            case MsgType::MenuIndex:
+                dataSocket->send ( new MenuIndex ( 0 ) );
+                return;
+
             case MsgType::BothInputs:
                 return;
 
@@ -895,6 +899,8 @@ struct MainApp
 
             // We must disconnect the sockets before the game process is created,
             // otherwise Windows say conflicting ports EVEN if they are created later.
+            dataSocket.reset();
+            serverDataSocket.reset();
             ctrlSocket.reset();
             serverCtrlSocket.reset();
 

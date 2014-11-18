@@ -32,6 +32,9 @@ using namespace std;
     } while ( 0 )
 
 
+static bool enableForceReusePort = true;
+
+
 Socket::Socket ( Owner *owner, const IpAddrPort& address, Protocol protocol, bool isRaw )
     : owner ( owner ), address ( address ), protocol ( protocol ), isRaw ( isRaw )
 {
@@ -93,13 +96,13 @@ void Socket::init()
             continue;
         }
 
-        if ( isServer() || isUDP() )
+        if ( enableForceReusePort && ( isServer() || isUDP() ) )
         {
-            char yes = 1;
+            const char yes = 1;
 
             // SO_REUSEADDR can replace existing port binds
             // SO_EXCLUSIVEADDRUSE only replaces if not exact match
-            if ( setsockopt ( fd, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, &yes, 1 ) == SOCKET_ERROR )
+            if ( setsockopt ( fd, SOL_SOCKET, SO_REUSEADDR, &yes, 1 ) == SOCKET_ERROR )
             {
                 err = WSAGetLastError();
                 LOG_SOCKET ( this, "%s; setsockopt failed", err );
@@ -163,7 +166,7 @@ void Socket::init()
                 throw err;
             }
 
-            // Sucessful bind
+            // Successful bind
             break;
         }
     }
@@ -609,4 +612,9 @@ const SmartSocket& Socket::getAsSmart() const
 {
     ASSERT ( typeid ( *this ) == typeid ( SmartSocket ) );
     return *static_cast<const SmartSocket *> ( this );
+}
+
+void Socket::forceReusePort ( bool enable )
+{
+    enableForceReusePort = enable;
 }

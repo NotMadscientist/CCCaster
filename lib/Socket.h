@@ -186,6 +186,9 @@ public:
     SmartSocket& getAsSmart();
     const SmartSocket& getAsSmart() const;
 
+    // Force reuse of existing ports
+    static void forceReusePort ( bool enable );
+
     friend class SocketManager;
 };
 

@@ -137,13 +137,20 @@ SmartSocket::SmartSocket ( Socket::Owner *owner, uint16_t port, Socket::Protocol
 
     vpsSocket = TcpSocket::connect ( this, vpsAddress, true ); // Raw socket
 
-    tunSocket = UdpSocket::listen ( this, 0 );
+    try
+    {
+        // Listen for direct connections at the same time
+        if ( isDirectTCP )
+            directSocket = TcpSocket::listen ( this, port );
+        else
+            directSocket = UdpSocket::listen ( this, port );
+    }
+    catch ( ... )
+    {
+        LOG ( "Failed to bind directSocket to port %u", port );
+    }
 
-    // Listen for direct connections at the same time
-    if ( isDirectTCP )
-        directSocket = TcpSocket::listen ( this, port );
-    else
-        directSocket = UdpSocket::listen ( this, port );
+    tunSocket = UdpSocket::listen ( this, 0 );
 
     // Update address port
     address.port = directSocket->address.port;

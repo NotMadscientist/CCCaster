@@ -965,6 +965,9 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
             // Logger::get().initialize ( LOG_FILE );
             // LOG ( "DLL_PROCESS_ATTACH" );
 
+            // We want the DLL to be able to rebind any previously bound ports
+            Socket::forceReusePort ( true );
+
             try
             {
                 // It is safe to initialize sockets here
