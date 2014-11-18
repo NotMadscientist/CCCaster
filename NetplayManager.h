@@ -45,16 +45,22 @@ class NetplayManager
     NetplayState state;
 
     // State of the menu navigation input
-    mutable uint32_t targetMenuState = 0;
+    mutable int32_t targetMenuState = -1;
 
     // Target menu index to navigate to
-    mutable uint32_t targetMenuIndex = MenuIndex::Invalid;
+    mutable int32_t targetMenuIndex = -1;
 
     // Local retry menu selected index
-    mutable uint32_t localRetryMenuIndex = MenuIndex::Invalid;
+    mutable int32_t localRetryMenuIndex = -1;
 
     // Remote retry menu selected index
-    mutable uint32_t remoteRetryMenuIndex = MenuIndex::Invalid;
+    mutable int32_t remoteRetryMenuIndex = -1;
+
+    // State of the training mode reset
+    mutable int32_t trainingResetState = -1;
+
+    // Type of the training mode reset
+    mutable int32_t trainingResetType = 0;
 
     // The starting value of CC_WORLD_TIMER_ADDR, where frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime.
     // This is reset to the current world time whenever the netplay state changes, ie a state transition happens.

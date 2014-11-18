@@ -5,7 +5,7 @@
 
 
 // Number of frames of inputs to send per message
-#define NUM_INPUTS                  30
+#define NUM_INPUTS                  ( 30 )
 
 
 // Game constants and addresses are prefixed CC
@@ -38,7 +38,16 @@
 #define CC_PERF_FREQ_ADDR           ( ( uint64_t * ) 0x774A80 ) // Value of QueryPerformanceFrequency for game FPS
 #define CC_SKIPPABLE_FLAG_ADDR      ( ( uint32_t * ) 0x74D99C ) // Flag that indicates a skippable state when in-game
 
-#define CC_PTR_TO_WRITE_INPUT_ADDR  ( ( char * ) 0x76E6AC )     // Pointer to the location to write game input
+#define CC_DUMMY_STATUS_ADDR        ( ( int32_t * )  0x74D7F8 ) // Training mode dummy status
+#define CC_DUMMY_STATUS_STAND       ( 0 )
+#define CC_DUMMY_STATUS_JUMP        ( 1 )
+#define CC_DUMMY_STATUS_CROUCH      ( 2 )
+#define CC_DUMMY_STATUS_CPU         ( 3 )
+#define CC_DUMMY_STATUS_MANUAL      ( 4 )
+#define CC_DUMMY_STATUS_DUMMY       ( 5 )
+#define CC_DUMMY_STATUS_RECORD      ( -1 )
+
+#define CC_PTR_TO_WRITE_INPUT_ADDR  ( ( char * )     0x76E6AC ) // Pointer to the location to write game input
 #define CC_P1_OFFSET_DIRECTION      ( 0x18 )                    // Offset to write P1 direction input
 #define CC_P1_OFFSET_BUTTONS        ( 0x24 )                    // Offset to write P1 buttons input
 #define CC_P2_OFFSET_DIRECTION      ( 0x2C )                    // Offset to write P2 direction input
@@ -52,9 +61,9 @@
 #define CC_BUTTON_E                 ( 0x0080 )
 #define CC_BUTTON_AB                ( 0x0040 )
 #define CC_BUTTON_START             ( 0x0001 )
-#define CC_BUTTON_FN1               ( 0x0100 )
-#define CC_BUTTON_FN2               ( 0x0200 )
-#define CC_BUTTON_SELECT            ( 0x0400 )
+#define CC_BUTTON_FN1               ( 0x0100 ) // Control dummy
+#define CC_BUTTON_FN2               ( 0x0200 ) // Training reset
+#define CC_BUTTON_CONFIRM           ( 0x0400 )
 #define CC_BUTTON_CANCEL            ( 0x0800 )
 
 #define CC_GAME_MODE_ADDR           ( ( uint32_t * ) 0x54EEE8 ) // Current game mode, constants below
@@ -91,10 +100,49 @@
 #define CC_CHARA_SELECT_MOON        ( 1 )
 #define CC_CHARA_SELECT_COLOUR      ( 2 )
 
+#define CC_PLR_STRUCT_SIZE          ( 0xAFC )
+
+// Player addresses
+#define CC_P1_SEQUENCE_ADDR         ( ( uint32_t * ) 0x555140 )
+#define CC_P1_SEQ_STATE_ADDR        ( ( uint32_t * ) 0x555144 )
+#define CC_P1_HEALTH_ADDR           ( ( uint32_t * ) 0x5551EC )
+#define CC_P1_RED_HEALTH_ADDR       ( ( uint32_t * ) 0x5551F0 )
+#define CC_P1_X_POSITION_ADDR       ( ( uint32_t * ) 0x555238 )
+#define CC_P1_Y_POSITION_ADDR       ( ( uint32_t * ) 0x55523C )
+#define CC_P1_X_PREV_POS_ADDR       ( ( uint32_t * ) 0x555244 )
+#define CC_P1_Y_PREV_POS_ADDR       ( ( uint32_t * ) 0x555248 )
+#define CC_P1_X_VELOCITY_ADDR       ( ( uint32_t * ) 0x55524C )
+#define CC_P1_Y_VELOCITY_ADDR       ( ( uint32_t * ) 0x555250 )
+#define CC_P1_X_ACCELERATION_ADDR   ( ( uint16_t * ) 0x555254 )
+#define CC_P1_Y_ACCELERATION_ADDR   ( ( uint16_t * ) 0x555256 )
+#define CC_P1_GUARD_BAR_ADDR        ( ( uint32_t * ) 0x5551F4 )
+#define CC_P1_GUARD_QUALITY_ADDR    ( ( uint32_t * ) 0x555208 )
+#define CC_P1_METER_ADDR            ( ( uint32_t * ) 0x555210 )
+
+#define CC_P2_SEQUENCE_ADDR         ( ( uint32_t * ) ( ( ( char * ) CC_P1_SEQUENCE_ADDR       ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_SEQ_STATE_ADDR        ( ( uint32_t * ) ( ( ( char * ) CC_P1_SEQ_STATE_ADDR      ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_HEALTH_ADDR           ( ( uint32_t * ) ( ( ( char * ) CC_P1_HEALTH_ADDR         ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_RED_HEALTH_ADDR       ( ( uint32_t * ) ( ( ( char * ) CC_P1_RED_HEALTH_ADDR     ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_X_POSITION_ADDR       ( ( uint32_t * ) ( ( ( char * ) CC_P1_X_POSITION_ADDR     ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_Y_POSITION_ADDR       ( ( uint32_t * ) ( ( ( char * ) CC_P1_Y_POSITION_ADDR     ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_X_PREV_POS_ADDR       ( ( uint32_t * ) ( ( ( char * ) CC_P1_X_PREV_POS_ADDR     ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_Y_PREV_POS_ADDR       ( ( uint32_t * ) ( ( ( char * ) CC_P1_Y_PREV_POS_ADDR     ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_X_VELOCITY_ADDR       ( ( uint32_t * ) ( ( ( char * ) CC_P1_X_VELOCITY_ADDR     ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_Y_VELOCITY_ADDR       ( ( uint32_t * ) ( ( ( char * ) CC_P1_Y_VELOCITY_ADDR     ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_X_ACCELERATION_ADDR   ( ( uint16_t * ) ( ( ( char * ) CC_P1_X_ACCELERATION_ADDR ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_Y_ACCELERATION_ADDR   ( ( uint16_t * ) ( ( ( char * ) CC_P1_Y_ACCELERATION_ADDR ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_GUARD_BAR_ADDR        ( ( uint32_t * ) ( ( ( char * ) CC_P1_GUARD_BAR_ADDR      ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_GUARD_QUALITY_ADDR    ( ( uint32_t * ) ( ( ( char * ) CC_P1_GUARD_QUALITY_ADDR  ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_METER_ADDR            ( ( uint32_t * ) ( ( ( char * ) CC_P1_METER_ADDR          ) + CC_PLR_STRUCT_SIZE ) )
+
+// Camera addresses
+#define CC_CAMERA_X_ADDR            ( ( int * )      0x564B14 )
+#define CC_CAMERA_Y_ADDR            ( ( int * )      0x564B18 )
+
 
 // Asm hacks are prefixed MM (for modified memory), they should be written to safe locations
-#define MM_HOOK_CALL1_ADDR          ( ( char * ) 0x40D032 )
-#define MM_HOOK_CALL2_ADDR          ( ( char * ) 0x40D411 )
+#define MM_HOOK_CALL1_ADDR          ( ( char * )     0x40D032 )
+#define MM_HOOK_CALL2_ADDR          ( ( char * )     0x40D411 )
 
 
 union IndexedFrame

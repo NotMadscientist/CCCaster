@@ -302,7 +302,7 @@ void MainUi::controls()
             { "Down       : ",  BIT_DOWN },
             { "Left       : ",  BIT_LEFT },
             { "Right      : ", BIT_RIGHT },
-            { "A (confirm): ", ( CC_BUTTON_A | CC_BUTTON_SELECT ) << 8 },
+            { "A (confirm): ", ( CC_BUTTON_A | CC_BUTTON_CONFIRM ) << 8 },
             { "B (cancel) : ", ( CC_BUTTON_B | CC_BUTTON_CANCEL ) << 8 },
             { "C          : ", CC_BUTTON_C << 8 },
             { "D          : ", CC_BUTTON_D << 8 },

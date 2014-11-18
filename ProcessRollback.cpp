@@ -85,29 +85,9 @@ using namespace std;
 #define CC_INTRO_FX2_ARRAY_END      ((char *)0x76E7CC)
 
 
-#define CC_P1_SEQUENCE_ADDR         ( ( uint32_t * ) 0x555140 )
-#define CC_P1_SEQ_STATE_ADDR        ( ( uint32_t * ) 0x555144 )
-#define CC_P1_HEALTH_ADDR           ( ( uint32_t * ) 0x5551EC )
-#define CC_P1_RED_HEALTH_ADDR       ( ( uint32_t * ) 0x5551F0 )
-#define CC_P1_X_POSITION_ADDR       ( ( uint32_t * ) 0x555238 )
-#define CC_P1_Y_POSITION_ADDR       ( ( uint32_t * ) 0x55523C )
-#define CC_P1_X_PREV_POS_ADDR       ( ( uint32_t * ) 0x555244 )
-#define CC_P1_Y_PREV_POS_ADDR       ( ( uint32_t * ) 0x555248 )
-#define CC_P1_X_VELOCITY_ADDR       ( ( uint32_t * ) 0x55524C )
-#define CC_P1_Y_VELOCITY_ADDR       ( ( uint32_t * ) 0x555250 )
-#define CC_P1_X_ACCELERATION_ADDR   ( ( uint16_t * ) 0x555254 )
-#define CC_P1_Y_ACCELERATION_ADDR   ( ( uint16_t * ) 0x555256 )
-#define CC_P1_GUARD_BAR_ADDR        ( ( uint32_t * ) 0x5551F4 )
-#define CC_P1_GUARD_QUALITY_ADDR    ( ( uint32_t * ) 0x555208 )
-#define CC_P1_METER_ADDR            ( ( uint32_t * ) 0x555210 )
-
-#define CC_PLR_STRUCT_SIZE          ( 0xAFC )
-
 #define CC_P1_SPELL_CIRCLE_ADDR     ( ( float * )    0x5641A4 )
 #define CC_P2_SPELL_CIRCLE_ADDR     ( ( float * )    0x564200 )
 
-#define CC_CAMERA_X_ADDR            ( ( int * )      0x564B14 )
-#define CC_CAMERA_Y_ADDR            ( ( int * )      0x564B18 )
 #define CC_HIT_SPARKS_ADDR          ( ( uint32_t * ) 0x67BD78 )
 #define CC_METER_ANIMATION_ADDR     ( ( uint32_t * ) 0x7717D8 )
 

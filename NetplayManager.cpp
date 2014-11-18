@@ -4,6 +4,7 @@
 #include "ProcessManager.h"
 
 #include <algorithm>
+#include <cmath>
 
 using namespace std;
 
@@ -25,7 +26,7 @@ uint16_t NetplayManager::getPreInitialInput ( uint8_t player ) const
         return 0;
 
     menuConfirmState = 2;
-    RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
+    RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
 }
 
 uint16_t NetplayManager::getInitialInput ( uint8_t player ) const
@@ -37,7 +38,7 @@ uint16_t NetplayManager::getInitialInput ( uint8_t player ) const
     if ( player != config.hostPlayer )
         return 0;
 
-    if ( targetMenuIndex == MenuIndex::Invalid )
+    if ( targetMenuState == -1 && targetMenuIndex == -1 )
     {
         targetMenuState = 0;
 
@@ -70,7 +71,12 @@ uint16_t NetplayManager::getCharaSelectInput ( uint8_t player ) const
 uint16_t NetplayManager::getSkippableInput ( uint8_t player ) const
 {
     // Only allow the A button here
-    return ( getDelayedInput ( player ) & COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT ) );
+    return ( getDelayedInput ( player ) & COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM ) );
+}
+
+static inline int quadraticScale ( int target, int i, int count )
+{
+    return ( int ) target * ( -pow ( ( double ( i ) / count ) - 1, 2.0 ) + 1 );
 }
 
 uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
@@ -93,15 +99,75 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
         // Don't allow pressing select until 2f after we have stopped moving the cursor. This is a work around
         // for the issue when select is pressed after the cursor moves, but before currentMenuIndex is updated.
         if ( hasUpDownInLast2f() )
-            input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
+            input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
 
         // Disable returning to main menu; 16 and 6 are the menu positions for training and versus mode respectively
         if ( currentMenuIndex == ( config.mode.isTraining() ? 16 : 6 ) )
-            input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
+            input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
 
         // Disable returning to chara-select in Wine; 15 and 4 are the menu positions for training and versus mode
         if ( config.mode.isWine() && currentMenuIndex == ( config.mode.isTraining() ? 15 : 4 ) )
-            input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
+            input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
+    }
+    else if ( config.mode.isTraining() && config.mode.isOffline() && player == config.hostPlayer
+              && *CC_DUMMY_STATUS_ADDR != CC_DUMMY_STATUS_DUMMY
+              && *CC_DUMMY_STATUS_ADDR != CC_DUMMY_STATUS_RECORD )
+    {
+        // Training mode enhancements when not paused
+        if ( trainingResetState == -1 && ( input & COMBINE_INPUT ( 0, CC_BUTTON_FN2 ) ) )   // Initial reset input
+        {
+            trainingResetState = 0;
+
+            if ( ( 0xF & input ) == 4 )
+                trainingResetType = -1;
+            else if ( ( 0xF & input ) == 6 )
+                trainingResetType = 1;
+            else if ( ( 0xF & input ) == 2 )
+                trainingResetType = 2;
+            else
+                trainingResetType = 0;
+
+            return COMBINE_INPUT ( 0, CC_BUTTON_FN2 );
+        }
+        else if ( ( trainingResetState == -2 || trainingResetState >= 0 )
+                  && ! ( input & COMBINE_INPUT ( 0, CC_BUTTON_FN2 ) ) )                     // Completed reset
+        {
+            trainingResetState = -1;
+        }
+        else if ( trainingResetState > 20 )                                                 // Check for held reset
+        {
+            // Swap sides if reset button is held for 20f
+            if ( trainingResetType != 2 && ( input & COMBINE_INPUT ( 0, CC_BUTTON_FN2 ) ) )
+                swap ( *CC_P1_X_POSITION_ADDR , *CC_P2_X_POSITION_ADDR );
+
+            trainingResetState = -2;
+
+            return COMBINE_INPUT ( 0, CC_BUTTON_FN2 );
+        }
+        else if ( trainingResetState >= 0 )                                                 // Reset in progress
+        {
+            if ( trainingResetType == -1 )
+            {
+                * ( player == 1 ? CC_P1_X_POSITION_ADDR : CC_P2_X_POSITION_ADDR ) = -45056;
+                * ( player == 1 ? CC_P2_X_POSITION_ADDR : CC_P1_X_POSITION_ADDR ) = -61440;
+                *CC_CAMERA_X_ADDR = quadraticScale ( -26624, trainingResetState, 10 );
+            }
+            else if ( trainingResetType == 1 )
+            {
+                * ( player == 1 ? CC_P1_X_POSITION_ADDR : CC_P2_X_POSITION_ADDR ) = 45056;
+                * ( player == 1 ? CC_P2_X_POSITION_ADDR : CC_P1_X_POSITION_ADDR ) = 61440;
+                *CC_CAMERA_X_ADDR = quadraticScale ( 26624, trainingResetState, 10 );
+            }
+            else if ( trainingResetType == 2 )
+            {
+                * ( player == 1 ? CC_P1_X_POSITION_ADDR : CC_P2_X_POSITION_ADDR ) = 16384;
+                * ( player == 1 ? CC_P2_X_POSITION_ADDR : CC_P1_X_POSITION_ADDR ) = -16384;
+            }
+
+            ++trainingResetState;
+
+            return COMBINE_INPUT ( 0, CC_BUTTON_FN2 );
+        }
     }
 
     return input;
@@ -109,7 +175,7 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
 
 // TODO check / fix replay saving
 // Only allow first 2 options (once again and chara select)
-#define MAX_RETRY_MENU_INDEX ( 1u )
+#define MAX_RETRY_MENU_INDEX ( 1 )
 
 uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
 {
@@ -117,7 +183,7 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
     if ( player != localPlayer )
         return 0;
 
-    if ( targetMenuIndex != MenuIndex::Invalid )
+    if ( targetMenuState != -1 && targetMenuIndex != -1 )
         return getMenuNavInput();
 
     uint16_t input = getDelayedInput ( player );
@@ -125,23 +191,23 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
     // Don't allow pressing select until 2f after we have stopped moving the cursor. This is a work around
     // for the issue when select is pressed after the cursor moves, but before currentMenuIndex is updated.
     if ( hasUpDownInLast2f() )
-        input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
+        input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
 
     // Limit retry menu selectable options
     if ( currentMenuIndex > MAX_RETRY_MENU_INDEX )
-        input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
+        input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
 
     if ( config.mode.isNetplay() )
     {
         // Special netplay retry menu behaviour, only select final option after both sides have selected
-        if ( remoteRetryMenuIndex != MenuIndex::Invalid && localRetryMenuIndex != MenuIndex::Invalid )
+        if ( remoteRetryMenuIndex != -1 && localRetryMenuIndex != -1 )
         {
             targetMenuState = 0;
             targetMenuIndex = max ( localRetryMenuIndex, remoteRetryMenuIndex );
             targetMenuIndex = min ( targetMenuIndex, MAX_RETRY_MENU_INDEX ); // Just in case...
             input = 0;
         }
-        else if ( localRetryMenuIndex != MenuIndex::Invalid )
+        else if ( localRetryMenuIndex != -1 )
         {
             input = 0;
         }
@@ -150,7 +216,7 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
             localRetryMenuIndex = currentMenuIndex;
             input = 0;
 
-            LOG ( "localRetryMenuIndex=%u", localRetryMenuIndex );
+            LOG ( "localRetryMenuIndex=%d", localRetryMenuIndex );
         }
     }
 
@@ -159,7 +225,7 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
 
 MsgPtr NetplayManager::getRetryMenuIndex() const
 {
-    if ( state == NetplayState::RetryMenu && localRetryMenuIndex != MenuIndex::Invalid )
+    if ( state == NetplayState::RetryMenu && localRetryMenuIndex != -1 )
         return MsgPtr ( new MenuIndex ( localRetryMenuIndex ) );
     else
         return 0;
@@ -169,7 +235,7 @@ void NetplayManager::setRetryMenuIndex ( uint32_t position )
 {
     remoteRetryMenuIndex = position;
 
-    LOG ( "remoteRetryMenuIndex=%u", remoteRetryMenuIndex );
+    LOG ( "remoteRetryMenuIndex=%d", remoteRetryMenuIndex );
 }
 
 uint16_t NetplayManager::getPauseMenuInput ( uint8_t player ) const
@@ -201,12 +267,12 @@ uint16_t NetplayManager::getDelayedInput ( uint8_t player, uint32_t frame ) cons
 
 uint16_t NetplayManager::getMenuNavInput() const
 {
-    if ( targetMenuIndex == MenuIndex::Invalid )
+    if ( targetMenuState == -1 || targetMenuIndex == -1 )
         return 0;
 
     if ( targetMenuState == 0 )                                 // Determined targetMenuIndex
     {
-        LOG ( "targetMenuIndex=%u", targetMenuIndex );
+        LOG ( "targetMenuIndex=%d", targetMenuIndex );
 
         targetMenuState = 1;
     }
@@ -214,8 +280,8 @@ uint16_t NetplayManager::getMenuNavInput() const
     {
         targetMenuState = 2;
 
-        if ( targetMenuIndex != currentMenuIndex )
-            return COMBINE_INPUT ( ( targetMenuIndex < currentMenuIndex ? 8 : 2 ), 0 );
+        if ( targetMenuIndex != ( int ) currentMenuIndex )
+            return COMBINE_INPUT ( ( targetMenuIndex < ( int ) currentMenuIndex ? 8 : 2 ), 0 );
     }
     else if ( targetMenuState >= 2 && targetMenuState <= 4 )    // Wait for currentMenuIndex to update
     {
@@ -224,15 +290,15 @@ uint16_t NetplayManager::getMenuNavInput() const
     else if ( targetMenuState == 39 )                           // Mash final menu selection
     {
         menuConfirmState = 2;
-        RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
+        RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
     }
-    else if ( currentMenuIndex != targetMenuIndex )             // Keep navigating
+    else if ( targetMenuIndex != ( int ) currentMenuIndex )             // Keep navigating
     {
         targetMenuState = 1;
     }
     else                                                        // Reached targetMenuIndex
     {
-        LOG ( "targetMenuIndex=%u; currentMenuIndex=%u", targetMenuIndex, currentMenuIndex );
+        LOG ( "targetMenuIndex=%d; currentMenuIndex=%u", targetMenuIndex, currentMenuIndex );
 
         targetMenuState = 39;
     }
@@ -247,15 +313,15 @@ bool NetplayManager::hasUpDownInLast2f() const
         if ( i > getFrame() )
             break;
 
-        const uint16_t p1 = ( state.value == NetplayState::InGame
-                              ? getOffsetInput ( 1, getFrame() - i )
-                              : getDelayedInput ( 1, getFrame() - i ) );
+        const uint16_t p1 = 0xF & ( state.value == NetplayState::InGame
+                                    ? getOffsetInput ( 1, getFrame() - i )
+                                    : getDelayedInput ( 1, getFrame() - i ) );
 
-        const uint16_t p2 = ( state.value == NetplayState::InGame
-                              ? getOffsetInput ( 2, getFrame() - i )
-                              : getDelayedInput ( 2, getFrame() - i ) );
+        const uint16_t p2 = 0xF & ( state.value == NetplayState::InGame
+                                    ? getOffsetInput ( 2, getFrame() - i )
+                                    : getDelayedInput ( 2, getFrame() - i ) );
 
-        if ( ( p1 & 2 ) || ( p1 & 8 ) || ( p2 & 2 ) || ( p2 & 8 ) )
+        if ( ( p1 == 2 ) || ( p1 == 8 ) || ( p2 == 2 ) || ( p2 == 8 ) )
             return true;
     }
 
@@ -338,10 +404,10 @@ void NetplayManager::setState ( NetplayState state )
 
             startIndex = getIndex();
 
-            targetMenuState = 0;
-            targetMenuIndex = MenuIndex::Invalid;
-            localRetryMenuIndex = MenuIndex::Invalid;
-            remoteRetryMenuIndex = MenuIndex::Invalid;
+            targetMenuState = -1;
+            targetMenuIndex = -1;
+            localRetryMenuIndex = -1;
+            remoteRetryMenuIndex = -1;
         }
 
         // Reset state variables
@@ -374,7 +440,7 @@ uint16_t NetplayManager::getInput ( uint8_t player ) const
                     || ( ( startIndex + inputs[remotePlayer - 1].getEndIndex() ) > getIndex() + 1 ) )
             {
                 menuConfirmState = 2;
-                RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_SELECT );
+                RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
             }
 
             return getSkippableInput ( player );

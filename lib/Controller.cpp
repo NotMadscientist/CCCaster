@@ -453,18 +453,6 @@ string Controller::getMapping ( uint32_t key ) const
     }
 }
 
-inline static uint8_t firstBitIndex ( uint32_t value )
-{
-    if ( value == 0 )
-        ASSERT_IMPOSSIBLE;
-
-    for ( uint8_t i = 0; i < 32; ++i )
-        if ( value & ( 1u << i ) )
-            return i;
-
-    ASSERT_IMPOSSIBLE;
-}
-
 void Controller::setMappings ( const array<char, 10>& config )
 {
     static const array<uint32_t, 10> bits =
@@ -473,7 +461,7 @@ void Controller::setMappings ( const array<char, 10>& config )
         BIT_UP,
         BIT_LEFT,
         BIT_RIGHT,
-        ( CC_BUTTON_A | CC_BUTTON_SELECT ) << 8,
+        ( CC_BUTTON_A | CC_BUTTON_CONFIRM ) << 8,
         ( CC_BUTTON_B | CC_BUTTON_CANCEL ) << 8,
         CC_BUTTON_C << 8,
         CC_BUTTON_D << 8,
