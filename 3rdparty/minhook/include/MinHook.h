@@ -73,7 +73,7 @@ typedef enum MH_STATUS
 }
 MH_STATUS;
 
-inline std::string MH_StatusString ( MH_STATUS status )
+inline const char *MH_StatusString ( MH_STATUS status )
 {
 	switch ( status )
 	{
@@ -182,7 +182,7 @@ extern "C" {
 //
 // mQueryPerformanceCounter is the hooked function
 //
-// MH_WINAPI_HOOK ( BOOL, QueryPerformanceCounter, LARGE_INTEGER *lpPerformanceCount )
+// MH_WINAPI_HOOK ( BOOL, WINAPI, QueryPerformanceCounter, LARGE_INTEGER *lpPerformanceCount )
 // {
 // 		return oQueryPerformanceCounter ( lpPerformanceCount );
 // }
@@ -191,11 +191,12 @@ extern "C" {
 //
 // MH_REMOVE_HOOK ( QueryPerformanceCounter );
 
-#define MH_WINAPI_HOOK(RETURN_TYPE, FUNC_NAME, ...)                             \
-    typedef RETURN_TYPE ( WINAPI *p ## FUNC_NAME ) ( __VA_ARGS__ );             \
+#define MH_WINAPI_HOOK(RETURN_TYPE, PREFIX, FUNC_NAME, ...)                     \
+    typedef RETURN_TYPE ( PREFIX *p ## FUNC_NAME ) ( __VA_ARGS__ );             \
     p ## FUNC_NAME o ## FUNC_NAME = 0;                                          \
-    RETURN_TYPE WINAPI m ## FUNC_NAME ( __VA_ARGS__ )
+    RETURN_TYPE PREFIX m ## FUNC_NAME ( __VA_ARGS__ )
 
-#define MH_CREATE_HOOK(FUNC_NAME) MH_CreateHook ( FUNC_NAME, m ## FUNC_NAME, o ## FUNC_NAME )
+#define MH_CREATE_HOOK(FUNC_NAME) \
+    MH_CreateHook ( ( void * ) FUNC_NAME, ( void * ) m ## FUNC_NAME, ( void ** ) &o ## FUNC_NAME )
 
-#define MH_REMOVE_HOOK(FUNC_NAME) MH_RemoveHook ( FUNC_NAME )
+#define MH_REMOVE_HOOK(FUNC_NAME) MH_RemoveHook ( ( void * ) FUNC_NAME )

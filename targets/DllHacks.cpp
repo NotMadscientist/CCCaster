@@ -32,6 +32,23 @@ void *mainWindowHandle = 0;
 
 
 // Note: this is on the SAME thread as the main thread where callback happens
+MH_WINAPI_HOOK ( LRESULT, CALLBACK, WindowProc, HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
+{
+    switch ( uMsg )
+    {
+        case WM_ENTERSIZEMOVE:
+            LOG ( "threadId=%08x; WM_MOVE", GetCurrentThreadId() );
+            break;
+
+        case WM_EXITSIZEMOVE:
+            LOG ( "threadId=%08x; WM_EXITSIZEMOVE", GetCurrentThreadId() );
+            break;
+    }
+
+    return oWindowProc ( hwnd, uMsg, wParam, lParam );
+}
+
+// Note: this is on the SAME thread as the main thread where callback happens
 void PresentFrameBegin ( IDirect3DDevice9 *device )
 {
     if ( !font )
@@ -112,6 +129,8 @@ void initializePreLoadHacks()
     // WRITE_ASM_HACK ( disableFpsLimit );
 }
 
+static pWindowProc WindowProc = 0;
+
 void initializePostLoadHacks()
 {
     *CC_DAMAGE_LEVEL_ADDR = 2;
@@ -129,6 +148,29 @@ void initializePostLoadHacks()
     if ( ( mainWindowHandle = enumFindWindow ( CC_TITLE ) ) == 0 )
         LOG ( "Couldn't find window '%s'", CC_TITLE );
 
+    // Disable resizing (this has weird behaviour with the viewport size)
+    // const DWORD dwStyle = GetWindowLong ( ( HWND ) mainWindowHandle, GWL_STYLE );
+    // SetWindowLong ( ( HWND ) mainWindowHandle, GWL_STYLE, ( dwStyle | WS_BORDER ) & ~ WS_THICKFRAME );
+
+    WindowProc = ( pWindowProc ) GetWindowLong ( ( HWND ) mainWindowHandle, GWL_WNDPROC );
+
+    LOG ( "WindowProc=%08x", WindowProc );
+
+    MH_STATUS status = MH_Initialize();
+
+    if ( status != MH_OK )
+        LOG ( "Initialize failed: %s", MH_StatusString ( status ) );
+
+    status = MH_CREATE_HOOK ( WindowProc );
+
+    if ( status != MH_OK )
+        LOG ( "Create hook failed: %s", MH_StatusString ( status ) );
+
+    status = MH_EnableHook ( ( void * ) WindowProc );
+
+    if ( status != MH_OK )
+        LOG ( "Enable hook failed: %s", MH_StatusString ( status ) );
+
     if ( detectWine() )
         return;
 
@@ -143,6 +185,10 @@ void initializePostLoadHacks()
 void deinitializeHacks()
 {
     UnhookDirectX();
+
+    MH_DisableHook ( ( void * ) WindowProc );
+    MH_REMOVE_HOOK ( WindowProc );
+    MH_Uninitialize();
 
     if ( keybdHook )
         UnhookWindowsHookEx ( keybdHook );
