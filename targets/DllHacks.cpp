@@ -148,10 +148,14 @@ void initializePostLoadHacks()
     if ( ( mainWindowHandle = enumFindWindow ( CC_TITLE ) ) == 0 )
         LOG ( "Couldn't find window '%s'", CC_TITLE );
 
+    // We can't save replays on Wine because MBAA crashes even without us.
     // We don't need to hook WindowProc on Wine because the game DOESN'T stop running if moving/resizing.
     // We can't hook DirectX calls on Wine (yet?).
     if ( detectWine() )
+    {
+        *CC_AUTO_REPLAY_SAVE_ADDR = 0;
         return;
+    }
 
     // // Disable resizing (this has weird behaviour with the viewport size)
     // const DWORD dwStyle = GetWindowLong ( ( HWND ) mainWindowHandle, GWL_STYLE );

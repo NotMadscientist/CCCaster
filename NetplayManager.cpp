@@ -9,8 +9,9 @@
 using namespace std;
 
 
-// Only allow first 3 options (once again, chara select, save replay)
-#define MAX_RETRY_MENU_INDEX ( 2 )
+// Only allow first 3 options (once again, chara select, save replay).
+// Prevent saving replays on Wine because MBAA crashes even without us.
+#define MAX_RETRY_MENU_INDEX ( detectWine() ? 1 : 2 )
 
 
 #define RETURN_MASH_INPUT(DIRECTION, BUTTONS)                       \
@@ -217,7 +218,7 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
         {
             targetMenuState = 0;
             targetMenuIndex = max ( localRetryMenuIndex, remoteRetryMenuIndex );
-            targetMenuIndex = min ( targetMenuIndex, MAX_RETRY_MENU_INDEX ); // Just in case...
+            targetMenuIndex = min ( targetMenuIndex, 1 ); // Just in case...
             input = 0;
         }
         else if ( localRetryMenuIndex != -1 )
