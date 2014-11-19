@@ -9,7 +9,8 @@
 using namespace std;
 
 
-#define MAX_GAMES_TO_KEEP ( 5 )
+// Only allow first 3 options (once again, chara select, save replay)
+#define MAX_RETRY_MENU_INDEX ( 2 )
 
 
 #define RETURN_MASH_INPUT(DIRECTION, BUTTONS)                       \
@@ -173,9 +174,6 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
     return input;
 }
 
-// Only allow first 3 options (once again, chara select, save replay)
-#define MAX_RETRY_MENU_INDEX ( 2 )
-
 uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
 {
     // Ignore remote input
@@ -205,7 +203,7 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
             return 0;
     }
 
-    // Allow manually saving replays; when replay save is selected or a replay save menu is open
+    // Allow saving replays; when manual replay save is selected or any replay save menu is open
     if ( currentMenuIndex == 2 || *CC_GAME_STATE_COUNTER_ADDR > retryMenuGameStateCounter )
     {
         menuConfirmState = 2;
