@@ -28,6 +28,8 @@ static HHOOK keybdHook = 0;
 
 string overlayText;
 
+void *mainWindowHandle = 0;
+
 
 // Note: this is on the SAME thread as the main thread where callback happens
 void PresentFrameBegin ( IDirect3DDevice9 *device )
@@ -121,15 +123,16 @@ void initializePostLoadHacks()
     if ( ! ( keybdHook = SetWindowsHookEx ( WH_KEYBOARD, keyboardCallback, 0, GetCurrentThreadId() ) ) )
         LOG ( "SetWindowsHookEx failed: %s", WindowsException ( GetLastError() ) );
 
+    // Get the handle to the main window
+    if ( ( mainWindowHandle = enumFindWindow ( CC_TITLE ) ) == 0 )
+        LOG ( "Couldn't find window '%s'", CC_TITLE );
+
     if ( detectWine() )
         return;
 
     // Hook DirectX
-    void *hwnd;
     string err;
-    if ( ( hwnd = enumFindWindow ( CC_TITLE ) ) == 0 )
-        LOG ( "Couldn't find window '%s'", CC_TITLE );
-    else if ( ! ( err = InitDirectX ( hwnd ) ).empty() )
+    if ( ! ( err = InitDirectX ( mainWindowHandle ) ).empty() )
         LOG ( "InitDirectX failed: %s", err );
     else if ( ! ( err = HookDirectX() ).empty() )
         LOG ( "HookDirectX failed: %s", err );

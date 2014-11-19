@@ -55,13 +55,13 @@ private:
     ControllerManager ( const ControllerManager& );
     const ControllerManager& operator= ( const ControllerManager& );
 
-    // Check for controller events
-    void doCheck();
+    // Check for joystick events
+    void checkJoystick();
 
 public:
 
-    // Check for controller events
-    void check();
+    // Check for controller events, matching keyboardWindowHandle if non-zero
+    void check ( void *keyboardWindowHandle = 0 );
 
     // Clear controllers
     void clear();

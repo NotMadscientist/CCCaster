@@ -118,7 +118,7 @@ struct DllMain
             case NetplayState::PauseMenu:
             {
                 // Check for changes to controller state
-                ControllerManager::get().check();
+                ControllerManager::get().check ( mainWindowHandle );
 
                 if ( clientMode.isSpectate() )
                 {
@@ -126,8 +126,7 @@ struct DllMain
                     break;
                 }
 
-                if ( controllers[0] )
-                    localInput = convertInputState ( controllers[0]->getState() );
+                localInput = convertInputState ( controllers[0] );
 
 #ifndef RELEASE
                 // Test rollback
@@ -192,8 +191,7 @@ struct DllMain
                 }
                 else if ( clientMode.isLocal() )
                 {
-                    if ( controllers[1] )
-                        remoteInput = convertInputState ( controllers[1]->getState() );
+                    remoteInput = convertInputState ( controllers[1] );
 
                     netMan.setInput ( remotePlayer, remoteInput );
                 }
@@ -945,10 +943,35 @@ struct DllMain
 
 private:
 
-    static uint16_t convertInputState ( uint32_t state )
+    // Filter simultaneous up/down and left/right directions.
+    // Prioritize down and left for keyboard only.
+    static uint16_t filterSimulDirState ( uint16_t state, bool isKeyboard )
     {
-        const uint16_t dirs = ( state & MASK_DIRS );
-        const uint16_t buttons = ( state & MASK_BUTTONS ) >> 8;
+        if ( isKeyboard )
+        {
+            if ( ( state & ( BIT_UP | BIT_DOWN ) ) == ( BIT_UP | BIT_DOWN ) )
+                state &= ~BIT_UP;
+            if ( ( state & ( BIT_LEFT | BIT_RIGHT ) ) == ( BIT_LEFT | BIT_RIGHT ) )
+                state &= ~BIT_RIGHT;
+        }
+        else
+        {
+            if ( ( state & ( BIT_UP | BIT_DOWN ) ) == ( BIT_UP | BIT_DOWN ) )
+                state &= ~ ( BIT_UP | BIT_DOWN );
+            if ( ( state & ( BIT_LEFT | BIT_RIGHT ) ) == ( BIT_LEFT | BIT_RIGHT ) )
+                state &= ~ ( BIT_LEFT | BIT_RIGHT );
+        }
+
+        return state;
+    }
+
+    static uint16_t convertInputState ( const Controller *controller )
+    {
+        if ( !controller )
+            return 0;
+
+        const uint16_t dirs = filterSimulDirState ( controller->getState() & MASK_DIRS, controller->isKeyboard() );
+        const uint16_t buttons = ( controller->getState() & MASK_BUTTONS ) >> 8;
 
         uint8_t direction = 5;
 

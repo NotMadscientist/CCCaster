@@ -12,20 +12,8 @@ using namespace std;
 #define MAX_EVENT_QUEUE 64
 
 
-void ControllerManager::doCheck()
+void ControllerManager::checkJoystick()
 {
-    // Update keyboard controller state
-    keyboard.state = 0;
-
-    for ( uint8_t i = 0; i < 32; ++i )
-    {
-        if ( !keyboard.keybd.codes[i] )
-            continue;
-
-        if ( GetKeyState ( keyboard.keybd.codes[i] ) & 0x80 )
-            keyboard.state |= ( 1u << i );
-    }
-
     // Update SDL joystick events
     SDL_PumpEvents();
     SDL_Event events[MAX_EVENT_QUEUE];
@@ -162,12 +150,27 @@ void ControllerManager::mappingsChanged ( Controller *controller )
     mappings.invalidate();
 }
 
-void ControllerManager::check()
+void ControllerManager::check ( void *keyboardWindowHandle )
 {
     if ( !initialized )
         return;
 
-    doCheck();
+    if ( !keyboardWindowHandle || keyboardWindowHandle == ( void * ) GetForegroundWindow() )
+    {
+        // Update keyboard controller state
+        keyboard.state = 0;
+
+        for ( uint8_t i = 0; i < 32; ++i )
+        {
+            if ( !keyboard.keybd.codes[i] )
+                continue;
+
+            if ( GetKeyState ( keyboard.keybd.codes[i] ) & 0x80 )
+                keyboard.state |= ( 1u << i );
+        }
+    }
+
+    checkJoystick();
 
     // Workaround for SDL bug 2643
     if ( shouldReset )
@@ -177,7 +180,7 @@ void ControllerManager::check()
         deinitialize();
         initialize ( owner );
 
-        doCheck();
+        checkJoystick();
 
         shouldReset = false;
     }

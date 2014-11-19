@@ -9,3 +9,5 @@ void initializePostLoadHacks();
 void deinitializeHacks();
 
 extern std::string overlayText;
+
+extern void *mainWindowHandle;
