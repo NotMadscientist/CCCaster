@@ -13,36 +13,64 @@ void Logger::log ( const char *file, int line, const char *func, const char *mes
 
 #else
 
-void Logger::initialize ( const string& name, uint32_t options )
+void Logger::initialize ( const string& file, uint32_t options )
 {
-    if ( initialized )
-        return;
+#ifdef LOGGER_MUTEXED
+    LOCK ( mutex );
+#endif
 
-    initialized = true;
+    bool same = initialized && ( this->file == file );
+
     this->options = options;
 
-    if ( name.empty() )
+    if ( file.empty() )
     {
+        this->file.clear();
         fd = stdout;
     }
     else
     {
         if ( options & PID_IN_FILENAME )
-            fd = fopen ( ( toString ( "log%08d", _getpid() ) + name ).c_str(), "w" );
+        {
+            const string tmp = toString ( "log%08d", _getpid() ) + file;
+            same = ( this->file == tmp );
+            this->file = tmp;
+        }
         else
-            fd = fopen ( name.c_str(), "w" );
+        {
+            this->file = file;
+        }
+
+        // Reopen the file if the path changed
+        if ( !same )
+        {
+            fflush ( fd );
+            fclose ( fd );
+        }
+
+        // Append to the file if the path is the same
+        fd = fopen ( this->file.c_str(), same ? "a" : "w" );
     }
 
-    if ( options & LOG_VERSION )
+    // Only log version if the path changed
+    if ( ( options & LOG_VERSION ) && !same )
     {
+        if ( !initialized )
+            logId = generateRandomId();
+
+        fprintf ( fd, "LogId '%s'\n", logId.c_str() );
         fprintf ( fd, "Version '%s' { '%s', '%s', '%s' }\n", LocalVersion.code.c_str(),
                   LocalVersion.major().c_str(), LocalVersion.minor().c_str(), LocalVersion.suffix().c_str() );
         fprintf ( fd, "CommitId '%s' { isCustom=%d }\n", LocalVersion.commitId.c_str(), LocalVersion.isCustom() );
         fprintf ( fd, "BuildTime '%s'\n", LocalVersion.buildTime.c_str() );
+
         if ( !sessionId.empty() )
             fprintf ( fd, "SessionId '%s'\n", sessionId.c_str() );
+
         fflush ( fd );
     }
+
+    initialized = true;
 }
 
 void Logger::deinitialize()
@@ -54,7 +82,13 @@ void Logger::deinitialize()
     LOCK ( mutex );
 #endif
 
-    fclose ( fd );
+    if ( fd != stdout )
+        fclose ( fd );
+
+    file.clear();
+    logId.clear();
+    sessionId.clear();
+    options = 0;
     fd = 0;
     initialized = false;
 }

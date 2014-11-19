@@ -18,7 +18,16 @@
 
 class Logger
 {
-    // Log file
+    // Log file path
+    std::string file;
+
+    // Log identifier, to match up reinitialized logs
+    std::string logId;
+
+    // Bit mask of options
+    uint32_t options = 0;
+
+    // Log file descriptor
     FILE *fd = 0;
 
     // Char buffer
@@ -26,9 +35,6 @@ class Logger
 
     // Flag to indicate if initialized
     bool initialized = false;
-
-    // Bit mask of options
-    uint32_t options = 0;
 
     // Optionally mutexed logging
 #ifdef LOGGER_MUTEXED
@@ -44,7 +50,7 @@ public:
     Logger() {}
 
     // Initialize / deinitialize logging
-    void initialize ( const std::string& name = "",
+    void initialize ( const std::string& file = "",
                       uint32_t options = ( LOG_VERSION | LOG_GM_TIME | LOG_FILE_LINE | LOG_FUNC_NAME ) );
     void deinitialize();
 

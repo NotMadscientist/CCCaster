@@ -491,7 +491,7 @@ struct MainApp
             case ClientMode::Host:
                 KeyboardManager::get().hook ( this, MainUi::getConsoleWindow(), { VK_ESCAPE } ); // Waiting again
                 netplayConfig = ui.getNetplayConfig();
-                netplayConfig.sessionId = generateSessionId();
+                netplayConfig.sessionId = generateRandomId();
                 netplayConfig.invalidate();
                 ctrlSocket->send ( netplayConfig );
                 break;
@@ -566,7 +566,7 @@ struct MainApp
         netplayConfig.winCount = ui.getConfig().getInteger ( "versusWinCount" );
 
         if ( clientMode.isLocal() )
-            options.set ( Options::SessionId, 1, generateSessionId() );
+            options.set ( Options::SessionId, 1, generateRandomId() );
         else if ( clientMode.isSpectate() )
             options.set ( Options::SessionId, 1, spectateConfig.sessionId );
         else
@@ -1073,20 +1073,6 @@ private:
         uiRecvSocket.reset();
 
         isBroadcastPortReady = isFinalConfigReady = isWaitingForUser = userConfirmed = false;
-    }
-
-    static string generateSessionId()
-    {
-        string sessionId;
-
-        for ( int i = 0; i < 10; ++i )
-        {
-            sessionId += ( 'A' + ( rand() % 26 ) );
-            sessionId += ( 'a' + ( rand() % 26 ) );
-            sessionId += ( '0' + ( rand() % 10 ) );
-        }
-
-        return sessionId;
     }
 };
 

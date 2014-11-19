@@ -924,7 +924,7 @@ struct DllMain
 
 #ifndef RELEASE
         ChangeMonitor::get().addRef ( this, Variable ( Variable::MenuConfirmState ), menuConfirmState );
-        ChangeMonitor::get().addRef ( this, Variable ( Variable::GameStateCounter ), *CC_GAME_STATE_COUNTER_ADDR );
+        // ChangeMonitor::get().addRef ( this, Variable ( Variable::GameStateCounter ), *CC_GAME_STATE_COUNTER_ADDR );
         ChangeMonitor::get().addRef ( this, Variable ( Variable::CurrentMenuIndex ), currentMenuIndex );
         ChangeMonitor::get().addPtrToRef ( this, Variable ( Variable::AutoReplaySave ),
                                            const_cast<const uint32_t *&> ( autoReplaySaveStatePtr ), 0u );
@@ -1001,8 +1001,25 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
     switch ( reason )
     {
         case DLL_PROCESS_ATTACH:
-            // Logger::get().initialize ( LOG_FILE );
-            // LOG ( "DLL_PROCESS_ATTACH" );
+        {
+            char buffer[4096];
+            string gameDir;
+
+            if ( GetModuleFileName ( 0, buffer, sizeof ( buffer ) ) )
+            {
+                gameDir = buffer;
+                gameDir = gameDir.substr ( 0, gameDir.find_last_of ( "/\\" ) );
+
+                replace ( gameDir.begin(), gameDir.end(), '/', '\\' );
+
+                if ( !gameDir.empty() && gameDir.back() != '\\' )
+                    gameDir += '\\';
+            }
+
+            srand ( time ( 0 ) );
+
+            Logger::get().initialize ( gameDir + LOG_FILE );
+            LOG ( "DLL_PROCESS_ATTACH" );
 
             // We want the DLL to be able to rebind any previously bound ports
             Socket::forceReusePort ( true );
@@ -1032,6 +1049,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
             }
 #endif
             break;
+        }
 
         case DLL_PROCESS_DETACH:
             LOG ( "DLL_PROCESS_DETACH" );

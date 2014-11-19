@@ -266,3 +266,19 @@ inline bool isPowerOfTwo ( uint32_t x )
 {
     return ( x != 0 ) && ( ( x & ( x - 1 ) ) == 0 );
 }
+
+
+// Random 30 character ID
+inline std::string generateRandomId()
+{
+    std::string randId;
+
+    for ( int i = 0; i < 10; ++i )
+    {
+        randId += ( 'A' + ( rand() % 26 ) );
+        randId += ( 'a' + ( rand() % 26 ) );
+        randId += ( '0' + ( rand() % 10 ) );
+    }
+
+    return randId;
+}
