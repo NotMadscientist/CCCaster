@@ -148,33 +148,33 @@ void initializePostLoadHacks()
     if ( ( mainWindowHandle = enumFindWindow ( CC_TITLE ) ) == 0 )
         LOG ( "Couldn't find window '%s'", CC_TITLE );
 
-    // Disable resizing (this has weird behaviour with the viewport size)
+    // We don't need to hook WindowProc on Wine because the game DOESN'T stop running if moving/resizing.
+    // We can't hook DirectX calls on Wine (yet?).
+    if ( detectWine() )
+        return;
+
+    // // Disable resizing (this has weird behaviour with the viewport size)
     // const DWORD dwStyle = GetWindowLong ( ( HWND ) mainWindowHandle, GWL_STYLE );
     // SetWindowLong ( ( HWND ) mainWindowHandle, GWL_STYLE, ( dwStyle | WS_BORDER ) & ~ WS_THICKFRAME );
 
+    // Hook the game's WindowProc
     WindowProc = ( pWindowProc ) GetWindowLong ( ( HWND ) mainWindowHandle, GWL_WNDPROC );
 
     LOG ( "WindowProc=%08x", WindowProc );
 
     MH_STATUS status = MH_Initialize();
-
     if ( status != MH_OK )
         LOG ( "Initialize failed: %s", MH_StatusString ( status ) );
 
     status = MH_CREATE_HOOK ( WindowProc );
-
     if ( status != MH_OK )
         LOG ( "Create hook failed: %s", MH_StatusString ( status ) );
 
     status = MH_EnableHook ( ( void * ) WindowProc );
-
     if ( status != MH_OK )
         LOG ( "Enable hook failed: %s", MH_StatusString ( status ) );
 
-    if ( detectWine() )
-        return;
-
-    // Hook DirectX
+    // Hook the game's DirectX calls
     string err;
     if ( ! ( err = InitDirectX ( mainWindowHandle ) ).empty() )
         LOG ( "InitDirectX failed: %s", err );
@@ -186,9 +186,13 @@ void deinitializeHacks()
 {
     UnhookDirectX();
 
-    MH_DisableHook ( ( void * ) WindowProc );
-    MH_REMOVE_HOOK ( WindowProc );
-    MH_Uninitialize();
+    if ( WindowProc )
+    {
+        MH_DisableHook ( ( void * ) WindowProc );
+        MH_REMOVE_HOOK ( WindowProc );
+        MH_Uninitialize();
+        WindowProc = 0;
+    }
 
     if ( keybdHook )
         UnhookWindowsHookEx ( keybdHook );

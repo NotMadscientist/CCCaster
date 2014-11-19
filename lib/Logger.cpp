@@ -42,7 +42,7 @@ void Logger::initialize ( const string& file, uint32_t options )
         }
 
         // Reopen the file if the path changed
-        if ( !same )
+        if ( fd && !same )
         {
             fflush ( fd );
             fclose ( fd );
@@ -82,7 +82,7 @@ void Logger::deinitialize()
     LOCK ( mutex );
 #endif
 
-    if ( fd != stdout )
+    if ( fd && fd != stdout )
         fclose ( fd );
 
     file.clear();
