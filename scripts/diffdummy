@@ -17,10 +17,19 @@ g.close()
 f.close()
 
 
-skip = True
-j = -1
+for i in range ( 0, 4 ):
+    if dlog[i] != rlog[i]:
+        print 'Line', i + 1
+        print '< ', dlog[i]
+        print '---'
+        print '> ', rlog[i]
+        exit ( -1 )
 
-for i in range ( 0, len ( rlog ) ):
+
+skip = True
+j = 3
+
+for i in range ( 4, len ( rlog ) ):
     if skip:
         # Skip lines until after CharaSelect state
         if rlog[i].find ( 'CharaSelect' ) > 0:
@@ -31,8 +40,13 @@ for i in range ( 0, len ( rlog ) ):
     else:
         m = re.match ( '^.+::([A-Za-z]+) \[([0-9]+):([0-9]+)\] (Inputs: .+)$', rlog[i] )
 
-        # Skip Loading and Skippable states
-        if ( not m ) or ( m.group ( 1 ) == 'Loading' ) or ( m.group ( 1 ) == 'Skippable' ):
+        if not m:
+            print 'Invalid line (%d) in regular sync log:' % ( i + 1 )
+            print rlog[i]
+            exit ( -1 )
+
+        # Skip Loading, Skippable, and Retry states
+        if ( m.group ( 1 ) == 'Loading' ) or ( m.group ( 1 ) == 'Skippable' ) or ( m.group ( 1 ) == 'Retry' ):
             continue
 
         rstate = m.group ( 1 )
@@ -45,9 +59,9 @@ for i in range ( 0, len ( rlog ) ):
             m = re.match ( '^\[([0-9]+):([0-9]+)\] (Inputs: .+)$', dlog[j] )
 
             if not m:
-                print 'Invalid line in dummy sync log:'
+                print 'Invalid line (%d) in dummy sync log:' % ( j + 1 )
                 print dlog[j]
-                exit ( 0 )
+                exit ( -1 )
 
             dindex = int ( m.group ( 1 ) )
             dframe = int ( m.group ( 2 ) )
