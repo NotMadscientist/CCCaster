@@ -176,7 +176,7 @@ std::ostream& operator<< ( std::ostream& os, const Exception& exception );
 // Find the first window handle with the given title (NOT thread safe)
 void *enumFindWindow ( const std::string& title );
 
-// Detect if we're running on Wine
+// Detect if we're running on Wine, this caches the result of the first call
 bool detectWine();
 
 // Write to a memory location in the same process, returns 0 on success

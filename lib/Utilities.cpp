@@ -163,7 +163,7 @@ void *enumFindWindow ( const string& title )
 
 bool detectWine()
 {
-    static char isWine = -1;
+    static char isWine = -1; // -1 means uninitialized
 
     if ( isWine >= 0 )
         return isWine;
