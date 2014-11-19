@@ -34,10 +34,14 @@
     void load ( cereal::BinaryInputArchive& ar ) { ar ( __VA_ARGS__ ); }
 
 
-// Top level message type, auto-generated
+// Message type, auto-generated from scanning all the headers
 enum class MsgType : uint8_t
 {
-#include "Protocol.enum.h"
+    FirstType = 0,
+
+#include "ProtocolEnums.h"
+
+    LastType
 };
 
 // Base message type

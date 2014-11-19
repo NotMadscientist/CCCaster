@@ -1,58 +1,121 @@
 #!/bin/sh
 
+# Library folder
 DIR=lib
 
-echo 'FirstType = 0,' > $DIR/tmp
+# Protocol match regex
+REGEX="^(struct|class) [A-Za-z0-9]+ .+ public Serializable[A-Z]"
 
-grep --extended-regexp "public Serializable[A-Z]" "$@" \
-  | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z0-9]+) .+$$/\1,/' \
+
+#######################################################################################################################
+
+
+# Scan for all protocol classes, sorted alphabetically
+grep --extended-regexp "$REGEX" "$@" \
+  | sed --regexp-extended 's/^.+\.h:[a-z]+ ([A-Za-z0-9]+) .+$$/\1,/' \
   | sort \
-  >> $DIR/tmp
+  | uniq \
+  > $DIR/tmp_all
 
-echo 'LastType' >> $DIR/tmp
+# Use a sorted list of enums
+sort $DIR/ProtocolEnums.h > $DIR/tmp_enums
 
-diff $DIR/tmp $DIR/Protocol.enum.h 1> /dev/null 2>&1
+# Separate unchanged, new, and deleted messages.
+# Deleted messages should be kept in the list of enums, to keep maintain numbering.
+# When the number of messages grows too large, this list should be pruned, which will break protocol.
+comm --nocheck-order $DIR/tmp_enums $DIR/tmp_all \
+  | sed --regexp-extended 's/^([A-Za-z0-9]+,)$/\1 \/\/ Deleted message/' \
+  | sed --regexp-extended 's/^\t([A-Za-z0-9]+,)$/\1 \/\/ New message/' \
+  | sed --regexp-extended 's/^\t\t([A-Za-z0-9]+,)$/\1/' \
+  > $DIR/tmp_changes
 
-if [ $? -ne 0 ]; then
+# Filter out deleted messages
+grep --fixed-strings ' // Deleted message' $DIR/tmp_changes \
+  | sed --regexp-extended 's/^([A-Za-z0-9]+,) \/\/.+$/\1/' \
+  | uniq \
+  > $DIR/tmp_deleted
+
+# Filter out new messages
+grep --fixed-strings ' // New message' $DIR/tmp_changes \
+  | sed --regexp-extended 's/^([A-Za-z0-9]+,) \/\/.+$/\1/' \
+  | uniq \
+  > $DIR/tmp_new
+
+# Regenerate enums with commented deleted messages
+rm -f $DIR/tmp_enums
+
+# Iterate through each message
+while read message
+do
+
+  # Check if the message is deleted
+  grep > /dev/null --fixed-strings "$message" $DIR/tmp_deleted
+
+  if [ $? -eq 0 ]; then
+    echo "$message // Deleted message" >> $DIR/tmp_enums
+  else
+    echo $message >> $DIR/tmp_enums
+  fi
+
+done < "$DIR/ProtocolEnums.h"
+
+# Append new messages at the end
+cat $DIR/tmp_new >> $DIR/tmp_enums
+
+
+#######################################################################################################################
+
+
+# Check for changes to the list of messages
+diff $DIR/tmp_enums $DIR/ProtocolEnums.h 1> /dev/null 2>&1
+
+# Check if we should regenerate protocol
+if [ $? -ne 0 ] || [ ! -f "$DIR/Protocol.includes.h" ]      \
+                || [ ! -f "$DIR/Protocol.clone.h" ]         \
+                || [ ! -f "$DIR/Protocol.types.h" ]         \
+                || [ ! -f "$DIR/Protocol.strings.h" ]       \
+                || [ ! -f "$DIR/Protocol.decode.h" ]; then
 
   echo Regenerating protocol
 
-  mv -f $DIR/tmp $DIR/Protocol.enum.h
+  mv -f $DIR/tmp_enums $DIR/ProtocolEnums.h
 
-  grep --extended-regexp "public Serializable[A-Z]" "$@" \
-    | sed -r \
+  rm -f $DIR/tmp*
+
+  grep --extended-regexp "$REGEX" "$@" \
+    | sed --regexp-extended \
       's/^(.+\.h):[a-z]+ ([A-Za-z0-9]+) .+$$/#include "\1"/' \
     | sort \
     | uniq \
     > $DIR/Protocol.includes.h
 
-  grep --extended-regexp "public Serializable[A-Z]" "$@" | grep --invert-match "no-clone" \
-    | sed -r \
+  grep --extended-regexp "$REGEX" "$@" | grep --invert-match "no-clone" \
+    | sed --regexp-extended \
       's/^(.+\.h):[a-z]+ ([A-Za-z0-9]+) .+$$/\
 MsgPtr \2::clone() const { MsgPtr msg ( new \2 ( *this ) ); msg->invalidate(); return msg; }/' \
     | sort \
     | uniq \
     > $DIR/Protocol.clone.h
 
-  grep --extended-regexp "public Serializable[A-Z]" "$@" | grep --invert-match "no-type" \
-    | sed -r \
+  grep --extended-regexp "$REGEX" "$@" | grep --invert-match "no-type" \
+    | sed --regexp-extended \
       's/^(.+\.h):[a-z]+ ([A-Za-z0-9]+) .+$$/MsgType \2::getMsgType() const { return MsgType::\2; }/' \
     | sort \
     | uniq \
     > $DIR/Protocol.types.h
 
-  grep --extended-regexp "public Serializable[A-Z]" "$@" \
-    | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z0-9]+) .+$$/case MsgType::\1: return ( os << "\1" );/' \
+  grep --extended-regexp "$REGEX" "$@" \
+    | sed --regexp-extended \
+      's/^.+\.h:[a-z]+ ([A-Za-z0-9]+) .+$$/case MsgType::\1: return ( os << "\1" );/' \
     | sort \
     > $DIR/Protocol.strings.h
 
-  grep --extended-regexp "public Serializable[A-Z]" "$@" \
-    | sed -r 's/^.+\.h:[a-z]+ ([A-Za-z0-9]+) .+$$/case MsgType::\1: msg.reset ( new \1() ); break;/' \
+  grep --extended-regexp "$REGEX" "$@" \
+    | sed --regexp-extended \
+      's/^.+\.h:[a-z]+ ([A-Za-z0-9]+) .+$$/case MsgType::\1: msg.reset ( new \1() ); break;/' \
     | sort \
     > $DIR/Protocol.decode.h
 
-else
-
-  rm -f $DIR/tmp
-
 fi
+
+rm -f $DIR/tmp*
