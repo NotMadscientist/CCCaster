@@ -415,6 +415,7 @@ struct MainApp
         this->netplayConfig.mode.flags = netplayConfig.mode.flags;
         this->netplayConfig.delay = netplayConfig.delay;
         this->netplayConfig.rollback = netplayConfig.rollback;
+        this->netplayConfig.winCount = netplayConfig.winCount;
         this->netplayConfig.hostPlayer = netplayConfig.hostPlayer;
         this->netplayConfig.sessionId = netplayConfig.sessionId;
 
@@ -562,6 +563,8 @@ struct MainApp
 
     void startGame()
     {
+        netplayConfig.winCount = ui.getConfig().getInteger ( "versusWinCount" );
+
         if ( clientMode.isLocal() )
             options.set ( Options::SessionId, 1, generateSessionId() );
         else if ( clientMode.isSpectate() )

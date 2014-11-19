@@ -393,7 +393,7 @@ void MainUi::controls()
 void MainUi::settings()
 {
     static const vector<string> options =
-    { "Alert on connect", "Display name", "Show full character name", "Game CPU priority" };
+    { "Alert on connect", "Display name", "Show full character name", "Game CPU priority", "Versus mode win count" };
 
     ui->pushRight ( new ConsoleUi::Menu ( "Settings", options, "Back" ) );
 
@@ -410,7 +410,7 @@ void MainUi::settings()
             {
                 ui->pushInFront ( new ConsoleUi::Menu ( "Alert when connected?",
                 { "Focus window", "Play a sound", "Do both", "Don't alert" }, "Cancel" ),
-                { 0, 0 }, true ); // Don't expand but clear
+                { 0, 0 }, true ); // Don't expand but DO clear
 
                 ui->top<ConsoleUi::Menu>()->setPosition ( ( config.getInteger ( "alertOnConnect" ) + 3 ) % 4 );
                 ui->popUntilUserInput();
@@ -471,7 +471,7 @@ void MainUi::settings()
             case 2:
                 ui->pushInFront ( new ConsoleUi::Menu ( "Show full character names when spectating?",
                 { "Yes", "No" }, "Cancel" ),
-                { 0, 0 }, true ); // Don't expand but clear
+                { 0, 0 }, true ); // Don't expand but DO clear
 
                 ui->top<ConsoleUi::Menu>()->setPosition ( ( config.getInteger ( "fullCharacterName" ) + 1 ) % 2 );
                 ui->popUntilUserInput();
@@ -488,7 +488,7 @@ void MainUi::settings()
             case 3:
                 ui->pushInFront ( new ConsoleUi::Menu ( "Start game with high CPU priority?",
                 { "Yes", "No" }, "Cancel" ),
-                { 0, 0 }, true ); // Don't expand but clear
+                { 0, 0 }, true ); // Don't expand but DO clear
 
                 ui->top<ConsoleUi::Menu>()->setPosition ( ( config.getInteger ( "highCpuPriority" ) + 1 ) % 2 );
                 ui->popUntilUserInput();
@@ -497,6 +497,35 @@ void MainUi::settings()
                 {
                     config.putInteger ( "highCpuPriority", ( ui->top()->resultInt + 1 ) % 2 );
                     saveConfig();
+                }
+
+                ui->pop();
+                break;
+
+            case 4:
+                ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter versus mode win count:" ),
+                { 0, 0 }, true ); // Don't expand but DO clear
+
+                ui->top<ConsoleUi::Prompt>()->allowNegative = false;
+                ui->top<ConsoleUi::Prompt>()->maxDigits = 1;
+                ui->top<ConsoleUi::Prompt>()->setInitial ( config.getInteger ( "versusWinCount" ) );
+
+                for ( ;; )
+                {
+                    ui->popUntilUserInput();
+
+                    if ( ui->top()->resultInt < 0 )
+                        break;
+
+                    if ( ui->top()->resultInt > 5 )
+                    {
+                        ui->pushBelow ( new ConsoleUi::TextBox ( "Win count can't be greater than 5!" ) );
+                        continue;
+                    }
+
+                    config.putInteger ( "versusWinCount", ui->top()->resultInt );
+                    saveConfig();
+                    break;
                 }
 
                 ui->pop();
@@ -518,6 +547,7 @@ void MainUi::initialize()
     config.putString ( "displayName", ProcessManager::fetchGameUserName() );
     config.putInteger ( "fullCharacterName", 0 );
     config.putInteger ( "highCpuPriority", 1 );
+    config.putInteger ( "versusWinCount", 2 );
 
     // Cached UI state
     config.putInteger ( "lastUsedPort", -1 );
@@ -768,10 +798,13 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
             continue;
         }
 
-        // TODO select rollback
-
         netplayConfig.delay = menu->resultInt;
-        netplayConfig.hostPlayer = 1; // TODO randomize
+        netplayConfig.rollback = 0; // TODO select rollback
+#ifdef RELEASE
+        netplayConfig.hostPlayer = 1 + ( rand() % 2 );
+#else
+        netplayConfig.hostPlayer = 1; // Host is always player 1 for easier debugging
+#endif
         ret = true;
         break;
     }

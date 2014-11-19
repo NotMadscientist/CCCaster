@@ -141,6 +141,7 @@ struct NetplayConfig : public SerializableSequence
 {
     ClientMode mode;
     uint8_t delay = 0xFF, rollback = 0;
+    uint8_t winCount = 2;
     uint8_t hostPlayer = 0;
     uint16_t broadcastPort = 0;
 
@@ -171,15 +172,17 @@ struct NetplayConfig : public SerializableSequence
     void clear()
     {
         mode.clear();
-        rollback = hostPlayer = 0;
         delay = 0xFF;
+        rollback = hostPlayer = 0;
+        winCount = 2;
         broadcastPort = 0;
         names[0].clear();
         names[1].clear();
         sessionId.clear();
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( NetplayConfig, mode, delay, rollback, hostPlayer, broadcastPort, names, sessionId )
+    PROTOCOL_MESSAGE_BOILERPLATE ( NetplayConfig,
+                                   mode, delay, rollback, winCount, hostPlayer, broadcastPort, names, sessionId )
 };
 
 

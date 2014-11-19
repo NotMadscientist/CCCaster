@@ -847,10 +847,12 @@ struct DllMain
                     netplayStateChanged ( NetplayState::Initial );
                 }
 
-                LOG ( "NetplayConfig: flags={ %s }; delay=%d; rollback=%d; training=%d; offline=%d; "
+                *CC_WIN_COUNT_VS_ADDR = ( uint32_t ) netMan.config.winCount;
+
+                LOG ( "NetplayConfig: flags={ %s }; delay=%d; rollback=%d; winCount=%d; training=%d; offline=%d; "
                       "hostPlayer=%d; localPlayer=%d; remotePlayer=%d",
                       netMan.config.mode.flagString(), netMan.config.delay, netMan.config.rollback,
-                      netMan.config.mode.isTraining(), netMan.config.mode.isOffline(),
+                      netMan.config.winCount, netMan.config.mode.isTraining(), netMan.config.mode.isOffline(),
                       netMan.config.hostPlayer, localPlayer, remotePlayer );
                 break;
 
