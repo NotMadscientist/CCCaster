@@ -26,7 +26,11 @@ struct Version : public SerializableSequence
 
     bool isCustom() const;
 
+#ifdef RELEASE
+    bool similar ( const Version& other, uint8_t level = 1 ) const;
+#else
     bool similar ( const Version& other, uint8_t level = 0xFF ) const;
+#endif
 
     void clear()
     {

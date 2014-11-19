@@ -30,10 +30,13 @@ extern uint32_t currentMenuIndex;
 extern uint32_t menuConfirmState;
 
 // Pointers to P1 and P2 character select mode (moon, colour, etc...), this gets updated by ASM hacks
-extern uint32_t *charaSelectModes[2];
+extern uint32_t *charaSelectModePtrs[2];
 
 // Round start counter, this gets incremented whenever players can start moving
 extern uint32_t roundStartCounter;
+
+// Auto replay save state, is set to 1 (loading), then 100 (saving), finally 255 (saved).
+extern uint32_t *autoReplaySaveStatePtr;
 
 
 namespace AsmHacks
@@ -173,7 +176,7 @@ static const AsmList hijackMenu =
         0x51,                                                       // push ecx
         0x8D, 0x8E, 0xEC, 0xD8, 0x74, 0x00,                         // lea ecx,[esi+0x74D8EC]
         0xC7, 0x01, 0x01, 0x00, 0x00, 0x00,                         // mov [ecx],00000001
-        0x89, 0x0C, 0xBD, INLINE_DWORD ( charaSelectModes ),        // mov [edi*4+charaSelectModes],ecx
+        0x89, 0x0C, 0xBD, INLINE_DWORD ( charaSelectModePtrs ),     // mov [edi*4+charaSelectModePtrs],ecx
         0x59,                                                       // pop ecx
 
         // The rest of the assembly code is unmodified and just shifted down
@@ -188,37 +191,37 @@ static const AsmList hijackMenu =
     // The value of menuConfirmState is set to 1 if a menu confirm happens.
     // A menu confirm will only go through if menuConfirmState is greater than 1.
     { ( void * ) 0x428F52, {
-        0x53, 0x51, 0x52,                                       // push ebx,ecx,edx
-        0x8D, 0x5C, 0x24, 0x30,                                 // lea ebx,[esp+30]
-        0xB9, INLINE_DWORD ( &menuConfirmState ),               // mov ecx,&menuConfirmState
-        0xEB, 0x04                                              // jmp 0x428F64
+        0x53, 0x51, 0x52,                                           // push ebx,ecx,edx
+        0x8D, 0x5C, 0x24, 0x30,                                     // lea ebx,[esp+30]
+        0xB9, INLINE_DWORD ( &menuConfirmState ),                   // mov ecx,&menuConfirmState
+        0xEB, 0x04                                                  // jmp 0x428F64
     } },
     { ( void * ) 0x428F64, {
-        0x83, 0x39, 0x01,                                       // cmp dword ptr [ecx],01
-        0x8B, 0x13,                                             // mov edx,[ebx]
-        0x89, 0x11,                                             // mov [ecx],edx
-        0x7F, 0x5B,                                             // jg B
-        0xEB, 0x55                                              // jmp A
+        0x83, 0x39, 0x01,                                           // cmp dword ptr [ecx],01
+        0x8B, 0x13,                                                 // mov edx,[ebx]
+        0x89, 0x11,                                                 // mov [ecx],edx
+        0x7F, 0x5B,                                                 // jg labelB
+        0xEB, 0x55                                                  // jmp labelA
     } },
     { ( void * ) 0x428F7A, {
-        0x5A, 0x59, 0x5B,                                       // pop edx,ecx,ebx
-        0x90,                                                   // nop
-        0xEB, 0x0D                                              // jmp RET
+        0x5A, 0x59, 0x5B,                                           // pop edx,ecx,ebx
+        0x90,                                                       // nop
+        0xEB, 0x0D                                                  // jmp RETURN
     } },
     { ( void * ) 0x428F82, {
-        0x81, 0x3C, 0x24, 0xF5, 0x99, 0x42, 0x00,               // cmp [esp],0x4299F5 (return addr of menu call)
-        0x75, 0x02,                                             // jne RET
-        0xEB, 0xC5,                                             // jmp 0x428F52
-                                                                /*RET*/
-        0xC2, 0x04, 0x00                                        // ret 0004
+        0x81, 0x3C, 0x24, 0xF5, 0x99, 0x42, 0x00,                   // cmp [esp],0x4299F5 (return addr of menu call)
+        0x75, 0x02,                                                 // jne RETURN
+        0xEB, 0xC5,                                                 // jmp 0x428F52
+                                                                    // RETURN:
+        0xC2, 0x04, 0x00                                            // ret 0004
     } },
     { ( void * ) 0x428FC4, {
-                                                                /*A*/
-        0x89, 0x03,                                             // mov [ebx],eax
-        0xEB, 0xB2,                                             // jmp 0x428F7A
-                                                                /*B*/
-        0x89, 0x01,                                             // mov [ecx],eax
-        0xEB, 0xAE                                              // jmp 0x428F7A
+                                                                    // labelA:
+        0x89, 0x03,                                                 // mov [ebx],eax
+        0xEB, 0xB2,                                                 // jmp 0x428F7A
+                                                                    // labelB:
+        0x89, 0x01,                                                 // mov [ecx],eax
+        0xEB, 0xAE                                                  // jmp 0x428F7A
     } },
 };
 
@@ -242,5 +245,14 @@ static const AsmList detectRoundStart =
         0xE9, 0x07, 0xFD, 0xFF, 0xFF                                // jmp 0x440CC5+2 (after)
     } },
 };
+
+// This copies an auto replay save flag to a non-dynamic memory location.
+// Used to detect when the auto replay save is done and the menu is up.
+static const Asm detectAutoReplaySave =
+    { ( void * ) 0x482D9B, {
+        0x8D, 0x88, 0xD0, 0x00, 0x00, 0x00,                         // lea ecx,[eax+000000D0]
+        0x89, 0x0D, INLINE_DWORD ( &autoReplaySaveStatePtr ),       // mov [&autoReplaySaveStatePtr],ecx
+        0x59, 0x5E, 0x83, 0xC4, 0x10, 0xC2, 0x04, 0x00              // rest of the code is just shifted down
+    } };
 
 } // namespace AsmHacks

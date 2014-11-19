@@ -62,6 +62,10 @@ class NetplayManager
     // Type of the training mode reset
     mutable int32_t trainingResetType = 0;
 
+    // The value of *CC_GAME_STATE_COUNTER_ADDR at the beginning of the RetryMenu state.
+    // This is used to determine if any other menus are open in front of the retry menu.
+    uint32_t retryMenuGameStateCounter = 0;
+
     // The starting value of CC_WORLD_TIMER_ADDR, where frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime.
     // This is reset to the current world time whenever the netplay state changes, ie a state transition happens.
     uint32_t startWorldTime = 0;

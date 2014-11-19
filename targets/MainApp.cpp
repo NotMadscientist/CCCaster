@@ -960,6 +960,11 @@ struct MainApp
             options.set ( Options::NoUi, 1 );
         }
 
+#ifndef RELEASE
+        if ( !options[Options::StrictVersion] )
+            options.set ( Options::StrictVersion, 3 );
+#endif
+
         if ( detectWine() )
             clientMode.flags |= ClientMode::IsWine;
 
@@ -1011,6 +1016,9 @@ private:
     // Update the UI status message
     void updateStatusMessage() const
     {
+        if ( isWaitingForUser )
+            return;
+
         if ( clientMode.isBroadcast() && !isBroadcastPortReady )
             return;
 

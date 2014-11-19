@@ -104,12 +104,17 @@ void initializePreLoadHacks()
     for ( const Asm& hack : detectRoundStart )
         WRITE_ASM_HACK ( hack );
 
+    WRITE_ASM_HACK ( detectAutoReplaySave );
+
     // TODO find an alternative because this doesn't work on Wine
     // WRITE_ASM_HACK ( disableFpsLimit );
 }
 
 void initializePostLoadHacks()
 {
+    *CC_DAMAGE_LEVEL_ADDR = 2;
+    *CC_TIMER_SPEED_ADDR = 2;
+
     // *CC_DAMAGE_LEVEL_ADDR = 4;
     // *CC_WIN_COUNT_VS_ADDR = 1;
 

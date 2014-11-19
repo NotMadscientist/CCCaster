@@ -62,7 +62,7 @@ uint16_t NetplayManager::getCharaSelectInput ( uint8_t player ) const
     uint16_t input = getDelayedInput ( player );
 
     // Prevent exiting character select
-    if ( !charaSelectModes[player - 1] || ( *charaSelectModes[player - 1] ) == CC_CHARA_SELECT_CHARA )
+    if ( !charaSelectModePtrs[player - 1] || ( *charaSelectModePtrs[player - 1] ) == CC_CHARA_SELECT_CHARA )
         input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_B | CC_BUTTON_CANCEL );
 
     return input;
@@ -173,9 +173,8 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
     return input;
 }
 
-// TODO check / fix replay saving
-// Only allow first 2 options (once again and chara select)
-#define MAX_RETRY_MENU_INDEX ( 1 )
+// Only allow first 3 options (once again, chara select, save replay)
+#define MAX_RETRY_MENU_INDEX ( 2 )
 
 uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
 {
@@ -183,6 +182,7 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
     if ( player != localPlayer )
         return 0;
 
+    // Auto navigate when final retry menu index has been decided
     if ( targetMenuState != -1 && targetMenuIndex != -1 )
         return getMenuNavInput();
 
@@ -196,6 +196,21 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
     // Limit retry menu selectable options
     if ( currentMenuIndex > MAX_RETRY_MENU_INDEX )
         input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
+
+    // Check if auto replay save is enabled
+    if ( *CC_AUTO_REPLAY_SAVE_ADDR && autoReplaySaveStatePtr )
+    {
+        // Prevent mashing through the auto replay save and causing a hang
+        if ( *autoReplaySaveStatePtr == 100 )
+            return 0;
+    }
+
+    // Allow manually saving replays; when replay save is selected or a replay save menu is open
+    if ( currentMenuIndex == 2 || *CC_GAME_STATE_COUNTER_ADDR > retryMenuGameStateCounter )
+    {
+        menuConfirmState = 2;
+        return input;
+    }
 
     if ( config.mode.isNetplay() )
     {
@@ -218,6 +233,9 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
 
             LOG ( "localRetryMenuIndex=%d", localRetryMenuIndex );
         }
+
+        // Disable menu confirms
+        menuConfirmState = 0;
     }
 
     return input;
@@ -292,7 +310,7 @@ uint16_t NetplayManager::getMenuNavInput() const
         menuConfirmState = 2;
         RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
     }
-    else if ( targetMenuIndex != ( int ) currentMenuIndex )             // Keep navigating
+    else if ( targetMenuIndex != ( int ) currentMenuIndex )     // Keep navigating
     {
         targetMenuState = 1;
     }
@@ -403,16 +421,29 @@ void NetplayManager::setState ( NetplayState state )
             rngStates.clear();
 
             startIndex = getIndex();
+        }
 
-            targetMenuState = -1;
-            targetMenuIndex = -1;
+        // Start of retry menu
+        if ( state == NetplayState::RetryMenu )
+        {
             localRetryMenuIndex = -1;
             remoteRetryMenuIndex = -1;
+
+            // The retry menu is *CC_GAME_STATE_COUNTER_ADDR + 1
+            retryMenuGameStateCounter = *CC_GAME_STATE_COUNTER_ADDR + 1;
+        }
+
+        // End of retry menu
+        if ( this->state == NetplayState::RetryMenu )
+        {
+            autoReplaySaveStatePtr = 0;
         }
 
         // Reset state variables
         currentMenuIndex = 0;
         menuConfirmState = 0;
+        targetMenuState = -1;
+        targetMenuIndex = -1;
     }
 
     this->state = state;

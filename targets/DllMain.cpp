@@ -39,12 +39,14 @@ static Mutex deinitMutex;
 static void deinitialize();
 
 // Enum of variables to monitor
-ENUM ( Variable, WorldTime, GameMode, RoundStart, SkippableFlag );
+ENUM ( Variable, WorldTime, GameMode, RoundStart, SkippableFlag,
+       MenuConfirmState, AutoReplaySave, GameStateCounter, CurrentMenuIndex );
 
 
 struct DllMain
         : public Main
         , public RefChangeMonitor<Variable, uint32_t>::Owner
+        , public PtrToRefChangeMonitor<Variable, uint32_t>::Owner
 {
     // NetplayManager instance
     NetplayManager netMan;
@@ -488,6 +490,7 @@ struct DllMain
                 break;
 
             default:
+                LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
                 break;
         }
     }
@@ -559,6 +562,8 @@ struct DllMain
                 LOG ( "dataSocket=%08x", dataSocket.get() );
                 return;
             }
+
+            // TODO lazy disconnect if in retry menu
 
             main->procMan.ipcSend ( new ErrorMessage ( "Disconnected!" ) );
             delayedStop();
@@ -916,6 +921,14 @@ struct DllMain
         ChangeMonitor::get().addRef ( this, Variable ( Variable::GameMode ), *CC_GAME_MODE_ADDR );
         ChangeMonitor::get().addRef ( this, Variable ( Variable::RoundStart ), roundStartCounter );
         ChangeMonitor::get().addRef ( this, Variable ( Variable::SkippableFlag ), *CC_SKIPPABLE_FLAG_ADDR );
+
+#ifndef RELEASE
+        ChangeMonitor::get().addRef ( this, Variable ( Variable::MenuConfirmState ), menuConfirmState );
+        ChangeMonitor::get().addRef ( this, Variable ( Variable::GameStateCounter ), *CC_GAME_STATE_COUNTER_ADDR );
+        ChangeMonitor::get().addRef ( this, Variable ( Variable::CurrentMenuIndex ), currentMenuIndex );
+        ChangeMonitor::get().addPtrToRef ( this, Variable ( Variable::AutoReplaySave ),
+                                           const_cast<const uint32_t *&> ( autoReplaySaveStatePtr ), 0u );
+#endif
     }
 
     // Destructor
