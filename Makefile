@@ -161,7 +161,7 @@ endef
 version:
 	$(make_version)
 
-protocol:
+proto:
 	$(make_protocol)
 
 depend: version protocol
@@ -185,9 +185,13 @@ sdl-clean:
 	@$(MAKE) --directory 3rdparty/SDL2 clean
 
 
-clean:
+clean-proto:
+	git co -- lib/ProtocolEnums.h
+	rm -f $(AUTOGEN_HEADERS)
+
+clean: clean-proto
 	rm -f .depend .include
-	rm -f $(AUTOGEN_HEADERS) *.res *.exe *.dll *.zip *.o targets/*.o lib/*.o tests/*.o $(FOLDER)/*.exe $(FOLDER)/*.dll
+	rm -f *.res *.exe *.dll *.zip *.o targets/*.o lib/*.o tests/*.o $(FOLDER)/*.exe $(FOLDER)/*.dll
 	rm -f $(MAIN_OBJECTS) $(DLL_OBJECTS)
 
 clean-full: clean

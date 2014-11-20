@@ -17,57 +17,68 @@ grep --extended-regexp "$REGEX" "$@" \
   | uniq \
   > $DIR/tmp_all
 
-# Use a sorted list of enums
-sort $DIR/ProtocolEnums.h > $DIR/tmp_enums
+# Use a sorted list of the current enums
+grep --invert-match --fixed-strings ' // Deleted message' $DIR/ProtocolEnums.h \
+  | sort \
+  > $DIR/tmp_enums
 
-# Separate unchanged, new, and deleted messages.
-# Deleted messages should be kept in the list of enums, to keep maintain numbering.
-# When the number of messages grows too large, this list should be pruned, which will break protocol.
-comm --nocheck-order $DIR/tmp_enums $DIR/tmp_all \
-  | sed --regexp-extended 's/^([A-Za-z0-9]+,)$/\1 \/\/ Deleted message/' \
-  | sed --regexp-extended 's/^\t([A-Za-z0-9]+,)$/\1 \/\/ New message/' \
-  | sed --regexp-extended 's/^\t\t([A-Za-z0-9]+,)$/\1/' \
-  > $DIR/tmp_changes
+# Check for changes to the new list of enums
+diff $DIR/tmp_all $DIR/tmp_enums 1> /dev/null 2>&1
 
-# Filter out deleted messages
-grep --fixed-strings ' // Deleted message' $DIR/tmp_changes \
-  | sed --regexp-extended 's/^([A-Za-z0-9]+,) \/\/.+$/\1/' \
-  | uniq \
-  > $DIR/tmp_deleted
+if [ $? -ne 0 ]; then
 
-# Filter out new messages
-grep --fixed-strings ' // New message' $DIR/tmp_changes \
-  | sed --regexp-extended 's/^([A-Za-z0-9]+,) \/\/.+$/\1/' \
-  | uniq \
-  > $DIR/tmp_new
+  echo Protocol changed
 
-# Regenerate enums with commented deleted messages
-rm -f $DIR/tmp_enums
+  # Separate unchanged, new, and deleted messages.
+  # Deleted messages should be kept in the list of enums, to keep maintain numbering.
+  # When the number of messages grows too large, this list should be pruned, which will break protocol.
+  comm $DIR/tmp_enums $DIR/tmp_all \
+    | sed --regexp-extended 's/^([A-Za-z0-9]+,)$/\1 \/\/ Deleted message/' \
+    | sed --regexp-extended 's/^\t([A-Za-z0-9]+,)$/\1 \/\/ New message/' \
+    | sed --regexp-extended 's/^\t\t([A-Za-z0-9]+,)$/\1/' \
+    > $DIR/tmp_changes
 
-# Iterate through each message
-while read message
-do
+  # Filter out deleted messages
+  grep --fixed-strings ' // Deleted message' $DIR/tmp_changes \
+    | sed --regexp-extended 's/^([A-Za-z0-9]+,) \/\/.+$/\1/' \
+    | uniq \
+    > $DIR/tmp_deleted
 
-  # Check if the message is deleted
-  grep > /dev/null --fixed-strings "$message" $DIR/tmp_deleted
+  # Filter out new messages
+  grep --fixed-strings ' // New message' $DIR/tmp_changes \
+    | sed --regexp-extended 's/^([A-Za-z0-9]+,) \/\/.+$/\1/' \
+    | uniq \
+    > $DIR/tmp_new
 
-  if [ $? -eq 0 ]; then
-    echo "$message // Deleted message" >> $DIR/tmp_enums
-  else
-    echo $message >> $DIR/tmp_enums
-  fi
+  # Regenerate enums with commented deleted messages
+  rm -f $DIR/tmp_enums
 
-done < "$DIR/ProtocolEnums.h"
+  # Iterate through each message
+  while read message
+  do
 
-# Append new messages at the end
-cat $DIR/tmp_new >> $DIR/tmp_enums
+    # Check if the message is deleted
+    grep > /dev/null --fixed-strings "$message" $DIR/tmp_deleted
+
+    if [ $? -eq 0 ]; then
+      echo "$message // Deleted message" >> $DIR/tmp_enums
+    else
+      echo $message >> $DIR/tmp_enums
+    fi
+
+  done < "$DIR/ProtocolEnums.h"
+
+  # Append new messages at the end
+  cat $DIR/tmp_new >> $DIR/tmp_enums
+
+  # Check for changes to the final list of enums
+  diff $DIR/tmp_enums $DIR/ProtocolEnums.h 1> /dev/null 2>&1
+
+fi
 
 
 #######################################################################################################################
 
-
-# Check for changes to the list of messages
-diff $DIR/tmp_enums $DIR/ProtocolEnums.h 1> /dev/null 2>&1
 
 # Check if we should regenerate protocol
 if [ $? -ne 0 ] || [ ! -f "$DIR/Protocol.includes.h" ]      \
