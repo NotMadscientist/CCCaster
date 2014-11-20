@@ -2,6 +2,7 @@
 
 #include "IpAddrPort.h"
 #include "GoBackN.h"
+#include "Enum.h"
 
 #include <vector>
 #include <memory>

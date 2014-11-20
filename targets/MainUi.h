@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Utilities.h"
 #include "Messages.h"
 #include "IpAddrPort.h"
 #include "Controller.h"
+#include "KeyValueStore.h"
 
 #include <string>
 #include <memory>
@@ -19,7 +19,7 @@ class MainUi : public Controller::Owner
 {
     std::shared_ptr<ConsoleUi> ui;
 
-    ConfigSettings config;
+    KeyValueStore config;
 
     IpAddrPort address;
 
@@ -70,7 +70,7 @@ public:
 
     bool confirm();
 
-    const ConfigSettings& getConfig() const { return config; }
+    const KeyValueStore& getConfig() const { return config; }
 
     const NetplayConfig& getNetplayConfig() const { return netplayConfig; }
 

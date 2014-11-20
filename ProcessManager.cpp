@@ -1,11 +1,10 @@
 #include "ProcessManager.h"
 #include "TcpSocket.h"
-#include "Logger.h"
-#include "Utilities.h"
 #include "Messages.h"
 #include "Constants.h"
 #include "AsmHacks.h"
 #include "EventManager.h"
+#include "Exceptions.h"
 
 #include <windows.h>
 #include <direct.h>
@@ -151,8 +150,8 @@ void ProcessManager::timerExpired ( Timer *timer )
     LOG ( "Trying to start game (%d)", gameStartCount );
 
     void *hwnd = 0;
-    if ( ! ( hwnd = enumFindWindow ( CC_STARTUP_TITLE_EN ) )
-            && ! ( hwnd = enumFindWindow ( CC_STARTUP_TITLE_JP ) ) )
+    if ( ! ( hwnd = findWindow ( CC_STARTUP_TITLE_EN ) )
+            && ! ( hwnd = findWindow ( CC_STARTUP_TITLE_JP ) ) )
         return;
 
     if ( ! ( hwnd = FindWindowEx ( ( HWND ) hwnd, 0, 0, CC_STARTUP_BUTTON ) ) )
@@ -255,7 +254,7 @@ void ProcessManager::openGame ( const string& appDir, bool highPriority )
 
     if ( bytes != sizeof ( ipcHost.port ) )
     {
-        Exception err = toString ( "read %d bytes, expected %d", bytes, sizeof ( ipcHost.port ) );
+        Exception err = format ( "read %d bytes, expected %d", bytes, sizeof ( ipcHost.port ) );
         LOG_AND_THROW_ERROR ( err, "ReadFile failed" );
     }
 
@@ -273,7 +272,7 @@ void ProcessManager::openGame ( const string& appDir, bool highPriority )
 
     if ( bytes != sizeof ( processId ) )
     {
-        Exception err = toString ( "read %d bytes, expected %d", bytes, sizeof ( processId ) );
+        Exception err = format ( "read %d bytes, expected %d", bytes, sizeof ( processId ) );
         LOG_AND_THROW_ERROR ( err, "ReadFile failed" );
     }
 
@@ -294,7 +293,7 @@ void ProcessManager::closeGame()
     for ( const string& window : { CC_TITLE, CC_STARTUP_TITLE_EN, CC_STARTUP_TITLE_JP } )
     {
         void *hwnd;
-        if ( ( hwnd = enumFindWindow ( window ) ) )
+        if ( ( hwnd = findWindow ( window ) ) )
             PostMessage ( ( HWND ) hwnd, WM_CLOSE, 0, 0 );
     }
 }
@@ -334,7 +333,7 @@ void ProcessManager::connectPipe()
 
     if ( bytes != sizeof ( ipcSocket->address.port ) )
     {
-        Exception err = toString ( "wrote %d bytes, expected %d", bytes, sizeof ( ipcSocket->address.port ) );
+        Exception err = format ( "wrote %d bytes, expected %d", bytes, sizeof ( ipcSocket->address.port ) );
         LOG_AND_THROW_ERROR ( err, "WriteFile failed" );
     }
 
@@ -348,7 +347,7 @@ void ProcessManager::connectPipe()
 
     if ( bytes != sizeof ( processId ) )
     {
-        Exception err = toString ( "wrote %d bytes, expected %d", bytes, sizeof ( ipcSocket->address.port ) );
+        Exception err = format ( "wrote %d bytes, expected %d", bytes, sizeof ( ipcSocket->address.port ) );
         LOG_AND_THROW_ERROR ( err, "WriteFile failed" );
     }
 }
@@ -423,4 +422,51 @@ array<char, 10> ProcessManager::fetchKeyboardConfig()
     fin.read ( &config[0], config.size() );
 
     return config;
+}
+
+void *ProcessManager::findWindow ( const string& title )
+{
+    static string tmpTitle;
+    static HWND tmpHwnd;
+
+    struct _
+    {
+        static BOOL CALLBACK enumWindowsProc ( HWND hwnd, LPARAM lParam )
+        {
+            if ( hwnd == 0 )
+                return true;
+
+            char buffer[4096];
+            GetWindowText ( hwnd, buffer, sizeof ( buffer ) );
+
+            if ( tmpTitle == trim ( buffer ) )
+                tmpHwnd = hwnd;
+            return true;
+        }
+    };
+
+    tmpTitle = title;
+    tmpHwnd = 0;
+    EnumWindows ( _::enumWindowsProc, 0 );
+    return tmpHwnd;
+}
+
+
+bool ProcessManager::isWine()
+{
+    static char isWine = -1; // -1 means uninitialized
+
+    if ( isWine >= 0 )
+        return isWine;
+
+    HMODULE hntdll = GetModuleHandle ( "ntdll.dll" );
+
+    if ( !hntdll )
+    {
+        isWine = 0;
+        return isWine;
+    }
+
+    isWine = ( GetProcAddress ( hntdll, "wine_get_version" ) ? 1 : 0 );
+    return isWine;
 }

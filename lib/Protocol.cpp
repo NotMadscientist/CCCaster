@@ -2,9 +2,9 @@
 #include "Protocol.includes.h"
 #include "Protocol.clone.h"
 #include "Protocol.types.h"
-#include "Utilities.h"
 #include "Compression.h"
 #include "Logger.h"
+#include "Enum.h"
 
 using namespace std;
 using namespace cereal;

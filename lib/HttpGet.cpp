@@ -1,6 +1,6 @@
 #include "HttpGet.h"
 #include "TcpSocket.h"
-#include "Logger.h"
+#include "Exceptions.h"
 
 #include <sstream>
 
@@ -41,7 +41,7 @@ void HttpGet::connectEvent ( Socket *socket )
 {
     ASSERT ( this->socket.get() == socket );
 
-    string request = toString ( "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", path, host );
+    string request = format ( "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", path, host );
 
     LOG ( "Sending request:\n%s", request );
 

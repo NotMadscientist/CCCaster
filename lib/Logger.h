@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Thread.h"
-#include "Utilities.h"
+#include "StringUtils.h"
 
 #include <string>
 #include <cstdio>
@@ -73,24 +73,24 @@ public:
 
 #else
 
-#define LOG_TO(LOGGER, FORMAT, ...)                                                                                 \
-    do {                                                                                                            \
-        LOGGER.log ( __BASE_FILE__, __LINE__, __PRETTY_FUNCTION__, TO_C_STR ( FORMAT, ## __VA_ARGS__ ) );           \
+#define LOG_TO(LOGGER, FORMAT, ...)                                                                                    \
+    do {                                                                                                               \
+        LOGGER.log ( __BASE_FILE__, __LINE__, __PRETTY_FUNCTION__, format ( FORMAT, ## __VA_ARGS__ ).c_str() );        \
     } while ( 0 )
 
-#define LOG(FORMAT, ...)                                                                                            \
-    do {                                                                                                            \
-        Logger::get().log ( __BASE_FILE__, __LINE__, __PRETTY_FUNCTION__, TO_C_STR ( FORMAT, ## __VA_ARGS__ ) );    \
+#define LOG(FORMAT, ...)                                                                                               \
+    do {                                                                                                               \
+        Logger::get().log ( __BASE_FILE__, __LINE__, __PRETTY_FUNCTION__, format ( FORMAT, ## __VA_ARGS__ ).c_str() ); \
     } while ( 0 )
 
-#define LOG_LIST(LIST, TO_STRING)                                                                                   \
-    do {                                                                                                            \
-        std::string list;                                                                                           \
-        for ( const auto& val : LIST )                                                                              \
-            list += " " + TO_STRING ( val ) + ",";                                                                  \
-        if ( !LIST.empty() )                                                                                        \
-            list [ list.size() - 1 ] = ' ';                                                                         \
-        LOG ( "this=%08x; "#LIST "=[%s]", this, list );                                                             \
+#define LOG_LIST(LIST, TO_STRING)                                                                                      \
+    do {                                                                                                               \
+        std::string list;                                                                                              \
+        for ( const auto& val : LIST )                                                                                 \
+            list += " " + TO_STRING ( val ) + ",";                                                                     \
+        if ( !LIST.empty() )                                                                                           \
+            list [ list.size() - 1 ] = ' ';                                                                            \
+        LOG ( "this=%08x; "#LIST "=[%s]", this, list );                                                                \
     } while ( 0 )
 
 #endif // DISABLE_LOGGING
@@ -102,31 +102,16 @@ public:
 
 #else
 
-#define ASSERT(ASSERTION)                                                                                           \
-    do {                                                                                                            \
-        if ( ASSERTION )                                                                                            \
-            break;                                                                                                  \
-        LOG ( "Assertion '%s' failed", #ASSERTION );                                                                \
-        PRINT ( "Assertion '%s' failed", #ASSERTION );                                                              \
-        abort();                                                                                                    \
+#define ASSERT(ASSERTION)                                                                                              \
+    do {                                                                                                               \
+        if ( ASSERTION )                                                                                               \
+            break;                                                                                                     \
+        LOG ( "Assertion '%s' failed", #ASSERTION );                                                                   \
+        PRINT ( "Assertion '%s' failed", #ASSERTION );                                                                 \
+        abort();                                                                                                       \
     } while ( 0 )
 
 #endif // DISABLE_ASSERTS
-
-
-#define LOG_AND_THROW_STRING(FORMAT, ...)                                                                           \
-    do {                                                                                                            \
-        ::Exception err = toString ( FORMAT, ## __VA_ARGS__ );                                                      \
-        LOG ( FORMAT, ## __VA_ARGS__ );                                                                             \
-        throw err;                                                                                                  \
-    } while ( 0 )
-
-
-#define LOG_AND_THROW_ERROR(EXCEPTION, FORMAT, ...)                                                                 \
-    do {                                                                                                            \
-        LOG ( "%s; " FORMAT, EXCEPTION, ## __VA_ARGS__ );                                                           \
-        throw EXCEPTION;                                                                                            \
-    } while ( 0 )
 
 
 #define ASSERT_IMPOSSIBLE           ASSERT ( !"This shouldn't happen!" )

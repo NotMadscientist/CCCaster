@@ -96,11 +96,19 @@ public:
     // Game directory, empty means current working directory
     static std::string gameDir;
 
+
     // Get the user name from the game config
     static std::string fetchGameUserName();
 
     // Get the keyboard config from the game binary
     static std::array<char, 10> fetchKeyboardConfig();
+
+    // Find the first window handle with the given title (NOT thread safe)
+    static void *findWindow ( const std::string& title );
+
+    // True if we're running on Wine, this caches the result of the first call (NOT thread safe)
+    static bool isWine();
+
 
     // Basic constructor / destructor
     ProcessManager ( Owner *owner );

@@ -1,5 +1,5 @@
 #include "Logger.h"
-#include "Utilities.h"
+#include "StringUtils.h"
 #include "Constants.h"
 
 #include <distorm.h>
@@ -67,9 +67,9 @@ void processInstruction ( uint8_t buffer[64], const _CodeInfo& ci, const _DInst&
     LOG ( "%08X: %s:\t%s%s%s",
           ( uint32_t ) context.Eip,
           toBase64 ( &buffer[decodedInst.offset], decodedInst.size ),
-          toLower ( ( char * ) decodedInst.mnemonic.p ),
+          lowerCase ( ( char * ) decodedInst.mnemonic.p ),
           ( decodedInst.operands.length != 0 ? " " : "" ),
-          toLower ( ( char * ) decodedInst.operands.p ) );
+          lowerCase ( ( char * ) decodedInst.operands.p ) );
 
     // LOG ( "addr = %08X", addr );
 }

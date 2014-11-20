@@ -1,9 +1,8 @@
 #include "Main.h"
 #include "MainUi.h"
-#include "Logger.h"
-#include "Utilities.h"
 #include "Version.h"
 #include "ConsoleUi.h"
+#include "Exceptions.h"
 
 #include <mmsystem.h>
 
@@ -585,12 +584,12 @@ void MainUi::saveConfig()
     if ( config.save ( file ) )
         return;
 
-    const string msg = toString ( "Failed to save: %s", file );
+    const string msg = format ( "Failed to save: %s", file );
 
     LOG ( "%s", msg );
 
     if ( sessionError.find ( msg ) == std::string::npos )
-        sessionError += toString ( "\n%s", msg );
+        sessionError += format ( "\n%s", msg );
 }
 
 void MainUi::loadConfig()
@@ -614,12 +613,12 @@ void MainUi::saveMappings ( const Controller& controller )
     if ( controller.saveMappings ( file ) )
         return;
 
-    const string msg = toString ( "Failed to save: %s", file );
+    const string msg = format ( "Failed to save: %s", file );
 
     LOG ( "%s", msg );
 
     if ( sessionError.find ( msg ) == std::string::npos )
-        sessionError += toString ( "\n%s", msg );
+        sessionError += format ( "\n%s", msg );
 }
 
 void MainUi::loadMappings ( Controller& controller )
@@ -718,7 +717,7 @@ static int computeDelay ( const Statistics& latency )
 
 static string formatStats ( const PingStats& pingStats )
 {
-    return toString (
+    return format (
                "%-" INDENT_STATS "sPing: %.2f ms"
 #ifndef NDEBUG
                "\n%-" INDENT_STATS "sWorst: %.2f ms"
@@ -726,7 +725,7 @@ static string formatStats ( const PingStats& pingStats )
                "\n%-" INDENT_STATS "sStdDev: %.2f ms"
                "\n%-" INDENT_STATS "sPacket Loss: %d%%"
 #endif
-               , toString ( "Delay: %d", computeDelay ( pingStats.latency ) ), pingStats.latency.getMean()
+               , format ( "Delay: %d", computeDelay ( pingStats.latency ) ), pingStats.latency.getMean()
 #ifndef NDEBUG
                , "", pingStats.latency.getWorst()
                , "", pingStats.latency.getStdErr()
@@ -813,9 +812,9 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
 
     if ( ret )
     {
-        ui->pushBelow ( new ConsoleUi::TextBox ( toString ( "Using %u delay%s",
+        ui->pushBelow ( new ConsoleUi::TextBox ( format ( "Using %u delay%s",
                         netplayConfig.delay,
-                        ( netplayConfig.rollback ? toString ( ", %u rollback", netplayConfig.rollback ) : "" ) ) ),
+                        ( netplayConfig.rollback ? format ( ", %u rollback", netplayConfig.rollback ) : "" ) ) ),
         { 1, 0 } ); // Expand width
 
         ui->pushBelow ( new ConsoleUi::TextBox ( "Waiting for client..." ), { 1, 0 } ); // Expand width
@@ -841,9 +840,9 @@ void MainUi::connected ( const NetplayConfig& netplayConfig )
 {
     ASSERT ( ui.get() != 0 );
 
-    ui->pushInFront ( new ConsoleUi::TextBox ( toString ( "Host chose %u delay%s",
+    ui->pushInFront ( new ConsoleUi::TextBox ( format ( "Host chose %u delay%s",
                       netplayConfig.delay,
-                      ( netplayConfig.rollback ? toString ( ", %u rollback", netplayConfig.rollback ) : "" ) ) ),
+                      ( netplayConfig.rollback ? format ( ", %u rollback", netplayConfig.rollback ) : "" ) ) ),
     { 1, 0 }, true ); // Expand width and clear
 }
 
@@ -862,21 +861,21 @@ void MainUi::spectate ( const SpectateConfig& spectateConfig )
     if ( spectateConfig.mode.isBroadcast() )
         text = "Spectating a broadcast (0 delay)\n\n";
     else
-        text = toString ( "Spectating %s mode (%u delay%s)\n\n",
-                          ( spectateConfig.mode.isTraining() ? "training" : "versus" ), spectateConfig.delay,
-                          ( spectateConfig.rollback ? toString ( ", %u rollback", spectateConfig.rollback ) : "" ) );
+        text = format ( "Spectating %s mode (%u delay%s)\n\n",
+                        ( spectateConfig.mode.isTraining() ? "training" : "versus" ), spectateConfig.delay,
+                        ( spectateConfig.rollback ? format ( ", %u rollback", spectateConfig.rollback ) : "" ) );
 
     if ( spectateConfig.chara[0] )
     {
         CharaNameFunc charaName = ( config.getInteger ( "useFullCharacterName" ) ? fullCharaName : shortCharaName );
 
-        text += toString ( ( spectateConfig.names[0].empty() ? "%s%c-%s" : "%s (%c-%s)" ),
-                           spectateConfig.names[0], spectateConfig.moon[0], charaName ( spectateConfig.chara[0] ) );
+        text += format ( ( spectateConfig.names[0].empty() ? "%s%c-%s" : "%s (%c-%s)" ),
+                         spectateConfig.names[0], spectateConfig.moon[0], charaName ( spectateConfig.chara[0] ) );
 
         text += " vs ";
 
-        text += toString ( ( spectateConfig.names[1].empty() ? "%s%c-%s" : "%s (%c-%s)" ),
-                           spectateConfig.names[1], spectateConfig.moon[1], charaName ( spectateConfig.chara[1] ) );
+        text += format ( ( spectateConfig.names[1].empty() ? "%s%c-%s" : "%s (%c-%s)" ),
+                         spectateConfig.names[1], spectateConfig.moon[1], charaName ( spectateConfig.chara[1] ) );
     }
     else
     {

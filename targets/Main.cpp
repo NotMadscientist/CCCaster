@@ -1,6 +1,8 @@
 #include "Main.h"
 #include "MainUi.h"
 #include "Test.h"
+#include "Exceptions.h"
+#include "StringUtils.h"
 
 #include <optionparser.h>
 #include <windows.h>
@@ -264,7 +266,7 @@ int main ( int argc, char *argv[] )
 #endif
 
     // Fork and re-run under wineconsole, needed for proper JLib support
-    if ( detectWine() && !opt[Options::NoFork] )
+    if ( ProcessManager::isWine() && !opt[Options::NoFork] )
     {
         string cmd = "wineconsole " + argv0 + " --no-fork";
 
@@ -300,11 +302,11 @@ int main ( int argc, char *argv[] )
 
     // Warn on invalid command line opt
     for ( Option *it = opt[Options::Unknown]; it; it = it->next() )
-        lastError += toString ( "Unknown option: '%s'\n", it->name );
+        lastError += format ( "Unknown option: '%s'\n", it->name );
 
     // Non-opt 1 and 2 are the IP address and port
     for ( int i = 2; i < parser.nonOptionsCount(); ++i )
-        lastError += toString ( "Non-option (%d): '%s'\n", i, parser.nonOption ( i ) );
+        lastError += format ( "Non-option (%d): '%s'\n", i, parser.nonOption ( i ) );
 
     if ( opt[Options::Offline] || opt[Options::Tourney] )
     {

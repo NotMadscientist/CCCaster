@@ -1,6 +1,5 @@
 #include "IpAddrPort.h"
-#include "Logger.h"
-#include "Utilities.h"
+#include "Exceptions.h"
 
 #include <winsock2.h>
 #include <windows.h>
@@ -21,7 +20,7 @@ shared_ptr<addrinfo> getAddrInfo ( const string& addr, uint16_t port, bool isV4,
     if ( passive )
         addrConf.ai_flags = AI_PASSIVE;
 
-    int error = getaddrinfo ( addr.empty() ? 0 : addr.c_str(), TO_C_STR ( port ), &addrConf, &addrRes );
+    int error = getaddrinfo ( addr.empty() ? 0 : addr.c_str(), format ( port ).c_str(), &addrConf, &addrRes );
 
     if ( error != 0 )
     {

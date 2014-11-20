@@ -1,6 +1,5 @@
 #include "GoBackN.h"
 #include "Logger.h"
-#include "Utilities.h"
 
 #include <cereal/types/string.hpp>
 
@@ -16,7 +15,7 @@ using namespace std;
 string formatSerializableSequence ( const MsgPtr& msg )
 {
     ASSERT ( msg->getBaseType() == BaseType::SerializableSequence );
-    return toString ( "%u:'%s'", msg->getAs<SerializableSequence>().getSequence(), msg );
+    return format ( "%u:'%s'", msg->getAs<SerializableSequence>().getSequence(), msg );
 }
 
 

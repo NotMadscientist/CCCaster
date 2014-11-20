@@ -5,7 +5,8 @@
 #include "UdpSocket.h"
 #include "SmartSocket.h"
 #include "Constants.h"
-#include "Logger.h"
+#include "Exceptions.h"
+#include "Algorithms.h"
 
 #include <windows.h>
 #include <ws2tcpip.h>
@@ -25,6 +26,45 @@ extern string lastError;
 
 extern string appDir;
 
+
+// static string getClipboard()
+// {
+//     const char *buffer = "";
+
+//     if ( OpenClipboard ( 0 ) )
+//     {
+//         HANDLE hData = GetClipboardData ( CF_TEXT );
+//         buffer = ( const char * ) GlobalLock ( hData );
+//         if ( buffer == 0 )
+//             buffer = "";
+//         GlobalUnlock ( hData );
+//         CloseClipboard();
+//     }
+//     else
+//     {
+//         LOG ( "OpenClipboard failed: %s", WindowsException ( GetLastError() ) );
+//     }
+
+//     return string ( buffer );
+// }
+
+static void setClipboard ( const string& str )
+{
+    if ( OpenClipboard ( 0 ) )
+    {
+        HGLOBAL clipbuffer = GlobalAlloc ( GMEM_DDESHARE, str.size() + 1 );
+        char *buffer = ( char * ) GlobalLock ( clipbuffer );
+        strcpy ( buffer, LPCSTR ( str.c_str() ) );
+        GlobalUnlock ( clipbuffer );
+        EmptyClipboard();
+        SetClipboardData ( CF_TEXT, clipbuffer );
+        CloseClipboard();
+    }
+    else
+    {
+        LOG ( "OpenClipboard failed: %s", WindowsException ( GetLastError() ) );
+    }
+}
 
 struct MainApp
         : public Main
@@ -128,12 +168,12 @@ struct MainApp
         }
         catch ( const Exception& err )
         {
-            lastError = toString ( "Error: %s", err );
+            lastError = format ( "Error: %s", err );
         }
 #ifdef NDEBUG
         catch ( const std::exception& err )
         {
-            lastError = toString ( "Error: %s", err.what() );
+            lastError = format ( "Error: %s", err.what() );
         }
         catch ( ... )
         {
@@ -156,9 +196,9 @@ struct MainApp
         else
         {
             if ( options[Options::Tunnel] )
-                ui.display ( toString ( "Trying %s (UDP tunnel)", address ) );
+                ui.display ( format ( "Trying %s (UDP tunnel)", address ) );
             else
-                ui.display ( toString ( "Trying %s", address ) );
+                ui.display ( format ( "Trying %s", address ) );
         }
 
         if ( clientMode.isHost() )
@@ -182,7 +222,7 @@ struct MainApp
     {
         AutoManager _ ( this, MainUi::getConsoleWindow(), { VK_ESCAPE } );
 
-        ui.display ( toString ( "Trying %s", address ) );
+        ui.display ( format ( "Trying %s", address ) );
 
         ctrlSocket = SmartSocket::connectTCP ( this, address, options[Options::Tunnel] );
 
@@ -594,7 +634,7 @@ struct MainApp
             return;
         }
 
-        ui.display ( toString ( "Starting %s mode...", clientMode.isTraining() ? "training" : "versus" ),
+        ui.display ( format ( "Starting %s mode...", clientMode.isTraining() ? "training" : "versus" ),
                      !clientMode.isClient() ); // Don't replace last message if client
 
         if ( clientMode.isClient() && ctrlSocket->isSmart() && ctrlSocket->getAsSmart().isTunnel() )
@@ -815,7 +855,7 @@ struct MainApp
         if ( socket != ctrlSocket.get() )
             return;
 
-        ui.display ( toString ( "Trying %s (UDP tunnel)", address ) );
+        ui.display ( format ( "Trying %s (UDP tunnel)", address ) );
     }
 
     // ProcessManager callbacks
@@ -842,7 +882,7 @@ struct MainApp
 
         procMan.ipcSend ( netplayConfig );
 
-        ui.display ( toString ( "Started %s mode", clientMode.isTraining() ? "training" : "versus" ) );
+        ui.display ( format ( "Started %s mode", clientMode.isTraining() ? "training" : "versus" ) );
     }
 
     void ipcDisconnectEvent() override
@@ -968,7 +1008,7 @@ struct MainApp
             options.set ( Options::StrictVersion, 3 );
 #endif
 
-        if ( detectWine() )
+        if ( ProcessManager::isWine() )
             clientMode.flags |= ClientMode::IsWine;
 
         if ( clientMode.isNetplay() )
@@ -1029,23 +1069,23 @@ private:
 
         if ( externaIpAddress.address.empty() || externaIpAddress.address == "unknown" )
         {
-            ui.display ( toString ( "%s on port %u%s\n",
-                                    ( clientMode.isBroadcast() ? "Broadcasting" : "Hosting" ),
-                                    port,
-                                    ( clientMode.isTraining() ? " (training mode)" : "" ) )
+            ui.display ( format ( "%s on port %u%s\n",
+                                  ( clientMode.isBroadcast() ? "Broadcasting" : "Hosting" ),
+                                  port,
+                                  ( clientMode.isTraining() ? " (training mode)" : "" ) )
                          + ( externaIpAddress.address.empty()
                              ? "(Fetching external IP address...)"
                              : "(Could not find external IP address!)" ) );
         }
         else
         {
-            setClipboard ( toString ( "%s:%u", externaIpAddress.address, port ) );
+            setClipboard ( format ( "%s:%u", externaIpAddress.address, port ) );
 
-            ui.display ( toString ( "%s at %s:%u%s\n(Address copied to clipboard)",
-                                    ( clientMode.isBroadcast() ? "Broadcasting" : "Hosting" ),
-                                    externaIpAddress.address,
-                                    port,
-                                    ( clientMode.isTraining() ? " (training mode)" : "" ) ) );
+            ui.display ( format ( "%s at %s:%u%s\n(Address copied to clipboard)",
+                                  ( clientMode.isBroadcast() ? "Broadcasting" : "Hosting" ),
+                                  externaIpAddress.address,
+                                  port,
+                                  ( clientMode.isTraining() ? " (training mode)" : "" ) ) );
         }
     }
 

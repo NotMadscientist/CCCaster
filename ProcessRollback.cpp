@@ -99,6 +99,9 @@ using namespace std;
 static MemDumpList allAddrs;
 
 
+template<typename T>
+static inline void deleteArray ( T *ptr ) { delete[] ptr; }
+
 void ProcessManager::GameState::save()
 {
     ASSERT ( rawBytes != 0 );

@@ -1,5 +1,6 @@
 #include "AsmHacks.h"
-#include "Utilities.h"
+
+#include <windows.h>
 
 
 uint32_t currentMenuIndex = 0;
@@ -11,6 +12,22 @@ uint32_t *charaSelectModePtrs[2] = { 0, 0 };
 uint32_t roundStartCounter = 0;
 
 uint32_t *autoReplaySaveStatePtr = 0;
+
+
+static int memwrite ( void *dst, const void *src, size_t len )
+{
+    DWORD old, tmp;
+
+    if ( !VirtualProtect ( dst, len, PAGE_READWRITE, &old ) )
+        return GetLastError();
+
+    memcpy ( dst, src, len );
+
+    if ( !VirtualProtect ( dst, len, old, &tmp ) )
+        return GetLastError();
+
+    return 0;
+}
 
 
 namespace AsmHacks

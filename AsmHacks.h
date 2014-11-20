@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Utilities.h"
 #include "Constants.h"
 
 #include <vector>

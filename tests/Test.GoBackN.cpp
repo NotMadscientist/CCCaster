@@ -193,7 +193,7 @@ TEST ( GoBackN, SendSequential )
     {
         LOG ( "Server got '%s'", server.msgs[i]->getAs<TestMessage>().str );
         EXPECT_EQ ( MsgType::TestMessage, server.msgs[i]->getMsgType() );
-        EXPECT_EQ ( toString ( "Message %u", i + 1 ), server.msgs[i]->getAs<TestMessage>().str );
+        EXPECT_EQ ( format ( "Message %u", i + 1 ), server.msgs[i]->getAs<TestMessage>().str );
     }
 
     SocketManager::get().deinitialize();
@@ -292,7 +292,7 @@ TEST ( GoBackN, SendAndRecv )
     {
         LOG ( "Server got '%s'", server.msgs[i]->getAs<TestMessage>().str );
         EXPECT_EQ ( MsgType::TestMessage, server.msgs[i]->getMsgType() );
-        EXPECT_EQ ( toString ( "Client %u", i + 1 ), server.msgs[i]->getAs<TestMessage>().str );
+        EXPECT_EQ ( format ( "Client %u", i + 1 ), server.msgs[i]->getAs<TestMessage>().str );
     }
 
     EXPECT_EQ ( 5, client.msgs.size() );
@@ -301,7 +301,7 @@ TEST ( GoBackN, SendAndRecv )
     {
         LOG ( "Client got '%s'", client.msgs[i]->getAs<TestMessage>().str );
         EXPECT_EQ ( MsgType::TestMessage, client.msgs[i]->getMsgType() );
-        EXPECT_EQ ( toString ( "Server %u", i + 1 ), client.msgs[i]->getAs<TestMessage>().str );
+        EXPECT_EQ ( format ( "Server %u", i + 1 ), client.msgs[i]->getAs<TestMessage>().str );
     }
 
     EXPECT_EQ ( 2, done );

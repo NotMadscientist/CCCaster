@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Utilities.h"
+#include "Enum.h"
 
 #include <cereal/archives/binary.hpp>
 

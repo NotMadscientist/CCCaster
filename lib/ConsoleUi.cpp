@@ -1,5 +1,6 @@
 #include "ConsoleUi.h"
-#include "Utilities.h"
+#include "StringUtils.h"
+#include "ProcessManager.h"
 
 #include <windows.h>
 
@@ -31,7 +32,7 @@ ConsoleUi::ConsoleUi ( const string& title )
     SetConsoleTitle ( title.c_str() );
     SetConsoleOutputCP ( 437 );
 
-    if ( detectWine() )
+    if ( ProcessManager::isWine() )
         return;
 
     // Undocumented console font functions:

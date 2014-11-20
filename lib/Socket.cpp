@@ -3,8 +3,7 @@
 #include "TcpSocket.h"
 #include "UdpSocket.h"
 #include "SmartSocket.h"
-#include "Logger.h"
-#include "Utilities.h"
+#include "Exceptions.h"
 
 #include <winsock2.h>
 #include <windows.h>

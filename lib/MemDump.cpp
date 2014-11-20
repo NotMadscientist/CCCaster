@@ -1,6 +1,7 @@
 #include "MemDump.h"
-#include "Utilities.h"
 #include "Compression.h"
+#include "Exceptions.h"
+#include "Algorithms.h"
 
 #include <list>
 #include <algorithm>

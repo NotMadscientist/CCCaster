@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Utilities.h"
+#include "StringUtils.h"
 #include "Logger.h"
 
 // Most of the implementation that depend on JLib is in this header so only the targets that need JLib can to link it
@@ -224,16 +224,16 @@ public:
             for ( size_t i = 0; i < items.size(); ++i )
             {
                 if ( i < 9 )
-                    items[i] = toString ( "[%d] %s", i + 1, items[i] );
+                    items[i] = format ( "[%d] %s", i + 1, items[i] );
                 else
-                    items[i] = toString ( "[%c] %s", 'A' + i - 9, items[i] );
+                    items[i] = format ( "[%c] %s", 'A' + i - 9, items[i] );
 
                 menu.Append ( " " + shortenWithEllipsis ( items[i] ) + " ", i );
             }
 
             if ( !lastItem.empty() )
             {
-                lastItem = toString ( "[0] %s", lastItem );
+                lastItem = format ( "[0] %s", lastItem );
                 menu.Append ( " " + shortenWithEllipsis ( lastItem ) + " ", items.size() );
             }
 

@@ -1,11 +1,11 @@
 #include "Main.h"
-#include "Logger.h"
-#include "Utilities.h"
 #include "Thread.h"
 #include "DllHacks.h"
 #include "NetplayManager.h"
 #include "ChangeMonitor.h"
 #include "SmartSocket.h"
+#include "Exceptions.h"
+#include "Enum.h"
 
 #include <windows.h>
 
@@ -340,7 +340,7 @@ struct DllMain
 
         // Log inputs every frame
         LOG_SYNC ( "Inputs: %04x %04x", netMan.getInput ( 1 ), netMan.getInput ( 2 ) );
-        overlayText = toString ( "%s", netMan.getIndexedFrame() );
+        overlayText = format ( "%s", netMan.getIndexedFrame() );
     }
 
     void frameStepRerun()

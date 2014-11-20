@@ -4,7 +4,6 @@
 #include "Protocol.h"
 #include "Logger.h"
 #include "Statistics.h"
-#include "Utilities.h"
 #include "Version.h"
 #include "Compression.h"
 
@@ -29,7 +28,7 @@ struct ErrorMessage : public SerializableSequence
 
 struct ClientMode : public SerializableSequence
 {
-    ENUM_VALUE ( ClientMode, Host, Client, Spectate, Broadcast, Offline )
+    ENUM_BOILERPLATE ( ClientMode, Host, Client, Spectate, Broadcast, Offline )
 
     enum { Training = 0x01, GameStarted = 0x02, UdpTunnel = 0x04, IsWine = 0x08 };
 
@@ -117,12 +116,12 @@ struct InitialConfig : public SerializableSequence
 
     std::string getConnectMessage ( const std::string& verb ) const
     {
-        return toString ( "%s to %s%s", verb, remoteName, ( mode.isTraining() ? " (training mode)" : "" ) );
+        return format ( "%s to %s%s", verb, remoteName, ( mode.isTraining() ? " (training mode)" : "" ) );
     }
 
     std::string getAcceptMessage ( const std::string& verb ) const
     {
-        return toString ( "%s %s", remoteName, verb );
+        return format ( "%s %s", remoteName, verb );
     }
 
     void clear()
@@ -233,7 +232,7 @@ struct RngState : public SerializableSequence
 
     std::string dump() const
     {
-        return toString ( "index=%u; { ", index )
+        return format ( "index=%u; { ", index )
                + toBase64 ( &rngState0, sizeof ( rngState0 ) ) + " "
                + toBase64 ( &rngState1, sizeof ( rngState1 ) ) + " "
                + toBase64 ( &rngState2, sizeof ( rngState2 ) ) + " "

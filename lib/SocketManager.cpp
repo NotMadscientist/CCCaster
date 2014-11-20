@@ -1,7 +1,7 @@
 #include "SocketManager.h"
 #include "Socket.h"
 #include "TimerManager.h"
-#include "Logger.h"
+#include "Exceptions.h"
 
 #include <winsock2.h>
 #include <windows.h>

@@ -1,5 +1,6 @@
 #include "Logger.h"
 #include "Version.h"
+#include "Algorithms.h"
 
 using namespace std;
 
@@ -32,7 +33,7 @@ void Logger::initialize ( const string& file, uint32_t options )
     {
         if ( options & PID_IN_FILENAME )
         {
-            const string tmp = toString ( "log%08d", _getpid() ) + file;
+            const string tmp = format ( "log%08d", _getpid() ) + file;
             same = ( this->file == tmp );
             this->file = tmp;
         }

@@ -1,7 +1,7 @@
 #include "NetplayManager.h"
-#include "Logger.h"
 #include "AsmHacks.h"
 #include "ProcessManager.h"
+#include "Exceptions.h"
 
 #include <algorithm>
 #include <cmath>
@@ -11,7 +11,7 @@ using namespace std;
 
 // Only allow first 3 options (once again, chara select, save replay).
 // Prevent saving replays on Wine because MBAA crashes even without us.
-#define MAX_RETRY_MENU_INDEX ( detectWine() ? 1 : 2 )
+#define MAX_RETRY_MENU_INDEX ( ProcessManager::isWine() ? 1 : 2 )
 
 
 #define RETURN_MASH_INPUT(DIRECTION, BUTTONS)                       \

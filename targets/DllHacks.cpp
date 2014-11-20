@@ -1,6 +1,7 @@
 #include "AsmHacks.h"
 #include "D3DHook.h"
-#include "Logger.h"
+#include "Exceptions.h"
+#include "ProcessManager.h"
 
 #include <windows.h>
 #include <d3dx9.h>
@@ -145,13 +146,13 @@ void initializePostLoadHacks()
         LOG ( "SetWindowsHookEx failed: %s", WindowsException ( GetLastError() ) );
 
     // Get the handle to the main window
-    if ( ( mainWindowHandle = enumFindWindow ( CC_TITLE ) ) == 0 )
+    if ( ( mainWindowHandle = ProcessManager::findWindow ( CC_TITLE ) ) == 0 )
         LOG ( "Couldn't find window '%s'", CC_TITLE );
 
     // We can't save replays on Wine because MBAA crashes even without us.
     // We don't need to hook WindowProc on Wine because the game DOESN'T stop running if moving/resizing.
     // We can't hook DirectX calls on Wine (yet?).
-    if ( detectWine() )
+    if ( ProcessManager::isWine() )
     {
         *CC_AUTO_REPLAY_SAVE_ADDR = 0;
         return;

@@ -1,7 +1,7 @@
 #include "Controller.h"
 #include "ControllerManager.h"
-#include "Logger.h"
 #include "Constants.h"
+#include "Exceptions.h"
 
 #include <SDL.h>
 #include <windows.h>
@@ -42,7 +42,7 @@ static string getVKeyName ( uint32_t vkCode, uint32_t scanCode, bool isExtended 
     if ( GetKeyNameText ( scanCode << 16, name, sizeof ( name ) ) > 0 )
         return name;
     else
-        return toString ( "Key Code 0x%02X", vkCode );
+        return format ( "Key Code 0x%02X", vkCode );
 }
 
 
@@ -316,7 +316,7 @@ static string nextName ( const string& name )
 
     uint32_t index = 2;
 
-    while ( namesWithIndex.find ( toString ( "%s (%d)", name, index ) ) != namesWithIndex.end() )
+    while ( namesWithIndex.find ( format ( "%s (%d)", name, index ) ) != namesWithIndex.end() )
     {
         if ( index == numeric_limits<uint32_t>::max() )
             LOG_AND_THROW_STRING ( "Too many duplicate names for: '%s'", name );
@@ -324,7 +324,7 @@ static string nextName ( const string& name )
         ++index;
     }
 
-    return toString ( "%s (%d)", name, index );
+    return format ( "%s (%d)", name, index );
 }
 
 Controller::Controller ( KeyboardEnum ) : name ( "Keyboard" )
@@ -431,18 +431,18 @@ string Controller::getMapping ( uint32_t key ) const
             {
                 case EVENT_JOY_AXIS:
                     if ( index < 4 )
-                        return toString ( "%c %c-Axis", getAxisSign ( index, value ), ( index == 0 ? 'X' : 'Y' ) );
+                        return format ( "%c %c-Axis", getAxisSign ( index, value ), ( index == 0 ? 'X' : 'Y' ) );
                     else
-                        return toString ( "%c Axis (%u)", getAxisSign ( index, value ), index + 1 );
+                        return format ( "%c Axis (%u)", getAxisSign ( index, value ), index + 1 );
 
                 case EVENT_JOY_HAT:
                     if ( index == 0 )
-                        return toString ( "POV %s", getHatString ( value ) );
+                        return format ( "POV %s", getHatString ( value ) );
                     else
-                        return toString ( "POV (%u) %s", index + 1, getHatString ( value ) );
+                        return format ( "POV (%u) %s", index + 1, getHatString ( value ) );
 
                 case EVENT_JOY_BUTTON:
-                    return toString ( "Button %u", index + 1 );
+                    return format ( "Button %u", index + 1 );
 
                 default:
                     ASSERT_IMPOSSIBLE;

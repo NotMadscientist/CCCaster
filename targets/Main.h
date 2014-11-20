@@ -11,6 +11,7 @@
 #include "KeyboardManager.h"
 #include "IpAddrPort.h"
 #include "Messages.h"
+#include "Enum.h"
 
 #include <vector>
 #include <string>
