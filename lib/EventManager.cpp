@@ -26,9 +26,10 @@ void EventManager::checkEvents ( uint64_t timeout )
 
     if ( TimerManager::get().getNextExpiry() != UINT64_MAX )
     {
-        ASSERT ( TimerManager::get().getNextExpiry() > TimerManager::get().getNow() );
+        uint64_t newTimeout = 1;
 
-        const uint64_t newTimeout = TimerManager::get().getNextExpiry() - TimerManager::get().getNow();
+        if ( TimerManager::get().getNextExpiry() > TimerManager::get().getNow() )
+            newTimeout = TimerManager::get().getNextExpiry() - TimerManager::get().getNow();
 
         if ( newTimeout < timeout )
             timeout = newTimeout;
