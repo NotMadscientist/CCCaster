@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# TODO merge diffdummy into this script
+
 import sys, os, re
 
 if len ( sys.argv ) < 3 :
