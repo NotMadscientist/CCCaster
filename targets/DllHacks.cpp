@@ -31,18 +31,24 @@ string overlayText;
 
 void *mainWindowHandle = 0;
 
+extern void startStall();
+
+extern void stopStall();
+
 
 // Note: this is on the SAME thread as the main thread where callback happens
 MH_WINAPI_HOOK ( LRESULT, CALLBACK, WindowProc, HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
     switch ( uMsg )
     {
-        case WM_ENTERSIZEMOVE:
-            LOG ( "threadId=%08x; WM_MOVE", GetCurrentThreadId() );
+        case WM_ENTERSIZEMOVE:  // This happens when the window is starting to be moved/resized
+        case WM_STYLECHANGING:  // This happens when the window is starting to change fullscreen state
+            startStall();
             break;
 
-        case WM_EXITSIZEMOVE:
-            LOG ( "threadId=%08x; WM_EXITSIZEMOVE", GetCurrentThreadId() );
+        case WM_EXITSIZEMOVE:   // This happens when the window is finished moving/resizing
+        case WM_STYLECHANGED:   // This happens when the window is finished changing fullscreen state
+            stopStall();
             break;
     }
 

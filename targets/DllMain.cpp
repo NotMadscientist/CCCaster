@@ -230,9 +230,6 @@ struct DllMain
                 return;
             }
 
-            if ( appState == AppState::Stopping )
-                return;
-
             // Don't need to wait for anything in local modes
             if ( clientMode.isLocal() )
                 break;
@@ -812,7 +809,7 @@ struct DllMain
                         serverCtrlSocket = SmartSocket::listenTCP ( this, 0 );
                         LOG ( "serverCtrlSocket=%08x", serverCtrlSocket.get() );
 
-                        // TODO send serverCtrlSocket->address.port to the host
+                        // TODO send serverCtrlSocket->address.port to the host, for spectator delegation
 
                         dataSocket = SmartSocket::connectUDP ( this, address, clientMode.isUdpTunnel() );
                         LOG ( "dataSocket=%08x", dataSocket.get() );
@@ -891,6 +888,7 @@ struct DllMain
         else if ( timer == stopTimer.get() )
         {
             appState = AppState::Stopping;
+            EventManager::get().stop();
         }
         else
         {
@@ -996,6 +994,26 @@ static void initializeDllMain()
     main.reset ( new DllMain() );
 }
 
+static void deinitialize()
+{
+    LOCK ( deinitMutex );
+
+    if ( appState == AppState::Deinitialized )
+        return;
+
+    main.reset();
+
+    EventManager::get().release();
+    TimerManager::get().deinitialize();
+    SocketManager::get().deinitialize();
+    // Joystick must be deinitialized on the same thread it was initialized, ie not here
+    Logger::get().deinitialize();
+
+    deinitializeHacks();
+
+    appState = AppState::Deinitialized;
+}
+
 extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
 {
     switch ( reason )
@@ -1060,25 +1078,6 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
     return TRUE;
 }
 
-static void deinitialize()
-{
-    LOCK ( deinitMutex );
-
-    if ( appState == AppState::Deinitialized )
-        return;
-
-    main.reset();
-
-    EventManager::get().release();
-    TimerManager::get().deinitialize();
-    SocketManager::get().deinitialize();
-    // Joystick must be deinitialized on the same thread it was initialized, ie not here
-    Logger::get().deinitialize();
-
-    deinitializeHacks();
-
-    appState = AppState::Deinitialized;
-}
 
 static void stopDllMain ( const string& error )
 {
@@ -1092,7 +1091,6 @@ static void stopDllMain ( const string& error )
         appState = AppState::Stopping;
     }
 }
-
 
 extern "C" void callback()
 {
@@ -1145,4 +1143,63 @@ extern "C" void callback()
         deinitialize();
         exit ( 0 );
     }
+}
+
+
+class PollThread : Thread
+{
+    bool stalled = false;
+
+public:
+
+    ~PollThread() { join(); }
+
+    void start()
+    {
+        stalled = true;
+        Thread::start();
+    }
+
+    void join()
+    {
+        stalled = false;
+        Thread::join();
+    }
+
+    void run() override
+    {
+        // Poll until we are not stalled
+        while ( stalled )
+        {
+            if ( !EventManager::get().poll ( 100 ) )
+            {
+                appState = AppState::Stopping;
+                return;
+            }
+
+            Sleep ( 1 );
+        }
+    }
+};
+
+static PollThread pollThread;
+
+void startStall()
+{
+    if ( !main || appState != AppState::Polling )
+        return;
+
+    LOG ( "[%s] worldTimer=%u; Starting to poll while stalled", main->netMan.getIndexedFrame(), *CC_WORLD_TIMER_ADDR );
+
+    pollThread.start();
+}
+
+void stopStall()
+{
+    if ( !main )
+        return;
+
+    pollThread.join();
+
+    LOG ( "[%s] worldTimer=%u; Stopped polling while stalled", main->netMan.getIndexedFrame(), *CC_WORLD_TIMER_ADDR );
 }

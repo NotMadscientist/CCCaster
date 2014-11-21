@@ -1,6 +1,7 @@
 #include "Logger.h"
 #include "Version.h"
 #include "Algorithms.h"
+#include "TimerManager.h"
 
 using namespace std;
 
@@ -126,7 +127,11 @@ void Logger::log ( const char *file, int line, const char *func, const char *mes
             ts = localtime ( &t );
 
         strftime ( buffer, sizeof ( buffer ), "%H:%M:%S", ts );
-        fprintf ( fd, "%s:", buffer );
+
+        TimerManager::get().updateNow();
+        uint64_t now = TimerManager::get().getNow();
+
+        fprintf ( fd, "%s.%03u:", buffer, ( uint32_t ) ( now % 1000 ) );
         hasPrefix = true;
     }
 
