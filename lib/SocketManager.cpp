@@ -2,6 +2,7 @@
 #include "Socket.h"
 #include "TimerManager.h"
 #include "Exceptions.h"
+#include "ErrorStrings.h"
 
 #include <winsock2.h>
 #include <windows.h>
@@ -65,10 +66,7 @@ void SocketManager::check ( uint64_t timeout )
     int count = select ( 0, &readFds, &writeFds, 0, &tv );
 
     if ( count == SOCKET_ERROR )
-    {
-        WindowsException err = WSAGetLastError();
-        LOG_AND_THROW_ERROR ( err, "select failed" );
-    }
+        THROW_WIN_EXCEPTION ( WSAGetLastError(), "select failed", ERROR_NETWORK_GENERIC );
 
     if ( count == 0 )
         return;
@@ -144,10 +142,7 @@ void SocketManager::initialize()
     int error = WSAStartup ( MAKEWORD ( 2, 2 ), &wsaData );
 
     if ( error != NO_ERROR )
-    {
-        WindowsException err = error;
-        LOG_AND_THROW_ERROR ( err, "WSAStartup failed" );
-    }
+        THROW_WIN_EXCEPTION ( error, "WSAStartup failed", ERROR_NETWORK_INIT );
 
     initialized = true;
 }

@@ -11,13 +11,13 @@ using namespace std;
 using namespace AsmHacks;
 
 
-#define WRITE_ASM_HACK(ASM_HACK)                                                                \
-    do {                                                                                        \
-        WindowsException err;                                                                   \
-        if ( ( err = ASM_HACK.write() ).code != 0 ) {                                           \
-            LOG ( "%s; %s failed; addr=%08x", err, #ASM_HACK, ASM_HACK.addr );                  \
-            exit ( 0 );                                                                         \
-        }                                                                                       \
+#define WRITE_ASM_HACK(ASM_HACK)                                                                                    \
+    do {                                                                                                            \
+        int error = ASM_HACK.write();                                                                               \
+        if ( error != 0 ) {                                                                                         \
+            LOG ( "%s; %s failed; addr=%08x", WinException::getAsString ( error ), #ASM_HACK, ASM_HACK.addr );      \
+            exit ( -1 );                                                                                            \
+        }                                                                                                           \
     } while ( 0 )
 
 
@@ -149,10 +149,10 @@ void initializePostLoadHacks()
 
     // Hook and ignore keyboard messages to prevent lag from unhandled messages
     if ( ! ( keybdHook = SetWindowsHookEx ( WH_KEYBOARD, keyboardCallback, 0, GetCurrentThreadId() ) ) )
-        LOG ( "SetWindowsHookEx failed: %s", WindowsException ( GetLastError() ) );
+        LOG ( "SetWindowsHookEx failed: %s", WinException::getLastError() );
 
     // Get the handle to the main window
-    if ( ( mainWindowHandle = ProcessManager::findWindow ( CC_TITLE ) ) == 0 )
+    if ( ! ( mainWindowHandle = ProcessManager::findWindow ( CC_TITLE ) ) )
         LOG ( "Couldn't find window '%s'", CC_TITLE );
 
     // We can't save replays on Wine because MBAA crashes even without us.

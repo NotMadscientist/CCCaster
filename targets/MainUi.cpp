@@ -3,6 +3,7 @@
 #include "Version.h"
 #include "ConsoleUi.h"
 #include "Exceptions.h"
+#include "ErrorStringsExt.h"
 
 #include <mmsystem.h>
 
@@ -59,9 +60,9 @@ void MainUi::netplay ( RunFuncPtr run )
         {
             address = menu->resultStr;
         }
-        catch ( const Exception& err )
+        catch ( const Exception& exc )
         {
-            ui->pushBelow ( new ConsoleUi::TextBox ( err.str() ), { 1, 0 } ); // Expand width
+            ui->pushBelow ( new ConsoleUi::TextBox ( exc.user ), { 1, 0 } ); // Expand width
             continue;
         }
 
@@ -114,15 +115,15 @@ void MainUi::spectate ( RunFuncPtr run )
         {
             address = menu->resultStr;
         }
-        catch ( const Exception& err )
+        catch ( const Exception& exc )
         {
-            ui->pushBelow ( new ConsoleUi::TextBox ( err.str() ), { 1, 0 } ); // Expand width
+            ui->pushBelow ( new ConsoleUi::TextBox ( exc.user ), { 1, 0 } ); // Expand width
             continue;
         }
 
         if ( address.addr.empty() )
         {
-            ui->pushBelow ( new ConsoleUi::TextBox ( "Invalid IP address!" ), { 1, 0 } ); // Expand width
+            ui->pushBelow ( new ConsoleUi::TextBox ( ERROR_INVALID_ADDR_PORT ), { 1, 0 } ); // Expand width
             continue;
         }
 
@@ -164,7 +165,7 @@ void MainUi::broadcast ( RunFuncPtr run )
 
         if ( menu->resultInt > 0xFFFF )
         {
-            ui->pushBelow ( new ConsoleUi::TextBox ( "Port can't be greater than 65535!" ), { 1, 0 } ); // Expand width
+            ui->pushBelow ( new ConsoleUi::TextBox ( ERROR_INVALID_PORT ), { 1, 0 } ); // Expand width
             continue;
         }
 
@@ -219,7 +220,7 @@ void MainUi::offline ( RunFuncPtr run )
 
         if ( menu->resultInt >= 0xFF )
         {
-            ui->pushBelow ( new ConsoleUi::TextBox ( "Delay can't be greater than 254!" ) );
+            ui->pushBelow ( new ConsoleUi::TextBox ( ERROR_INVALID_DELAY ) );
             continue;
         }
 
@@ -793,7 +794,7 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
 
         if ( menu->resultInt >= 0xFF )
         {
-            ui->pushBelow ( new ConsoleUi::TextBox ( "Delay can't be greater than 254!" ) );
+            ui->pushBelow ( new ConsoleUi::TextBox ( ERROR_INVALID_DELAY ) );
             continue;
         }
 

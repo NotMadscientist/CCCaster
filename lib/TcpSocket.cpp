@@ -2,6 +2,7 @@
 #include "TcpSocket.h"
 #include "Protocol.h"
 #include "Exceptions.h"
+#include "ErrorStrings.h"
 
 #include <winsock2.h>
 #include <windows.h>
@@ -61,10 +62,9 @@ TcpSocket::TcpSocket ( Socket::Owner *owner, const SocketShareData& data )
 
     if ( this->fd == INVALID_SOCKET )
     {
-        WindowsException err = WSAGetLastError();
-        LOG_SOCKET ( this, "%s; WSASocket failed", err );
+        LOG_SOCKET ( this, "WSASocket failed" );
         this->fd = 0;
-        throw err;
+        THROW_WIN_EXCEPTION ( WSAGetLastError(), "WSASocket failed", ERROR_NETWORK_GENERIC );
     }
 
     SocketManager::get().add ( this );
@@ -106,7 +106,7 @@ SocketPtr TcpSocket::accept ( Socket::Owner *owner )
 
     if ( newFd == INVALID_SOCKET )
     {
-        LOG_SOCKET ( this, "%s; accept failed", WindowsException ( WSAGetLastError() ) );
+        LOG_SOCKET ( this, "%s; accept failed", WinException::getAsString ( WSAGetLastError() ) );
         return 0;
     }
 

@@ -10,7 +10,7 @@ using namespace std;
 HttpGet::HttpGet ( Owner *owner, const string& url ) : owner ( owner ), url ( url )
 {
     if ( url.substr ( 0, 8 ) == "https://" )
-        LOG_AND_THROW_STRING ( "Unsupported https protocol!" );
+        THROW_EXCEPTION ( "url='%s'", "Unsupported https protocol!", url );
 
     if ( url.substr ( 0, 7 ) == "http://" )
         host = url.substr ( 7 );

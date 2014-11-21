@@ -164,17 +164,17 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
         archive ( msg->md5 );
         msg->md5empty = false;
     }
-    catch ( const cereal::Exception& err )
+    catch ( const cereal::Exception& exc )
     {
 #ifdef LOG_PROTOCOL
-        LOG ( "type=%s; cereal::Exception: '%s'", type, err.what() );
+        LOG ( "type=%s; cereal::Exception: '%s'", type, exc.what() );
 #endif
         msg.reset();
     }
-    catch ( const std::exception& err )
+    catch ( const std::exception& exc )
     {
 #ifdef LOG_PROTOCOL
-        LOG ( "type=%s; std::exception: '%s'", type, err.what() );
+        LOG ( "type=%s; std::exception: '%s'", type, exc.what() );
 #endif
         msg.reset();
     }
@@ -279,18 +279,18 @@ DecodeResult decodeStageTwo ( const char *bytes, size_t len, size_t& consumed, M
             archive ( msgData );                // compressed size + compressed data
         }
     }
-    catch ( const cereal::Exception& err )
+    catch ( const cereal::Exception& exc )
     {
 #ifdef LOG_PROTOCOL
-        LOG ( "cereal::Exception: '%s'", type, err.what() );
+        LOG ( "cereal::Exception: '%s'", type, exc.what() );
 #endif
         consumed = 0;
         return DecodeResult::Failed;
     }
-    catch ( const std::exception& err )
+    catch ( const std::exception& exc )
     {
 #ifdef LOG_PROTOCOL
-        LOG ( "std::exception: '%s'", type, err.what() );
+        LOG ( "std::exception: '%s'", type, exc.what() );
 #endif
         consumed = 0;
         return DecodeResult::Failed;

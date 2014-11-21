@@ -2,6 +2,7 @@
 #include "ControllerManager.h"
 #include "Constants.h"
 #include "Exceptions.h"
+#include "ErrorStrings.h"
 
 #include <SDL.h>
 #include <windows.h>
@@ -319,7 +320,7 @@ static string nextName ( const string& name )
     while ( namesWithIndex.find ( format ( "%s (%d)", name, index ) ) != namesWithIndex.end() )
     {
         if ( index == numeric_limits<uint32_t>::max() )
-            LOG_AND_THROW_STRING ( "Too many duplicate names for: '%s'", name );
+            THROW_EXCEPTION ( ERROR_TOO_MANY_CONTROLLERS, "", name );
 
         ++index;
     }

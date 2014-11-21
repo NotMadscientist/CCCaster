@@ -485,7 +485,7 @@ uint16_t NetplayManager::getInput ( uint8_t player ) const
             return getPauseMenuInput ( player );
 
         default:
-            LOG_AND_THROW_STRING ( "Invalid state %s!", state );
+            ASSERT_IMPOSSIBLE;
             return 0;
     }
 }

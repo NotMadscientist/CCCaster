@@ -4,10 +4,12 @@
 #include "UdpSocket.h"
 #include "SmartSocket.h"
 #include "Exceptions.h"
+#include "ErrorStrings.h"
 
 #include <winsock2.h>
 #include <windows.h>
 #include <ws2tcpip.h>
+
 #include <cereal/types/unordered_map.hpp>
 
 #include <unordered_set>
@@ -18,16 +20,15 @@ using namespace std;
 
 #define READ_BUFFER_SIZE ( 1024 * 4096 )
 
-#define SET_NON_BLOCKING_MODE(VALUE)                                        \
-    do {                                                                    \
-        u_long flag = VALUE;                                                \
-        if ( ioctlsocket ( fd, FIONBIO, &flag ) != 0 ) {                    \
-            err = WSAGetLastError();                                        \
-            LOG_SOCKET ( this, "%s; ioctlsocket failed", err );             \
-            closesocket ( fd );                                             \
-            fd = 0;                                                         \
-            throw err;                                                      \
-        }                                                                   \
+#define SET_NON_BLOCKING_MODE(VALUE)                                                                                \
+    do {                                                                                                            \
+        u_long flag = VALUE;                                                                                        \
+        if ( ioctlsocket ( fd, FIONBIO, &flag ) != 0 ) {                                                            \
+            LOG_SOCKET ( this, "ioctlsocket(FIONBIO, %u) failed", VALUE );                                          \
+            closesocket ( fd );                                                                                     \
+            fd = 0;                                                                                                 \
+            THROW_WIN_EXCEPTION ( WSAGetLastError(), "ioctlsocket(FIONBIO, %u) failed", ERROR_NETWORK_GENERIC );    \
+        }                                                                                                           \
     } while ( 0 )
 
 
@@ -63,7 +64,7 @@ void Socket::init()
 {
     ASSERT ( fd == 0 );
 
-    WindowsException err;
+    WinException exc;
     shared_ptr<addrinfo> addrInfo;
 
     // TODO proper binding of IPv6 interfaces
@@ -89,9 +90,9 @@ void Socket::init()
 
         if ( fd == INVALID_SOCKET )
         {
-            err = WSAGetLastError();
-            LOG_SOCKET ( this, "%s; socket failed", err );
+            exc = WinException ( WSAGetLastError(), "socket failed", ERROR_NETWORK_GENERIC );
             fd = 0;
+            LOG_SOCKET ( this, "%s", exc );
             continue;
         }
 
@@ -103,8 +104,8 @@ void Socket::init()
             // SO_EXCLUSIVEADDRUSE only replaces if not exact match
             if ( setsockopt ( fd, SOL_SOCKET, SO_REUSEADDR, &yes, 1 ) == SOCKET_ERROR )
             {
-                err = WSAGetLastError();
-                LOG_SOCKET ( this, "%s; setsockopt failed", err );
+                exc = WinException ( WSAGetLastError(), "setsockopt failed", ERROR_NETWORK_GENERIC );
+                LOG_SOCKET ( this, "%s", exc );
                 // Should be safe to continue even if this fails
             }
         }
@@ -123,8 +124,8 @@ void Socket::init()
                     if ( error == WSAEWOULDBLOCK || error == WSAEINVAL )
                         break;
 
-                    err = error;
-                    LOG_SOCKET ( this, "%s; connect failed", err );
+                    exc = WinException ( error, "connect failed", ERROR_NETWORK_GENERIC );
+                    LOG_SOCKET ( this, "%s", exc );
                     closesocket ( fd );
                     fd = 0;
                     continue;
@@ -134,8 +135,8 @@ void Socket::init()
             {
                 if ( ::bind ( fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
                 {
-                    err = WSAGetLastError();
-                    LOG_SOCKET ( this, "%s; bind failed", err );
+                    exc = WinException ( WSAGetLastError(), "bind failed", ERROR_NETWORK_GENERIC );
+                    LOG_SOCKET ( this, "%s", exc );
                     closesocket ( fd );
                     fd = 0;
                     continue;
@@ -149,8 +150,8 @@ void Socket::init()
         {
             if ( ::bind ( fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
             {
-                err = WSAGetLastError();
-                LOG_SOCKET ( this, "%s; bind failed", err );
+                exc = WinException ( WSAGetLastError(), format ( ERROR_NETWORK_PORT_BIND, address.port ), "" );
+                LOG_SOCKET ( this, "%s", exc );
                 closesocket ( fd );
                 fd = 0;
                 continue;
@@ -158,11 +159,10 @@ void Socket::init()
 
             if ( isTCP() && ( ::listen ( fd, SOMAXCONN ) == SOCKET_ERROR ) )
             {
-                err = WSAGetLastError();
-                LOG_SOCKET ( this, "%s; listen failed", err );
+                exc = WinException ( WSAGetLastError(), "listen failed", ERROR_NETWORK_GENERIC );
+                LOG_SOCKET ( this, "%s", exc );
                 closesocket ( fd );
                 fd = 0;
-                throw err;
             }
 
             // Successful bind
@@ -172,8 +172,8 @@ void Socket::init()
 
     if ( fd == 0 )
     {
-        LOG_SOCKET ( this, "%s; init failed", err );
-        throw err;
+        LOG_SOCKET ( this, "%s; init failed", exc );
+        throw exc;
     }
 
     // Update the address to resolve hostname
@@ -198,11 +198,10 @@ void Socket::init()
 
         if ( getsockname ( fd, ( sockaddr * ) &sas, &saLen ) == SOCKET_ERROR )
         {
-            err = WSAGetLastError();
-            LOG_SOCKET ( this, "%s; getsockname failed", err );
+            LOG_SOCKET ( this, "getsockname failed" );
             closesocket ( fd );
             fd = 0;
-            throw err;
+            THROW_WIN_EXCEPTION ( WSAGetLastError(), "getsockname failed", ERROR_NETWORK_GENERIC );
         }
 
         address.port = getPortFromSockAddr ( ( sockaddr * ) &sas );
@@ -241,7 +240,7 @@ bool Socket::send ( const char *buffer, size_t len )
 
         if ( sentBytes == SOCKET_ERROR )
         {
-            WindowsException err = WSAGetLastError();
+            const string err = WinException::getLastSocketError();
 
             // Disconnect the socket if an error occurred during send
             if ( isTCP() )
@@ -290,7 +289,7 @@ bool Socket::send ( const char *buffer, size_t len, const IpAddrPort& address )
 
         if ( sentBytes == SOCKET_ERROR )
         {
-            LOG_SOCKET ( this, "%s; sendto failed", WindowsException ( WSAGetLastError() ) );
+            LOG_SOCKET ( this, "%s; sendto failed", WinException::getLastSocketError() );
             return false;
         }
 
@@ -383,7 +382,7 @@ void Socket::readEvent()
 
     if ( error )
     {
-        LOG_SOCKET ( this, "%s; %s failed", ( isTCP() ? "recv" : "recvfrom" ), WindowsException ( error ) );
+        LOG_SOCKET ( this, "%s; %s failed", ( isTCP() ? "recv" : "recvfrom" ), WinException::getAsString ( error ) );
 
         // Skip blocking reads
         if ( error == WSAEWOULDBLOCK )
@@ -473,11 +472,7 @@ MsgPtr Socket::share ( int processId )
     shared_ptr<WSAPROTOCOL_INFO> info ( new WSAPROTOCOL_INFO() );
 
     if ( WSADuplicateSocket ( fd, processId, info.get() ) )
-    {
-        WindowsException err = WSAGetLastError();
-        LOG_SOCKET ( this, "%s; WSADuplicateSocket failed", err );
-        throw err;
-    }
+        THROW_WIN_EXCEPTION ( WSAGetLastError(), "WSADuplicateSocket failed", ERROR_NETWORK_GENERIC );
 
     // Workaround for Wine, because apparently these aren't set
     if ( isTCP() )

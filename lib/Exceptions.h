@@ -1,46 +1,76 @@
 #pragma once
 
 #include "Logger.h"
-
-#include <string>
-#include <iostream>
+#include "StringUtils.h"
 
 
 struct Exception
 {
-    std::string msg;
+    std::string debug, user;
 
     Exception() {}
-    Exception ( const std::string& msg ) : msg ( msg ) {}
+    Exception ( const std::string& debug, const std::string& user )
+        : debug ( debug ), user ( user.empty() ? debug : user ) {}
 
     virtual std::string str() const;
 };
 
 
-struct WindowsException : public Exception
+struct SDLException : public Exception
 {
-    int code = 0;
+    std::string desc;
 
-    WindowsException() {}
-    WindowsException ( int code );
+    SDLException() {}
+    SDLException ( const char *desc, const std::string& debug, const std::string& user )
+        : Exception ( debug, user ), desc ( desc ) {}
 
-    std::string str() const;
+    std::string str() const override;
 };
 
 
-std::ostream& operator<< ( std::ostream& os, const Exception& exception );
+struct WinException : public Exception
+{
+    int code = 0;
+    std::string desc;
+
+    WinException() {}
+    WinException ( int code, const std::string& debug, const std::string& user )
+        : Exception ( debug, user ), code ( code ), desc ( getAsString ( code ) ) {}
+
+    std::string str() const override;
+
+    static std::string getAsString ( int windowsErrorCode );
+
+    static std::string getLastError();
+
+    static std::string getLastSocketError();
+};
 
 
-#define LOG_AND_THROW_STRING(FORMAT, ...)                                                                           \
-    do {                                                                                                            \
-        ::Exception err = format ( FORMAT, ## __VA_ARGS__ );                                                        \
-        LOG ( FORMAT, ## __VA_ARGS__ );                                                                             \
-        throw err;                                                                                                  \
+inline std::ostream& operator<< ( std::ostream& os, const Exception& exception )
+{
+    return ( os << exception.str() );
+}
+
+
+#define THROW_EXCEPTION(DEBUG, USER, ...)                                                       \
+    do {                                                                                        \
+        Exception exc ( format ( DEBUG, ## __VA_ARGS__ ), USER );                               \
+        LOG ( "%s", exc );                                                                      \
+        throw exc;                                                                              \
+    } while ( 0 )
+
+#define THROW_SDL_EXCEPTION(DESC, DEBUG, USER, ...)                                             \
+    do {                                                                                        \
+        SDLException exc ( DESC, format ( DEBUG, ## __VA_ARGS__ ), USER );                      \
+        LOG ( "%s", exc );                                                                      \
+        throw exc;                                                                              \
     } while ( 0 )
 
 
-#define LOG_AND_THROW_ERROR(EXCEPTION, FORMAT, ...)                                                                 \
-    do {                                                                                                            \
-        LOG ( "%s; " FORMAT, EXCEPTION, ## __VA_ARGS__ );                                                           \
-        throw EXCEPTION;                                                                                            \
+#define THROW_WIN_EXCEPTION(CODE, DEBUG, USER, ...)                                             \
+    do {                                                                                        \
+        WinException exc ( CODE, format ( DEBUG, ## __VA_ARGS__ ), USER );                      \
+        LOG ( "%s", exc );                                                                      \
+        throw exc;                                                                              \
     } while ( 0 )

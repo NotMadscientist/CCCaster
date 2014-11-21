@@ -1,5 +1,6 @@
 #include "ControllerManager.h"
 #include "Exceptions.h"
+#include "ErrorStrings.h"
 
 #include <SDL.h>
 #include <windows.h>
@@ -57,10 +58,7 @@ void ControllerManager::checkJoystick()
     int count = SDL_PeepEvents ( events, sizeof ( events ), SDL_GETEVENT, SDL_JOYAXISMOTION, SDL_JOYDEVICEREMOVED );
 
     if ( count < 0 )
-    {
-        Exception err = format ( "SDL error: '%s'", SDL_GetError() );
-        LOG_AND_THROW_ERROR ( err, "SDL_PeepEvents failed" );
-    }
+        THROW_SDL_EXCEPTION ( SDL_GetError(), "SDL_PeepEvents failed", ERROR_CONTROLLER_CHECK );
 
     for ( int i = 0; i < count; ++i )
     {
@@ -268,10 +266,7 @@ void ControllerManager::initialize ( Owner *owner )
 
     // Initialize SDL joystick
     if ( SDL_Init ( SDL_INIT_JOYSTICK ) < 0 )
-    {
-        Exception err = format ( "SDL error: '%s'", SDL_GetError() );
-        LOG_AND_THROW_ERROR ( err, "SDL_Init(SDL_INIT_JOYSTICK) failed" );
-    }
+        THROW_SDL_EXCEPTION ( SDL_GetError(), "SDL_INIT_JOYSTICK failed", ERROR_CONTROLLER_INIT );
 
     initialized = true;
 }

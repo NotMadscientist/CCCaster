@@ -1,5 +1,6 @@
 #include "IpAddrPort.h"
 #include "Exceptions.h"
+#include "ErrorStrings.h"
 
 #include <winsock2.h>
 #include <windows.h>
@@ -23,10 +24,7 @@ shared_ptr<addrinfo> getAddrInfo ( const string& addr, uint16_t port, bool isV4,
     int error = getaddrinfo ( addr.empty() ? 0 : addr.c_str(), format ( port ).c_str(), &addrConf, &addrRes );
 
     if ( error != 0 )
-    {
-        WindowsException err = error;
-        LOG_AND_THROW_ERROR ( err, "getaddrinfo failed" );
-    }
+        THROW_WIN_EXCEPTION ( error, ERROR_INVALID_HOSTNAME, "", addr );
 
     return shared_ptr<addrinfo> ( addrRes, freeaddrinfo );
 }
@@ -87,12 +85,12 @@ IpAddrPort::IpAddrPort ( const string& addrPort ) : addr ( addrPort ), port ( 0 
             break;
 
     if ( i == ( int ) addr.size() - 1 )
-        throw Exception ( "Invalid port!" );
+        THROW_EXCEPTION ( "addrPort=%s", ERROR_INVALID_ADDR_PORT, addrPort );
 
     stringstream ss ( addr.substr ( i + 1 ) );
 
     if ( ! ( ss >> port ) )
-        throw Exception ( "Port can't be greater than 65535!" );
+        THROW_EXCEPTION ( "addrPort=%s", ERROR_INVALID_ADDR_PORT, addrPort );
 
     for ( ; i >= 0; --i )
         if ( isalnum ( addr[i] ) )

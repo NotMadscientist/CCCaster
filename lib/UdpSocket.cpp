@@ -2,6 +2,7 @@
 #include "UdpSocket.h"
 #include "Protocol.h"
 #include "Exceptions.h"
+#include "ErrorStrings.h"
 
 #include <winsock2.h>
 #include <windows.h>
@@ -60,10 +61,9 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const SocketShareData& data )
 
     if ( this->fd == INVALID_SOCKET )
     {
-        WindowsException err = WSAGetLastError();
-        LOG_UDP_SOCKET ( this, "%s; WSASocket failed", err );
+        LOG_UDP_SOCKET ( this, "WSASocket failed" );
         this->fd = 0;
-        throw err;
+        THROW_WIN_EXCEPTION ( WSAGetLastError(), "WSASocket failed", ERROR_NETWORK_GENERIC );
     }
 
     LOG ( "Shared:" );
@@ -98,8 +98,7 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const SocketShareData& data )
             break;
 
         default:
-            LOG_AND_THROW_STRING ( "Invalid UDP socket type!" );
-            break;
+            THROW_EXCEPTION ( "Invalid UDP socket type!", ERROR_INTERNAL );
     }
 
     SocketManager::get().add ( this );

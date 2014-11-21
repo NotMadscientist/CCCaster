@@ -383,14 +383,14 @@ int main ( int argc, char *argv[] )
         {
             ui.main ( run );
         }
-        catch ( const Exception& err )
+        catch ( const Exception& exc )
         {
-            PRINT ( "Error: %s", err );
+            PRINT ( "%s", exc.user );
         }
 #ifdef NDEBUG
-        catch ( const std::exception& err )
+        catch ( const std::exception& exc )
         {
-            PRINT ( "Error: %s", err.what() );
+            PRINT ( "Error: %s", exc.what() );
         }
         catch ( ... )
         {

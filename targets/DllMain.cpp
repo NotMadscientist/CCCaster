@@ -6,6 +6,7 @@
 #include "SmartSocket.h"
 #include "Exceptions.h"
 #include "Enum.h"
+#include "ErrorStringsExt.h"
 
 #include <windows.h>
 
@@ -451,7 +452,7 @@ struct DllMain
             return;
         }
 
-        LOG_AND_THROW_STRING ( "Unknown game mode! previous=%u; current=%u", previous, current );
+        THROW_EXCEPTION ( "gameModeChanged(%u, %u)", ERROR_INVALID_GAME_MODE, previous, current );
     }
 
     void delayedStop()
@@ -773,12 +774,12 @@ struct DllMain
                 netMan.config.mode = clientMode;
 
                 if ( netMan.config.delay == 0xFF )
-                    LOG_AND_THROW_STRING ( "NetplayConfig: delay=%d is invalid!", netMan.config.delay );
+                    THROW_EXCEPTION ( "delay=%u", ERROR_INVALID_HOST_CONFIG, netMan.config.delay );
 
                 if ( clientMode.isNetplay() )
                 {
                     if ( netMan.config.hostPlayer != 1 && netMan.config.hostPlayer != 2 )
-                        LOG_AND_THROW_STRING ( "NetplayConfig: hostPlayer=%d is invalid!", netMan.config.hostPlayer );
+                        THROW_EXCEPTION ( "hostPlayer=%u", ERROR_INVALID_HOST_CONFIG, netMan.config.hostPlayer );
 
                     // Determine the player numbers
                     if ( clientMode.isHost() )
@@ -1047,21 +1048,18 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
                 initializePreLoadHacks();
                 initializeDllMain();
             }
-            catch ( const Exception& err )
+            catch ( const Exception& exc )
             {
-                // LOG ( "Aborting due to exception: %s", err );
-                exit ( 0 );
+                exit ( -1 );
             }
 #ifdef NDEBUG
-            catch ( const std::exception& err )
+            catch ( const std::exception& exc )
             {
-                // LOG ( "Aborting due to std::exception: %s", err.what() );
-                exit ( 0 );
+                exit ( -1 );
             }
             catch ( ... )
             {
-                // LOG ( "Aborting due to unknown exception!" );
-                exit ( 0 );
+                exit ( -1 );
             }
 #endif
             break;
@@ -1115,16 +1113,16 @@ extern "C" void callback()
 
         main->callback();
     }
-    catch ( const Exception& err )
+    catch ( const Exception& exc )
     {
-        LOG ( "Stopping due to exception: %s", err );
-        stopDllMain ( "Error: " + err.str() );
+        LOG ( "Stopping due to exception: %s", exc );
+        stopDllMain ( exc.user );
     }
 #ifdef NDEBUG
-    catch ( const std::exception& err )
+    catch ( const std::exception& exc )
     {
-        LOG ( "Stopping due to std::exception: %s", err.what() );
-        stopDllMain ( string ( "Error: " ) + err.what() );
+        LOG ( "Stopping due to std::exception: %s", exc.what() );
+        stopDllMain ( string ( "Error: " ) + exc.what() );
     }
     catch ( ... )
     {

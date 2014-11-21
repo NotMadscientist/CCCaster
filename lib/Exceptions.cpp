@@ -1,37 +1,51 @@
 #include "Exceptions.h"
 #include "StringUtils.h"
 
+#include <winsock2.h>
 #include <windows.h>
+#include <ws2tcpip.h>
 
 using namespace std;
 
 
-static string getWindowsExceptionAsString ( int error )
+string Exception::str() const
+{
+    if ( debug.empty() || debug == user )
+        return user;
+
+    if ( user.empty() )
+        return debug;
+
+    return debug + "; " + user;
+}
+
+string SDLException::str() const
+{
+    return format ( "SDL error: '%s'; %s; %s", desc, debug, user );
+}
+
+string WinException::str() const
+{
+    return format ( "[%d] '%s'; %s; %s", code, desc, debug, user );
+}
+
+string WinException::getAsString ( int windowsErrorCode )
 {
     string str;
     char *errorString = 0;
     FormatMessage ( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-                    0, error, 0, ( LPSTR ) &errorString, 0, 0 );
+                    0, windowsErrorCode, 0, ( LPSTR ) &errorString, 0, 0 );
     str = ( errorString ? trim ( errorString ) : "(null)" );
     LocalFree ( errorString );
     return str;
 }
 
-
-string Exception::str() const { return msg; }
-
-
-WindowsException::WindowsException ( int code )
-    : Exception ( getWindowsExceptionAsString ( code ) )
-    , code ( code ) {}
-
-string WindowsException::str() const
+string WinException::getLastError()
 {
-    return format ( "[%d] '%s'", code, msg );
+    return getAsString ( GetLastError() );
 }
 
-
-ostream& operator<< ( ostream& os, const Exception& error )
+string WinException::getLastSocketError()
 {
-    return ( os << error.str() );
+    return getAsString ( WSAGetLastError() );
 }

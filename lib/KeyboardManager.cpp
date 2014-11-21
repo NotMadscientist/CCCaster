@@ -118,7 +118,7 @@ public:
 
         if ( !keyboardHook )
         {
-            LOG ( "SetWindowsHookEx failed: %s", WindowsException ( GetLastError() ) );
+            LOG ( "SetWindowsHookEx failed: %s", WinException::getLastError() );
             return;
         }
 

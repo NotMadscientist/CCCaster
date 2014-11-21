@@ -100,8 +100,7 @@ int main ( int argc, char *argv[] )
     if ( !CreateProcess ( 0, const_cast<char *> ( exe.c_str() ), 0, 0, TRUE, DEBUG_ONLY_THIS_PROCESS, 0,
                           cwd.empty() ? 0 : cwd.c_str(), &si, &pi ) )
     {
-        WindowsException err = GetLastError();
-        PRINT ( "CreateProcess failed: %s", err );
+        PRINT ( "CreateProcess failed: %s", WinException::getLastError() );
         exit ( -1 );
     }
 
@@ -122,8 +121,7 @@ int main ( int argc, char *argv[] )
     {
         if ( !WaitForDebugEvent ( &event, INFINITE ) )
         {
-            WindowsException err = GetLastError();
-            PRINT ( "WaitForDebugEvent failed: %s", err );
+            PRINT ( "WaitForDebugEvent failed: %s", WinException::getLastError() );
             exit ( -1 );
         }
 
@@ -154,8 +152,7 @@ int main ( int argc, char *argv[] )
                             if ( ! ( thread = OpenThread ( THREAD_GET_CONTEXT | THREAD_SET_CONTEXT,
                                                            0, event.dwThreadId ) ) )
                             {
-                                WindowsException err = GetLastError();
-                                PRINT ( "OpenThread failed: %s", err );
+                                PRINT ( "OpenThread failed: %s", WinException::getLastError() );
                                 exit ( -1 );
                             }
                         }
@@ -238,8 +235,7 @@ int main ( int argc, char *argv[] )
 
         if ( !ContinueDebugEvent ( event.dwProcessId, event.dwThreadId, DBG_CONTINUE ) )
         {
-            WindowsException err = GetLastError();
-            PRINT ( "ContinueDebugEvent failed: %s", err );
+            PRINT ( "ContinueDebugEvent failed: %s", WinException::getLastError() );
             exit ( -1 );
         }
     }

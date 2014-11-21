@@ -2,8 +2,8 @@
 #include "MainUi.h"
 #include "Pinger.h"
 #include "ExternalIpAddress.h"
-#include "UdpSocket.h"
 #include "SmartSocket.h"
+#include "UdpSocket.h"
 #include "Constants.h"
 #include "Exceptions.h"
 #include "Algorithms.h"
@@ -42,7 +42,7 @@ extern string appDir;
 //     }
 //     else
 //     {
-//         LOG ( "OpenClipboard failed: %s", WindowsException ( GetLastError() ) );
+//         LOG ( "OpenClipboard failed: %s", WinException::getLastError() );
 //     }
 
 //     return string ( buffer );
@@ -62,7 +62,7 @@ static void setClipboard ( const string& str )
     }
     else
     {
-        LOG ( "OpenClipboard failed: %s", WindowsException ( GetLastError() ) );
+        LOG ( "OpenClipboard failed: %s", WinException::getLastError() );
     }
 }
 
@@ -166,14 +166,14 @@ struct MainApp
                 ASSERT_IMPOSSIBLE;
             }
         }
-        catch ( const Exception& err )
+        catch ( const Exception& exc )
         {
-            lastError = format ( "Error: %s", err );
+            lastError = exc.user;
         }
 #ifdef NDEBUG
-        catch ( const std::exception& err )
+        catch ( const std::exception& exc )
         {
-            lastError = format ( "Error: %s", err.what() );
+            lastError = format ( "Error: %s", exc.what() );
         }
         catch ( ... )
         {
