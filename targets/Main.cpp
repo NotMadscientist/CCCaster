@@ -147,7 +147,6 @@ int main ( int argc, char *argv[] )
 
         { Options::Help,      0, "h",      "help", Arg::None,     "  --help, -h         Print help and exit.\n" },
         { Options::GameDir,   0, "d",       "dir", Arg::Required, "  --dir, -d folder   Specify game folder.\n" },
-        { Options::Tunnel,    0, "T",    "tunnel", Arg::None,     "  --tunnel, -T       Connect via UDP tunnel.\n" },
 
         { Options::Training,  0, "t",  "training", Arg::None,     "  --training, -t     Force training mode." },
         { Options::Broadcast, 0, "b", "broadcast", Arg::None,     "  --broadcast, -b    Force broadcast mode." },
@@ -162,7 +161,6 @@ int main ( int argc, char *argv[] )
         {
             Options::NoUi, 0, "n", "no-ui", Arg::None,
             "  --no-ui, -n        No UI, just quits after running once.\n"
-            "                     Should be used with address and/or port.\n"
         },
 
         {
@@ -174,6 +172,7 @@ int main ( int argc, char *argv[] )
         { Options::Unknown,   0,  "",       "", Arg::None,        "Debug options:" },
         { Options::Tests,     0,  "",  "tests", Arg::None,        "  --tests            Run unit tests and exit." },
         { Options::Stdout,    0,  "", "stdout", Arg::None,        "  --stdout,          Output logs to stdout"},
+        { Options::Tunnel,    0, "T", "tunnel", Arg::None,        "  --tunnel, -T       Force UDP tunnel" },
         { Options::Dummy,     0, "D",  "dummy", Arg::None,        "  --dummy, -D        Client mode with fake inputs" },
         { Options::FakeUi,    0, "F",   "fake", Arg::None,        "  --fake, -F         Fake UI mode\n" },
 
@@ -191,8 +190,11 @@ int main ( int argc, char *argv[] )
         {
             Options::Unknown, 0, "", "", Arg::None,
             "Examples:\n"
-            "  " BINARY " --unknown -- --this_is_no_option\n"
-            "  " BINARY " -unk --plus -ppp file1 file2\n"
+            "  " BINARY " 12345                 Host on port 12345\n"
+            "  " BINARY " 12.34.56.78 12345     Connect to 12.34.56.78 on port 12345\n"
+            "  " BINARY " -b 12345              Broadcast on port 12345\n"
+            "  " BINARY " -ot                   Offline training mode.\n"
+            "  " BINARY " -o 4 -t               Offline training mode with 4 delay.\n"
         },
 
         { 0, 0, 0, 0, 0, 0 }
