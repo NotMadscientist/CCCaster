@@ -80,9 +80,6 @@ struct DllMain
     // Initial connect timer
     TimerPtr initialTimer;
 
-    // Local and remote SyncHashes
-    list<MsgPtr> localSync, remoteSync;
-
     // Controller mappings
     ControllerMappings mappings;
 
@@ -94,6 +91,11 @@ struct DllMain
 
     // If we have sent our local retry menu index
     bool localRetryMenuIndexSent = false;
+
+#ifndef RELEASE
+    // Local and remote SyncHashes
+    list<MsgPtr> localSync, remoteSync;
+#endif
 
 
     void frameStepNormal()
@@ -129,21 +131,24 @@ struct DllMain
                 localInput = convertInputState ( controllers[0] );
 
 #ifndef RELEASE
-                // Test rollback
-                if ( ( GetKeyState ( VK_F10 ) & 0x80 )
-                        && netMan.config.rollback
-                        && netMan.getState() == NetplayState::InGame
-                        && netMan.getFrame() > 60 )
-                {
-                    // Sleep ( 1000 );
-                    procMan.loadState ( { netMan.getIndex(), netMan.getFrame() - 10 }, netMan );
-                }
-
                 // Test random inputs
                 static bool randomize = false;
 
-                if ( GetKeyState ( VK_F11 ) & 0x80 ) randomize = true;
-                if ( GetKeyState ( VK_F12 ) & 0x80 ) randomize = false;
+                if ( mainWindowHandle == ( void * ) GetForegroundWindow() )
+                {
+                    // Test rollback
+                    if ( ( GetKeyState ( VK_F10 ) & 0x80 )
+                            && netMan.config.rollback
+                            && netMan.getState() == NetplayState::InGame
+                            && netMan.getFrame() > 60 )
+                    {
+                        // Sleep ( 1000 );
+                        procMan.loadState ( { netMan.getIndex(), netMan.getFrame() - 10 }, netMan );
+                    }
+
+                    if ( GetKeyState ( VK_F11 ) & 0x80 ) randomize = true;
+                    if ( GetKeyState ( VK_F12 ) & 0x80 ) randomize = false;
+                }
 
                 if ( randomize )
                 {
@@ -299,6 +304,7 @@ struct DllMain
                 kv.first->send ( msgBothInputs );
         }
 
+#ifndef RELEASE
         // Log the RngState once every 5 seconds.
         // This effectively also logs whenever the frame becomes zero, ie when the index is incremented.
         if ( dataSocket && dataSocket->isConnected() && netMan.getFrame() % ( 5 * 60 ) == 0 )
@@ -308,32 +314,31 @@ struct DllMain
             LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
 
             // Check for desyncs by periodically sending hashes
-            if ( options[Options::CheckSync] )
+            MsgPtr msgSyncHash ( new SyncHash ( netMan.getIndexedFrame(), msgRngState->getAs<RngState>() ) );
+
+            dataSocket->send ( msgSyncHash );
+
+            localSync.push_back ( msgSyncHash );
+
+            while ( !localSync.empty() && !remoteSync.empty() )
             {
-                MsgPtr msgSyncHash ( new SyncHash ( netMan.getIndexedFrame(), msgRngState->getAs<RngState>() ) );
-
-                dataSocket->send ( msgSyncHash );
-
-                localSync.push_back ( msgSyncHash );
-
-                while ( !localSync.empty() && !remoteSync.empty() )
+                if ( localSync.front()->getAs<SyncHash>() == remoteSync.front()->getAs<SyncHash>() )
                 {
-                    if ( localSync.front()->getAs<SyncHash>() == remoteSync.front()->getAs<SyncHash>() )
-                    {
-                        localSync.pop_front();
-                        remoteSync.pop_front();
-                        continue;
-                    }
-
-                    LOG_SYNC ( "Desync: local=[%s]; remote=[%s]",
-                               localSync.front()->getAs<SyncHash>().indexedFrame,
-                               remoteSync.front()->getAs<SyncHash>().indexedFrame );
-
-                    appState = AppState::Stopping;
-                    return;
+                    localSync.pop_front();
+                    remoteSync.pop_front();
+                    continue;
                 }
+
+                LOG_SYNC ( "Desync: local=[%s]; remote=[%s]",
+                           localSync.front()->getAs<SyncHash>().indexedFrame,
+                           remoteSync.front()->getAs<SyncHash>().indexedFrame );
+
+                appState = AppState::Stopping;
+                EventManager::get().stop();
+                return;
             }
         }
+#endif
 
         // Log inputs every frame
         LOG_SYNC ( "Inputs: %04x %04x", netMan.getInput ( 1 ), netMan.getInput ( 2 ) );
@@ -543,6 +548,8 @@ struct DllMain
         netplayStateChanged ( NetplayState::Initial );
 
         initialTimer.reset();
+
+        SetForegroundWindow ( ( HWND ) mainWindowHandle );
     }
 
     void disconnectEvent ( Socket *socket ) override
@@ -646,21 +653,11 @@ struct DllMain
                     kv.first->send ( msg );
                 return;
 
+#ifndef RELEASE
             case MsgType::SyncHash:
-                if ( !options[Options::CheckSync] )
-                {
-                    options.set ( Options::CheckSync, 1 );
-
-                    ASSERT ( localSync.empty() == true );
-                    ASSERT ( remoteSync.empty() == true );
-
-                    // Fake the first SyncHash when enabling --check for the first time
-                    dataSocket->send ( msg );
-                    return;
-                }
-
                 remoteSync.push_back ( msg );
                 return;
+#endif
 
             default:
                 break;
@@ -713,6 +710,7 @@ struct DllMain
     void ipcDisconnectEvent() override
     {
         appState = AppState::Stopping;
+        EventManager::get().stop();
     }
 
     void ipcReadEvent ( const MsgPtr& msg ) override
@@ -1089,6 +1087,7 @@ static void stopDllMain ( const string& error )
     else
     {
         appState = AppState::Stopping;
+        EventManager::get().stop();
     }
 }
 

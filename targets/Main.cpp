@@ -174,9 +174,8 @@ int main ( int argc, char *argv[] )
         { Options::Unknown,   0,  "",       "", Arg::None,        "Debug options:" },
         { Options::Tests,     0,  "",  "tests", Arg::None,        "  --tests            Run unit tests and exit." },
         { Options::Stdout,    0,  "", "stdout", Arg::None,        "  --stdout,          Output logs to stdout"},
-        { Options::FakeUi,    0, "F",   "fake", Arg::None,        "  --fake, -F         Fake UI mode" },
         { Options::Dummy,     0, "D",  "dummy", Arg::None,        "  --dummy, -D        Client mode with fake inputs" },
-        { Options::CheckSync, 0, "C",  "check", Arg::None,        "  --check, -C        Check for desyncs\n" },
+        { Options::FakeUi,    0, "F",   "fake", Arg::None,        "  --fake, -F         Fake UI mode\n" },
 
         {
             Options::StrictVersion, 0, "S", "strict", Arg::None,

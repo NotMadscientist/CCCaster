@@ -12,6 +12,42 @@ using namespace std;
 #define MAX_EVENT_QUEUE 64
 
 
+void ControllerManager::check ( void *keyboardWindowHandle )
+{
+    if ( !initialized )
+        return;
+
+    if ( !keyboardWindowHandle || keyboardWindowHandle == ( void * ) GetForegroundWindow() )
+    {
+        // Update keyboard controller state
+        keyboard.state = 0;
+
+        for ( uint8_t i = 0; i < 32; ++i )
+        {
+            if ( !keyboard.keybd.codes[i] )
+                continue;
+
+            if ( GetKeyState ( keyboard.keybd.codes[i] ) & 0x80 )
+                keyboard.state |= ( 1u << i );
+        }
+    }
+
+    checkJoystick();
+
+    // Workaround for SDL bug 2643
+    if ( shouldReset )
+    {
+        LOG ( "Resetting SDL!" );
+
+        deinitialize();
+        initialize ( owner );
+
+        checkJoystick();
+
+        shouldReset = false;
+    }
+}
+
 void ControllerManager::checkJoystick()
 {
     // Update SDL joystick events
@@ -148,42 +184,6 @@ void ControllerManager::mappingsChanged ( Controller *controller )
 
     mappings.mappings[controller->getName()] = controller->getMappings();
     mappings.invalidate();
-}
-
-void ControllerManager::check ( void *keyboardWindowHandle )
-{
-    if ( !initialized )
-        return;
-
-    if ( !keyboardWindowHandle || keyboardWindowHandle == ( void * ) GetForegroundWindow() )
-    {
-        // Update keyboard controller state
-        keyboard.state = 0;
-
-        for ( uint8_t i = 0; i < 32; ++i )
-        {
-            if ( !keyboard.keybd.codes[i] )
-                continue;
-
-            if ( GetKeyState ( keyboard.keybd.codes[i] ) & 0x80 )
-                keyboard.state |= ( 1u << i );
-        }
-    }
-
-    checkJoystick();
-
-    // Workaround for SDL bug 2643
-    if ( shouldReset )
-    {
-        LOG ( "Resetting SDL!" );
-
-        deinitialize();
-        initialize ( owner );
-
-        checkJoystick();
-
-        shouldReset = false;
-    }
 }
 
 void ControllerManager::clear()
