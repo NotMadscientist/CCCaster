@@ -144,6 +144,9 @@ SmartSocket::SmartSocket ( Socket::Owner *owner, uint16_t port, Socket::Protocol
             directSocket = TcpSocket::listen ( this, port );
         else
             directSocket = UdpSocket::listen ( this, port );
+
+        // Update address port
+        address.port = directSocket->address.port;
     }
     catch ( ... )
     {
@@ -151,9 +154,6 @@ SmartSocket::SmartSocket ( Socket::Owner *owner, uint16_t port, Socket::Protocol
     }
 
     tunSocket = UdpSocket::listen ( this, 0 );
-
-    // Update address port
-    address.port = directSocket->address.port;
 }
 
 SmartSocket::SmartSocket ( Socket::Owner *owner, const IpAddrPort& address, Socket::Protocol protocol, bool forceTun )
@@ -250,7 +250,11 @@ void SmartSocket::connectEvent ( Socket *socket )
 
 void SmartSocket::disconnectEvent ( Socket *socket )
 {
-    if ( socket == directSocket.get() && isConnecting() )
+    if ( socket == directSocket.get() && isServer() )
+    {
+        directSocket.reset();
+    }
+    else if ( socket == directSocket.get() && isConnecting() )
     {
         LOG_SMART_SOCKET ( this, "Switch to UDP tunnel" );
 
