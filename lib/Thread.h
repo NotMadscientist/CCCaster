@@ -148,4 +148,4 @@ typedef std::shared_ptr<Thread> ThreadPtr;
     public:                                                     \
         NAME ( CONTEXT& context ) : context ( context ) {}      \
         void run() override;                                    \
-    }
+    } //

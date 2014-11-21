@@ -100,6 +100,9 @@ private:
     // Start the timer if necessary
     void checkAndStartTimer();
 
+    // Refresh keep alive count down
+    void refreshKeepAlive() { countDown = ( keepAlive / interval ); }
+
 public:
 
     // Basic constructors

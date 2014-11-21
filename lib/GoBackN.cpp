@@ -139,8 +139,7 @@ void GoBackN::recvRaw ( const MsgPtr& msg )
 
     if ( keepAlive )
     {
-        // Refresh keep alive count down
-        countDown = ( keepAlive / interval );
+        refreshKeepAlive();
 
         LOG ( "this=%08x; keepAlive=%llu; countDown=%d", this, keepAlive, countDown );
 
@@ -227,7 +226,8 @@ void GoBackN::setSendInterval ( uint64_t interval )
     ASSERT ( interval > 0 );
 
     this->interval = interval;
-    countDown = ( keepAlive / interval );
+
+    refreshKeepAlive();
 
     LOG ( "interval=%llu; countDown=%d", interval, countDown );
 }
@@ -235,7 +235,8 @@ void GoBackN::setSendInterval ( uint64_t interval )
 void GoBackN::setKeepAlive ( uint64_t timeout )
 {
     keepAlive = timeout;
-    countDown = ( timeout / interval );
+
+    refreshKeepAlive();
 
     LOG ( "keepAlive=%llu; countDown=%d", keepAlive, countDown );
 }
@@ -259,7 +260,7 @@ GoBackN::GoBackN ( Owner *owner, uint64_t interval, uint64_t timeout )
 {
     ASSERT ( interval > 0 );
 
-    countDown = timeout / interval;
+    refreshKeepAlive();
 }
 
 GoBackN::GoBackN ( Owner *owner, const GoBackN& state ) : owner ( owner ), sendListPos ( sendList.end() )
