@@ -12,7 +12,7 @@ using namespace std;
 
 #define SEND_INTERVAL ( 50 )
 
-const IpAddrPort vpsAddress = "23.95.23.238:3939";
+const IpAddrPort vpsAddress = "192.210.227.23:3939";
 
 /* Tunnel protocol
 
