@@ -23,7 +23,7 @@ std::string toBase64 ( const std::string& bytes );
 std::string toBase64 ( const void *bytes, size_t len );
 
 // String trim
-std::string trim ( std::string str, const std::string& ws = " \t\r\n" );
+std::string trimmed ( std::string str, const std::string& ws = " \t\r\n" );
 
 // String split
 std::vector<std::string> split ( const std::string& str, const std::string& delim = " " );

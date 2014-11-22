@@ -3,6 +3,7 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#include <cmath>
 
 
 // Return a sorted list with increasing order
@@ -76,4 +77,12 @@ inline std::string generateRandomId()
     }
 
     return randId;
+}
+
+
+// This increases somewhat linearly then slows down as i approaches count.
+// Returns 1 - ( x - 1 )^2, where x = i / count
+inline double getNegativeQuadraticScale ( size_t i, size_t count )
+{
+    return 1.0 - std::pow ( ( double ( i ) / count ) - 1, 2.0 );
 }

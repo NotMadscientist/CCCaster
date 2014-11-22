@@ -190,7 +190,7 @@ public:
 
     public:
 
-        TextBox ( const std::string& text ) : Element ( false ), text ( trim ( text, "\n" ) ) {}
+        TextBox ( const std::string& text ) : Element ( false ), text ( trimmed ( text, "\n" ) ) {}
     };
 
     // Scrollable menu

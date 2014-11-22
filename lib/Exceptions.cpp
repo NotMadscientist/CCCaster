@@ -35,7 +35,7 @@ string WinException::getAsString ( int windowsErrorCode )
     char *errorString = 0;
     FormatMessage ( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
                     0, windowsErrorCode, 0, ( LPSTR ) &errorString, 0, 0 );
-    str = ( errorString ? trim ( errorString ) : "(null)" );
+    str = ( errorString ? trimmed ( errorString ) : "(null)" );
     LocalFree ( errorString );
     return str;
 }

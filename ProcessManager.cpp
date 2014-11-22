@@ -404,7 +404,7 @@ void *ProcessManager::findWindow ( const string& title )
             char buffer[4096];
             GetWindowText ( hwnd, buffer, sizeof ( buffer ) );
 
-            if ( tmpTitle == trim ( buffer ) )
+            if ( tmpTitle == trimmed ( buffer ) )
                 tmpHwnd = hwnd;
             return true;
         }

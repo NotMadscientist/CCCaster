@@ -79,11 +79,6 @@ uint16_t NetplayManager::getSkippableInput ( uint8_t player ) const
     return ( getDelayedInput ( player ) & COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM ) );
 }
 
-static inline int quadraticScale ( int target, int i, int count )
-{
-    return ( int ) target * ( -pow ( ( double ( i ) / count ) - 1, 2.0 ) + 1 );
-}
-
 uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
 {
     // Workaround for round start desync, since inputs have effects during a small period after round start.
@@ -155,13 +150,13 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
             {
                 * ( player == 1 ? CC_P1_X_POSITION_ADDR : CC_P2_X_POSITION_ADDR ) = -45056;
                 * ( player == 1 ? CC_P2_X_POSITION_ADDR : CC_P1_X_POSITION_ADDR ) = -61440;
-                *CC_CAMERA_X_ADDR = quadraticScale ( -26624, trainingResetState, 10 );
+                *CC_CAMERA_X_ADDR = -26624;
             }
             else if ( trainingResetType == 1 )
             {
                 * ( player == 1 ? CC_P1_X_POSITION_ADDR : CC_P2_X_POSITION_ADDR ) = 45056;
                 * ( player == 1 ? CC_P2_X_POSITION_ADDR : CC_P1_X_POSITION_ADDR ) = 61440;
-                *CC_CAMERA_X_ADDR = quadraticScale ( 26624, trainingResetState, 10 );
+                *CC_CAMERA_X_ADDR = 26624;
             }
             else if ( trainingResetType == 2 )
             {

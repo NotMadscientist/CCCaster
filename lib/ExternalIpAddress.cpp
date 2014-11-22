@@ -29,7 +29,7 @@ void ExternalIpAddress::receivedHttp ( HttpGet *httpGet, int code, const string&
         return;
     }
 
-    address = trim ( data );
+    address = trimmed ( data );
     this->httpGet.reset();
 
     if ( owner )

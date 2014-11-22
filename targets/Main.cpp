@@ -233,7 +233,7 @@ int main ( int argc, char *argv[] )
     // Initialize the main application directory, this also does a sanity check
     if ( !initAndCheckAppDir() )
     {
-        PRINT ( "%s", trim ( lastError ) );
+        PRINT ( "%s", trimmed ( lastError ) );
         PRINT ( "Press any key to exit." );
         getchar();
         return -1;

@@ -62,7 +62,7 @@ string toBase64 ( const void *bytes, size_t len )
     return str.substr ( 0, str.size() - 1 );
 }
 
-string trim ( string str, const string& ws )
+string trimmed ( string str, const string& ws )
 {
     // trim trailing spaces
     size_t endpos = str.find_last_not_of ( ws );
