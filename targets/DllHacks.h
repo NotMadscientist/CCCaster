@@ -2,11 +2,19 @@
 
 #include "AsmHacks.h"
 
+#include <string>
+
+
+namespace DllHacks
+{
 
 extern void *mainWindowHandle;
 
-void initializePreLoadHacks();
 
-void initializePostLoadHacks();
+void initializePreLoad();
 
-void deinitializeHacks();
+void initializePostLoad();
+
+void deinitialize();
+
+} // namespace DllHacks

@@ -3,17 +3,6 @@
 #include <windows.h>
 
 
-uint32_t currentMenuIndex = 0;
-
-uint32_t menuConfirmState = 0;
-
-uint32_t *charaSelectModePtrs[2] = { 0, 0 };
-
-uint32_t roundStartCounter = 0;
-
-uint32_t *autoReplaySaveStatePtr = 0;
-
-
 static int memwrite ( void *dst, const void *src, size_t len )
 {
     DWORD old, tmp;
@@ -29,9 +18,19 @@ static int memwrite ( void *dst, const void *src, size_t len )
     return 0;
 }
 
-
 namespace AsmHacks
 {
+
+uint32_t currentMenuIndex = 0;
+
+uint32_t menuConfirmState = 0;
+
+uint32_t *charaSelectModePtrs[2] = { 0, 0 };
+
+uint32_t roundStartCounter = 0;
+
+uint32_t *autoReplaySaveStatePtr = 0;
+
 
 int Asm::write() const
 {

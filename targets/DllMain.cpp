@@ -125,7 +125,7 @@ struct DllMain
             case NetplayState::PauseMenu:
             {
                 // Check for changes to controller state
-                ControllerManager::get().check ( mainWindowHandle );
+                ControllerManager::get().check ( DllHacks::mainWindowHandle );
 
                 if ( !playerControllers[0] )
                 {
@@ -152,7 +152,7 @@ struct DllMain
                 // Test random inputs
                 static bool randomize = false;
 
-                if ( mainWindowHandle == ( void * ) GetForegroundWindow() )
+                if ( DllHacks::mainWindowHandle == ( void * ) GetForegroundWindow() )
                 {
                     // Test rollback
                     if ( ( GetKeyState ( VK_F10 ) & 0x80 )
@@ -579,7 +579,7 @@ struct DllMain
 
         initialTimer.reset();
 
-        SetForegroundWindow ( ( HWND ) mainWindowHandle );
+        SetForegroundWindow ( ( HWND ) DllHacks::mainWindowHandle );
     }
 
     void disconnectEvent ( Socket *socket ) override
@@ -945,15 +945,15 @@ struct DllMain
         netplayStateChanged ( NetplayState::PreInitial );
 
         ChangeMonitor::get().addRef ( this, Variable ( Variable::GameMode ), *CC_GAME_MODE_ADDR );
-        ChangeMonitor::get().addRef ( this, Variable ( Variable::RoundStart ), roundStartCounter );
+        ChangeMonitor::get().addRef ( this, Variable ( Variable::RoundStart ), AsmHacks::roundStartCounter );
         ChangeMonitor::get().addRef ( this, Variable ( Variable::SkippableFlag ), *CC_SKIPPABLE_FLAG_ADDR );
 
 #ifndef RELEASE
-        ChangeMonitor::get().addRef ( this, Variable ( Variable::MenuConfirmState ), menuConfirmState );
+        ChangeMonitor::get().addRef ( this, Variable ( Variable::MenuConfirmState ), AsmHacks::menuConfirmState );
         // ChangeMonitor::get().addRef ( this, Variable ( Variable::GameStateCounter ), *CC_GAME_STATE_COUNTER_ADDR );
-        ChangeMonitor::get().addRef ( this, Variable ( Variable::CurrentMenuIndex ), currentMenuIndex );
+        ChangeMonitor::get().addRef ( this, Variable ( Variable::CurrentMenuIndex ), AsmHacks::currentMenuIndex );
         ChangeMonitor::get().addPtrToRef ( this, Variable ( Variable::AutoReplaySave ),
-                                           const_cast<const uint32_t *&> ( autoReplaySaveStatePtr ), 0u );
+                                           const_cast<const uint32_t *&> ( AsmHacks::autoReplaySaveStatePtr ), 0u );
 #endif
     }
 
@@ -1034,7 +1034,7 @@ static void deinitialize()
     // Joystick must be deinitialized on the same thread it was initialized, ie not here
     Logger::get().deinitialize();
 
-    deinitializeHacks();
+    DllHacks::deinitialize();
 
     appState = AppState::Deinitialized;
 }
@@ -1071,7 +1071,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
             {
                 // It is safe to initialize sockets here
                 SocketManager::get().initialize();
-                initializePreLoadHacks();
+                DllHacks::initializePreLoad();
                 initializeDllMain();
             }
             catch ( const Exception& exc )
@@ -1115,6 +1115,9 @@ static void stopDllMain ( const string& error )
     }
 }
 
+namespace AsmHacks
+{
+
 extern "C" void callback()
 {
     if ( appState == AppState::Deinitialized )
@@ -1124,7 +1127,7 @@ extern "C" void callback()
     {
         if ( appState == AppState::Uninitialized )
         {
-            initializePostLoadHacks();
+            DllHacks::initializePostLoad();
 
             // Joystick and timer must be initialized in the main thread
             TimerManager::get().initialize();
@@ -1167,6 +1170,8 @@ extern "C" void callback()
         exit ( 0 );
     }
 }
+
+} // namespace AsmHacks
 
 
 class PollThread : Thread

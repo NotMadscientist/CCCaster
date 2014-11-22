@@ -11,6 +11,19 @@ using namespace std;
 using namespace AsmHacks;
 
 
+// Note: this is on the SAME thread as the main thread where callback happens
+void PresentFrameBegin ( IDirect3DDevice9 *device )
+{
+}
+
+void PresentFrameEnd ( IDirect3DDevice9 *device )
+{
+}
+
+void InvalidateDeviceObjects()
+{
+}
+
 #define WRITE_ASM_HACK(ASM_HACK)                                                                                    \
     do {                                                                                                            \
         int error = ASM_HACK.write();                                                                               \
@@ -20,100 +33,15 @@ using namespace AsmHacks;
         }                                                                                                           \
     } while ( 0 )
 
-
-static ID3DXFont *font = 0;
-
-static LRESULT CALLBACK keyboardCallback ( int, WPARAM, LPARAM );
-
-static HHOOK keybdHook = 0;
-
-string overlayText;
-
-void *mainWindowHandle = 0;
-
 extern void startStall();
 
 extern void stopStall();
 
 
-// Note: this is on the SAME thread as the main thread where callback happens
-MH_WINAPI_HOOK ( LRESULT, CALLBACK, WindowProc, HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
+namespace DllHacks
 {
-    switch ( uMsg )
-    {
-        case WM_ENTERSIZEMOVE:  // This happens when the window is starting to be moved/resized
-        case WM_STYLECHANGING:  // This happens when the window is starting to change fullscreen state
-            startStall();
-            break;
 
-        case WM_EXITSIZEMOVE:   // This happens when the window is finished moving/resizing
-        case WM_STYLECHANGED:   // This happens when the window is finished changing fullscreen state
-            stopStall();
-            break;
-    }
-
-    return oWindowProc ( hwnd, uMsg, wParam, lParam );
-}
-
-// Note: this is on the SAME thread as the main thread where callback happens
-void PresentFrameBegin ( IDirect3DDevice9 *device )
-{
-    if ( !font )
-    {
-        D3DXCreateFont (
-            device,                         // D3D device pointer
-            24,                             // height
-            0,                              // width
-            FW_BOLD,                        // weight
-            1,                              // # of mipmap levels
-            FALSE,                          // italic
-            DEFAULT_CHARSET,                // charset
-            OUT_DEFAULT_PRECIS,             // output precision
-            ANTIALIASED_QUALITY,            // quality
-            DEFAULT_PITCH | FF_DONTCARE,    // pitch and family
-            "Courier New",                  // typeface name
-            &font );
-    }
-
-    D3DVIEWPORT9 viewport;
-    device->GetViewport ( &viewport );
-
-    // This should be the only viewport with the same width as the main viewport
-    if ( viewport.Width == * CC_SCREEN_WIDTH_ADDR )
-    {
-        const long centerX = ( long ) viewport.Width / 2;
-        // const long centerY = ( long ) viewport.Height / 2;
-
-        RECT rect;
-        rect.left    = centerX - 200;
-        rect.right   = centerX + 200;
-        rect.top     = 0;
-        rect.bottom  = 20;
-
-        font->DrawText (
-            0,                              // Text as a ID3DXSprite object
-            &overlayText[0],                // Text as a C-string
-            overlayText.size(),             // Number of letters, -1 for null-terminated
-            &rect,                          // Text bounding RECT
-            DT_CENTER,                      // Text formatting
-            D3DCOLOR_XRGB ( 255, 0, 0 ) );  // Text colour
-    }
-}
-
-void PresentFrameEnd ( IDirect3DDevice9 *device )
-{
-}
-
-void InvalidateDeviceObjects()
-{
-    if ( font )
-    {
-        font->OnLostDevice();
-        font = 0;
-    }
-}
-
-void initializePreLoadHacks()
+void initializePreLoad()
 {
     for ( const Asm& hack : hookMainLoop )
         WRITE_ASM_HACK ( hack );
@@ -136,9 +64,38 @@ void initializePreLoadHacks()
     // WRITE_ASM_HACK ( disableFpsLimit );
 }
 
+
+// Note: this is on the SAME thread as the main thread where callback happens
+MH_WINAPI_HOOK ( LRESULT, CALLBACK, WindowProc, HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
+{
+    switch ( uMsg )
+    {
+        case WM_ENTERSIZEMOVE:  // This happens when the window is starting to be moved/resized
+        case WM_STYLECHANGING:  // This happens when the window is starting to change fullscreen state
+            startStall();
+            break;
+
+        case WM_EXITSIZEMOVE:   // This happens when the window is finished moving/resizing
+        case WM_STYLECHANGED:   // This happens when the window is finished changing fullscreen state
+            stopStall();
+            break;
+    }
+
+    return oWindowProc ( hwnd, uMsg, wParam, lParam );
+}
+
+
 static pWindowProc WindowProc = 0;
 
-void initializePostLoadHacks()
+static HHOOK keybdHook = 0;
+
+static LRESULT CALLBACK keyboardCallback ( int, WPARAM, LPARAM );
+
+
+void *mainWindowHandle = 0;
+
+
+void initializePostLoad()
 {
     *CC_DAMAGE_LEVEL_ADDR = 2;
     *CC_TIMER_SPEED_ADDR = 2;
@@ -193,7 +150,7 @@ void initializePostLoadHacks()
         LOG ( "HookDirectX failed: %s", err );
 }
 
-void deinitializeHacks()
+void deinitialize()
 {
     UnhookDirectX();
 
@@ -220,3 +177,5 @@ LRESULT CALLBACK keyboardCallback ( int code, WPARAM wParam, LPARAM lParam )
 
     return 1;
 }
+
+} // namespace DllHacks

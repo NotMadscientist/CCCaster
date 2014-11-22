@@ -18,6 +18,9 @@
 #define INLINE_NOP_THREE_TIMES { 0x90, 0x90, 0x90 }
 
 
+namespace AsmHacks
+{
+
 // DLL callback function
 extern "C" void callback();
 
@@ -37,9 +40,6 @@ extern uint32_t roundStartCounter;
 // Auto replay save state, is set to 1 (loading), then 100 (saving), finally 255 (saved).
 extern uint32_t *autoReplaySaveStatePtr;
 
-
-namespace AsmHacks
-{
 
 // Struct for storing assembly code
 struct Asm
