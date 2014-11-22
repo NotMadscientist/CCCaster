@@ -13,6 +13,9 @@ using namespace std;
 #define MAX_EVENT_QUEUE 64
 
 
+uint32_t ( *ControllerManager::mapInputState ) ( uint32_t state, bool isKeyboard );
+
+
 void ControllerManager::check ( void *keyboardWindowHandle )
 {
     if ( !initialized )
@@ -31,6 +34,9 @@ void ControllerManager::check ( void *keyboardWindowHandle )
             if ( GetKeyState ( keyboard.keybd.codes[i] ) & 0x80 )
                 keyboard.state |= ( 1u << i );
         }
+
+        if ( mapInputState )
+            keyboard.state = mapInputState ( keyboard.state, true );
     }
 
     checkJoystick();
@@ -174,6 +180,10 @@ void ControllerManager::checkJoystick()
                 break;
         }
     }
+
+    if ( mapInputState )
+        for ( auto& kv : joysticks )
+            kv.second->state = mapInputState ( kv.second->state, false );
 }
 
 void ControllerManager::mappingsChanged ( Controller *controller )
@@ -269,6 +279,8 @@ void ControllerManager::initialize ( Owner *owner )
         THROW_SDL_EXCEPTION ( SDL_GetError(), "SDL_INIT_JOYSTICK failed", ERROR_CONTROLLER_INIT );
 
     initialized = true;
+
+    mapInputState = 0;
 }
 
 void ControllerManager::deinitialize()

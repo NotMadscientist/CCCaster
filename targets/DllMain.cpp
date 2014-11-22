@@ -12,6 +12,7 @@
 
 #include <vector>
 #include <memory>
+#include <algorithm>
 
 using namespace std;
 
@@ -84,8 +85,11 @@ struct DllMain
     // Controller mappings
     ControllerMappings mappings;
 
+    // All controllers
+    vector<Controller *> allControllers;
+
     // Player 1 (local) and 2 (remote) controllers
-    Controller *controllers[2] = { 0, 0 };
+    Controller *playerControllers[2] = { 0, 0 };
 
     // Local and remote inputs
     uint16_t localInput = 0, remoteInput = 0;
@@ -123,13 +127,26 @@ struct DllMain
                 // Check for changes to controller state
                 ControllerManager::get().check ( mainWindowHandle );
 
+                if ( !playerControllers[0] )
+                {
+                    for ( Controller *controller : allControllers )
+                    {
+                        if ( controller != playerControllers[1] && controller->getState() )
+                        {
+                            playerControllers[0] = controller;
+                            break;
+                        }
+                    }
+                }
+
+                if ( playerControllers[0] )
+                    localInput = playerControllers[0]->getState();
+
                 if ( clientMode.isSpectate() )
                 {
                     // TODO spectator controls
                     break;
                 }
-
-                localInput = convertInputState ( controllers[0] );
 
 #ifndef RELEASE
                 // Test random inputs
@@ -197,7 +214,20 @@ struct DllMain
                 }
                 else if ( clientMode.isLocal() )
                 {
-                    remoteInput = convertInputState ( controllers[1] );
+                    if ( !playerControllers[1] )
+                    {
+                        for ( Controller *controller : allControllers )
+                        {
+                            if ( controller != playerControllers[0] && controller->getState() )
+                            {
+                                playerControllers[1] = controller;
+                                break;
+                            }
+                        }
+                    }
+
+                    if ( playerControllers[1] )
+                        remoteInput = playerControllers[1]->getState();
 
                     netMan.setInput ( remotePlayer, remoteInput );
                 }
@@ -731,18 +761,10 @@ struct DllMain
 
             case MsgType::ControllerMappings:
                 mappings = msg->getAs<ControllerMappings>();
+                ControllerManager::mapInputState = mapInputState;
                 ControllerManager::get().setMappings ( mappings );
                 ControllerManager::get().check();
-                // TODO proper controller selection
-                if ( ControllerManager::get().getJoysticks().empty() )
-                {
-                    controllers[0] = ControllerManager::get().getKeyboard();
-                }
-                else
-                {
-                    controllers[0] = ControllerManager::get().getJoysticks() [0];
-                    controllers[1] = ControllerManager::get().getKeyboard();
-                }
+                allControllers = ControllerManager::get().getControllers();
                 break;
 
             case MsgType::ClientMode:
@@ -859,10 +881,18 @@ struct DllMain
     // ControllerManager callbacks
     void attachedJoystick ( Controller *controller ) override
     {
+        allControllers.push_back ( controller );
     }
 
     void detachedJoystick ( Controller *controller ) override
     {
+        if ( playerControllers[0] == controller )
+            playerControllers[0] = 0;
+
+        if ( playerControllers[1] == controller )
+            playerControllers[1] = 0;
+
+        remove ( allControllers.begin(), allControllers.end(), controller );
     }
 
     // Controller callback
@@ -962,13 +992,10 @@ private:
         return state;
     }
 
-    static uint16_t convertInputState ( const Controller *controller )
+    static uint32_t mapInputState ( uint32_t state, bool isKeyboard )
     {
-        if ( !controller )
-            return 0;
-
-        const uint16_t dirs = filterSimulDirState ( controller->getState() & MASK_DIRS, controller->isKeyboard() );
-        const uint16_t buttons = ( controller->getState() & MASK_BUTTONS ) >> 8;
+        const uint16_t dirs = filterSimulDirState ( state & MASK_DIRS, isKeyboard );
+        const uint16_t buttons = ( state & MASK_BUTTONS ) >> 8;
 
         uint8_t direction = 5;
 
