@@ -91,8 +91,8 @@ struct DllMain
     // Player controllers
     Controller *playerControllers[2] = { 0, 0 };
 
-    // Local and remote inputs
-    uint16_t localInput = 0, remoteInput = 0;
+    // Local player inputs
+    uint16_t localInputs[2] = { 0, 0 };
 
     // If we have sent our local retry menu index
     bool localRetryMenuIndexSent = false;
@@ -102,6 +102,29 @@ struct DllMain
     list<MsgPtr> localSync, remoteSync;
 #endif
 
+    void updateLocalInputs ( uint8_t player )
+    {
+        ASSERT ( player == 1 || player == 2 );
+
+        if ( !playerControllers[player - 1] )
+        {
+            for ( Controller *controller : allControllers )
+            {
+                if ( controller != playerControllers[2 - player] && controller->getState() )
+                {
+                    playerControllers[player - 1] = controller;
+                    break;
+                }
+            }
+
+            if ( !playerControllers[player - 1] )
+                return;
+        }
+
+        const uint16_t newInput = convertInputState ( playerControllers[player - 1] );
+
+        localInputs[player - 1] = newInput;
+    }
 
     void frameStepNormal()
     {
@@ -127,24 +150,12 @@ struct DllMain
                 // Check for changes to controller state
                 ControllerManager::get().check ( DllHacks::mainWindowHandle );
 
-                if ( !playerControllers[0] )
-                {
-                    for ( Controller *controller : allControllers )
-                    {
-                        if ( controller != playerControllers[1] && controller->getState() )
-                        {
-                            playerControllers[0] = controller;
-                            break;
-                        }
-                    }
-                }
+                // Update player 1 inputs
+                updateLocalInputs ( 1 );
 
-                if ( playerControllers[0] )
-                    localInput = playerControllers[0]->getState();
-
+                // TODO spectator controls
                 if ( clientMode.isSpectate() )
                 {
-                    // TODO spectator controls
                     break;
                 }
 
@@ -187,12 +198,13 @@ struct DllMain
                         if ( netMan.getState().value == NetplayState::CharaSelect )
                             buttons &= ~ ( CC_BUTTON_B | CC_BUTTON_CANCEL );
 
-                        localInput = COMBINE_INPUT ( direction, buttons );
+                        localInputs[0] = COMBINE_INPUT ( direction, buttons );
                     }
                 }
 #endif
 
-                netMan.setInput ( localPlayer, localInput );
+                // Assign local player inputs
+                netMan.setInput ( localPlayer, localInputs[0] );
 
                 if ( clientMode.isNetplay() )
                 {
@@ -214,22 +226,11 @@ struct DllMain
                 }
                 else if ( clientMode.isLocal() )
                 {
-                    if ( !playerControllers[1] )
-                    {
-                        for ( Controller *controller : allControllers )
-                        {
-                            if ( controller != playerControllers[0] && controller->getState() )
-                            {
-                                playerControllers[1] = controller;
-                                break;
-                            }
-                        }
-                    }
+                    // Update player 2 inputs
+                    updateLocalInputs ( 2 );
 
-                    if ( playerControllers[1] )
-                        remoteInput = playerControllers[1]->getState();
-
-                    netMan.setInput ( remotePlayer, remoteInput );
+                    // Assign remote player inputs
+                    netMan.setInput ( remotePlayer, localInputs[1] );
                 }
 
                 if ( shouldSyncRngState && ( clientMode.isHost() || clientMode.isBroadcast() ) )
@@ -760,7 +761,6 @@ struct DllMain
 
             case MsgType::ControllerMappings:
                 mappings = msg->getAs<ControllerMappings>();
-                ControllerManager::mapInputState = mapInputState;
                 ControllerManager::get().setMappings ( mappings );
                 ControllerManager::get().check();
                 allControllers = ControllerManager::get().getControllers();
@@ -991,10 +991,10 @@ private:
         return state;
     }
 
-    static uint32_t mapInputState ( uint32_t state, bool isKeyboard )
+    static uint16_t convertInputState ( const Controller *controller )
     {
-        const uint16_t dirs = filterSimulDirState ( state & MASK_DIRS, isKeyboard );
-        const uint16_t buttons = ( state & MASK_BUTTONS ) >> 8;
+        const uint16_t dirs = filterSimulDirState ( controller->getState() & MASK_DIRS, controller->isKeyboard() );
+        const uint16_t buttons = ( controller->getState() & MASK_BUTTONS ) >> 8;
 
         uint8_t direction = 5;
 
@@ -1007,6 +1007,9 @@ private:
             --direction;
         else if ( dirs & BIT_RIGHT )
             ++direction;
+
+        if ( direction == 5 )
+            direction = 0;
 
         return COMBINE_INPUT ( direction, buttons );
     }

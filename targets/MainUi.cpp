@@ -315,7 +315,10 @@ void MainUi::controls()
 
         ui->clearTop();
 
-        int position = ( controller.isKeyboard() ? 0 : 4 );
+        // TODO fix default joystick mappings
+        // int position = ( controller.isKeyboard() ? 0 : 4 );
+
+        int position = 0;
 
         for ( ;; )
         {

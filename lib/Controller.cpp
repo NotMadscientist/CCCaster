@@ -353,26 +353,27 @@ Controller::Controller ( SDL_Joystick *joystick ) : name ( SDL_JoystickName ( jo
     for ( auto& v : deadzones )
         v = DEFAULT_DEADZONE;
 
-    // Default axis mappings
-    stick.mappings[EVENT_JOY_AXIS][0][0] = MASK_X_AXIS;
-    stick.mappings[EVENT_JOY_AXIS][0][AXIS_POSITIVE] = BIT_RIGHT;
-    stick.mappings[EVENT_JOY_AXIS][0][AXIS_NEGATIVE] = BIT_LEFT;
-    stick.mappings[EVENT_JOY_AXIS][1][0] = MASK_Y_AXIS;
-    stick.mappings[EVENT_JOY_AXIS][1][AXIS_POSITIVE] = BIT_DOWN; // SDL joystick Y-axis is inverted
-    stick.mappings[EVENT_JOY_AXIS][1][AXIS_NEGATIVE] = BIT_UP;
-    stick.mappings[EVENT_JOY_AXIS][2][0] = MASK_X_AXIS;
-    stick.mappings[EVENT_JOY_AXIS][2][AXIS_POSITIVE] = BIT_RIGHT;
-    stick.mappings[EVENT_JOY_AXIS][2][AXIS_NEGATIVE] = BIT_LEFT;
-    stick.mappings[EVENT_JOY_AXIS][3][0] = MASK_Y_AXIS;
-    stick.mappings[EVENT_JOY_AXIS][3][AXIS_POSITIVE] = BIT_DOWN; // SDL joystick Y-axis is inverted
-    stick.mappings[EVENT_JOY_AXIS][3][AXIS_NEGATIVE] = BIT_UP;
+    // TODO default joystick mappings
+    // // Default axis mappings
+    // stick.mappings[EVENT_JOY_AXIS][0][0] = MASK_X_AXIS;
+    // stick.mappings[EVENT_JOY_AXIS][0][AXIS_POSITIVE] = BIT_RIGHT;
+    // stick.mappings[EVENT_JOY_AXIS][0][AXIS_NEGATIVE] = BIT_LEFT;
+    // stick.mappings[EVENT_JOY_AXIS][1][0] = MASK_Y_AXIS;
+    // stick.mappings[EVENT_JOY_AXIS][1][AXIS_POSITIVE] = BIT_DOWN; // SDL joystick Y-axis is inverted
+    // stick.mappings[EVENT_JOY_AXIS][1][AXIS_NEGATIVE] = BIT_UP;
+    // stick.mappings[EVENT_JOY_AXIS][2][0] = MASK_X_AXIS;
+    // stick.mappings[EVENT_JOY_AXIS][2][AXIS_POSITIVE] = BIT_RIGHT;
+    // stick.mappings[EVENT_JOY_AXIS][2][AXIS_NEGATIVE] = BIT_LEFT;
+    // stick.mappings[EVENT_JOY_AXIS][3][0] = MASK_Y_AXIS;
+    // stick.mappings[EVENT_JOY_AXIS][3][AXIS_POSITIVE] = BIT_DOWN; // SDL joystick Y-axis is inverted
+    // stick.mappings[EVENT_JOY_AXIS][3][AXIS_NEGATIVE] = BIT_UP;
 
-    // Default hat mappings
-    stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_CENTERED] = ( MASK_X_AXIS | MASK_Y_AXIS );
-    stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_UP]       = BIT_UP;
-    stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_RIGHT]    = BIT_RIGHT;
-    stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_DOWN]     = BIT_DOWN;
-    stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_LEFT]     = BIT_LEFT;
+    // // Default hat mappings
+    // stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_CENTERED] = ( MASK_X_AXIS | MASK_Y_AXIS );
+    // stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_UP]       = BIT_UP;
+    // stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_RIGHT]    = BIT_RIGHT;
+    // stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_DOWN]     = BIT_DOWN;
+    // stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_LEFT]     = BIT_LEFT;
 }
 
 Controller::~Controller()

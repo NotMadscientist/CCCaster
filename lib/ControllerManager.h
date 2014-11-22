@@ -60,9 +60,6 @@ private:
 
 public:
 
-    // Function that maps each controllers input state to a different representation
-    static uint32_t ( *mapInputState ) ( uint32_t state, bool isKeyboard );
-
     // Check for controller events, matching keyboardWindowHandle if non-zero
     void check ( void *keyboardWindowHandle = 0 );
 
