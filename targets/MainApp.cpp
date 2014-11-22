@@ -213,6 +213,9 @@ struct MainApp
             ctrlSocket = SmartSocket::connectTCP ( this, address, options[Options::Tunnel] );
 
             LOG ( "ctrlSocket=%08x", ctrlSocket.get() );
+
+            stopTimer.reset ( new Timer ( this ) );
+            stopTimer->start ( DEFAULT_PENDING_TIMEOUT );
         }
 
         EventManager::get().start();
@@ -790,6 +793,8 @@ struct MainApp
         if ( !msg.get() )
             return;
 
+        stopTimer.reset();
+
         if ( msg->getMsgType() == MsgType::VersionConfig
                 && ( ( clientMode.isHost() && !ctrlSocket ) || clientMode.isClient() ) )
         {
@@ -934,6 +939,7 @@ struct MainApp
     {
         if ( timer == stopTimer.get() )
         {
+            lastError = "Timed out!";
             stop();
         }
         else if ( timer == startTimer.get() )
