@@ -86,10 +86,10 @@ struct DllMain
     ControllerMappings mappings;
 
     // All controllers
-    vector<Controller *> allControllers;
+    vector<const Controller *> allControllers;
 
     // Player controllers
-    Controller *playerControllers[2] = { 0, 0 };
+    const Controller *playerControllers[2] = { 0, 0 };
 
     // Local player inputs
     uint16_t localInputs[2] = { 0, 0 };
@@ -763,7 +763,7 @@ struct DllMain
                 mappings = msg->getAs<ControllerMappings>();
                 ControllerManager::get().setMappings ( mappings );
                 ControllerManager::get().check();
-                allControllers = ControllerManager::get().getControllers();
+                allControllers = const_cast<const ControllerManager&> ( ControllerManager::get() ).getControllers();
                 break;
 
             case MsgType::ClientMode:
@@ -969,7 +969,7 @@ struct DllMain
 
 private:
 
-    // Filter simultaneous up/down and left/right directions.
+    // Filter simultaneous up / down and left / right directions.
     // Prioritize down and left for keyboard only.
     static uint16_t filterSimulDirState ( uint16_t state, bool isKeyboard )
     {

@@ -115,7 +115,7 @@ private:
     SDL_Joystick *joystick = 0;
 
     // Controller state
-    uint32_t state = 0;
+    uint32_t prevState = 0, state = 0;
 
     // Keyboard mappings
     KeyboardMappings keybd;
@@ -187,6 +187,9 @@ public:
 
     // Clear this controller's mapping(s)
     void clearMapping ( uint32_t keys = 0xFFFFFFFF );
+
+    // Get previous controller state
+    uint32_t getPrevState() const { return prevState; }
 
     // Get the controller state
     uint32_t getState() const { return state; }

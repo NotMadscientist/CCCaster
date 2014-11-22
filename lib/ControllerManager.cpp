@@ -21,6 +21,7 @@ void ControllerManager::check ( void *keyboardWindowHandle )
     if ( !keyboardWindowHandle || keyboardWindowHandle == ( void * ) GetForegroundWindow() )
     {
         // Update keyboard controller state
+        keyboard.prevState = keyboard.state;
         keyboard.state = 0;
 
         for ( uint8_t i = 0; i < 32; ++i )
@@ -32,6 +33,9 @@ void ControllerManager::check ( void *keyboardWindowHandle )
                 keyboard.state |= ( 1u << i );
         }
     }
+
+    for ( auto& kv : joysticks )
+        kv.second->prevState = kv.second->state;
 
     checkJoystick();
 
@@ -136,10 +140,6 @@ void ControllerManager::checkJoystick()
                     uniqueNames.insert ( controller->name );
                 else
                     shouldReset = true;
-
-                // LOG ( "joysticks :%s", joysticks.empty() ? " (empty)" : "" );
-                // for ( const auto& kv : joysticks )
-                //     LOG ( "%d -> %08x", kv.first, kv.second.get() );
                 break;
             }
 
@@ -162,10 +162,6 @@ void ControllerManager::checkJoystick()
 
                 joysticksByName.erase ( controller->getName() );
                 joysticks.erase ( id );
-
-                // LOG ( "joysticks :%s", joysticks.empty() ? " (empty)" : "" );
-                // for ( const auto& kv : joysticks )
-                //     LOG ( "%d -> %08x", kv.first, kv.second.get() );
                 break;
             }
 

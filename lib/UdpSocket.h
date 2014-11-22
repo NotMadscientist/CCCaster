@@ -123,11 +123,11 @@ public:
     bool send ( SerializableSequence *message, const IpAddrPort& address = NullAddress ) override;
     bool send ( const MsgPtr& message, const IpAddrPort& address = NullAddress ) override;
 
-    // Get/set the interval to send packets, should be non-zero
+    // Get / set the interval to send packets, should be non-zero
     uint64_t getSendInterval() const { return gbn.getSendInterval(); }
     void setSendInterval ( uint64_t interval ) { if ( !isConnectionLess() ) gbn.setSendInterval ( interval ); }
 
-    // Get/set the timeout for keep alive packets, 0 to disable
+    // Get / set the timeout for keep alive packets, 0 to disable
     uint64_t getKeepAlive() const { return keepAlive; }
     void setKeepAlive ( uint64_t timeout ) { if ( !isConnectionLess() ) gbn.setKeepAlive ( keepAlive = timeout ); }
 

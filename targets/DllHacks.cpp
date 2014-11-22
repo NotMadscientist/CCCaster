@@ -70,12 +70,12 @@ MH_WINAPI_HOOK ( LRESULT, CALLBACK, WindowProc, HWND hwnd, UINT uMsg, WPARAM wPa
 {
     switch ( uMsg )
     {
-        case WM_ENTERSIZEMOVE:  // This happens when the window is starting to be moved/resized
+        case WM_ENTERSIZEMOVE:  // This happens when the window is starting to be moved / resized
         case WM_STYLECHANGING:  // This happens when the window is starting to change fullscreen state
             startStall();
             break;
 
-        case WM_EXITSIZEMOVE:   // This happens when the window is finished moving/resizing
+        case WM_EXITSIZEMOVE:   // This happens when the window is finished moving / resizing
         case WM_STYLECHANGED:   // This happens when the window is finished changing fullscreen state
             stopStall();
             break;

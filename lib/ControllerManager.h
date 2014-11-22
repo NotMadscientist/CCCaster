@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Controller.h"
-#include "Logger.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -88,8 +87,6 @@ public:
 
         for ( auto& kv : mappings.mappings )
         {
-            LOG ( "name=%s", kv.first );
-
             if ( kv.second->getMsgType() == MsgType::KeyboardMappings )
                 keyboard.setMappings ( kv.second->getAs<KeyboardMappings>() );
             else if ( joysticksByName.find ( kv.first ) != joysticksByName.end() )

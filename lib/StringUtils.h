@@ -28,7 +28,7 @@ std::string trimmed ( std::string str, const std::string& ws = " \t\r\n" );
 // String split
 std::vector<std::string> split ( const std::string& str, const std::string& delim = " " );
 
-// String to lower/upper case
+// String to lower / upper case
 inline std::string lowerCase ( std::string str ) { for ( char& c : str ) c = std::tolower ( c ); return str; }
 inline std::string upperCase ( std::string str ) { for ( char& c : str ) c = std::toupper ( c ); return str; }
 
