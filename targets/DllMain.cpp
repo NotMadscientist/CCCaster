@@ -88,7 +88,7 @@ struct DllMain
     // All controllers
     vector<Controller *> allControllers;
 
-    // Player 1 (local) and 2 (remote) controllers
+    // Player controllers
     Controller *playerControllers[2] = { 0, 0 };
 
     // Local and remote inputs
@@ -373,7 +373,6 @@ struct DllMain
 
         // Log inputs every frame
         LOG_SYNC ( "Inputs: %04x %04x", netMan.getInput ( 1 ), netMan.getInput ( 2 ) );
-        overlayText = format ( "%s", netMan.getIndexedFrame() );
     }
 
     void frameStepRerun()

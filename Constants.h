@@ -21,7 +21,7 @@
 #define CC_KEYBOARD_CONFIG_OFFSET   ( 0x14D2C0 )
 
 #define CC_LOOP_START_ADDR          ( ( char * )     0x40D330 ) // Start of the main event loop
-#define CC_SCREEN_WIDTH_ADDR        ( ( uint32_t * ) 0x54D048 ) // The width of the main viewport
+#define CC_SCREEN_WIDTH_ADDR        ( ( uint32_t * ) 0x54D048 ) // The actual width of the main viewport
 #define CC_DAMAGE_LEVEL_ADDR        ( ( uint32_t * ) 0x553FCC ) // Damage level: default 2
 #define CC_WIN_COUNT_VS_ADDR        ( ( uint32_t * ) 0x553FDC ) // Win count: default 2
 #define CC_TIMER_SPEED_ADDR         ( ( uint32_t * ) 0x553FD0 ) // Timer speed: default 2

@@ -2,12 +2,11 @@
 
 #include "AsmHacks.h"
 
+
+extern void *mainWindowHandle;
+
 void initializePreLoadHacks();
 
 void initializePostLoadHacks();
 
 void deinitializeHacks();
-
-extern std::string overlayText;
-
-extern void *mainWindowHandle;
