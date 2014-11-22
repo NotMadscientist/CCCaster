@@ -2,6 +2,7 @@
 #include "D3DHook.h"
 #include "Exceptions.h"
 #include "ProcessManager.h"
+#include "Algorithms.h"
 
 #include <windows.h>
 #include <d3dx9.h>
@@ -11,9 +12,171 @@ using namespace std;
 using namespace AsmHacks;
 
 
+#define FONT_HEIGHT                 ( 18 )
+
+#define TEXT_BORDER                 ( 10 )
+
+#define OVERLAY_ENABLE_COUNT        ( 8 )
+
+
+namespace DllHacks
+{
+
+static int overlayState = 0;
+
+string overlayText[3];
+
+
+void enableOverlay()
+{
+    if ( overlayState == 0 )
+        overlayState = 1;
+}
+
+void disableOverlay()
+{
+    overlayState = 0;
+}
+
+void toggleOverlay()
+{
+    overlayState = ( overlayState ? 0 : 1 );
+}
+
+bool isOverlayEnabled()
+{
+    return overlayState;
+}
+
+} // namespace DllHacks
+
+
+using namespace DllHacks;
+
+
+static bool initalizedDirectx = false;
+
+static ID3DXFont *font = 0;
+
+static IDirect3DVertexBuffer9 *background = 0;
+
+
+struct Vertex
+{
+    FLOAT x, y, z;
+    DWORD color;
+
+    static const DWORD format = ( D3DFVF_XYZ | D3DFVF_DIFFUSE );
+};
+
+
+static int DrawText ( const string& text, RECT& rect, int flags, int r, int g, int b )
+{
+    if ( !font )
+        return 0;
+
+    return font->DrawText ( 0,                                  // text as a ID3DXSprite object
+                            &text[0],                           // text buffer
+                            text.size(),                        // number of characters, -1 if null-terminated
+                            &rect,                              // text bounding RECT
+                            flags | DT_WORDBREAK | DT_NOCLIP,   // text formatting
+                            D3DCOLOR_XRGB ( r, g, b ) );        // text colour
+}
+
 // Note: this is on the SAME thread as the main thread where callback happens
 void PresentFrameBegin ( IDirect3DDevice9 *device )
 {
+    if ( !initalizedDirectx )
+    {
+        initalizedDirectx = true;
+
+        D3DXCreateFont ( device,                                // device pointer
+                         FONT_HEIGHT,                           // height
+                         0,                                     // width
+                         FW_REGULAR,                            // weight
+                         1,                                     // # of mipmap levels
+                         false,                                 // italic
+                         DEFAULT_CHARSET,                       // charset
+                         OUT_DEFAULT_PRECIS,                    // output precision
+                         ANTIALIASED_QUALITY,                   // quality
+                         DEFAULT_PITCH | FF_DONTCARE,           // pitch and family
+                         "Lucida Console",                      // typeface name
+                         &font );                               // pointer to ID3DXFont
+
+        static const Vertex verts[4] =
+        {
+            { -1.0, -1.0, 0.0f, D3DCOLOR_ARGB ( 210, 0, 0, 0 ) },
+            {  1.0, -1.0, 0.0f, D3DCOLOR_ARGB ( 210, 0, 0, 0 ) },
+            { -1.0,  1.0, 0.0f, D3DCOLOR_ARGB ( 210, 0, 0, 0 ) },
+            {  1.0,  1.0, 0.0f, D3DCOLOR_ARGB ( 210, 0, 0, 0 ) }
+        };
+
+        device->CreateVertexBuffer ( 4 * sizeof ( Vertex ),     // buffer size in bytes
+                                     0,                         // memory usage flags
+                                     Vertex::format,            // vertex format
+                                     D3DPOOL_MANAGED,           // memory storage flags
+                                     &background,               // pointer to IDirect3DVertexBuffer9
+                                     0 );                       // unused
+
+        void *ptr = 0;
+
+        background->Lock ( 0, 0, ( void ** ) &ptr, 0 );
+        memcpy ( ptr, verts, 4 * sizeof ( verts[0] ) );
+        background->Unlock();
+    }
+
+    D3DVIEWPORT9 viewport;
+    device->GetViewport ( &viewport );
+
+    // Only draw in the main viewport; there should only be one with this width
+    if ( overlayState == 0 || viewport.Width != * CC_SCREEN_WIDTH_ADDR )
+        return;
+
+    int textHeight = 0;
+
+    for ( string& text : overlayText )
+    {
+        text = trimmed ( text );
+        textHeight = max ( textHeight, FONT_HEIGHT * ( 1 + count ( text.begin(), text.end(), '\n' ) ) );
+    }
+
+    const float scaleY = ( float ( textHeight + 2 * TEXT_BORDER ) / viewport.Height )
+                         * getNegativeQuadraticScale ( overlayState, OVERLAY_ENABLE_COUNT );
+
+    D3DXMATRIX translate, scale;
+    D3DXMatrixScaling ( &scale, 1.0f, scaleY, 1.0f );
+    D3DXMatrixTranslation ( &translate, 0.0f, 1.0f - scaleY, 0.0f );
+    device->SetTransform ( D3DTS_VIEW, & ( scale = scale * translate ) );
+
+    device->SetStreamSource ( 0, background, 0, sizeof ( Vertex ) );
+    device->SetFVF ( Vertex::format );
+    device->DrawPrimitive ( D3DPT_TRIANGLESTRIP, 0, 2 );
+
+    if ( overlayState < OVERLAY_ENABLE_COUNT )
+    {
+        ++overlayState;
+        return;
+    }
+
+    if ( ! ( overlayText[0].empty() && overlayText[1].empty() && overlayText[2].empty() ) )
+    {
+        const int centerX = viewport.Width / 2;
+
+        RECT rect;
+        rect.left   = centerX - int ( ( viewport.Width / 2 ) * 1.0 ) + TEXT_BORDER;
+        rect.right  = centerX + int ( ( viewport.Width / 2 ) * 1.0 ) - TEXT_BORDER;
+        rect.top    = TEXT_BORDER;
+        rect.bottom = rect.top + textHeight + TEXT_BORDER;
+
+        if ( !overlayText[0].empty() )
+            DrawText ( overlayText[0], rect, DT_LEFT, 255, 0, 0 );
+
+        if ( !overlayText[1].empty() )
+            DrawText ( overlayText[1], rect, DT_CENTER, 255, 0, 0 );
+
+        if ( !overlayText[2].empty() )
+            DrawText ( overlayText[2], rect, DT_RIGHT, 255, 0, 0 );
+    }
 }
 
 void PresentFrameEnd ( IDirect3DDevice9 *device )
@@ -22,6 +185,16 @@ void PresentFrameEnd ( IDirect3DDevice9 *device )
 
 void InvalidateDeviceObjects()
 {
+    if ( initalizedDirectx )
+    {
+        initalizedDirectx = false;
+
+        font->OnLostDevice();
+        font = 0;
+
+        background->Release();
+        background = 0;
+    }
 }
 
 #define WRITE_ASM_HACK(ASM_HACK)                                                                                    \

@@ -102,30 +102,6 @@ struct DllMain
     list<MsgPtr> localSync, remoteSync;
 #endif
 
-    void updateLocalInputs ( uint8_t player )
-    {
-        ASSERT ( player == 1 || player == 2 );
-
-        if ( !playerControllers[player - 1] )
-        {
-            for ( Controller *controller : allControllers )
-            {
-                if ( controller != playerControllers[2 - player] && controller->getState() )
-                {
-                    playerControllers[player - 1] = controller;
-                    break;
-                }
-            }
-
-            if ( !playerControllers[player - 1] )
-                return;
-        }
-
-        const uint16_t newInput = convertInputState ( playerControllers[player - 1] );
-
-        localInputs[player - 1] = newInput;
-    }
-
     void frameStepNormal()
     {
         switch ( netMan.getState().value )
@@ -150,8 +126,92 @@ struct DllMain
                 // Check for changes to controller state
                 ControllerManager::get().check ( DllHacks::mainWindowHandle );
 
+                // Overlay UI controls
+                if ( DllHacks::isOverlayEnabled() )
+                {
+                    if ( clientMode.isLocal() )
+                    {
+                        // Check all controllers
+                        for ( const Controller *controller : allControllers )
+                        {
+                            if ( isButtonPressed ( controller, CC_BUTTON_START ) )
+                            {
+                                DllHacks::toggleOverlay();
+                                break;
+                            }
+
+                            // Move controllers with left / right, reset with down
+                            if ( controller == playerControllers[0] )
+                            {
+                                if ( isDirectionPressed ( controller, 6 ) || isDirectionPressed ( controller, 2 ) )
+                                    playerControllers[0] = 0;
+                            }
+                            else if ( controller == playerControllers[1] )
+                            {
+                                if ( isDirectionPressed ( controller, 4 ) || isDirectionPressed ( controller, 2 ) )
+                                    playerControllers[1] = 0;
+                            }
+                            else if ( !playerControllers[0] && isDirectionPressed ( controller, 4 ) )
+                            {
+                                playerControllers[0] = controller;
+                            }
+                            else if ( !playerControllers[1] && isDirectionPressed ( controller, 6 ) )
+                            {
+                                playerControllers[1] = controller;
+                            }
+                        }
+
+                        if ( !DllHacks::isOverlayEnabled() )
+                            break;
+
+                        // Display all controllers
+                        DllHacks::overlayText[1] = "Controllers";
+                        for ( const Controller *controller : allControllers )
+                        {
+                            if ( controller == playerControllers[0] || controller == playerControllers[1] )
+                                continue;
+
+                            DllHacks::overlayText[1] += "\n" + controller->getName();
+                        }
+
+                        DllHacks::overlayText[0] = "P1 Controller";
+                        if ( playerControllers[0] )
+                            DllHacks::overlayText[0] += "\n" + playerControllers[0]->getName();
+
+                        DllHacks::overlayText[2] = "P2 Controller";
+                        if ( playerControllers[1] )
+                            DllHacks::overlayText[2] += "\n" + playerControllers[1]->getName();
+                    }
+                    else
+                    {
+                    }
+
+                    break;
+                }
+
+                for ( const Controller *controller : allControllers )
+                {
+                    if ( isButtonPressed ( controller, CC_BUTTON_START ) )
+                    {
+                        DllHacks::toggleOverlay();
+                        break;
+                    }
+
+                    uint16_t input = getInput ( controller );
+
+                    // Sticky controllers to the first available player when anything is pressed EXCEPT start
+                    if ( input && ! ( input & COMBINE_INPUT ( 0, CC_BUTTON_START ) ) )
+                    {
+                        if ( !playerControllers[0] && controller != playerControllers[1] )
+                            playerControllers[0] = controller;
+                        else if ( !playerControllers[1] && controller != playerControllers[0] )
+                            playerControllers[1] = controller;
+                    }
+                }
+
                 // Update player 1 inputs
-                updateLocalInputs ( 1 );
+                if ( playerControllers[0] )
+                    localInputs[0] = getInput ( playerControllers[0] );
 
                 // TODO spectator controls
                 if ( clientMode.isSpectate() )
@@ -227,7 +287,8 @@ struct DllMain
                 else if ( clientMode.isLocal() )
                 {
                     // Update player 2 inputs
-                    updateLocalInputs ( 2 );
+                    if ( playerControllers[1] )
+                        localInputs[1] = getInput ( playerControllers[1] );
 
                     // Assign remote player inputs
                     netMan.setInput ( remotePlayer, localInputs[1] );
@@ -411,17 +472,27 @@ struct DllMain
     {
         ASSERT ( netMan.getState() != state );
 
-        if ( netMan.getState() != NetplayState::InGame && state == NetplayState::InGame )
+        // Entering InGame
+        if ( state == NetplayState::InGame )
         {
             if ( netMan.isRollbackState() )
                 procMan.allocateStates();
         }
-        else if ( netMan.getState() == NetplayState::InGame && state != NetplayState::InGame )
+
+        // Exiting InGame
+        if ( state != NetplayState::InGame )
         {
             if ( netMan.config.rollback )
                 procMan.deallocateStates();
         }
 
+        // Exiting CharaSelect
+        if ( netMan.getState() == NetplayState::CharaSelect )
+        {
+            DllHacks::disableOverlay();
+        }
+
+        // Entering CharaSelect OR entering in-game Skippable state
         if ( state == NetplayState::CharaSelect
                 || ( netMan.getState() == NetplayState::Loading && state == NetplayState::Skippable ) )
         {
@@ -429,6 +500,7 @@ struct DllMain
                 shouldSyncRngState = true;
         }
 
+        // Entering RetryMenu
         if ( state == NetplayState::RetryMenu )
         {
             localRetryMenuIndexSent = false;
@@ -991,10 +1063,10 @@ private:
         return state;
     }
 
-    static uint16_t convertInputState ( const Controller *controller )
+    static uint16_t convertInputState ( uint32_t state, bool isKeyboard )
     {
-        const uint16_t dirs = filterSimulDirState ( controller->getState() & MASK_DIRS, controller->isKeyboard() );
-        const uint16_t buttons = ( controller->getState() & MASK_BUTTONS ) >> 8;
+        const uint16_t dirs = filterSimulDirState ( state & MASK_DIRS, isKeyboard );
+        const uint16_t buttons = ( state & MASK_BUTTONS ) >> 8;
 
         uint8_t direction = 5;
 
@@ -1014,6 +1086,39 @@ private:
         return COMBINE_INPUT ( direction, buttons );
     }
 
+    static uint16_t getPrevInput ( const Controller *controller )
+    {
+        if ( !controller )
+            return 0;
+
+        return convertInputState ( controller->getPrevState(), controller->isKeyboard() );
+    }
+
+    static uint16_t getInput ( const Controller *controller )
+    {
+        if ( !controller )
+            return 0;
+
+        return convertInputState ( controller->getState(), controller->isKeyboard() );
+    }
+
+    static bool isButtonPressed ( const Controller *controller, uint16_t button )
+    {
+        if ( !controller )
+            return false;
+
+        button = COMBINE_INPUT ( 0, button );
+        return ( getInput ( controller ) & button ) && ! ( getPrevInput ( controller ) & button );
+    }
+
+    static bool isDirectionPressed ( const Controller *controller, uint16_t dir )
+    {
+        if ( !controller )
+            return false;
+
+        return ( ( getInput ( controller ) & MASK_DIRS ) == dir )
+               && ( ( getPrevInput ( controller ) & MASK_DIRS ) != dir );
+    }
 };
 
 
