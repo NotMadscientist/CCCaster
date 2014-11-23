@@ -34,6 +34,8 @@ class MainUi : public Controller::Owner
     void controls();
     void settings();
 
+    bool areYouSure();
+
     bool gameMode();
 
     void doneMapping ( Controller *controller, uint32_t key );

@@ -3,6 +3,7 @@
 #include "Constants.h"
 #include "Exceptions.h"
 #include "ErrorStrings.h"
+#include "ProcessManager.h"
 
 #include <SDL.h>
 #include <windows.h>
@@ -12,8 +13,6 @@
 
 using namespace std;
 
-
-#define DEFAULT_DEADZONE    25000
 
 #define EVENT_JOY_AXIS      0
 #define EVENT_JOY_HAT       1
@@ -108,7 +107,7 @@ void Controller::joystickEvent ( const SDL_JoyAxisEvent& event )
     uint32_t *values = stick.mappings[EVENT_JOY_AXIS][event.axis];
 
     uint8_t value = 0;
-    if ( abs ( event.value ) > deadzones[event.axis] )
+    if ( abs ( event.value ) > stick.deadzone )
         value = ( event.value > 0 ? AXIS_POSITIVE : AXIS_NEGATIVE );
 
     if ( keyToMap != 0 && !waitForNeutral )
@@ -357,31 +356,6 @@ Controller::Controller ( SDL_Joystick *joystick ) : name ( SDL_JoystickName ( jo
         ++it->second;
 
     doClearMapping();
-
-    for ( auto& v : deadzones )
-        v = DEFAULT_DEADZONE;
-
-    // TODO default joystick mappings
-    // // Default axis mappings
-    // stick.mappings[EVENT_JOY_AXIS][0][0] = MASK_X_AXIS;
-    // stick.mappings[EVENT_JOY_AXIS][0][AXIS_POSITIVE] = BIT_RIGHT;
-    // stick.mappings[EVENT_JOY_AXIS][0][AXIS_NEGATIVE] = BIT_LEFT;
-    // stick.mappings[EVENT_JOY_AXIS][1][0] = MASK_Y_AXIS;
-    // stick.mappings[EVENT_JOY_AXIS][1][AXIS_POSITIVE] = BIT_DOWN; // SDL joystick Y-axis is inverted
-    // stick.mappings[EVENT_JOY_AXIS][1][AXIS_NEGATIVE] = BIT_UP;
-    // stick.mappings[EVENT_JOY_AXIS][2][0] = MASK_X_AXIS;
-    // stick.mappings[EVENT_JOY_AXIS][2][AXIS_POSITIVE] = BIT_RIGHT;
-    // stick.mappings[EVENT_JOY_AXIS][2][AXIS_NEGATIVE] = BIT_LEFT;
-    // stick.mappings[EVENT_JOY_AXIS][3][0] = MASK_Y_AXIS;
-    // stick.mappings[EVENT_JOY_AXIS][3][AXIS_POSITIVE] = BIT_DOWN; // SDL joystick Y-axis is inverted
-    // stick.mappings[EVENT_JOY_AXIS][3][AXIS_NEGATIVE] = BIT_UP;
-
-    // // Default hat mappings
-    // stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_CENTERED] = ( MASK_X_AXIS | MASK_Y_AXIS );
-    // stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_UP]       = BIT_UP;
-    // stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_RIGHT]    = BIT_RIGHT;
-    // stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_DOWN]     = BIT_DOWN;
-    // stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_LEFT]     = BIT_LEFT;
 }
 
 Controller::~Controller()
@@ -585,6 +559,40 @@ void Controller::clearMapping ( uint32_t keys )
     doClearMapping ( keys );
 
     ControllerManager::get().mappingsChanged ( this );
+}
+
+void Controller::resetToDefault()
+{
+    if ( isKeyboard() )
+    {
+        setMappings ( ProcessManager::fetchKeyboardConfig() );
+    }
+    else
+    {
+        // TODO default joystick mappings
+        // // Default axis mappings
+        // stick.mappings[EVENT_JOY_AXIS][0][0] = MASK_X_AXIS;
+        // stick.mappings[EVENT_JOY_AXIS][0][AXIS_POSITIVE] = BIT_RIGHT;
+        // stick.mappings[EVENT_JOY_AXIS][0][AXIS_NEGATIVE] = BIT_LEFT;
+        // stick.mappings[EVENT_JOY_AXIS][1][0] = MASK_Y_AXIS;
+        // stick.mappings[EVENT_JOY_AXIS][1][AXIS_POSITIVE] = BIT_DOWN; // SDL joystick Y-axis is inverted
+        // stick.mappings[EVENT_JOY_AXIS][1][AXIS_NEGATIVE] = BIT_UP;
+        // stick.mappings[EVENT_JOY_AXIS][2][0] = MASK_X_AXIS;
+        // stick.mappings[EVENT_JOY_AXIS][2][AXIS_POSITIVE] = BIT_RIGHT;
+        // stick.mappings[EVENT_JOY_AXIS][2][AXIS_NEGATIVE] = BIT_LEFT;
+        // stick.mappings[EVENT_JOY_AXIS][3][0] = MASK_Y_AXIS;
+        // stick.mappings[EVENT_JOY_AXIS][3][AXIS_POSITIVE] = BIT_DOWN; // SDL joystick Y-axis is inverted
+        // stick.mappings[EVENT_JOY_AXIS][3][AXIS_NEGATIVE] = BIT_UP;
+
+        // // Default hat mappings
+        // stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_CENTERED] = ( MASK_X_AXIS | MASK_Y_AXIS );
+        // stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_UP]       = BIT_UP;
+        // stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_RIGHT]    = BIT_RIGHT;
+        // stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_DOWN]     = BIT_DOWN;
+        // stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_LEFT]     = BIT_LEFT;
+
+        stick.deadzone = DEFAULT_DEADZONE;
+    }
 }
 
 bool Controller::saveMappings ( const string& file ) const

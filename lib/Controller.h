@@ -13,16 +13,17 @@
           CONTROLLER->getName(), CONTROLLER, CONTROLLER->joystick, CONTROLLER->state, ## __VA_ARGS__ )
 
 
-#define BIT_UP          ( 0x00000001u )
-#define BIT_DOWN        ( 0x00000002u )
-#define BIT_LEFT        ( 0x00000004u )
-#define BIT_RIGHT       ( 0x00000008u )
+#define BIT_UP              ( 0x00000001u )
+#define BIT_DOWN            ( 0x00000002u )
+#define BIT_LEFT            ( 0x00000004u )
+#define BIT_RIGHT           ( 0x00000008u )
 
-#define MASK_X_AXIS     ( 0x0000000Cu )
-#define MASK_Y_AXIS     ( 0x00000003u )
-#define MASK_DIRS       ( 0x0000000Fu )
-#define MASK_BUTTONS    ( 0xFFFFFFF0u )
+#define MASK_X_AXIS         ( 0x0000000Cu )
+#define MASK_Y_AXIS         ( 0x00000003u )
+#define MASK_DIRS           ( 0x0000000Fu )
+#define MASK_BUTTONS        ( 0xFFFFFFF0u )
 
+#define DEFAULT_DEADZONE    ( 25000 )
 
 // Forward declarations
 struct _SDL_Joystick;
@@ -65,6 +66,9 @@ struct JoystickMappings : public SerializableSequence
     //
     uint32_t mappings[3][256][16];
 
+    // Axis deadzones
+    uint16_t deadzone = DEFAULT_DEADZONE;
+
     // Find a 3-tuple mapping for the given key, returns false if none exist
     bool find ( uint32_t key, uint8_t& type, uint8_t& index, uint8_t& value ) const
     {
@@ -88,7 +92,7 @@ struct JoystickMappings : public SerializableSequence
         return false;
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( JoystickMappings, name, mappings )
+    PROTOCOL_MESSAGE_BOILERPLATE ( JoystickMappings, name, mappings, deadzone )
 };
 
 
@@ -149,9 +153,6 @@ private:
 
 public:
 
-    // Joystick axis deadzones
-    uint16_t deadzones[256];
-
     // Basic destructor
     ~Controller();
 
@@ -189,7 +190,15 @@ public:
     void cancelMapping();
 
     // Clear this controller's mapping(s)
-    void clearMapping ( uint32_t keys = 0xFFFFFFFF );
+    void clearMapping ( uint32_t keys );
+    void clearAllMappings() { clearMapping ( 0xFFFFFFFF ); }
+
+    // Reset to default mappings
+    void resetToDefault();
+
+    // Get / set joystick deadzone
+    uint16_t getDeadzone() { return stick.deadzone; }
+    void setDeadzone ( uint16_t deadzone ) { stick.deadzone = deadzone; }
 
     // Get previous controller state
     uint32_t getPrevState() const { return prevState; }

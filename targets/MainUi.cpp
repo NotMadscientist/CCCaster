@@ -249,6 +249,17 @@ void MainUi::offline ( RunFuncPtr run )
     ui->popNonUserInput();
 }
 
+bool MainUi::areYouSure()
+{
+    ui->pushRight ( new ConsoleUi::Menu ( "Are you sure?", { "Yes" }, "Cancel" ) );
+
+    int ret = ui->popUntilUserInput()->resultInt;
+
+    ui->pop();
+
+    return ( ret == 0 );
+}
+
 bool MainUi::gameMode()
 {
     ui->pushBelow ( new ConsoleUi::Menu ( "Mode", { "Versus", "Training" }, "Cancel" ) );
@@ -324,38 +335,111 @@ void MainUi::controls()
         {
             loadMappings ( controller );
 
-            vector<string> mappings ( bits.size() );
+            vector<string> options ( bits.size() );
+
             for ( size_t i = 0; i < bits.size(); ++i )
             {
-                string mapping = controller.getMapping ( bits[i].second );
-                mappings[i] = bits[i].first + ( mapping.empty() ? "   " : mapping );
+                const string option = controller.getMapping ( bits[i].second );
+                options[i] = bits[i].first + ( option.empty() ? "   " : option );
             }
 
+            options.push_back ( "Reset to default" );
+            options.push_back ( "Clear all" );
+
+            if ( controller.isJoystick() )
+                options.push_back ( "Set joystick deadzone" );
+
             // TODO show more info at the top
-            ui->pushInFront ( new ConsoleUi::Menu ( controller.getName(), mappings, "Back" ) );
+            ui->pushInFront ( new ConsoleUi::Menu ( controller.getName(), options, "Back" ) );
             ui->top<ConsoleUi::Menu>()->setPosition ( position );
             ui->top<ConsoleUi::Menu>()->setDelete ( 2 );
 
             position = ui->popUntilUserInput()->resultInt;
 
+            // Cancel or exit
             if ( position < 0
-                    || position > ( int ) mappings.size()
-                    || ( position == ( int ) mappings.size() && !ui->top()->resultStr.empty() ) )
+                    || position > ( int ) options.size()
+                    || ( position == ( int ) options.size() && !ui->top()->resultStr.empty() ) )
             {
                 ui->pop();
                 break;
             }
 
-            if ( ui->top()->resultStr.empty() )
+            // Reset to default
+            if ( position == ( int ) bits.size() )
             {
-                if ( position < ( int ) mappings.size() )
-                    controller.clearMapping ( bits[position].second );
+                if ( areYouSure() )
+                {
+                    controller.resetToDefault();
+                    saveMappings ( controller );
+                }
 
                 ui->pop();
-                saveMappings ( controller );
                 continue;
             }
 
+            // Clear all
+            if ( position == ( int ) bits.size() + 1 )
+            {
+                if ( areYouSure() )
+                {
+                    controller.clearAllMappings();
+                    saveMappings ( controller );
+                }
+
+                ui->pop();
+                continue;
+            }
+
+            // Set joystick deadzone
+            if ( position == ( int ) bits.size() + 2 )
+            {
+                ui->pop();
+
+                if ( !controller.isJoystick() )
+                    continue;
+
+                ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger,
+                                                        "Enter a value between 0 and 32768:" ) );
+
+                ui->top<ConsoleUi::Prompt>()->allowNegative = false;
+                ui->top<ConsoleUi::Prompt>()->maxDigits = 5;
+                ui->top<ConsoleUi::Prompt>()->setInitial ( controller.getDeadzone() );
+
+                for ( ;; )
+                {
+                    int ret = ui->popUntilUserInput()->resultInt;
+
+                    if ( ret < 0 )
+                        break;
+
+                    if ( ret <= 0 || ret >= 32768 )
+                    {
+                        ui->pushBelow ( new ConsoleUi::TextBox ( "Value must be between 0 and 32768!" ) );
+                        continue;
+                    }
+
+                    controller.setDeadzone ( ret );
+                    break;
+                }
+
+                saveMappings ( controller );
+                ui->pop();
+                continue;
+            }
+
+            // Delete specific mapping
+            if ( ui->top()->resultStr.empty() )
+            {
+                if ( position < ( int ) bits.size() )
+                    controller.clearMapping ( bits[position].second );
+
+                saveMappings ( controller );
+                ui->pop();
+                continue;
+            }
+
+            // Map selected key
             ui->top<ConsoleUi::Menu>()->overlayCurrentPosition ( bits[position].first + "..." );
 
             AutoManager _;
@@ -368,7 +452,7 @@ void MainUi::controls()
             }
             else
             {
-                ControllerManager::get().check(); // Flush events before mapping
+                ControllerManager::get().check(); // Flush joystick events before mapping
 
                 controller.startMapping ( this, bits[position].second, getConsoleWindow() );
 
@@ -378,15 +462,15 @@ void MainUi::controls()
                     ControllerManager::get().check();
             }
 
-            ui->pop();
             saveMappings ( controller );
+            ui->pop();
 
             // Continue mapping
             if ( mappedKey )
             {
                 ++position;
 
-                if ( position < ( int ) mappings.size() )
+                if ( position < ( int ) bits.size() )
                     _ungetch ( RETURN_KEY );
             }
         }
@@ -570,8 +654,9 @@ void MainUi::initialize()
     ControllerManager::get().initialize ( 0 );
     ControllerManager::get().check();
 
-    // Default keyboard mappings
-    ControllerManager::get().getKeyboard()->setMappings ( ProcessManager::fetchKeyboardConfig() );
+    // Setup default mappings
+    for ( Controller *controller : ControllerManager::get().getControllers() )
+        controller->resetToDefault();
 
     // Load all controller mappings
     ControllerManager::get().loadMappings ( appDir + FOLDER, MAPPINGS_EXT );
