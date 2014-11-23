@@ -178,11 +178,27 @@ struct DllMain
 
                         text[0] = "P1 Controller";
                         if ( playerControllers[0] )
+                        {
                             text[0] += "\n" + playerControllers[0]->getName();
+
+                            for ( const auto& kv : gameInputBits )
+                            {
+                                const string mapping = playerControllers[0]->getMapping ( kv.second );
+                                text[0] += "\n" + kv.first + ": " + mapping;
+                            }
+                        }
 
                         text[2] = "P2 Controller";
                         if ( playerControllers[1] )
+                        {
                             text[2] += "\n" + playerControllers[1]->getName();
+
+                            for ( const auto& kv : gameInputBits )
+                            {
+                                const string mapping = playerControllers[1]->getMapping ( kv.second );
+                                text[2] += "\n" + kv.first + ": " + mapping;
+                            }
+                        }
 
                         DllHacks::updateOverlay ( text );
                     }

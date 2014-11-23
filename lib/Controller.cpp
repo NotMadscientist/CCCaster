@@ -341,8 +341,7 @@ Controller::Controller ( KeyboardEnum ) : name ( "Keyboard" )
     origNameCount[name] = 1;
 
     doClearMapping();
-
-    resetToDefaults();
+    doResetToDefaults();
 }
 
 Controller::Controller ( SDL_Joystick *joystick ) : name ( SDL_JoystickName ( joystick ) ), joystick ( joystick )
@@ -357,8 +356,7 @@ Controller::Controller ( SDL_Joystick *joystick ) : name ( SDL_JoystickName ( jo
         ++it->second;
 
     doClearMapping();
-
-    resetToDefaults();
+    doResetToDefaults();
 }
 
 Controller::~Controller()
@@ -585,7 +583,7 @@ void Controller::clearMapping ( uint32_t keys )
     ControllerManager::get().mappingsChanged ( this );
 }
 
-void Controller::resetToDefaults()
+void Controller::doResetToDefaults()
 {
     if ( !isJoystick() )
         return;
@@ -606,6 +604,14 @@ void Controller::resetToDefaults()
     stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_LEFT]     = BIT_LEFT;
 
     stick.deadzone = DEFAULT_DEADZONE;
+}
+
+void Controller::resetToDefaults()
+{
+    if ( !isJoystick() )
+        return;
+
+    doResetToDefaults();
 
     ControllerManager::get().mappingsChanged ( this );
 }

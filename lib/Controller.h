@@ -152,6 +152,9 @@ private:
     // Clear this controller's mapping(s) without callback to ControllerManager
     void doClearMapping ( uint32_t keys = 0xFFFFFFFF );
 
+    // Reset this joystick's mapping(s) without callback to ControllerManager
+    void doResetToDefaults();
+
 public:
 
     // Basic destructor

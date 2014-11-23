@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <map>
 
 using namespace std;
 
@@ -65,6 +66,9 @@ void ControllerManager::checkJoystick()
     if ( count < 0 )
         THROW_SDL_EXCEPTION ( SDL_GetError(), "SDL_PeepEvents failed", ERROR_CONTROLLER_CHECK );
 
+    // Save new joysticks so we can add them ordered by instance ID
+    map<int, SDL_Joystick *> newJoysticks;
+
     for ( int i = 0; i < count; ++i )
     {
         switch ( events[i].type )
@@ -121,26 +125,9 @@ void ControllerManager::checkJoystick()
             {
                 SDL_Joystick *joystick = SDL_JoystickOpen ( events[i].jdevice.which );
                 SDL_JoystickID id = SDL_JoystickInstanceID ( joystick );
-                Controller *controller = new Controller ( joystick );
-                ASSERT ( controller != 0 );
 
-                LOG_CONTROLLER ( controller, "id=%d; SDL_JOYDEVICEADDED", id );
-
-                joysticks[id].reset ( controller );
-                joysticksByName[controller->getName()] = controller;
-
-                auto it = mappings.mappings.find ( controller->getName() );
-                if ( it != mappings.mappings.end() && it->second->getMsgType() == MsgType::JoystickMappings )
-                    controller->setMappings ( it->second->getAs<JoystickMappings>() );
-
-                if ( owner )
-                    owner->attachedJoystick ( controller );
-
-                // Workaround SDL bug 2643
-                if ( uniqueNames.find ( controller->name ) == uniqueNames.end() )
-                    uniqueNames.insert ( controller->name );
-                else
-                    shouldReset = true;
+                // Add new joysticks later, so we can add them ordered by instance ID
+                newJoysticks[id] = joystick;
                 break;
             }
 
@@ -170,6 +157,31 @@ void ControllerManager::checkJoystick()
                 LOG ( "Unknown event type (%d)", events[i].type );
                 break;
         }
+    }
+
+    // Add joysticks ordered by instance ID
+    for ( const auto& kv : newJoysticks )
+    {
+        Controller *controller = new Controller ( kv.second );
+        ASSERT ( controller != 0 );
+
+        LOG_CONTROLLER ( controller, "id=%d; SDL_JOYDEVICEADDED", kv.first );
+
+        joysticks[kv.first].reset ( controller );
+        joysticksByName[controller->getName()] = controller;
+
+        auto it = mappings.mappings.find ( controller->getName() );
+        if ( it != mappings.mappings.end() && it->second->getMsgType() == MsgType::JoystickMappings )
+            controller->setMappings ( it->second->getAs<JoystickMappings>() );
+
+        if ( owner )
+            owner->attachedJoystick ( controller );
+
+        // Workaround SDL bug 2643
+        if ( uniqueNames.find ( controller->name ) == uniqueNames.end() )
+            uniqueNames.insert ( controller->name );
+        else
+            shouldReset = true;
     }
 }
 
