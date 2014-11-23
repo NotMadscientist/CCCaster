@@ -14,9 +14,15 @@ using namespace std;
 using namespace AsmHacks;
 
 
-#define FONT_HEIGHT                 ( 18 )
+#define OVERLAY_FONT                "Lucida Console"
 
-#define TEXT_BORDER                 ( 10 )
+#define OVERLAY_FONT_HEIGHT         ( 18 )
+
+#define OVERLAY_TEXT_COLOR          D3DCOLOR_XRGB ( 255, 0, 0 )
+
+#define OVERLAY_TEXT_BORDER         ( 10 )
+
+#define OVERLAY_BG_COLOR            D3DCOLOR_ARGB ( 210, 0, 0, 0 )
 
 #define OVERLAY_CHANGE_DELTA        ( 4 + abs ( overlayHeight - newHeight ) / 4 )
 
@@ -37,7 +43,7 @@ static int getTextHeight ( const array<string, 3>& newText )
     int height = 0;
 
     for ( const string& text : newText )
-        height = max ( height, FONT_HEIGHT * ( 1 + count ( text.begin(), text.end(), '\n' ) ) );
+        height = max ( height, OVERLAY_FONT_HEIGHT * ( 1 + count ( text.begin(), text.end(), '\n' ) ) );
 
     return height;
 }
@@ -141,7 +147,7 @@ struct Vertex
 };
 
 
-static int DrawText ( const string& text, RECT& rect, int flags, int r, int g, int b )
+static int DrawText ( const string& text, RECT& rect, int flags, const D3DCOLOR& color )
 {
     if ( !font )
         return 0;
@@ -151,7 +157,7 @@ static int DrawText ( const string& text, RECT& rect, int flags, int r, int g, i
                             text.size(),                        // number of characters, -1 if null-terminated
                             &rect,                              // text bounding RECT
                             flags | DT_WORDBREAK | DT_NOCLIP,   // text formatting
-                            D3DCOLOR_XRGB ( r, g, b ) );        // text colour
+                            color );                            // text colour
 }
 
 // Note: this is on the SAME thread as the main thread where callback happens
@@ -162,7 +168,7 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
         initalizedDirectx = true;
 
         D3DXCreateFont ( device,                                // device pointer
-                         FONT_HEIGHT,                           // height
+                         OVERLAY_FONT_HEIGHT,                   // height
                          0,                                     // width
                          FW_REGULAR,                            // weight
                          1,                                     // # of mipmap levels
@@ -171,15 +177,15 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
                          OUT_DEFAULT_PRECIS,                    // output precision
                          ANTIALIASED_QUALITY,                   // quality
                          DEFAULT_PITCH | FF_DONTCARE,           // pitch and family
-                         "Lucida Console",                      // typeface name
+                         OVERLAY_FONT,                          // typeface name
                          &font );                               // pointer to ID3DXFont
 
         static const Vertex verts[4] =
         {
-            { -1.0, -1.0, 0.0f, D3DCOLOR_ARGB ( 210, 0, 0, 0 ) },
-            {  1.0, -1.0, 0.0f, D3DCOLOR_ARGB ( 210, 0, 0, 0 ) },
-            { -1.0,  1.0, 0.0f, D3DCOLOR_ARGB ( 210, 0, 0, 0 ) },
-            {  1.0,  1.0, 0.0f, D3DCOLOR_ARGB ( 210, 0, 0, 0 ) }
+            { -1.0, -1.0, 0.0f, OVERLAY_BG_COLOR },
+            {  1.0, -1.0, 0.0f, OVERLAY_BG_COLOR },
+            { -1.0,  1.0, 0.0f, OVERLAY_BG_COLOR },
+            {  1.0,  1.0, 0.0f, OVERLAY_BG_COLOR }
         };
 
         device->CreateVertexBuffer ( 4 * sizeof ( Vertex ),     // buffer size in bytes
@@ -207,7 +213,7 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
         return;
 
     // Scaling factor for the overlay background
-    const float scaleY = float ( overlayHeight + 2 * TEXT_BORDER ) / viewport.Height;
+    const float scaleY = float ( overlayHeight + 2 * OVERLAY_TEXT_BORDER ) / viewport.Height;
 
     D3DXMATRIX translate, scale;
     D3DXMatrixScaling ( &scale, 1.0f, scaleY, 1.0f );
@@ -227,19 +233,19 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
         const int centerX = viewport.Width / 2;
 
         RECT rect;
-        rect.left   = centerX - int ( ( viewport.Width / 2 ) * 1.0 ) + TEXT_BORDER;
-        rect.right  = centerX + int ( ( viewport.Width / 2 ) * 1.0 ) - TEXT_BORDER;
-        rect.top    = TEXT_BORDER;
-        rect.bottom = rect.top + overlayHeight + TEXT_BORDER;
+        rect.left   = centerX - int ( ( viewport.Width / 2 ) * 1.0 ) + OVERLAY_TEXT_BORDER;
+        rect.right  = centerX + int ( ( viewport.Width / 2 ) * 1.0 ) - OVERLAY_TEXT_BORDER;
+        rect.top    = OVERLAY_TEXT_BORDER;
+        rect.bottom = rect.top + overlayHeight + OVERLAY_TEXT_BORDER;
 
         if ( !overlayText[0].empty() )
-            DrawText ( overlayText[0], rect, DT_LEFT, 255, 0, 0 );
+            DrawText ( overlayText[0], rect, DT_LEFT, OVERLAY_TEXT_COLOR );
 
         if ( !overlayText[1].empty() )
-            DrawText ( overlayText[1], rect, DT_CENTER, 255, 0, 0 );
+            DrawText ( overlayText[1], rect, DT_CENTER, OVERLAY_TEXT_COLOR );
 
         if ( !overlayText[2].empty() )
-            DrawText ( overlayText[2], rect, DT_RIGHT, 255, 0, 0 );
+            DrawText ( overlayText[2], rect, DT_RIGHT, OVERLAY_TEXT_COLOR );
     }
 }
 
