@@ -89,10 +89,13 @@ struct DllMain
     vector<const Controller *> allControllers;
 
     // Player controllers
-    const Controller *playerControllers[2] = { 0, 0 };
+    array<const Controller *, 2> playerControllers = {{ 0, 0 }};
+
+    // Player controller config positions
+    array<int, 2> playerPositions = {{ 0, 0 }};
 
     // Local player inputs
-    uint16_t localInputs[2] = { 0, 0 };
+    array<uint16_t, 2> localInputs = {{ 0, 0 }};
 
     // If we have sent our local retry menu index
     bool localRetryMenuIndexSent = false;
@@ -140,24 +143,26 @@ struct DllMain
                                 break;
                             }
 
-                            // Move controllers with left / right, reset with down
+                            // Move controllers with left / right, configure with down
                             if ( controller == playerControllers[0] )
                             {
-                                if ( isDirectionPressed ( controller, 6 ) || isDirectionPressed ( controller, 2 ) )
+                                if ( isDirectionPressed ( controller, 6 ) )
                                     playerControllers[0] = 0;
                             }
                             else if ( controller == playerControllers[1] )
                             {
-                                if ( isDirectionPressed ( controller, 4 ) || isDirectionPressed ( controller, 2 ) )
+                                if ( isDirectionPressed ( controller, 4 ) )
                                     playerControllers[1] = 0;
                             }
                             else if ( !playerControllers[0] && isDirectionPressed ( controller, 4 ) )
                             {
                                 playerControllers[0] = controller;
+                                playerPositions[0] = 0;
                             }
                             else if ( !playerControllers[1] && isDirectionPressed ( controller, 6 ) )
                             {
                                 playerControllers[1] = controller;
+                                playerPositions[1] = 0;
                             }
                         }
 
@@ -167,37 +172,50 @@ struct DllMain
                         array<string, 3> text;
 
                         // Display all controllers
-                        text[1] = "Controllers";
+                        text[2].clear();
                         for ( const Controller *controller : allControllers )
+                            if ( controller != playerControllers[0] && controller != playerControllers[1] )
+                                text[2] += controller->getName() + "\n";
+                        text[2].pop_back();
+
+                        const size_t playerCount = ( playerControllers[0] ? 1 : 0 ) + ( playerControllers[1] ? 1 : 0 );
+                        const size_t headerHeight = 1 + allControllers.size() - playerCount;
+
+                        // Update player controllers
+                        for ( uint8_t i = 0; i < 2; ++i )
                         {
-                            if ( controller == playerControllers[0] || controller == playerControllers[1] )
+                            if ( !playerControllers[i] )
+                            {
+                                text[i] = string ( headerHeight, '\n' );
+                                text[i] += format ( "P%u Controller", i + 1 );
+                                DllHacks::updateSelector ( i );
                                 continue;
+                            }
 
-                            text[1] += "\n" + controller->getName();
-                        }
+                            text[i] = string ( headerHeight, '\n' );
 
-                        text[0] = "P1 Controller";
-                        if ( playerControllers[0] )
-                        {
-                            text[0] += "\n" + playerControllers[0]->getName();
+                            vector<string> options;
+                            options.push_back ( playerControllers[i]->getName() );
+                            text[i] += options.back();
 
                             for ( const auto& kv : gameInputBits )
                             {
-                                const string mapping = playerControllers[0]->getMapping ( kv.second );
-                                text[0] += "\n" + kv.first + ": " + mapping;
+                                const string mapping = playerControllers[i]->getMapping ( kv.second );
+                                options.push_back ( kv.first + " : " + mapping );
+                                text[i] += "\n" + options.back();
                             }
-                        }
 
-                        text[2] = "P2 Controller";
-                        if ( playerControllers[1] )
-                        {
-                            text[2] += "\n" + playerControllers[1]->getName();
-
-                            for ( const auto& kv : gameInputBits )
+                            if ( isDirectionPressed ( playerControllers[i], 2 ) )
                             {
-                                const string mapping = playerControllers[1]->getMapping ( kv.second );
-                                text[2] += "\n" + kv.first + ": " + mapping;
+                                playerPositions[i] = ( playerPositions[i] + 1 ) % options.size();
                             }
+                            else if ( isDirectionPressed ( playerControllers[i], 8 ) )
+                            {
+                                playerPositions[i] = ( playerPositions[i] + options.size() - 1 ) % options.size();
+                            }
+
+                            const int pos = playerPositions[i];
+                            DllHacks::updateSelector ( i, headerHeight + pos, options[pos] );
                         }
 
                         DllHacks::updateOverlay ( text );

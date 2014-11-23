@@ -3,6 +3,7 @@
 #include "Constants.h"
 
 #include <vector>
+#include <array>
 
 
 #define INLINE_DWORD(X)                                                         \
@@ -32,7 +33,7 @@ extern uint32_t currentMenuIndex;
 extern uint32_t menuConfirmState;
 
 // Pointers to P1 and P2 character select mode (moon, colour, etc...), this gets updated by ASM hacks
-extern uint32_t *charaSelectModePtrs[2];
+extern std::array<uint32_t *, 2> charaSelectModePtrs;
 
 // Round start counter, this gets incremented whenever players can start moving
 extern uint32_t roundStartCounter;
@@ -175,7 +176,7 @@ static const AsmList hijackMenu =
         0x51,                                                       // push ecx
         0x8D, 0x8E, 0xEC, 0xD8, 0x74, 0x00,                         // lea ecx,[esi+0x74D8EC]
         0xC7, 0x01, 0x01, 0x00, 0x00, 0x00,                         // mov [ecx],00000001
-        0x89, 0x0C, 0xBD, INLINE_DWORD ( charaSelectModePtrs ),     // mov [edi*4+charaSelectModePtrs],ecx
+        0x89, 0x0C, 0xBD, INLINE_DWORD ( &charaSelectModePtrs[0] ), // mov [edi*4+charaSelectModePtrs],ecx
         0x59,                                                       // pop ecx
 
         // The rest of the assembly code is unmodified and just shifted down

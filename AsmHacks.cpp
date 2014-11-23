@@ -2,6 +2,8 @@
 
 #include <windows.h>
 
+using namespace std;
+
 
 static int memwrite ( void *dst, const void *src, size_t len )
 {
@@ -25,7 +27,7 @@ uint32_t currentMenuIndex = 0;
 
 uint32_t menuConfirmState = 0;
 
-uint32_t *charaSelectModePtrs[2] = { 0, 0 };
+array<uint32_t *, 2> charaSelectModePtrs = { 0, 0 };
 
 uint32_t roundStartCounter = 0;
 

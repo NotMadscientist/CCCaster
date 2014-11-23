@@ -12,21 +12,39 @@
 
 using namespace std;
 using namespace AsmHacks;
+using namespace DllHacks;
 
 
-#define OVERLAY_FONT                "Tahoma"
+#define OVERLAY_FONT                    "Tahoma"
 
-#define OVERLAY_FONT_HEIGHT         ( 14 )
+#define OVERLAY_FONT_HEIGHT             ( 14 )
 
-#define OVERLAY_FONT_WEIGHT         ( 600 )
+#define OVERLAY_FONT_WIDTH              ( 5 )
 
-#define OVERLAY_TEXT_COLOR          D3DCOLOR_XRGB ( 255, 0, 0 )
+#define OVERLAY_FONT_WEIGHT             ( 600 )
 
-#define OVERLAY_TEXT_BORDER         ( 10 )
+#define OVERLAY_TEXT_COLOR              D3DCOLOR_XRGB ( 255, 255, 255 )
 
-#define OVERLAY_BG_COLOR            D3DCOLOR_ARGB ( 210, 0, 0, 0 )
+#define OVERLAY_TEXT_BORDER             ( 10 )
 
-#define OVERLAY_CHANGE_DELTA        ( 4 + abs ( overlayHeight - newHeight ) / 4 )
+#define OVERLAY_SELECTOR_L_COLOR        D3DCOLOR_XRGB ( 220, 0, 0 )
+
+#define OVERLAY_SELECTOR_R_COLOR        D3DCOLOR_XRGB ( 0, 0, 240 )
+
+#define OVERLAY_SELECTOR_X_BORDER       ( 3 )
+
+#define OVERLAY_SELECTOR_Y_BORDER       ( 1 )
+
+#define OVERLAY_BG_COLOR                D3DCOLOR_ARGB ( 220, 0, 0, 0 )
+
+#define OVERLAY_CHANGE_DELTA            ( 4 + abs ( overlayHeight - newHeight ) / 4 )
+
+#define INLINE_RECT(rect)               rect.left, rect.top, rect.right, rect.bottom
+
+
+extern void startStall();
+
+extern void stopStall();
 
 
 namespace DllHacks
@@ -39,6 +57,10 @@ static Overlay overlayState = Overlay::Disabled;
 static int overlayHeight = 0, oldHeight = 0, newHeight = 0;
 
 static array<string, 3> overlayText;
+
+static array<RECT, 2> overlaySelector;
+
+static array<bool, 2> drawSelector { false, false };
 
 static int getTextHeight ( const array<string, 3>& newText )
 {
@@ -127,11 +149,6 @@ bool isOverlayEnabled()
     return ( overlayState != Overlay::Disabled );
 }
 
-} // namespace DllHacks
-
-
-using namespace DllHacks;
-
 
 static bool initalizedDirectx = false;
 
@@ -149,7 +166,7 @@ struct Vertex
 };
 
 
-static int DrawText ( const string& text, RECT& rect, int flags, const D3DCOLOR& color )
+static inline int DrawText ( const string& text, RECT& rect, int flags, const D3DCOLOR& color )
 {
     if ( !font )
         return 0;
@@ -158,9 +175,61 @@ static int DrawText ( const string& text, RECT& rect, int flags, const D3DCOLOR&
                             &text[0],                           // text buffer
                             text.size(),                        // number of characters, -1 if null-terminated
                             &rect,                              // text bounding RECT
-                            flags | DT_WORDBREAK | DT_NOCLIP,   // text formatting
+                            flags | DT_NOCLIP,                  // text formatting
                             color );                            // text colour
 }
+
+static inline void DrawRectangle ( IDirect3DDevice9 *device, int x1, int y1, int x2, int y2, const D3DCOLOR& color )
+{
+    const D3DRECT rect = { x1, y1, x2, y2 };
+    device->Clear ( 1, &rect, D3DCLEAR_TARGET, color, 0, 0 );
+}
+
+static inline void DrawBox ( IDirect3DDevice9 *device, int x1, int y1, int x2, int y2, int w, const D3DCOLOR& color )
+{
+    DrawRectangle ( device, x1, y1, x1 + w, y2, color );
+    DrawRectangle ( device, x1, y1, x2, y1 + w, color );
+    DrawRectangle ( device, x2 - w, y1, x2, y2, color );
+    DrawRectangle ( device, x1, y2 - w, x2, y2, color );
+}
+
+void updateSelector ( uint8_t index, int position, const string& line )
+{
+    if ( index > 1 )
+        return;
+
+    if ( position == 0 || line.empty() )
+    {
+        drawSelector[index] = false;
+        return;
+    }
+
+    RECT rect;
+    rect.top = rect.left = 0;
+    rect.right = 1;
+    rect.bottom = OVERLAY_FONT_HEIGHT;
+    DrawText ( line, rect, DT_CALCRECT, D3DCOLOR_XRGB ( 0, 0, 0 ) );
+
+    rect.top    += OVERLAY_TEXT_BORDER + position * OVERLAY_FONT_HEIGHT - OVERLAY_SELECTOR_Y_BORDER + 1;
+    rect.bottom += OVERLAY_TEXT_BORDER + position * OVERLAY_FONT_HEIGHT + OVERLAY_SELECTOR_Y_BORDER;
+
+    if ( index == 0 )
+    {
+        rect.left += OVERLAY_TEXT_BORDER - OVERLAY_SELECTOR_X_BORDER;
+        rect.right += OVERLAY_TEXT_BORDER + OVERLAY_SELECTOR_X_BORDER;
+    }
+    else
+    {
+        rect.left = 640 - rect.right - OVERLAY_TEXT_BORDER - OVERLAY_SELECTOR_X_BORDER;
+        rect.right = 640 - OVERLAY_TEXT_BORDER + OVERLAY_SELECTOR_X_BORDER;
+    }
+
+    overlaySelector[index] = rect;
+    drawSelector[index] = true;
+}
+
+} // namespace DllHacks
+
 
 // Note: this is on the SAME thread as the main thread where callback happens
 void PresentFrameBegin ( IDirect3DDevice9 *device )
@@ -171,7 +240,7 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
 
         D3DXCreateFont ( device,                                // device pointer
                          OVERLAY_FONT_HEIGHT,                   // height
-                         0,                                     // width
+                         OVERLAY_FONT_WIDTH,                    // width
                          OVERLAY_FONT_WEIGHT,                   // weight
                          1,                                     // # of mipmap levels
                          false,                                 // italic
@@ -240,14 +309,23 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
         rect.top    = OVERLAY_TEXT_BORDER;
         rect.bottom = rect.top + overlayHeight + OVERLAY_TEXT_BORDER;
 
-        if ( !overlayText[0].empty() )
-            DrawText ( overlayText[0], rect, DT_LEFT, OVERLAY_TEXT_COLOR );
+        if ( newHeight == overlayHeight )
+        {
+            if ( drawSelector[0] )
+                DrawRectangle ( device, INLINE_RECT ( overlaySelector[0] ), OVERLAY_SELECTOR_L_COLOR );
 
-        if ( !overlayText[1].empty() )
-            DrawText ( overlayText[1], rect, DT_CENTER, OVERLAY_TEXT_COLOR );
+            if ( drawSelector[1] )
+                DrawRectangle ( device, INLINE_RECT ( overlaySelector[1] ), OVERLAY_SELECTOR_R_COLOR );
+        }
 
         if ( !overlayText[2].empty() )
-            DrawText ( overlayText[2], rect, DT_RIGHT, OVERLAY_TEXT_COLOR );
+            DrawText ( overlayText[2], rect, DT_WORDBREAK | DT_CENTER, OVERLAY_TEXT_COLOR );
+
+        if ( !overlayText[0].empty() )
+            DrawText ( overlayText[0], rect, DT_WORDBREAK | DT_LEFT, OVERLAY_TEXT_COLOR );
+
+        if ( !overlayText[1].empty() )
+            DrawText ( overlayText[1], rect, DT_WORDBREAK | DT_RIGHT, OVERLAY_TEXT_COLOR );
     }
 }
 
@@ -269,6 +347,10 @@ void InvalidateDeviceObjects()
     }
 }
 
+
+namespace DllHacks
+{
+
 #define WRITE_ASM_HACK(ASM_HACK)                                                                                    \
     do {                                                                                                            \
         int error = ASM_HACK.write();                                                                               \
@@ -278,13 +360,6 @@ void InvalidateDeviceObjects()
         }                                                                                                           \
     } while ( 0 )
 
-extern void startStall();
-
-extern void stopStall();
-
-
-namespace DllHacks
-{
 
 void initializePreLoad()
 {
