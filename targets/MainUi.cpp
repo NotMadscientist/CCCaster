@@ -309,7 +309,7 @@ void MainUi::controls()
 
         ui->clearTop();
 
-        int position = ( controller.isKeyboard() ? 0 : 4 );
+        int pos = ( controller.isKeyboard() ? 0 : 4 );
 
         for ( ;; )
         {
@@ -331,22 +331,22 @@ void MainUi::controls()
 
             // TODO show more info at the top
             ui->pushInFront ( new ConsoleUi::Menu ( controller.getName(), options, "Back" ) );
-            ui->top<ConsoleUi::Menu>()->setPosition ( position );
+            ui->top<ConsoleUi::Menu>()->setPosition ( pos );
             ui->top<ConsoleUi::Menu>()->setDelete ( 2 );
 
-            position = ui->popUntilUserInput()->resultInt;
+            pos = ui->popUntilUserInput()->resultInt;
 
             // Cancel or exit
-            if ( position < 0
-                    || position > ( int ) options.size()
-                    || ( position == ( int ) options.size() && !ui->top()->resultStr.empty() ) )
+            if ( pos < 0
+                    || pos > ( int ) options.size()
+                    || ( pos == ( int ) options.size() && !ui->top()->resultStr.empty() ) )
             {
                 ui->pop();
                 break;
             }
 
             // Reset to defaults
-            if ( position == ( int ) gameInputBits.size() )
+            if ( pos == ( int ) gameInputBits.size() )
             {
                 if ( areYouSure() )
                 {
@@ -359,7 +359,7 @@ void MainUi::controls()
             }
 
             // Clear all
-            if ( position == ( int ) gameInputBits.size() + 1 )
+            if ( pos == ( int ) gameInputBits.size() + 1 )
             {
                 if ( areYouSure() )
                 {
@@ -372,7 +372,7 @@ void MainUi::controls()
             }
 
             // Set joystick deadzone
-            if ( position == ( int ) gameInputBits.size() + 2 )
+            if ( pos == ( int ) gameInputBits.size() + 2 )
             {
                 ui->pop();
 
@@ -411,8 +411,8 @@ void MainUi::controls()
             // Delete specific mapping
             if ( ui->top()->resultStr.empty() )
             {
-                if ( position < ( int ) gameInputBits.size() )
-                    controller.clearMapping ( gameInputBits[position].second );
+                if ( pos < ( int ) gameInputBits.size() )
+                    controller.clearMapping ( gameInputBits[pos].second );
 
                 saveMappings ( controller );
                 ui->pop();
@@ -420,13 +420,13 @@ void MainUi::controls()
             }
 
             // Map selected key
-            ui->top<ConsoleUi::Menu>()->overlayCurrentPosition ( gameInputBits[position].first + "..." );
+            ui->top<ConsoleUi::Menu>()->overlayCurrentPosition ( format ( "%11s: ...", gameInputBits[pos].first ) );
 
             AutoManager _;
 
             if ( controller.isKeyboard() )
             {
-                controller.startMapping ( this, gameInputBits[position].second, getConsoleWindow() );
+                controller.startMapping ( this, gameInputBits[pos].second, getConsoleWindow() );
 
                 EventManager::get().start();
             }
@@ -434,7 +434,7 @@ void MainUi::controls()
             {
                 ControllerManager::get().check(); // Flush joystick events before mapping
 
-                controller.startMapping ( this, gameInputBits[position].second, getConsoleWindow() );
+                controller.startMapping ( this, gameInputBits[pos].second, getConsoleWindow() );
 
                 EventManager::get().startPolling();
 
@@ -448,9 +448,9 @@ void MainUi::controls()
             // Continue mapping
             if ( mappedKey )
             {
-                ++position;
+                ++pos;
 
-                if ( position < ( int ) gameInputBits.size() )
+                if ( pos < ( int ) gameInputBits.size() )
                     _ungetch ( RETURN_KEY );
             }
         }
