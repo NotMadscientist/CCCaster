@@ -368,6 +368,8 @@ void MainUi::controls()
             }
             else
             {
+                ControllerManager::get().check(); // Flush events before mapping
+
                 controller.startMapping ( this, bits[position].second, getConsoleWindow() );
 
                 EventManager::get().startPolling();

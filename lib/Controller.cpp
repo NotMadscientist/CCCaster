@@ -111,7 +111,7 @@ void Controller::joystickEvent ( const SDL_JoyAxisEvent& event )
     if ( abs ( event.value ) > deadzones[event.axis] )
         value = ( event.value > 0 ? AXIS_POSITIVE : AXIS_NEGATIVE );
 
-    if ( keyToMap != 0 )
+    if ( keyToMap != 0 && !waitForNeutral )
     {
         uint32_t *activeValues = active.mappings[EVENT_JOY_AXIS][event.axis];
 
@@ -160,6 +160,9 @@ void Controller::joystickEvent ( const SDL_JoyAxisEvent& event )
     if ( value != AXIS_CENTERED )
         state |= values[value];
 
+    if ( !state && waitForNeutral )
+        waitForNeutral = false;
+
     // LOG_CONTROLLER ( this, "axis=%d; value=%c; EVENT_JOY_AXIS", event.axis, getAxisSign ( 0, value ) );
 }
 
@@ -187,7 +190,7 @@ void Controller::joystickEvent ( const SDL_JoyHatEvent& event )
 {
     uint32_t *values = stick.mappings[EVENT_JOY_HAT][event.hat];
 
-    if ( keyToMap != 0 )
+    if ( keyToMap != 0 && !waitForNeutral )
     {
         uint32_t *activeValues = active.mappings[EVENT_JOY_HAT][event.hat];
 
@@ -251,12 +254,15 @@ void Controller::joystickEvent ( const SDL_JoyHatEvent& event )
     else if ( event.value & SDL_HAT_RIGHT )
         state |= values[SDL_HAT_RIGHT];
 
+    if ( !state && waitForNeutral )
+        waitForNeutral = false;
+
     // LOG_CONTROLLER ( this, "hat=%d; value=%d; EVENT_JOY_HAT", event.hat, getHatNumPadDir ( event.value ) );
 }
 
 void Controller::joystickEvent ( const SDL_JoyButtonEvent& event )
 {
-    if ( keyToMap != 0 )
+    if ( keyToMap != 0 && !waitForNeutral )
     {
         uint32_t *activeStates = active.mappings[EVENT_JOY_BUTTON][event.button];
         const bool isActive = ( activeStates[SDL_PRESSED] );
@@ -301,6 +307,9 @@ void Controller::joystickEvent ( const SDL_JoyButtonEvent& event )
         state &= ~key;
     else if ( event.state == SDL_PRESSED )
         state |= key;
+
+    if ( !state && waitForNeutral )
+        waitForNeutral = false;
 
     // LOG_CONTROLLER ( this, "button=%d; value=%d; EVENT_JOY_BUTTON", event.button, ( event.state == SDL_PRESSED ) );
 }
@@ -513,11 +522,14 @@ void Controller::startMapping ( Owner *owner, uint32_t key, const void *window )
 
     LOG ( "Starting mapping %08x", key );
 
+    if ( state )
+        waitForNeutral = true;
+
     this->owner = owner;
     keyToMap = key;
 
     if ( isKeyboard() )
-        KeyboardManager::get().hook ( this, window );
+        KeyboardManager::get().hook ( this, window ); // Check all keys
     else
         KeyboardManager::get().hook ( this, window , { VK_ESCAPE } );
 }
@@ -528,6 +540,7 @@ void Controller::cancelMapping()
 
     owner = 0;
     keyToMap = 0;
+    waitForNeutral = false;
 
     for ( auto& a : active.mappings )
     {

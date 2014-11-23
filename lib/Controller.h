@@ -126,6 +126,9 @@ private:
     // The current key to map to an event
     uint32_t keyToMap = 0;
 
+    // Flag to wait for neutral state before mapping
+    bool waitForNeutral = false;
+
     // The currently active joystick mappings for the above key
     JoystickMappings active;
 
