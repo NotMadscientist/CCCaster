@@ -194,7 +194,7 @@ public:
     void clearAllMappings() { clearMapping ( 0xFFFFFFFF ); }
 
     // Reset to default mappings
-    void resetToDefault();
+    void resetToDefaults();
 
     // Get / set joystick deadzone
     uint16_t getDeadzone() { return stick.deadzone; }

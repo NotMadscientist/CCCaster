@@ -343,7 +343,7 @@ void MainUi::controls()
                 options[i] = bits[i].first + ( option.empty() ? "   " : option );
             }
 
-            options.push_back ( "Reset to default" );
+            options.push_back ( "Reset to defaults" );
             options.push_back ( "Clear all" );
 
             if ( controller.isJoystick() )
@@ -365,12 +365,12 @@ void MainUi::controls()
                 break;
             }
 
-            // Reset to default
+            // Reset to defaults
             if ( position == ( int ) bits.size() )
             {
                 if ( areYouSure() )
                 {
-                    controller.resetToDefault();
+                    controller.resetToDefaults();
                     saveMappings ( controller );
                 }
 
@@ -656,7 +656,7 @@ void MainUi::initialize()
 
     // Setup default mappings
     for ( Controller *controller : ControllerManager::get().getControllers() )
-        controller->resetToDefault();
+        controller->resetToDefaults();
 
     // Load then save all controller mappings
     ControllerManager::get().loadMappings ( appDir + FOLDER, MAPPINGS_EXT );

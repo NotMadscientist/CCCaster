@@ -561,7 +561,7 @@ void Controller::clearMapping ( uint32_t keys )
     ControllerManager::get().mappingsChanged ( this );
 }
 
-void Controller::resetToDefault()
+void Controller::resetToDefaults()
 {
     if ( isKeyboard() )
     {
