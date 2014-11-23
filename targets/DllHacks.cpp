@@ -1,3 +1,4 @@
+#include "DllHacks.h"
 #include "AsmHacks.h"
 #include "D3DHook.h"
 #include "Exceptions.h"
@@ -22,30 +23,34 @@ using namespace AsmHacks;
 namespace DllHacks
 {
 
-static int overlayState = 0;
+static int overlayEnableState = 0;
 
 string overlayText[3];
 
 
 void enableOverlay()
 {
-    if ( overlayState == 0 )
-        overlayState = 1;
+    if ( overlayEnableState == 0 )
+        overlayEnableState = 1;
 }
 
 void disableOverlay()
 {
-    overlayState = 0;
+    if ( overlayEnableState > 0 )
+        overlayEnableState = -OVERLAY_ENABLE_COUNT;
 }
 
 void toggleOverlay()
 {
-    overlayState = ( overlayState ? 0 : 1 );
+    if ( isOverlayEnabled() )
+        disableOverlay();
+    else
+        enableOverlay();
 }
 
 bool isOverlayEnabled()
 {
-    return overlayState;
+    return ( overlayEnableState > 0 );
 }
 
 } // namespace DllHacks
@@ -129,7 +134,7 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
     device->GetViewport ( &viewport );
 
     // Only draw in the main viewport; there should only be one with this width
-    if ( overlayState == 0 || viewport.Width != * CC_SCREEN_WIDTH_ADDR )
+    if ( overlayEnableState == 0 || viewport.Width != * CC_SCREEN_WIDTH_ADDR )
         return;
 
     int textHeight = 0;
@@ -141,7 +146,7 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
     }
 
     const float scaleY = ( float ( textHeight + 2 * TEXT_BORDER ) / viewport.Height )
-                         * getNegativeQuadraticScale ( overlayState, OVERLAY_ENABLE_COUNT );
+                         * getNegativeQuadraticScale ( abs ( overlayEnableState ), OVERLAY_ENABLE_COUNT );
 
     D3DXMATRIX translate, scale;
     D3DXMatrixScaling ( &scale, 1.0f, scaleY, 1.0f );
@@ -152,9 +157,17 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
     device->SetFVF ( Vertex::format );
     device->DrawPrimitive ( D3DPT_TRIANGLESTRIP, 0, 2 );
 
-    if ( overlayState < OVERLAY_ENABLE_COUNT )
+    // Enabling overlay
+    if ( overlayEnableState > 0 && overlayEnableState < OVERLAY_ENABLE_COUNT )
     {
-        ++overlayState;
+        ++overlayEnableState;
+        return;
+    }
+
+    // Disabling overlay
+    if ( overlayEnableState < 0 )
+    {
+        ++overlayEnableState;
         return;
     }
 
