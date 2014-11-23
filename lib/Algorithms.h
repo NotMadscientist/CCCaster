@@ -48,12 +48,14 @@ inline T sorted ( const T& list, const F& compare )
 
 // Clamp a value to a range
 template<typename T>
-inline void clamp ( T& value, T min, T max )
+inline T clamped ( T value, T min, T max )
 {
     if ( value < min )
-        value = min;
+        return min;
     else if ( value > max )
-        value = max;
+        return max;
+    else
+        return value;
 }
 
 
