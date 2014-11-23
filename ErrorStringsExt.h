@@ -11,4 +11,6 @@
 
 #define ERROR_INVALID_HOST_CONFIG   "Host sent invalid configuration!"
 
-#define ERROR_INVALID_DELAY         "Delay must be less than 255!"
+#define ERROR_INVALID_NETPLAY_DELAY "Delay must be between 0 and 255!"
+
+#define ERROR_INVALID_OFFLINE_DELAY "Delay must be less than 255!"

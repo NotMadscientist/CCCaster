@@ -220,7 +220,7 @@ void MainUi::offline ( RunFuncPtr run )
 
         if ( menu->resultInt >= 0xFF )
         {
-            ui->pushBelow ( new ConsoleUi::TextBox ( ERROR_INVALID_DELAY ) );
+            ui->pushBelow ( new ConsoleUi::TextBox ( ERROR_INVALID_OFFLINE_DELAY ) );
             continue;
         }
 
@@ -860,9 +860,9 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
         if ( menu->resultInt < 0 )
             break;
 
-        if ( menu->resultInt >= 0xFF )
+        if ( menu->resultInt <= 0 || menu->resultInt >= 0xFF )
         {
-            ui->pushBelow ( new ConsoleUi::TextBox ( ERROR_INVALID_DELAY ) );
+            ui->pushBelow ( new ConsoleUi::TextBox ( ERROR_INVALID_NETPLAY_DELAY ) );
             continue;
         }
 
