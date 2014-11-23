@@ -164,23 +164,27 @@ struct DllMain
                         if ( !DllHacks::isOverlayEnabled() )
                             break;
 
+                        array<string, 3> text;
+
                         // Display all controllers
-                        DllHacks::overlayText[1] = "Controllers";
+                        text[1] = "Controllers";
                         for ( const Controller *controller : allControllers )
                         {
                             if ( controller == playerControllers[0] || controller == playerControllers[1] )
                                 continue;
 
-                            DllHacks::overlayText[1] += "\n" + controller->getName();
+                            text[1] += "\n" + controller->getName();
                         }
 
-                        DllHacks::overlayText[0] = "P1 Controller";
+                        text[0] = "P1 Controller";
                         if ( playerControllers[0] )
-                            DllHacks::overlayText[0] += "\n" + playerControllers[0]->getName();
+                            text[0] += "\n" + playerControllers[0]->getName();
 
-                        DllHacks::overlayText[2] = "P2 Controller";
+                        text[2] = "P2 Controller";
                         if ( playerControllers[1] )
-                            DllHacks::overlayText[2] += "\n" + playerControllers[1]->getName();
+                            text[2] += "\n" + playerControllers[1]->getName();
+
+                        DllHacks::updateOverlay ( text );
                     }
                     else
                     {

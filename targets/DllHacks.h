@@ -3,12 +3,11 @@
 #include "AsmHacks.h"
 
 #include <string>
+#include <array>
 
 
 namespace DllHacks
 {
-
-extern std::string overlayText[3];
 
 extern void *mainWindowHandle;
 
@@ -18,6 +17,8 @@ void enableOverlay();
 void disableOverlay();
 
 void toggleOverlay();
+
+void updateOverlay ( const std::array<std::string, 3>& newText );
 
 bool isOverlayEnabled();
 

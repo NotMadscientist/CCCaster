@@ -4,6 +4,7 @@
 #include "Exceptions.h"
 #include "ProcessManager.h"
 #include "Algorithms.h"
+#include "Enum.h"
 
 #include <windows.h>
 #include <d3dx9.h>
@@ -17,27 +18,41 @@ using namespace AsmHacks;
 
 #define TEXT_BORDER                 ( 10 )
 
-#define OVERLAY_ENABLE_COUNT        ( 8 )
+#define OVERLAY_CHANGE_DELTA        ( 4 + abs ( overlayHeight - newHeight ) / 4 )
 
 
 namespace DllHacks
 {
 
-static int overlayEnableState = 0;
+ENUM ( Overlay, Disabled, Disabling, Enabled, Enabling );
 
-string overlayText[3];
+static Overlay overlayState = Overlay::Disabled;
+
+static int overlayHeight = 0, oldHeight = 0, newHeight = 0;
+
+static array<string, 3> overlayText;
+
+static int getTextHeight ( const array<string, 3>& newText )
+{
+    int height = 0;
+
+    for ( const string& text : newText )
+        height = max ( height, FONT_HEIGHT * ( 1 + count ( text.begin(), text.end(), '\n' ) ) );
+
+    return height;
+}
 
 
 void enableOverlay()
 {
-    if ( overlayEnableState == 0 )
-        overlayEnableState = 1;
+    if ( overlayState != Overlay::Enabled )
+        overlayState = Overlay::Enabling;
 }
 
 void disableOverlay()
 {
-    if ( overlayEnableState > 0 )
-        overlayEnableState = -OVERLAY_ENABLE_COUNT;
+    if ( overlayState != Overlay::Disabled )
+        overlayState = Overlay::Disabling;
 }
 
 void toggleOverlay()
@@ -48,9 +63,60 @@ void toggleOverlay()
         enableOverlay();
 }
 
+void updateOverlay ( const array<string, 3>& newText )
+{
+    switch ( overlayState.value )
+    {
+        default:
+        case Overlay::Disabled:
+            overlayHeight = oldHeight = newHeight = 0;
+            return;
+
+        case Overlay::Disabling:
+            newHeight = 0;
+
+            if ( overlayHeight != newHeight )
+                break;
+
+            overlayState = Overlay::Disabled;
+            oldHeight = 0;
+            break;
+
+        case Overlay::Enabled:
+            newHeight = getTextHeight ( newText );
+
+            if ( newHeight > overlayHeight )
+                break;
+
+            if ( newHeight == overlayHeight )
+                oldHeight = overlayHeight;
+
+            overlayText = newText;
+            break;
+
+        case Overlay::Enabling:
+            newHeight = getTextHeight ( newText );
+
+            if ( overlayHeight != newHeight )
+                break;
+
+            overlayState = Overlay::Enabled;
+            oldHeight = overlayHeight;
+            break;
+    }
+
+    if ( overlayHeight == newHeight )
+        return;
+
+    if ( newHeight > overlayHeight )
+        overlayHeight = clamped ( overlayHeight + OVERLAY_CHANGE_DELTA, overlayHeight, newHeight );
+    else
+        overlayHeight = clamped ( overlayHeight - OVERLAY_CHANGE_DELTA, newHeight, overlayHeight );
+}
+
 bool isOverlayEnabled()
 {
-    return ( overlayEnableState > 0 );
+    return ( overlayState != Overlay::Disabled );
 }
 
 } // namespace DllHacks
@@ -130,23 +196,18 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
         background->Unlock();
     }
 
+    if ( overlayState == Overlay::Disabled )
+        return;
+
     D3DVIEWPORT9 viewport;
     device->GetViewport ( &viewport );
 
     // Only draw in the main viewport; there should only be one with this width
-    if ( overlayEnableState == 0 || viewport.Width != * CC_SCREEN_WIDTH_ADDR )
+    if ( viewport.Width != * CC_SCREEN_WIDTH_ADDR )
         return;
 
-    int textHeight = 0;
-
-    for ( string& text : overlayText )
-    {
-        text = trimmed ( text );
-        textHeight = max ( textHeight, FONT_HEIGHT * ( 1 + count ( text.begin(), text.end(), '\n' ) ) );
-    }
-
-    const float scaleY = ( float ( textHeight + 2 * TEXT_BORDER ) / viewport.Height )
-                         * getNegativeQuadraticScale ( abs ( overlayEnableState ), OVERLAY_ENABLE_COUNT );
+    // Scaling factor for the overlay background
+    const float scaleY = float ( overlayHeight + 2 * TEXT_BORDER ) / viewport.Height;
 
     D3DXMATRIX translate, scale;
     D3DXMatrixScaling ( &scale, 1.0f, scaleY, 1.0f );
@@ -157,19 +218,9 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
     device->SetFVF ( Vertex::format );
     device->DrawPrimitive ( D3DPT_TRIANGLESTRIP, 0, 2 );
 
-    // Enabling overlay
-    if ( overlayEnableState > 0 && overlayEnableState < OVERLAY_ENABLE_COUNT )
-    {
-        ++overlayEnableState;
+    // Only draw text if fully enabled
+    if ( overlayState != Overlay::Enabled )
         return;
-    }
-
-    // Disabling overlay
-    if ( overlayEnableState < 0 )
-    {
-        ++overlayEnableState;
-        return;
-    }
 
     if ( ! ( overlayText[0].empty() && overlayText[1].empty() && overlayText[2].empty() ) )
     {
@@ -179,7 +230,7 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
         rect.left   = centerX - int ( ( viewport.Width / 2 ) * 1.0 ) + TEXT_BORDER;
         rect.right  = centerX + int ( ( viewport.Width / 2 ) * 1.0 ) - TEXT_BORDER;
         rect.top    = TEXT_BORDER;
-        rect.bottom = rect.top + textHeight + TEXT_BORDER;
+        rect.bottom = rect.top + overlayHeight + TEXT_BORDER;
 
         if ( !overlayText[0].empty() )
             DrawText ( overlayText[0], rect, DT_LEFT, 255, 0, 0 );
