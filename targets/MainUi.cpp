@@ -400,7 +400,7 @@ void MainUi::controls()
                     continue;
 
                 ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger,
-                                                        "Enter a value between 0 and 32768:" ) );
+                                  "Enter a value between 0 and 32768:" ) );
 
                 ui->top<ConsoleUi::Prompt>()->allowNegative = false;
                 ui->top<ConsoleUi::Prompt>()->maxDigits = 5;
@@ -658,8 +658,9 @@ void MainUi::initialize()
     for ( Controller *controller : ControllerManager::get().getControllers() )
         controller->resetToDefault();
 
-    // Load all controller mappings
+    // Load then save all controller mappings
     ControllerManager::get().loadMappings ( appDir + FOLDER, MAPPINGS_EXT );
+    ControllerManager::get().saveMappings ( appDir + FOLDER, MAPPINGS_EXT );
 }
 
 void MainUi::saveConfig()

@@ -14,9 +14,11 @@ using namespace std;
 using namespace AsmHacks;
 
 
-#define OVERLAY_FONT                "Lucida Console"
+#define OVERLAY_FONT                "Tahoma"
 
-#define OVERLAY_FONT_HEIGHT         ( 18 )
+#define OVERLAY_FONT_HEIGHT         ( 14 )
+
+#define OVERLAY_FONT_WEIGHT         ( 600 )
 
 #define OVERLAY_TEXT_COLOR          D3DCOLOR_XRGB ( 255, 0, 0 )
 
@@ -170,7 +172,7 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
         D3DXCreateFont ( device,                                // device pointer
                          OVERLAY_FONT_HEIGHT,                   // height
                          0,                                     // width
-                         FW_REGULAR,                            // weight
+                         OVERLAY_FONT_WEIGHT,                   // weight
                          1,                                     // # of mipmap levels
                          false,                                 // italic
                          DEFAULT_CHARSET,                       // charset

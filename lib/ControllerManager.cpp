@@ -311,6 +311,25 @@ void ControllerMappings::load ( cereal::BinaryInputArchive& ar )
     }
 }
 
+size_t ControllerManager::saveMappings ( const string& folder, const string& ext ) const
+{
+    size_t count = 0;
+
+    for ( auto& kv : mappings.mappings )
+    {
+        const string file = folder + kv.first + ext;
+
+        if ( !saveMappings ( file, kv.second ) )
+            continue;
+
+        ++count;
+
+        LOG ( "Saved: %s", file );
+    }
+
+    return count;
+}
+
 size_t ControllerManager::loadMappings ( const string& folder, const string& ext )
 {
     WIN32_FIND_DATA fd;
@@ -360,6 +379,17 @@ size_t ControllerManager::loadMappings ( const string& folder, const string& ext
     setMappings ( mappings );
 
     return count;
+}
+
+bool ControllerManager::saveMappings ( const std::string& file, const MsgPtr& mappings )
+{
+    if ( mappings->getMsgType() == MsgType::KeyboardMappings )
+        return saveMappings ( file, mappings->getAs<KeyboardMappings>() );
+
+    if ( mappings->getMsgType() == MsgType::JoystickMappings )
+        return saveMappings ( file, mappings->getAs<JoystickMappings>() );
+
+    return false;
 }
 
 bool ControllerManager::saveMappings ( const string& file, const KeyboardMappings& mappings )
