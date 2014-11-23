@@ -97,7 +97,7 @@ static char getAxisSign ( int index, int value )
 {
     if ( value == 0 )
         return '0';
-    else if ( index % 2 == 0 || index >= 4 )
+    else if ( index % 2 == 0 || index > 2 )
         return ( value == AXIS_POSITIVE ? '+' : '-' );
     else
         return ( value == AXIS_POSITIVE ? '-' : '+' ); // SDL joystick Y-axis is inverted
@@ -431,8 +431,8 @@ string Controller::getMapping ( uint32_t key ) const
             switch ( type )
             {
                 case EVENT_JOY_AXIS:
-                    if ( index < 4 )
-                        return format ( "%c %c-Axis", getAxisSign ( index, value ), ( index == 0 ? 'X' : 'Y' ) );
+                    if ( index <= 2 )
+                        return format ( "%c %c-Axis", getAxisSign ( index, value ), 'X' + index );
                     else
                         return format ( "%c Axis (%u)", getAxisSign ( index, value ), index + 1 );
 
