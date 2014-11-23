@@ -289,7 +289,7 @@ endif
 
 
 %.o: %.cpp
-	$(CXX) $(CC_FLAGS) -Wall -std=c++11 -o $@ -c $<
+	$(CXX) $(CC_FLAGS) -Wall -Wempty-body -std=c++11 -o $@ -c $<
 
 %.o: %.cc
 	$(CXX) $(CC_FLAGS) -o $@ -c $<
