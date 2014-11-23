@@ -6,6 +6,7 @@
 #include <windows.h>
 
 #include <algorithm>
+#include <fstream>
 
 using namespace std;
 
@@ -308,4 +309,117 @@ void ControllerMappings::load ( cereal::BinaryInputArchive& ar )
 
         ASSERT ( consumed == buffer.size() );
     }
+}
+
+size_t ControllerManager::loadMappings ( const string& folder, const string& ext )
+{
+    WIN32_FIND_DATA fd;
+    HANDLE handle = 0;
+
+    // File path with glob
+    string path = folder + "*" + ext;
+
+    if ( ( handle = FindFirstFile ( path.c_str(), &fd ) ) == INVALID_HANDLE_VALUE )
+    {
+        LOG ( "Path not found: %s", path );
+        return 0;
+    }
+
+    size_t count = 0;
+
+    do
+    {
+        // Ignore "." and ".."
+        if ( !strcmp ( fd.cFileName, "." ) || !strcmp ( fd.cFileName, ".." ) )
+            continue;
+
+        // Ignore folders
+        if ( fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY )
+            continue;
+
+        MsgPtr msg = loadMappings ( folder + fd.cFileName );
+
+        if ( !msg )
+            continue;
+
+        if ( msg->getMsgType() == MsgType::KeyboardMappings )
+            mappings.mappings [ msg->getAs<KeyboardMappings>().name ] = msg;
+        else if ( msg->getMsgType() == MsgType::JoystickMappings )
+            mappings.mappings [ msg->getAs<JoystickMappings>().name ] = msg;
+        else
+            continue;
+
+        ++count;
+
+        LOG ( "Loaded: %s", folder + fd.cFileName );
+    }
+    while ( FindNextFile ( handle, &fd ) ); // Find the next file.
+
+    FindClose ( handle );
+
+    setMappings ( mappings );
+
+    return count;
+}
+
+bool ControllerManager::saveMappings ( const string& file, const KeyboardMappings& mappings )
+{
+    ofstream fout ( file.c_str(), ios::binary );
+    bool good = fout.good();
+
+    if ( good )
+    {
+        const string buffer = Protocol::encode ( mappings );
+
+        fout.write ( &buffer[0], buffer.size() );
+
+        good = fout.good();
+    }
+
+    fout.close();
+    return good;
+}
+
+bool ControllerManager::saveMappings ( const string& file, const JoystickMappings& mappings )
+{
+    ofstream fout ( file.c_str(), ios::binary );
+    bool good = fout.good();
+
+    if ( good )
+    {
+        const string buffer = Protocol::encode ( mappings );
+
+        fout.write ( &buffer[0], buffer.size() );
+
+        good = fout.good();
+    }
+
+    fout.close();
+    return good;
+}
+
+MsgPtr ControllerManager::loadMappings ( const string& file )
+{
+    MsgPtr msg;
+    ifstream fin ( file.c_str(), ios::binary );
+    bool good = fin.good();
+
+    if ( good )
+    {
+        stringstream ss;
+        ss << fin.rdbuf();
+
+        string buffer = ss.str();
+        size_t consumed;
+
+        msg = Protocol::decode ( &buffer[0], buffer.size(), consumed );
+
+        if ( !msg )
+            LOG ( "Failed to decode %u bytes", buffer.size() );
+        else if ( consumed != buffer.size() )
+            LOG ( "Warning: consumed bytes %u != buffer size %u", consumed, buffer.size() );
+    }
+
+    fin.close();
+    return msg;
 }

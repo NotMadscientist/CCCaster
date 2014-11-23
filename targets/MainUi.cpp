@@ -571,12 +571,8 @@ void MainUi::initialize()
     // Default keyboard mappings
     ControllerManager::get().getKeyboard()->setMappings ( ProcessManager::fetchKeyboardConfig() );
 
-    // Load and save controller mappings
-    for ( Controller *c : ControllerManager::get().getControllers() )
-    {
-        loadMappings ( *c );
-        saveMappings ( *c );
-    }
+    // Load all controller mappings
+    ControllerManager::get().loadMappings ( appDir + FOLDER, MAPPINGS_EXT );
 }
 
 void MainUi::saveConfig()

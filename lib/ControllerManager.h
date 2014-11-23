@@ -102,6 +102,14 @@ public:
     void deinitialize();
     bool isInitialized() const { return initialized; }
 
+    // Load mappings from a folder, returns the number of mappings loaded
+    size_t loadMappings ( const std::string& folder, const std::string& ext );
+
+    // Save / load mappings
+    static bool saveMappings ( const std::string& file, const KeyboardMappings& mappings );
+    static bool saveMappings ( const std::string& file, const JoystickMappings& mappings );
+    static MsgPtr loadMappings ( const std::string& file );
+
     // Get the singleton instance
     static ControllerManager& get();
 };

@@ -833,6 +833,7 @@ struct DllMain
 
             case MsgType::ControllerMappings:
                 mappings = msg->getAs<ControllerMappings>();
+                ControllerManager::get().owner = this;
                 ControllerManager::get().setMappings ( mappings );
                 ControllerManager::get().check();
                 allControllers = const_cast<const ControllerManager&> ( ControllerManager::get() ).getControllers();
@@ -963,7 +964,11 @@ struct DllMain
         if ( playerControllers[1] == controller )
             playerControllers[1] = 0;
 
-        remove ( allControllers.begin(), allControllers.end(), controller );
+        auto it = find ( allControllers.begin(), allControllers.end(), controller );
+
+        ASSERT ( it != allControllers.end() );
+
+        allControllers.erase ( it );
     }
 
     // Controller callback
@@ -1035,6 +1040,8 @@ struct DllMain
         syncLog.deinitialize();
 
         procMan.disconnectPipe();
+
+        ControllerManager::get().owner = 0;
 
         // Timer and controller deinitialization is not done here because of threading issues
     }
@@ -1239,7 +1246,7 @@ extern "C" void callback()
 
             // Joystick and timer must be initialized in the main thread
             TimerManager::get().initialize();
-            ControllerManager::get().initialize ( main.get() );
+            ControllerManager::get().initialize ( 0 );
 
             // Start polling now
             EventManager::get().startPolling();

@@ -8,7 +8,6 @@
 #include <windows.h>
 
 #include <cstdlib>
-#include <fstream>
 #include <limits>
 
 using namespace std;
@@ -577,93 +576,53 @@ void Controller::clearMapping ( uint32_t keys )
 
 bool Controller::saveMappings ( const string& file ) const
 {
-    ofstream fout ( file.c_str(), ios::binary );
-    bool good = fout.good();
-
-    if ( good )
-    {
-        string buffer;
-
-        if ( isKeyboard() )
-            buffer = Protocol::encode ( keybd );
-        else
-            buffer = Protocol::encode ( stick );
-
-        fout.write ( &buffer[0], buffer.size() );
-
-        good = fout.good();
-    }
-
-    fout.close();
-    return good;
+    if ( isKeyboard() )
+        return ControllerManager::saveMappings ( file, keybd );
+    else
+        return ControllerManager::saveMappings ( file, stick );
 }
 
 bool Controller::loadMappings ( const string& file )
 {
-    ifstream fin ( file.c_str(), ios::binary );
-    bool good = fin.good();
+    MsgPtr msg = ControllerManager::loadMappings ( file );
 
-    if ( good )
+    if ( !msg )
+        return false;
+
+    if ( isKeyboard() )
     {
-        stringstream ss;
-        ss << fin.rdbuf();
-
-        string buffer = ss.str();
-        size_t consumed;
-
-        MsgPtr msg = Protocol::decode ( &buffer[0], buffer.size(), consumed );
-
-        if ( !msg )
+        if ( msg->getMsgType() != MsgType::KeyboardMappings )
         {
-            LOG ( "Failed to decode %u bytes", buffer.size() );
-            good = false;
+            LOG ( "Invalid keyboard mapping type: %s", msg->getMsgType() );
+            return false;
         }
-        else
+
+        if ( msg->getAs<KeyboardMappings>().name != keybd.name )
         {
-            if ( consumed != buffer.size() )
-                LOG ( "Warning: consumed bytes %u != buffer size %u", consumed, buffer.size() );
-
-            if ( isKeyboard() )
-            {
-                if ( msg->getMsgType() != MsgType::KeyboardMappings )
-                {
-                    LOG ( "Invalid keyboard mapping type: %s", msg->getMsgType() );
-                    good = false;
-                }
-                else
-                {
-                    if ( msg->getAs<KeyboardMappings>().name != keybd.name )
-                    {
-                        LOG ( "Name mismatch: decoded '%s' != keyboard '%s'",
-                              msg->getAs<KeyboardMappings>().name, keybd.name );
-                    }
-
-                    keybd = msg->getAs<KeyboardMappings>();
-                    ControllerManager::get().mappingsChanged ( this );
-                }
-            }
-            else // if ( isJoystick() )
-            {
-                if ( msg->getMsgType() != MsgType::JoystickMappings )
-                {
-                    LOG ( "Invalid joystick mapping type: %s", msg->getMsgType() );
-                    good = false;
-                }
-                else
-                {
-                    if ( msg->getAs<JoystickMappings>().name != stick.name )
-                    {
-                        LOG ( "Name mismatch: decoded '%s' != joystick '%s'",
-                              msg->getAs<JoystickMappings>().name, stick.name );
-                    }
-
-                    stick = msg->getAs<JoystickMappings>();
-                    ControllerManager::get().mappingsChanged ( this );
-                }
-            }
+            LOG ( "Name mismatch: decoded '%s' != keyboard '%s'",
+                  msg->getAs<KeyboardMappings>().name, keybd.name );
         }
+
+        keybd = msg->getAs<KeyboardMappings>();
+        ControllerManager::get().mappingsChanged ( this );
+    }
+    else // if ( isJoystick() )
+    {
+        if ( msg->getMsgType() != MsgType::JoystickMappings )
+        {
+            LOG ( "Invalid joystick mapping type: %s", msg->getMsgType() );
+            return false;
+        }
+
+        if ( msg->getAs<JoystickMappings>().name != stick.name )
+        {
+            LOG ( "Name mismatch: decoded '%s' != joystick '%s'",
+                  msg->getAs<JoystickMappings>().name, stick.name );
+        }
+
+        stick = msg->getAs<JoystickMappings>();
+        ControllerManager::get().mappingsChanged ( this );
     }
 
-    fin.close();
-    return good;
+    return true;
 }
