@@ -320,7 +320,7 @@ void MainUi::controls()
             for ( size_t i = 0; i < gameInputBits.size(); ++i )
             {
                 const string mapping = controller.getMapping ( gameInputBits[i].second );
-                options[i] = format ( "%11s: %s", gameInputBits[i].first, mapping );
+                options[i] = format ( "%-11s: %s", gameInputBits[i].first, mapping );
             }
 
             options.push_back ( "Reset to defaults" );
@@ -420,7 +420,7 @@ void MainUi::controls()
             }
 
             // Map selected key
-            ui->top<ConsoleUi::Menu>()->overlayCurrentPosition ( format ( "%11s: ...", gameInputBits[pos].first ) );
+            ui->top<ConsoleUi::Menu>()->overlayCurrentPosition ( format ( "%-11s: ...", gameInputBits[pos].first ) );
 
             AutoManager _;
 

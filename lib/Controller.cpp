@@ -341,6 +341,8 @@ Controller::Controller ( KeyboardEnum ) : name ( "Keyboard" )
     origNameCount[name] = 1;
 
     doClearMapping();
+
+    resetToDefaults();
 }
 
 Controller::Controller ( SDL_Joystick *joystick ) : name ( SDL_JoystickName ( joystick ) ), joystick ( joystick )
@@ -355,6 +357,8 @@ Controller::Controller ( SDL_Joystick *joystick ) : name ( SDL_JoystickName ( jo
         ++it->second;
 
     doClearMapping();
+
+    resetToDefaults();
 }
 
 Controller::~Controller()
