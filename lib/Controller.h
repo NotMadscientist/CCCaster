@@ -25,6 +25,7 @@
 
 #define DEFAULT_DEADZONE    ( 25000 )
 
+
 // Forward declarations
 struct _SDL_Joystick;
 typedef struct _SDL_Joystick SDL_Joystick;
@@ -193,7 +194,7 @@ public:
     void clearMapping ( uint32_t keys );
     void clearAllMappings() { clearMapping ( 0xFFFFFFFF ); }
 
-    // Reset to default mappings
+    // Reset default mappings (joystick only)
     void resetToDefaults();
 
     // Get / set joystick deadzone

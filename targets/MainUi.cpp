@@ -307,40 +307,20 @@ void MainUi::controls()
 
         Controller& controller = *controllers[menu->resultInt];
 
-        static const vector<pair<string, uint32_t>> bits =
-        {
-            { "Up         : ",    BIT_UP },
-            { "Down       : ",  BIT_DOWN },
-            { "Left       : ",  BIT_LEFT },
-            { "Right      : ", BIT_RIGHT },
-            { "A (confirm): ", ( CC_BUTTON_A | CC_BUTTON_CONFIRM ) << 8 },
-            { "B (cancel) : ", ( CC_BUTTON_B | CC_BUTTON_CANCEL ) << 8 },
-            { "C          : ", CC_BUTTON_C << 8 },
-            { "D          : ", CC_BUTTON_D << 8 },
-            { "E          : ", CC_BUTTON_E << 8 },
-            { "Start      : ", CC_BUTTON_START << 8 },
-            { "FN1        : ", CC_BUTTON_FN1 << 8 },
-            { "FN2        : ", CC_BUTTON_FN2 << 8 },
-            { "A+B        : ", CC_BUTTON_AB << 8 },
-        };
-
         ui->clearTop();
 
-        // TODO fix default joystick mappings
-        // int position = ( controller.isKeyboard() ? 0 : 4 );
-
-        int position = 0;
+        int position = ( controller.isKeyboard() ? 0 : 4 );
 
         for ( ;; )
         {
             loadMappings ( controller );
 
-            vector<string> options ( bits.size() );
+            vector<string> options ( gameInputBits.size() );
 
-            for ( size_t i = 0; i < bits.size(); ++i )
+            for ( size_t i = 0; i < gameInputBits.size(); ++i )
             {
-                const string option = controller.getMapping ( bits[i].second );
-                options[i] = bits[i].first + ( option.empty() ? "   " : option );
+                const string mapping = controller.getMapping ( gameInputBits[i].second );
+                options[i] = format ( "%11s: %s", gameInputBits[i].first, mapping );
             }
 
             options.push_back ( "Reset to defaults" );
@@ -366,7 +346,7 @@ void MainUi::controls()
             }
 
             // Reset to defaults
-            if ( position == ( int ) bits.size() )
+            if ( position == ( int ) gameInputBits.size() )
             {
                 if ( areYouSure() )
                 {
@@ -379,7 +359,7 @@ void MainUi::controls()
             }
 
             // Clear all
-            if ( position == ( int ) bits.size() + 1 )
+            if ( position == ( int ) gameInputBits.size() + 1 )
             {
                 if ( areYouSure() )
                 {
@@ -392,7 +372,7 @@ void MainUi::controls()
             }
 
             // Set joystick deadzone
-            if ( position == ( int ) bits.size() + 2 )
+            if ( position == ( int ) gameInputBits.size() + 2 )
             {
                 ui->pop();
 
@@ -431,8 +411,8 @@ void MainUi::controls()
             // Delete specific mapping
             if ( ui->top()->resultStr.empty() )
             {
-                if ( position < ( int ) bits.size() )
-                    controller.clearMapping ( bits[position].second );
+                if ( position < ( int ) gameInputBits.size() )
+                    controller.clearMapping ( gameInputBits[position].second );
 
                 saveMappings ( controller );
                 ui->pop();
@@ -440,13 +420,13 @@ void MainUi::controls()
             }
 
             // Map selected key
-            ui->top<ConsoleUi::Menu>()->overlayCurrentPosition ( bits[position].first + "..." );
+            ui->top<ConsoleUi::Menu>()->overlayCurrentPosition ( gameInputBits[position].first + "..." );
 
             AutoManager _;
 
             if ( controller.isKeyboard() )
             {
-                controller.startMapping ( this, bits[position].second, getConsoleWindow() );
+                controller.startMapping ( this, gameInputBits[position].second, getConsoleWindow() );
 
                 EventManager::get().start();
             }
@@ -454,7 +434,7 @@ void MainUi::controls()
             {
                 ControllerManager::get().check(); // Flush joystick events before mapping
 
-                controller.startMapping ( this, bits[position].second, getConsoleWindow() );
+                controller.startMapping ( this, gameInputBits[position].second, getConsoleWindow() );
 
                 EventManager::get().startPolling();
 
@@ -470,7 +450,7 @@ void MainUi::controls()
             {
                 ++position;
 
-                if ( position < ( int ) bits.size() )
+                if ( position < ( int ) gameInputBits.size() )
                     _ungetch ( RETURN_KEY );
             }
         }
@@ -655,7 +635,8 @@ void MainUi::initialize()
     ControllerManager::get().check();
 
     // Setup default mappings
-    for ( Controller *controller : ControllerManager::get().getControllers() )
+    ControllerManager::get().getKeyboard()->setMappings ( ProcessManager::fetchKeyboardConfig() );
+    for ( Controller *controller : ControllerManager::get().getJoysticks() )
         controller->resetToDefaults();
 
     // Load then save all controller mappings

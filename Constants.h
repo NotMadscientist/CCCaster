@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <iostream>
 
+#include "Controller.h"
+
 
 // Number of frames of inputs to send per message
 #define NUM_INPUTS                  ( 30 )
@@ -200,3 +202,21 @@ inline const char *gameModeStr ( uint32_t gameMode )
 
     return "Unknown game mode!";
 }
+
+
+const std::vector<std::pair<std::string, uint32_t>> gameInputBits =
+{
+    { "Up",          BIT_UP },
+    { "Down",        BIT_DOWN },
+    { "Left",        BIT_LEFT },
+    { "Right",       BIT_RIGHT },
+    { "A (confirm)", ( CC_BUTTON_A | CC_BUTTON_CONFIRM ) << 8 },
+    { "B (cancel)",  ( CC_BUTTON_B | CC_BUTTON_CANCEL ) << 8 },
+    { "C",           CC_BUTTON_C << 8 },
+    { "D",           CC_BUTTON_D << 8 },
+    { "E",           CC_BUTTON_E << 8 },
+    { "Start",       CC_BUTTON_START << 8 },
+    { "FN1",         CC_BUTTON_FN1 << 8 },
+    { "FN2",         CC_BUTTON_FN2 << 8 },
+    { "A+B",         CC_BUTTON_AB << 8 },
+};

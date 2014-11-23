@@ -3,7 +3,6 @@
 #include "Constants.h"
 #include "Exceptions.h"
 #include "ErrorStrings.h"
-#include "ProcessManager.h"
 
 #include <SDL.h>
 #include <windows.h>
@@ -405,36 +404,57 @@ string Controller::getMapping ( uint32_t key ) const
 
         return "";
     }
-    else
+    else if ( isJoystick() )
     {
-        uint8_t type, index, value;
+        string ret;
 
-        if ( stick.find ( key, type, index, value ) )
+        for ( uint8_t type = 0; type < 3; ++type )
         {
-            switch ( type )
+            for ( uint16_t index = 0; index < 256; ++index )
             {
-                case EVENT_JOY_AXIS:
-                    if ( index <= 2 )
-                        return format ( "%c %c-Axis", getAxisSign ( index, value ), 'X' + index );
-                    else
-                        return format ( "%c Axis (%u)", getAxisSign ( index, value ), index + 1 );
+                for ( uint8_t value = 1; value < 16; ++value ) // We skip value=0 since it is the neutral value
+                {
+                    if ( stick.mappings[type][index][value] == key )
+                    {
+                        string mapping;
 
-                case EVENT_JOY_HAT:
-                    if ( index == 0 )
-                        return format ( "POV %s", getHatString ( value ) );
-                    else
-                        return format ( "POV (%u) %s", index + 1, getHatString ( value ) );
+                        switch ( type )
+                        {
+                            case EVENT_JOY_AXIS:
+                                if ( index <= 2 )
+                                    mapping = format ( "%c %c-Axis", getAxisSign ( index, value ), 'X' + index );
+                                else
+                                    mapping = format ( "%c Axis (%u)", getAxisSign ( index, value ), index + 1 );
+                                break;
 
-                case EVENT_JOY_BUTTON:
-                    return format ( "Button %u", index + 1 );
+                            case EVENT_JOY_HAT:
+                                if ( index == 0 )
+                                    mapping = format ( "DPad %s", getHatString ( value ) );
+                                else
+                                    mapping = format ( "DPad (%u) %s", index + 1, getHatString ( value ) );
+                                break;
 
-                default:
-                    ASSERT_IMPOSSIBLE;
+                            case EVENT_JOY_BUTTON:
+                                mapping = format ( "Button %u", index + 1 );
+                                break;
+
+                            default:
+                                ASSERT_IMPOSSIBLE;
+                        }
+
+                        if ( ret.empty() )
+                            ret = mapping;
+                        else
+                            ret += ", " + mapping;
+                    }
+                }
             }
         }
 
-        return "";
+        return ret;
     }
+
+    return "";
 }
 
 void Controller::setMappings ( const array<char, 10>& config )
@@ -563,36 +583,27 @@ void Controller::clearMapping ( uint32_t keys )
 
 void Controller::resetToDefaults()
 {
-    if ( isKeyboard() )
-    {
-        setMappings ( ProcessManager::fetchKeyboardConfig() );
-    }
-    else
-    {
-        // TODO default joystick mappings
-        // // Default axis mappings
-        // stick.mappings[EVENT_JOY_AXIS][0][0] = MASK_X_AXIS;
-        // stick.mappings[EVENT_JOY_AXIS][0][AXIS_POSITIVE] = BIT_RIGHT;
-        // stick.mappings[EVENT_JOY_AXIS][0][AXIS_NEGATIVE] = BIT_LEFT;
-        // stick.mappings[EVENT_JOY_AXIS][1][0] = MASK_Y_AXIS;
-        // stick.mappings[EVENT_JOY_AXIS][1][AXIS_POSITIVE] = BIT_DOWN; // SDL joystick Y-axis is inverted
-        // stick.mappings[EVENT_JOY_AXIS][1][AXIS_NEGATIVE] = BIT_UP;
-        // stick.mappings[EVENT_JOY_AXIS][2][0] = MASK_X_AXIS;
-        // stick.mappings[EVENT_JOY_AXIS][2][AXIS_POSITIVE] = BIT_RIGHT;
-        // stick.mappings[EVENT_JOY_AXIS][2][AXIS_NEGATIVE] = BIT_LEFT;
-        // stick.mappings[EVENT_JOY_AXIS][3][0] = MASK_Y_AXIS;
-        // stick.mappings[EVENT_JOY_AXIS][3][AXIS_POSITIVE] = BIT_DOWN; // SDL joystick Y-axis is inverted
-        // stick.mappings[EVENT_JOY_AXIS][3][AXIS_NEGATIVE] = BIT_UP;
+    if ( !isJoystick() )
+        return;
 
-        // // Default hat mappings
-        // stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_CENTERED] = ( MASK_X_AXIS | MASK_Y_AXIS );
-        // stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_UP]       = BIT_UP;
-        // stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_RIGHT]    = BIT_RIGHT;
-        // stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_DOWN]     = BIT_DOWN;
-        // stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_LEFT]     = BIT_LEFT;
+    // Default axis mappings
+    stick.mappings[EVENT_JOY_AXIS][0][0] = MASK_X_AXIS;
+    stick.mappings[EVENT_JOY_AXIS][0][AXIS_POSITIVE] = BIT_RIGHT;
+    stick.mappings[EVENT_JOY_AXIS][0][AXIS_NEGATIVE] = BIT_LEFT;
+    stick.mappings[EVENT_JOY_AXIS][1][0] = MASK_Y_AXIS;
+    stick.mappings[EVENT_JOY_AXIS][1][AXIS_POSITIVE] = BIT_DOWN; // SDL joystick Y-axis is inverted
+    stick.mappings[EVENT_JOY_AXIS][1][AXIS_NEGATIVE] = BIT_UP;
 
-        stick.deadzone = DEFAULT_DEADZONE;
-    }
+    // Default hat mappings
+    stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_CENTERED] = ( MASK_X_AXIS | MASK_Y_AXIS );
+    stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_UP]       = BIT_UP;
+    stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_RIGHT]    = BIT_RIGHT;
+    stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_DOWN]     = BIT_DOWN;
+    stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_LEFT]     = BIT_LEFT;
+
+    stick.deadzone = DEFAULT_DEADZONE;
+
+    ControllerManager::get().mappingsChanged ( this );
 }
 
 bool Controller::saveMappings ( const string& file ) const
