@@ -197,6 +197,12 @@ void ControllerManager::clear()
 {
     LOG ( "Clearing controllers" );
 
+    if ( owner )
+    {
+        for ( auto& kv : joysticks )
+            owner->detachedJoystick ( kv.second.get() );
+    }
+
     joysticks.clear();
     joysticksByName.clear();
 }
