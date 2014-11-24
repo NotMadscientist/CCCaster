@@ -258,7 +258,7 @@ struct DllMain
                 }
 
 #ifndef RELEASE
-                // Test random inputs
+                // Test random input
                 static bool randomize = false;
 
                 if ( DllHacks::mainWindowHandle == ( void * ) GetForegroundWindow() )
@@ -301,7 +301,7 @@ struct DllMain
                 }
 #endif
 
-                // Assign local player inputs
+                // Assign local player input
                 netMan.setInput ( localPlayer, localInputs[0] );
 
                 if ( clientMode.isNetplay() )
@@ -324,11 +324,9 @@ struct DllMain
                 }
                 else if ( clientMode.isLocal() )
                 {
-                    // Update player 2 inputs
-                    if ( playerControllers[1] )
+                    if ( playerControllers[1] && !DllHacks::isOverlayEnabled() )
                         localInputs[1] = getInput ( playerControllers[1] );
 
-                    // Assign remote player inputs
                     netMan.setInput ( remotePlayer, localInputs[1] );
                 }
 
@@ -872,6 +870,7 @@ struct DllMain
             case MsgType::ControllerMappings:
                 mappings = msg->getAs<ControllerMappings>();
                 ControllerManager::get().owner = this;
+                ControllerManager::get().getKeyboard()->setMappings ( ProcessManager::fetchKeyboardConfig() );
                 ControllerManager::get().setMappings ( mappings );
                 ControllerManager::get().check();
                 allControllers = const_cast<const ControllerManager&> ( ControllerManager::get() ).getControllers();
@@ -1211,6 +1210,8 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
                 if ( !gameDir.empty() && gameDir.back() != '\\' )
                     gameDir += '\\';
             }
+
+            ProcessManager::gameDir = gameDir;
 
             srand ( time ( 0 ) );
 

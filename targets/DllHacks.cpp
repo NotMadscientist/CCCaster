@@ -29,7 +29,7 @@ using namespace DllHacks;
 
 #define OVERLAY_SELECTOR_L_COLOR        D3DCOLOR_XRGB ( 220, 0, 0 )
 
-#define OVERLAY_SELECTOR_R_COLOR        D3DCOLOR_XRGB ( 0, 0, 240 )
+#define OVERLAY_SELECTOR_R_COLOR        D3DCOLOR_XRGB ( 0, 0, 255 )
 
 #define OVERLAY_SELECTOR_X_BORDER       ( 3 )
 
@@ -62,7 +62,7 @@ static array<RECT, 2> overlaySelector;
 
 static array<bool, 2> drawSelector { false, false };
 
-static int getTextHeight ( const array<string, 3>& newText )
+static inline int getTextHeight ( const array<string, 3>& newText )
 {
     int height = 0;
 
