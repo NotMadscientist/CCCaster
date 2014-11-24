@@ -46,7 +46,7 @@ static string getVKeyName ( uint32_t vkCode, uint32_t scanCode, bool isExtended 
 
 void Controller::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown )
 {
-    // Ignore keyboard events for joystick (except Esc)
+    // Ignore keyboard events for joystick (except ESC)
     if ( isJoystick() && vkCode != VK_ESCAPE )
         return;
 
@@ -312,9 +312,9 @@ void Controller::joystickEvent ( const SDL_JoyButtonEvent& event )
     // LOG_CONTROLLER ( this, "button=%d; value=%d; EVENT_JOY_BUTTON", event.button, ( event.state == SDL_PRESSED ) );
 }
 
-static unordered_set<std::string> namesWithIndex;
+static unordered_set<string> namesWithIndex;
 
-static unordered_map<std::string, uint32_t> origNameCount;
+static unordered_map<string, uint32_t> origNameCount;
 
 static string nextName ( const string& name )
 {
@@ -396,8 +396,11 @@ static string getHatString ( int hat )
     return dir;
 }
 
-string Controller::getMapping ( uint32_t key ) const
+string Controller::getMapping ( uint32_t key, const string& placeholder ) const
 {
+    if ( key == keyToMap && !placeholder.empty() )
+        return placeholder;
+
     if ( isKeyboard() )
     {
         for ( uint8_t i = 0; i < 32; ++i )
@@ -512,7 +515,7 @@ void Controller::setMappings ( const JoystickMappings& mappings )
     ControllerManager::get().mappingsChanged ( this );
 }
 
-void Controller::startMapping ( Owner *owner, uint32_t key, const void *window )
+void Controller::startMapping ( Owner *owner, uint32_t key, const void *window, const unordered_set<uint32_t>& ignore )
 {
     cancelMapping();
 
@@ -525,13 +528,15 @@ void Controller::startMapping ( Owner *owner, uint32_t key, const void *window )
     keyToMap = key;
 
     if ( isKeyboard() )
-        KeyboardManager::get().hook ( this, window ); // Check all keys
+        KeyboardManager::get().hook ( this, window, {}, ignore ); // Check all except ignored keys
     else
-        KeyboardManager::get().hook ( this, window , { VK_ESCAPE } );
+        KeyboardManager::get().hook ( this, window, { VK_ESCAPE } ); // Only check ESC key
 }
 
 void Controller::cancelMapping()
 {
+    LOG ( "Cancel mapping %08x", keyToMap );
+
     KeyboardManager::get().unhook();
 
     owner = 0;

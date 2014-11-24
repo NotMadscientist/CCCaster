@@ -173,7 +173,7 @@ public:
     bool isUniqueName() const;
 
     // Get the mapping for the given key as a human-readable string
-    std::string getMapping ( uint32_t key ) const;
+    std::string getMapping ( uint32_t key, const std::string& placeholder = "" ) const;
 
     // Get the mappings for this controller
     MsgPtr getMappings() const
@@ -190,8 +190,11 @@ public:
     void setMappings ( const JoystickMappings& mappings );
 
     // Start / cancel mapping for the given key
-    void startMapping ( Owner *owner, uint32_t key, const void *window = 0 );
+    void startMapping ( Owner *owner, uint32_t key,
+                        const void *window = 0,                             // Window to match for keyboard events
+                        const std::unordered_set<uint32_t>& ignore = {} );  // VK codes to IGNORE
     void cancelMapping();
+    bool isMapping() const { return ( keyToMap != 0 ); }
 
     // Clear this controller's mapping(s)
     void clearMapping ( uint32_t keys );

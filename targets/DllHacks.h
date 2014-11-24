@@ -9,7 +9,7 @@
 namespace DllHacks
 {
 
-extern void *mainWindowHandle;
+extern void *windowHandle;
 
 
 void enableOverlay();

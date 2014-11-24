@@ -46,9 +46,10 @@ public:
 
     // Hook keyboard events
     void hook ( Owner *owner,
-                const void *window = 0,                         // Window to match for keyboard events, 0 to match all
-                const std::unordered_set<uint32_t>& keys = {},  // VK codes to match, empty to match all
-                uint8_t options = 0 );                          // Keyboard event hooking options
+                const void *window = 0,                          // Window to match for keyboard events, 0 to match all
+                const std::unordered_set<uint32_t>& keys = {},   // VK codes to match, empty to match all
+                const std::unordered_set<uint32_t>& ignore = {}, // VK codes to specifically IGNORE
+                uint8_t options = 0 );                           // Keyboard event hooking options
 
     // Unhook keyboard events
     void unhook();

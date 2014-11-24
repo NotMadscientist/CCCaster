@@ -657,7 +657,7 @@ void MainUi::saveConfig()
 
     LOG ( "%s", msg );
 
-    if ( sessionError.find ( msg ) == std::string::npos )
+    if ( sessionError.find ( msg ) == string::npos )
         sessionError += format ( "\n%s", msg );
 }
 
@@ -686,7 +686,7 @@ void MainUi::saveMappings ( const Controller& controller )
 
     LOG ( "%s", msg );
 
-    if ( sessionError.find ( msg ) == std::string::npos )
+    if ( sessionError.find ( msg ) == string::npos )
         sessionError += format ( "\n%s", msg );
 }
 

@@ -12,7 +12,10 @@ using namespace std;
 static const void *keyboardWindow = 0;
 
 // VK codes to match for keyboard events, empty to match all, NOT safe to modify when hooked!
-static unordered_set<uint32_t> keyboardKeys;
+static unordered_set<uint32_t> matchKeys;
+
+// VK codes to IGNORE for keyboard events, NOT safe to modify when hooked!
+static unordered_set<uint32_t> ignoreKeys;
 
 // Keyboard hook and message loop thread
 static ThreadPtr keyboardThread;
@@ -47,7 +50,11 @@ static LRESULT CALLBACK keyboardCallback ( int code, WPARAM wParam, LPARAM lPara
                 const uint32_t vkCode = ( uint32_t ) ( ( ( PKBDLLHOOKSTRUCT ) lParam )->vkCode );
 
                 // Ignore key if the VK code is not matched
-                if ( !keyboardKeys.empty() && ( keyboardKeys.find ( vkCode ) == keyboardKeys.end() ) )
+                if ( !matchKeys.empty() && ( matchKeys.find ( vkCode ) == matchKeys.end() ) )
+                    break;
+
+                // Ignore key if it is explicitly ignored
+                if ( ignoreKeys.find ( vkCode ) != ignoreKeys.end() )
                     break;
 
                 const uint32_t scanCode = ( uint32_t ) ( ( ( PKBDLLHOOKSTRUCT ) lParam )->scanCode );
@@ -172,7 +179,8 @@ void KeyboardManager::readEvent ( Socket *socket, const MsgPtr& msg, const IpAdd
 
 void KeyboardManager::hook ( Owner *owner,
                              const void *window,
-                             const std::unordered_set<uint32_t>& keys,
+                             const unordered_set<uint32_t>& keys,
+                             const unordered_set<uint32_t>& ignore,
                              uint8_t options )
 {
     if ( keyboardThread )
@@ -182,7 +190,8 @@ void KeyboardManager::hook ( Owner *owner,
 
     this->owner = owner;
     keyboardWindow = window;
-    keyboardKeys = keys;
+    matchKeys = keys;
+    ignoreKeys = ignore;
 
     // TODO implement other keyboard hook options (ie no message loop, regular hook, polling, etc..)
 

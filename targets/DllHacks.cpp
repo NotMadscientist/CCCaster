@@ -412,7 +412,7 @@ static HHOOK keybdHook = 0;
 static LRESULT CALLBACK keyboardCallback ( int, WPARAM, LPARAM );
 
 
-void *mainWindowHandle = 0;
+void *windowHandle = 0;
 
 
 void initializePostLoad()
@@ -429,7 +429,7 @@ void initializePostLoad()
         LOG ( "SetWindowsHookEx failed: %s", WinException::getLastError() );
 
     // Get the handle to the main window
-    if ( ! ( mainWindowHandle = ProcessManager::findWindow ( CC_TITLE ) ) )
+    if ( ! ( windowHandle = ProcessManager::findWindow ( CC_TITLE ) ) )
         LOG ( "Couldn't find window '%s'", CC_TITLE );
 
     // We can't save replays on Wine because MBAA crashes even without us.
@@ -442,11 +442,11 @@ void initializePostLoad()
     }
 
     // // Disable resizing (this has weird behaviour with the viewport size)
-    // const DWORD dwStyle = GetWindowLong ( ( HWND ) mainWindowHandle, GWL_STYLE );
-    // SetWindowLong ( ( HWND ) mainWindowHandle, GWL_STYLE, ( dwStyle | WS_BORDER ) & ~ WS_THICKFRAME );
+    // const DWORD dwStyle = GetWindowLong ( ( HWND ) windowHandle, GWL_STYLE );
+    // SetWindowLong ( ( HWND ) windowHandle, GWL_STYLE, ( dwStyle | WS_BORDER ) & ~ WS_THICKFRAME );
 
     // Hook the game's WindowProc
-    WindowProc = ( pWindowProc ) GetWindowLong ( ( HWND ) mainWindowHandle, GWL_WNDPROC );
+    WindowProc = ( pWindowProc ) GetWindowLong ( ( HWND ) windowHandle, GWL_WNDPROC );
 
     LOG ( "WindowProc=%08x", WindowProc );
 
@@ -464,7 +464,7 @@ void initializePostLoad()
 
     // Hook the game's DirectX calls
     string err;
-    if ( ! ( err = InitDirectX ( mainWindowHandle ) ).empty() )
+    if ( ! ( err = InitDirectX ( windowHandle ) ).empty() )
         LOG ( "InitDirectX failed: %s", err );
     else if ( ! ( err = HookDirectX() ).empty() )
         LOG ( "HookDirectX failed: %s", err );

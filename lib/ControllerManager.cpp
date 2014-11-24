@@ -399,7 +399,7 @@ size_t ControllerManager::loadMappings ( const string& folder, const string& ext
     return count;
 }
 
-bool ControllerManager::saveMappings ( const std::string& file, const MsgPtr& mappings )
+bool ControllerManager::saveMappings ( const string& file, const MsgPtr& mappings )
 {
     if ( mappings->getMsgType() == MsgType::KeyboardMappings )
         return saveMappings ( file, mappings->getAs<KeyboardMappings>() );

@@ -7,6 +7,7 @@
 #include "Exceptions.h"
 #include "Enum.h"
 #include "ErrorStringsExt.h"
+#include "KeyboardState.h"
 
 #include <windows.h>
 
@@ -17,11 +18,16 @@
 using namespace std;
 
 
-#define LOG_FILE FOLDER "dll.log"
+#define LOG_FILE                    FOLDER "dll.log"
 
-#define DELAYED_STOP ( 100 )
+#define DELAYED_STOP                ( 100 )
 
-#define RESEND_INPUTS_INTERVAL ( 100 )
+#define RESEND_INPUTS_INTERVAL      ( 100 )
+
+#define VK_TOGGLE_OVERLAY           ( VK_F4 )
+
+#define VK_TOGGLE_RANDOMIZE         ( VK_F12 )
+
 
 #define LOG_SYNC(FORMAT, ...)                                                                                   \
     LOG_TO ( syncLog, "%s [%u] %s [%s] " FORMAT,                                                                \
@@ -86,13 +92,13 @@ struct DllMain
     ControllerMappings mappings;
 
     // All controllers
-    vector<const Controller *> allControllers;
+    vector<Controller *> allControllers;
 
     // Player controllers
-    array<const Controller *, 2> playerControllers = {{ 0, 0 }};
+    array<Controller *, 2> playerControllers = {{ 0, 0 }};
 
     // Player controller config positions
-    array<int, 2> playerPositions = {{ 0, 0 }};
+    array<size_t, 2> playerPositions = {{ 0, 0 }};
 
     // Local player inputs
     array<uint16_t, 2> localInputs = {{ 0, 0 }};
@@ -127,7 +133,7 @@ struct DllMain
             case NetplayState::PauseMenu:
             {
                 // Check for changes to controller state
-                ControllerManager::get().check ( DllHacks::mainWindowHandle );
+                ControllerManager::get().check ( DllHacks::windowHandle );
 
                 // Overlay UI controls
                 if ( DllHacks::isOverlayEnabled() )
@@ -135,7 +141,7 @@ struct DllMain
                     if ( clientMode.isLocal() )
                     {
                         // Check all controllers
-                        for ( const Controller *controller : allControllers )
+                        for ( Controller *controller : allControllers )
                         {
                             if ( isButtonPressed ( controller, CC_BUTTON_START ) )
                             {
@@ -227,7 +233,7 @@ struct DllMain
                     break;
                 }
 
-                for ( const Controller *controller : allControllers )
+                for ( Controller *controller : allControllers )
                 {
                     if ( isButtonPressed ( controller, CC_BUTTON_START ) )
                     {
@@ -261,21 +267,8 @@ struct DllMain
                 // Test random input
                 static bool randomize = false;
 
-                if ( DllHacks::mainWindowHandle == ( void * ) GetForegroundWindow() )
-                {
-                    // Test rollback
-                    if ( ( GetKeyState ( VK_F10 ) & 0x80 )
-                            && netMan.config.rollback
-                            && netMan.getState() == NetplayState::InGame
-                            && netMan.getFrame() > 60 )
-                    {
-                        // Sleep ( 1000 );
-                        procMan.loadState ( { netMan.getIndex(), netMan.getFrame() - 10 }, netMan );
-                    }
-
-                    if ( GetKeyState ( VK_F11 ) & 0x80 ) randomize = true;
-                    if ( GetKeyState ( VK_F12 ) & 0x80 ) randomize = false;
-                }
+                if ( KeyboardState::isPressed ( VK_TOGGLE_RANDOMIZE ) )
+                    randomize = !randomize;
 
                 if ( randomize )
                 {
@@ -688,7 +681,7 @@ struct DllMain
 
         initialTimer.reset();
 
-        SetForegroundWindow ( ( HWND ) DllHacks::mainWindowHandle );
+        SetForegroundWindow ( ( HWND ) DllHacks::windowHandle );
     }
 
     void disconnectEvent ( Socket *socket ) override
@@ -869,11 +862,12 @@ struct DllMain
 
             case MsgType::ControllerMappings:
                 mappings = msg->getAs<ControllerMappings>();
+                KeyboardState::clear();
                 ControllerManager::get().owner = this;
                 ControllerManager::get().getKeyboard()->setMappings ( ProcessManager::fetchKeyboardConfig() );
                 ControllerManager::get().setMappings ( mappings );
                 ControllerManager::get().check();
-                allControllers = const_cast<const ControllerManager&> ( ControllerManager::get() ).getControllers();
+                allControllers = ControllerManager::get().getControllers();
                 break;
 
             case MsgType::ClientMode:
@@ -1247,7 +1241,9 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
 
         case DLL_PROCESS_DETACH:
             LOG ( "DLL_PROCESS_DETACH" );
-            deinitialize();
+            appState = AppState::Stopping;
+            EventManager::get().release();
+            exit ( 0 );
             break;
     }
 
@@ -1282,6 +1278,7 @@ extern "C" void callback()
         if ( appState == AppState::Uninitialized )
         {
             DllHacks::initializePostLoad();
+            KeyboardState::windowHandle = DllHacks::windowHandle;
 
             // Joystick and timer must be initialized in the main thread
             TimerManager::get().initialize();
