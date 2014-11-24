@@ -23,7 +23,10 @@
 #define MASK_DIRS           ( 0x0000000Fu )
 #define MASK_BUTTONS        ( 0xFFFFFFF0u )
 
-#define DEFAULT_DEADZONE    ( 25000 )
+#define DEFAULT_DEADZONE    ( 25000u )
+
+#define MAP_PRESERVE_DIRS   ( 0x01u )
+#define MAP_CONTINUOUSLY    ( 0x02u )
 
 
 // Forward declarations
@@ -93,6 +96,14 @@ struct JoystickMappings : public SerializableSequence
         return false;
     }
 
+    // Find a 3-tuple mapping for the given key, returns false if none exist
+    bool find ( uint32_t key ) const
+    {
+        uint8_t i, j, k;
+
+        return find ( key, i, j, k );
+    }
+
     PROTOCOL_MESSAGE_BOILERPLATE ( JoystickMappings, name, mappings, deadzone )
 };
 
@@ -133,6 +144,9 @@ private:
 
     // Flag to wait for neutral state before mapping
     bool waitForNeutral = false;
+
+    // Mappings options
+    uint8_t options = 0;
 
     // The currently active joystick mappings for the above key
     JoystickMappings active;
@@ -192,7 +206,8 @@ public:
     // Start / cancel mapping for the given key
     void startMapping ( Owner *owner, uint32_t key,
                         const void *window = 0,                             // Window to match for keyboard events
-                        const std::unordered_set<uint32_t>& ignore = {} );  // VK codes to IGNORE
+                        const std::unordered_set<uint32_t>& ignore = {},    // VK codes to IGNORE
+                        uint8_t options = 0 );                              // Mapping options
     void cancelMapping();
     bool isMapping() const { return ( keyToMap != 0 ); }
 

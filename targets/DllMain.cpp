@@ -272,34 +272,40 @@ struct DllMain
                 changedPosition = true;
             }
 
-            // if ( playerPositions[i] > 0 )
-            // {
-            //     const size_t bit = playerPositions[i] - 1 + ( playerControllers[i]->isKeyboard() ? 0 : 4 );
+            if ( playerPositions[i] > 0 )
+            {
+                const size_t pos = playerPositions[i] - 1 + ( playerControllers[i]->isKeyboard() ? 0 : 4 );
 
-            //     ASSERT ( bit >= 0 );
-            //     ASSERT ( bit < gameInputBits.size() );
+                ASSERT ( pos >= 0 );
 
-            //     if ( deleteMapping || mapDirections || changedPosition || justFinishedMapping[i] )
-            //     {
-            //         if ( deleteMapping )
-            //             playerControllers[i]->clearMapping ( gameInputBits[bit].second );
+                if ( deleteMapping || mapDirections || changedPosition || justFinishedMapping[i] )
+                {
+                    if ( deleteMapping )
+                    {
+                        playerControllers[i]->clearMapping ( gameInputBits[pos].second );
+                    }
+                    else if ( pos >= 4 && pos < gameInputBits.size() )
+                    {
+                        justFinishedMapping[i] = false;
 
-            //         // Cancel previous mapping attempt
-            //         justFinishedMapping[i] = 0;
-            //         playerControllers[i]->cancelMapping();
+                        playerControllers[i]->startMapping ( this, gameInputBits[pos].second, DllHacks::windowHandle,
+                        { VK_ESCAPE, VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT, VK_TOGGLE_OVERLAY },
+                        MAP_PRESERVE_DIRS | MAP_CONTINUOUSLY );
+                    }
+                    else if ( mapDirections )
+                    {
+                        justFinishedMapping[i] = false;
 
-            //         // Only automatically start mapping buttons
-            //         if ( bit >= 4 )
-            //         {
-            //             playerControllers[i]->startMapping ( this, gameInputBits[bit].second, DllHacks::windowHandle,
-            //             { VK_ESCAPE, VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT, VK_TOGGLE_OVERLAY }, true );
-            //         }
-            //         else if ( mapDirections )
-            //         {
-            //             playerControllers[i]->startMapping ( this, gameInputBits[bit].second, DllHacks::windowHandle );
-            //         }
-            //     }
-            // }
+                        playerControllers[i]->startMapping ( this, gameInputBits[pos].second, DllHacks::windowHandle );
+                    }
+                    else
+                    {
+                        justFinishedMapping[i] = false;
+
+                        playerControllers[i]->cancelMapping();
+                    }
+                }
+            }
 
             DllHacks::updateSelector ( i, headerHeight + playerPositions[i], options[playerPositions[i]] );
         }
