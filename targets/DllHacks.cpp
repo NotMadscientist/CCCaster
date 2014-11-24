@@ -27,11 +27,11 @@ using namespace DllHacks;
 
 #define OVERLAY_TEXT_BORDER             ( 10 )
 
-#define OVERLAY_SELECTOR_L_COLOR        D3DCOLOR_XRGB ( 220, 0, 0 )
+#define OVERLAY_SELECTOR_L_COLOR        D3DCOLOR_XRGB ( 210, 0, 0 )
 
-#define OVERLAY_SELECTOR_R_COLOR        D3DCOLOR_XRGB ( 0, 0, 255 )
+#define OVERLAY_SELECTOR_R_COLOR        D3DCOLOR_XRGB ( 30, 30, 255 )
 
-#define OVERLAY_SELECTOR_X_BORDER       ( 3 )
+#define OVERLAY_SELECTOR_X_BORDER       ( 5 )
 
 #define OVERLAY_SELECTOR_Y_BORDER       ( 1 )
 
@@ -215,13 +215,13 @@ void updateSelector ( uint8_t index, int position, const string& line )
 
     if ( index == 0 )
     {
-        rect.left += OVERLAY_TEXT_BORDER - OVERLAY_SELECTOR_X_BORDER;
+        rect.left  += OVERLAY_TEXT_BORDER - OVERLAY_SELECTOR_X_BORDER;
         rect.right += OVERLAY_TEXT_BORDER + OVERLAY_SELECTOR_X_BORDER;
     }
     else
     {
-        rect.left = 640 - rect.right - OVERLAY_TEXT_BORDER - OVERLAY_SELECTOR_X_BORDER;
-        rect.right = 640 - OVERLAY_TEXT_BORDER + OVERLAY_SELECTOR_X_BORDER;
+        rect.left  = ( * CC_SCREEN_WIDTH_ADDR ) - rect.right - OVERLAY_TEXT_BORDER - OVERLAY_SELECTOR_X_BORDER;
+        rect.right = ( * CC_SCREEN_WIDTH_ADDR ) - OVERLAY_TEXT_BORDER + OVERLAY_SELECTOR_X_BORDER;
     }
 
     overlaySelector[index] = rect;
@@ -321,11 +321,11 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
         if ( !overlayText[2].empty() )
             DrawText ( overlayText[2], rect, DT_WORDBREAK | DT_CENTER, OVERLAY_TEXT_COLOR );
 
-        if ( !overlayText[0].empty() )
-            DrawText ( overlayText[0], rect, DT_WORDBREAK | DT_LEFT, OVERLAY_TEXT_COLOR );
-
         if ( !overlayText[1].empty() )
             DrawText ( overlayText[1], rect, DT_WORDBREAK | DT_RIGHT, OVERLAY_TEXT_COLOR );
+
+        if ( !overlayText[0].empty() )
+            DrawText ( overlayText[0], rect, DT_WORDBREAK | DT_LEFT, OVERLAY_TEXT_COLOR );
     }
 }
 
