@@ -75,18 +75,27 @@ static inline int getTextHeight ( const array<string, 3>& newText )
 
 void enableOverlay()
 {
+    if ( ProcessManager::isWine() )
+        return;
+
     if ( overlayState != Overlay::Enabled )
         overlayState = Overlay::Enabling;
 }
 
 void disableOverlay()
 {
+    if ( ProcessManager::isWine() )
+        return;
+
     if ( overlayState != Overlay::Disabled )
         overlayState = Overlay::Disabling;
 }
 
 void toggleOverlay()
 {
+    if ( ProcessManager::isWine() )
+        return;
+
     if ( isOverlayEnabled() )
         disableOverlay();
     else
@@ -95,6 +104,9 @@ void toggleOverlay()
 
 void updateOverlay ( const array<string, 3>& newText )
 {
+    if ( ProcessManager::isWine() )
+        return;
+
     switch ( overlayState.value )
     {
         default:
@@ -146,6 +158,9 @@ void updateOverlay ( const array<string, 3>& newText )
 
 bool isOverlayEnabled()
 {
+    if ( ProcessManager::isWine() )
+        return false;
+
     return ( overlayState != Overlay::Disabled );
 }
 
