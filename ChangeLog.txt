@@ -1,6 +1,11 @@
 v2.1:
 - Can host and connect without port forward
-- Proper Linux / Wine support
+- In-game button config with player selection:
+  Toggle with F4 or start button on any controller with start mapped
+  Can move controllers left or right to switch players
+- Linux / Wine support with some features disabled:
+  No in-game config unless someone can figure out how to hook DirectX9 under Wine
+  Can't save replays because MBAA.exe crashes when saving replays even when running by itself
 - Command line options
 
 v2.0d:

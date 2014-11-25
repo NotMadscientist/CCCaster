@@ -102,7 +102,7 @@ debugger: $(DEBUGGER)
 $(ARCHIVE): $(BINARY) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER)
 	@echo
 	rm -f $(filter-out %.log,$(filter-out $(ARCHIVE),$(wildcard $(NAME)*.zip)))
-	$(ZIP) $(NAME).v$(VERSION).zip $^
+	$(ZIP) $(NAME).v$(VERSION).zip ChangeLog.txt $^
 	$(GRANT)
 
 $(BINARY): $(MAIN_OBJECTS)
