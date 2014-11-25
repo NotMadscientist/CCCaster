@@ -106,6 +106,9 @@ struct DllMain
     // If we have sent our local retry menu index
     bool localRetryMenuIndexSent = false;
 
+    // If we should disconnect at the next NetplayState change
+    bool lazyDisconnect = false;
+
 #ifndef RELEASE
     // Local and remote SyncHashes
     list<MsgPtr> localSync, remoteSync;
@@ -488,12 +491,24 @@ struct DllMain
                     {
                         MsgPtr msgMenuIndex = netMan.getRetryMenuIndex();
 
-                        if ( msgMenuIndex && !localRetryMenuIndexSent )
+                        // Lazy disconnect now once the retry menu option has been selected
+                        if ( msgMenuIndex && ( !dataSocket || !dataSocket->isConnected() ) )
                         {
-                            dataSocket->send ( msgMenuIndex );
-                            localRetryMenuIndexSent = true;
+                            if ( lazyDisconnect )
+                            {
+                                lazyDisconnect = false;
+                                main->procMan.ipcSend ( new ErrorMessage ( "Disconnected!" ) );
+                                delayedStop();
+                            }
+                            break;
                         }
 
+                        // Only send retry menu index once
+                        if ( msgMenuIndex && !localRetryMenuIndexSent )
+                        {
+                            localRetryMenuIndexSent = true;
+                            dataSocket->send ( msgMenuIndex );
+                        }
                         break;
                     }
 
@@ -541,8 +556,8 @@ struct DllMain
                 return;
             }
 
-            // Don't need to wait for anything in local modes
-            if ( clientMode.isLocal() )
+            // Don't need to wait for anything in local or skippable modes
+            if ( clientMode.isLocal() || netMan.getState() == NetplayState::Skippable )
                 break;
 
             // Check if we are ready to continue running, ie not waiting on remote input or RngState
@@ -713,10 +728,22 @@ struct DllMain
                 shouldSyncRngState = true;
         }
 
-        // Entering RetryMenu
+        // Entering RetryMenu (enable lazy disconnect)
         if ( state == NetplayState::RetryMenu )
         {
+            lazyDisconnect = true;
             localRetryMenuIndexSent = false;
+        }
+        else if ( lazyDisconnect )
+        {
+            lazyDisconnect = false;
+
+            if ( !dataSocket || !dataSocket->isConnected() )
+            {
+                main->procMan.ipcSend ( new ErrorMessage ( "Disconnected!" ) );
+                delayedStop();
+                return;
+            }
         }
 
         netMan.setState ( state );
@@ -797,12 +824,16 @@ struct DllMain
                 break;
 
             case Variable::SkippableFlag:
-                // When the SkippableFlag is set while InGame (not training mode), we are in a Skippable state
                 if ( clientMode.isTraining()
                         || ! ( previous == 0 && current == 1 && netMan.getState() == NetplayState::InGame ) )
                     break;
+
+                // When the SkippableFlag is set while InGame (not training mode), we are in a Skippable state
                 LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
                 netplayStateChanged ( NetplayState::Skippable );
+
+                // Enable lazy disconnect in case someone just won a game
+                lazyDisconnect = true;
                 break;
 
             default:
@@ -881,7 +912,8 @@ struct DllMain
                 return;
             }
 
-            // TODO lazy disconnect if in retry menu
+            if ( lazyDisconnect )
+                return;
 
             main->procMan.ipcSend ( new ErrorMessage ( "Disconnected!" ) );
             delayedStop();
@@ -1150,7 +1182,12 @@ struct DllMain
                     netplayStateChanged ( NetplayState::Initial );
                 }
 
+                *CC_DAMAGE_LEVEL_ADDR = 2;
+                *CC_TIMER_SPEED_ADDR = 2;
                 *CC_WIN_COUNT_VS_ADDR = ( uint32_t ) netMan.config.winCount;
+
+                // *CC_WIN_COUNT_VS_ADDR = 1;
+                // *CC_DAMAGE_LEVEL_ADDR = 4;
 
                 LOG ( "NetplayConfig: flags={ %s }; delay=%d; rollback=%d; winCount=%d; training=%d; offline=%d; "
                       "hostPlayer=%d; localPlayer=%d; remotePlayer=%d",

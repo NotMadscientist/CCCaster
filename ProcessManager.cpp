@@ -177,7 +177,7 @@ void ProcessManager::openGame ( const string& appDir, bool highPriority )
                0 );                                                 // use default security attributes
 
     if ( pipe == INVALID_HANDLE_VALUE )
-        THROW_WIN_EXCEPTION ( GetLastError(), "CreateNamedPipe failed", ERROR_PIPE_START );
+        THROW_WIN_EXCEPTION ( GetLastError(), "CreateNamedPipe failed", ERROR_PIPE_OPEN );
 
     LOG ( "appDir='%s'", appDir );
     LOG ( "gameDir='%s'", gameDir );

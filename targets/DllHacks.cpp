@@ -432,11 +432,6 @@ void *windowHandle = 0;
 
 void initializePostLoad()
 {
-    *CC_DAMAGE_LEVEL_ADDR = 2;
-    *CC_TIMER_SPEED_ADDR = 2;
-
-    // *CC_DAMAGE_LEVEL_ADDR = 4;
-
     LOG ( "threadId=%08x", GetCurrentThreadId() );
 
     // Hook and ignore keyboard messages to prevent lag from unhandled messages

@@ -3,6 +3,8 @@
 #include "ErrorStrings.h"
 
 
+#define ERROR_PIPE_OPEN             "Failed to start game!\nIs " MBAA_EXE " already running?"
+
 #define ERROR_PIPE_START            "Failed to start game!\nIs " BINARY " in same folder as " MBAA_EXE "?"
 
 #define ERROR_PIPE_RW               "Failed to communicate with " MBAA_EXE

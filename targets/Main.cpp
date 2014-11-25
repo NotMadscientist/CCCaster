@@ -183,6 +183,10 @@ int main ( int argc, char *argv[] )
             "                     -SS means commit ID must match.\n"
             "                     -SSS means build time must match.\n"
         },
+#else
+        { Options::Tunnel, 0, "", "tunnel", Arg::None, 0 },
+        { Options::Dummy, 0, "", "dummy", Arg::None, 0 },
+        { Options::StrictVersion, 0, "S", "", Arg::None, 0 },
 #endif
 
         { Options::NoFork, 0, "", "no-fork", Arg::None, 0 }, // Don't fork when inside Wine, ie when under wineconsole
