@@ -42,6 +42,8 @@ while log2[j].find ( 'CharaSelect' ) < 0:
 j -= 1
 
 
+count = 0
+
 REGEX = '^[^ ]+ \[[0-9]+\] NetplayState::([A-Za-z]+) \[([0-9]+):([0-9]+)\] ([A-Za-z]+: .+)$'
 
 
@@ -90,8 +92,12 @@ while i + 1 < len ( log1 ):
 
         if ( index2 == index1 ) and ( frame2 == frame1 ) and ( data2 == data1 ):
             # Matched
+            count += 1
             break
 
         print 'Missing line (%d) in log 1 from log 2:' % ( i + 1 )
         print log1[i]
         exit ( -1 )
+
+
+print 'Successfully matched', count, 'lines'
