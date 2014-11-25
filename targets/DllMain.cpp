@@ -106,9 +106,6 @@ struct DllMain
     // If we have sent our local retry menu index
     bool localRetryMenuIndexSent = false;
 
-    // If we just finished mapping a controller, -1 indicates cancelled
-    array<int, 2> justFinishedMapping = {{ 0, 0 }};
-
 #ifndef RELEASE
     // Local and remote SyncHashes
     list<MsgPtr> localSync, remoteSync;
@@ -222,15 +219,18 @@ struct DllMain
                 options.push_back ( gameInputBits[j].first + " : " + mapping );
             }
 
-            options.push_back ( "Reset to defaults" );
+            // Add extra mapping options
             options.push_back ( "Clear all" );
-
-            if ( playerControllers[i]->isJoystick() )
+            if ( playerControllers[i]->isKeyboard() )
+                options.push_back ( "Reset to defaults" );
+            else if ( playerControllers[i]->isJoystick() )
                 options.push_back ( "Set joystick deadzone" );
 
+            // Update overlay text with all the options
             for ( const string& option : options )
                 text[i] += "\n" + option;
 
+            // Filter keyboard overlay controls when mapping directions
             if ( playerControllers[i]->isKeyboard() && playerControllers[i]->isMapping()
                     && playerPositions[i] >= 1 && playerPositions[i] <= 4 )
             {
@@ -263,6 +263,8 @@ struct DllMain
                 // Move selector down
                 playerPositions[i] = ( playerPositions[i] + 1 ) % options.size();
                 changedPosition = true;
+
+                LOG ( "changedPosition: %u", playerPositions[i] );
             }
             else if ( ( playerControllers[i]->isJoystick() && isDirectionPressed ( playerControllers[i], 8 ) )
                       || ( playerControllers[i]->isKeyboard() && KeyboardState::isPressed ( VK_UP ) ) )
@@ -270,6 +272,8 @@ struct DllMain
                 // Move selector up
                 playerPositions[i] = ( playerPositions[i] + options.size() - 1 ) % options.size();
                 changedPosition = true;
+
+                LOG ( "changedPosition: %u", playerPositions[i] );
             }
 
             if ( playerPositions[i] > 0 )
@@ -278,30 +282,24 @@ struct DllMain
 
                 ASSERT ( pos >= 0 );
 
-                if ( deleteMapping || mapDirections || changedPosition || justFinishedMapping[i] )
+                if ( deleteMapping || mapDirections || changedPosition )
                 {
-                    if ( deleteMapping )
+                    if ( deleteMapping && pos < gameInputBits.size() )
                     {
                         playerControllers[i]->clearMapping ( gameInputBits[pos].second );
                     }
                     else if ( pos >= 4 && pos < gameInputBits.size() )
                     {
-                        justFinishedMapping[i] = false;
-
                         playerControllers[i]->startMapping ( this, gameInputBits[pos].second, DllHacks::windowHandle,
                         { VK_ESCAPE, VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT, VK_TOGGLE_OVERLAY },
                         MAP_PRESERVE_DIRS | MAP_CONTINUOUSLY );
                     }
-                    else if ( mapDirections )
+                    else if ( mapDirections && pos < 4 )
                     {
-                        justFinishedMapping[i] = false;
-
                         playerControllers[i]->startMapping ( this, gameInputBits[pos].second, DllHacks::windowHandle );
                     }
                     else
                     {
-                        justFinishedMapping[i] = false;
-
                         playerControllers[i]->cancelMapping();
                     }
                 }
@@ -1150,11 +1148,6 @@ struct DllMain
     void doneMapping ( Controller *controller, uint32_t key ) override
     {
         LOG ( "%s: controller=%08x; key=%08x", controller->getName(), controller, key );
-
-        if ( controller == playerControllers[0] )
-            justFinishedMapping[0] = ( key ? 1 : -1 );
-        else if ( controller == playerControllers[1] )
-            justFinishedMapping[1] = ( key ? 1 : -1 );
     }
 
     // Timer callback

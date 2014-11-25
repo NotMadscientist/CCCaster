@@ -83,7 +83,10 @@ void Controller::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExte
         LOG_CONTROLLER ( this, "Mapped key [0x%02X] %s to %08x ", vkCode, name, keyToMap );
     }
 
-    cancelMapping();
+    if ( options & MAP_CONTINUOUSLY )
+        clearActive();
+    else
+        cancelMapping();
 
     ControllerManager::get().mappingsChanged ( this );
 
@@ -138,7 +141,10 @@ void Controller::joystickEvent ( const SDL_JoyAxisEvent& event )
             Owner *owner = this->owner;
             const uint32_t key = keyToMap;
 
-            cancelMapping();
+            if ( options & MAP_CONTINUOUSLY )
+                clearActive();
+            else
+                cancelMapping();
 
             ControllerManager::get().mappingsChanged ( this );
 
@@ -231,7 +237,10 @@ void Controller::joystickEvent ( const SDL_JoyHatEvent& event )
             Owner *owner = this->owner;
             const uint32_t key = keyToMap;
 
-            cancelMapping();
+            if ( options & MAP_CONTINUOUSLY )
+                clearActive();
+            else
+                cancelMapping();
 
             ControllerManager::get().mappingsChanged ( this );
 
@@ -294,7 +303,10 @@ void Controller::joystickEvent ( const SDL_JoyButtonEvent& event )
             Owner *owner = this->owner;
             const uint32_t key = keyToMap;
 
-            cancelMapping();
+            if ( options & MAP_CONTINUOUSLY )
+                clearActive();
+            else
+                cancelMapping();
 
             ControllerManager::get().mappingsChanged ( this );
 
@@ -532,7 +544,10 @@ void Controller::setMappings ( const JoystickMappings& mappings )
 void Controller::startMapping ( Owner *owner, uint32_t key, const void *window,
                                 const unordered_set<uint32_t>& ignore, uint8_t options )
 {
-    cancelMapping();
+    if ( this->options & MAP_CONTINUOUSLY )
+        clearActive();
+    else
+        cancelMapping();
 
     LOG ( "Starting mapping %08x", key );
 
@@ -551,17 +566,19 @@ void Controller::startMapping ( Owner *owner, uint32_t key, const void *window,
 
 void Controller::cancelMapping()
 {
-    if ( ! ( options & MAP_CONTINUOUSLY ) )
-    {
-        LOG ( "Cancel mapping %08x", keyToMap );
+    LOG ( "Cancel mapping %08x", keyToMap );
 
-        KeyboardManager::get().unhook();
+    KeyboardManager::get().unhook();
 
-        owner = 0;
-        keyToMap = 0;
-        waitForNeutral = false;
-    }
+    owner = 0;
+    keyToMap = 0;
+    waitForNeutral = false;
 
+    clearActive();
+}
+
+void Controller::clearActive()
+{
     for ( auto& a : active.mappings )
     {
         for ( auto& b : a )

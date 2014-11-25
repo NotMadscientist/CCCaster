@@ -323,8 +323,8 @@ void MainUi::controls()
                 options[i] = format ( "%-11s: %s", gameInputBits[i].first, mapping );
             }
 
-            options.push_back ( "Reset to defaults" );
             options.push_back ( "Clear all" );
+            options.push_back ( "Reset to defaults" );
 
             if ( controller.isJoystick() )
                 options.push_back ( "Set joystick deadzone" );
@@ -345,12 +345,12 @@ void MainUi::controls()
                 break;
             }
 
-            // Reset to defaults
+            // Clear all
             if ( pos == ( int ) gameInputBits.size() )
             {
                 if ( areYouSure() )
                 {
-                    controller.resetToDefaults();
+                    controller.clearAllMappings();
                     saveMappings ( controller );
                 }
 
@@ -358,12 +358,12 @@ void MainUi::controls()
                 continue;
             }
 
-            // Clear all
+            // Reset to defaults
             if ( pos == ( int ) gameInputBits.size() + 1 )
             {
                 if ( areYouSure() )
                 {
-                    controller.clearAllMappings();
+                    controller.resetToDefaults();
                     saveMappings ( controller );
                 }
 
