@@ -363,7 +363,10 @@ void MainUi::controls()
             {
                 if ( areYouSure() )
                 {
-                    controller.resetToDefaults();
+                    if ( controller.isKeyboard() )
+                        controller.setMappings ( ProcessManager::fetchKeyboardConfig() );
+                    else
+                        controller.resetToDefaults();
                     saveMappings ( controller );
                 }
 
