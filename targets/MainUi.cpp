@@ -331,7 +331,22 @@ void MainUi::controls()
             ui->top<ConsoleUi::Menu>()->setPosition ( pos );
             ui->top<ConsoleUi::Menu>()->setDelete ( 2 );
 
-            pos = ui->popUntilUserInput()->resultInt;
+            for ( ;; )
+            {
+                pos = ui->popUntilUserInput()->resultInt;
+
+                // Cancel or exit
+                if ( pos < 0 || pos > ( int ) options.size() )
+                    break;
+
+                // Modify a key
+                if ( pos >= 0 && pos < ( int ) gameInputBits.size() )
+                    break;
+
+                // Last 3 options (ignore delete)
+                if ( !ui->top()->resultStr.empty() )
+                    break;
+            }
 
             // Cancel or exit
             if ( pos < 0
