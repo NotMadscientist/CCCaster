@@ -37,7 +37,10 @@ void ControllerManager::check ( void *keyboardWindowHandle )
     }
 
     for ( auto& kv : joysticks )
+    {
+        kv.second->prevAnyButton = kv.second->anyButton;
         kv.second->prevState = kv.second->state;
+    }
 
     checkJoystick();
 

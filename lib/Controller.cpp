@@ -322,6 +322,11 @@ void Controller::joystickEvent ( const SDL_JoyButtonEvent& event )
         return;
     }
 
+    if ( event.state == SDL_RELEASED )
+        anyButton &= ~ ( 1u << event.button );
+    else if ( event.state == SDL_PRESSED )
+        anyButton |= ( 1u << event.button );
+
     const uint32_t key = values[event.state];
 
     if ( key == 0 )
@@ -561,7 +566,7 @@ void Controller::startMapping ( Owner *owner, uint32_t key, const void *window,
     if ( isKeyboard() )
         KeyboardManager::get().hook ( this, window, {}, ignore ); // Check all except ignored keys
     else
-        KeyboardManager::get().hook ( this, window, { VK_ESCAPE } ); // Only check ESC key
+        KeyboardManager::get().hook ( this, window, { VK_ESCAPE }, ignore ); // Only check ESC key
 }
 
 void Controller::cancelMapping()

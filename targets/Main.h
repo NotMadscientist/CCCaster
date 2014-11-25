@@ -22,6 +22,9 @@
 // Log file that contains all the data needed to keep games in sync
 #define SYNC_LOG_FILE FOLDER "sync.log"
 
+// Controller mappings file extension
+#define MAPPINGS_EXT ".mappings"
+
 // Default pending socket timeout
 #define DEFAULT_PENDING_TIMEOUT ( 10000 )
 

@@ -130,6 +130,9 @@ private:
     // SDL joystick pointer, 0 for keyboard
     SDL_Joystick *joystick = 0;
 
+    // Joystick any-button state
+    uint8_t prevAnyButton = 0, anyButton = 0;
+
     // Controller state
     uint32_t prevState = 0, state = 0;
 
@@ -225,10 +228,12 @@ public:
     uint16_t getDeadzone() { return stick.deadzone; }
     void setDeadzone ( uint16_t deadzone ) { stick.deadzone = deadzone; }
 
-    // Get previous controller state
-    uint32_t getPrevState() const { return prevState; }
+    // Get the joystick any-button state
+    bool getPrevAnyButton() const { return prevAnyButton; }
+    bool getAnyButton() const { return anyButton; }
 
     // Get the controller state
+    uint32_t getPrevState() const { return prevState; }
     uint32_t getState() const { return state; }
 
     // Indicates if this is a keyboard / joystick controller

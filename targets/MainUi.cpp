@@ -19,9 +19,6 @@ using namespace std;
 // Main configuration file
 #define CONFIG_FILE FOLDER "config.ini"
 
-// Controller mappings file extension
-#define MAPPINGS_EXT ".mappings"
-
 // Run macro that deinitializes controllers, runs, then reinitializes controllers
 #define RUN(ADDRESS, CONFIG)                                                                    \
     do {                                                                                        \
