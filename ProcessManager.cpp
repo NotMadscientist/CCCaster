@@ -381,10 +381,18 @@ array<char, 10> ProcessManager::fetchKeyboardConfig()
     LOG ( "Reading: %s", file );
 
     array<char, 10> config;
+    for ( char& c : config )
+        c = 0;
+
     ifstream fin ( file, ios::binary );
 
-    fin.seekg ( CC_KEYBOARD_CONFIG_OFFSET );
-    fin.read ( &config[0], config.size() );
+    if ( fin.good() )
+        fin.seekg ( CC_KEYBOARD_CONFIG_OFFSET );
+
+    if ( fin.good() )
+        fin.read ( &config[0], config.size() );
+
+    fin.close();
 
     return config;
 }

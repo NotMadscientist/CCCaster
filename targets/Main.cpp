@@ -27,7 +27,7 @@ void runMain ( const IpAddrPort& address, const Serializable& config );
 void runFake ( const IpAddrPort& address, const Serializable& config );
 
 
-static bool initAndCheckAppDir()
+static bool initDirsAndSanityCheck()
 {
     bool success = true;
 
@@ -70,6 +70,28 @@ static bool initAndCheckAppDir()
     if ( val == INVALID_FILE_ATTRIBUTES )
     {
         lastError += "\nMissing " LAUNCHER "!";
+        success = false;
+    }
+
+    if ( opt[Options::GameDir] && opt[Options::GameDir].arg )
+    {
+        ProcessManager::gameDir = opt[Options::GameDir].arg;
+
+        replace ( ProcessManager::gameDir.begin(), ProcessManager::gameDir.end(), '/', '\\' );
+
+        if ( ProcessManager::gameDir.back() != '\\' )
+            ProcessManager::gameDir += '\\';
+    }
+    else
+    {
+        ProcessManager::gameDir = appDir;
+    }
+
+    val = GetFileAttributes ( ( ProcessManager::gameDir + MBAA_EXE ).c_str() );
+
+    if ( val == INVALID_FILE_ATTRIBUTES )
+    {
+        lastError += "\nCouldn't find " MBAA_EXE "!";
         success = false;
     }
 
@@ -234,12 +256,12 @@ int main ( int argc, char *argv[] )
     signal ( SIGTERM, signalHandler );
     SetConsoleCtrlHandler ( consoleCtrl, TRUE );
 
-    // Initialize the main application directory, this also does a sanity check
-    if ( !initAndCheckAppDir() )
+    // Initialize the main directories, this also does a sanity check
+    if ( !initDirsAndSanityCheck() )
     {
         PRINT ( "%s", trimmed ( lastError ) );
         PRINT ( "Press any key to exit." );
-        getchar();
+        system ( "@pause > nul" );
         return -1;
     }
 
@@ -283,17 +305,6 @@ int main ( int argc, char *argv[] )
 
         PRINT ( "%s", cmd );
         return system ( cmd.c_str() );
-    }
-
-    // Initialize game dir first because ui.initialize() needs it
-    if ( opt[Options::GameDir] && opt[Options::GameDir].arg )
-    {
-        ProcessManager::gameDir = opt[Options::GameDir].arg;
-
-        replace ( ProcessManager::gameDir.begin(), ProcessManager::gameDir.end(), '/', '\\' );
-
-        if ( ProcessManager::gameDir.back() != '\\' )
-            ProcessManager::gameDir += '\\';
     }
 
     // Initialize config

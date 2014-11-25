@@ -180,8 +180,7 @@ void KeyboardManager::readEvent ( Socket *socket, const MsgPtr& msg, const IpAdd
 void KeyboardManager::hook ( Owner *owner,
                              const void *window,
                              const unordered_set<uint32_t>& keys,
-                             const unordered_set<uint32_t>& ignore,
-                             uint8_t options )
+                             const unordered_set<uint32_t>& ignore )
 {
     if ( keyboardThread )
         return;
@@ -192,8 +191,6 @@ void KeyboardManager::hook ( Owner *owner,
     keyboardWindow = window;
     matchKeys = keys;
     ignoreKeys = ignore;
-
-    // TODO implement other keyboard hook options (ie no message loop, regular hook, polling, etc..)
 
     recvSocket = UdpSocket::bind ( this, 0 );
     sendSocket = UdpSocket::bind ( 0, { "127.0.0.1", recvSocket->address.port } );

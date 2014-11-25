@@ -326,7 +326,6 @@ void MainUi::controls()
             if ( controller.isJoystick() )
                 options.push_back ( "Set joystick deadzone" );
 
-            // TODO show more info at the top
             ui->pushInFront ( new ConsoleUi::Menu ( controller.getName(), options, "Back" ) );
             ui->top<ConsoleUi::Menu>()->setPosition ( pos );
             ui->top<ConsoleUi::Menu>()->setDelete ( 2 );

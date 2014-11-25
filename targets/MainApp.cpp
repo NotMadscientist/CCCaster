@@ -576,7 +576,7 @@ struct MainApp
 
             case MsgType::PlayerInputs:
             {
-                // TODO log inputs to check sync
+                // TODO log dummy inputs to check sync
                 MsgPtr clone = msg->clone();
                 clone->getAs<PlayerInputs>().indexedFrame.parts.frame += netplayConfig.delay * 2;
                 dataSocket->send ( clone );
