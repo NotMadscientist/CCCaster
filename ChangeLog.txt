@@ -1,11 +1,13 @@
 v2.1:
-- Can host and connect without port forward
+- Can host and connect without port forward. It is still recommended to port forward if possible,
+  since the initial connect will be faster, and it will probably be more stable.
 - In-game button config with player selection:
-  Toggle with F4 or start button on any controller with start mapped
-  Can move controllers left or right to switch players
+  Toggle with F4 or start button on any controller with start mapped.
+  Can move controllers left or right to switch players.
 - Linux / Wine support with some features disabled:
-  No in-game config unless someone can figure out how to hook DirectX9 under Wine
-  Can't save replays because MBAA.exe crashes when saving replays even when running by itself
+  No in-game button config unless someone can figure out how to hook DirectX9 under Wine.
+  Can't save replays because MBAA.exe crashes when saving replays even when running by itself.
+  Note you'll need to create a 32bit Wine prefix see: http://askubuntu.com/a/257505
 - Command line options
 
 v2.0d:
@@ -26,7 +28,7 @@ v2.0b:
 
 v2.0a:
 - Fixed the freeze that happens when spectating training mode
-- Offline training mode reset button enhancement (like P4U)
+- Offline training mode reset button enhancement
   Tap reset + left/right to go to either corner (with gap)
   Hold reset + left/right makes player 1 go into the corner
   Hold down reset to go to player 2 starting position
