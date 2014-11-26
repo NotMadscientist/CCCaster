@@ -193,6 +193,9 @@ struct GameConfig
 
     // Selected stage
     uint32_t stage = 0;
+
+    // Versus mode win count
+    uint8_t winCount = 2;
 };
 
 
@@ -211,7 +214,8 @@ struct SpectateConfig : public SerializableSequence, public GameConfig
         : GameConfig ( gameConfig ), mode ( netplayConfig.mode ), delay ( netplayConfig.delay )
         , rollback ( netplayConfig.rollback ), names ( netplayConfig.names ), sessionId ( netplayConfig.sessionId ) {}
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig, chara, moon, color, stage, mode, delay, rollback, names, sessionId )
+    PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig,
+                                   chara, moon, color, stage, winCount, mode, delay, rollback, names, sessionId )
 };
 
 
