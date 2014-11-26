@@ -612,10 +612,13 @@ struct DllMain
             ASSERT ( msgRngState.get() != 0 );
 
             procMan.setRngState ( msgRngState->getAs<RngState>() );
+
+            for ( const auto& kv : specSockets )
+                kv.first->send ( msgRngState );
         }
 
         // Broadcast inputs to spectators once every NUM_INPUTS frames
-        if ( !specSockets.empty() && netMan.getFrame() % NUM_INPUTS == NUM_INPUTS - 1 )
+        if ( !specSockets.empty() && netMan.getFrame() > 0 && netMan.getFrame() % NUM_INPUTS == 0 )
         {
             MsgPtr msgBothInputs = netMan.getBothInputs();
 
