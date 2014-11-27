@@ -362,6 +362,7 @@ struct MainApp
         {
             this->initialConfig.mode.flags = initialConfig.mode.flags;
             this->initialConfig.dataPort = initialConfig.dataPort;
+            this->initialConfig.winCount = initialConfig.winCount;
 
             ASSERT ( ctrlSocket.get() != 0 );
             ASSERT ( ctrlSocket->isConnected() == true );
@@ -371,12 +372,15 @@ struct MainApp
 
             LOG ( "dataSocket=%08x", dataSocket.get() );
 
-            ui.display ( this->initialConfig.getConnectMessage ( "Connecting" ) );
+            ui.display (
+                "Connecting to " + this->initialConfig.remoteName
+                + "\n\n" + ( this->initialConfig.mode.isTraining() ? "Training" : "Versus" ) + " mode"
+                + "\n\nCalculating delay..." );
         }
 
-        LOG ( "InitialConfig: mode=%s; flags={ %s }; dataPort=%u; localName='%s'; remoteName='%s'",
+        LOG ( "InitialConfig: mode=%s; flags={ %s }; dataPort=%u; localName='%s'; remoteName='%s'; winCount=%u",
               initialConfig.mode, initialConfig.mode.flagString(),
-              initialConfig.dataPort, initialConfig.localName, initialConfig.remoteName );
+              initialConfig.dataPort, initialConfig.localName, initialConfig.remoteName, initialConfig.winCount );
     }
 
     void gotPingStats ( const PingStats& pingStats )
@@ -598,8 +602,6 @@ struct MainApp
 
     void startGame()
     {
-        netplayConfig.winCount = ui.getConfig().getInteger ( "versusWinCount" );
-
         if ( clientMode.isLocal() )
             options.set ( Options::SessionId, 1, generateRandomId() );
         else if ( clientMode.isSpectate() )
@@ -636,7 +638,10 @@ struct MainApp
             clientMode.flags |= ClientMode::UdpTunnel;
 
         if ( clientMode.isNetplay() )
+        {
             netplayConfig.mode.flags = initialConfig.mode.flags;
+            netplayConfig.winCount = initialConfig.winCount;
+        }
 
         // Start game (and disconnect sockets) after a small delay since the final configs are still in flight
         startTimer.reset ( new Timer ( this ) );

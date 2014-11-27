@@ -330,6 +330,7 @@ int main ( int argc, char *argv[] )
         netplayConfig.mode.value = ClientMode::Offline;
         netplayConfig.mode.flags = ui.initialConfig.mode.flags;
         netplayConfig.delay = 0;
+        netplayConfig.winCount = ui.getConfig().getInteger ( "versusWinCount" );
         netplayConfig.hostPlayer = 1;
 
         if ( opt[Options::Offline].arg && !opt[Options::Tourney] )
@@ -349,6 +350,7 @@ int main ( int argc, char *argv[] )
         netplayConfig.mode.value = ClientMode::Broadcast;
         netplayConfig.mode.flags = ui.initialConfig.mode.flags;
         netplayConfig.delay = 0;
+        netplayConfig.winCount = ui.getConfig().getInteger ( "versusWinCount" );
         netplayConfig.hostPlayer = 1;
 
         stringstream ss;

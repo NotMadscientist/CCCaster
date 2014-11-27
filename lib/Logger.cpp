@@ -34,7 +34,8 @@ void Logger::initialize ( const string& file, uint32_t options )
     {
         if ( options & PID_IN_FILENAME )
         {
-            const string tmp = format ( "log%08d", _getpid() ) + file;
+            const size_t i = file.find_last_of ( '.' );
+            const string tmp = file.substr ( 0, i ) + format ( "_%08d", _getpid() ) + file.substr ( i );
             same = ( this->file == tmp );
             this->file = tmp;
         }

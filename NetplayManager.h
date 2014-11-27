@@ -74,7 +74,7 @@ class NetplayManager
     // Current netplay frame, frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime.
     IndexedFrame indexedFrame = {{ 0, 0 }};
 
-    // The starting index of the current game (starting from the loading state)
+    // The starting index of the current game
     uint32_t startIndex = 0;
 
     // Mapping: player -> index offset -> frame -> input

@@ -629,9 +629,11 @@ struct DllMain
         }
 
 #ifndef RELEASE
-        // Log the RngState once every 5 seconds.
+        // Log the RngState once every 5 seconds, except in Loading, Skippable, and RetryMenu states.
         // This effectively also logs whenever the frame becomes zero, ie when the index is incremented.
-        if ( dataSocket && dataSocket->isConnected() && netMan.getFrame() % ( 5 * 60 ) == 0 )
+        if ( dataSocket && dataSocket->isConnected() && netMan.getFrame() % ( 5 * 60 ) == 0
+                && netMan.getState() != NetplayState::Loading && netMan.getState() != NetplayState::Skippable
+                && netMan.getState() != NetplayState::RetryMenu )
         {
             MsgPtr msgRngState = procMan.getRngState ( netMan.getIndex() );
 
@@ -724,11 +726,11 @@ struct DllMain
         }
 
         // Entering CharaSelect OR entering in-game Skippable state
-        if ( state == NetplayState::CharaSelect
-                || ( netMan.getState() == NetplayState::Loading && state == NetplayState::Skippable ) )
+        if ( !clientMode.isOffline() &&
+                ( state == NetplayState::CharaSelect
+                  || ( netMan.getState() == NetplayState::Loading && state == NetplayState::Skippable ) ) )
         {
-            if ( !clientMode.isOffline() )
-                shouldSyncRngState = true;
+            shouldSyncRngState = true;
         }
 
         // Entering RetryMenu (enable lazy disconnect on netplay)
@@ -1061,8 +1063,12 @@ struct DllMain
         {
             case MsgType::OptionsMessage:
                 options = msg->getAs<OptionsMessage>();
+
                 Logger::get().sessionId = options.arg ( Options::SessionId );
                 Logger::get().initialize ( options.arg ( Options::AppDir ) + LOG_FILE );
+
+                LOG ( "SessionId '%s'", Logger::get().sessionId );
+
                 syncLog.sessionId = options.arg ( Options::SessionId );
                 syncLog.initialize ( options.arg ( Options::AppDir ) + SYNC_LOG_FILE, LOG_VERSION );
                 break;

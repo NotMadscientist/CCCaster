@@ -643,6 +643,7 @@ void MainUi::initialize()
     // Reset the initial config
     initialConfig.clear();
     initialConfig.localName = config.getString ( "displayName" );
+    initialConfig.winCount = config.getInteger ( "versusWinCount" );
 
     // Initialize controllers
     ControllerManager::get().initialize ( 0 );
@@ -743,6 +744,7 @@ void MainUi::main ( RunFuncPtr run )
 
         // Update cached UI state
         initialConfig.localName = config.getString ( "displayName" );
+        initialConfig.winCount = config.getInteger ( "versusWinCount" );
         if ( address.empty() )
             address.port = config.getInteger ( "lastUsedPort" );
 
@@ -858,8 +860,8 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
     ASSERT ( ui.get() != 0 );
 
     ui->pushInFront ( new ConsoleUi::TextBox (
-                          initialConfig.getAcceptMessage ( "connected" ) + "\n\n"
-                          + formatStats ( pingStats ) ), { 1, 0 }, true ); // Expand width and clear
+                          initialConfig.remoteName + " connected"
+                          "\n\n" + formatStats ( pingStats ) ), { 1, 0 }, true ); // Expand width and clear
 
     ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter delay:" ) );
 
@@ -882,6 +884,7 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
 
         netplayConfig.delay = menu->resultInt;
         netplayConfig.rollback = 0; // TODO select rollback
+        netplayConfig.winCount = config.getInteger ( "versusWinCount" );
 #ifdef RELEASE
         netplayConfig.hostPlayer = 1 + ( rand() % 2 );
 #else
@@ -912,9 +915,14 @@ void MainUi::connected ( const InitialConfig& initialConfig, const PingStats& pi
 
     ASSERT ( ui.get() != 0 );
 
+    const string modeString = ( initialConfig.mode.isTraining()
+                                ? "Training mode"
+                                : format ( "Versus mode, each game is %u rounds", initialConfig.winCount ) );
+
     ui->pushInFront ( new ConsoleUi::TextBox (
-                          initialConfig.getConnectMessage ( "Connected" ) + "\n\n"
-                          + formatStats ( pingStats ) ), { 1, 0 }, true ); // Expand width and clear
+                          "Connected to " + initialConfig.remoteName
+                          + "\n\n" + modeString
+                          + "\n\n" + formatStats ( pingStats ) ), { 1, 0 }, true ); // Expand width and clear
 
     ui->pushBelow ( new ConsoleUi::TextBox ( "Waiting for host to choose delay..." ), { 1, 0 } ); // Expand width
 }

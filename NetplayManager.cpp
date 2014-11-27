@@ -407,22 +407,17 @@ void NetplayManager::setState ( NetplayState state )
         //     }
         // }
 
-        // Start of a new game; entering loading state
-        if ( state == NetplayState::Loading )
+        // Start of retry menu
+        if ( state == NetplayState::RetryMenu )
         {
-            LOG ( "Start of a new game" );
-
+            // TODO save game data before clearing
             inputs[0].clear();
             inputs[1].clear();
 
             rngStates.clear();
 
             startIndex = getIndex();
-        }
 
-        // Start of retry menu
-        if ( state == NetplayState::RetryMenu )
-        {
             localRetryMenuIndex = -1;
             remoteRetryMenuIndex = -1;
 

@@ -113,16 +113,7 @@ struct InitialConfig : public SerializableSequence
     ClientMode mode;
     uint16_t dataPort = 0;
     std::string localName, remoteName;
-
-    std::string getConnectMessage ( const std::string& verb ) const
-    {
-        return format ( "%s to %s%s", verb, remoteName, ( mode.isTraining() ? " (training mode)" : "" ) );
-    }
-
-    std::string getAcceptMessage ( const std::string& verb ) const
-    {
-        return format ( "%s %s", remoteName, verb );
-    }
+    uint8_t winCount = 2;
 
     void clear()
     {
@@ -130,9 +121,10 @@ struct InitialConfig : public SerializableSequence
         dataPort = 0;
         localName.clear();
         remoteName.clear();
+        winCount = 2;
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( InitialConfig, mode, dataPort, localName, remoteName )
+    PROTOCOL_MESSAGE_BOILERPLATE ( InitialConfig, mode, dataPort, localName, remoteName, winCount )
 };
 
 
@@ -204,6 +196,7 @@ struct SpectateConfig : public SerializableSequence
 {
     ClientMode mode;
     uint8_t delay = 0xFF, rollback = 0;
+    uint8_t winCount = 2;
 
     // Player names
     std::array<std::string, 2> names;
@@ -216,10 +209,10 @@ struct SpectateConfig : public SerializableSequence
 
     SpectateConfig ( const NetplayConfig& netplayConfig )
         : mode ( netplayConfig.mode ), delay ( netplayConfig.delay ), rollback ( netplayConfig.rollback )
-        , names ( netplayConfig.names ), sessionId ( netplayConfig.sessionId )
+        , winCount ( netplayConfig.winCount ), names ( netplayConfig.names ), sessionId ( netplayConfig.sessionId )
         , initial ( netplayConfig.mode.isTraining() ) {}
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig, mode, delay, rollback, names, sessionId, initial )
+    PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig, mode, delay, rollback, winCount, names, sessionId, initial )
 };
 
 
