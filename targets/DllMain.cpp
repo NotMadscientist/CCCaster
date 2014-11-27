@@ -8,6 +8,7 @@
 #include "Enum.h"
 #include "ErrorStringsExt.h"
 #include "KeyboardState.h"
+#include "CharacterNames.h"
 
 #include <windows.h>
 
@@ -364,6 +365,7 @@ struct DllMain
         {
             case NetplayState::PreInitial:
             case NetplayState::Initial:
+            case NetplayState::InitialCharaSelect:
                 // Disable FPS limit while going to character select
                 *CC_SKIP_FRAMES_ADDR = 1;
                 break;
@@ -785,7 +787,11 @@ struct DllMain
 
         if ( current == CC_GAME_MODE_CHARA_SELECT )
         {
-            netplayStateChanged ( NetplayState::CharaSelect );
+            // Spectate mode needs to initialize the character select state first
+            if ( netMan.config.mode.isSpectate() )
+                netplayStateChanged ( NetplayState::InitialCharaSelect );
+            else
+                netplayStateChanged ( NetplayState::CharaSelect );
             return;
         }
 
@@ -798,7 +804,7 @@ struct DllMain
         if ( current == CC_GAME_MODE_INGAME )
         {
             // Versus mode in-game starts with character intros, which is a skippable state
-            if ( !netMan.config.mode.isTraining() )
+            if ( netMan.config.mode.isVersus() )
                 netplayStateChanged ( NetplayState::Skippable );
             else
                 netplayStateChanged ( NetplayState::InGame );
@@ -1118,7 +1124,36 @@ struct DllMain
                 break;
 
             case MsgType::SpectateConfig:
-                ASSERT_UNIMPLEMENTED;
+                ASSERT ( clientMode == ClientMode::Spectate );
+
+                netMan.config.mode      = clientMode;
+                netMan.config.delay     = msg->getAs<SpectateConfig>().delay;
+                netMan.config.rollback  = msg->getAs<SpectateConfig>().delay;
+                netMan.config.winCount  = msg->getAs<SpectateConfig>().winCount;
+                netMan.config.names     = msg->getAs<SpectateConfig>().names;
+                netMan.config.sessionId = msg->getAs<SpectateConfig>().sessionId;
+
+                if ( netMan.config.delay == 0xFF )
+                    THROW_EXCEPTION ( "delay=%u", ERROR_INVALID_HOST_CONFIG, netMan.config.delay );
+
+                netMan.initial = msg->getAs<SpectateConfig>().initial;
+
+                if ( netMan.initial.initialMode == InitialGameState::Unknown )
+                    THROW_EXCEPTION ( "initialMode=%u", ERROR_INVALID_HOST_CONFIG, netMan.initial.initialMode );
+
+                LOG ( "SessionId '%s'", netMan.config.sessionId );
+
+                LOG ( "SpectateConfig: %s; flags={ %s }; delay=%d; rollback=%d; winCount=%d; "
+                      "hostPlayer=%d; names={ %s, %s }",
+                      netMan.config.mode, netMan.config.mode.flagString(), netMan.config.delay, netMan.config.rollback,
+                      netMan.config.winCount, netMan.config.names[0], netMan.config.names[1] );
+
+                LOG ( "InitialGameState: %s; initialMode=%u; stage=%u; %s vs %s",
+                      netMan.initial.initialMode, netMan.initial.stage,
+                      msg->getAs<SpectateConfig>().formatPlayer ( 1, fullCharaName ),
+                      msg->getAs<SpectateConfig>().formatPlayer ( 2, fullCharaName ) );
+
+                netplayStateChanged ( NetplayState::Initial );
                 break;
 
             case MsgType::NetplayConfig:
@@ -1203,7 +1238,9 @@ struct DllMain
                 // *CC_WIN_COUNT_VS_ADDR = 1;
                 // *CC_DAMAGE_LEVEL_ADDR = 4;
 
-                LOG ( "NetplayConfig: mode=%s; flags={ %s }; delay=%d; rollback=%d; winCount=%d; "
+                LOG ( "SessionId '%s'", netMan.config.sessionId );
+
+                LOG ( "NetplayConfig: %s; flags={ %s }; delay=%d; rollback=%d; winCount=%d; "
                       "hostPlayer=%d; localPlayer=%d; remotePlayer=%d",
                       netMan.config.mode, netMan.config.mode.flagString(), netMan.config.delay, netMan.config.rollback,
                       netMan.config.winCount, netMan.config.hostPlayer, localPlayer, remotePlayer );

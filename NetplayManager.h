@@ -14,19 +14,21 @@ struct InputsContainer16 : public SerializableSequence, public InputsContainer<u
 
 // PreInitial: The period while we are preparing communication channels
 // Initial: The game starting phase
+// InitialCharaSelect: Initializing character select state (spectate only)
 // CharaSelect: Character select
 // Loading: Loading screen, distinct from skippable, so we can transition properly
 // Skippable: Skippable states (chara intros, rounds, post-game, pre-retry)
 // InGame: In-game state
 // RetryMenu: Post-game retry menu
 // PauseMenu: Pause menu or training mode menu
-ENUM ( NetplayState, PreInitial, Initial, CharaSelect, Loading, Skippable, InGame, RetryMenu, PauseMenu );
+ENUM ( NetplayState,
+       PreInitial, Initial, InitialCharaSelect, CharaSelect, Loading, Skippable, InGame, RetryMenu, PauseMenu );
 
 /* Netplay state transitions
 
-    PreInitial -> Initial -> CharaSelect -> Loading
+    PreInitial -> Initial -> { InitialCharaSelect (spectate only), CharaSelect }
 
-    Loading -> { Skippable, InGame (training mode) }
+    CharaSelect -> Loading -> { Skippable, InGame (training mode) }
 
     Skippable -> { InGame (versus mode), RetryMenu }
 
@@ -62,6 +64,9 @@ class NetplayManager
     // Type of the training mode reset
     mutable int32_t trainingResetType = 0;
 
+    // If the initial character select state is ready
+    mutable std::array<int32_t, 2> charaSelectState = {{ 0, 0 }};
+
     // The value of *CC_GAME_STATE_COUNTER_ADDR at the beginning of the RetryMenu state.
     // This is used to determine if any other menus are open in front of the retry menu.
     uint32_t retryMenuGameStateCounter = 0;
@@ -92,6 +97,7 @@ class NetplayManager
     // Get the input for the specific netplay state
     uint16_t getPreInitialInput ( uint8_t player ) const;
     uint16_t getInitialInput ( uint8_t player ) const;
+    uint16_t getInitialCharaSelectInput ( uint8_t player ) const;
     uint16_t getCharaSelectInput ( uint8_t player ) const;
     uint16_t getSkippableInput ( uint8_t player ) const;
     uint16_t getInGameInput ( uint8_t player ) const;
@@ -116,6 +122,9 @@ public:
 
     // Netplay config
     NetplayConfig config;
+
+    // Initial game state (spectate only)
+    InitialGameState initial;
 
     // Indicate which player is the remote player
     void setRemotePlayer ( uint8_t player );

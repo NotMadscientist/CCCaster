@@ -53,14 +53,19 @@ uint16_t NetplayManager::getInitialInput ( uint8_t player ) const
     return getMenuNavInput();
 }
 
+uint16_t NetplayManager::getInitialCharaSelectInput ( uint8_t player ) const
+{
+    int32_t& state = charaSelectState[player - 1];
+
+    uint32_t mode = 0;
+    if ( AsmHacks::charaSelectModePtrs[player - 1] )
+        mode = *AsmHacks::charaSelectModePtrs[player - 1];
+
+    return 0;
+}
+
 uint16_t NetplayManager::getCharaSelectInput ( uint8_t player ) const
 {
-    if ( config.mode.isSpectate() )
-    {
-        // TODO automatically select character
-        return 0;
-    }
-
     uint16_t input = getDelayedInput ( player );
 
     // Prevent exiting character select
@@ -452,6 +457,9 @@ uint16_t NetplayManager::getInput ( uint8_t player ) const
 
         case NetplayState::Initial:
             return getInitialInput ( player );
+
+        case NetplayState::InitialCharaSelect:
+            return getInitialCharaSelectInput ( player );
 
         case NetplayState::CharaSelect:
             return getCharaSelectInput ( player );

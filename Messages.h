@@ -177,6 +177,8 @@ struct NetplayConfig : public SerializableSequence
 };
 
 
+typedef const char * ( *CharaNameFunc ) ( uint32_t chara );
+
 struct InitialGameState : public SerializableSequence
 {
     enum { Unknown = 0, CharaSelect, VersusMode, TrainingMode };
@@ -187,6 +189,8 @@ struct InitialGameState : public SerializableSequence
     uint8_t initialMode = 0;
 
     InitialGameState ( bool isTraining );
+
+    void applyState();
 
     PROTOCOL_MESSAGE_BOILERPLATE ( InitialGameState, stage, chara, moon, color, charaSelectMode, initialMode );
 };
@@ -211,6 +215,16 @@ struct SpectateConfig : public SerializableSequence
         : mode ( netplayConfig.mode ), delay ( netplayConfig.delay ), rollback ( netplayConfig.rollback )
         , winCount ( netplayConfig.winCount ), names ( netplayConfig.names ), sessionId ( netplayConfig.sessionId )
         , initial ( netplayConfig.mode.isTraining() ) {}
+
+    std::string formatPlayer ( uint8_t player, CharaNameFunc charaNameFunc ) const
+    {
+        ASSERT ( player == 1 || player == 2 );
+
+        const char moonCh = ( initial.moon[player - 1] == 0 ? 'C' : ( initial.moon[player - 1] == 1 ? 'F' : 'H' ) );
+
+        return format ( ( names[player - 1].empty() ? "%s%c-%s" : "%s (%c-%s)" ),
+                        names[player - 1], moonCh, charaNameFunc ( initial.chara[player - 1] ) );
+    }
 
     PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig, mode, delay, rollback, winCount, names, sessionId, initial )
 };
