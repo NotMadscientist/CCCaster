@@ -164,6 +164,10 @@ version:
 proto:
 	$(make_protocol)
 
+reset-proto:
+	rm -f lib/ProtocolEnums.h
+	@$(MAKE) proto
+
 depend: version protocol
 	$(make_depend)
 
@@ -227,7 +231,7 @@ count:
 
 
 ifeq (,$(findstring version,$(MAKECMDGOALS)))
-ifeq (,$(findstring protocol,$(MAKECMDGOALS)))
+ifeq (,$(findstring proto,$(MAKECMDGOALS)))
 ifeq (,$(findstring depend,$(MAKECMDGOALS)))
 ifeq (,$(findstring clean,$(MAKECMDGOALS)))
 ifeq (,$(findstring check,$(MAKECMDGOALS)))

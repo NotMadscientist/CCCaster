@@ -48,6 +48,8 @@ class MainUi : public Controller::Owner
 
     void alertUser();
 
+    std::string formatPlayer ( const SpectateConfig& spectateConfig, uint8_t player ) const;
+
 public:
 
     InitialConfig initialConfig;

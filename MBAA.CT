@@ -277,6 +277,13 @@
       <Address>00559550</Address>
     </CheatEntry>
     <CheatEntry>
+      <ID>251</ID>
+      <Description>"P2 wins"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>00559580</Address>
+    </CheatEntry>
+    <CheatEntry>
       <ID>158</ID>
       <Description>"camera scale1"</Description>
       <Color>80000008</Color>

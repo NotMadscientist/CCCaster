@@ -133,16 +133,6 @@ struct MainApp
 
        10 - Reconnect dataSocket in-game, and also don't need ctrlSocket for host-client communications
 
-       Spectate protocol
-
-        1 - Connect / accept ctrlSocket
-
-        2 - Both send and recv VersionConfig
-
-        3 - Host sends SpectateConfig
-
-        4 - Client recvs SpectateConfig and waits for user confirmation
-
     */
 
     void run() override
@@ -434,11 +424,13 @@ struct MainApp
         }
 
         LOG ( "SpectateConfig: mode=%s; flags={ %s }; delay=%u; rollback=%u; names={ '%s', '%s' }"
-              "chara={ %u, %u }; moon={ %c, %c }; color= { %d, %d }; state=%u",
+              "chara={ %u, %u }; moon={ %u, %u }; color= { %u, %u }; stage=%u; initialMode=%u",
               spectateConfig.mode, spectateConfig.mode.flagString(),
               spectateConfig.delay, spectateConfig.rollback, spectateConfig.names[0], spectateConfig.names[1],
-              spectateConfig.chara[0], spectateConfig.chara[1], spectateConfig.moon[0], spectateConfig.moon[1],
-              ( int ) spectateConfig.color[0], ( int ) spectateConfig.color[1], spectateConfig.stage );
+              spectateConfig.initial.chara[0], spectateConfig.initial.chara[1],
+              spectateConfig.initial.moon[0], spectateConfig.initial.moon[1],
+              spectateConfig.initial.color[0], spectateConfig.initial.color[1],
+              spectateConfig.initial.stage, spectateConfig.initial.initialMode );
 
         this->spectateConfig = spectateConfig;
 

@@ -265,6 +265,9 @@ void ProcessManager::openGame ( const string& appDir, bool highPriority )
 
 void ProcessManager::closeGame()
 {
+    if ( !isConnected() )
+        return;
+
     disconnectPipe();
 
     LOG ( "Closing game" );

@@ -931,7 +931,20 @@ void MainUi::connected ( const NetplayConfig& netplayConfig )
 
 #include "CharacterNames.h"
 
-typedef const char * ( *CharaNameFunc ) ( uint32_t chara );
+string MainUi::formatPlayer ( const SpectateConfig& spectateConfig, uint8_t player ) const
+{
+    ASSERT ( player == 1 || player == 2 );
+
+    typedef const char * ( *CharaNameFunc ) ( uint32_t chara );
+
+    CharaNameFunc charaName = ( config.getInteger ( "fullCharacterName" ) ? fullCharaName : shortCharaName );
+
+    const char moon = ( spectateConfig.initial.moon[player - 1] == 0 ? 'C' :
+                        ( spectateConfig.initial.moon[player - 1] == 1 ? 'F' : 'H' ) );
+
+    return format ( ( spectateConfig.names[player - 1].empty() ? "%s%c-%s" : "%s (%c-%s)" ),
+                    spectateConfig.names[player - 1], moon, charaName ( spectateConfig.initial.chara[player - 1] ) );
+}
 
 void MainUi::spectate ( const SpectateConfig& spectateConfig )
 {
@@ -948,22 +961,10 @@ void MainUi::spectate ( const SpectateConfig& spectateConfig )
                         ( spectateConfig.mode.isTraining() ? "training" : "versus" ), spectateConfig.delay,
                         ( spectateConfig.rollback ? format ( ", %u rollback", spectateConfig.rollback ) : "" ) );
 
-    if ( spectateConfig.chara[0] )
-    {
-        CharaNameFunc charaName = ( config.getInteger ( "useFullCharacterName" ) ? fullCharaName : shortCharaName );
-
-        text += format ( ( spectateConfig.names[0].empty() ? "%s%c-%s" : "%s (%c-%s)" ),
-                         spectateConfig.names[0], spectateConfig.moon[0], charaName ( spectateConfig.chara[0] ) );
-
-        text += " vs ";
-
-        text += format ( ( spectateConfig.names[1].empty() ? "%s%c-%s" : "%s (%c-%s)" ),
-                         spectateConfig.names[1], spectateConfig.moon[1], charaName ( spectateConfig.chara[1] ) );
-    }
-    else
-    {
+    if ( spectateConfig.initial.initialMode == InitialGameState::CharaSelect )
         text += "Selecting characters...";
-    }
+    else
+        text += formatPlayer ( spectateConfig, 1 ) + " vs " + formatPlayer ( spectateConfig, 2 );
 
     ui->pushInFront ( new ConsoleUi::TextBox ( text ), { 1, 0 }, true ); // Expand width and clear
 }

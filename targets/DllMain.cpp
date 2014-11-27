@@ -731,10 +731,10 @@ struct DllMain
                 shouldSyncRngState = true;
         }
 
-        // Entering RetryMenu (enable lazy disconnect)
+        // Entering RetryMenu (enable lazy disconnect on netplay)
         if ( state == NetplayState::RetryMenu )
         {
-            lazyDisconnect = true;
+            lazyDisconnect = clientMode.isNetplay();
             localRetryMenuIndexSent = false;
         }
         else if ( lazyDisconnect )
@@ -835,8 +835,8 @@ struct DllMain
                 LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
                 netplayStateChanged ( NetplayState::Skippable );
 
-                // Enable lazy disconnect in case someone just won a game
-                lazyDisconnect = true;
+                // Enable lazy disconnect in case someone just won a game (netplay only)
+                lazyDisconnect = clientMode.isNetplay();
                 break;
 
             default:
@@ -966,19 +966,7 @@ struct DllMain
                     return;
                 }
 
-                // SpectateConfig *config = new SpectateConfig ( netMan.config );
-                // MsgPtr msgPerGameData = netMan.getLastGame();
-
-                // if ( msgPerGameData )
-                // {
-                //     for ( uint8_t i = 0; i < 2; ++i )
-                //     {
-                //         config->chara[i] = msgPerGameData->getAs<PerGameData>().chara[i];
-                //         config->moon[i] = msgPerGameData->getAs<PerGameData>().moon[i];
-                //     }
-                // }
-
-                // socket->send ( config );
+                socket->send ( new SpectateConfig ( netMan.config ) );
                 return;
             }
 

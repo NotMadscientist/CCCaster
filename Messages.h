@@ -185,21 +185,22 @@ struct NetplayConfig : public SerializableSequence
 };
 
 
-struct GameConfig
+struct InitialGameState : public SerializableSequence
 {
-    // Character select data, indexed by player
-    std::array<uint32_t, 2> chara = {{ 0, 0 }};
-    std::array<char, 2> moon = {{ 0, 0 }}, color = {{ 0, 0 }};
+    enum { Unknown = 0, CharaSelect, VersusMode, TrainingMode };
 
-    // Selected stage
     uint32_t stage = 0;
+    std::array<uint32_t, 2> chara = {{ 0, 0 }};
+    std::array<uint8_t, 2> moon = {{ 0, 0 }}, color = {{ 0, 0 }}, charaSelectMode {{ 0, 0 }};
+    uint8_t initialMode = 0;
 
-    // Versus mode win count
-    uint8_t winCount = 2;
+    InitialGameState ( bool isTraining );
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( InitialGameState, stage, chara, moon, color, charaSelectMode, initialMode );
 };
 
 
-struct SpectateConfig : public SerializableSequence, public GameConfig
+struct SpectateConfig : public SerializableSequence
 {
     ClientMode mode;
     uint8_t delay = 0xFF, rollback = 0;
@@ -210,12 +211,15 @@ struct SpectateConfig : public SerializableSequence, public GameConfig
     // Session ID
     std::string sessionId;
 
-    SpectateConfig ( const NetplayConfig& netplayConfig, const GameConfig& gameConfig )
-        : GameConfig ( gameConfig ), mode ( netplayConfig.mode ), delay ( netplayConfig.delay )
-        , rollback ( netplayConfig.rollback ), names ( netplayConfig.names ), sessionId ( netplayConfig.sessionId ) {}
+    // Initial game state
+    InitialGameState initial;
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig,
-                                   chara, moon, color, stage, winCount, mode, delay, rollback, names, sessionId )
+    SpectateConfig ( const NetplayConfig& netplayConfig )
+        : mode ( netplayConfig.mode ), delay ( netplayConfig.delay ), rollback ( netplayConfig.rollback )
+        , names ( netplayConfig.names ), sessionId ( netplayConfig.sessionId )
+        , initial ( netplayConfig.mode.isTraining() ) {}
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig, mode, delay, rollback, names, sessionId, initial )
 };
 
 
