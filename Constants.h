@@ -36,6 +36,7 @@
 #define CC_VERSUS_PAUSE_ADDR        ( ( uint32_t * ) 0x564B30 ) // 0xFFFFFFFF when paused
 #define CC_P1_WINS_ADDR             ( ( uint32_t * ) 0x559550 ) // P1 number of wins
 #define CC_P2_WINS_ADDR             ( ( uint32_t * ) 0x559580 ) // P2 number of wins
+#define CC_ROUND_COUNT_ADDR         ( ( uint32_t * ) 0x5550E0 ) // Round count
 
 #define CC_STAGE_SELECTOR_ADDR      ( ( uint32_t * ) 0x74FD98 ) // Currently selected stage, can be assigned to directly
 #define CC_FPS_COUNTER_ADDR         ( ( uint32_t * ) 0x774A70 ) // Value of the displayed FPS counter

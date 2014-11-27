@@ -457,7 +457,6 @@ uint16_t NetplayManager::getInput ( uint8_t player ) const
             return getCharaSelectInput ( player );
 
         case NetplayState::Loading:
-        case NetplayState::Skippable:
             // If spectating or the remote inputs index is ahead, then we should mash to skip.
             if ( config.mode.isSpectate()
                     || ( ( startIndex + inputs[remotePlayer - 1].getEndIndex() ) > getIndex() + 1 ) )
@@ -466,6 +465,7 @@ uint16_t NetplayManager::getInput ( uint8_t player ) const
                 RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
             }
 
+        case NetplayState::Skippable:
             return getSkippableInput ( player );
 
         case NetplayState::InGame:

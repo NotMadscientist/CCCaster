@@ -109,6 +109,9 @@ struct DllMain
     // If we should disconnect at the next NetplayState change
     bool lazyDisconnect = false;
 
+    // If the game is over now (after checking P1 and P2 health values)
+    bool isGameOver = false;
+
 #ifndef RELEASE
     // Local and remote SyncHashes
     list<MsgPtr> localSync, remoteSync;
@@ -556,8 +559,8 @@ struct DllMain
                 return;
             }
 
-            // Don't need to wait for anything in local or skippable modes
-            if ( clientMode.isLocal() || netMan.getState() == NetplayState::Skippable )
+            // Don't need to wait for anything in local modes
+            if ( clientMode.isLocal() || lazyDisconnect )
                 break;
 
             // Check if we are ready to continue running, ie not waiting on remote input or RngState
@@ -606,6 +609,19 @@ struct DllMain
         if ( shouldSyncRngState )
         {
             shouldSyncRngState = false;
+
+            // LOG ( "Randomizing RngState" );
+
+            // RngState rngState;
+
+            // rngState.rngState0 = rand() % 1000000;
+            // rngState.rngState1 = rand() % 1000000;
+            // rngState.rngState2 = rand() % 1000000;
+
+            // for ( char& c : rngState.rngState3 )
+            //     c = rand() % 256;
+
+            // procMan.setRngState ( rngState );
 
             MsgPtr msgRngState = netMan.getRngState();
 
@@ -725,12 +741,10 @@ struct DllMain
             DllHacks::disableOverlay();
         }
 
-        // Entering CharaSelect OR entering in-game Skippable state
-        if ( !clientMode.isOffline() &&
-                ( state == NetplayState::CharaSelect
-                  || ( netMan.getState() == NetplayState::Loading && state == NetplayState::Skippable ) ) )
+        // Entering CharaSelect OR entering InGame
+        if ( !clientMode.isOffline() && ( state == NetplayState::CharaSelect || state == NetplayState::InGame ) )
         {
-            shouldSyncRngState = true;
+            shouldSyncRngState = !isGameOver;
         }
 
         // Entering RetryMenu (enable lazy disconnect on netplay)
@@ -833,12 +847,15 @@ struct DllMain
                         || ! ( previous == 0 && current == 1 && netMan.getState() == NetplayState::InGame ) )
                     break;
 
+                // Check for game over since we just entered a skippable state
+                updateGameOverFlags();
+
                 // When the SkippableFlag is set while InGame (not training mode), we are in a Skippable state
                 LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
                 netplayStateChanged ( NetplayState::Skippable );
 
-                // Enable lazy disconnect in case someone just won a game (netplay only)
-                lazyDisconnect = clientMode.isNetplay();
+                // Enable lazy disconnect if someone just won a game (netplay only)
+                lazyDisconnect = ( clientMode.isNetplay() && isGameOver );
                 break;
 
             default:
@@ -1300,6 +1317,36 @@ struct DllMain
     }
 
 private:
+
+    bool wasLastRoundDoubleGamePointDraw = false;
+
+    void updateGameOverFlags()
+    {
+        const bool isKnockOut = ( ( *CC_P1_HEALTH_ADDR ) == 0 ) || ( ( *CC_P2_HEALTH_ADDR ) == 0 );
+        const bool isTimeOut = ( ( *CC_ROUND_TIMER_ADDR ) == 0 );
+
+        if ( !isKnockOut && !isTimeOut )
+        {
+            isGameOver = false;
+        }
+        else
+        {
+            const bool isP1GamePoint = ( ( *CC_P1_WINS_ADDR ) + 1 == ( *CC_WIN_COUNT_VS_ADDR ) );
+            const bool isP2GamePoint = ( ( *CC_P2_WINS_ADDR ) + 1 == ( *CC_WIN_COUNT_VS_ADDR ) );
+            const bool isDraw = ( ( *CC_P1_HEALTH_ADDR ) == ( *CC_P2_HEALTH_ADDR ) );
+
+            if ( ( isP1GamePoint || isP2GamePoint ) && !isDraw )
+                isGameOver = true;
+            else if ( isP1GamePoint && isP2GamePoint && isDraw && wasLastRoundDoubleGamePointDraw )
+                isGameOver = true;
+            else
+                isGameOver = false;
+
+            wasLastRoundDoubleGamePointDraw = ( isP1GamePoint && isP2GamePoint && isDraw );
+        }
+
+        LOG ( "isGameOver=%u", ( isGameOver ? 1 : 0 ) );
+    }
 
     void saveMappings ( const Controller *controller ) const
     {
