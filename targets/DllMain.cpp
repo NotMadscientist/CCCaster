@@ -1203,11 +1203,10 @@ struct DllMain
                 // *CC_WIN_COUNT_VS_ADDR = 1;
                 // *CC_DAMAGE_LEVEL_ADDR = 4;
 
-                LOG ( "NetplayConfig: flags={ %s }; delay=%d; rollback=%d; winCount=%d; training=%d; offline=%d; "
+                LOG ( "NetplayConfig: mode=%s; flags={ %s }; delay=%d; rollback=%d; winCount=%d; "
                       "hostPlayer=%d; localPlayer=%d; remotePlayer=%d",
-                      netMan.config.mode.flagString(), netMan.config.delay, netMan.config.rollback,
-                      netMan.config.winCount, netMan.config.mode.isTraining(), netMan.config.mode.isOffline(),
-                      netMan.config.hostPlayer, localPlayer, remotePlayer );
+                      netMan.config.mode, netMan.config.mode.flagString(), netMan.config.delay, netMan.config.rollback,
+                      netMan.config.winCount, netMan.config.hostPlayer, localPlayer, remotePlayer );
                 break;
 
             default:

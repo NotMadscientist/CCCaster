@@ -631,17 +631,18 @@ struct MainApp
             return;
         }
 
-        ui.display ( format ( "Starting %s mode...", clientMode.isTraining() ? "training" : "versus" ),
-                     !clientMode.isClient() ); // Don't replace last message if client
-
         if ( clientMode.isClient() && ctrlSocket->isSmart() && ctrlSocket->getAsSmart().isTunnel() )
             clientMode.flags |= ClientMode::UdpTunnel;
 
         if ( clientMode.isNetplay() )
         {
+            clientMode.flags = initialConfig.mode.flags;
             netplayConfig.mode.flags = initialConfig.mode.flags;
             netplayConfig.winCount = initialConfig.winCount;
         }
+
+        ui.display ( format ( "Starting %s mode...", clientMode.isTraining() ? "training" : "versus" ),
+                     !clientMode.isClient() ); // Don't replace last message if client
 
         // Start game (and disconnect sockets) after a small delay since the final configs are still in flight
         startTimer.reset ( new Timer ( this ) );
