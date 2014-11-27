@@ -6,12 +6,6 @@
 #include <vector>
 
 
-// 16 bit input container
-struct InputsContainer16 : public SerializableSequence, public InputsContainer<uint16_t>
-{
-    PROTOCOL_MESSAGE_BOILERPLATE ( InputsContainer16, inputs );
-};
-
 // PreInitial: The period while we are preparing communication channels
 // Initial: The game starting phase
 // InitialCharaSelect: Initializing character select state (spectate only)
@@ -79,11 +73,11 @@ class NetplayManager
     // Current netplay frame, frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime.
     IndexedFrame indexedFrame = {{ 0, 0 }};
 
-    // The starting index of the current game
+    // The starting index the current game
     uint32_t startIndex = 0;
 
     // Mapping: player -> index offset -> frame -> input
-    std::array<InputsContainer16, 2> inputs;
+    std::array<InputsContainer<uint16_t>, 2> inputs;
 
     // Mapping: index offset -> RngState (can be null)
     std::vector<MsgPtr> rngStates;

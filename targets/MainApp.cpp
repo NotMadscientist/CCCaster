@@ -586,9 +586,6 @@ struct MainApp
             case MsgType::BothInputs:
                 return;
 
-            case MsgType::InputsContainer16:
-                return;
-
             case MsgType::ErrorMessage:
                 stop ( msg->getAs<ErrorMessage>().error );
                 return;

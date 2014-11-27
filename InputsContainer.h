@@ -135,6 +135,19 @@ public:
         return inputs.back().size();
     }
 
+    void eraseIndexOlderThan ( size_t index )
+    {
+        if ( index + 1 >= inputs.size() )
+            inputs.clear();
+        else
+            inputs.erase ( inputs.begin(), inputs.begin() + index );
+
+        if ( index + 1 >= real.size() )
+            real.clear();
+        else
+            real.erase ( real.begin(), real.begin() + index );
+    }
+
     // const IndexedFrame& getLastChangedFrame() const { return lastChangedFrame; }
 
     // void clearLastChangedFrame() { lastChangedFrame = {{ UINT_MAX, UINT_MAX }}; }

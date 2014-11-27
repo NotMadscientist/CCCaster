@@ -51,6 +51,14 @@ static void deinitialize();
 ENUM ( Variable, WorldTime, GameMode, RoundStart, SkippableFlag,
        MenuConfirmState, AutoReplaySave, GameStateCounter, CurrentMenuIndex );
 
+// Spectator state
+struct SpectatorState
+{
+    SocketPtr socket;
+
+    IndexedFrame pos = {{ 0, 0 }};
+};
+
 
 struct DllMain
         : public Main
@@ -84,7 +92,7 @@ struct DllMain
     IndexedFrame rerunStopFrame = {{ 0, 0 }};
 
     // Spectator sockets
-    unordered_map<Socket *, SocketPtr> specSockets;
+    unordered_map<Socket *, SpectatorState> spectators;
 
     // Initial connect timer
     TimerPtr initialTimer;
@@ -112,6 +120,9 @@ struct DllMain
 
     // If the game is over now (after checking P1 and P2 health values)
     bool isGameOver = false;
+
+    // The starting index of the current game
+    uint32_t gameStartIndex = 0;
 
 #ifndef RELEASE
     // Local and remote SyncHashes
@@ -538,7 +549,7 @@ struct DllMain
                     if ( clientMode.isHost() )
                         dataSocket->send ( msgRngState );
 
-                    for ( const auto& kv : specSockets )
+                    for ( const auto& kv : spectators )
                         kv.first->send ( msgRngState );
                 }
                 break;
@@ -631,27 +642,26 @@ struct DllMain
 
             procMan.setRngState ( msgRngState->getAs<RngState>() );
 
-            for ( const auto& kv : specSockets )
+            for ( const auto& kv : spectators )
                 kv.first->send ( msgRngState );
         }
 
         // Broadcast inputs to spectators once every NUM_INPUTS frames
-        if ( !specSockets.empty() && netMan.getFrame() > 0 && netMan.getFrame() % NUM_INPUTS == 0 )
+        if ( !spectators.empty() && netMan.getFrame() > 0 && netMan.getFrame() % NUM_INPUTS == 0 )
         {
             MsgPtr msgBothInputs = netMan.getBothInputs();
 
             ASSERT ( msgBothInputs.get() != 0 );
 
-            for ( const auto& kv : specSockets )
+            for ( const auto& kv : spectators )
                 kv.first->send ( msgBothInputs );
         }
 
 #ifndef RELEASE
-        // Log the RngState once every 5 seconds, except in Loading, Skippable, and RetryMenu states.
+        // Log the RngState once every 5 seconds, except in Loading and RetryMenu states.
         // This effectively also logs whenever the frame becomes zero, ie when the index is incremented.
         if ( dataSocket && dataSocket->isConnected() && netMan.getFrame() % ( 5 * 60 ) == 0
-                && netMan.getState() != NetplayState::Loading && netMan.getState() != NetplayState::Skippable
-                && netMan.getState() != NetplayState::RetryMenu )
+                && netMan.getState() != NetplayState::Loading && netMan.getState() != NetplayState::RetryMenu )
         {
             MsgPtr msgRngState = procMan.getRngState ( netMan.getIndex() );
 
@@ -723,6 +733,15 @@ struct DllMain
     {
         ASSERT ( netMan.getState() != state );
 
+        DllHacks::disableOverlay();
+
+        // Entering Loading
+        if ( state == NetplayState::Loading )
+        {
+            // The current index is still on the previous state, so actual InGame/Skippable is 2 after
+            gameStartIndex = netMan.getIndex() + 2;
+        }
+
         // Entering InGame
         if ( state == NetplayState::InGame )
         {
@@ -735,12 +754,6 @@ struct DllMain
         {
             if ( netMan.config.rollback )
                 procMan.deallocateStates();
-        }
-
-        // Exiting CharaSelect
-        if ( netMan.getState() == NetplayState::CharaSelect )
-        {
-            DllHacks::disableOverlay();
         }
 
         // Entering CharaSelect OR entering InGame
@@ -950,9 +963,9 @@ struct DllMain
 
         popPendingSocket ( socket );
 
-        LOG ( "specSockets.erase ( %08x )", socket );
+        LOG ( "spectators.erase ( %08x )", socket );
 
-        specSockets.erase ( socket );
+        spectators.erase ( socket );
     }
 
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
@@ -999,21 +1012,34 @@ struct DllMain
             {
                 SocketPtr newSocket = popPendingSocket ( socket );
 
-                if ( newSocket )
+                ASSERT ( newSocket.get() == socket );
+
+                if ( !newSocket )
+                    return;
+
+                SpectatorState ss;
+                ss.socket = newSocket;
+
+                if ( netMan.getState() == NetplayState::CharaSelect )
                 {
-                    specSockets[socket] = newSocket;
-                    // rate limit newSocket if host or client
-                    // send over newSocket:
-                    //  - InputContainers
-                    //  - RngStates
+                    // Spectating CharaSelect can start on the current frame, since we can sync the complete state.
+                    ss.pos = netMan.getIndexedFrame();
                 }
+                else
+                {
+                    // Spectating any other state must start from the beginning of the current game.
+                    ss.pos = { 0, gameStartIndex };
+                }
+
+                spectators[newSocket.get()] = ss;
+                newSocket->send ( new InitialGameState ( clientMode.isTraining() ) );
                 return;
             }
 
             case MsgType::RngState:
                 netMan.setRngState ( msg->getAs<RngState>() );
 
-                for ( const auto& kv : specSockets )
+                for ( const auto& kv : spectators )
                     kv.first->send ( msg );
                 return;
 
