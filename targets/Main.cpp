@@ -196,6 +196,7 @@ int main ( int argc, char *argv[] )
         { Options::Stdout,    0,  "", "stdout", Arg::None,        "  --stdout,          Output logs to stdout"},
         { Options::Tunnel,    0, "T", "tunnel", Arg::None,        "  --tunnel, -T       Force UDP tunnel" },
         { Options::Dummy,     0, "D",  "dummy", Arg::None,        "  --dummy, -D        Client mode with fake inputs" },
+        { Options::PidLog,    0, "P", "pidlog", Arg::None,        "  --pidlog, -P       Tag log files with the PID" },
         { Options::FakeUi,    0, "F",   "fake", Arg::None,        "  --fake, -F         Fake UI mode\n" },
 
         {
@@ -208,6 +209,7 @@ int main ( int argc, char *argv[] )
 #else
         { Options::Tunnel, 0, "", "tunnel", Arg::None, 0 },
         { Options::Dummy, 0, "", "dummy", Arg::None, 0 },
+        { Options::PidLog, 0, "", "pidlog", Arg::None, 0 },
         { Options::StrictVersion, 0, "S", "", Arg::None, 0 },
 #endif
 
@@ -268,6 +270,8 @@ int main ( int argc, char *argv[] )
     // Initialize logging
     if ( opt[Options::Stdout] )
         Logger::get().initialize();
+    else if ( opt[Options::PidLog] )
+        Logger::get().initialize ( appDir + LOG_FILE, LOG_DEFAULT_OPTIONS | PID_IN_FILENAME );
     else
         Logger::get().initialize ( appDir + LOG_FILE );
 

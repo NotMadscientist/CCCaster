@@ -15,6 +15,8 @@
 #define LOG_FUNC_NAME   ( 0x10 )    // Log the function name per message
 #define PID_IN_FILENAME ( 0x20 )    // Append the PID to the log filename
 
+#define LOG_DEFAULT_OPTIONS ( LOG_VERSION | LOG_GM_TIME | LOG_FILE_LINE | LOG_FUNC_NAME )
+
 
 class Logger
 {
@@ -50,12 +52,7 @@ public:
     Logger() {}
 
     // Initialize / deinitialize logging
-    void initialize ( const std::string& file = "",
-                      uint32_t options = ( LOG_VERSION | LOG_GM_TIME | LOG_FILE_LINE | LOG_FUNC_NAME
-// #ifndef RELEASE
-//                                            | PID_IN_FILENAME
-// #endif
-                                         ) );
+    void initialize ( const std::string& file = "", uint32_t options = LOG_DEFAULT_OPTIONS );
     void deinitialize();
 
     // Flush to file
