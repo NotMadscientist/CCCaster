@@ -32,6 +32,8 @@ count = 0
 REGEX_FULL = '^[^ ]+ \[[0-9]+\] NetplayState::([A-Za-z]+) \[([0-9]+):([0-9]+)\] ([A-Za-z]+: .+)$'
 REGEX_SHORT = '^([^ ]+) \[([0-9]+):([0-9]+)\] ([A-Za-z]+: .+)$'
 
+SKIP_STATES = set ( [ 'Loading', 'Skippable', 'RetryMenu' ] )
+
 regex1, regex2 = None, None
 i, j = 4, 4
 
@@ -43,9 +45,8 @@ if log1[j] != log2[j]:
 
 if re.match ( REGEX_FULL, log1[i + 1] ):
     regex1 = REGEX_FULL
-    while log1[i].find ( 'CharaSelect' ) < 0:
+    while log1[i + 1].find ( 'CharaSelect' ) < 0:
         i += 1
-    i -= 1
 elif re.match ( REGEX_SHORT, log1[i + 1] ):
     regex1 = REGEX_SHORT
 else:
@@ -55,9 +56,8 @@ else:
 
 if re.match ( REGEX_FULL, log2[j + 1] ):
     regex2 = REGEX_FULL
-    while log2[j].find ( 'CharaSelect' ) < 0:
+    while log2[j + 1].find ( 'CharaSelect' ) < 0:
         j += 1
-    j -= 1
 elif re.match ( REGEX_SHORT, log2[j + 1] ):
     regex2 = REGEX_SHORT
 else:
@@ -74,14 +74,13 @@ while i + 1 < len ( log1 ):
         print log1[i]
         exit ( -1 )
 
-    # Skip Loading, Skippable, and RetryMenu states
-    if ( m.group ( 1 ) == 'Loading' ) or ( m.group ( 1 ) == 'Skippable' ) or ( m.group ( 1 ) == 'RetryMenu' ):
-        continue
-
     state1 = m.group ( 1 )
     index1 = int ( m.group ( 2 ) )
     frame1 = int ( m.group ( 3 ) )
     data1 = m.group ( 4 )
+
+    if state1 in SKIP_STATES:
+        continue
 
     while j + 1 < len ( log2 ):
         j += 1

@@ -390,7 +390,6 @@ struct DllMain
             case NetplayState::Loading:
             case NetplayState::Skippable:
             case NetplayState::RetryMenu:
-            case NetplayState::PauseMenu:
             {
                 KeyboardState::update();
                 ControllerManager::get().check ( DllHacks::windowHandle );
@@ -646,7 +645,7 @@ struct DllMain
         }
 
         // Broadcast inputs to spectators once every NUM_INPUTS frames
-        if ( !spectators.empty() && netMan.getFrame() > 0 && netMan.getFrame() % NUM_INPUTS == 0 )
+        if ( !spectators.empty() && ( netMan.getFrame() + 1 ) % NUM_INPUTS == 0 )
         {
             MsgPtr msgBothInputs = netMan.getBothInputs();
 
@@ -694,7 +693,7 @@ struct DllMain
 #endif
 
         // Log inputs every frame
-        LOG_SYNC ( "Inputs: %04x %04x", netMan.getInput ( 1 ), netMan.getInput ( 2 ) );
+        LOG_SYNC ( "Inputs: %04x %04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
     }
 
     void frameStepRerun()

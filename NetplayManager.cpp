@@ -239,6 +239,11 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
         // Disable menu confirms
         AsmHacks::menuConfirmState = 0;
     }
+    else
+    {
+        // Allow regular retry menu operation when not netplaying
+        AsmHacks::menuConfirmState = 2;
+    }
 
     return input;
 }
@@ -256,11 +261,6 @@ void NetplayManager::setRetryMenuIndex ( uint32_t position )
     remoteRetryMenuIndex = position;
 
     LOG ( "remoteRetryMenuIndex=%d", remoteRetryMenuIndex );
-}
-
-uint16_t NetplayManager::getPauseMenuInput ( uint8_t player ) const
-{
-    return 0;
 }
 
 uint16_t NetplayManager::getOffsetInput ( uint8_t player, uint32_t frame ) const
@@ -369,7 +369,7 @@ void NetplayManager::setState ( NetplayState state )
 
     LOG ( "indexedFrame=[%s]; previous=%s; current=%s", indexedFrame, this->state, state );
 
-    if ( state.value >= NetplayState::CharaSelect && state.value <= NetplayState::PauseMenu )
+    if ( state.value >= NetplayState::CharaSelect )
     {
         // Increment the index
         ++indexedFrame.parts.index;
@@ -456,8 +456,29 @@ uint16_t NetplayManager::getInput ( uint8_t player ) const
         case NetplayState::RetryMenu:
             return getRetryMenuInput ( player );
 
-        case NetplayState::PauseMenu:
-            return getPauseMenuInput ( player );
+        default:
+            ASSERT_IMPOSSIBLE;
+            return 0;
+    }
+}
+
+uint16_t NetplayManager::getRawInput ( uint8_t player ) const
+{
+    ASSERT ( player == 1 || player == 2 );
+
+    switch ( state.value )
+    {
+        case NetplayState::PreInitial:
+        case NetplayState::Initial:
+        case NetplayState::InitialCharaSelect:
+        case NetplayState::Loading:
+        case NetplayState::RetryMenu:
+        case NetplayState::Skippable:
+        case NetplayState::CharaSelect:
+            return getDelayedInput ( player );
+
+        case NetplayState::InGame:
+            return getOffsetInput ( player );
 
         default:
             ASSERT_IMPOSSIBLE;

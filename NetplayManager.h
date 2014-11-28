@@ -11,12 +11,10 @@
 // InitialCharaSelect: Initializing character select state (spectate only)
 // CharaSelect: Character select
 // Loading: Loading screen, distinct from skippable, so we can transition properly
-// Skippable: Skippable states (chara intros, rounds, post-game, pre-retry)
+// Skippable: Skippable states (chara intros, round transitions, post-game, pre-retry)
 // InGame: In-game state
 // RetryMenu: Post-game retry menu
-// PauseMenu: Pause menu or training mode menu
-ENUM ( NetplayState,
-       PreInitial, Initial, InitialCharaSelect, CharaSelect, Loading, Skippable, InGame, RetryMenu, PauseMenu );
+ENUM ( NetplayState, PreInitial, Initial, InitialCharaSelect, CharaSelect, Loading, Skippable, InGame, RetryMenu );
 
 /* Netplay state transitions
 
@@ -26,11 +24,9 @@ ENUM ( NetplayState,
 
     Skippable -> { InGame (versus mode), RetryMenu }
 
-    InGame -> { Skippable, PauseMenu (training / broadcast / offline only) }
+    InGame -> { Skippable, CharaSelect (not on netplay) }
 
     RetryMenu -> { Loading, CharaSelect }
-
-    PauseMenu -> { InGame, CharaSelect }
 
 */
 
@@ -96,7 +92,6 @@ class NetplayManager
     uint16_t getSkippableInput ( uint8_t player ) const;
     uint16_t getInGameInput ( uint8_t player ) const;
     uint16_t getRetryMenuInput ( uint8_t player ) const;
-    uint16_t getPauseMenuInput ( uint8_t player ) const;
 
     // Get the input for the current frame taking into account delay and rollback
     uint16_t getOffsetInput ( uint8_t player ) const { return getOffsetInput ( player, getFrame() ); }
@@ -142,6 +137,7 @@ public:
 
     // Get / set the input for the current frame given the player
     uint16_t getInput ( uint8_t player ) const;
+    uint16_t getRawInput ( uint8_t player ) const;
     void setInput ( uint8_t player, uint16_t input );
 
     // Get / set batch inputs for the given player
