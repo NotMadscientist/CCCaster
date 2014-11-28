@@ -513,8 +513,7 @@ struct DllMain
                             if ( lazyDisconnect )
                             {
                                 lazyDisconnect = false;
-                                main->procMan.ipcSend ( new ErrorMessage ( "Disconnected!" ) );
-                                delayedStop();
+                                delayedStop ( "Disconnected!" );
                             }
                             break;
                         }
@@ -658,10 +657,11 @@ struct DllMain
         }
 
 #ifndef RELEASE
-        // Log the RngState once every 5 seconds, except in Loading and RetryMenu states.
+        // Log the RngState once every 5 seconds after CharaSelect, except in Loading, Skippable, and RetryMenu states.
         // This effectively also logs whenever the frame becomes zero, ie when the index is incremented.
         if ( dataSocket && dataSocket->isConnected() && netMan.getFrame() % ( 5 * 60 ) == 0
-                && netMan.getState() != NetplayState::Loading && netMan.getState() != NetplayState::RetryMenu )
+                && netMan.getState().value >= NetplayState::CharaSelect && netMan.getState() != NetplayState::Loading
+                && netMan.getState() != NetplayState::Skippable && netMan.getState() != NetplayState::RetryMenu )
         {
             MsgPtr msgRngState = procMan.getRngState ( netMan.getIndex() );
 
@@ -687,8 +687,7 @@ struct DllMain
                            localSync.front()->getAs<SyncHash>().indexedFrame,
                            remoteSync.front()->getAs<SyncHash>().indexedFrame );
 
-                appState = AppState::Stopping;
-                EventManager::get().stop();
+                delayedStop ( "Desync!" );
                 return;
             }
         }
@@ -774,8 +773,7 @@ struct DllMain
 
             if ( !dataSocket || !dataSocket->isConnected() )
             {
-                main->procMan.ipcSend ( new ErrorMessage ( "Disconnected!" ) );
-                delayedStop();
+                delayedStop ( "Disconnected!" );
                 return;
             }
         }
@@ -835,8 +833,11 @@ struct DllMain
         THROW_EXCEPTION ( "gameModeChanged(%u, %u)", ERROR_INVALID_GAME_MODE, previous, current );
     }
 
-    void delayedStop()
+    void delayedStop ( string error )
     {
+        if ( !error.empty() )
+            procMan.ipcSend ( new ErrorMessage ( "Disconnected!" ) );
+
         stopTimer.reset ( new Timer ( this ) );
         stopTimer->start ( DELAYED_STOP );
     }
@@ -956,8 +957,7 @@ struct DllMain
             if ( lazyDisconnect )
                 return;
 
-            main->procMan.ipcSend ( new ErrorMessage ( "Disconnected!" ) );
-            delayedStop();
+            delayedStop ( "Disconnected!" );
             return;
         }
 
@@ -1319,7 +1319,7 @@ struct DllMain
         else if ( timer == initialTimer.get() )
         {
             main->procMan.ipcSend ( new ErrorMessage ( "Disconnected!" ) );
-            delayedStop();
+            delayedStop ( "Disconnected!" );
             initialTimer.reset();
         }
         else if ( timer == stopTimer.get() )
@@ -1609,8 +1609,7 @@ static void stopDllMain ( const string& error )
 {
     if ( main )
     {
-        main->procMan.ipcSend ( new ErrorMessage ( error ) );
-        main->delayedStop();
+        main->delayedStop ( error );
     }
     else
     {

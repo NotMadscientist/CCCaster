@@ -386,7 +386,10 @@ void NetplayManager::setState ( NetplayState state )
             inputs[0].eraseIndexOlderThan ( offset );
             inputs[1].eraseIndexOlderThan ( offset );
 
-            rngStates.erase ( rngStates.begin(), rngStates.begin() + offset );
+            if ( offset >= rngStates.size() )
+                rngStates.clear();
+            else
+                rngStates.erase ( rngStates.begin(), rngStates.begin() + offset );
 
             startIndex = getIndex();
         }

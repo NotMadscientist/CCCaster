@@ -56,8 +56,8 @@ while i + 1 < len ( log1 ):
         print log1[i]
         exit ( -1 )
 
-    # Skip Loading and RetryMenu states
-    if ( m.group ( 1 ) == 'Loading' ) or ( m.group ( 1 ) == 'RetryMenu' ):
+    # Skip Loading, Skippable, and RetryMenu states
+    if ( m.group ( 1 ) == 'Loading' ) or ( m.group ( 1 ) == 'Skippable' ) or ( m.group ( 1 ) == 'RetryMenu' ):
         continue
 
     state1 = m.group ( 1 )
