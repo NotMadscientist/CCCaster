@@ -27,29 +27,47 @@ def mismatch ( i, j ):
     exit ( -1 )
 
 
-if log1[3] != log2[3]:
-    mismatch ( 3, 3 )
-
-
-i = 4
-while log1[i].find ( 'CharaSelect' ) < 0:
-    i += 1
-i -= 1
-
-j = 4
-while log2[j].find ( 'CharaSelect' ) < 0:
-    j += 1
-j -= 1
-
-
 count = 0
 
-REGEX = '^[^ ]+ \[[0-9]+\] NetplayState::([A-Za-z]+) \[([0-9]+):([0-9]+)\] ([A-Za-z]+: .+)$'
+REGEX_FULL = '^[^ ]+ \[[0-9]+\] NetplayState::([A-Za-z]+) \[([0-9]+):([0-9]+)\] ([A-Za-z]+: .+)$'
+REGEX_SHORT = '^([^ ]+) \[([0-9]+):([0-9]+)\] ([A-Za-z]+: .+)$'
+
+regex1, regex2 = None, None
+i, j = 4, 4
+
+
+# Check SessionId
+if log1[j] != log2[j]:
+    mismatch ( i, j )
+
+
+if re.match ( REGEX_FULL, log1[i + 1] ):
+    regex1 = REGEX_FULL
+    while log1[i].find ( 'CharaSelect' ) < 0:
+        i += 1
+    i -= 1
+elif re.match ( REGEX_SHORT, log1[i + 1] ):
+    regex1 = REGEX_SHORT
+else:
+    print 'Log 1 has unknown format!'
+    exit ( -1 )
+
+
+if re.match ( REGEX_FULL, log2[j + 1] ):
+    regex2 = REGEX_FULL
+    while log2[j].find ( 'CharaSelect' ) < 0:
+        j += 1
+    j -= 1
+elif re.match ( REGEX_SHORT, log2[j + 1] ):
+    regex2 = REGEX_SHORT
+else:
+    print 'Log 2 has unknown format!'
+    exit ( -1 )
 
 
 while i + 1 < len ( log1 ):
     i += 1
-    m = re.match ( REGEX, log1[i] )
+    m = re.match ( regex1, log1[i] )
 
     if not m:
         print 'Invalid line (%d) in log 1:' % ( i + 1 )
@@ -67,7 +85,7 @@ while i + 1 < len ( log1 ):
 
     while j + 1 < len ( log2 ):
         j += 1
-        m = re.match ( REGEX, log2[j] )
+        m = re.match ( regex2, log2[j] )
 
         if not m:
             print 'Invalid line (%d) in log 2:' % ( j + 1 )

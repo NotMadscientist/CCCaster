@@ -454,7 +454,7 @@ struct DllMain
                 else if ( clientMode.isLocal() )                // Local input
                 {
                     if ( playerControllers[0] )
-                        localInputs[0] = getInput ( playerControllers[0] );
+                        localInputs[1] = localInputs[0] = getInput ( playerControllers[0] );
                 }
                 // else if ( clientMode.isSpectate() )             // TODO
                 // {
@@ -1158,6 +1158,7 @@ struct DllMain
                 ASSERT ( clientMode == ClientMode::Spectate );
 
                 netMan.config.mode      = clientMode;
+                netMan.config.sessionId = Logger::get().sessionId;
                 netMan.config.delay     = msg->getAs<SpectateConfig>().delay;
                 netMan.config.rollback  = msg->getAs<SpectateConfig>().delay;
                 netMan.config.winCount  = msg->getAs<SpectateConfig>().winCount;
@@ -1174,12 +1175,11 @@ struct DllMain
 
                 LOG ( "SessionId '%s'", netMan.config.sessionId );
 
-                LOG ( "SpectateConfig: %s; flags={ %s }; delay=%d; rollback=%d; winCount=%d; "
-                      "hostPlayer=%d; names={ %s, %s }",
+                LOG ( "SpectateConfig: %s; flags={ %s }; delay=%d; rollback=%d; winCount=%d; names={ %s, %s }",
                       netMan.config.mode, netMan.config.mode.flagString(), netMan.config.delay, netMan.config.rollback,
                       netMan.config.winCount, netMan.config.names[0], netMan.config.names[1] );
 
-                LOG ( "InitialGameState: %s; initialMode=%u; stage=%u; %s vs %s",
+                LOG ( "InitialGameState: initialMode=%u; stage=%u; %s vs %s",
                       netMan.initial.initialMode, netMan.initial.stage,
                       msg->getAs<SpectateConfig>().formatPlayer ( 1, fullCharaName ),
                       msg->getAs<SpectateConfig>().formatPlayer ( 2, fullCharaName ) );
@@ -1193,6 +1193,7 @@ struct DllMain
 
                 netMan.config = msg->getAs<NetplayConfig>();
                 netMan.config.mode = clientMode;
+                netMan.config.sessionId = Logger::get().sessionId;
 
                 if ( netMan.config.delay == 0xFF )
                     THROW_EXCEPTION ( "delay=%u", ERROR_INVALID_HOST_CONFIG, netMan.config.delay );

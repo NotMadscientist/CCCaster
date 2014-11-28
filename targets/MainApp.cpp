@@ -7,6 +7,7 @@
 #include "Constants.h"
 #include "Exceptions.h"
 #include "Algorithms.h"
+#include "CharacterNames.h"
 
 #include <windows.h>
 #include <ws2tcpip.h>
@@ -427,14 +428,16 @@ struct MainApp
             return;
         }
 
-        LOG ( "SpectateConfig: mode=%s; flags={ %s }; delay=%u; rollback=%u; names={ '%s', '%s' }"
-              "chara={ %u, %u }; moon={ %u, %u }; color= { %u, %u }; stage=%u; initialMode=%u",
-              spectateConfig.mode, spectateConfig.mode.flagString(),
-              spectateConfig.delay, spectateConfig.rollback, spectateConfig.names[0], spectateConfig.names[1],
-              spectateConfig.initial.chara[0], spectateConfig.initial.chara[1],
-              spectateConfig.initial.moon[0], spectateConfig.initial.moon[1],
-              spectateConfig.initial.color[0], spectateConfig.initial.color[1],
-              spectateConfig.initial.stage, spectateConfig.initial.initialMode );
+        LOG ( "SessionId '%s'", spectateConfig.sessionId );
+
+        LOG ( "SpectateConfig: %s; flags={ %s }; delay=%d; rollback=%d; winCount=%d; names={ %s, %s }",
+              spectateConfig.mode, spectateConfig.mode.flagString(), spectateConfig.delay, spectateConfig.rollback,
+              spectateConfig.winCount, spectateConfig.names[0], spectateConfig.names[1] );
+
+        LOG ( "InitialGameState: initialMode=%u; stage=%u; %s vs %s",
+              spectateConfig.initial.initialMode, spectateConfig.initial.stage,
+              spectateConfig.formatPlayer ( 1, fullCharaName ),
+              spectateConfig.formatPlayer ( 2, fullCharaName ) );
 
         this->spectateConfig = spectateConfig;
 
@@ -567,6 +570,13 @@ struct MainApp
 
         switch ( msg->getMsgType() )
         {
+            case MsgType::InitialGameState:
+                LOG ( "InitialGameState: initialMode=%u; stage=%u; %s vs %s",
+                      msg->getAs<InitialGameState>().initialMode, msg->getAs<InitialGameState>().stage,
+                      msg->getAs<InitialGameState>().formatCharaName ( 1, fullCharaName ),
+                      msg->getAs<InitialGameState>().formatCharaName ( 2, fullCharaName ) );
+                return;
+
             case MsgType::RngState:
                 return;
 
@@ -580,11 +590,22 @@ struct MainApp
             }
 
             case MsgType::MenuIndex:
+                // Dummy mode always chooses the first retry menu option,
+                // since the higher option always takes priority, the host effectively takes priority.
                 dataSocket->send ( new MenuIndex ( 0 ) );
                 return;
 
             case MsgType::BothInputs:
+            {
+                const BothInputs& both = msg->getAs<BothInputs>();
+
+                for ( uint32_t i = 0; i < both.size(); ++i )
+                {
+                    LOG_TO ( syncLog, "Dummy [%u:%u] Inputs: %04x %04x",
+                             both.getIndex(), i + both.getStartFrame(), both.inputs[0][i], both.inputs[1][i] );
+                }
                 return;
+            }
 
             case MsgType::ErrorMessage:
                 stop ( msg->getAs<ErrorMessage>().error );
@@ -616,14 +637,17 @@ struct MainApp
 
             isDummyReady = true;
 
-            dataSocket = SmartSocket::connectUDP ( this, address, ctrlSocket->getAsSmart().isTunnel() );
+            if ( clientMode.isClient() )
+            {
+                dataSocket = SmartSocket::connectUDP ( this, address, ctrlSocket->getAsSmart().isTunnel() );
 
-            LOG ( "dataSocket=%08x", dataSocket.get() );
+                LOG ( "dataSocket=%08x", dataSocket.get() );
+            }
 
             stopTimer.reset ( new Timer ( this ) );
             stopTimer->start ( DEFAULT_PENDING_TIMEOUT * 2 );
 
-            syncLog.sessionId = netplayConfig.sessionId;
+            syncLog.sessionId = ( clientMode.isSpectate() ? spectateConfig.sessionId : netplayConfig.sessionId );
             syncLog.initialize ( appDir + SYNC_LOG_FILE, LOG_VERSION );
             return;
         }

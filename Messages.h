@@ -190,7 +190,14 @@ struct InitialGameState : public SerializableSequence
 
     InitialGameState ( bool isTraining );
 
-    void applyState();
+    std::string formatCharaName ( uint8_t player, CharaNameFunc charaNameFunc ) const
+    {
+        ASSERT ( player == 1 || player == 2 );
+
+        const char moonCh = ( moon[player - 1] == 0 ? 'C' : ( moon[player - 1] == 1 ? 'F' : 'H' ) );
+
+        return format ( "%c-%s", moonCh, charaNameFunc ( chara[player - 1] ) );
+    }
 
     PROTOCOL_MESSAGE_BOILERPLATE ( InitialGameState, stage, chara, moon, color, charaSelectMode, initialMode );
 };
@@ -220,10 +227,8 @@ struct SpectateConfig : public SerializableSequence
     {
         ASSERT ( player == 1 || player == 2 );
 
-        const char moonCh = ( initial.moon[player - 1] == 0 ? 'C' : ( initial.moon[player - 1] == 1 ? 'F' : 'H' ) );
-
-        return format ( ( names[player - 1].empty() ? "%s%c-%s" : "%s (%c-%s)" ),
-                        names[player - 1], moonCh, charaNameFunc ( initial.chara[player - 1] ) );
+        return format ( ( names[player - 1].empty() ? "%s%s" : "%s (%s)" ),
+                        names[player - 1], initial.formatCharaName ( player, charaNameFunc ) );
     }
 
     PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig, mode, delay, rollback, winCount, names, sessionId, initial )
