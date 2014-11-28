@@ -759,12 +759,17 @@ struct DllMain
         if ( !clientMode.isOffline() && ( state == NetplayState::CharaSelect || state == NetplayState::InGame ) )
         {
             shouldSyncRngState = !isGameOver;
+            LOG ( "[%s] shouldSyncRngState=%u", netMan.getIndexedFrame(), shouldSyncRngState );
         }
 
         // Entering RetryMenu (enable lazy disconnect on netplay)
         if ( state == NetplayState::RetryMenu )
         {
             lazyDisconnect = clientMode.isNetplay();
+
+            // Clear state flags
+            isGameOver = false;
+            wasLastRoundDoubleGamePointDraw = false;
             localRetryMenuIndexSent = false;
         }
         else if ( lazyDisconnect )
@@ -1395,19 +1400,25 @@ private:
         {
             const bool isP1GamePoint = ( ( *CC_P1_WINS_ADDR ) + 1 == ( *CC_WIN_COUNT_VS_ADDR ) );
             const bool isP2GamePoint = ( ( *CC_P2_WINS_ADDR ) + 1 == ( *CC_WIN_COUNT_VS_ADDR ) );
+            const bool didP1Win = ( ( *CC_P1_HEALTH_ADDR ) > ( *CC_P2_HEALTH_ADDR ) );
+            const bool didP2Win = ( ( *CC_P1_HEALTH_ADDR ) < ( *CC_P2_HEALTH_ADDR ) );
             const bool isDraw = ( ( *CC_P1_HEALTH_ADDR ) == ( *CC_P2_HEALTH_ADDR ) );
 
-            if ( ( isP1GamePoint || isP2GamePoint ) && !isDraw )
+            if ( ( isP1GamePoint && didP1Win ) || ( isP2GamePoint && didP2Win ) )
                 isGameOver = true;
             else if ( isP1GamePoint && isP2GamePoint && isDraw && wasLastRoundDoubleGamePointDraw )
                 isGameOver = true;
             else
                 isGameOver = false;
 
+            LOG ( "[%s] p1wins=%u; p2wins=%u; p1health=%u; p2health=%u; wasLastRoundDoubleGamePointDraw=%u",
+                  netMan.getIndexedFrame(), *CC_P1_WINS_ADDR, *CC_P2_WINS_ADDR, *CC_P1_HEALTH_ADDR, *CC_P2_HEALTH_ADDR,
+                  wasLastRoundDoubleGamePointDraw );
+
             wasLastRoundDoubleGamePointDraw = ( isP1GamePoint && isP2GamePoint && isDraw );
         }
 
-        LOG ( "isGameOver=%u", ( isGameOver ? 1 : 0 ) );
+        LOG ( "[%s] isGameOver=%u", netMan.getIndexedFrame(), ( isGameOver ? 1 : 0 ) );
     }
 
     void saveMappings ( const Controller *controller ) const
