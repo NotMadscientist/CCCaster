@@ -516,7 +516,12 @@ void NetplayManager::setInputs ( uint8_t player, const PlayerInputs& playerInput
 
 MsgPtr NetplayManager::getBothInputs() const
 {
-    BothInputs *bothInputs = new BothInputs ( indexedFrame );
+    if ( inputs[0].empty ( getIndex() ) || inputs[1].empty ( getIndex() ) )
+        return 0;
+
+    uint32_t minFrame = min ( inputs[0].getEndFrame ( getIndex() ), inputs[1].getEndFrame ( getIndex() ) ) - 1;
+
+    BothInputs *bothInputs = new BothInputs ( { minFrame, getIndex() } );
 
     ASSERT ( bothInputs->getIndex() >= startIndex );
 

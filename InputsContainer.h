@@ -135,6 +135,14 @@ public:
         return inputs.back().size();
     }
 
+    uint32_t getEndFrame ( size_t index ) const
+    {
+        if ( index + 1 > inputs.size() )
+            return 0;
+
+        return inputs[index].size();
+    }
+
     void eraseIndexOlderThan ( size_t index )
     {
         if ( index + 1 >= inputs.size() )

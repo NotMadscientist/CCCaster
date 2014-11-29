@@ -649,10 +649,9 @@ struct DllMain
         {
             MsgPtr msgBothInputs = netMan.getBothInputs();
 
-            ASSERT ( msgBothInputs.get() != 0 );
-
-            for ( const auto& kv : spectators )
-                kv.first->send ( msgBothInputs );
+            if ( msgBothInputs )
+                for ( const auto& kv : spectators )
+                    kv.first->send ( msgBothInputs );
         }
 
 #ifndef RELEASE

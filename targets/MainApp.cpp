@@ -597,11 +597,12 @@ struct MainApp
             case MsgType::BothInputs:
             {
                 const BothInputs& both = msg->getAs<BothInputs>();
+                const uint32_t offset = clamped ( spectateConfig.delay - ( int ) spectateConfig.rollback, 0, 255 );
 
                 for ( uint32_t i = 0; i < both.size(); ++i )
                 {
                     LOG_TO ( syncLog, "Dummy [%u:%u] Inputs: %04x %04x",
-                             both.getIndex(), i + both.getStartFrame(), both.inputs[0][i], both.inputs[1][i] );
+                             both.getIndex(), i + both.getStartFrame() + offset, both.inputs[0][i], both.inputs[1][i] );
                 }
                 return;
             }
