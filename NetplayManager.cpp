@@ -55,12 +55,7 @@ uint16_t NetplayManager::getInitialInput ( uint8_t player ) const
 
 uint16_t NetplayManager::getInitialCharaSelectInput ( uint8_t player ) const
 {
-    int32_t& state = charaSelectState[player - 1];
-
-    uint32_t mode = 0;
-    if ( AsmHacks::charaSelectModePtrs[player - 1] )
-        mode = *AsmHacks::charaSelectModePtrs[player - 1];
-
+    // TODO character selection
     return 0;
 }
 
@@ -69,8 +64,7 @@ uint16_t NetplayManager::getCharaSelectInput ( uint8_t player ) const
     uint16_t input = getDelayedInput ( player );
 
     // Prevent exiting character select
-    if ( !AsmHacks::charaSelectModePtrs[player - 1]
-            || ( *AsmHacks::charaSelectModePtrs[player - 1] ) == CC_CHARA_SELECT_CHARA )
+    if ( ( * ( player == 1 ? CC_P1_SELECTOR_MODE_ADDR : CC_P2_SELECTOR_MODE_ADDR ) ) == CC_CHARA_SELECT_CHARA )
     {
         input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_B | CC_BUTTON_CANCEL );
     }
@@ -371,15 +365,15 @@ void NetplayManager::setState ( NetplayState state )
 
     if ( state.value >= NetplayState::CharaSelect )
     {
-        // Increment the index
+        // Increment the index whenever the netplay state changes
         ++indexedFrame.parts.index;
 
         // Start counting from frame=0 again
         startWorldTime = *CC_WORLD_TIMER_ADDR;
         indexedFrame.parts.frame = 0;
 
-        // Entering Loading
-        if ( state == NetplayState::Loading )
+        // Entering InGame
+        if ( state == NetplayState::InGame )
         {
             size_t offset = getIndex() - startIndex;
 
@@ -602,19 +596,19 @@ bool NetplayManager::isRemoteInputReady() const
     return true;
 }
 
-MsgPtr NetplayManager::getRngState() const
+MsgPtr NetplayManager::getRngState ( uint32_t index ) const
 {
     if ( config.mode.isOffline() )
         return 0;
 
     LOG ( "[%s]", indexedFrame );
 
-    ASSERT ( getIndex() >= startIndex );
+    ASSERT ( index >= startIndex );
 
-    if ( getIndex() + 1 > startIndex + rngStates.size() )
+    if ( index + 1 > startIndex + rngStates.size() )
         return 0;
 
-    return rngStates[getIndex() - startIndex];
+    return rngStates[index - startIndex];
 }
 
 void NetplayManager::setRngState ( const RngState& rngState )

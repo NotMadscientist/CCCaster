@@ -1,5 +1,6 @@
 #include "AsmHacks.h"
 #include "Messages.h"
+#include "NetplayManager.h"
 
 #include <windows.h>
 
@@ -29,8 +30,6 @@ uint32_t currentMenuIndex = 0;
 
 uint32_t menuConfirmState = 0;
 
-array<uint32_t *, 2> charaSelectModePtrs = { 0, 0 };
-
 uint32_t roundStartCounter = 0;
 
 uint32_t *autoReplaySaveStatePtr = 0;
@@ -51,10 +50,11 @@ int Asm::revert() const
 } // namespace AsmHacks
 
 
-InitialGameState::InitialGameState ( bool isTraining )
+InitialGameState::InitialGameState ( uint32_t index, uint8_t state )
+    : index ( index )
+    , stage ( *CC_STAGE_SELECTOR_ADDR )
+    , state ( state )
 {
-    stage = *CC_STAGE_SELECTOR_ADDR;
-
     chara[0] = *CC_P1_CHARA_SELECTOR_ADDR;
     chara[1] = *CC_P2_CHARA_SELECTOR_ADDR;
 
@@ -64,26 +64,9 @@ InitialGameState::InitialGameState ( bool isTraining )
     color[0] = ( uint8_t ) * CC_P1_COLOR_SELECTOR_ADDR;
     color[1] = ( uint8_t ) * CC_P2_COLOR_SELECTOR_ADDR;
 
-    if ( *CC_GAME_MODE_ADDR == CC_GAME_MODE_CHARA_SELECT )
+    if ( state == NetplayState::CharaSelect )
     {
-        if ( AsmHacks::charaSelectModePtrs[0] == 0 )
-            charaSelectMode[0] = 0;
-        else
-            charaSelectMode[0] = ( uint8_t ) * AsmHacks::charaSelectModePtrs[0];
-
-        if ( AsmHacks::charaSelectModePtrs[1] == 0 )
-            charaSelectMode[1] = 0;
-        else
-            charaSelectMode[1] = ( uint8_t ) * AsmHacks::charaSelectModePtrs[1];
-
-        initialMode = InitialGameState::CharaSelect;
-    }
-    else if ( isTraining )
-    {
-        initialMode = InitialGameState::TrainingMode;
-    }
-    else
-    {
-        initialMode = InitialGameState::VersusMode;
+        charaSelectMode[0] = ( uint8_t ) * CC_P1_SELECTOR_MODE_ADDR;
+        charaSelectMode[1] = ( uint8_t ) * CC_P2_SELECTOR_MODE_ADDR;
     }
 }

@@ -54,9 +54,6 @@ class NetplayManager
     // Type of the training mode reset
     mutable int32_t trainingResetType = 0;
 
-    // If the initial character select state is ready
-    mutable std::array<int32_t, 2> charaSelectState = {{ 0, 0 }};
-
     // The value of *CC_GAME_STATE_COUNTER_ADDR at the beginning of the RetryMenu state.
     // This is used to determine if any other menus are open in front of the retry menu.
     uint32_t retryMenuGameStateCounter = 0;
@@ -151,8 +148,9 @@ public:
     // True if remote input is ready for the current frame, otherwise the caller should wait for more input
     bool isRemoteInputReady() const;
 
-    // Get / set the RngState for some index
-    MsgPtr getRngState() const;
+    // Get / set the RngState
+    MsgPtr getRngState() const { return getRngState ( getIndex() ); }
+    MsgPtr getRngState ( uint32_t index ) const;
     void setRngState ( const RngState& rngState );
 
     // True if the RngState is ready for the current frame, otherwise the caller should wait for it

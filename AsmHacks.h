@@ -32,9 +32,6 @@ extern uint32_t currentMenuIndex;
 // A menu confirm will only go through if menuConfirmState is greater than 1.
 extern uint32_t menuConfirmState;
 
-// Pointers to P1 and P2 character select mode (moon, colour, etc...), this gets updated by ASM hacks
-extern std::array<uint32_t *, 2> charaSelectModePtrs;
-
 // Round start counter, this gets incremented whenever players can start moving
 extern uint32_t roundStartCounter;
 
@@ -156,35 +153,6 @@ static const AsmList hijackMenu =
     { ( void * ) 0x4299CB, {
         0xE9, 0x47, 0xFE, 0xFF, 0xFF                                // jmp 0x429817
                                                                     // after:
-    } },
-
-    // Copy the pointers to the P1 and P2 character select modes to a location we control.
-    //
-    // Originally this section of code was just:
-    //   mov [esi+0x74D8EC],00000001
-    //
-    // This gets run when a character first gets selected, so we can hijack the address then.
-    //
-    // In this context:
-    //   esi+0x74D8EC is the address that we want
-    //   edi is the player index, 0 for P1 and 1 for P2
-    //
-    // So the modified code saves the address to ecx, assigns [ecx] normally,
-    // then copies the value of ecx to a location that we control.
-    //
-    { ( void * ) 0x42803B, {
-        0x51,                                                       // push ecx
-        0x8D, 0x8E, 0xEC, 0xD8, 0x74, 0x00,                         // lea ecx,[esi+0x74D8EC]
-        0xC7, 0x01, 0x01, 0x00, 0x00, 0x00,                         // mov [ecx],00000001
-        0x89, 0x0C, 0xBD, INLINE_DWORD ( &charaSelectModePtrs[0] ), // mov [edi*4+charaSelectModePtrs],ecx
-        0x59,                                                       // pop ecx
-
-        // The rest of the assembly code is unmodified and just shifted down
-        0xD9, 0x50, 0x2C, 0xC7, 0x00, 0x01, 0x00, 0x00, 0x00, 0xC7, 0x40, 0x24, 0x00, 0x00, 0x00, 0x00,
-        0xC7, 0x40, 0x28, 0x00, 0x00, 0x00, 0x00, 0x83, 0xBE, 0x08, 0xD9, 0x74, 0x00, 0x00, 0x75, 0x12,
-        0xD9, 0xE8, 0x8B, 0x0D, 0x08, 0xD8, 0x74, 0x00, 0x69, 0xFF, 0xDC, 0x01, 0x00, 0x00, 0xD9, 0x5C,
-        0x0F, 0x28, 0xD8, 0x1D, 0x60, 0xE9, 0x76, 0x00, 0x5F, 0x5E, 0xDF, 0xE0, 0xF6, 0xC4, 0x41, 0x7A,
-        0x0B, 0x8B, 0x54, 0x24, 0x04, 0xC7, 0x42, 0x48, 0x01, 0x00, 0x00, 0x00, 0xC2, 0x0C, 0x00
     } },
 
     // Code that allows us to selectively override menu confirms.

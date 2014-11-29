@@ -89,9 +89,11 @@
 #define CC_GAME_MODE_RETRY          ( 5 )
 
 // Character select data, can be assigned to directly at the character select screen
+#define CC_P1_SELECTOR_MODE_ADDR    ( ( uint32_t * ) 0x74D8EC )
 #define CC_P1_CHARA_SELECTOR_ADDR   ( ( uint32_t * ) 0x74D8F8 )
 #define CC_P1_MOON_SELECTOR_ADDR    ( ( uint32_t * ) 0x74D900 )
 #define CC_P1_COLOR_SELECTOR_ADDR   ( ( uint32_t * ) 0x74D904 )
+#define CC_P2_SELECTOR_MODE_ADDR    ( ( uint32_t * ) 0x74D910 )
 #define CC_P2_CHARA_SELECTOR_ADDR   ( ( uint32_t * ) 0x74D91C )
 #define CC_P2_MOON_SELECTOR_ADDR    ( ( uint32_t * ) 0x74D924 )
 #define CC_P2_COLOR_SELECTOR_ADDR   ( ( uint32_t * ) 0x74D928 )

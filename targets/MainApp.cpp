@@ -428,14 +428,12 @@ struct MainApp
             return;
         }
 
-        LOG ( "SessionId '%s'", spectateConfig.sessionId );
-
-        LOG ( "SpectateConfig: %s; flags={ %s }; delay=%d; rollback=%d; winCount=%d; names={ %s, %s }",
+        LOG ( "SpectateConfig: %s; flags={ %s }; delay=%d; rollback=%d; winCount=%d; hostPlayer=%u; names={ %s, %s }",
               spectateConfig.mode, spectateConfig.mode.flagString(), spectateConfig.delay, spectateConfig.rollback,
-              spectateConfig.winCount, spectateConfig.names[0], spectateConfig.names[1] );
+              spectateConfig.winCount, spectateConfig.hostPlayer, spectateConfig.names[0], spectateConfig.names[1] );
 
-        LOG ( "InitialGameState: initialMode=%u; stage=%u; %s vs %s",
-              spectateConfig.initial.initialMode, spectateConfig.initial.stage,
+        LOG ( "InitialGameState: %s; stage=%u; %s vs %s",
+              NetplayState ( ( NetplayState::Enum ) spectateConfig.initial.state ), spectateConfig.initial.stage,
               spectateConfig.formatPlayer ( 1, fullCharaName ),
               spectateConfig.formatPlayer ( 2, fullCharaName ) );
 
@@ -571,8 +569,9 @@ struct MainApp
         switch ( msg->getMsgType() )
         {
             case MsgType::InitialGameState:
-                LOG ( "InitialGameState: initialMode=%u; stage=%u; %s vs %s",
-                      msg->getAs<InitialGameState>().initialMode, msg->getAs<InitialGameState>().stage,
+                LOG ( "InitialGameState: %s; stage=%u; %s vs %s",
+                      NetplayState ( ( NetplayState::Enum ) msg->getAs<InitialGameState>().state ),
+                      msg->getAs<InitialGameState>().stage,
                       msg->getAs<InitialGameState>().formatCharaName ( 1, fullCharaName ),
                       msg->getAs<InitialGameState>().formatCharaName ( 2, fullCharaName ) );
                 return;
@@ -965,12 +964,15 @@ struct MainApp
         {
             startTimer.reset();
 
-            // We must disconnect the sockets before the game process is created,
-            // otherwise Windows say conflicting ports EVEN if they are created later.
-            dataSocket.reset();
-            serverDataSocket.reset();
-            ctrlSocket.reset();
-            serverCtrlSocket.reset();
+            if ( !clientMode.isSpectate() )
+            {
+                // We must disconnect the sockets before the game process is created,
+                // otherwise Windows say conflicting ports EVEN if they are created later.
+                dataSocket.reset();
+                serverDataSocket.reset();
+                ctrlSocket.reset();
+                serverCtrlSocket.reset();
+            }
 
             // Open the game and wait for callback to ipcConnectEvent
             procMan.openGame ( appDir, ui.getConfig().getInteger ( "highCpuPriority" ) );

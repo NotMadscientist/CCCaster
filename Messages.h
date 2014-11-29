@@ -181,14 +181,13 @@ typedef const char * ( *CharaNameFunc ) ( uint32_t chara );
 
 struct InitialGameState : public SerializableSequence
 {
-    enum { Unknown = 0, CharaSelect, VersusMode, TrainingMode };
-
+    uint32_t index = 0;
     uint32_t stage = 0;
     std::array<uint32_t, 2> chara = {{ 0, 0 }};
     std::array<uint8_t, 2> moon = {{ 0, 0 }}, color = {{ 0, 0 }}, charaSelectMode {{ 0, 0 }};
-    uint8_t initialMode = 0;
+    uint8_t state;
 
-    InitialGameState ( bool isTraining );
+    InitialGameState ( uint32_t index, uint8_t state );
 
     std::string formatCharaName ( uint8_t player, CharaNameFunc charaNameFunc ) const
     {
@@ -199,7 +198,7 @@ struct InitialGameState : public SerializableSequence
         return format ( "%c-%s", moonCh, charaNameFunc ( chara[player - 1] ) );
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( InitialGameState, stage, chara, moon, color, charaSelectMode, initialMode );
+    PROTOCOL_MESSAGE_BOILERPLATE ( InitialGameState, index, stage, chara, moon, color, charaSelectMode, state );
 };
 
 
@@ -208,6 +207,7 @@ struct SpectateConfig : public SerializableSequence
     ClientMode mode;
     uint8_t delay = 0xFF, rollback = 0;
     uint8_t winCount = 2;
+    uint8_t hostPlayer = 0;
 
     // Player names
     std::array<std::string, 2> names;
@@ -218,10 +218,10 @@ struct SpectateConfig : public SerializableSequence
     // Initial game state
     InitialGameState initial;
 
-    SpectateConfig ( const NetplayConfig& netplayConfig )
+    SpectateConfig ( const NetplayConfig& netplayConfig, uint8_t state )
         : mode ( netplayConfig.mode ), delay ( netplayConfig.delay ), rollback ( netplayConfig.rollback )
-        , winCount ( netplayConfig.winCount ), names ( netplayConfig.names ), sessionId ( netplayConfig.sessionId )
-        , initial ( netplayConfig.mode.isTraining() ) {}
+        , winCount ( netplayConfig.winCount ), hostPlayer ( netplayConfig.hostPlayer ), names ( netplayConfig.names )
+        , sessionId ( netplayConfig.sessionId ), initial ( 0, state ) {}
 
     std::string formatPlayer ( uint8_t player, CharaNameFunc charaNameFunc ) const
     {
@@ -231,7 +231,8 @@ struct SpectateConfig : public SerializableSequence
                         names[player - 1], initial.formatCharaName ( player, charaNameFunc ) );
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig, mode, delay, rollback, winCount, names, sessionId, initial )
+    PROTOCOL_MESSAGE_BOILERPLATE ( SpectateConfig,
+                                   mode, delay, rollback, winCount, hostPlayer, names, sessionId, initial )
 };
 
 

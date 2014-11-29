@@ -453,7 +453,7 @@ struct DllMain
                 else if ( clientMode.isLocal() )                // Local input
                 {
                     if ( playerControllers[0] )
-                        localInputs[1] = localInputs[0] = getInput ( playerControllers[0] );
+                        localInputs[0] = getInput ( playerControllers[0] );
                 }
                 // else if ( clientMode.isSpectate() )             // TODO
                 // {
@@ -712,6 +712,20 @@ struct DllMain
         // Check for changes to important variables for state transitions
         ChangeMonitor::get().check();
 
+        // if ( mode[0] == netMan.initial.charaSelectMode[0] && mode[1] == netMan.initial.charaSelectMode[1] )
+        // {
+        //     *CC_P1_CHARA_SELECTOR_ADDR = netMan.initial.chara[0];
+        //     *CC_P2_CHARA_SELECTOR_ADDR = netMan.initial.chara[1];
+
+        //     *CC_P1_MOON_SELECTOR_ADDR = ( uint32_t ) netMan.initial.moon[0];
+        //     *CC_P2_MOON_SELECTOR_ADDR = ( uint32_t ) netMan.initial.moon[1];
+
+        //     *CC_P1_COLOR_SELECTOR_ADDR = ( uint32_t ) netMan.initial.color[0];
+        //     *CC_P2_COLOR_SELECTOR_ADDR = ( uint32_t ) netMan.initial.color[1];
+
+        //     netplayStateChanged ( NetplayState::CharaSelect );
+        // }
+
         // Perform the frame step
         if ( rerunStopFrame.value )
             frameStepRerun();
@@ -733,16 +747,11 @@ struct DllMain
 
         DllHacks::disableOverlay();
 
-        // Entering Loading
-        if ( state == NetplayState::Loading )
-        {
-            // The current index is still on the previous state, so actual InGame/Skippable is 2 after
-            gameStartIndex = netMan.getIndex() + 2;
-        }
-
         // Entering InGame
         if ( state == NetplayState::InGame )
         {
+            gameStartIndex = netMan.getIndex();
+
             if ( netMan.isRollbackState() )
                 procMan.allocateStates();
         }
@@ -1008,7 +1017,7 @@ struct DllMain
                     return;
                 }
 
-                socket->send ( new SpectateConfig ( netMan.config ) );
+                socket->send ( new SpectateConfig ( netMan.config, netMan.getState().value ) );
                 return;
             }
 
@@ -1024,19 +1033,22 @@ struct DllMain
                 SpectatorState ss;
                 ss.socket = newSocket;
 
-                if ( netMan.getState() == NetplayState::CharaSelect )
+                if ( netMan.getState() == NetplayState::CharaSelect || netMan.getState() == NetplayState::Loading )
                 {
-                    // Spectating CharaSelect can start on the current frame, since we can sync the complete state.
+                    // When spectating before InGame, we can sync the complete game state, so start on current frame.
                     ss.pos = netMan.getIndexedFrame();
                 }
                 else
                 {
-                    // Spectating any other state must start from the beginning of the current game.
+                    // Otherwise we must start from the beginning of the current game.
                     ss.pos = { 0, gameStartIndex };
                 }
 
                 spectators[newSocket.get()] = ss;
-                newSocket->send ( new InitialGameState ( clientMode.isTraining() ) );
+                newSocket->send ( new InitialGameState ( ss.pos.parts.index, netMan.getState().value ) );
+
+                if ( netMan.getState() == NetplayState::CharaSelect )
+                    newSocket->send ( procMan.getRngState ( 0 ) );
                 return;
             }
 
@@ -1080,8 +1092,21 @@ struct DllMain
             case ClientMode::Spectate:
                 switch ( msg->getMsgType() )
                 {
+                    case MsgType::InitialGameState:
+                        netMan.initial = msg->getAs<InitialGameState>();
+
+                        LOG ( "InitialGameState: %s; index=%u; stage=%u; %s vs %s",
+                              NetplayState ( ( NetplayState::Enum ) netMan.initial.state ),
+                              netMan.initial.index, netMan.initial.stage,
+                              netMan.initial.formatCharaName ( 1, fullCharaName ),
+                              netMan.initial.formatCharaName ( 2, fullCharaName ) );
+                        return;
+
                     case MsgType::BothInputs:
                         netMan.setBothInputs ( msg->getAs<BothInputs>() );
+                        return;
+
+                    case MsgType::RngState:
                         return;
 
                     default:
@@ -1156,30 +1181,30 @@ struct DllMain
             case MsgType::SpectateConfig:
                 ASSERT ( clientMode == ClientMode::Spectate );
 
-                netMan.config.mode      = clientMode;
-                netMan.config.sessionId = Logger::get().sessionId;
-                netMan.config.delay     = msg->getAs<SpectateConfig>().delay;
-                netMan.config.rollback  = msg->getAs<SpectateConfig>().delay;
-                netMan.config.winCount  = msg->getAs<SpectateConfig>().winCount;
-                netMan.config.names     = msg->getAs<SpectateConfig>().names;
-                netMan.config.sessionId = msg->getAs<SpectateConfig>().sessionId;
+                netMan.config.mode       = clientMode;
+                netMan.config.sessionId  = Logger::get().sessionId;
+                netMan.config.delay      = msg->getAs<SpectateConfig>().delay;
+                netMan.config.rollback   = msg->getAs<SpectateConfig>().delay;
+                netMan.config.winCount   = msg->getAs<SpectateConfig>().winCount;
+                netMan.config.hostPlayer = msg->getAs<SpectateConfig>().hostPlayer;
+                netMan.config.names      = msg->getAs<SpectateConfig>().names;
+                netMan.config.sessionId  = msg->getAs<SpectateConfig>().sessionId;
 
                 if ( netMan.config.delay == 0xFF )
                     THROW_EXCEPTION ( "delay=%u", ERROR_INVALID_HOST_CONFIG, netMan.config.delay );
 
                 netMan.initial = msg->getAs<SpectateConfig>().initial;
 
-                if ( netMan.initial.initialMode == InitialGameState::Unknown )
-                    THROW_EXCEPTION ( "initialMode=%u", ERROR_INVALID_HOST_CONFIG, netMan.initial.initialMode );
+                if ( netMan.initial.state == NetplayState::Unknown )
+                    THROW_EXCEPTION ( "state=NetplayState::Unknown", ERROR_INVALID_HOST_CONFIG );
 
-                LOG ( "SessionId '%s'", netMan.config.sessionId );
+                LOG ( "SpectateConfig: %s; flags={ %s }; delay=%d; rollback=%d; winCount=%d; hostPlayer=%u; "
+                      "names={ %s, %s }", netMan.config.mode, netMan.config.mode.flagString(), netMan.config.delay,
+                      netMan.config.rollback, netMan.config.hostPlayer, netMan.config.winCount,
+                      netMan.config.names[0], netMan.config.names[1] );
 
-                LOG ( "SpectateConfig: %s; flags={ %s }; delay=%d; rollback=%d; winCount=%d; names={ %s, %s }",
-                      netMan.config.mode, netMan.config.mode.flagString(), netMan.config.delay, netMan.config.rollback,
-                      netMan.config.winCount, netMan.config.names[0], netMan.config.names[1] );
-
-                LOG ( "InitialGameState: initialMode=%u; stage=%u; %s vs %s",
-                      netMan.initial.initialMode, netMan.initial.stage,
+                LOG ( "InitialGameState: %s; stage=%u; %s vs %s",
+                      NetplayState ( ( NetplayState::Enum ) netMan.initial.state ), netMan.initial.stage,
                       msg->getAs<SpectateConfig>().formatPlayer ( 1, fullCharaName ),
                       msg->getAs<SpectateConfig>().formatPlayer ( 2, fullCharaName ) );
 
@@ -1278,6 +1303,12 @@ struct DllMain
                 break;
 
             default:
+                if ( clientMode.isSpectate() )
+                {
+                    readEvent ( 0, msg, NullAddress );
+                    break;
+                }
+
                 LOG ( "Unexpected '%s'", msg );
                 break;
         }

@@ -959,7 +959,7 @@ void MainUi::spectate ( const SpectateConfig& spectateConfig )
 
     CharaNameFunc charaNameFunc = ( config.getInteger ( "fullCharacterName" ) ? fullCharaName : shortCharaName );
 
-    if ( spectateConfig.initial.initialMode == InitialGameState::CharaSelect )
+    if ( spectateConfig.initial.state == NetplayState::CharaSelect )
     {
         text += "Selecting characters...";
     }
