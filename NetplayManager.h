@@ -4,6 +4,7 @@
 #include "InputsContainer.h"
 
 #include <vector>
+#include <climits>
 
 
 // PreInitial: The period while we are preparing communication channels
@@ -111,6 +112,9 @@ public:
 
     // Initial game state (spectate only)
     InitialGameState initial;
+
+    // Oldest index to preserve
+    uint32_t preserveIndex = UINT_MAX;
 
     // Indicate which player is the remote player
     void setRemotePlayer ( uint8_t player );

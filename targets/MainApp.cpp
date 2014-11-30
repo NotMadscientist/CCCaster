@@ -8,6 +8,7 @@
 #include "Exceptions.h"
 #include "Algorithms.h"
 #include "CharacterNames.h"
+#include "SpectatorManager.h"
 
 #include <windows.h>
 #include <ws2tcpip.h>
@@ -73,6 +74,7 @@ struct MainApp
         , public ExternalIpAddress::Owner
         , public KeyboardManager::Owner
         , public Thread
+        , protected SpectatorManager
 {
     ExternalIpAddress externaIpAddress;
 
@@ -715,7 +717,7 @@ struct MainApp
 
             newSocket->send ( new VersionConfig ( clientMode ) );
 
-            pushPendingSocket ( newSocket );
+            pushPendingSocket ( this, newSocket );
         }
         else if ( serverSocket == serverDataSocket.get() && ctrlSocket && ctrlSocket->isConnected() && !dataSocket )
         {
@@ -980,7 +982,7 @@ struct MainApp
         }
         else
         {
-            expirePendingSocketTimer ( timer );
+            SpectatorManager::timerExpired ( timer );
         }
     }
 

@@ -9,6 +9,7 @@
 #include "ErrorStringsExt.h"
 #include "KeyboardState.h"
 #include "CharacterNames.h"
+#include "SpectatorManager.h"
 
 #include <windows.h>
 
@@ -51,19 +52,12 @@ static void deinitialize();
 ENUM ( Variable, WorldTime, GameMode, RoundStart, SkippableFlag,
        MenuConfirmState, AutoReplaySave, GameStateCounter, CurrentMenuIndex );
 
-// Spectator state
-struct SpectatorState
-{
-    SocketPtr socket;
-
-    IndexedFrame pos = {{ 0, 0 }};
-};
-
 
 struct DllMain
         : public Main
         , public RefChangeMonitor<Variable, uint32_t>::Owner
         , public PtrToRefChangeMonitor<Variable, uint32_t>::Owner
+        , protected SpectatorManager
 {
     // NetplayManager instance
     NetplayManager netMan;
@@ -90,9 +84,6 @@ struct DllMain
     // Frame to stop on, when re-running the game due to rollback.
     // Also used as a flag to indicate re-run mode, 0:0 means not re-running.
     IndexedFrame rerunStopFrame = {{ 0, 0 }};
-
-    // Spectator sockets
-    unordered_map<Socket *, SpectatorState> spectators;
 
     // Initial connect timer
     TimerPtr initialTimer;
@@ -547,8 +538,7 @@ struct DllMain
                     if ( clientMode.isHost() )
                         dataSocket->send ( msgRngState );
 
-                    for ( const auto& kv : spectators )
-                        kv.first->send ( msgRngState );
+                    newRngState ( msgRngState->getAs<RngState>() );
                 }
                 break;
             }
@@ -639,19 +629,6 @@ struct DllMain
             ASSERT ( msgRngState.get() != 0 );
 
             procMan.setRngState ( msgRngState->getAs<RngState>() );
-
-            for ( const auto& kv : spectators )
-                kv.first->send ( msgRngState );
-        }
-
-        // Broadcast inputs to spectators once every NUM_INPUTS frames
-        if ( !spectators.empty() && ( netMan.getFrame() + 1 ) % NUM_INPUTS == 0 )
-        {
-            MsgPtr msgBothInputs = netMan.getBothInputs();
-
-            if ( msgBothInputs )
-                for ( const auto& kv : spectators )
-                    kv.first->send ( msgBothInputs );
         }
 
 #ifndef RELEASE
@@ -693,6 +670,9 @@ struct DllMain
 
         // Log inputs every frame
         LOG_SYNC ( "Inputs: %04x %04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
+
+        // Handle broadcast inputs
+        broadcastFrameStep ( netMan );
     }
 
     void frameStepRerun()
@@ -914,7 +894,7 @@ struct DllMain
 
             newSocket->send ( new VersionConfig ( clientMode ) );
 
-            pushPendingSocket ( newSocket );
+            pushPendingSocket ( this, newSocket );
         }
         else if ( serverSocket == serverDataSocket.get() && !dataSocket )
         {
@@ -974,10 +954,7 @@ struct DllMain
         }
 
         popPendingSocket ( socket );
-
-        LOG ( "spectators.erase ( %08x )", socket );
-
-        spectators.erase ( socket );
+        popSpectator ( socket );
     }
 
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
@@ -1021,41 +998,12 @@ struct DllMain
             }
 
             case MsgType::ConfirmConfig:
-            {
-                SocketPtr newSocket = popPendingSocket ( socket );
-
-                ASSERT ( newSocket.get() == socket );
-
-                if ( !newSocket )
-                    return;
-
-                SpectatorState ss;
-                ss.socket = newSocket;
-
-                if ( netMan.getState() == NetplayState::CharaSelect || netMan.getState() == NetplayState::Loading )
-                {
-                    // When spectating before InGame, we can sync the complete game state, so start on current frame.
-                    ss.pos = netMan.getIndexedFrame();
-                }
-                else
-                {
-                    // Otherwise we must start from the beginning of the current game.
-                    ss.pos = { 0, gameStartIndex };
-                }
-
-                spectators[newSocket.get()] = ss;
-                newSocket->send ( new InitialGameState ( ss.pos.parts.index, netMan.getState().value ) );
-
-                if ( netMan.getState() == NetplayState::CharaSelect )
-                    newSocket->send ( procMan.getRngState ( 0 ) );
+                pushSpectator ( socket );
                 return;
-            }
 
             case MsgType::RngState:
                 netMan.setRngState ( msg->getAs<RngState>() );
-
-                for ( const auto& kv : spectators )
-                    kv.first->send ( msg );
+                newRngState ( msg->getAs<RngState>() );
                 return;
 
 #ifndef RELEASE
@@ -1364,7 +1312,7 @@ struct DllMain
         }
         else
         {
-            expirePendingSocketTimer ( timer );
+            SpectatorManager::timerExpired ( timer );
         }
     }
 
