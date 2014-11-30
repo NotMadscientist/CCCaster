@@ -142,7 +142,8 @@ public:
     void setInputs ( uint8_t player, const PlayerInputs& playerInputs );
 
     // Get / set batch inputs for the both players
-    MsgPtr getBothInputs() const;
+    MsgPtr getBothInputs() const { return getBothInputs ( getIndex() ); }
+    MsgPtr getBothInputs ( uint32_t index ) const;
     void setBothInputs ( const BothInputs& bothInputs );
 
     // True if remote input is ready for the current frame, otherwise the caller should wait for more input

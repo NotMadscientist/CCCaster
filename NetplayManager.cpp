@@ -514,14 +514,14 @@ void NetplayManager::setInputs ( uint8_t player, const PlayerInputs& playerInput
                              &playerInputs.inputs[0], playerInputs.size() );
 }
 
-MsgPtr NetplayManager::getBothInputs() const
+MsgPtr NetplayManager::getBothInputs ( uint32_t index ) const
 {
-    if ( inputs[0].empty ( getIndex() ) || inputs[1].empty ( getIndex() ) )
+    if ( inputs[0].empty ( index ) || inputs[1].empty ( index ) )
         return 0;
 
-    uint32_t minFrame = min ( inputs[0].getEndFrame ( getIndex() ), inputs[1].getEndFrame ( getIndex() ) ) - 1;
+    const uint32_t minFrame = min ( inputs[0].getEndFrame ( index ), inputs[1].getEndFrame ( index ) ) - 1;
 
-    BothInputs *bothInputs = new BothInputs ( { minFrame, getIndex() } );
+    BothInputs *bothInputs = new BothInputs ( { minFrame, index } );
 
     ASSERT ( bothInputs->getIndex() >= startIndex );
 

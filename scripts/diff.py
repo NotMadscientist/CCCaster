@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-# TODO merge diffdummy into this script
-
 import sys, os, re
 
 if len ( sys.argv ) < 3 :
@@ -12,8 +10,7 @@ if len ( sys.argv ) < 3 :
 f = open ( sys.argv[1] )
 g = open ( sys.argv[2] )
 
-log1 = f.readlines()
-log2 = g.readlines()
+log = [ f.readlines(), g.readlines() ]
 
 g.close()
 f.close()
@@ -21,100 +18,122 @@ f.close()
 
 def mismatch ( i, j ):
     print 'Line', i + 1
-    print '<', log1[i]
+    print '<', log[0][i]
     print 'Line', j + 1
-    print '>', log2[j]
+    print '>', log[1][j]
     exit ( -1 )
 
 
-count = 0
-
 REGEX_FULL = '^[^ ]+ \[[0-9]+\] NetplayState::([A-Za-z]+) \[([0-9]+):([0-9]+)\] ([A-Za-z]+: .+)$'
-REGEX_SHORT = '^([^ ]+) \[([0-9]+):([0-9]+)\] ([A-Za-z]+: .+)$'
+REGEX_SHORT = '^([A-Za-z]+) \[([0-9]+):([0-9]+)\] ([A-Za-z]+: .+)$'
 
 SKIP_STATES = set ( [ 'Loading', 'Skippable', 'RetryMenu' ] )
 
-regex1, regex2 = None, None
-i, j = 4, 4
+
+count = 0
+regex = [ None, None ]
+index = [ 4, 4 ]
 
 
 # Check SessionId
-if log1[j] != log2[j]:
-    mismatch ( i, j )
+if log[0][4] != log[1][4]:
+    mismatch ( 4, 4 )
 
 
-if re.match ( REGEX_FULL, log1[i + 1] ):
-    regex1 = REGEX_FULL
-    while log1[i + 1].find ( 'CharaSelect' ) < 0:
-        i += 1
-elif re.match ( REGEX_SHORT, log1[i + 1] ):
-    regex1 = REGEX_SHORT
-else:
-    print 'Log 1 has unknown format!'
-    exit ( -1 )
+for i in range ( 0, 2 ):
 
+    if re.match ( REGEX_FULL, log[i][index[i] + 1] ):
+        regex[i] = REGEX_FULL
+        while log[i][index[i] + 1].find ( 'CharaSelect' ) < 0:
+            index[i] += 1
 
-if re.match ( REGEX_FULL, log2[j + 1] ):
-    regex2 = REGEX_FULL
-    while log2[j + 1].find ( 'CharaSelect' ) < 0:
-        j += 1
-elif re.match ( REGEX_SHORT, log2[j + 1] ):
-    regex2 = REGEX_SHORT
-else:
-    print 'Log 2 has unknown format!'
-    exit ( -1 )
+    elif re.match ( REGEX_SHORT, log[i][index[i] + 1] ):
+        regex[i] = REGEX_SHORT
+        index[i] += 1
 
-
-while i + 1 < len ( log1 ):
-    i += 1
-    m = re.match ( regex1, log1[i] )
-
-    if not m:
-        print 'Invalid line (%d) in log 1:' % ( i + 1 )
-        print log1[i]
+    else:
+        print 'Log %d has unknown format!' % ( i + 1 )
         exit ( -1 )
 
-    state1 = m.group ( 1 )
-    index1 = int ( m.group ( 2 ) )
-    frame1 = int ( m.group ( 3 ) )
-    data1 = m.group ( 4 )
 
-    if state1 in SKIP_STATES:
-        continue
+# Flag log types
+dummy = [ ( regex[0] == REGEX_SHORT ), ( regex[1] == REGEX_SHORT ) ]
 
-    while j + 1 < len ( log2 ):
-        j += 1
-        m = re.match ( regex2, log2[j] )
+
+while ( index[0] < len ( log[0] ) ) and ( index[1] < len ( log[1] ) ):
+
+    data = [ None, None ]
+
+    for i in range ( 0, 2 ):
+        m = re.match ( regex[i], log[i][index[i]] )
 
         if not m:
-            print 'Invalid line (%d) in log 2:' % ( j + 1 )
-            print log2[j]
+            print 'Invalid line (%d) in log %d:' % ( index[i], i + 1 )
+            print log[i][index[i]]
             exit ( -1 )
 
-        state2 = m.group ( 1 )
-        index2 = int ( m.group ( 2 ) )
-        frame2 = int ( m.group ( 3 ) )
-        data2 = m.group ( 4 )
+        data[i] = [ m.group ( 1 ), int ( m.group ( 2 ) ), int ( m.group ( 3 ) ), m.group ( 4 ) ]
 
-        if index2 < index1:
-            # Skip line
-            continue
+    # Copy NetplayState
+    if data[0][0] == 'Dummy':
+        data[0][0] = data[1][0]
 
-        if ( index2 == index1 ) and ( frame2 < frame1 ):
-            # Skip line
-            continue
+    if data[1][0] == 'Dummy':
+        data[1][0] = data[0][0]
 
-        if ( index2 == index1 ) and ( frame2 == frame1 ) and ( data2 != data1 ):
-            mismatch ( i, j )
+    # Ignored NetplayStates
+    if data[0][0] in SKIP_STATES:
+        # Skip state
+        index[0] += 1
+        continue
 
-        if ( index2 == index1 ) and ( frame2 == frame1 ) and ( data2 == data1 ):
-            # Matched
-            count += 1
-            break
+    if data[1][0] in SKIP_STATES:
+        # Skip state
+        index[1] += 1
+        continue
 
-        print 'Missing line (%d) in log 1 from log 2:' % ( i + 1 )
-        print log1[i]
-        exit ( -1 )
+    # Ignore RngStates if dummy sync log
+    if dummy[0] and ( data[1][3].find ( 'RngState' ) == 0 ):
+        # Skip RngState data
+        index[1] += 1
+        continue
+
+    if dummy[1] and ( data[0][3].find ( 'RngState' ) == 0 ):
+        # Skip RngState data
+        index[0] += 1
+        continue
+
+    # Skip older transition indicies
+    if data[0][1] < data[1][1]:
+        # Skip line
+        index[0] += 1
+        continue
+
+    if data[1][1] < data[0][1]:
+        # Skip line
+        index[1] += 1
+        continue
+
+    # Skip older frames before we match the first line
+    if ( count == 0 ) and ( data[0][2] < data[1][2] ):
+        # Skip line
+        index[0] += 1
+        continue
+
+    if ( count == 0 ) and ( data[1][2] < data[0][2] ):
+        # Skip line
+        index[1] += 1
+        continue
+
+    # Match the line
+    if data[0] == data[1]:
+        # Matched
+        count += 1
+        index[0] += 1
+        index[1] += 1
+        continue
+
+    mismatch ( index[0], index[1] )
 
 
 print 'Successfully matched', count, 'lines'
