@@ -430,9 +430,10 @@ struct MainApp
             return;
         }
 
-        LOG ( "SpectateConfig: %s; flags={ %s }; delay=%d; rollback=%d; winCount=%d; hostPlayer=%u; names={ %s, %s }",
-              spectateConfig.mode, spectateConfig.mode.flagString(), spectateConfig.delay, spectateConfig.rollback,
-              spectateConfig.winCount, spectateConfig.hostPlayer, spectateConfig.names[0], spectateConfig.names[1] );
+        LOG ( "SpectateConfig: %s; flags={ %s }; delay=%d; rollback=%d; winCount=%d; hostPlayer=%u; "
+              "names={ '%s', '%s' }", spectateConfig.mode, spectateConfig.mode.flagString(), spectateConfig.delay,
+              spectateConfig.rollback, spectateConfig.winCount, spectateConfig.hostPlayer,
+              spectateConfig.names[0], spectateConfig.names[1] );
 
         LOG ( "InitialGameState: %s; stage=%u; %s vs %s",
               NetplayState ( ( NetplayState::Enum ) spectateConfig.initial.netplayState ), spectateConfig.initial.stage,

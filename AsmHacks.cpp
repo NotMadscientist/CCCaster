@@ -50,8 +50,8 @@ int Asm::revert() const
 } // namespace AsmHacks
 
 
-InitialGameState::InitialGameState ( uint32_t index, uint8_t netplayState )
-    : index ( index )
+InitialGameState::InitialGameState ( IndexedFrame indexedFrame, uint8_t netplayState )
+    : indexedFrame ( indexedFrame )
     , stage ( *CC_STAGE_SELECTOR_ADDR )
     , netplayState ( netplayState )
 {

@@ -112,9 +112,6 @@ struct DllMain
     // If the game is over now (after checking P1 and P2 health values)
     bool isGameOver = false;
 
-    // The starting index of the current game
-    uint32_t gameStartIndex = 0;
-
 #ifndef RELEASE
     // Local and remote SyncHashes
     list<MsgPtr> localSync, remoteSync;
@@ -446,10 +443,9 @@ struct DllMain
                     if ( playerControllers[0] )
                         localInputs[0] = getInput ( playerControllers[0] );
                 }
-                // else if ( clientMode.isSpectate() )             // TODO
-                // {
-                //     break;
-                // }
+                else if ( clientMode.isSpectate() )             // Spectator input
+                {
+                }
                 else
                 {
                     LOG ( "Unknown clientMode=%s; flags={ %s }", clientMode, clientMode.flagString() );
@@ -488,7 +484,8 @@ struct DllMain
 #endif
 
                 // Assign local player input
-                netMan.setInput ( localPlayer, localInputs[0] );
+                if ( !clientMode.isSpectate() )
+                    netMan.setInput ( localPlayer, localInputs[0] );
 
                 if ( clientMode.isNetplay() )
                 {
@@ -532,6 +529,8 @@ struct DllMain
                     shouldSyncRngState = false;
 
                     MsgPtr msgRngState = procMan.getRngState ( netMan.getIndex() );
+
+                    ASSERT ( msgRngState.get() != 0 );
 
                     netMan.setRngState ( msgRngState->getAs<RngState>() );
 
@@ -626,9 +625,8 @@ struct DllMain
 
             MsgPtr msgRngState = netMan.getRngState();
 
-            ASSERT ( msgRngState.get() != 0 );
-
-            procMan.setRngState ( msgRngState->getAs<RngState>() );
+            if ( msgRngState )
+                procMan.setRngState ( msgRngState->getAs<RngState>() );
         }
 
 #ifndef RELEASE
@@ -639,6 +637,8 @@ struct DllMain
                 && netMan.getState() != NetplayState::Skippable && netMan.getState() != NetplayState::RetryMenu )
         {
             MsgPtr msgRngState = procMan.getRngState ( netMan.getIndex() );
+
+            ASSERT ( msgRngState.get() != 0 );
 
             LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
 
@@ -671,8 +671,8 @@ struct DllMain
         // Log inputs every frame
         LOG_SYNC ( "Inputs: %04x %04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
 
-        // Handle broadcast inputs
-        broadcastFrameStep ( netMan );
+        // Update broadcast inputs
+        broadcastFrameStep();
     }
 
     void frameStepRerun()
@@ -692,7 +692,8 @@ struct DllMain
         ChangeMonitor::get().check();
 
         // Check if completed automated character select
-        if ( netMan.getState() == NetplayState::AutoCharaSelect && netMan.isAutoCharaSelectDone() )
+        if ( netMan.getState() == NetplayState::AutoCharaSelect
+                && netMan.isAutoCharaSelectDone() && netMan.getFrame() > CC_CHARA_SELECT_LOAD_FRAMES )
         {
             netplayStateChanged ( NetplayState::CharaSelect );
         }
@@ -707,7 +708,7 @@ struct DllMain
         if ( rerunStopFrame.value )
             *CC_SKIP_FRAMES_ADDR = 1;
 
-        // Write netplay inputs
+        // Write game inputs
         procMan.writeGameInput ( localPlayer, netMan.getInput ( localPlayer ) );
         procMan.writeGameInput ( remotePlayer, netMan.getInput ( remotePlayer ) );
     }
@@ -721,8 +722,6 @@ struct DllMain
         // Entering InGame
         if ( state == NetplayState::InGame )
         {
-            gameStartIndex = netMan.getIndex();
-
             if ( netMan.isRollbackState() )
                 procMan.allocateStates();
         }
@@ -1032,18 +1031,17 @@ struct DllMain
                     case MsgType::InitialGameState:
                         netMan.initial = msg->getAs<InitialGameState>();
 
-                        LOG ( "InitialGameState: %s; index=%u; stage=%u; %s vs %s",
+                        LOG ( "InitialGameState: %s; indexedFrame=[%s]; stage=%u; %s vs %s",
                               NetplayState ( ( NetplayState::Enum ) netMan.initial.netplayState ),
-                              netMan.initial.index, netMan.initial.stage,
+                              netMan.initial.indexedFrame, netMan.initial.stage,
                               netMan.initial.formatCharaName ( 1, getFullCharaName ),
                               netMan.initial.formatCharaName ( 2, getFullCharaName ) );
+
+                        netplayStateChanged ( NetplayState::Initial );
                         return;
 
                     case MsgType::BothInputs:
                         netMan.setBothInputs ( msg->getAs<BothInputs>() );
-                        return;
-
-                    case MsgType::RngState:
                         return;
 
                     default:
@@ -1148,8 +1146,8 @@ struct DllMain
                     THROW_EXCEPTION ( "character[1]=%u", ERROR_INVALID_HOST_CONFIG, netMan.initial.character[1] );
 
                 LOG ( "SpectateConfig: %s; flags={ %s }; delay=%d; rollback=%d; winCount=%d; hostPlayer=%u; "
-                      "names={ %s, %s }", netMan.config.mode, netMan.config.mode.flagString(), netMan.config.delay,
-                      netMan.config.rollback, netMan.config.hostPlayer, netMan.config.winCount,
+                      "names={ '%s', '%s' }", netMan.config.mode, netMan.config.mode.flagString(), netMan.config.delay,
+                      netMan.config.rollback, netMan.config.winCount, netMan.config.hostPlayer,
                       netMan.config.names[0], netMan.config.names[1] );
 
                 LOG ( "InitialGameState: %s; stage=%u; %s vs %s",
@@ -1157,7 +1155,7 @@ struct DllMain
                       msg->getAs<SpectateConfig>().formatPlayer ( 1, getFullCharaName ),
                       msg->getAs<SpectateConfig>().formatPlayer ( 2, getFullCharaName ) );
 
-                netplayStateChanged ( NetplayState::Initial );
+                // Wait for final InitialGameState message before going to NetplayState::Initial
                 break;
 
             case MsgType::NetplayConfig:
@@ -1330,7 +1328,9 @@ struct DllMain
     }
 
     // Constructor
-    DllMain() : worldTimerMoniter ( this, Variable::WorldTime, *CC_WORLD_TIMER_ADDR )
+    DllMain()
+        : SpectatorManager ( &netMan, &procMan )
+        , worldTimerMoniter ( this, Variable::WorldTime, *CC_WORLD_TIMER_ADDR )
     {
         // Timer and controller initialization is not done here because of threading issues
 

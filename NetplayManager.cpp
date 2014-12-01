@@ -124,10 +124,10 @@ uint16_t NetplayManager::getCharaSelectInput ( uint8_t player ) const
         input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_B | CC_BUTTON_CANCEL );
     }
 
-    // Don't allow hitting Confirm until 2f after we have stopped changing the selector mode
-    if ( hasButtonInLast2f ( player, CC_BUTTON_A | CC_BUTTON_CONFIRM ) )
+    // Don't allow hitting Confirm or Cancel until 2f after we have stopped changing the selector mode
+    if ( hasButtonInPrev2f ( player, CC_BUTTON_A | CC_BUTTON_CONFIRM | CC_BUTTON_B | CC_BUTTON_CANCEL ) )
     {
-        input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
+        input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM | CC_BUTTON_B | CC_BUTTON_CANCEL );
     }
 
     return input;
@@ -403,11 +403,11 @@ bool NetplayManager::hasUpDownInLast2f() const
     return false;
 }
 
-bool NetplayManager::hasButtonInLast2f ( uint8_t player, uint16_t button ) const
+bool NetplayManager::hasButtonInPrev2f ( uint8_t player, uint16_t button ) const
 {
     ASSERT ( player == 1 || player == 2 );
 
-    for ( size_t i = 0; i < 2; ++i )
+    for ( size_t i = 1; i < 3; ++i )
     {
         if ( i > getFrame() )
             break;
@@ -446,17 +446,36 @@ void NetplayManager::setState ( NetplayState state )
 
     if ( state.value >= NetplayState::CharaSelect )
     {
-        // Increment the index whenever the netplay state changes
-        ++indexedFrame.parts.index;
+        if ( this->state == NetplayState::AutoCharaSelect )
+        {
+            // Start from the initial index and frame
+            startWorldTime = 0;
+            *CC_WORLD_TIMER_ADDR = initial.indexedFrame.parts.frame;
+            indexedFrame = initial.indexedFrame;
+        }
+        else
+        {
+            // Increment the index whenever the NetplayState changes
+            ++indexedFrame.parts.index;
 
-        // Start counting from frame=0 again
-        startWorldTime = *CC_WORLD_TIMER_ADDR;
-        indexedFrame.parts.frame = 0;
+            // Start counting from frame=0 again
+            startWorldTime = *CC_WORLD_TIMER_ADDR;
+            indexedFrame.parts.frame = 0;
+        }
 
         // Entering InGame
         if ( state == NetplayState::InGame )
         {
-            size_t offset = getIndex() - startIndex;
+            gameStartIndex = getIndex();
+
+            uint32_t newStartIndex = getIndex();
+
+            ASSERT ( preserveIndex >= getIndex() );
+
+            if ( preserveIndex != UINT_MAX )
+                newStartIndex = preserveIndex;
+
+            const size_t offset = newStartIndex - startIndex;
 
             inputs[0].eraseIndexOlderThan ( offset );
             inputs[1].eraseIndexOlderThan ( offset );
@@ -466,7 +485,7 @@ void NetplayManager::setState ( NetplayState state )
             else
                 rngStates.erase ( rngStates.begin(), rngStates.begin() + offset );
 
-            startIndex = getIndex();
+            startIndex = newStartIndex;
         }
 
         // Entering RetryMenu
@@ -595,14 +614,50 @@ void NetplayManager::setInputs ( uint8_t player, const PlayerInputs& playerInput
                              &playerInputs.inputs[0], playerInputs.size() );
 }
 
-MsgPtr NetplayManager::getBothInputs ( uint32_t index ) const
+MsgPtr NetplayManager::getBothInputs ( IndexedFrame& pos ) const
 {
-    if ( inputs[0].empty ( index ) || inputs[1].empty ( index ) )
+    if ( pos.parts.index > getIndex() )
         return 0;
 
-    const uint32_t minFrame = min ( inputs[0].getEndFrame ( index ), inputs[1].getEndFrame ( index ) ) - 1;
+    IndexedFrame orig = pos;
 
-    BothInputs *bothInputs = new BothInputs ( { minFrame, index } );
+    const uint32_t commonEndFrame = min ( inputs[0].getEndFrame ( orig.parts.index ),
+                                          inputs[1].getEndFrame ( orig.parts.index ) );
+
+    if ( orig.parts.index == getIndex() )
+    {
+        if ( orig.parts.frame + 1 <= commonEndFrame )
+        {
+            // Increment by NUM_INPUTS
+            pos.parts.frame += NUM_INPUTS;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+    else
+    {
+        if ( orig.parts.frame + 1 <= commonEndFrame )
+        {
+            // Increment by NUM_INPUTS
+            pos.parts.frame += NUM_INPUTS;
+        }
+        else
+        {
+            // Increment to next transition index
+            pos.parts.frame = NUM_INPUTS - 1;
+            ++pos.parts.index;
+
+            if ( commonEndFrame == 0 )
+                return 0;
+
+            // Get the rest of this transition index
+            orig.parts.frame = commonEndFrame - 1;
+        }
+    }
+
+    BothInputs *bothInputs = new BothInputs ( orig );
 
     ASSERT ( bothInputs->getIndex() >= startIndex );
 

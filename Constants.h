@@ -109,6 +109,8 @@
 #define CC_RNGSTATE3_ADDR           ( ( char * )     0x56406C )
 #define CC_RNGSTATE3_SIZE           ( 224 )
 
+#define CC_CHARA_SELECT_LOAD_FRAMES ( 120 )
+
 // Character select selection mode
 #define CC_SELECT_CHARA             ( 0 )
 #define CC_SELECT_MOON              ( 1 )

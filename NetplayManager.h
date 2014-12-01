@@ -63,15 +63,18 @@ class NetplayManager
     uint32_t retryMenuGameStateCounter = 0;
 
     // The starting value of CC_WORLD_TIMER_ADDR, where frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime.
-    // This is reset to the current world time whenever the netplay state changes, ie a state transition happens.
+    // This is reset to the current world time whenever the NetplayState changes, ie a state transition happens.
     uint32_t startWorldTime = 0;
 
-    // Current transition index, incremented whenever the netplay state changes (after CharaSelect).
+    // Current transition index, incremented whenever the NetplayState changes (after CharaSelect).
     // Current netplay frame, frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime.
     IndexedFrame indexedFrame = {{ 0, 0 }};
 
-    // The starting index the current game
+    // The current starting index for the offset index data
     uint32_t startIndex = 0;
+
+    // The current game's starting index
+    uint32_t gameStartIndex = 0;
 
     // Mapping: player -> index offset -> frame -> input
     std::array<InputsContainer<uint16_t>, 2> inputs;
@@ -85,7 +88,7 @@ class NetplayManager
     // The remote player, ie the one where setInputs gets called for each input message
     uint8_t remotePlayer = 2;
 
-    // Get the input for the specific netplay state
+    // Get the input for the specific NetplayState
     uint16_t getPreInitialInput ( uint8_t player ) const;
     uint16_t getInitialInput ( uint8_t player ) const;
     uint16_t getAutoCharaSelectInput ( uint8_t player ) const;
@@ -107,7 +110,7 @@ class NetplayManager
 
     // Detect if a key has been pressed by either player in the last 2 frames
     bool hasUpDownInLast2f() const;
-    bool hasButtonInLast2f ( uint8_t player, uint16_t button ) const;
+    bool hasButtonInPrev2f ( uint8_t player, uint16_t button ) const;
 
 public:
 
@@ -117,7 +120,7 @@ public:
     // Initial game state (spectate only)
     InitialGameState initial;
 
-    // Oldest index to preserve
+    // Oldest index to preserve for broadcasting
     uint32_t preserveIndex = UINT_MAX;
 
     // Indicate which player is the remote player
@@ -128,9 +131,12 @@ public:
 
     // Update the current netplay frame
     void updateFrame();
+
+    // Get index / frame information
     uint32_t getFrame() const { return indexedFrame.parts.frame; }
     uint32_t getIndex() const { return indexedFrame.parts.index; }
     IndexedFrame getIndexedFrame() const { return indexedFrame; }
+    uint32_t getGameStartIndex() const { return gameStartIndex; }
 
     // // Get / clear the last changed frame (for rollback)
     // const IndexedFrame& getLastChangedFrame() const { return inputs[remotePlayer - 1].getLastChangedFrame(); }
@@ -139,7 +145,7 @@ public:
     // Check if we are in a rollback state, with 10 frame initial buffer window
     bool isRollbackState() const { return ( config.rollback && getFrame() >= 10 ); }
 
-    // Get / set the current netplay state
+    // Get / set the current NetplayState
     NetplayState getState() const { return state; }
     void setState ( NetplayState state );
 

@@ -181,14 +181,14 @@ typedef const char * ( *CharaNameFunc ) ( uint8_t chara );
 
 struct InitialGameState : public SerializableSequence
 {
-    uint32_t index = 0;
+    IndexedFrame indexedFrame = {{ 0, 0 }};
     uint32_t stage = 0;
     std::array<uint8_t, 2> charaSelector = {{ 0, 0 }}, character = {{ 0, 0 }};
     std::array<uint8_t, 2> moon = {{ 0, 0 }}, color = {{ 0, 0 }}, charaSelectMode {{ 0, 0 }};
     uint8_t isRandomColor = 0;
     uint8_t netplayState = 0;
 
-    InitialGameState ( uint32_t index, uint8_t netplayState );
+    InitialGameState ( IndexedFrame indexedFrame, uint8_t netplayState );
 
     std::string formatCharaName ( uint8_t player, CharaNameFunc charaNameFunc ) const
     {
@@ -200,7 +200,7 @@ struct InitialGameState : public SerializableSequence
     }
 
     PROTOCOL_MESSAGE_BOILERPLATE ( InitialGameState,
-                                   index, stage, charaSelector, character, moon, color,
+                                   indexedFrame.value, stage, charaSelector, character, moon, color,
                                    charaSelectMode, isRandomColor, netplayState );
 };
 
@@ -224,7 +224,7 @@ struct SpectateConfig : public SerializableSequence
     SpectateConfig ( const NetplayConfig& netplayConfig, uint8_t state )
         : mode ( netplayConfig.mode ), delay ( netplayConfig.delay ), rollback ( netplayConfig.rollback )
         , winCount ( netplayConfig.winCount ), hostPlayer ( netplayConfig.hostPlayer ), names ( netplayConfig.names )
-        , sessionId ( netplayConfig.sessionId ), initial ( 0, state ) {}
+        , sessionId ( netplayConfig.sessionId ), initial ( { 0, 0 }, state ) {}
 
     std::string formatPlayer ( uint8_t player, CharaNameFunc charaNameFunc ) const
     {
