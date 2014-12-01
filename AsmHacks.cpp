@@ -50,13 +50,16 @@ int Asm::revert() const
 } // namespace AsmHacks
 
 
-InitialGameState::InitialGameState ( uint32_t index, uint8_t state )
+InitialGameState::InitialGameState ( uint32_t index, uint8_t netplayState )
     : index ( index )
     , stage ( *CC_STAGE_SELECTOR_ADDR )
-    , state ( state )
+    , netplayState ( netplayState )
 {
-    chara[0] = *CC_P1_CHARA_SELECTOR_ADDR;
-    chara[1] = *CC_P2_CHARA_SELECTOR_ADDR;
+    charaSelector[0] = ( uint8_t ) * CC_P1_CHARA_SELECTOR_ADDR;
+    charaSelector[1] = ( uint8_t ) * CC_P2_CHARA_SELECTOR_ADDR;
+
+    character[0] = ( uint8_t ) * CC_P1_CHARACTER_ADDR;
+    character[1] = ( uint8_t ) * CC_P2_CHARACTER_ADDR;
 
     moon[0] = ( uint8_t ) * CC_P1_MOON_SELECTOR_ADDR;
     moon[1] = ( uint8_t ) * CC_P2_MOON_SELECTOR_ADDR;
@@ -64,7 +67,13 @@ InitialGameState::InitialGameState ( uint32_t index, uint8_t state )
     color[0] = ( uint8_t ) * CC_P1_COLOR_SELECTOR_ADDR;
     color[1] = ( uint8_t ) * CC_P2_COLOR_SELECTOR_ADDR;
 
-    if ( state == NetplayState::CharaSelect )
+    if ( *CC_P1_RANDOM_COLOR_ADDR )
+        isRandomColor |= 0x01;
+
+    if ( *CC_P2_RANDOM_COLOR_ADDR )
+        isRandomColor |= 0x02;
+
+    if ( netplayState == NetplayState::CharaSelect )
     {
         charaSelectMode[0] = ( uint8_t ) * CC_P1_SELECTOR_MODE_ADDR;
         charaSelectMode[1] = ( uint8_t ) * CC_P2_SELECTOR_MODE_ADDR;

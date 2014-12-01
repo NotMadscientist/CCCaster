@@ -2,6 +2,7 @@
 #include "AsmHacks.h"
 #include "ProcessManager.h"
 #include "Exceptions.h"
+#include "CharacterSelect.h"
 
 #include <algorithm>
 #include <cmath>
@@ -53,10 +54,64 @@ uint16_t NetplayManager::getInitialInput ( uint8_t player ) const
     return getMenuNavInput();
 }
 
-uint16_t NetplayManager::getInitialCharaSelectInput ( uint8_t player ) const
+uint16_t NetplayManager::getAutoCharaSelectInput ( uint8_t player ) const
 {
-    // TODO character selection
+    if ( autoCharaSelectState == -1 )                                           // Initialize character select state
+    {
+        *CC_P1_CHARA_SELECTOR_ADDR = ( uint32_t ) initial.charaSelector[0];
+        *CC_P2_CHARA_SELECTOR_ADDR = ( uint32_t ) initial.charaSelector[1];
+
+        *CC_P1_CHARACTER_ADDR = ( uint32_t ) initial.character[0];
+        *CC_P2_CHARACTER_ADDR = ( uint32_t ) initial.character[1];
+
+        *CC_P1_MOON_SELECTOR_ADDR = ( uint32_t ) initial.moon[0];
+        *CC_P2_MOON_SELECTOR_ADDR = ( uint32_t ) initial.moon[1];
+
+        *CC_P1_COLOR_SELECTOR_ADDR = ( uint32_t ) initial.color[0];
+        *CC_P2_COLOR_SELECTOR_ADDR = ( uint32_t ) initial.color[1];
+
+        autoCharaSelectState = 0;
+    }
+    else if ( autoCharaSelectState >= 0 && autoCharaSelectState < 2 )           // Press Confirm to change mode
+    {
+        const uint8_t current = ( uint8_t ) * ( player == 1 ? CC_P1_SELECTOR_MODE_ADDR : CC_P2_SELECTOR_MODE_ADDR );
+        const uint8_t target = initial.charaSelectMode[player - 1];
+
+        ++autoCharaSelectState;
+
+        if ( current < target )
+            return COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
+    }
+    else if ( autoCharaSelectState >= 2 && autoCharaSelectState <= 4 )          // Wait for mode to change
+    {
+        if ( player == 1 )
+            ++autoCharaSelectState;
+    }
+    else if ( ( *CC_P1_SELECTOR_MODE_ADDR != initial.charaSelectMode[0] )       // Keep pressing Confirm
+              || ( *CC_P2_SELECTOR_MODE_ADDR != initial.charaSelectMode[1] ) )
+    {
+        autoCharaSelectState = 0;
+    }
+    else                                                                        // Reached target mode
+    {
+        autoCharaSelectState = 39;
+
+        if ( ( *CC_P1_SELECTOR_MODE_ADDR > CC_SELECT_COLOR ) && ( *CC_P1_SELECTOR_MODE_ADDR > CC_SELECT_COLOR ) )
+            *CC_STAGE_SELECTOR_ADDR = initial.stage;
+
+        if ( ( *CC_P1_SELECTOR_MODE_ADDR == CC_SELECT_COLOR ) && ( initial.isRandomColor & 0x01 ) )
+            *CC_P1_RANDOM_COLOR_ADDR = 1;
+
+        if ( ( *CC_P1_SELECTOR_MODE_ADDR == CC_SELECT_COLOR ) && ( initial.isRandomColor & 0x02 ) )
+            *CC_P2_RANDOM_COLOR_ADDR = 1;
+    }
+
     return 0;
+}
+
+bool NetplayManager::isAutoCharaSelectDone() const
+{
+    return ( autoCharaSelectState == 39 );
 }
 
 uint16_t NetplayManager::getCharaSelectInput ( uint8_t player ) const
@@ -64,9 +119,15 @@ uint16_t NetplayManager::getCharaSelectInput ( uint8_t player ) const
     uint16_t input = getDelayedInput ( player );
 
     // Prevent exiting character select
-    if ( ( * ( player == 1 ? CC_P1_SELECTOR_MODE_ADDR : CC_P2_SELECTOR_MODE_ADDR ) ) == CC_CHARA_SELECT_CHARA )
+    if ( ( * ( player == 1 ? CC_P1_SELECTOR_MODE_ADDR : CC_P2_SELECTOR_MODE_ADDR ) ) == CC_SELECT_CHARA )
     {
         input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_B | CC_BUTTON_CANCEL );
+    }
+
+    // Don't allow hitting Confirm until 2f after we have stopped changing the selector mode
+    if ( hasButtonInLast2f ( player, CC_BUTTON_A | CC_BUTTON_CONFIRM ) )
+    {
+        input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
     }
 
     return input;
@@ -95,7 +156,7 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
     {
         AsmHacks::menuConfirmState = 2;
 
-        // Don't allow pressing select until 2f after we have stopped moving the cursor. This is a work around
+        // Don't allow hitting Confirm until 2f after we have stopped moving the cursor. This is a work around
         // for the issue when select is pressed after the cursor moves, but before currentMenuIndex is updated.
         if ( hasUpDownInLast2f() )
             input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
@@ -184,7 +245,7 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
 
     uint16_t input = getDelayedInput ( player );
 
-    // Don't allow pressing select until 2f after we have stopped moving the cursor. This is a work around
+    // Don't allow hitting Confirm until 2f after we have stopped moving the cursor. This is a work around
     // for the issue when select is pressed after the cursor moves, but before currentMenuIndex is updated.
     if ( hasUpDownInLast2f() )
         input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
@@ -342,6 +403,26 @@ bool NetplayManager::hasUpDownInLast2f() const
     return false;
 }
 
+bool NetplayManager::hasButtonInLast2f ( uint8_t player, uint16_t button ) const
+{
+    ASSERT ( player == 1 || player == 2 );
+
+    for ( size_t i = 0; i < 2; ++i )
+    {
+        if ( i > getFrame() )
+            break;
+
+        const uint16_t buttons = ( state.value == NetplayState::InGame
+                                   ? getOffsetInput ( player, getFrame() - i )
+                                   : getDelayedInput ( player, getFrame() - i ) ) >> 4;
+
+        if ( buttons & button )
+            return true;
+    }
+
+    return false;
+}
+
 void NetplayManager::setRemotePlayer ( uint8_t player )
 {
     ASSERT ( player == 1 || player == 2 );
@@ -426,8 +507,8 @@ uint16_t NetplayManager::getInput ( uint8_t player ) const
         case NetplayState::Initial:
             return getInitialInput ( player );
 
-        case NetplayState::InitialCharaSelect:
-            return getInitialCharaSelectInput ( player );
+        case NetplayState::AutoCharaSelect:
+            return getAutoCharaSelectInput ( player );
 
         case NetplayState::CharaSelect:
             return getCharaSelectInput ( player );
@@ -464,7 +545,7 @@ uint16_t NetplayManager::getRawInput ( uint8_t player ) const
     {
         case NetplayState::PreInitial:
         case NetplayState::Initial:
-        case NetplayState::InitialCharaSelect:
+        case NetplayState::AutoCharaSelect:
         case NetplayState::Loading:
         case NetplayState::RetryMenu:
         case NetplayState::Skippable:
@@ -653,39 +734,4 @@ bool NetplayManager::isRngStateReady ( bool shouldSyncRngState ) const
     }
 
     return true;
-}
-
-MsgPtr NetplayManager::getLastGame() const
-{
-    // if ( games.empty() )
-    //     return 0;
-
-    // return games.back();
-
-    return 0;
-}
-
-void NetplayManager::saveLastGame()
-{
-    // if ( config.mode.isOffline() )
-    //     return;
-
-    // ASSERT ( games.back().get() != 0 );
-    // ASSERT ( games.back()->getMsgType() == MsgType::PerGameData );
-
-    // LOG ( "indexedFrame=[%s]; startIndex=%u", indexedFrame, startIndex );
-
-    // PerGameData& game = games.back()->getAs<PerGameData>();
-
-    // for ( uint32_t i = startIndex; i < rngStates.size(); ++i )
-    // {
-    //     if ( !rngStates[i] )
-    //         continue;
-
-    //     LOG ( "rngState[%d]", i );
-
-    //     ASSERT ( rngStates[i]->getMsgType() == MsgType::RngState );
-
-    //     game.rngStates[i] = rngStates[i]->getAs<RngState>();
-    // }
 }

@@ -9,17 +9,17 @@
 
 // PreInitial: The period while we are preparing communication channels
 // Initial: The game starting phase
-// InitialCharaSelect: Initializing character select state (spectate only)
+// AutoCharaSelect: Automatic character select (spectate only)
 // CharaSelect: Character select
 // Loading: Loading screen, distinct from skippable, so we can transition properly
 // Skippable: Skippable states (chara intros, round transitions, post-game, pre-retry)
 // InGame: In-game state
 // RetryMenu: Post-game retry menu
-ENUM ( NetplayState, PreInitial, Initial, InitialCharaSelect, CharaSelect, Loading, Skippable, InGame, RetryMenu );
+ENUM ( NetplayState, PreInitial, Initial, AutoCharaSelect, CharaSelect, Loading, Skippable, InGame, RetryMenu );
 
 /* Netplay state transitions
 
-    PreInitial -> Initial -> { InitialCharaSelect (spectate only), CharaSelect }
+    PreInitial -> Initial -> { AutoCharaSelect (spectate only), CharaSelect }
 
     CharaSelect -> Loading -> { Skippable, InGame (training mode) }
 
@@ -36,6 +36,9 @@ class NetplayManager
 {
     // Netplay state
     NetplayState state;
+
+    // State of the automatic character select input
+    mutable int32_t autoCharaSelectState = -1;
 
     // State of the menu navigation input
     mutable int32_t targetMenuState = -1;
@@ -85,7 +88,7 @@ class NetplayManager
     // Get the input for the specific netplay state
     uint16_t getPreInitialInput ( uint8_t player ) const;
     uint16_t getInitialInput ( uint8_t player ) const;
-    uint16_t getInitialCharaSelectInput ( uint8_t player ) const;
+    uint16_t getAutoCharaSelectInput ( uint8_t player ) const;
     uint16_t getCharaSelectInput ( uint8_t player ) const;
     uint16_t getSkippableInput ( uint8_t player ) const;
     uint16_t getInGameInput ( uint8_t player ) const;
@@ -102,8 +105,9 @@ class NetplayManager
     // Get the input needed to navigate the menu
     uint16_t getMenuNavInput() const;
 
-    // Detect if up or down has been pressed by either player in the last 2 frames
+    // Detect if a key has been pressed by either player in the last 2 frames
     bool hasUpDownInLast2f() const;
+    bool hasButtonInLast2f ( uint8_t player, uint16_t button ) const;
 
 public:
 
@@ -118,6 +122,9 @@ public:
 
     // Indicate which player is the remote player
     void setRemotePlayer ( uint8_t player );
+
+    // Indicates if done automatically selecting character
+    bool isAutoCharaSelectDone() const;
 
     // Update the current netplay frame
     void updateFrame();
@@ -146,8 +153,7 @@ public:
     void setInputs ( uint8_t player, const PlayerInputs& playerInputs );
 
     // Get / set batch inputs for the both players
-    MsgPtr getBothInputs() const { return getBothInputs ( getIndex() ); }
-    MsgPtr getBothInputs ( uint32_t index ) const;
+    MsgPtr getBothInputs ( IndexedFrame& pos ) const;
     void setBothInputs ( const BothInputs& bothInputs );
 
     // True if remote input is ready for the current frame, otherwise the caller should wait for more input
@@ -160,10 +166,6 @@ public:
 
     // True if the RngState is ready for the current frame, otherwise the caller should wait for it
     bool isRngStateReady ( bool shouldSyncRngState ) const;
-
-    // Get / save the data for the last game
-    MsgPtr getLastGame() const;
-    void saveLastGame();
 
     // Get / set the retry menu index
     MsgPtr getRetryMenuIndex() const;

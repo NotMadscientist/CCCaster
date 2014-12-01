@@ -8,7 +8,7 @@
 #include "Enum.h"
 #include "ErrorStringsExt.h"
 #include "KeyboardState.h"
-#include "CharacterNames.h"
+#include "CharacterSelect.h"
 #include "SpectatorManager.h"
 
 #include <windows.h>
@@ -367,7 +367,7 @@ struct DllMain
         {
             case NetplayState::PreInitial:
             case NetplayState::Initial:
-            case NetplayState::InitialCharaSelect:
+            case NetplayState::AutoCharaSelect:
                 // Disable FPS limit while going to character select
                 *CC_SKIP_FRAMES_ADDR = 1;
                 break;
@@ -691,19 +691,11 @@ struct DllMain
         // Check for changes to important variables for state transitions
         ChangeMonitor::get().check();
 
-        // if ( mode[0] == netMan.initial.charaSelectMode[0] && mode[1] == netMan.initial.charaSelectMode[1] )
-        // {
-        //     *CC_P1_CHARA_SELECTOR_ADDR = netMan.initial.chara[0];
-        //     *CC_P2_CHARA_SELECTOR_ADDR = netMan.initial.chara[1];
-
-        //     *CC_P1_MOON_SELECTOR_ADDR = ( uint32_t ) netMan.initial.moon[0];
-        //     *CC_P2_MOON_SELECTOR_ADDR = ( uint32_t ) netMan.initial.moon[1];
-
-        //     *CC_P1_COLOR_SELECTOR_ADDR = ( uint32_t ) netMan.initial.color[0];
-        //     *CC_P2_COLOR_SELECTOR_ADDR = ( uint32_t ) netMan.initial.color[1];
-
-        //     netplayStateChanged ( NetplayState::CharaSelect );
-        // }
+        // Check if completed automated character select
+        if ( netMan.getState() == NetplayState::AutoCharaSelect && netMan.isAutoCharaSelectDone() )
+        {
+            netplayStateChanged ( NetplayState::CharaSelect );
+        }
 
         // Perform the frame step
         if ( rerunStopFrame.value )
@@ -792,7 +784,7 @@ struct DllMain
         {
             // Spectate mode needs to initialize the character select state first
             if ( netMan.config.mode.isSpectate() )
-                netplayStateChanged ( NetplayState::InitialCharaSelect );
+                netplayStateChanged ( NetplayState::AutoCharaSelect );
             else
                 netplayStateChanged ( NetplayState::CharaSelect );
             return;
@@ -816,8 +808,6 @@ struct DllMain
 
         if ( current == CC_GAME_MODE_RETRY )
         {
-            // TODO do this earlier?
-            netMan.saveLastGame();
             netplayStateChanged ( NetplayState::RetryMenu );
             return;
         }
@@ -1043,10 +1033,10 @@ struct DllMain
                         netMan.initial = msg->getAs<InitialGameState>();
 
                         LOG ( "InitialGameState: %s; index=%u; stage=%u; %s vs %s",
-                              NetplayState ( ( NetplayState::Enum ) netMan.initial.state ),
+                              NetplayState ( ( NetplayState::Enum ) netMan.initial.netplayState ),
                               netMan.initial.index, netMan.initial.stage,
-                              netMan.initial.formatCharaName ( 1, fullCharaName ),
-                              netMan.initial.formatCharaName ( 2, fullCharaName ) );
+                              netMan.initial.formatCharaName ( 1, getFullCharaName ),
+                              netMan.initial.formatCharaName ( 2, getFullCharaName ) );
                         return;
 
                     case MsgType::BothInputs:
@@ -1142,8 +1132,20 @@ struct DllMain
 
                 netMan.initial = msg->getAs<SpectateConfig>().initial;
 
-                if ( netMan.initial.state == NetplayState::Unknown )
-                    THROW_EXCEPTION ( "state=NetplayState::Unknown", ERROR_INVALID_HOST_CONFIG );
+                if ( netMan.initial.netplayState == NetplayState::Unknown )
+                    THROW_EXCEPTION ( "netplayState=NetplayState::Unknown", ERROR_INVALID_HOST_CONFIG );
+
+                if ( netMan.initial.charaSelector[0] == UNKNOWN_POSITION )
+                    THROW_EXCEPTION ( "charaSelector[0]=Unknown", ERROR_INVALID_HOST_CONFIG );
+
+                if ( netMan.initial.charaSelector[1] == UNKNOWN_POSITION )
+                    THROW_EXCEPTION ( "charaSelector[1]=Unknown", ERROR_INVALID_HOST_CONFIG );
+
+                if ( selectorToChara ( netMan.initial.charaSelector[0] ) != netMan.initial.character[0] )
+                    THROW_EXCEPTION ( "character[0]=%u", ERROR_INVALID_HOST_CONFIG, netMan.initial.character[0] );
+
+                if ( selectorToChara ( netMan.initial.charaSelector[1] ) != netMan.initial.character[1] )
+                    THROW_EXCEPTION ( "character[1]=%u", ERROR_INVALID_HOST_CONFIG, netMan.initial.character[1] );
 
                 LOG ( "SpectateConfig: %s; flags={ %s }; delay=%d; rollback=%d; winCount=%d; hostPlayer=%u; "
                       "names={ %s, %s }", netMan.config.mode, netMan.config.mode.flagString(), netMan.config.delay,
@@ -1151,9 +1153,9 @@ struct DllMain
                       netMan.config.names[0], netMan.config.names[1] );
 
                 LOG ( "InitialGameState: %s; stage=%u; %s vs %s",
-                      NetplayState ( ( NetplayState::Enum ) netMan.initial.state ), netMan.initial.stage,
-                      msg->getAs<SpectateConfig>().formatPlayer ( 1, fullCharaName ),
-                      msg->getAs<SpectateConfig>().formatPlayer ( 2, fullCharaName ) );
+                      NetplayState ( ( NetplayState::Enum ) netMan.initial.netplayState ), netMan.initial.stage,
+                      msg->getAs<SpectateConfig>().formatPlayer ( 1, getFullCharaName ),
+                      msg->getAs<SpectateConfig>().formatPlayer ( 2, getFullCharaName ) );
 
                 netplayStateChanged ( NetplayState::Initial );
                 break;

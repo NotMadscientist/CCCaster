@@ -177,17 +177,18 @@ struct NetplayConfig : public SerializableSequence
 };
 
 
-typedef const char * ( *CharaNameFunc ) ( uint32_t chara );
+typedef const char * ( *CharaNameFunc ) ( uint8_t chara );
 
 struct InitialGameState : public SerializableSequence
 {
     uint32_t index = 0;
     uint32_t stage = 0;
-    std::array<uint32_t, 2> chara = {{ 0, 0 }};
+    std::array<uint8_t, 2> charaSelector = {{ 0, 0 }}, character = {{ 0, 0 }};
     std::array<uint8_t, 2> moon = {{ 0, 0 }}, color = {{ 0, 0 }}, charaSelectMode {{ 0, 0 }};
-    uint8_t state;
+    uint8_t isRandomColor = 0;
+    uint8_t netplayState = 0;
 
-    InitialGameState ( uint32_t index, uint8_t state );
+    InitialGameState ( uint32_t index, uint8_t netplayState );
 
     std::string formatCharaName ( uint8_t player, CharaNameFunc charaNameFunc ) const
     {
@@ -195,10 +196,12 @@ struct InitialGameState : public SerializableSequence
 
         const char moonCh = ( moon[player - 1] == 0 ? 'C' : ( moon[player - 1] == 1 ? 'F' : 'H' ) );
 
-        return format ( "%c-%s", moonCh, charaNameFunc ( chara[player - 1] ) );
+        return format ( "%c-%s", moonCh, charaNameFunc ( character[player - 1] ) );
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( InitialGameState, index, stage, chara, moon, color, charaSelectMode, state );
+    PROTOCOL_MESSAGE_BOILERPLATE ( InitialGameState,
+                                   index, stage, charaSelector, character, moon, color,
+                                   charaSelectMode, isRandomColor, netplayState );
 };
 
 

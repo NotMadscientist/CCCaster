@@ -7,7 +7,7 @@
 #include "Constants.h"
 #include "Exceptions.h"
 #include "Algorithms.h"
-#include "CharacterNames.h"
+#include "CharacterSelect.h"
 #include "SpectatorManager.h"
 
 #include <windows.h>
@@ -435,9 +435,9 @@ struct MainApp
               spectateConfig.winCount, spectateConfig.hostPlayer, spectateConfig.names[0], spectateConfig.names[1] );
 
         LOG ( "InitialGameState: %s; stage=%u; %s vs %s",
-              NetplayState ( ( NetplayState::Enum ) spectateConfig.initial.state ), spectateConfig.initial.stage,
-              spectateConfig.formatPlayer ( 1, fullCharaName ),
-              spectateConfig.formatPlayer ( 2, fullCharaName ) );
+              NetplayState ( ( NetplayState::Enum ) spectateConfig.initial.netplayState ), spectateConfig.initial.stage,
+              spectateConfig.formatPlayer ( 1, getFullCharaName ),
+              spectateConfig.formatPlayer ( 2, getFullCharaName ) );
 
         this->spectateConfig = spectateConfig;
 
@@ -572,10 +572,10 @@ struct MainApp
         {
             case MsgType::InitialGameState:
                 LOG ( "InitialGameState: %s; stage=%u; %s vs %s",
-                      NetplayState ( ( NetplayState::Enum ) msg->getAs<InitialGameState>().state ),
+                      NetplayState ( ( NetplayState::Enum ) msg->getAs<InitialGameState>().netplayState ),
                       msg->getAs<InitialGameState>().stage,
-                      msg->getAs<InitialGameState>().formatCharaName ( 1, fullCharaName ),
-                      msg->getAs<InitialGameState>().formatCharaName ( 2, fullCharaName ) );
+                      msg->getAs<InitialGameState>().formatCharaName ( 1, getFullCharaName ),
+                      msg->getAs<InitialGameState>().formatCharaName ( 2, getFullCharaName ) );
                 return;
 
             case MsgType::RngState:

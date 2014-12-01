@@ -433,17 +433,26 @@
     </CheatEntry>
     <CheatEntry>
       <ID>61</ID>
-      <Description>"P1 selector type"</Description>
+      <Description>"P1 selector mode"</Description>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
       <Address>0074D8EC</Address>
     </CheatEntry>
     <CheatEntry>
-      <ID>54</ID>
+      <ID>255</ID>
       <Description>"P1 character selector"</Description>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
       <Address>0074D8F8</Address>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>54</ID>
+          <Description>"P1 character"</Description>
+          <Color>80000008</Color>
+          <VariableType>4 Bytes</VariableType>
+          <Address>0074D8FC</Address>
+        </CheatEntry>
+      </CheatEntries>
     </CheatEntry>
     <CheatEntry>
       <ID>59</ID>
@@ -458,10 +467,22 @@
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
       <Address>0074D904</Address>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>257</ID>
+          <Description>"P2 random color"</Description>
+          <Color>80000008</Color>
+          <VariableType>Byte</VariableType>
+          <Address>0x74D808</Address>
+          <Offsets>
+            <Offset>38</Offset>
+          </Offsets>
+        </CheatEntry>
+      </CheatEntries>
     </CheatEntry>
     <CheatEntry>
       <ID>62</ID>
-      <Description>"P2 selector type"</Description>
+      <Description>"P2 selector mode"</Description>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
       <Address>0074D910</Address>
@@ -472,6 +493,15 @@
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
       <Address>0074D91C</Address>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>256</ID>
+          <Description>"P2 character"</Description>
+          <Color>80000008</Color>
+          <VariableType>4 Bytes</VariableType>
+          <Address>0074D920</Address>
+        </CheatEntry>
+      </CheatEntries>
     </CheatEntry>
     <CheatEntry>
       <ID>60</ID>
@@ -486,6 +516,18 @@
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
       <Address>0074D928</Address>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>258</ID>
+          <Description>"P2 random color"</Description>
+          <Color>80000008</Color>
+          <VariableType>Byte</VariableType>
+          <Address>0x74D808</Address>
+          <Offsets>
+            <Offset>214</Offset>
+          </Offsets>
+        </CheatEntry>
+      </CheatEntries>
     </CheatEntry>
     <CheatEntry>
       <ID>65</ID>

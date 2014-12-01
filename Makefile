@@ -23,10 +23,10 @@ BASE_CPP_SRCS = $(wildcard *.cpp) $(wildcard lib/*.cpp)
 MAIN_CPP_SRCS = $(wildcard targets/Main*.cpp) $(wildcard tests/*.cpp) $(BASE_CPP_SRCS)
 DLL_CPP_SRCS = $(wildcard targets/Dll*.cpp) $(BASE_CPP_SRCS)
 
-NON_GEN_SRCS = *.cpp targets/*.cpp lib/*.cpp tests/*.cpp
+NON_GEN_SRCS = $(wildcard *.cpp) $(wildcard targets/*.cpp) $(wildcard lib/*.cpp) $(wildcard tests/*.cpp)
 NON_GEN_HEADERS = \
 	$(filter-out lib/Version.%.h lib/Protocol.%.h,$(wildcard *.h targets/*.h lib/*.h tests/*.h))
-AUTOGEN_HEADERS = lib/Version.*.h lib/Protocol.*.h
+AUTOGEN_HEADERS = $(wildcard lib/Version.*.h) $(wildcard lib/Protocol.*.h)
 
 # Main program objects
 MAIN_OBJECTS = $(MAIN_CPP_SRCS:.cpp=.o) $(CONTRIB_CC_SRCS:.cc=.o) $(CONTRIB_C_SRCS:.c=.o)
@@ -224,7 +224,7 @@ format:
     --keep-one-line-blocks      \
     --align-pointer=name        \
     --align-reference=type      \
-    $(filter-out lib/KeyboardMappings.h AsmHacks.h,$(NON_GEN_SRCS) $(NON_GEN_HEADERS))
+    $(filter-out CharacterSelect.cpp lib/KeyboardMappings.h AsmHacks.h,$(NON_GEN_SRCS) $(NON_GEN_HEADERS))
 
 count:
 	@wc -l $(NON_GEN_SRCS) $(NON_GEN_HEADERS) | sort -nr | head -n 10 && echo '    ...'

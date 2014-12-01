@@ -91,12 +91,16 @@
 // Character select data, can be assigned to directly at the character select screen
 #define CC_P1_SELECTOR_MODE_ADDR    ( ( uint32_t * ) 0x74D8EC )
 #define CC_P1_CHARA_SELECTOR_ADDR   ( ( uint32_t * ) 0x74D8F8 )
+#define CC_P1_CHARACTER_ADDR        ( ( uint32_t * ) 0x74D8FC )
 #define CC_P1_MOON_SELECTOR_ADDR    ( ( uint32_t * ) 0x74D900 )
 #define CC_P1_COLOR_SELECTOR_ADDR   ( ( uint32_t * ) 0x74D904 )
+#define CC_P1_RANDOM_COLOR_ADDR     ( ( uint8_t *  ) ( ( * ( uint32_t * ) 0x74D808 ) + 0 * 0x1DC + 0x2C + 0x0C ) )
 #define CC_P2_SELECTOR_MODE_ADDR    ( ( uint32_t * ) 0x74D910 )
 #define CC_P2_CHARA_SELECTOR_ADDR   ( ( uint32_t * ) 0x74D91C )
+#define CC_P2_CHARACTER_ADDR        ( ( uint32_t * ) 0x74D920 )
 #define CC_P2_MOON_SELECTOR_ADDR    ( ( uint32_t * ) 0x74D924 )
 #define CC_P2_COLOR_SELECTOR_ADDR   ( ( uint32_t * ) 0x74D928 )
+#define CC_P2_RANDOM_COLOR_ADDR     ( ( uint8_t *  ) ( ( * ( uint32_t * ) 0x74D808 ) + 1 * 0x1DC + 0x2C + 0x0C ) )
 
 // Complete RngState
 #define CC_RNGSTATE0_ADDR           ( ( uint32_t * ) 0x563778 )
@@ -106,9 +110,9 @@
 #define CC_RNGSTATE3_SIZE           ( 224 )
 
 // Character select selection mode
-#define CC_CHARA_SELECT_CHARA       ( 0 )
-#define CC_CHARA_SELECT_MOON        ( 1 )
-#define CC_CHARA_SELECT_COLOUR      ( 2 )
+#define CC_SELECT_CHARA             ( 0 )
+#define CC_SELECT_MOON              ( 1 )
+#define CC_SELECT_COLOR             ( 2 )
 
 #define CC_PLR_STRUCT_SIZE          ( 0xAFC )
 

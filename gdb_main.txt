@@ -1,3 +1,4 @@
+directory ~/CCCaster
 set breakpoint pending on
 set confirm off
 set print thread-events off

@@ -4,7 +4,7 @@
 #include "ConsoleUi.h"
 #include "Exceptions.h"
 #include "ErrorStringsExt.h"
-#include "CharacterNames.h"
+#include "CharacterSelect.h"
 
 #include <mmsystem.h>
 
@@ -957,9 +957,9 @@ void MainUi::spectate ( const SpectateConfig& spectateConfig )
                         ( spectateConfig.rollback ? format ( ", %u rollback", spectateConfig.rollback ) : "" ) );
     }
 
-    CharaNameFunc charaNameFunc = ( config.getInteger ( "fullCharacterName" ) ? fullCharaName : shortCharaName );
+    CharaNameFunc charaNameFunc = ( config.getInteger ( "fullCharacterName" ) ? getFullCharaName : getShortCharaName );
 
-    if ( spectateConfig.initial.state == NetplayState::CharaSelect )
+    if ( spectateConfig.initial.netplayState == NetplayState::CharaSelect )
     {
         text += "Selecting characters...";
     }
