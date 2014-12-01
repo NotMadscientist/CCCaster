@@ -132,8 +132,12 @@ public:
     uint32_t getFrame() const { return indexedFrame.parts.frame; }
     uint32_t getIndex() const { return indexedFrame.parts.index; }
     IndexedFrame getIndexedFrame() const { return indexedFrame; }
+    IndexedFrame getRemoteIndexedFrame() const;
+
+    // Get the index for spectators to start inputs on.
+    // During CharaSelect state, this is the beginning of the current CharaSelect state.
+    // During any other state, this is the beginning of the current game's Loading state.
     uint32_t getSpectateStartIndex() const { return spectateStartIndex; }
-    IndexedFrame getRemoteFrame() const;
 
     // // Get / clear the last changed frame (for rollback)
     // const IndexedFrame& getLastChangedFrame() const { return inputs[remotePlayer - 1].getLastChangedFrame(); }

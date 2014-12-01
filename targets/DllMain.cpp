@@ -380,13 +380,18 @@ struct DllMain
             case NetplayState::RetryMenu:
             {
                 // Fast forward if spectator
-                if ( clientMode.isSpectate() )
+                if ( clientMode.isSpectate() && netMan.getState() != NetplayState::Loading )
                 {
                     static bool doneSkipping = true;
 
-                    if ( doneSkipping && netMan.getRemoteFrame().value > netMan.getIndexedFrame().value + NUM_INPUTS )
+                    const IndexedFrame remoteIndexedFrame = netMan.getRemoteIndexedFrame();
+
+                    if ( doneSkipping && remoteIndexedFrame.value > netMan.getIndexedFrame().value + NUM_INPUTS )
                     {
-                        *CC_SKIP_FRAMES_ADDR = 4;
+                        if ( remoteIndexedFrame.parts.index > netMan.getIndex() )
+                            *CC_SKIP_FRAMES_ADDR = 16;
+                        else
+                            *CC_SKIP_FRAMES_ADDR = 4;
                         doneSkipping = false;
                     }
                     else if ( !doneSkipping && *CC_SKIP_FRAMES_ADDR == 0 )
@@ -552,8 +557,6 @@ struct DllMain
 
                     if ( clientMode.isHost() )
                         dataSocket->send ( msgRngState );
-
-                    newRngState ( msgRngState->getAs<RngState>() );
                 }
                 break;
             }
@@ -1005,7 +1008,6 @@ struct DllMain
 
             case MsgType::RngState:
                 netMan.setRngState ( msg->getAs<RngState>() );
-                newRngState ( msg->getAs<RngState>() );
                 return;
 
 #ifndef RELEASE

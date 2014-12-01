@@ -759,7 +759,7 @@ bool NetplayManager::isRngStateReady ( bool shouldSyncRngState ) const
     return true;
 }
 
-IndexedFrame NetplayManager::getRemoteFrame() const
+IndexedFrame NetplayManager::getRemoteIndexedFrame() const
 {
     IndexedFrame indexedFrame =
     {

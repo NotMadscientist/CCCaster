@@ -92,7 +92,19 @@ void SpectatorManager::pushSpectator ( Socket *socketPtr )
     const uint8_t netplayState = netManPtr->getState().value;
     const bool isTraining = netManPtr->config.mode.isTraining();
 
-    newSocket->send ( netManPtr->getRngState ( spectator.pos.parts.index ) );
+    switch ( netplayState )
+    {
+        case NetplayState::CharaSelect:
+            newSocket->send ( netManPtr->getRngState ( spectator.pos.parts.index ) );
+            break;
+
+        case NetplayState::Skippable:
+        case NetplayState::InGame:
+        case NetplayState::RetryMenu:
+            newSocket->send ( netManPtr->getRngState ( spectator.pos.parts.index + ( isTraining ? 1 : 2 ) ) );
+            break;
+    }
+
     newSocket->send ( new InitialGameState ( spectator.pos, netplayState, isTraining ) );
 }
 
@@ -137,6 +149,7 @@ void SpectatorManager::frameStepSpectators()
 
     Socket *socket = it->first;
     Spectator& spectator = it->second;
+    const uint32_t oldIndex = spectator.pos.parts.index;
 
     LOG ( "spectator.pos=[%s]", spectator.pos );
 
@@ -144,6 +157,15 @@ void SpectatorManager::frameStepSpectators()
 
     if ( msgBothInputs )
         socket->send ( msgBothInputs );
+
+    // Send new RngState if necessary
+    if ( spectator.pos.parts.index > oldIndex )
+    {
+        MsgPtr msgRngState = netManPtr->getRngState ( spectator.pos.parts.index );
+
+        if ( msgBothInputs )
+            socket->send ( msgRngState );
+    }
 
     ++spectatorListPos;
 }
