@@ -6,6 +6,7 @@
 #include "Statistics.h"
 #include "Version.h"
 #include "Compression.h"
+#include "CharacterSelect.h"
 
 #include <cereal/types/array.hpp>
 #include <cereal/types/vector.hpp>
@@ -21,6 +22,8 @@ struct ErrorMessage : public SerializableSequence
     std::string error;
 
     ErrorMessage ( const std::string& error ) : error ( error ) {}
+
+    std::string str() const override { return format ( "ErrorMessage { %s }", error ); }
 
     PROTOCOL_MESSAGE_BOILERPLATE ( ErrorMessage, error )
 };
@@ -181,14 +184,17 @@ typedef const char * ( *CharaNameFunc ) ( uint8_t chara );
 
 struct InitialGameState : public SerializableSequence
 {
+    // Common game state
     IndexedFrame indexedFrame = {{ 0, 0 }};
     uint32_t stage = 0;
-    std::array<uint8_t, 2> charaSelector = {{ 0, 0 }}, character = {{ 0, 0 }};
-    std::array<uint8_t, 2> moon = {{ 0, 0 }}, color = {{ 0, 0 }}, charaSelectMode {{ 0, 0 }};
-    uint8_t isRandomColor = 0;
-    uint8_t netplayState = 0;
+    uint8_t netplayState = 0, isTraining = 0;
+    std::array<uint8_t, 2> character = {{ UNKNOWN_POSITION, UNKNOWN_POSITION }}, moon = {{ 0, 0 }}, color = {{ 0, 0 }};
 
-    InitialGameState ( IndexedFrame indexedFrame, uint8_t netplayState );
+    // CharacterSelect specific state
+    std::array<uint8_t, 2> charaSelector = {{ UNKNOWN_POSITION, UNKNOWN_POSITION }}, charaSelectMode {{ 0, 0 }};
+    uint8_t isRandomColor = 0;
+
+    InitialGameState ( IndexedFrame indexedFrame, uint8_t netplayState, bool isTraining );
 
     std::string formatCharaName ( uint8_t player, CharaNameFunc charaNameFunc ) const
     {
@@ -199,9 +205,7 @@ struct InitialGameState : public SerializableSequence
         return format ( "%c-%s", moonCh, charaNameFunc ( character[player - 1] ) );
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( InitialGameState,
-                                   indexedFrame.value, stage, charaSelector, character, moon, color,
-                                   charaSelectMode, isRandomColor, netplayState );
+    DECLARE_MESSAGE_BOILERPLATE ( InitialGameState )
 };
 
 
@@ -224,7 +228,7 @@ struct SpectateConfig : public SerializableSequence
     SpectateConfig ( const NetplayConfig& netplayConfig, uint8_t state )
         : mode ( netplayConfig.mode ), delay ( netplayConfig.delay ), rollback ( netplayConfig.rollback )
         , winCount ( netplayConfig.winCount ), hostPlayer ( netplayConfig.hostPlayer ), names ( netplayConfig.names )
-        , sessionId ( netplayConfig.sessionId ), initial ( { 0, 0 }, state ) {}
+        , sessionId ( netplayConfig.sessionId ), initial ( { 0, 0 }, state, netplayConfig.mode.isTraining() ) {}
 
     std::string formatPlayer ( uint8_t player, CharaNameFunc charaNameFunc ) const
     {

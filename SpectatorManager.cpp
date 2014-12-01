@@ -87,12 +87,12 @@ void SpectatorManager::pushSpectator ( Socket *socketPtr )
 
     if ( netManPtr->getState() == NetplayState::CharaSelect || netManPtr->getState() == NetplayState::Loading )
     {
-        // When spectating before InGame, we can sync the complete game state, so start on current frame.
-        spectator.pos = netManPtr->getIndexedFrame();
+        // // When spectating before InGame, we can sync the complete game state, so start on current frame.
+        // spectator.pos = netManPtr->getIndexedFrame();
 
-        // Send the current RngState
-        newSocket->send ( procManPtr->getRngState ( spectator.pos.parts.index -
-                          ( netManPtr->getState() == NetplayState::CharaSelect ? 0 : 1 ) ) );
+        // // Send the current RngState
+        // newSocket->send ( procManPtr->getRngState ( spectator.pos.parts.index -
+        //                   ( netManPtr->getState() == NetplayState::CharaSelect ? 0 : 1 ) ) );
     }
     else
     {
@@ -100,7 +100,8 @@ void SpectatorManager::pushSpectator ( Socket *socketPtr )
         spectator.pos = { 0, netManPtr->getGameStartIndex() };
     }
 
-    newSocket->send ( new InitialGameState ( spectator.pos, netManPtr->getState().value ) );
+    newSocket->send ( new InitialGameState (
+                          spectator.pos, netManPtr->getState().value, netManPtr->config.mode.isTraining() ) );
 
     spectatorMap[socketPtr] = spectator;
 }

@@ -817,7 +817,7 @@ struct DllMain
     void delayedStop ( string error )
     {
         if ( !error.empty() )
-            procMan.ipcSend ( new ErrorMessage ( "Disconnected!" ) );
+            procMan.ipcSend ( new ErrorMessage ( error ) );
 
         stopTimer.reset ( new Timer ( this ) );
         stopTimer->start ( DELAYED_STOP );
@@ -1031,9 +1031,9 @@ struct DllMain
                     case MsgType::InitialGameState:
                         netMan.initial = msg->getAs<InitialGameState>();
 
-                        LOG ( "InitialGameState: %s; indexedFrame=[%s]; stage=%u; %s vs %s",
+                        LOG ( "InitialGameState: %s; indexedFrame=[%s]; stage=%u; isTraining=%u; %s vs %s",
                               NetplayState ( ( NetplayState::Enum ) netMan.initial.netplayState ),
-                              netMan.initial.indexedFrame, netMan.initial.stage,
+                              netMan.initial.indexedFrame, netMan.initial.stage, netMan.initial.isTraining,
                               netMan.initial.formatCharaName ( 1, getFullCharaName ),
                               netMan.initial.formatCharaName ( 2, getFullCharaName ) );
 
@@ -1140,18 +1140,25 @@ struct DllMain
                     THROW_EXCEPTION ( "charaSelector[1]=Unknown", ERROR_INVALID_HOST_CONFIG );
 
                 if ( selectorToChara ( netMan.initial.charaSelector[0] ) != netMan.initial.character[0] )
-                    THROW_EXCEPTION ( "character[0]=%u", ERROR_INVALID_HOST_CONFIG, netMan.initial.character[0] );
+                {
+                    THROW_EXCEPTION ( "selectorToChara ( %u ) != %u", ERROR_INVALID_HOST_CONFIG,
+                                      netMan.initial.charaSelector[0], netMan.initial.character[0] );
+                }
 
                 if ( selectorToChara ( netMan.initial.charaSelector[1] ) != netMan.initial.character[1] )
-                    THROW_EXCEPTION ( "character[1]=%u", ERROR_INVALID_HOST_CONFIG, netMan.initial.character[1] );
+                {
+                    THROW_EXCEPTION ( "selectorToChara ( %u ) != %u", ERROR_INVALID_HOST_CONFIG,
+                                      netMan.initial.charaSelector[1], netMan.initial.character[1] );
+                }
 
                 LOG ( "SpectateConfig: %s; flags={ %s }; delay=%d; rollback=%d; winCount=%d; hostPlayer=%u; "
                       "names={ '%s', '%s' }", netMan.config.mode, netMan.config.mode.flagString(), netMan.config.delay,
                       netMan.config.rollback, netMan.config.winCount, netMan.config.hostPlayer,
                       netMan.config.names[0], netMan.config.names[1] );
 
-                LOG ( "InitialGameState: %s; stage=%u; %s vs %s",
-                      NetplayState ( ( NetplayState::Enum ) netMan.initial.netplayState ), netMan.initial.stage,
+                LOG ( "InitialGameState: %s; stage=%u; isTraining=%u; %s vs %s",
+                      NetplayState ( ( NetplayState::Enum ) netMan.initial.netplayState ),
+                      netMan.initial.stage, netMan.initial.isTraining,
                       msg->getAs<SpectateConfig>().formatPlayer ( 1, getFullCharaName ),
                       msg->getAs<SpectateConfig>().formatPlayer ( 2, getFullCharaName ) );
 

@@ -435,8 +435,9 @@ struct MainApp
               spectateConfig.rollback, spectateConfig.winCount, spectateConfig.hostPlayer,
               spectateConfig.names[0], spectateConfig.names[1] );
 
-        LOG ( "InitialGameState: %s; stage=%u; %s vs %s",
-              NetplayState ( ( NetplayState::Enum ) spectateConfig.initial.netplayState ), spectateConfig.initial.stage,
+        LOG ( "InitialGameState: %s; stage=%u; isTraining=%u; %s vs %s",
+              NetplayState ( ( NetplayState::Enum ) spectateConfig.initial.netplayState ),
+              spectateConfig.initial.stage, spectateConfig.initial.isTraining,
               spectateConfig.formatPlayer ( 1, getFullCharaName ),
               spectateConfig.formatPlayer ( 2, getFullCharaName ) );
 
@@ -572,9 +573,9 @@ struct MainApp
         switch ( msg->getMsgType() )
         {
             case MsgType::InitialGameState:
-                LOG ( "InitialGameState: %s; stage=%u; %s vs %s",
+                LOG ( "InitialGameState: %s; stage=%u; isTraining=%u; %s vs %s",
                       NetplayState ( ( NetplayState::Enum ) msg->getAs<InitialGameState>().netplayState ),
-                      msg->getAs<InitialGameState>().stage,
+                      msg->getAs<InitialGameState>().stage, msg->getAs<InitialGameState>().isTraining,
                       msg->getAs<InitialGameState>().formatCharaName ( 1, getFullCharaName ),
                       msg->getAs<InitialGameState>().formatCharaName ( 2, getFullCharaName ) );
                 return;
@@ -927,7 +928,7 @@ struct MainApp
         switch ( msg->getMsgType() )
         {
             case MsgType::ErrorMessage:
-                lastError = msg->getAs<ErrorMessage>().error;
+                stop ( msg->getAs<ErrorMessage>().error );
                 return;
 
             case MsgType::NetplayConfig:
