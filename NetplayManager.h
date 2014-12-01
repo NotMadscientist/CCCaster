@@ -21,7 +21,9 @@ ENUM ( NetplayState, PreInitial, Initial, AutoCharaSelect, CharaSelect, Loading,
 
     PreInitial -> Initial -> { AutoCharaSelect (spectate only), CharaSelect }
 
-    CharaSelect -> Loading -> { Skippable, InGame (training mode) }
+    { AutoCharaSelect (spectate only), CharaSelect } -> Loading
+
+    Loading -> { Skippable, InGame (training mode) }
 
     Skippable -> { InGame (versus mode), RetryMenu }
 
@@ -36,9 +38,6 @@ class NetplayManager
 {
     // Netplay state
     NetplayState state;
-
-    // State of the automatic character select input
-    mutable int32_t autoCharaSelectState = -1;
 
     // State of the menu navigation input
     mutable int32_t targetMenuState = -1;
@@ -73,8 +72,8 @@ class NetplayManager
     // The current starting index for the offset index data
     uint32_t startIndex = 0;
 
-    // The current game's starting index
-    uint32_t gameStartIndex = 0;
+    // The starting index for spectators
+    uint32_t spectateStartIndex = 0;
 
     // Mapping: player -> index offset -> frame -> input
     std::array<InputsContainer<uint16_t>, 2> inputs;
@@ -121,13 +120,10 @@ public:
     InitialGameState initial;
 
     // Oldest index to preserve for broadcasting
-    uint32_t preserveIndex = UINT_MAX;
+    uint32_t preserveStartIndex = UINT_MAX;
 
     // Indicate which player is the remote player
     void setRemotePlayer ( uint8_t player );
-
-    // Indicates if done automatically selecting character
-    bool isAutoCharaSelectDone() const;
 
     // Update the current netplay frame
     void updateFrame();
@@ -136,7 +132,8 @@ public:
     uint32_t getFrame() const { return indexedFrame.parts.frame; }
     uint32_t getIndex() const { return indexedFrame.parts.index; }
     IndexedFrame getIndexedFrame() const { return indexedFrame; }
-    uint32_t getGameStartIndex() const { return gameStartIndex; }
+    uint32_t getSpectateStartIndex() const { return spectateStartIndex; }
+    IndexedFrame getRemoteFrame() const;
 
     // // Get / clear the last changed frame (for rollback)
     // const IndexedFrame& getLastChangedFrame() const { return inputs[remotePlayer - 1].getLastChangedFrame(); }

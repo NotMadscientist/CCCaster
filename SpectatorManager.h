@@ -39,7 +39,7 @@ class SpectatorManager
 
     std::list<Socket *> spectatorList;
 
-    std::list<Socket *>::iterator spectatorPos;
+    std::list<Socket *>::iterator spectatorListPos;
 
     const NetplayManager *netManPtr = 0;
 
@@ -69,5 +69,5 @@ public:
 
     void newRngState ( const RngState& rngState );
 
-    void broadcastFrameStep();
+    void frameStepSpectators();
 };

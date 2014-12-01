@@ -23,7 +23,7 @@ struct ErrorMessage : public SerializableSequence
 
     ErrorMessage ( const std::string& error ) : error ( error ) {}
 
-    std::string str() const override { return format ( "ErrorMessage { %s }", error ); }
+    std::string str() const override { return format ( "ErrorMessage[%s]", error ); }
 
     PROTOCOL_MESSAGE_BOILERPLATE ( ErrorMessage, error )
 };
@@ -184,28 +184,29 @@ typedef const char * ( *CharaNameFunc ) ( uint8_t chara );
 
 struct InitialGameState : public SerializableSequence
 {
-    // Common game state
     IndexedFrame indexedFrame = {{ 0, 0 }};
     uint32_t stage = 0;
     uint8_t netplayState = 0, isTraining = 0;
-    std::array<uint8_t, 2> character = {{ UNKNOWN_POSITION, UNKNOWN_POSITION }}, moon = {{ 0, 0 }}, color = {{ 0, 0 }};
-
-    // CharacterSelect specific state
-    std::array<uint8_t, 2> charaSelector = {{ UNKNOWN_POSITION, UNKNOWN_POSITION }}, charaSelectMode {{ 0, 0 }};
-    uint8_t isRandomColor = 0;
+    std::array<uint8_t, 2> chara = {{ UNKNOWN_POSITION, UNKNOWN_POSITION }};
+    std::array<uint8_t, 2> moon = {{ UNKNOWN_POSITION, UNKNOWN_POSITION }}, color = {{ 0, 0 }};
 
     InitialGameState ( IndexedFrame indexedFrame, uint8_t netplayState, bool isTraining );
 
     std::string formatCharaName ( uint8_t player, CharaNameFunc charaNameFunc ) const
     {
         ASSERT ( player == 1 || player == 2 );
+        ASSERT ( chara[0] != UNKNOWN_POSITION );
+        ASSERT ( chara[1] != UNKNOWN_POSITION );
+        ASSERT ( moon[0] != UNKNOWN_POSITION );
+        ASSERT ( moon[1] != UNKNOWN_POSITION );
 
         const char moonCh = ( moon[player - 1] == 0 ? 'C' : ( moon[player - 1] == 1 ? 'F' : 'H' ) );
 
-        return format ( "%c-%s", moonCh, charaNameFunc ( character[player - 1] ) );
+        return format ( "%c-%s", moonCh, charaNameFunc ( chara[player - 1] ) );
     }
 
-    DECLARE_MESSAGE_BOILERPLATE ( InitialGameState )
+    PROTOCOL_MESSAGE_BOILERPLATE ( InitialGameState,
+                                   indexedFrame.value, stage, netplayState, isTraining, chara, moon, color )
 };
 
 
@@ -329,6 +330,8 @@ struct PlayerInputs : public SerializableMessage, public BaseInputs
 
     PlayerInputs ( IndexedFrame indexedFrame ) { this->indexedFrame = indexedFrame; }
 
+    std::string str() const override { return format ( "PlayerInputs[%s]", indexedFrame ); }
+
     PROTOCOL_MESSAGE_BOILERPLATE ( PlayerInputs, indexedFrame.value, inputs )
 };
 
@@ -339,6 +342,8 @@ struct BothInputs : public SerializableSequence, public BaseInputs
     std::array<std::array<uint16_t, NUM_INPUTS>, 2> inputs;
 
     BothInputs ( IndexedFrame indexedFrame ) { this->indexedFrame = indexedFrame; }
+
+    std::string str() const override { return format ( "BothInputs[%s]", indexedFrame ); }
 
     PROTOCOL_MESSAGE_BOILERPLATE ( BothInputs, indexedFrame.value, inputs )
 };

@@ -8,7 +8,7 @@ using namespace std;
 
 
 SpectatorManager::SpectatorManager ( const NetplayManager *netManPtr, const ProcessManager *procManPtr )
-    : spectatorPos ( spectatorList.end() )
+    : spectatorListPos ( spectatorList.end() )
     , netManPtr ( netManPtr )
     , procManPtr ( procManPtr )
 {
@@ -84,26 +84,16 @@ void SpectatorManager::pushSpectator ( Socket *socketPtr )
     Spectator spectator;
     spectator.socket = newSocket;
     spectator.it = it;
-
-    if ( netManPtr->getState() == NetplayState::CharaSelect || netManPtr->getState() == NetplayState::Loading )
-    {
-        // // When spectating before InGame, we can sync the complete game state, so start on current frame.
-        // spectator.pos = netManPtr->getIndexedFrame();
-
-        // // Send the current RngState
-        // newSocket->send ( procManPtr->getRngState ( spectator.pos.parts.index -
-        //                   ( netManPtr->getState() == NetplayState::CharaSelect ? 0 : 1 ) ) );
-    }
-    else
-    {
-        // Otherwise we must start from the beginning of the current game.
-        spectator.pos = { 0, netManPtr->getGameStartIndex() };
-    }
-
-    newSocket->send ( new InitialGameState (
-                          spectator.pos, netManPtr->getState().value, netManPtr->config.mode.isTraining() ) );
+    spectator.pos.parts.frame = NUM_INPUTS - 1;
+    spectator.pos.parts.index = netManPtr->getSpectateStartIndex();
 
     spectatorMap[socketPtr] = spectator;
+
+    const uint8_t netplayState = netManPtr->getState().value;
+    const bool isTraining = netManPtr->config.mode.isTraining();
+
+    newSocket->send ( netManPtr->getRngState ( spectator.pos.parts.index ) );
+    newSocket->send ( new InitialGameState ( spectator.pos, netplayState, isTraining ) );
 }
 
 void SpectatorManager::popSpectator ( Socket *socketPtr )
@@ -115,8 +105,8 @@ void SpectatorManager::popSpectator ( Socket *socketPtr )
     if ( it == spectatorMap.end() )
         return;
 
-    if ( spectatorPos == it->second.it )
-        ++spectatorPos;
+    if ( spectatorListPos == it->second.it )
+        ++spectatorListPos;
 
     spectatorList.erase ( it->second.it );
     spectatorMap.erase ( socketPtr );
@@ -128,7 +118,7 @@ void SpectatorManager::newRngState ( const RngState& rngState )
         socket->send ( rngState );
 }
 
-void SpectatorManager::broadcastFrameStep()
+void SpectatorManager::frameStepSpectators()
 {
     if ( spectatorMap.empty() )
         return;
@@ -138,20 +128,22 @@ void SpectatorManager::broadcastFrameStep()
     if ( netManPtr->getFrame() % ( NUM_INPUTS / 2 ) )
         return;
 
-    if ( spectatorPos == spectatorList.end() )
-        spectatorPos = spectatorList.begin();
+    if ( spectatorListPos == spectatorList.end() )
+        spectatorListPos = spectatorList.begin();
 
-    auto it = spectatorMap.find ( *spectatorPos );
+    auto it = spectatorMap.find ( *spectatorListPos );
 
     ASSERT ( it != spectatorMap.end() );
 
     Socket *socket = it->first;
     Spectator& spectator = it->second;
 
+    LOG ( "spectator.pos=[%s]", spectator.pos );
+
     MsgPtr msgBothInputs = netManPtr->getBothInputs ( spectator.pos );
 
     if ( msgBothInputs )
         socket->send ( msgBothInputs );
 
-    ++spectatorPos;
+    ++spectatorListPos;
 }

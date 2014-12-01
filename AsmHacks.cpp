@@ -51,38 +51,19 @@ int Asm::revert() const
 } // namespace AsmHacks
 
 
+// This is here because this constructor should only be called when running in the DLL, ie MBAA's memory space
 InitialGameState::InitialGameState ( IndexedFrame indexedFrame, uint8_t netplayState, bool isTraining )
     : indexedFrame ( indexedFrame )
     , stage ( *CC_STAGE_SELECTOR_ADDR )
     , netplayState ( netplayState )
     , isTraining ( isTraining )
 {
-    character[0] = ( uint8_t ) * CC_P1_CHARACTER_ADDR;
-    character[1] = ( uint8_t ) * CC_P2_CHARACTER_ADDR;
+    chara[0] = ( uint8_t ) * CC_P1_CHARACTER_ADDR;
+    chara[1] = ( uint8_t ) * CC_P2_CHARACTER_ADDR;
 
     moon[0] = ( uint8_t ) * CC_P1_MOON_SELECTOR_ADDR;
     moon[1] = ( uint8_t ) * CC_P2_MOON_SELECTOR_ADDR;
 
     color[0] = ( uint8_t ) * CC_P1_COLOR_SELECTOR_ADDR;
     color[1] = ( uint8_t ) * CC_P2_COLOR_SELECTOR_ADDR;
-
-    if ( netplayState == NetplayState::CharaSelect )
-    {
-        charaSelector[0] = ( uint8_t ) * CC_P1_CHARA_SELECTOR_ADDR;
-        charaSelector[1] = ( uint8_t ) * CC_P2_CHARA_SELECTOR_ADDR;
-
-        charaSelectMode[0] = ( uint8_t ) * CC_P1_SELECTOR_MODE_ADDR;
-        charaSelectMode[1] = ( uint8_t ) * CC_P2_SELECTOR_MODE_ADDR;
-
-        if ( *CC_P1_RANDOM_COLOR_ADDR )
-            isRandomColor |= 0x01;
-
-        if ( *CC_P2_RANDOM_COLOR_ADDR )
-            isRandomColor |= 0x02;
-    }
-    else
-    {
-        charaSelector[0] = charaToSelector ( character[0] );
-        charaSelector[1] = charaToSelector ( character[1] );
-    }
 }

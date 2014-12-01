@@ -56,62 +56,21 @@ uint16_t NetplayManager::getInitialInput ( uint8_t player ) const
 
 uint16_t NetplayManager::getAutoCharaSelectInput ( uint8_t player ) const
 {
-    if ( autoCharaSelectState == -1 )                                           // Initialize character select state
-    {
-        *CC_P1_CHARA_SELECTOR_ADDR = ( uint32_t ) initial.charaSelector[0];
-        *CC_P2_CHARA_SELECTOR_ADDR = ( uint32_t ) initial.charaSelector[1];
+    *CC_P1_CHARA_SELECTOR_ADDR = ( uint32_t ) charaToSelector ( initial.chara[0] );
+    *CC_P2_CHARA_SELECTOR_ADDR = ( uint32_t ) charaToSelector ( initial.chara[1] );
 
-        *CC_P1_CHARACTER_ADDR = ( uint32_t ) initial.character[0];
-        *CC_P2_CHARACTER_ADDR = ( uint32_t ) initial.character[1];
+    *CC_P1_CHARACTER_ADDR = ( uint32_t ) initial.chara[0];
+    *CC_P2_CHARACTER_ADDR = ( uint32_t ) initial.chara[1];
 
-        *CC_P1_MOON_SELECTOR_ADDR = ( uint32_t ) initial.moon[0];
-        *CC_P2_MOON_SELECTOR_ADDR = ( uint32_t ) initial.moon[1];
+    *CC_P1_MOON_SELECTOR_ADDR = ( uint32_t ) initial.moon[0];
+    *CC_P2_MOON_SELECTOR_ADDR = ( uint32_t ) initial.moon[1];
 
-        *CC_P1_COLOR_SELECTOR_ADDR = ( uint32_t ) initial.color[0];
-        *CC_P2_COLOR_SELECTOR_ADDR = ( uint32_t ) initial.color[1];
+    *CC_P1_COLOR_SELECTOR_ADDR = ( uint32_t ) initial.color[0];
+    *CC_P2_COLOR_SELECTOR_ADDR = ( uint32_t ) initial.color[1];
 
-        autoCharaSelectState = 0;
-    }
-    else if ( autoCharaSelectState >= 0 && autoCharaSelectState < 2 )           // Press Confirm to change mode
-    {
-        const uint8_t current = ( uint8_t ) * ( player == 1 ? CC_P1_SELECTOR_MODE_ADDR : CC_P2_SELECTOR_MODE_ADDR );
-        const uint8_t target = initial.charaSelectMode[player - 1];
+    *CC_STAGE_SELECTOR_ADDR = initial.stage;
 
-        ++autoCharaSelectState;
-
-        if ( current < target )
-            return COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
-    }
-    else if ( autoCharaSelectState >= 2 && autoCharaSelectState <= 4 )          // Wait for mode to change
-    {
-        if ( player == 1 )
-            ++autoCharaSelectState;
-    }
-    else if ( ( *CC_P1_SELECTOR_MODE_ADDR != initial.charaSelectMode[0] )       // Keep pressing Confirm
-              || ( *CC_P2_SELECTOR_MODE_ADDR != initial.charaSelectMode[1] ) )
-    {
-        autoCharaSelectState = 0;
-    }
-    else                                                                        // Reached target mode
-    {
-        autoCharaSelectState = 39;
-
-        if ( ( *CC_P1_SELECTOR_MODE_ADDR > CC_SELECT_COLOR ) && ( *CC_P1_SELECTOR_MODE_ADDR > CC_SELECT_COLOR ) )
-            *CC_STAGE_SELECTOR_ADDR = initial.stage;
-
-        if ( ( *CC_P1_SELECTOR_MODE_ADDR == CC_SELECT_COLOR ) && ( initial.isRandomColor & 0x01 ) )
-            *CC_P1_RANDOM_COLOR_ADDR = 1;
-
-        if ( ( *CC_P1_SELECTOR_MODE_ADDR == CC_SELECT_COLOR ) && ( initial.isRandomColor & 0x02 ) )
-            *CC_P2_RANDOM_COLOR_ADDR = 1;
-    }
-
-    return 0;
-}
-
-bool NetplayManager::isAutoCharaSelectDone() const
-{
-    return ( autoCharaSelectState == 39 );
+    RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
 }
 
 uint16_t NetplayManager::getCharaSelectInput ( uint8_t player ) const
@@ -463,29 +422,33 @@ void NetplayManager::setState ( NetplayState state )
             indexedFrame.parts.frame = 0;
         }
 
-        // Entering InGame
-        if ( state == NetplayState::InGame )
+        // Entering CharaSelect
+        if ( state == NetplayState::CharaSelect )
+            spectateStartIndex = getIndex();
+
+        // Entering Loading
+        if ( state == NetplayState::Loading )
         {
-            gameStartIndex = getIndex();
+            spectateStartIndex = getIndex();
 
-            uint32_t newStartIndex = getIndex();
+            // uint32_t newStartIndex = getIndex();
 
-            ASSERT ( preserveIndex >= getIndex() );
+            // ASSERT ( preserveIndex >= getIndex() );
 
-            if ( preserveIndex != UINT_MAX )
-                newStartIndex = preserveIndex;
+            // if ( preserveIndex != UINT_MAX )
+            //     newStartIndex = preserveIndex;
 
-            const size_t offset = newStartIndex - startIndex;
+            // const size_t offset = newStartIndex - startIndex;
 
-            inputs[0].eraseIndexOlderThan ( offset );
-            inputs[1].eraseIndexOlderThan ( offset );
+            // inputs[0].eraseIndexOlderThan ( offset );
+            // inputs[1].eraseIndexOlderThan ( offset );
 
-            if ( offset >= rngStates.size() )
-                rngStates.clear();
-            else
-                rngStates.erase ( rngStates.begin(), rngStates.begin() + offset );
+            // if ( offset >= rngStates.size() )
+            //     rngStates.clear();
+            // else
+            //     rngStates.erase ( rngStates.begin(), rngStates.begin() + offset );
 
-            startIndex = newStartIndex;
+            // startIndex = newStartIndex;
         }
 
         // Entering RetryMenu
@@ -621,8 +584,10 @@ MsgPtr NetplayManager::getBothInputs ( IndexedFrame& pos ) const
 
     IndexedFrame orig = pos;
 
-    const uint32_t commonEndFrame = min ( inputs[0].getEndFrame ( orig.parts.index ),
-                                          inputs[1].getEndFrame ( orig.parts.index ) );
+    ASSERT ( orig.parts.index >= startIndex );
+
+    const uint32_t commonEndFrame = min ( inputs[0].getEndFrame ( orig.parts.index - startIndex ),
+                                          inputs[1].getEndFrame ( orig.parts.index - startIndex ) );
 
     if ( orig.parts.index == getIndex() )
     {
@@ -687,8 +652,11 @@ void NetplayManager::setBothInputs ( const BothInputs& bothInputs )
 
 bool NetplayManager::isRemoteInputReady() const
 {
-    if ( state.value < NetplayState::CharaSelect || state.value == NetplayState::RetryMenu )
+    if ( state.value < NetplayState::CharaSelect
+            || state.value == NetplayState::Loading || state.value == NetplayState::RetryMenu )
+    {
         return true;
+    }
 
     // if ( isRollbackState() && state == NetplayState::InGame )
     // {
@@ -789,4 +757,21 @@ bool NetplayManager::isRngStateReady ( bool shouldSyncRngState ) const
     }
 
     return true;
+}
+
+IndexedFrame NetplayManager::getRemoteFrame() const
+{
+    IndexedFrame indexedFrame =
+    {
+        inputs[remotePlayer - 1].getEndFrame(),
+        inputs[remotePlayer - 1].getEndIndex() + startIndex
+    };
+
+    if ( indexedFrame.parts.frame > 0 )
+        --indexedFrame.parts.frame;
+
+    if ( indexedFrame.parts.index > 0 )
+        --indexedFrame.parts.index;
+
+    return indexedFrame;
 }
