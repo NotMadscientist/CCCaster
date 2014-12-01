@@ -176,7 +176,7 @@ public:
 
     // Get / set the retry menu index
     MsgPtr getRetryMenuIndex() const;
-    void setRetryMenuIndex ( uint32_t index );
+    void setRetryMenuIndex ( uint32_t menuIndex );
 
     friend class ProcessManager;
 };

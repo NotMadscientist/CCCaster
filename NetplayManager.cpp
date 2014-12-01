@@ -270,9 +270,9 @@ MsgPtr NetplayManager::getRetryMenuIndex() const
         return 0;
 }
 
-void NetplayManager::setRetryMenuIndex ( uint32_t position )
+void NetplayManager::setRetryMenuIndex ( uint32_t menuIndex )
 {
-    remoteRetryMenuIndex = position;
+    remoteRetryMenuIndex = menuIndex;
 
     LOG ( "remoteRetryMenuIndex=%d", remoteRetryMenuIndex );
 }
