@@ -462,10 +462,12 @@ struct DllMain
                 else if ( clientMode.isLocal() )                // Local input
                 {
                     if ( playerControllers[0] )
-                        localInputs[1] = localInputs[0] = getInput ( playerControllers[0] );
+                        localInputs[0] = getInput ( playerControllers[0] );
                 }
                 else if ( clientMode.isSpectate() )             // Spectator input
                 {
+                    if ( playerControllers[0] && playerControllers[0]->getState() )
+                        *CC_SKIP_FRAMES_ADDR = 0;
                 }
                 else
                 {
@@ -1144,9 +1146,10 @@ struct DllMain
                 ASSERT ( clientMode == ClientMode::Spectate );
 
                 netMan.config.mode       = clientMode;
+                netMan.config.mode.flags |= msg->getAs<SpectateConfig>().mode.flags;
                 netMan.config.sessionId  = Logger::get().sessionId;
                 netMan.config.delay      = msg->getAs<SpectateConfig>().delay;
-                netMan.config.rollback   = msg->getAs<SpectateConfig>().delay;
+                netMan.config.rollback   = msg->getAs<SpectateConfig>().rollback;
                 netMan.config.winCount   = msg->getAs<SpectateConfig>().winCount;
                 netMan.config.hostPlayer = msg->getAs<SpectateConfig>().hostPlayer;
                 netMan.config.names      = msg->getAs<SpectateConfig>().names;

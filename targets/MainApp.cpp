@@ -1040,9 +1040,6 @@ struct MainApp
             options.set ( Options::StrictVersion, 3 );
 #endif
 
-        if ( ProcessManager::isWine() )
-            clientMode.flags |= ClientMode::IsWine;
-
         if ( clientMode.isNetplay() )
         {
             ASSERT ( config.getMsgType() == MsgType::InitialConfig );
@@ -1068,6 +1065,13 @@ struct MainApp
         else
         {
             ASSERT_IMPOSSIBLE;
+        }
+
+        if ( ProcessManager::isWine() )
+        {
+            clientMode.flags |= ClientMode::IsWine;
+            initialConfig.mode.flags |= ClientMode::IsWine;
+            netplayConfig.mode.flags |= ClientMode::IsWine;
         }
     }
 

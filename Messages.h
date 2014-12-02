@@ -37,7 +37,11 @@ struct ClientMode : public SerializableSequence
 
     uint8_t flags = 0;
 
-    ClientMode ( Enum value, uint8_t flags = 0 ) : value ( value ), flags ( flags ) {}
+    ClientMode ( Enum value, uint8_t flags ) : value ( value ), flags ( flags ) {}
+
+    ClientMode ( const ClientMode& other ) : ClientMode ( other.value, other.flags ) {}
+
+    ClientMode& operator= ( const ClientMode& other ) { value = other.value; flags = other.flags; return *this; }
 
     bool isHost() const { return ( value == Host ); }
     bool isClient() const { return ( value == Client ); }

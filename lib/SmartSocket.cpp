@@ -283,7 +283,8 @@ void SmartSocket::disconnectEvent ( Socket *socket )
 
         LOG_SMART_SOCKET ( this, "vpsSocket disconnected" );
 
-        if ( isServer() )
+        // We can ignore this disconnect and still mostly function if this is a server socket or if already connected
+        if ( isServer() || isConnected() )
         {
             vpsSocket.reset();
             return;
