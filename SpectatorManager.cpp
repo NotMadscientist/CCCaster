@@ -137,6 +137,7 @@ void SpectatorManager::frameStepSpectators()
 
     // const uint32_t interval = clamped ( ( NUM_INPUTS / spectatorList.size() / 2 ), 1, NUM_INPUTS );
 
+    // TODO fix this interval
     if ( netManPtr->getFrame() % ( NUM_INPUTS / 2 ) )
         return;
 
@@ -155,16 +156,33 @@ void SpectatorManager::frameStepSpectators()
 
     MsgPtr msgBothInputs = netManPtr->getBothInputs ( spectator.pos );
 
+    // Send inputs if available
     if ( msgBothInputs )
         socket->send ( msgBothInputs );
 
-    // Send new RngState if necessary
+    // Clear sent flags whenever the index changes
     if ( spectator.pos.parts.index > oldIndex )
     {
-        MsgPtr msgRngState = netManPtr->getRngState ( spectator.pos.parts.index );
+        spectator.sentRngState = false;
+        spectator.sentRetryMenuIndex = false;
+    }
 
-        if ( msgBothInputs )
-            socket->send ( msgRngState );
+    MsgPtr msgRngState = netManPtr->getRngState ( oldIndex );
+
+    // Send RngState ONCE if available
+    if ( msgRngState && !spectator.sentRngState )
+    {
+        socket->send ( msgRngState );
+        spectator.sentRngState = true;
+    }
+
+    MsgPtr msgMenuIndex = netManPtr->getRetryMenuIndex ( oldIndex );
+
+    // Send retry menu index ONCE if available
+    if ( msgMenuIndex && !spectator.sentRetryMenuIndex )
+    {
+        socket->send ( msgMenuIndex );
+        spectator.sentRetryMenuIndex = true;
     }
 
     ++spectatorListPos;

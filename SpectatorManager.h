@@ -23,6 +23,8 @@ struct Spectator
 
     IndexedFrame pos = {{ 0, 0 }};
 
+    bool sentRngState = false, sentRetryMenuIndex = false;
+
     std::list<Socket *>::iterator it;
 };
 

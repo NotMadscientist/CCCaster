@@ -316,7 +316,7 @@ int main ( int argc, char *argv[] )
     ui.initialConfig.mode.flags |= ( opt[Options::Training] && !opt[Options::Tourney] ? ClientMode::Training : 0 );
 
     if ( opt[Options::Spectate] )
-        ui.initialConfig.mode.value = ClientMode::Spectate;
+        ui.initialConfig.mode.value = ClientMode::SpectateNetplay;
 
     RunFuncPtr run = ( opt[Options::FakeUi] ? runFake : runMain );
 

@@ -12,7 +12,7 @@ using namespace std;
 
 // Only allow first 3 options (once again, chara select, save replay).
 // Prevent saving replays on Wine because MBAA crashes even without us.
-#define MAX_RETRY_MENU_INDEX ( ProcessManager::isWine() ? 1 : 2 )
+#define MAX_RETRY_MENU_INDEX ( config.mode.isWine() ? 1 : 2 )
 
 
 #define RETURN_MASH_INPUT(DIRECTION, BUTTONS)                       \
@@ -23,7 +23,7 @@ using namespace std;
     } while ( 0 )
 
 
-uint16_t NetplayManager::getPreInitialInput ( uint8_t player ) const
+uint16_t NetplayManager::getPreInitialInput ( uint8_t player )
 {
     if ( ( *CC_GAME_MODE_ADDR ) == CC_GAME_MODE_MAIN )
         return 0;
@@ -32,7 +32,7 @@ uint16_t NetplayManager::getPreInitialInput ( uint8_t player ) const
     RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
 }
 
-uint16_t NetplayManager::getInitialInput ( uint8_t player ) const
+uint16_t NetplayManager::getInitialInput ( uint8_t player )
 {
     if ( ( *CC_GAME_MODE_ADDR ) != CC_GAME_MODE_MAIN )
         return getPreInitialInput ( player );
@@ -54,7 +54,7 @@ uint16_t NetplayManager::getInitialInput ( uint8_t player ) const
     return getMenuNavInput();
 }
 
-uint16_t NetplayManager::getAutoCharaSelectInput ( uint8_t player ) const
+uint16_t NetplayManager::getAutoCharaSelectInput ( uint8_t player )
 {
     *CC_P1_CHARA_SELECTOR_ADDR = ( uint32_t ) charaToSelector ( initial.chara[0] );
     *CC_P2_CHARA_SELECTOR_ADDR = ( uint32_t ) charaToSelector ( initial.chara[1] );
@@ -73,7 +73,7 @@ uint16_t NetplayManager::getAutoCharaSelectInput ( uint8_t player ) const
     RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
 }
 
-uint16_t NetplayManager::getCharaSelectInput ( uint8_t player ) const
+uint16_t NetplayManager::getCharaSelectInput ( uint8_t player )
 {
     uint16_t input = getDelayedInput ( player );
 
@@ -92,13 +92,13 @@ uint16_t NetplayManager::getCharaSelectInput ( uint8_t player ) const
     return input;
 }
 
-uint16_t NetplayManager::getSkippableInput ( uint8_t player ) const
+uint16_t NetplayManager::getSkippableInput ( uint8_t player )
 {
     // Only allow the A button here
     return ( getDelayedInput ( player ) & COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM ) );
 }
 
-uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
+uint16_t NetplayManager::getInGameInput ( uint8_t player )
 {
     // Workaround for round start desync, since inputs have effects during a small period after round start.
     if ( getFrame() < 10 )
@@ -107,8 +107,10 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
     uint16_t input = getOffsetInput ( player );
 
     // Disable pausing in netplay versus mode
-    if ( config.mode.isNetplay() && config.mode.isVersus() )
+    if ( ( config.mode.isNetplay() || config.mode.isSpectateNetplay() ) && config.mode.isVersus() )
+    {
         input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_START );
+    }
 
     // If the pause menu is up
     if ( * ( config.mode.isTraining() ? CC_TRAINING_PAUSE_ADDR : CC_VERSUS_PAUSE_ADDR ) )
@@ -192,7 +194,7 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player ) const
     return input;
 }
 
-uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
+uint16_t NetplayManager::getRetryMenuInput ( uint8_t player )
 {
     // Ignore remote input
     if ( player != localPlayer )
@@ -203,6 +205,9 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
         return getMenuNavInput();
 
     uint16_t input = getDelayedInput ( player );
+
+    if ( config.mode.isSpectateNetplay() )
+        input = ( getFrame() % 2 ? 0 : COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM ) );
 
     // Don't allow hitting Confirm until 2f after we have stopped moving the cursor. This is a work around
     // for the issue when select is pressed after the cursor moves, but before currentMenuIndex is updated.
@@ -228,14 +233,29 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
         return input;
     }
 
-    if ( config.mode.isNetplay() )
+    if ( config.mode.isSpectateNetplay() )
+    {
+        // Disable menu confirms
+        AsmHacks::menuConfirmState = 0;
+
+        MsgPtr msgMenuIndex = getRetryMenuIndex ( getIndex() );
+
+        if ( msgMenuIndex )
+        {
+            targetMenuState = 0;
+            targetMenuIndex = msgMenuIndex->getAs<MenuIndex>().menuIndex;
+            return 0;
+        }
+    }
+    else if ( config.mode.isNetplay() )
     {
         // Special netplay retry menu behaviour, only select final option after both sides have selected
         if ( remoteRetryMenuIndex != -1 && localRetryMenuIndex != -1 )
         {
             targetMenuState = 0;
             targetMenuIndex = max ( localRetryMenuIndex, remoteRetryMenuIndex );
-            targetMenuIndex = min ( targetMenuIndex, 1 ); // Just in case...
+            targetMenuIndex = min ( targetMenuIndex, ( int8_t ) 1 ); // Just in case...
+            setRetryMenuIndex ( getIndex(), targetMenuIndex );
             input = 0;
         }
         else if ( localRetryMenuIndex != -1 )
@@ -262,19 +282,52 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player ) const
     return input;
 }
 
-MsgPtr NetplayManager::getRetryMenuIndex() const
+MsgPtr NetplayManager::getLocalRetryMenuIndex() const
 {
     if ( state == NetplayState::RetryMenu && localRetryMenuIndex != -1 )
-        return MsgPtr ( new MenuIndex ( localRetryMenuIndex ) );
+        return MsgPtr ( new MenuIndex ( getIndex(), localRetryMenuIndex ) );
     else
         return 0;
 }
 
-void NetplayManager::setRetryMenuIndex ( uint32_t menuIndex )
+void NetplayManager::setRemoteRetryMenuIndex ( int8_t menuIndex )
 {
     remoteRetryMenuIndex = menuIndex;
 
     LOG ( "remoteRetryMenuIndex=%d", remoteRetryMenuIndex );
+}
+
+MsgPtr NetplayManager::getRetryMenuIndex ( uint32_t index ) const
+{
+    if ( config.mode.isOffline() )
+        return 0;
+
+    LOG ( "[%s] index=%u", indexedFrame, index );
+
+    ASSERT ( index >= startIndex );
+
+    if ( index + 1 > startIndex + retryMenuIndicies.size() )
+        return 0;
+
+    if ( retryMenuIndicies[index - startIndex] < 0 )
+        return 0;
+
+    return MsgPtr ( new MenuIndex ( index, retryMenuIndicies[index - startIndex] ) );
+}
+
+void NetplayManager::setRetryMenuIndex ( uint32_t index, int8_t menuIndex )
+{
+    if ( config.mode.isOffline() || index == 0 || index < startIndex || menuIndex < 0 )
+        return;
+
+    LOG ( "[%s] index=%u; menuIndex=%d", indexedFrame, index, menuIndex );
+
+    ASSERT ( index >= startIndex );
+
+    if ( index + 1 > startIndex + retryMenuIndicies.size() )
+        retryMenuIndicies.resize ( index + 1 - startIndex, -1 );
+
+    retryMenuIndicies[index - startIndex] = menuIndex;
 }
 
 uint16_t NetplayManager::getOffsetInput ( uint8_t player, uint32_t frame ) const
@@ -299,38 +352,38 @@ uint16_t NetplayManager::getDelayedInput ( uint8_t player, uint32_t frame ) cons
     return inputs[player - 1].get ( getIndex() - startIndex, frame - config.delay );
 }
 
-uint16_t NetplayManager::getMenuNavInput() const
+uint16_t NetplayManager::getMenuNavInput()
 {
     if ( targetMenuState == -1 || targetMenuIndex == -1 )
         return 0;
 
-    if ( targetMenuState == 0 )                                         // Determined targetMenuIndex
+    if ( targetMenuState == 0 )                                             // Determined targetMenuIndex
     {
         LOG ( "targetMenuIndex=%d", targetMenuIndex );
 
         targetMenuState = 1;
     }
-    else if ( targetMenuState == 1 )                                    // Move up or down towards targetMenuIndex
+    else if ( targetMenuState == 1 )                                        // Move up or down towards targetMenuIndex
     {
         targetMenuState = 2;
 
-        if ( targetMenuIndex != ( int ) AsmHacks::currentMenuIndex )
-            return COMBINE_INPUT ( ( targetMenuIndex < ( int ) AsmHacks::currentMenuIndex ? 8 : 2 ), 0 );
+        if ( targetMenuIndex != ( int8_t ) AsmHacks::currentMenuIndex )
+            return COMBINE_INPUT ( ( targetMenuIndex < ( int8_t ) AsmHacks::currentMenuIndex ? 8 : 2 ), 0 );
     }
-    else if ( targetMenuState >= 2 && targetMenuState <= 4 )            // Wait for currentMenuIndex to update
+    else if ( targetMenuState >= 2 && targetMenuState <= 4 )                // Wait for currentMenuIndex to update
     {
         ++targetMenuState;
     }
-    else if ( targetMenuState == 39 )                                   // Mash final menu selection
+    else if ( targetMenuState == 39 )                                       // Mash final menu selection
     {
         AsmHacks::menuConfirmState = 2;
         RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
     }
-    else if ( targetMenuIndex != ( int ) AsmHacks::currentMenuIndex )   // Keep navigating
+    else if ( targetMenuIndex != ( int8_t ) AsmHacks::currentMenuIndex )    // Keep navigating
     {
         targetMenuState = 1;
     }
-    else                                                                // Reached targetMenuIndex
+    else                                                                    // Reached targetMenuIndex
     {
         LOG ( "targetMenuIndex=%d; currentMenuIndex=%u", targetMenuIndex, AsmHacks::currentMenuIndex );
 
@@ -431,6 +484,8 @@ void NetplayManager::setState ( NetplayState state )
         {
             spectateStartIndex = getIndex();
 
+            // TODO handle preserveIndex
+
             // uint32_t newStartIndex = getIndex();
 
             // ASSERT ( preserveIndex >= getIndex() );
@@ -447,6 +502,11 @@ void NetplayManager::setState ( NetplayState state )
             //     rngStates.clear();
             // else
             //     rngStates.erase ( rngStates.begin(), rngStates.begin() + offset );
+
+            // if ( offset >= retryMenuIndicies.size() )
+            //     retryMenuIndicies.clear();
+            // else
+            //     retryMenuIndicies.erase ( retryMenuIndicies.begin(), retryMenuIndicies.begin() + offset );
 
             // startIndex = newStartIndex;
         }
@@ -477,7 +537,7 @@ void NetplayManager::setState ( NetplayState state )
     this->state = state;
 }
 
-uint16_t NetplayManager::getInput ( uint8_t player ) const
+uint16_t NetplayManager::getInput ( uint8_t player )
 {
     ASSERT ( player == 1 || player == 2 );
 

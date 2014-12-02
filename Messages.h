@@ -31,7 +31,7 @@ struct ErrorMessage : public SerializableSequence
 
 struct ClientMode : public SerializableSequence
 {
-    ENUM_BOILERPLATE ( ClientMode, Host, Client, Spectate, Broadcast, Offline )
+    ENUM_BOILERPLATE ( ClientMode, Host, Client, SpectateNetplay, SpectateBroadcast, Broadcast, Offline )
 
     enum { Training = 0x01, GameStarted = 0x02, UdpTunnel = 0x04, IsWine = 0x08 };
 
@@ -45,7 +45,9 @@ struct ClientMode : public SerializableSequence
 
     bool isHost() const { return ( value == Host ); }
     bool isClient() const { return ( value == Client ); }
-    bool isSpectate() const { return ( value == Spectate ); }
+    bool isSpectateNetplay() const { return ( value == SpectateNetplay ); }
+    bool isSpectateBroadcast() const { return ( value == SpectateBroadcast ); }
+    bool isSpectate() const { return ( value == SpectateNetplay || value == SpectateBroadcast ); }
     bool isBroadcast() const { return ( value == Broadcast ); }
     bool isOffline() const { return ( value == Offline ); }
     bool isNetplay() const { return ( value == Host || value == Client ); }
@@ -301,11 +303,13 @@ struct SyncHash : public SerializableSequence
 
 struct MenuIndex : public SerializableSequence
 {
-    int32_t index = -1;
+    uint32_t index = 0;
 
-    MenuIndex ( int32_t index ) : index ( index ) {}
+    int8_t menuIndex = -1;
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( MenuIndex, index );
+    MenuIndex ( uint32_t index, int8_t menuIndex ) : index ( index ), menuIndex ( menuIndex ) {}
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( MenuIndex, index, menuIndex );
 };
 
 

@@ -302,7 +302,11 @@ struct MainApp
 
         // Switch to spectate mode if the game is already started
         if ( clientMode.isClient() && versionConfig.mode.isGameStarted() )
-            clientMode.value = ClientMode::Spectate;
+            clientMode.value = ClientMode::SpectateNetplay;
+
+        // Update spectate type
+        if ( clientMode.isSpectate() && versionConfig.mode.isBroadcast() )
+            clientMode.value = ClientMode::SpectateBroadcast;
 
         if ( clientMode.isSpectate() )
         {
@@ -498,7 +502,8 @@ struct MainApp
                 break;
 
             case ClientMode::Client:
-            case ClientMode::Spectate:
+            case ClientMode::SpectateNetplay:
+            case ClientMode::SpectateBroadcast:
                 userConfirmed = ui.confirm();
                 break;
 
@@ -526,7 +531,8 @@ struct MainApp
 
         switch ( clientMode.value )
         {
-            case ClientMode::Spectate:
+            case ClientMode::SpectateNetplay:
+            case ClientMode::SpectateBroadcast:
                 isQueueing = true;
                 ctrlSocket->send ( new ConfirmConfig() );
                 startGame();
@@ -586,16 +592,23 @@ struct MainApp
             case MsgType::PlayerInputs:
             {
                 // TODO log dummy inputs to check sync
-                MsgPtr clone = msg->clone();
-                clone->getAs<PlayerInputs>().indexedFrame.parts.frame += netplayConfig.delay * 2;
-                dataSocket->send ( clone );
+                PlayerInputs inputs ( msg->getAs<PlayerInputs>().indexedFrame );
+                inputs.indexedFrame.parts.frame += netplayConfig.delay * 2;
+
+                for ( uint32_t i = 0; i < inputs.size(); ++i )
+                {
+                    const uint32_t frame = i + inputs.getStartFrame();
+                    inputs.inputs[i] = ( frame % 5 ? 0 : COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM ) );
+                }
+
+                dataSocket->send ( inputs );
                 return;
             }
 
             case MsgType::MenuIndex:
                 // Dummy mode always chooses the first retry menu option,
                 // since the higher option always takes priority, the host effectively takes priority.
-                dataSocket->send ( new MenuIndex ( 0 ) );
+                dataSocket->send ( new MenuIndex ( msg->getAs<MenuIndex>().index, 0 ) );
                 return;
 
             case MsgType::BothInputs:
@@ -635,7 +648,7 @@ struct MainApp
 
         if ( options[Options::Dummy] )
         {
-            ASSERT ( clientMode.value == ClientMode::Client || clientMode.value == ClientMode::Spectate );
+            ASSERT ( clientMode.value == ClientMode::Client || clientMode.isSpectate() == true );
 
             ui.display ( "Dummy is ready", false ); // Don't replace last message
 

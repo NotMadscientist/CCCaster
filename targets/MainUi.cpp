@@ -125,7 +125,7 @@ void MainUi::spectate ( RunFuncPtr run )
             continue;
         }
 
-        initialConfig.mode.value = ClientMode::Spectate;
+        initialConfig.mode.value = ClientMode::SpectateNetplay;
 
         RUN ( address, initialConfig );
 

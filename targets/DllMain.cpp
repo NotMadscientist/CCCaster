@@ -501,7 +501,10 @@ struct DllMain
                         if ( netMan.getState().value == NetplayState::CharaSelect )
                             buttons &= ~ ( CC_BUTTON_B | CC_BUTTON_CANCEL );
 
-                        localInputs[0] = COMBINE_INPUT ( direction, buttons );
+                        if ( clientMode.isLocal() )
+                            localInputs[1] = COMBINE_INPUT ( direction, buttons );
+                        else
+                            localInputs[0] = COMBINE_INPUT ( direction, buttons );
                     }
                 }
 #endif
@@ -515,7 +518,7 @@ struct DllMain
                     // Special netplay retry menu behaviour, only select final option after both sides have selected
                     if ( netMan.getState().value == NetplayState::RetryMenu )
                     {
-                        MsgPtr msgMenuIndex = netMan.getRetryMenuIndex();
+                        MsgPtr msgMenuIndex = netMan.getLocalRetryMenuIndex();
 
                         // Lazy disconnect now once the retry menu option has been selected
                         if ( msgMenuIndex && ( !dataSocket || !dataSocket->isConnected() ) )
@@ -1034,7 +1037,7 @@ struct DllMain
 
                     case MsgType::MenuIndex:
                         if ( netMan.getState() == NetplayState::RetryMenu )
-                            netMan.setRetryMenuIndex ( msg->getAs<MenuIndex>().index );
+                            netMan.setRemoteRetryMenuIndex ( msg->getAs<MenuIndex>().menuIndex );
                         return;
 
                     default:
@@ -1042,7 +1045,8 @@ struct DllMain
                 }
                 break;
 
-            case ClientMode::Spectate:
+            case ClientMode::SpectateNetplay:
+            case ClientMode::SpectateBroadcast:
                 switch ( msg->getMsgType() )
                 {
                     case MsgType::InitialGameState:
@@ -1071,6 +1075,10 @@ struct DllMain
 
                     case MsgType::BothInputs:
                         netMan.setBothInputs ( msg->getAs<BothInputs>() );
+                        return;
+
+                    case MsgType::MenuIndex:
+                        netMan.setRetryMenuIndex ( msg->getAs<MenuIndex>().index, msg->getAs<MenuIndex>().menuIndex );
                         return;
 
                     default:
@@ -1143,7 +1151,7 @@ struct DllMain
                 break;
 
             case MsgType::SpectateConfig:
-                ASSERT ( clientMode == ClientMode::Spectate );
+                ASSERT ( clientMode.isSpectate() == true );
 
                 netMan.config.mode       = clientMode;
                 netMan.config.mode.flags |= msg->getAs<SpectateConfig>().mode.flags;
