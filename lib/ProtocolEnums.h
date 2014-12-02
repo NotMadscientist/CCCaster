@@ -1,5 +1,6 @@
 AckSequence,
 BothInputs,
+ChangeConfig,
 ClientMode,
 ConfirmConfig,
 ControllerMappings,

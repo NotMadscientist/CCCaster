@@ -313,6 +313,16 @@ struct MenuIndex : public SerializableSequence
 };
 
 
+struct ChangeConfig : public SerializableSequence
+{
+    uint8_t delay = 0xFF, rollback = 0;
+
+    ChangeConfig ( uint8_t delay, uint8_t rollback = 0 ) : delay ( delay ), rollback ( rollback ) {}
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( ChangeConfig, delay, rollback );
+};
+
+
 struct BaseInputs
 {
     IndexedFrame indexedFrame = {{ 0, 0 }};
