@@ -1109,7 +1109,8 @@ struct MainApp
     // Destructor
     ~MainApp()
     {
-        join();
+        this->join();
+
         procMan.closeGame();
 
         if ( !lastError.empty() )
@@ -1119,6 +1120,8 @@ struct MainApp
         }
 
         syncLog.deinitialize();
+
+        externaIpAddress.owner = 0;
     }
 
 private:
@@ -1134,7 +1137,7 @@ private:
 
         const uint16_t port = ( clientMode.isBroadcast() ? netplayConfig.broadcastPort : address.port );
 
-        if ( externaIpAddress.address.empty() || externaIpAddress.address == "unknown" )
+        if ( externaIpAddress.address.empty() || externaIpAddress.address == ExternalIpAddress::Unknown )
         {
             ui.display ( format ( "%s on port %u%s\n",
                                   ( clientMode.isBroadcast() ? "Broadcasting" : "Hosting" ),

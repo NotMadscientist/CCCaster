@@ -32,6 +32,8 @@ private:
 
 public:
 
+    static const std::string Unknown;
+
     std::string address;
 
     ExternalIpAddress ( Owner *owner );
