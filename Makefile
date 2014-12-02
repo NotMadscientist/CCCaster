@@ -1,4 +1,5 @@
 VERSION = 2.1
+SUFFIX =
 NAME = cccaster
 
 # Main programs
@@ -142,7 +143,7 @@ $(DEBUGGER): targets/Debugger.cpp lib/Utilities.cpp lib/Logger.cpp
 
 
 define make_version
-@scripts/make_version $(VERSION) > lib/Version.local.h
+@scripts/make_version $(VERSION)$(SUFFIX) > lib/Version.local.h
 endef
 
 define make_protocol

@@ -477,7 +477,14 @@ void MainUi::controls()
 void MainUi::settings()
 {
     static const vector<string> options =
-    { "Alert on connect", "Display name", "Show full character name", "Game CPU priority", "Versus mode win count" };
+    {
+        "Alert on connect",
+        "Display name",
+        "Show full character name",
+        "Game CPU priority",
+        "Versus mode win count",
+        "About",
+    };
 
     ui->pushRight ( new ConsoleUi::Menu ( "Settings", options, "Back" ) );
 
@@ -613,6 +620,13 @@ void MainUi::settings()
                 }
 
                 ui->pop();
+                break;
+
+            case 5:
+                ui->pushInFront ( new ConsoleUi::TextBox ( format ( "%s %s\n\nBuilt on %s\n\nPress any key to go back",
+                                  uiTitle, LocalVersion.commitId, LocalVersion.buildTime ) ),
+                { 0, 0 }, true ); // Don't expand but DO clear
+                system ( "@pause > nul" );
                 break;
 
             default:
