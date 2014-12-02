@@ -72,13 +72,15 @@ while ( index[0] < len ( log[0] ) ) and ( index[1] < len ( log[1] ) ):
             print log[i][index[i]]
             exit ( -1 )
 
+        # NetplayState, index, frame, input/RNG data
         data[i] = [ m.group ( 1 ), int ( m.group ( 2 ) ), int ( m.group ( 3 ) ), m.group ( 4 ) ]
 
-    # Copy NetplayState
-    if data[0][0] == 'Dummy':
+
+    # Assign dummy NetplayState
+    if ( data[0][0] == 'Dummy' ) and ( data[0][1] == data[1][1] ):
         data[0][0] = data[1][0]
 
-    if data[1][0] == 'Dummy':
+    if ( data[1][0] == 'Dummy' ) and ( data[1][1] == data[0][1] ):
         data[1][0] = data[0][0]
 
     # Ignored NetplayStates
@@ -114,7 +116,7 @@ while ( index[0] < len ( log[0] ) ) and ( index[1] < len ( log[1] ) ):
         index[1] += 1
         continue
 
-    # Skip older frames before we match the first line
+    # Skip initial frames before we match the first line
     if ( count == 0 ) and ( data[0][2] < data[1][2] ):
         # Skip line
         index[0] += 1

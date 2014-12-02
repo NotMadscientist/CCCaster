@@ -612,19 +612,33 @@ struct MainApp
             case MsgType::MenuIndex:
                 // Dummy mode always chooses the first retry menu option,
                 // since the higher option always takes priority, the host effectively takes priority.
-                dataSocket->send ( new MenuIndex ( msg->getAs<MenuIndex>().index, 0 ) );
+                if ( clientMode.isClient() )
+                    dataSocket->send ( new MenuIndex ( msg->getAs<MenuIndex>().index, 0 ) );
                 return;
 
             case MsgType::BothInputs:
             {
+                static IndexedFrame last = {{ 0, 0 }};
                 const BothInputs& both = msg->getAs<BothInputs>();
                 const uint32_t offset = clamped ( spectateConfig.delay - ( int ) spectateConfig.rollback, 0, 255 );
 
+                if ( both.getIndex() > last.parts.index )
+                {
+                    for ( uint32_t i = 0; i < both.getStartFrame() + offset; ++i )
+                        LOG_TO ( syncLog, "Dummy [%u:%u] Inputs: %04x %04x", both.getIndex(), i, 0, 0 );
+                }
+
                 for ( uint32_t i = 0; i < both.size(); ++i )
                 {
-                    LOG_TO ( syncLog, "Dummy [%u:%u] Inputs: %04x %04x",
-                             both.getIndex(), i + both.getStartFrame() + offset, both.inputs[0][i], both.inputs[1][i] );
+                    const IndexedFrame current = {{ i + both.getStartFrame() + offset, both.getIndex() }};
+
+                    if ( current.value <= last.value + offset )
+                        continue;
+
+                    LOG_TO ( syncLog, "Dummy [%s] Inputs: %04x %04x", current, both.inputs[0][i], both.inputs[1][i] );
                 }
+
+                last = both.indexedFrame;
                 return;
             }
 
