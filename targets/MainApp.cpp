@@ -353,9 +353,13 @@ struct MainApp
         {
             isInitialConfigReady = true;
 
+            this->initialConfig.mode.flags |= initialConfig.mode.flags;
+
             this->initialConfig.remoteName = initialConfig.localName;
+
             if ( this->initialConfig.remoteName.empty() )
                 this->initialConfig.remoteName = ctrlSocket->address.addr;
+
             this->initialConfig.invalidate();
 
             ctrlSocket->send ( this->initialConfig );
