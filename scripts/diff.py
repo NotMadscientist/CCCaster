@@ -47,6 +47,10 @@ for k in range ( 2, len ( sys.argv ) ):
     # Check log format
     for i in range ( 0, 2 ):
 
+        if index[i] + 1 >= len ( log[i] ):
+            print '%s is empty!' % sys.argv [ ( 1, k )[i] ]
+            break
+
         if re.match ( REGEX_FULL, log[i][index[i] + 1] ):
             regex[i] = REGEX_FULL
             while log[i][index[i] + 1].find ( 'CharaSelect' ) < 0:
@@ -57,7 +61,7 @@ for k in range ( 2, len ( sys.argv ) ):
             index[i] += 1
 
         else:
-            print 'Log %d has unknown format!' % ( 1, k )[i]
+            print '%s has unknown format!' % sys.argv [ ( 1, k )[i] ]
             break
 
     if ( not regex[0] ) or ( not regex[1] ):

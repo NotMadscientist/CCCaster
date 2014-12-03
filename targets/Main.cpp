@@ -27,7 +27,7 @@ void runMain ( const IpAddrPort& address, const Serializable& config );
 void runFake ( const IpAddrPort& address, const Serializable& config );
 
 
-static bool initDirsAndSanityCheck()
+static bool initDirsAndSanityCheck ( bool checkGameExe = true )
 {
     bool success = true;
 
@@ -87,12 +87,15 @@ static bool initDirsAndSanityCheck()
         ProcessManager::gameDir = appDir;
     }
 
-    val = GetFileAttributes ( ( ProcessManager::gameDir + MBAA_EXE ).c_str() );
-
-    if ( val == INVALID_FILE_ATTRIBUTES )
+    if ( checkGameExe )
     {
-        lastError += "\nCouldn't find " MBAA_EXE "!";
-        success = false;
+        val = GetFileAttributes ( ( ProcessManager::gameDir + MBAA_EXE ).c_str() );
+
+        if ( val == INVALID_FILE_ATTRIBUTES )
+        {
+            lastError += "\nCouldn't find " MBAA_EXE "!";
+            success = false;
+        }
     }
 
     return success;
@@ -274,7 +277,7 @@ int main ( int argc, char *argv[] )
     SetConsoleCtrlHandler ( consoleCtrl, TRUE );
 
     // Initialize the main directories, this also does a sanity check
-    if ( !initDirsAndSanityCheck() )
+    if ( !initDirsAndSanityCheck ( !opt[Options::Dummy] ) )
     {
         PRINT ( "%s", trimmed ( lastError ) );
         PRINT ( "Press any key to exit." );

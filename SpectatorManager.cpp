@@ -94,14 +94,18 @@ void SpectatorManager::pushSpectator ( Socket *socketPtr )
     //
     // Spectators: 2 [3] 4 1    interval is 15/4 = 3, now #1 will get a broadcast in 6 frames
     //
+    list<Socket *>::iterator it;
+
     if ( spectatorList.empty() )
-        spectatorList.push_back ( socketPtr );
+        it = spectatorList.insert ( spectatorList.end(), socketPtr );
+    else if ( spectatorListPos == spectatorList.end() )
+        it = spectatorList.insert ( spectatorList.begin(), socketPtr );
     else
-        spectatorList.insert ( incremented ( spectatorListPos ), socketPtr );
+        it = spectatorList.insert ( incremented ( spectatorListPos ), socketPtr );
 
     Spectator spectator;
     spectator.socket = newSocket;
-    spectator.it = spectatorList.begin();
+    spectator.it = it;
     spectator.pos.parts.frame = NUM_INPUTS - 1;
     spectator.pos.parts.index = netManPtr->getSpectateStartIndex();
 

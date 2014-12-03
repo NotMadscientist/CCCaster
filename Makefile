@@ -39,17 +39,19 @@ GCC = $(PREFIX)gcc
 CXX = $(PREFIX)g++
 WINDRES = $(PREFIX)windres
 STRIP = $(PREFIX)strip
+TOUCH = touch
 ZIP = zip
 
 # OS specific tools
 ifeq ($(OS),Windows_NT)
-    CHMOD_X = icacls $@ /grant Everyone:F
-    GRANT = icacls $@ /grant Everyone:F
-    ASTYLE = 3rdparty/astyle.exe
+	CHMOD_X = icacls $@ /grant Everyone:F
+	GRANT = icacls $@ /grant Everyone:F
+	ASTYLE = 3rdparty/astyle.exe
 else
-    CHMOD_X = chmod +x $@
-    GRANT =
-    ASTYLE = 3rdparty/astyle
+	CHMOD_X = chmod +x $@
+	GRANT =
+	ASTYLE = 3rdparty/astyle
+	TOUCH = $(PREFIX)strip
 endif
 
 
@@ -78,7 +80,7 @@ INSTALL=1
 
 all: debug
 
-target-debug: STRIP = touch
+target-debug: STRIP = $(TOUCH)
 target-debug: DEFINES += -D_GLIBCXX_DEBUG
 target-debug: CC_FLAGS += -ggdb3 -O0 -fno-inline
 target-debug: $(ARCHIVE)
@@ -91,7 +93,7 @@ target-release-logging: DEFINES += -DRELEASE
 target-release-logging: CC_FLAGS += -s -Os -O2
 target-release-logging: $(ARCHIVE)
 
-target-profile: STRIP = touch
+target-profile: STRIP = $(TOUCH)
 target-profile: DEFINES += -DNDEBUG -DRELEASE -DDISABLE_LOGGING -DDISABLE_ASSERTS
 target-profile: CC_FLAGS += -O2 -fno-rtti -pg
 target-profile: LD_FLAGS += -pg -lgmon
@@ -211,21 +213,21 @@ trim:
 	sed --in-place 's/[[:space:]]\\+$$//' $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
 
 format:
-	$(ASTYLE)             \
-    --indent=spaces=4           \
-    --convert-tabs              \
-    --indent-preprocessor       \
-    --indent-switches           \
-    --style=allman              \
-    --max-code-length=120       \
-    --pad-paren                 \
-    --pad-oper                  \
-    --suffix=none               \
-    --formatted                 \
-    --keep-one-line-blocks      \
-    --align-pointer=name        \
-    --align-reference=type      \
-    $(filter-out CharacterSelect.cpp lib/KeyboardMappings.h AsmHacks.h,$(NON_GEN_SRCS) $(NON_GEN_HEADERS))
+	$(ASTYLE)             	    \
+	--indent=spaces=4           \
+	--convert-tabs              \
+	--indent-preprocessor       \
+	--indent-switches           \
+	--style=allman              \
+	--max-code-length=120       \
+	--pad-paren                 \
+	--pad-oper                  \
+	--suffix=none               \
+	--formatted                 \
+	--keep-one-line-blocks      \
+	--align-pointer=name        \
+	--align-reference=type      \
+$(filter-out CharacterSelect.cpp lib/KeyboardMappings.h AsmHacks.h,$(NON_GEN_SRCS) $(NON_GEN_HEADERS))
 
 count:
 	@wc -l $(NON_GEN_SRCS) $(NON_GEN_HEADERS) | sort -nr | head -n 10 && echo '    ...'
