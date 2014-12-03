@@ -12,11 +12,11 @@ struct Version : public SerializableSequence
     enum PartEnum { Major, Minor, Suffix };
 
     std::string code;
-    std::string commitId;
+    std::string revision;
     std::string buildTime;
 
-    Version ( const std::string& code, const std::string& commitId, const std::string& buildTime )
-        : code ( code ), commitId ( commitId ), buildTime ( buildTime ) {}
+    Version ( const std::string& code, const std::string& revision, const std::string& buildTime )
+        : code ( code ), revision ( revision ), buildTime ( buildTime ) {}
 
     std::string major() const { return get ( Major ); }
 
@@ -35,11 +35,11 @@ struct Version : public SerializableSequence
     void clear()
     {
         code.clear();
-        commitId.clear();
+        revision.clear();
         buildTime.clear();
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( Version, code, commitId, buildTime )
+    PROTOCOL_MESSAGE_BOILERPLATE ( Version, code, revision, buildTime )
 
 private:
 

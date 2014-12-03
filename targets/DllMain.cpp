@@ -1044,8 +1044,8 @@ struct DllMain
 
                     if ( options[Options::StrictVersion] >= 2 )
                     {
-                        local += " " + LocalVersion.commitId;
-                        remote += " " + RemoteVersion.commitId;
+                        local += " " + LocalVersion.revision;
+                        remote += " " + RemoteVersion.revision;
                     }
 
                     if ( options[Options::StrictVersion] >= 3 )

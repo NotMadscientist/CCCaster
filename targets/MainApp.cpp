@@ -268,11 +268,11 @@ struct MainApp
     {
         const Version RemoteVersion = versionConfig.version;
 
-        LOG ( "LocalVersion='%s'; commitId='%s'; buildTime='%s'",
-              LocalVersion, LocalVersion.commitId, LocalVersion.buildTime );
+        LOG ( "LocalVersion='%s'; revision='%s'; buildTime='%s'",
+              LocalVersion, LocalVersion.revision, LocalVersion.buildTime );
 
-        LOG ( "RemoteVersion='%s'; commitId='%s'; buildTime='%s'",
-              RemoteVersion, RemoteVersion.commitId, RemoteVersion.buildTime );
+        LOG ( "RemoteVersion='%s'; revision='%s'; buildTime='%s'",
+              RemoteVersion, RemoteVersion.revision, RemoteVersion.buildTime );
 
         LOG ( "VersionConfig: mode=%s; flags={ %s }", versionConfig.mode, versionConfig.mode.flagString() );
 
@@ -283,8 +283,8 @@ struct MainApp
 
             if ( options[Options::StrictVersion] >= 2 )
             {
-                local += " " + LocalVersion.commitId;
-                remote += " " + RemoteVersion.commitId;
+                local += " " + LocalVersion.revision;
+                remote += " " + RemoteVersion.revision;
             }
 
             if ( options[Options::StrictVersion] >= 3 )

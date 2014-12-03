@@ -213,20 +213,20 @@ trim:
 	sed --in-place 's/[[:space:]]\\+$$//' $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
 
 format:
-	$(ASTYLE)             	    \
-	--indent=spaces=4           \
-	--convert-tabs              \
-	--indent-preprocessor       \
-	--indent-switches           \
-	--style=allman              \
-	--max-code-length=120       \
-	--pad-paren                 \
-	--pad-oper                  \
-	--suffix=none               \
-	--formatted                 \
-	--keep-one-line-blocks      \
-	--align-pointer=name        \
-	--align-reference=type      \
+	$(ASTYLE)                   	\
+    --indent=spaces=4           	\
+    --convert-tabs              	\
+    --indent-preprocessor       	\
+    --indent-switches           	\
+    --style=allman              	\
+    --max-code-length=120       	\
+    --pad-paren                 	\
+    --pad-oper                  	\
+    --suffix=none               	\
+    --formatted                 	\
+    --keep-one-line-blocks      	\
+    --align-pointer=name        	\
+    --align-reference=type      	\
 $(filter-out CharacterSelect.cpp lib/KeyboardMappings.h AsmHacks.h,$(NON_GEN_SRCS) $(NON_GEN_HEADERS))
 
 count:

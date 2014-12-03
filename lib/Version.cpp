@@ -26,10 +26,10 @@ string Version::get ( PartEnum part ) const
 
 bool Version::isCustom() const
 {
-    if ( commitId.empty() )
+    if ( revision.empty() )
         return false;
 
-    return ( commitId.rfind ( "-custom" ) + 7 == commitId.size() );
+    return ( revision.rfind ( "-custom" ) + 7 == revision.size() );
 }
 
 bool Version::similar ( const Version& other, uint8_t level ) const
@@ -45,7 +45,7 @@ bool Version::similar ( const Version& other, uint8_t level ) const
             if ( isCustom() && other.isCustom() )
                 return ( buildTime == other.buildTime );
 
-            if ( commitId != other.commitId )
+            if ( revision != other.revision )
                 return false;
 
         case 2:
