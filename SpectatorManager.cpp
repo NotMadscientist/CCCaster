@@ -3,11 +3,12 @@
 #include "ProcessManager.h"
 #include "Logger.h"
 #include "Algorithms.h"
+#include "Constants.h"
 
 using namespace std;
 
 
-SpectatorManager::SpectatorManager ( const NetplayManager *netManPtr, const ProcessManager *procManPtr )
+SpectatorManager::SpectatorManager ( NetplayManager *netManPtr, const ProcessManager *procManPtr )
     : spectatorListPos ( spectatorList.end() )
     , netManPtr ( netManPtr )
     , procManPtr ( procManPtr )
@@ -79,15 +80,34 @@ void SpectatorManager::pushSpectator ( Socket *socketPtr )
 
     ASSERT ( newSocket.get() == socketPtr );
 
-    const auto it = spectatorList.insert ( spectatorList.end(), socketPtr );
+    // Add new spectators just AFTER the current spectator position.
+    // This way whenever a new spectator causes a decrease in the broadcast interval, later spectators
+    // will still get their next set of inputs late enough that they don't need to wait another interval.
+    //
+    // Example:
+    //
+    // Spectators: [2] 1        interval is 15/2 = 7, so #1 will get a broadcast in 7 frames
+    //
+    // Spectators: [2] 3 1      interval is 15/3 = 5, now #1 will get a broadcast in 10 frames
+    //
+    // Spectators: 2 [3] 1      interval is 15/3 = 5, so #1 will get a broadcast in 5 frames
+    //
+    // Spectators: 2 [3] 4 1    interval is 15/4 = 3, now #1 will get a broadcast in 6 frames
+    //
+    if ( spectatorList.empty() )
+        spectatorList.push_back ( socketPtr );
+    else
+        spectatorList.insert ( incremented ( spectatorListPos ), socketPtr );
 
     Spectator spectator;
     spectator.socket = newSocket;
-    spectator.it = it;
+    spectator.it = spectatorList.begin();
     spectator.pos.parts.frame = NUM_INPUTS - 1;
     spectator.pos.parts.index = netManPtr->getSpectateStartIndex();
 
     spectatorMap[socketPtr] = spectator;
+
+    netManPtr->preserveStartIndex = min ( netManPtr->preserveStartIndex, spectator.pos.parts.index );
 
     const uint8_t netplayState = netManPtr->getState().value;
     const bool isTraining = netManPtr->config.mode.isTraining();
@@ -117,6 +137,7 @@ void SpectatorManager::popSpectator ( Socket *socketPtr )
     if ( it == spectatorMap.end() )
         return;
 
+    // If the spectator being removed is at the current spectator position, we should increment it to the next one.
     if ( spectatorListPos == it->second.it )
         ++spectatorListPos;
 
@@ -133,57 +154,82 @@ void SpectatorManager::newRngState ( const RngState& rngState )
 void SpectatorManager::frameStepSpectators()
 {
     if ( spectatorMap.empty() )
+    {
+        spectatorListPos = spectatorList.end();
+
+        // Reset the preserve index
+        netManPtr->preserveStartIndex = currentMinIndex = UINT_MAX;
+        return;
+    }
+
+    // Number of times to broadcast per frame
+    const uint32_t multiplier = 1 + ( spectatorList.size() * 2 ) / ( NUM_INPUTS + 1 );
+
+    // Number of frames between each broadcast
+    const uint32_t interval = ( multiplier * NUM_INPUTS / 2 ) / spectatorList.size();
+
+    if ( ( *CC_WORLD_TIMER_ADDR ) % interval )
         return;
 
-    // const uint32_t interval = clamped ( ( NUM_INPUTS / spectatorList.size() / 2 ), 1, NUM_INPUTS );
-
-    // TODO fix this interval
-    if ( netManPtr->getFrame() % ( NUM_INPUTS / 2 ) )
-        return;
-
-    if ( spectatorListPos == spectatorList.end() )
-        spectatorListPos = spectatorList.begin();
-
-    auto it = spectatorMap.find ( *spectatorListPos );
-
-    ASSERT ( it != spectatorMap.end() );
-
-    Socket *socket = it->first;
-    Spectator& spectator = it->second;
-    const uint32_t oldIndex = spectator.pos.parts.index;
-
-    LOG ( "spectator.pos=[%s]", spectator.pos );
-
-    MsgPtr msgBothInputs = netManPtr->getBothInputs ( spectator.pos );
-
-    // Send inputs if available
-    if ( msgBothInputs )
-        socket->send ( msgBothInputs );
-
-    // Clear sent flags whenever the index changes
-    if ( spectator.pos.parts.index > oldIndex )
+    for ( uint32_t i = 0; i < multiplier; ++i )
     {
-        spectator.sentRngState = false;
-        spectator.sentRetryMenuIndex = false;
+        // Once we reach the end
+        if ( spectatorListPos == spectatorList.end() )
+        {
+            // Restart from the beginning
+            spectatorListPos = spectatorList.begin();
+
+            // Update the preserve index
+            netManPtr->preserveStartIndex = currentMinIndex;
+
+            // Reset the current min index
+            currentMinIndex = UINT_MAX;
+        }
+
+        const auto it = spectatorMap.find ( *spectatorListPos );
+
+        ASSERT ( it != spectatorMap.end() );
+
+        Socket *socket = it->first;
+        Spectator& spectator = it->second;
+        const uint32_t oldIndex = spectator.pos.parts.index;
+
+        LOG ( "socket=%08x; spectator.pos=[%s]", socket, spectator.pos );
+
+        MsgPtr msgBothInputs = netManPtr->getBothInputs ( spectator.pos );
+
+        // Send inputs if available
+        if ( msgBothInputs )
+            socket->send ( msgBothInputs );
+
+        // Clear sent flags whenever the index changes
+        if ( spectator.pos.parts.index > oldIndex )
+        {
+            spectator.sentRngState = false;
+            spectator.sentRetryMenuIndex = false;
+        }
+
+        MsgPtr msgRngState = netManPtr->getRngState ( oldIndex );
+
+        // Send RngState ONCE if available
+        if ( msgRngState && !spectator.sentRngState )
+        {
+            socket->send ( msgRngState );
+            spectator.sentRngState = true;
+        }
+
+        MsgPtr msgMenuIndex = netManPtr->getRetryMenuIndex ( oldIndex );
+
+        // Send retry menu index ONCE if available
+        if ( msgMenuIndex && !spectator.sentRetryMenuIndex )
+        {
+            socket->send ( msgMenuIndex );
+            spectator.sentRetryMenuIndex = true;
+        }
+
+        ++spectatorListPos;
+
+        // Update the current min index
+        currentMinIndex = min ( currentMinIndex, spectator.pos.parts.index );
     }
-
-    MsgPtr msgRngState = netManPtr->getRngState ( oldIndex );
-
-    // Send RngState ONCE if available
-    if ( msgRngState && !spectator.sentRngState )
-    {
-        socket->send ( msgRngState );
-        spectator.sentRngState = true;
-    }
-
-    MsgPtr msgMenuIndex = netManPtr->getRetryMenuIndex ( oldIndex );
-
-    // Send retry menu index ONCE if available
-    if ( msgMenuIndex && !spectator.sentRetryMenuIndex )
-    {
-        socket->send ( msgMenuIndex );
-        spectator.sentRetryMenuIndex = true;
-    }
-
-    ++spectatorListPos;
 }

@@ -43,7 +43,9 @@ class SpectatorManager
 
     std::list<Socket *>::iterator spectatorListPos;
 
-    const NetplayManager *netManPtr = 0;
+    uint32_t currentMinIndex = UINT_MAX;
+
+    NetplayManager *netManPtr = 0;
 
     const ProcessManager *procManPtr = 0;
 
@@ -54,7 +56,7 @@ public:
     uint64_t pendingSocketTimeout = DEFAULT_PENDING_TIMEOUT;
 
 
-    SpectatorManager ( const NetplayManager *netManPtr = 0, const ProcessManager *procManPtr = 0 );
+    SpectatorManager ( NetplayManager *netManPtr = 0, const ProcessManager *procManPtr = 0 );
 
 
     void pushPendingSocket ( Timer::Owner *owner, const SocketPtr& socket );

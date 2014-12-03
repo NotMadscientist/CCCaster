@@ -114,7 +114,7 @@ public:
     // Initial game state (spectate only)
     InitialGameState initial;
 
-    // Oldest index to preserve for broadcasting
+    // Preserve input/RngState/MenuIndex starting from this index
     uint32_t preserveStartIndex = UINT_MAX;
 
     // Indicate which player is the remote player
@@ -155,8 +155,11 @@ public:
     MsgPtr getInputs ( uint8_t player ) const;
     void setInputs ( uint8_t player, const PlayerInputs& playerInputs );
 
-    // Get / set batch inputs for the both players
+    // Get inputs both players. May return null if not enough inputs are ready for the given pos.
+    // Otherwise this increments the given pos by at most NUM_INPUTS if returning non-null.
     MsgPtr getBothInputs ( IndexedFrame& pos ) const;
+
+    // Set inputs for both players
     void setBothInputs ( const BothInputs& bothInputs );
 
     // True if remote input is ready for the current frame, otherwise the caller should wait for more input

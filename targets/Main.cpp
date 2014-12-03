@@ -252,6 +252,21 @@ int main ( int argc, char *argv[] )
         return 0;
     }
 
+    // Fork and re-run under wineconsole, needed for proper JLib support
+    if ( ProcessManager::isWine() && !opt[Options::NoFork] )
+    {
+        string cmd = "wineconsole " + argv0 + " --no-fork";
+
+        for ( int i = 0; i < argc; ++i )
+        {
+            cmd += " ";
+            cmd += argv[i];
+        }
+
+        PRINT ( "%s", cmd );
+        return system ( cmd.c_str() );
+    }
+
     // Setup signal and console handlers
     signal ( SIGABRT, signalHandler );
     signal ( SIGINT, signalHandler );
@@ -295,21 +310,6 @@ int main ( int argc, char *argv[] )
         return result;
     }
 #endif
-
-    // Fork and re-run under wineconsole, needed for proper JLib support
-    if ( ProcessManager::isWine() && !opt[Options::NoFork] )
-    {
-        string cmd = "wineconsole " + argv0 + " --no-fork";
-
-        for ( int i = 0; i < argc; ++i )
-        {
-            cmd += " ";
-            cmd += argv[i];
-        }
-
-        PRINT ( "%s", cmd );
-        return system ( cmd.c_str() );
-    }
 
     // Initialize config
     ui.initialize();

@@ -13,7 +13,7 @@
 #define LOG_LOCAL_TIME  ( 0x04 )    // Log the localtime timestamp per message
 #define LOG_FILE_LINE   ( 0x08 )    // Log file:line per message
 #define LOG_FUNC_NAME   ( 0x10 )    // Log the function name per message
-#define PID_IN_FILENAME ( 0x20 )    // Append the PID to the log filename
+#define PID_IN_FILENAME ( 0x20 )    // Add the PID to the log filename
 
 #define LOG_DEFAULT_OPTIONS ( LOG_VERSION | LOG_GM_TIME | LOG_FILE_LINE | LOG_FUNC_NAME )
 

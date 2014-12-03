@@ -456,31 +456,23 @@ void NetplayManager::setState ( NetplayState state )
         {
             spectateStartIndex = getIndex();
 
-            // TODO handle preserveIndex
+            const uint32_t newStartIndex = min ( preserveStartIndex, getIndex() );
+            const size_t offset = newStartIndex - startIndex;
 
-            // uint32_t newStartIndex = getIndex();
+            inputs[0].eraseIndexOlderThan ( offset );
+            inputs[1].eraseIndexOlderThan ( offset );
 
-            // ASSERT ( preserveIndex >= getIndex() );
+            if ( offset >= rngStates.size() )
+                rngStates.clear();
+            else
+                rngStates.erase ( rngStates.begin(), rngStates.begin() + offset );
 
-            // if ( preserveIndex != UINT_MAX )
-            //     newStartIndex = preserveIndex;
+            if ( offset >= retryMenuIndicies.size() )
+                retryMenuIndicies.clear();
+            else
+                retryMenuIndicies.erase ( retryMenuIndicies.begin(), retryMenuIndicies.begin() + offset );
 
-            // const size_t offset = newStartIndex - startIndex;
-
-            // inputs[0].eraseIndexOlderThan ( offset );
-            // inputs[1].eraseIndexOlderThan ( offset );
-
-            // if ( offset >= rngStates.size() )
-            //     rngStates.clear();
-            // else
-            //     rngStates.erase ( rngStates.begin(), rngStates.begin() + offset );
-
-            // if ( offset >= retryMenuIndicies.size() )
-            //     retryMenuIndicies.clear();
-            // else
-            //     retryMenuIndicies.erase ( retryMenuIndicies.begin(), retryMenuIndicies.begin() + offset );
-
-            // startIndex = newStartIndex;
+            startIndex = newStartIndex;
         }
 
         // Entering RetryMenu

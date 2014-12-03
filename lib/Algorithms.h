@@ -88,3 +88,12 @@ inline double getNegativeQuadraticScale ( size_t i, size_t count )
 {
     return 1.0 - std::pow ( ( double ( i ) / count ) - 1, 2.0 );
 }
+
+
+// Return the incremented value of x
+template<typename T>
+inline T incremented ( T x )
+{
+    ++x;
+    return x;
+}

@@ -483,16 +483,27 @@ struct MainApp
         // Disable keyboard hooks for the UI
         KeyboardManager::get().unhook();
 
+        // The dummy auto-confirms any settings
+        if ( options[Options::Dummy] )
+        {
+            isWaitingForUser = true;
+            userConfirmed = true;
+            gotUserConfirmation();
+            return;
+        }
+
         uiRecvSocket = UdpSocket::bind ( this, 0 );
         uiSendSocket = UdpSocket::bind ( 0, { "127.0.0.1", uiRecvSocket->address.port } );
         isWaitingForUser = true;
 
+        // Unblock the thread waiting for user confirmation
         LOCK ( uiMutex );
         uiCondVar.signal();
     }
 
     void waitForUserConfirmation()
     {
+        // This runs a different thread waiting for user confirmation
         LOCK ( uiMutex );
         uiCondVar.wait ( uiMutex );
 
@@ -516,6 +527,7 @@ struct MainApp
                 break;
         }
 
+        // Signal the main thread via a UDP packet
         uiSendSocket->send ( NullMsg );
     }
 
@@ -683,7 +695,11 @@ struct MainApp
             stopTimer->start ( DEFAULT_PENDING_TIMEOUT * 2 );
 
             syncLog.sessionId = ( clientMode.isSpectate() ? spectateConfig.sessionId : netplayConfig.sessionId );
-            syncLog.initialize ( appDir + SYNC_LOG_FILE, LOG_VERSION );
+
+            if ( options[Options::PidLog] )
+                syncLog.initialize ( appDir + SYNC_LOG_FILE, LOG_VERSION | PID_IN_FILENAME );
+            else
+                syncLog.initialize ( appDir + SYNC_LOG_FILE, LOG_VERSION );
             return;
         }
 
