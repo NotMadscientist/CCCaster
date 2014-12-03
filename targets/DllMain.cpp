@@ -449,9 +449,13 @@ struct DllMain
                     }
                 }
 
-                // Only toggle overlay if both players are "done"; ie at the first option
-                if ( toggleOverlay && !playerPositions[0] && !playerPositions[1] )
+                // Only toggle overlay if both players are "done"; ie at the first option; or have no controller
+                if ( toggleOverlay
+                        && ( !playerControllers[0] || !playerPositions[0] )
+                        && ( !playerControllers[1] || !playerPositions[1] ) )
+                {
                     DllHacks::toggleOverlay();
+                }
 
                 if ( DllHacks::isOverlayEnabled() )             // Overlay UI input
                 {
