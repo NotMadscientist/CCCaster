@@ -28,8 +28,6 @@ using namespace std;
 
 #define VK_TOGGLE_OVERLAY           ( VK_F4 )
 
-#define VK_TOGGLE_RANDOMIZE         ( VK_F12 )
-
 
 #define LOG_SYNC(FORMAT, ...)                                                                                   \
     LOG_TO ( syncLog, "%s [%u] %s [%s] " FORMAT,                                                                \
@@ -81,9 +79,9 @@ struct DllMain
     // Indicates if we should sync the game RngState on this frame
     bool shouldSyncRngState = false;
 
-    // Frame to stop on, when re-running the game due to rollback.
-    // Also used as a flag to indicate re-run mode, 0:0 means not re-running.
-    IndexedFrame rerunStopFrame = {{ 0, 0 }};
+    // Frame to stop on, when fast-forwarding the game.
+    // Used as a flag to indicate fast-forward mode, 0:0 means not fast-forwarding.
+    IndexedFrame fastFwdStopFrame = {{ 0, 0 }};
 
     // Initial connect timer
     TimerPtr initialTimer;
@@ -111,6 +109,12 @@ struct DllMain
 
     // If the game is over now (after checking P1 and P2 health values)
     bool isGameOver = false;
+
+    // If the delay and/or rollback should be changed
+    bool shouldChangeDelayRollback = false;
+
+    // Latest ChangeConfig for changing delay/rollback
+    ChangeConfig changeConfig;
 
 #ifndef RELEASE
     // Local and remote SyncHashes
@@ -458,6 +462,43 @@ struct DllMain
                 {
                     if ( playerControllers[localPlayer - 1] )
                         localInputs[0] = getInput ( playerControllers[localPlayer - 1] );
+
+                    if ( GetKeyState ( VK_CONTROL ) & 0x80 )
+                    {
+                        for ( uint8_t i = 0; i < 10; ++i )
+                        {
+                            // Offset by -1, so Ctrl+0 sets delay 10
+                            const uint8_t delay = 1 + ( i + 9 ) % 10;
+
+                            if ( delay == netMan.getDelay() )
+                                continue;
+
+                            if ( GetKeyState ( '0' + i ) & 0x80 )
+                            {
+                                shouldChangeDelayRollback = true;
+                                changeConfig.indexedFrame = netMan.getIndexedFrame();
+                                changeConfig.delay = delay;
+                                dataSocket->send ( changeConfig );
+                                break;
+                            }
+                        }
+                    }
+
+#ifndef RELEASE
+                    // Test random delay setting
+                    static bool randomize = false;
+
+                    if ( KeyboardState::isPressed ( VK_F11 ) )
+                        randomize = !randomize;
+
+                    if ( randomize && rand() % 5 == 0 )
+                    {
+                        shouldChangeDelayRollback = true;
+                        changeConfig.indexedFrame = netMan.getIndexedFrame();
+                        changeConfig.delay = 1 + rand() % 9;
+                        dataSocket->send ( changeConfig );
+                    }
+#endif
                 }
                 else if ( clientMode.isLocal() )                // Local input
                 {
@@ -479,7 +520,7 @@ struct DllMain
                 // Test random input
                 static bool randomize = false;
 
-                if ( KeyboardState::isPressed ( VK_TOGGLE_RANDOMIZE ) )
+                if ( KeyboardState::isPressed ( VK_F12 ) )
                     randomize = !randomize;
 
                 if ( randomize )
@@ -622,7 +663,7 @@ struct DllMain
         //     LOG_SYNC ( "Rollback: %s -> %s", netMan.getIndexedFrame(), netMan.getLastChangedFrame() );
 
         //     // Indicate we're re-running (save the frame first)
-        //     rerunStopFrame = netMan.getIndexedFrame();
+        //     fastFwdStopFrame = netMan.getIndexedFrame();
 
         //     // Reset the game state (this resets game state and netMan state)
         //     procMan.loadState ( netMan.getLastChangedFrame(), netMan );
@@ -651,6 +692,18 @@ struct DllMain
 
             if ( msgRngState )
                 procMan.setRngState ( msgRngState->getAs<RngState>() );
+        }
+
+        // Update delay and/or rollback if necessary
+        if ( shouldChangeDelayRollback )
+        {
+            shouldChangeDelayRollback = false;
+
+            if ( changeConfig.delay != 0xFF )
+            {
+                netMan.setDelay ( changeConfig.delay );
+                // netMan.setRollback ( changeConfig.rollback );
+            }
         }
 
 #ifndef RELEASE
@@ -698,12 +751,12 @@ struct DllMain
 
     void frameStepRerun()
     {
-        // Stop re-running once we're reached the frame we want
-        if ( netMan.getIndexedFrame().value >= rerunStopFrame.value )
-            rerunStopFrame.value = 0;
+        // Stop fast-forwarding once we're reached the frame we want
+        if ( netMan.getIndexedFrame().value >= fastFwdStopFrame.value )
+            fastFwdStopFrame.value = 0;
 
-        // Disable FPS limit while re-running
-        if ( rerunStopFrame.value )
+        // Disable FPS limit while fast-forwarding
+        if ( fastFwdStopFrame.value )
             *CC_SKIP_FRAMES_ADDR = 1;
     }
 
@@ -717,7 +770,7 @@ struct DllMain
         ChangeMonitor::get().check();
 
         // Perform the frame step
-        if ( rerunStopFrame.value )
+        if ( fastFwdStopFrame.value )
             frameStepRerun();
         else
             frameStepNormal();
@@ -1038,6 +1091,16 @@ struct DllMain
                     case MsgType::MenuIndex:
                         if ( netMan.getState() == NetplayState::RetryMenu )
                             netMan.setRemoteRetryMenuIndex ( msg->getAs<MenuIndex>().menuIndex );
+                        return;
+
+                    case MsgType::ChangeConfig:
+                        if ( ( msg->getAs<ChangeConfig>().indexedFrame.value > changeConfig.indexedFrame.value )
+                                || ( msg->getAs<ChangeConfig>().indexedFrame.value == changeConfig.indexedFrame.value
+                                     && clientMode.isClient() ) )
+                        {
+                            shouldChangeDelayRollback = true;
+                            changeConfig = msg->getAs<ChangeConfig>();
+                        }
                         return;
 
                     default:

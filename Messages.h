@@ -309,15 +309,29 @@ struct MenuIndex : public SerializableSequence
 
     MenuIndex ( uint32_t index, int8_t menuIndex ) : index ( index ), menuIndex ( menuIndex ) {}
 
+    std::string str() const override { return format ( "MenuIndex[%u,%d]", index, menuIndex ); }
+
     PROTOCOL_MESSAGE_BOILERPLATE ( MenuIndex, index, menuIndex );
 };
 
 
 struct ChangeConfig : public SerializableSequence
 {
+    IndexedFrame indexedFrame = {{ 0, 0 }};
+
     uint8_t delay = 0xFF, rollback = 0;
 
-    ChangeConfig ( uint8_t delay, uint8_t rollback = 0 ) : delay ( delay ), rollback ( rollback ) {}
+    uint8_t getOffset() const
+    {
+        ASSERT ( delay != 0xFF );
+
+        if ( delay < rollback )
+            return 0;
+        else
+            return delay - rollback;
+    }
+
+    std::string str() const override { return format ( "ChangeConfig[%s,%u,%u]", indexedFrame, delay, rollback ); }
 
     PROTOCOL_MESSAGE_BOILERPLATE ( ChangeConfig, delay, rollback );
 };

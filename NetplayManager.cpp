@@ -75,7 +75,7 @@ uint16_t NetplayManager::getAutoCharaSelectInput ( uint8_t player )
 
 uint16_t NetplayManager::getCharaSelectInput ( uint8_t player )
 {
-    uint16_t input = getDelayedInput ( player );
+    uint16_t input = getRawInput ( player );
 
     // Prevent exiting character select
     if ( ( * ( player == 1 ? CC_P1_SELECTOR_MODE_ADDR : CC_P2_SELECTOR_MODE_ADDR ) ) == CC_SELECT_CHARA )
@@ -95,7 +95,7 @@ uint16_t NetplayManager::getCharaSelectInput ( uint8_t player )
 uint16_t NetplayManager::getSkippableInput ( uint8_t player )
 {
     // Only allow the A button here
-    return ( getDelayedInput ( player ) & COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM ) );
+    return ( getRawInput ( player ) & COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM ) );
 }
 
 uint16_t NetplayManager::getInGameInput ( uint8_t player )
@@ -104,7 +104,7 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player )
     if ( getFrame() < 10 )
         return 0;
 
-    uint16_t input = getOffsetInput ( player );
+    uint16_t input = getRawInput ( player );
 
     // Disable pausing in netplay versus mode
     if ( ( config.mode.isNetplay() || config.mode.isSpectateNetplay() ) && config.mode.isVersus() )
@@ -204,7 +204,7 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player )
     if ( targetMenuState != -1 && targetMenuIndex != -1 )
         return getMenuNavInput();
 
-    uint16_t input = getDelayedInput ( player );
+    uint16_t input = getRawInput ( player );
 
     if ( config.mode.isSpectateNetplay() )
         input = ( getFrame() % 2 ? 0 : COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM ) );
@@ -330,28 +330,6 @@ void NetplayManager::setRetryMenuIndex ( uint32_t index, int8_t menuIndex )
     retryMenuIndicies[index - startIndex] = menuIndex;
 }
 
-uint16_t NetplayManager::getOffsetInput ( uint8_t player, uint32_t frame ) const
-{
-    if ( frame < config.getOffset() )
-        return 0;
-
-    ASSERT ( player == 1 || player == 2 );
-    ASSERT ( getIndex() >= startIndex );
-
-    return inputs[player - 1].get ( getIndex() - startIndex, frame - config.getOffset() );
-}
-
-uint16_t NetplayManager::getDelayedInput ( uint8_t player, uint32_t frame ) const
-{
-    if ( frame < config.delay )
-        return 0;
-
-    ASSERT ( player == 1 || player == 2 );
-    ASSERT ( getIndex() >= startIndex );
-
-    return inputs[player - 1].get ( getIndex() - startIndex, frame - config.delay );
-}
-
 uint16_t NetplayManager::getMenuNavInput()
 {
     if ( targetMenuState == -1 || targetMenuIndex == -1 )
@@ -400,15 +378,11 @@ bool NetplayManager::hasUpDownInLast2f() const
         if ( i > getFrame() )
             break;
 
-        const uint16_t p1 = 0xF & ( state.value == NetplayState::InGame
-                                    ? getOffsetInput ( 1, getFrame() - i )
-                                    : getDelayedInput ( 1, getFrame() - i ) );
+        const uint16_t p1dir = 0xF & getRawInput ( 1, getFrame() - i );
 
-        const uint16_t p2 = 0xF & ( state.value == NetplayState::InGame
-                                    ? getOffsetInput ( 2, getFrame() - i )
-                                    : getDelayedInput ( 2, getFrame() - i ) );
+        const uint16_t p2dir = 0xF & getRawInput ( 2, getFrame() - i );
 
-        if ( ( p1 == 2 ) || ( p1 == 8 ) || ( p2 == 2 ) || ( p2 == 8 ) )
+        if ( ( p1dir == 2 ) || ( p1dir == 8 ) || ( p2dir == 2 ) || ( p2dir == 8 ) )
             return true;
     }
 
@@ -424,9 +398,7 @@ bool NetplayManager::hasButtonInPrev2f ( uint8_t player, uint16_t button ) const
         if ( i > getFrame() )
             break;
 
-        const uint16_t buttons = ( state.value == NetplayState::InGame
-                                   ? getOffsetInput ( player, getFrame() - i )
-                                   : getDelayedInput ( player, getFrame() - i ) ) >> 4;
+        const uint16_t buttons = getRawInput ( player, getFrame() - i ) >> 4;
 
         if ( buttons & button )
             return true;
@@ -579,28 +551,12 @@ uint16_t NetplayManager::getInput ( uint8_t player )
     }
 }
 
-uint16_t NetplayManager::getRawInput ( uint8_t player ) const
+uint16_t NetplayManager::getRawInput ( uint8_t player, uint32_t frame ) const
 {
     ASSERT ( player == 1 || player == 2 );
+    ASSERT ( getIndex() >= startIndex );
 
-    switch ( state.value )
-    {
-        case NetplayState::PreInitial:
-        case NetplayState::Initial:
-        case NetplayState::AutoCharaSelect:
-        case NetplayState::Loading:
-        case NetplayState::RetryMenu:
-        case NetplayState::Skippable:
-        case NetplayState::CharaSelect:
-            return getDelayedInput ( player );
-
-        case NetplayState::InGame:
-            return getOffsetInput ( player );
-
-        default:
-            ASSERT_IMPOSSIBLE;
-            return 0;
-    }
+    return inputs[player - 1].get ( getIndex() - startIndex, frame );
 }
 
 void NetplayManager::setInput ( uint8_t player, uint16_t input )
@@ -608,7 +564,12 @@ void NetplayManager::setInput ( uint8_t player, uint16_t input )
     ASSERT ( player == 1 || player == 2 );
     ASSERT ( getIndex() >= startIndex );
 
-    inputs[player - 1].set ( getIndex() - startIndex, getFrame(), input );
+    // TODO for rollback
+    // if ( state == NetplayState::InGame )
+    //     inputs[player - 1].set ( getIndex() - startIndex, getFrame() + config.getOffset(), input );
+    // else
+
+    inputs[player - 1].set ( getIndex() - startIndex, getFrame() + config.delay, input );
 }
 
 MsgPtr NetplayManager::getInputs ( uint8_t player ) const
@@ -646,8 +607,12 @@ MsgPtr NetplayManager::getBothInputs ( IndexedFrame& pos ) const
 
     ASSERT ( orig.parts.index >= startIndex );
 
-    const uint32_t commonEndFrame = min ( inputs[0].getEndFrame ( orig.parts.index - startIndex ),
-                                          inputs[1].getEndFrame ( orig.parts.index - startIndex ) );
+    uint32_t commonEndFrame = min ( inputs[0].getEndFrame ( orig.parts.index - startIndex ),
+                                    inputs[1].getEndFrame ( orig.parts.index - startIndex ) );
+
+    // Add a small buffer to the input end frame to allow for changing delay
+    if ( commonEndFrame >= config.delay )
+        commonEndFrame -= config.delay;
 
     if ( orig.parts.index == getIndex() )
     {
@@ -751,13 +716,10 @@ bool NetplayManager::isRemoteInputReady() const
 
     ASSERT ( inputs[remotePlayer - 1].getEndFrame() >= 1 );
 
-    if ( ( inputs[remotePlayer - 1].getEndFrame() - 1 + config.delay ) < getFrame() )
+    if ( ( inputs[remotePlayer - 1].getEndFrame() - 1 ) < getFrame() )
     {
-        LOG ( "[%s] remoteFrame = %u + %u delay = %u < localFrame=%u",
-              indexedFrame,
-              inputs[remotePlayer - 1].getEndFrame() - 1, config.delay,
-              inputs[remotePlayer - 1].getEndFrame() - 1 + config.delay,
-              getFrame() );
+        LOG ( "[%s] remoteFrame = %u < localFrame=%u",
+              indexedFrame, inputs[remotePlayer - 1].getEndFrame() - 1, getFrame() );
 
         return false;
     }

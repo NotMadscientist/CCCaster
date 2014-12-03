@@ -90,23 +90,25 @@ public:
         if ( index >= inputs.size() )
             inputs.resize ( index + 1 );
 
+        const T last = ( inputs[index].empty() ? 0 : inputs[index].back() );
+
         if ( frame + n > inputs[index].size() )
-            inputs[index].resize ( frame + n, 0 );
+            inputs[index].resize ( frame + n, last );
 
-        if ( fillFakeInputs )
-        {
-            if ( index >= real.size() )
-                real.resize ( index + 1 );
+        // if ( fillFakeInputs )
+        // {
+        //     if ( index >= real.size() )
+        //         real.resize ( index + 1 );
 
-            if ( frame + n > real[index].size() )
-                real[index].resize ( frame + n, false );
+        //     if ( frame + n > real[index].size() )
+        //         real[index].resize ( frame + n, false );
 
-            if ( isReal )
-            {
-                std::fill ( real[index].begin() + frame,
-                            real[index].begin() + frame + n, true );
-            }
-        }
+        //     if ( isReal )
+        //     {
+        //         std::fill ( real[index].begin() + frame,
+        //                     real[index].begin() + frame + n, true );
+        //     }
+        // }
     }
 
     void clear()

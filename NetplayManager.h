@@ -99,14 +99,6 @@ class NetplayManager
     uint16_t getInGameInput ( uint8_t player );
     uint16_t getRetryMenuInput ( uint8_t player );
 
-    // Get the input for the current frame taking into account delay and rollback
-    uint16_t getOffsetInput ( uint8_t player ) const { return getOffsetInput ( player, getFrame() ); }
-    uint16_t getOffsetInput ( uint8_t player, uint32_t frame ) const;
-
-    // Get the delayed input for the given frame
-    uint16_t getDelayedInput ( uint8_t player ) const { return getDelayedInput ( player, getFrame() ); }
-    uint16_t getDelayedInput ( uint8_t player, uint32_t frame ) const;
-
     // Get the input needed to navigate the menu
     uint16_t getMenuNavInput();
 
@@ -155,7 +147,8 @@ public:
 
     // Get / set the input for the current frame given the player
     uint16_t getInput ( uint8_t player );
-    uint16_t getRawInput ( uint8_t player ) const;
+    uint16_t getRawInput ( uint8_t player ) const { return getRawInput ( player, getFrame() ); }
+    uint16_t getRawInput ( uint8_t player, uint32_t frame ) const;
     void setInput ( uint8_t player, uint16_t input );
 
     // Get / set batch inputs for the given player
@@ -182,6 +175,17 @@ public:
     void setRemoteRetryMenuIndex ( int8_t menuIndex );
     MsgPtr getRetryMenuIndex ( uint32_t index ) const;
     void setRetryMenuIndex ( uint32_t index, int8_t menuIndex );
+
+    // Get / set input delay frames
+    uint8_t getDelay() const { return config.delay; }
+    void setDelay ( uint8_t delay ) { config.delay = delay; }
+
+    // // Get / set input rollback frames
+    // uint8_t getRollback() const { return config.rollback; }
+    // void setRollback ( uint8_t rollback ) { config.rollback = rollback; }
+
+    // Get input offset frames
+    uint8_t getOffset() const { return config.getOffset(); }
 
     friend class ProcessManager;
 };

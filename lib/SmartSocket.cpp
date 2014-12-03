@@ -283,19 +283,8 @@ void SmartSocket::disconnectEvent ( Socket *socket )
 
         LOG_SMART_SOCKET ( this, "vpsSocket disconnected" );
 
-        // We can ignore this disconnect and still mostly function if this is a server socket or if already connected
-        if ( isServer() || isConnected() )
-        {
-            vpsSocket.reset();
-            return;
-        }
-
-        Socket::Owner *const owner = this->owner;
-
-        disconnect();
-
-        if ( owner )
-            owner->disconnectEvent ( this );
+        // We can ignore this disconnect and still mostly function properly
+        vpsSocket.reset();
     }
     else
     {

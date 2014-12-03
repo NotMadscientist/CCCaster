@@ -4,6 +4,7 @@ v2.1:
 - In-game button config with player selection:
   Toggle with F4 or start button on any controller with start mapped.
   Can move controllers left or right to switch players.
+- Can change delay in-game by pressing Ctrl+Number on the keyboard.
 - Linux / Wine support with some features disabled:
   No in-game button config unless someone can figure out how to hook DirectX9 under Wine.
   Can't save replays because MBAA.exe crashes when saving replays even when running by itself.

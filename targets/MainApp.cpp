@@ -619,20 +619,20 @@ struct MainApp
             case MsgType::BothInputs:
             {
                 static IndexedFrame last = {{ 0, 0 }};
+
                 const BothInputs& both = msg->getAs<BothInputs>();
-                const uint32_t offset = clamped ( spectateConfig.delay - ( int ) spectateConfig.rollback, 0, 255 );
 
                 if ( both.getIndex() > last.parts.index )
                 {
-                    for ( uint32_t i = 0; i < both.getStartFrame() + offset; ++i )
+                    for ( uint32_t i = 0; i < both.getStartFrame(); ++i )
                         LOG_TO ( syncLog, "Dummy [%u:%u] Inputs: %04x %04x", both.getIndex(), i, 0, 0 );
                 }
 
                 for ( uint32_t i = 0; i < both.size(); ++i )
                 {
-                    const IndexedFrame current = {{ i + both.getStartFrame() + offset, both.getIndex() }};
+                    const IndexedFrame current = {{ i + both.getStartFrame(), both.getIndex() }};
 
-                    if ( current.value <= last.value + offset )
+                    if ( current.value <= last.value )
                         continue;
 
                     LOG_TO ( syncLog, "Dummy [%s] Inputs: %04x %04x", current, both.inputs[0][i], both.inputs[1][i] );
