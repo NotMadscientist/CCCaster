@@ -623,7 +623,8 @@ void MainUi::settings()
                 break;
 
             case 5:
-                ui->pushInFront ( new ConsoleUi::TextBox ( format ( "%s %s\n\nBuilt on %s\n\nPress any key to go back",
+                ui->pushInFront ( new ConsoleUi::TextBox ( format ( "%s\n\nRevision %s\n\nBuilt on %s\n\n"
+                                  "Created by Madscientist\n\nPress any key to go back",
                                   uiTitle, LocalVersion.commitId, LocalVersion.buildTime ) ),
                 { 0, 0 }, true ); // Don't expand but DO clear
                 system ( "@pause > nul" );
