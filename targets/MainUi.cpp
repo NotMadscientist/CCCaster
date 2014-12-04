@@ -614,6 +614,12 @@ void MainUi::settings()
                     if ( ui->top()->resultInt < 0 )
                         break;
 
+                    if ( ui->top()->resultInt == 0 )
+                    {
+                        ui->pushBelow ( new ConsoleUi::TextBox ( "Win count can't be zero!" ) );
+                        continue;
+                    }
+
                     if ( ui->top()->resultInt > 5 )
                     {
                         ui->pushBelow ( new ConsoleUi::TextBox ( "Win count can't be greater than 5!" ) );
@@ -768,7 +774,7 @@ void MainUi::main ( RunFuncPtr run )
         initialConfig.localName = config.getString ( "displayName" );
         initialConfig.winCount = config.getInteger ( "versusWinCount" );
 
-        if ( address.empty() )
+        if ( address.empty() && config.getInteger ( "lastUsedPort" ) > 0 )
         {
             address.port = config.getInteger ( "lastUsedPort" );
             address.invalidate();

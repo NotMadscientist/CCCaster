@@ -69,7 +69,7 @@ struct IpAddrPort : public SerializableSequence
     std::string str() const override
     {
         if ( empty() )
-            return "(NullAddress)";
+            return "";
         std::stringstream ss;
         ss << addr << ':' << port;
         return ss.str();
@@ -78,7 +78,7 @@ struct IpAddrPort : public SerializableSequence
     const char *c_str() const
     {
         if ( empty() )
-            return "(NullAddress)";
+            return "";
         static char buffer[256];
         std::snprintf ( buffer, sizeof ( buffer ), "%s:%u", addr.c_str(), port );
         return buffer;

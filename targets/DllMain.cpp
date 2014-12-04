@@ -1339,6 +1339,10 @@ struct DllMain
 
                 procMan.ipcSend ( serverCtrlSocket->address );
 
+                *CC_DAMAGE_LEVEL_ADDR = 2;
+                *CC_TIMER_SPEED_ADDR = 2;
+                *CC_WIN_COUNT_VS_ADDR = ( uint32_t ) ( netMan.config.winCount ? netMan.config.winCount : 2 );
+
                 // Wait for final InitialGameState message before going to NetplayState::Initial
                 break;
 
@@ -1418,7 +1422,7 @@ struct DllMain
 
                 *CC_DAMAGE_LEVEL_ADDR = 2;
                 *CC_TIMER_SPEED_ADDR = 2;
-                *CC_WIN_COUNT_VS_ADDR = ( uint32_t ) netMan.config.winCount;
+                *CC_WIN_COUNT_VS_ADDR = ( uint32_t ) ( netMan.config.winCount ? netMan.config.winCount : 2 );
 
                 // *CC_WIN_COUNT_VS_ADDR = 1;
                 // *CC_DAMAGE_LEVEL_ADDR = 4;
