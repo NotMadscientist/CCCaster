@@ -663,7 +663,7 @@ struct DllMain
             if ( clientMode.isSpectate() )
             {
                 // Stop the timer if we're ready
-                if ( ready )
+                if ( ready || isGameOver )
                 {
                     specInputsTimer.reset();
                     break;
@@ -1214,6 +1214,11 @@ struct DllMain
 
                     case MsgType::MenuIndex:
                         netMan.setRetryMenuIndex ( msg->getAs<MenuIndex>().index, msg->getAs<MenuIndex>().menuIndex );
+                        return;
+
+                    case MsgType::ErrorMessage:
+                        if ( isGameOver )
+                            delayedStop ( msg->getAs<ErrorMessage>().error );
                         return;
 
                     default:

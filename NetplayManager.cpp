@@ -97,6 +97,9 @@ uint16_t NetplayManager::getCharaSelectInput ( uint8_t player )
 
 uint16_t NetplayManager::getSkippableInput ( uint8_t player )
 {
+    if ( config.mode.isSpectate() )
+        RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
+
     // Only allow the A button here
     return ( getRawInput ( player ) & COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM ) );
 }
@@ -249,6 +252,8 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player )
             targetMenuIndex = msgMenuIndex->getAs<MenuIndex>().menuIndex;
             return 0;
         }
+
+        RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
     }
     else if ( config.mode.isNetplay() )
     {

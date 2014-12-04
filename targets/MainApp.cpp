@@ -717,7 +717,8 @@ struct MainApp
         }
 
         ui.display ( format ( "Starting %s mode...", clientMode.isTraining() ? "training" : "versus" ),
-                     !clientMode.isClient() ); // Don't replace last message if client
+                     ! ( clientMode.isClient() || clientMode.isSpectate() ) );
+        // Don't replace last message if not client or spectator
 
         // Start game (and disconnect sockets) after a small delay since the final configs are still in flight
         startTimer.reset ( new Timer ( this ) );
@@ -838,6 +839,7 @@ struct MainApp
             if ( socket == ctrlSocket.get() && clientMode.isSpectate() )
             {
                 forwardMsgQueue();
+                procMan.ipcSend ( new ErrorMessage ( "Disconnected!" ) );
                 return;
             }
 
@@ -875,7 +877,7 @@ struct MainApp
 
         stopTimer.reset();
 
-        if ( msg->getMsgType() == MsgType::IpAddrPort && socket == ctrlSocket.get() )
+        if ( msg->getMsgType() == MsgType::IpAddrPort && socket == ctrlSocket.get() && clientMode.isSpectate() )
         {
             this->address = msg->getAs<IpAddrPort>();
             ctrlSocket = SmartSocket::connectTCP ( this, this->address, options[Options::Tunnel] );
@@ -936,9 +938,9 @@ struct MainApp
             }
         }
 
-        if ( clientMode.isHost() )
+        if ( clientMode.isHost() && msg->getMsgType() == MsgType::VersionConfig )
         {
-            if ( msg->getMsgType() == MsgType::VersionConfig && msg->getAs<VersionConfig>().mode.isSpectate() )
+            if ( msg->getAs<VersionConfig>().mode.isSpectate() )
                 socket->send ( new ErrorMessage ( "Not in a game yet, cannot spectate!" ) );
             else
                 socket->send ( new ErrorMessage ( "Another client is currently connecting!" ) );

@@ -330,7 +330,12 @@ void MainUi::controls()
             if ( controller.isJoystick() )
                 options.push_back ( "Set joystick deadzone" );
 
-            ui->pushInFront ( new ConsoleUi::Menu ( controller.getName(), options, "Back" ) );
+
+            ui->pushInFront ( new ConsoleUi::TextBox (
+                                  controller.getName() + " mappings\n"
+                                  "Press Left/Right/Delete to delete a key\n"
+                                  "Press Escape to cancel mapping\n" ) );
+            ui->pushBelow ( new ConsoleUi::Menu ( options, "Back" ) );
             ui->top<ConsoleUi::Menu>()->setPosition ( pos );
             ui->top<ConsoleUi::Menu>()->setDelete ( 2 );
 
@@ -464,12 +469,10 @@ void MainUi::controls()
             ui->pop();
 
             // Continue mapping
-            if ( mappedKey )
+            if ( mappedKey && pos + 1 < ( int ) gameInputBits.size() )
             {
                 ++pos;
-
-                if ( pos < ( int ) gameInputBits.size() )
-                    _ungetch ( RETURN_KEY );
+                _ungetch ( RETURN_KEY );
             }
         }
     }
