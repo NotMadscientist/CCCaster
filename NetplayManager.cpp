@@ -584,9 +584,12 @@ void NetplayManager::setInput ( uint8_t player, uint16_t input )
 
 MsgPtr NetplayManager::getInputs ( uint8_t player ) const
 {
-    PlayerInputs *playerInputs = new PlayerInputs ( indexedFrame );
-
     ASSERT ( player == 1 || player == 2 );
+    ASSERT ( getIndex() >= startIndex );
+    ASSERT ( inputs[player - 1].getEndFrame ( getIndex() - startIndex ) >= 1 );
+
+    PlayerInputs *playerInputs = new PlayerInputs ( { inputs[player - 1].getEndFrame() - 1, getIndex() } );
+
     ASSERT ( playerInputs->getIndex() >= startIndex );
 
     inputs[player - 1].get ( playerInputs->getIndex() - startIndex, playerInputs->getStartFrame(),
