@@ -14,6 +14,9 @@ using namespace std;
 // Prevent saving replays on Wine because MBAA crashes even without us.
 #define MAX_RETRY_MENU_INDEX ( config.mode.isWine() ? 1 : 2 )
 
+// Extra number to add to preserveStartIndex, this is a safety buffer for chained spectators.
+#define PRESERVE_START_INDEX_BUFFER ( 5 )
+
 
 #define RETURN_MASH_INPUT(DIRECTION, BUTTONS)                       \
     do {                                                            \
@@ -422,6 +425,17 @@ void NetplayManager::updateFrame()
     indexedFrame.parts.frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime;
 }
 
+uint32_t NetplayManager::getBufferedPreserveStartIndex() const
+{
+    if ( preserveStartIndex == UINT_MAX )
+        return UINT_MAX;
+
+    if ( preserveStartIndex <= PRESERVE_START_INDEX_BUFFER )
+        return 0;
+
+    return ( preserveStartIndex - PRESERVE_START_INDEX_BUFFER );
+}
+
 void NetplayManager::setState ( NetplayState state )
 {
     ASSERT ( this->state != state );
@@ -456,23 +470,27 @@ void NetplayManager::setState ( NetplayState state )
         {
             spectateStartIndex = getIndex();
 
-            const uint32_t newStartIndex = min ( preserveStartIndex, getIndex() );
-            const size_t offset = newStartIndex - startIndex;
+            const uint32_t newStartIndex = min ( getBufferedPreserveStartIndex(), getIndex() );
 
-            inputs[0].eraseIndexOlderThan ( offset );
-            inputs[1].eraseIndexOlderThan ( offset );
+            if ( newStartIndex > startIndex )
+            {
+                const size_t offset = newStartIndex - startIndex;
 
-            if ( offset >= rngStates.size() )
-                rngStates.clear();
-            else
-                rngStates.erase ( rngStates.begin(), rngStates.begin() + offset );
+                inputs[0].eraseIndexOlderThan ( offset );
+                inputs[1].eraseIndexOlderThan ( offset );
 
-            if ( offset >= retryMenuIndicies.size() )
-                retryMenuIndicies.clear();
-            else
-                retryMenuIndicies.erase ( retryMenuIndicies.begin(), retryMenuIndicies.begin() + offset );
+                if ( offset >= rngStates.size() )
+                    rngStates.clear();
+                else
+                    rngStates.erase ( rngStates.begin(), rngStates.begin() + offset );
 
-            startIndex = newStartIndex;
+                if ( offset >= retryMenuIndicies.size() )
+                    retryMenuIndicies.clear();
+                else
+                    retryMenuIndicies.erase ( retryMenuIndicies.begin(), retryMenuIndicies.begin() + offset );
+
+                startIndex = newStartIndex;
+            }
         }
 
         // Entering RetryMenu

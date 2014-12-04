@@ -106,6 +106,9 @@ class NetplayManager
     bool hasUpDownInLast2f() const;
     bool hasButtonInPrev2f ( uint8_t player, uint16_t button ) const;
 
+    // Get the buffered preserveStartIndex
+    uint32_t getBufferedPreserveStartIndex() const;
+
 public:
 
     // Netplay config
