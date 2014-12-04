@@ -480,7 +480,8 @@ struct DllMain
                             if ( delay == netMan.getDelay() )
                                 continue;
 
-                            if ( GetKeyState ( '0' + i ) & 0x80 )
+                            // Ctrl+Number or Ctrl+Numpad#
+                            if ( ( GetKeyState ( '0' + i ) & 0x80 ) || ( GetKeyState ( VK_NUMPAD0 + i ) & 0x80 ) )
                             {
                                 shouldChangeDelayRollback = true;
                                 changeConfig.indexedFrame = netMan.getIndexedFrame();
