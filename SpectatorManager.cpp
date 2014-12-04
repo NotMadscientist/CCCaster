@@ -10,6 +10,7 @@ using namespace std;
 
 SpectatorManager::SpectatorManager ( NetplayManager *netManPtr, const ProcessManager *procManPtr )
     : spectatorListPos ( spectatorList.end() )
+    , spectatorMapPos ( spectatorMap.end() )
     , netManPtr ( netManPtr )
     , procManPtr ( procManPtr )
 {
@@ -69,9 +70,9 @@ void SpectatorManager::timerExpired ( Timer *timerPtr )
     pendingTimerToSocket.erase ( timerPtr );
 }
 
-void SpectatorManager::pushSpectator ( Socket *socketPtr )
+void SpectatorManager::pushSpectator ( Socket *socketPtr, const IpAddrPort& serverAddr )
 {
-    LOG ( "socket=%08x", socketPtr );
+    LOG ( "socket=%08x; serverAddr='%s'", socketPtr, serverAddr );
 
     SocketPtr newSocket = popPendingSocket ( socketPtr );
 
@@ -105,11 +106,15 @@ void SpectatorManager::pushSpectator ( Socket *socketPtr )
 
     Spectator spectator;
     spectator.socket = newSocket;
+    spectator.serverAddr = serverAddr;
     spectator.it = it;
     spectator.pos.parts.frame = NUM_INPUTS - 1;
     spectator.pos.parts.index = netManPtr->getSpectateStartIndex();
 
     spectatorMap[socketPtr] = spectator;
+
+    if ( spectatorMap.size() == 1 || spectatorMapPos == spectatorMap.end() )
+        spectatorMapPos = spectatorMap.begin();
 
     netManPtr->preserveStartIndex = min ( netManPtr->preserveStartIndex, spectator.pos.parts.index );
 
@@ -141,9 +146,11 @@ void SpectatorManager::popSpectator ( Socket *socketPtr )
     if ( it == spectatorMap.end() )
         return;
 
-    // If the spectator being removed is at the current spectator position, we should increment it to the next one.
     if ( spectatorListPos == it->second.it )
         ++spectatorListPos;
+
+    if ( spectatorMapPos == it )
+        ++spectatorMapPos;
 
     spectatorList.erase ( it->second.it );
     spectatorMap.erase ( socketPtr );
@@ -160,11 +167,21 @@ void SpectatorManager::frameStepSpectators()
     if ( spectatorMap.empty() )
     {
         spectatorListPos = spectatorList.end();
+        spectatorMapPos = spectatorMap.end();
 
         // Reset the preserve index
         netManPtr->preserveStartIndex = currentMinIndex = UINT_MAX;
         return;
     }
+
+    if ( spectatorMapPos == spectatorMap.end() )
+        spectatorMapPos = spectatorMap.begin();
+
+    if ( spectatorMap.size() > 1 )
+        ++spectatorMapPos;
+
+    if ( spectatorMapPos == spectatorMap.end() )
+        spectatorMapPos = spectatorMap.begin();
 
     // Number of times to broadcast per frame
     const uint32_t multiplier = 1 + ( spectatorList.size() * 2 ) / ( NUM_INPUTS + 1 );
@@ -236,4 +253,16 @@ void SpectatorManager::frameStepSpectators()
         // Update the current min index
         currentMinIndex = min ( currentMinIndex, spectator.pos.parts.index );
     }
+}
+
+const IpAddrPort& SpectatorManager::getRandomSpectatorAddress() const
+{
+    if ( spectatorMap.empty() || spectatorMapPos == spectatorMap.end() )
+    {
+        LOG ( "'%s'", NullAddress );
+        return NullAddress;
+    }
+
+    LOG ( "'%s'", spectatorMapPos->second.serverAddr );
+    return spectatorMapPos->second.serverAddr;
 }

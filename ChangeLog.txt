@@ -5,8 +5,10 @@ v2.1:
   Toggle with F4 on the keyboard or start button on any controller with start mapped.
   Move controllers left or right to switch players.
 - Change delay during netplay by pressing Ctrl+Number on the keyboard.
-- Fixed and improved spectating:
+- Improved spectating:
   Spectating always starts from the beginning of the most recent game.
+  New spectators will be redirected to spectate from existing spectators.
+  These two changes should greatly reduce the extra network traffic caused by spectators.
 - Linux / Wine support with some features disabled:
   No in-game button config unless someone can figure out how to hook DirectX9 under Wine.
   Can't save replays because MBAA.exe crashes when saving replays even when running by itself.

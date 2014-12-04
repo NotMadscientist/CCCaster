@@ -25,6 +25,8 @@ struct Spectator
 
     bool sentRngState = false, sentRetryMenuIndex = false;
 
+    IpAddrPort serverAddr;
+
     std::list<Socket *>::iterator it;
 };
 
@@ -43,6 +45,8 @@ class SpectatorManager
 
     std::list<Socket *>::iterator spectatorListPos;
 
+    std::unordered_map<Socket *, Spectator>::const_iterator spectatorMapPos;
+
     uint32_t currentMinIndex = UINT_MAX;
 
     NetplayManager *netManPtr = 0;
@@ -59,6 +63,8 @@ public:
     SpectatorManager ( NetplayManager *netManPtr = 0, const ProcessManager *procManPtr = 0 );
 
 
+    bool isPendingSocket ( Socket *socket ) const { return ( pendingSockets.find ( socket ) != pendingSockets.end() ); }
+
     void pushPendingSocket ( Timer::Owner *owner, const SocketPtr& socket );
 
     SocketPtr popPendingSocket ( Socket *socket );
@@ -66,9 +72,13 @@ public:
     void timerExpired ( Timer *timer );
 
 
-    void pushSpectator ( Socket *socket );
+    size_t numSpectators() const { return spectatorMap.size(); }
+
+    void pushSpectator ( Socket *socket, const IpAddrPort& serverAddr );
 
     void popSpectator ( Socket *socket );
+
+    const IpAddrPort& getRandomSpectatorAddress() const;
 
 
     void newRngState ( const RngState& rngState );

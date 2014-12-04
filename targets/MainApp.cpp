@@ -205,7 +205,6 @@ struct MainApp
         else
         {
             ctrlSocket = SmartSocket::connectTCP ( this, address, options[Options::Tunnel] );
-
             LOG ( "ctrlSocket=%08x", ctrlSocket.get() );
 
             stopTimer.reset ( new Timer ( this ) );
@@ -222,7 +221,6 @@ struct MainApp
         ui.display ( format ( "Trying %s", address ) );
 
         ctrlSocket = SmartSocket::connectTCP ( this, address, options[Options::Tunnel] );
-
         LOG ( "ctrlSocket=%08x", ctrlSocket.get() );
 
         EventManager::get().start();
@@ -327,7 +325,6 @@ struct MainApp
             }
 
             ctrlSocket = popPendingSocket ( socket );
-
             LOG ( "ctrlSocket=%08x", ctrlSocket.get() );
 
             if ( !ctrlSocket.get() )
@@ -381,7 +378,6 @@ struct MainApp
 
             dataSocket = SmartSocket::connectUDP ( this, { address.addr, this->initialConfig.dataPort },
                                                    ctrlSocket->getAsSmart().isTunnel() );
-
             LOG ( "dataSocket=%08x", dataSocket.get() );
 
             ui.display (
@@ -685,10 +681,14 @@ struct MainApp
 
             isDummyReady = true;
 
+            // We need to send an IpAddrPort message to indicate our serverCtrlSocket address, here it is a fake
+            if ( ctrlSocket && ctrlSocket->isConnected() )
+                ctrlSocket->send ( NullAddress );
+
+            // Only connect the dataSocket if isClient
             if ( clientMode.isClient() )
             {
                 dataSocket = SmartSocket::connectUDP ( this, address, ctrlSocket->getAsSmart().isTunnel() );
-
                 LOG ( "dataSocket=%08x", dataSocket.get() );
             }
 
@@ -774,7 +774,6 @@ struct MainApp
             LOG ( "serverDataSocket->accept ( this )" );
 
             dataSocket = serverDataSocket->accept ( this );
-
             LOG ( "dataSocket=%08x", dataSocket.get() );
 
             ASSERT ( dataSocket != 0 );
@@ -927,10 +926,13 @@ struct MainApp
             }
         }
 
-        if ( msg->getMsgType() == MsgType::VersionConfig && msg->getAs<VersionConfig>().mode.isSpectate() )
-            socket->send ( new ErrorMessage ( "Not in a game yet, cannot spectate!" ) );
-        else
-            socket->send ( new ErrorMessage ( "Another client is currently connecting!" ) );
+        if ( clientMode.isHost() )
+        {
+            if ( msg->getMsgType() == MsgType::VersionConfig && msg->getAs<VersionConfig>().mode.isSpectate() )
+                socket->send ( new ErrorMessage ( "Not in a game yet, cannot spectate!" ) );
+            else
+                socket->send ( new ErrorMessage ( "Another client is currently connecting!" ) );
+        }
 
         LOG ( "Unexpected '%s' from socket=%08x", msg, socket );
     }
@@ -992,6 +994,11 @@ struct MainApp
                 netplayConfig = msg->getAs<NetplayConfig>();
                 isBroadcastPortReady = true;
                 updateStatusMessage();
+                return;
+
+            case MsgType::IpAddrPort:
+                if ( ctrlSocket && ctrlSocket->isConnected() )
+                    ctrlSocket->send ( msg );
                 return;
 
             default:

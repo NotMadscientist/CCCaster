@@ -20,13 +20,28 @@
 using namespace std;
 
 
+// The main log file path
 #define LOG_FILE                    FOLDER "dll.log"
 
+// The main overlay UI toggle hotkey
+#define VK_TOGGLE_OVERLAY           ( VK_F4 )
+
+// The number of milliseconds to wait to perform a delayed stop so that ErrorMessages are received in time
 #define DELAYED_STOP                ( 100 )
 
+// The number of milliseconds before resending inputs while waiting for more inputs
 #define RESEND_INPUTS_INTERVAL      ( 100 )
 
-#define VK_TOGGLE_OVERLAY           ( VK_F4 )
+// The maximum number of spectators allowed for ClientMode::Spectate
+#define MAX_SPECTATORS              ( 15 )
+
+// The maximum number of spectators allowed for ClientMode::Host/Client
+#define MAX_ROOT_SPECTATORS         ( 1 )
+
+// Indicates if this client should redirect spectators
+#define SHOULD_REDIRECT_SPECTATORS  ( clientMode.isSpectate()                                                   \
+                                      ? numSpectators() >= MAX_SPECTATORS                                       \
+                                      : numSpectators() >= MAX_ROOT_SPECTATORS )
 
 
 #define LOG_SYNC(FORMAT, ...)                                                                                   \
@@ -119,10 +134,14 @@ struct DllMain
     // Client serverCtrlSocket address
     IpAddrPort clientServerAddr;
 
+    // Sockets that have been redirected to another client
+    unordered_set<Socket *> redirectedSockets;
+
 #ifndef RELEASE
     // Local and remote SyncHashes
     list<MsgPtr> localSync, remoteSync;
 #endif
+
 
     void overlayUiControls()
     {
@@ -963,11 +982,20 @@ struct DllMain
             ASSERT ( newSocket != 0 );
             ASSERT ( newSocket->isConnected() == true );
 
-            // TODO
-            if ( clientServerAddr.empty() )
+            IpAddrPort redirectAddr;
+
+            if ( SHOULD_REDIRECT_SPECTATORS )
+                redirectAddr = getRandomRedirectAddress();
+
+            if ( redirectAddr.empty() )
+            {
                 newSocket->send ( new VersionConfig ( clientMode ) );
+            }
             else
-                newSocket->send ( clientServerAddr );
+            {
+                redirectedSockets.insert ( newSocket.get() );
+                newSocket->send ( redirectAddr );
+            }
 
             pushPendingSocket ( this, newSocket );
         }
@@ -1030,6 +1058,7 @@ struct DllMain
             return;
         }
 
+        redirectedSockets.erase ( socket );
         popPendingSocket ( socket );
         popSpectator ( socket );
     }
@@ -1041,14 +1070,13 @@ struct DllMain
         if ( !msg.get() )
             return;
 
+        if ( redirectedSockets.find ( socket ) != redirectedSockets.end() )
+            return;
+
         switch ( msg->getMsgType() )
         {
             case MsgType::VersionConfig:
             {
-                // TODO
-                if ( !clientServerAddr.empty() )
-                    return;
-
                 const Version RemoteVersion = msg->getAs<VersionConfig>().version;
 
                 if ( !LocalVersion.similar ( RemoteVersion, 1 + options[Options::StrictVersion] ) )
@@ -1079,7 +1107,14 @@ struct DllMain
             }
 
             case MsgType::ConfirmConfig:
-                pushSpectator ( socket );
+                // Wait for IpAddrPort before actually adding this new spectator
+                return;
+
+            case MsgType::IpAddrPort:
+                if ( socket == dataSocket.get() || !isPendingSocket ( socket ) )
+                    break;
+
+                pushSpectator ( socket, { socket->address.addr, msg->getAs<IpAddrPort>().port } );
                 return;
 
             case MsgType::RngState:
@@ -1282,6 +1317,11 @@ struct DllMain
                       netMan.initial.stage, netMan.initial.isTraining,
                       msg->getAs<SpectateConfig>().formatPlayer ( 1, getFullCharaName ),
                       msg->getAs<SpectateConfig>().formatPlayer ( 2, getFullCharaName ) );
+
+                serverCtrlSocket = SmartSocket::listenTCP ( this, 0 );
+                LOG ( "serverCtrlSocket=%08x", serverCtrlSocket.get() );
+
+                procMan.ipcSend ( serverCtrlSocket->address );
 
                 // Wait for final InitialGameState message before going to NetplayState::Initial
                 break;
@@ -1540,6 +1580,16 @@ private:
             return;
 
         LOG ( "Failed to save: %s", file );
+    }
+
+    const IpAddrPort& getRandomRedirectAddress() const
+    {
+        size_t r = rand() % ( 1 + numSpectators() );
+
+        if ( r == 0 && !clientServerAddr.empty() )
+            return clientServerAddr;
+        else
+            return getRandomSpectatorAddress();
     }
 
     // Filter simultaneous up / down and left / right directions.
