@@ -15,7 +15,6 @@ static vector<string> externalIpServices =
     "http://checkip.amazonaws.com",
     "http://ifcfg.net",
     "http://ipv4.icanhazip.com",
-    "http://ifconfig.me/ip"
 };
 
 ExternalIpAddress::ExternalIpAddress ( Owner *owner ) : owner ( owner ) {}

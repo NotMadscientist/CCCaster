@@ -24,7 +24,7 @@ HttpGet::HttpGet ( Owner *owner, const string& url ) : owner ( owner ), url ( ur
         path = "/";
 
     if ( i != string::npos )
-        host = host.substr ( i );
+        host = host.substr ( 0, i );
 
     ASSERT ( host.empty() == false );
     ASSERT ( path.empty() == false );
@@ -34,7 +34,15 @@ void HttpGet::start()
 {
     LOG ( "Connecting to: '%s:80'", host );
 
-    socket = TcpSocket::connect ( this, host + ":80", true ); // Raw socket
+    try
+    {
+        socket = TcpSocket::connect ( this, host + ":80", true ); // Raw socket
+    }
+    catch ( ... )
+    {
+        socket.reset();
+        disconnectEvent ( 0 );
+    }
 }
 
 void HttpGet::connectEvent ( Socket *socket )
