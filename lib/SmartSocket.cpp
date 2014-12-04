@@ -147,6 +147,7 @@ SmartSocket::SmartSocket ( Socket::Owner *owner, uint16_t port, Socket::Protocol
 
         // Update address port
         address.port = directSocket->address.port;
+        address.invalidate();
     }
     catch ( ... )
     {

@@ -2,9 +2,11 @@ v2.1:
 - Can host and connect without port forward. It is still recommended to port forward if possible,
   since the initial connect will be faster, and it will probably be more stable.
 - In-game button config with player selection:
-  Toggle with F4 or start button on any controller with start mapped.
-  Can move controllers left or right to switch players.
-- Can change delay during netplay by pressing Ctrl+Number on the keyboard.
+  Toggle with F4 on the keyboard or start button on any controller with start mapped.
+  Move controllers left or right to switch players.
+- Change delay during netplay by pressing Ctrl+Number on the keyboard.
+- Fixed and improved spectating:
+  Spectating always starts from the beginning of the most recent game.
 - Linux / Wine support with some features disabled:
   No in-game button config unless someone can figure out how to hook DirectX9 under Wine.
   Can't save replays because MBAA.exe crashes when saving replays even when running by itself.

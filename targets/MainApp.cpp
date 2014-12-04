@@ -198,6 +198,7 @@ struct MainApp
         {
             serverCtrlSocket = SmartSocket::listenTCP ( this, address.port );
             address.port = serverCtrlSocket->address.port; // Update port in case it was initially 0
+            address.invalidate();
 
             LOG ( "serverCtrlSocket=%08x", serverCtrlSocket.get() );
         }
@@ -865,8 +866,14 @@ struct MainApp
 
         stopTimer.reset();
 
-        if ( msg->getMsgType() == MsgType::VersionConfig
-                && ( ( clientMode.isHost() && !ctrlSocket ) || clientMode.isClient() ) )
+        if ( msg->getMsgType() == MsgType::IpAddrPort && socket == ctrlSocket.get() )
+        {
+            this->address = msg->getAs<IpAddrPort>();
+            ctrlSocket = SmartSocket::connectTCP ( this, this->address, options[Options::Tunnel] );
+            return;
+        }
+        else if ( msg->getMsgType() == MsgType::VersionConfig
+                  && ( ( clientMode.isHost() && !ctrlSocket ) || clientMode.isClient() ) )
         {
             gotVersionConfig ( socket, msg->getAs<VersionConfig>() );
             return;
@@ -920,7 +927,10 @@ struct MainApp
             }
         }
 
-        socket->send ( new ErrorMessage ( "Another client is currently connecting!" ) );
+        if ( msg->getMsgType() == MsgType::VersionConfig && msg->getAs<VersionConfig>().mode.isSpectate() )
+            socket->send ( new ErrorMessage ( "Not in a game yet, cannot spectate!" ) );
+        else
+            socket->send ( new ErrorMessage ( "Another client is currently connecting!" ) );
 
         LOG ( "Unexpected '%s' from socket=%08x", msg, socket );
     }

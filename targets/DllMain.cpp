@@ -116,6 +116,9 @@ struct DllMain
     // Latest ChangeConfig for changing delay/rollback
     ChangeConfig changeConfig;
 
+    // Client serverCtrlSocket address
+    IpAddrPort clientServerAddr;
+
 #ifndef RELEASE
     // Local and remote SyncHashes
     list<MsgPtr> localSync, remoteSync;
@@ -959,7 +962,11 @@ struct DllMain
             ASSERT ( newSocket != 0 );
             ASSERT ( newSocket->isConnected() == true );
 
-            newSocket->send ( new VersionConfig ( clientMode ) );
+            // TODO
+            if ( clientServerAddr.empty() )
+                newSocket->send ( new VersionConfig ( clientMode ) );
+            else
+                newSocket->send ( clientServerAddr );
 
             pushPendingSocket ( this, newSocket );
         }
@@ -992,6 +999,8 @@ struct DllMain
 
         ASSERT ( dataSocket.get() != 0 );
         ASSERT ( dataSocket->isConnected() == true );
+
+        dataSocket->send ( serverCtrlSocket->address );
 
         netplayStateChanged ( NetplayState::Initial );
 
@@ -1035,6 +1044,10 @@ struct DllMain
         {
             case MsgType::VersionConfig:
             {
+                // TODO
+                if ( !clientServerAddr.empty() )
+                    return;
+
                 const Version RemoteVersion = msg->getAs<VersionConfig>().version;
 
                 if ( !LocalVersion.similar ( RemoteVersion, 1 + options[Options::StrictVersion] ) )
@@ -1085,6 +1098,14 @@ struct DllMain
         switch ( clientMode.value )
         {
             case ClientMode::Host:
+                if ( msg->getMsgType() == MsgType::IpAddrPort && socket == dataSocket.get() )
+                {
+                    clientServerAddr = msg->getAs<IpAddrPort>();
+                    clientServerAddr.addr = dataSocket->address.addr;
+                    clientServerAddr.invalidate();
+                    return;
+                }
+
             case ClientMode::Client:
                 switch ( msg->getMsgType() )
                 {
@@ -1306,8 +1327,6 @@ struct DllMain
                     {
                         serverCtrlSocket = SmartSocket::listenTCP ( this, 0 );
                         LOG ( "serverCtrlSocket=%08x", serverCtrlSocket.get() );
-
-                        // TODO send serverCtrlSocket->address.port to the host, for spectator delegation
 
                         dataSocket = SmartSocket::connectUDP ( this, address, clientMode.isUdpTunnel() );
                         LOG ( "dataSocket=%08x", dataSocket.get() );

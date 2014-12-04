@@ -182,11 +182,13 @@ void Socket::init()
         if ( isTCP() && res )
         {
             address.addr = getAddrFromSockAddr ( res->ai_addr );
+            address.invalidate();
         }
         else
         {
             addrInfo = address.getAddrInfo();
             address.addr = getAddrFromSockAddr ( addrInfo->ai_addr );
+            address.invalidate();
         }
     }
 
@@ -205,6 +207,7 @@ void Socket::init()
         }
 
         address.port = getPortFromSockAddr ( ( sockaddr * ) &sas );
+        address.invalidate();
     }
 }
 

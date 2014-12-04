@@ -27,7 +27,7 @@ struct IpAddrPort : public SerializableSequence
 {
     std::string addr;
     uint16_t port = 0;
-    bool isV4 = true;
+    uint8_t isV4 = true;
 
     IpAddrPort ( const char *addr, uint16_t port ) : IpAddrPort ( std::string ( addr ), port ) {}
     IpAddrPort ( const std::string& addr, uint16_t port ) : addr ( addr ), port ( port ) {}
@@ -36,6 +36,21 @@ struct IpAddrPort : public SerializableSequence
     IpAddrPort ( const std::string& addrPort );
 
     IpAddrPort ( const sockaddr *sa );
+
+    IpAddrPort& operator= ( const IpAddrPort& other )
+    {
+        addr = other.addr;
+        port = other.port;
+        isV4 = other.isV4;
+        invalidate();
+        return *this;
+    }
+
+    void invalidate() const override
+    {
+        Serializable::invalidate();
+        addrInfo.reset();
+    }
 
     const std::shared_ptr<addrinfo>& getAddrInfo() const;
 
@@ -48,9 +63,10 @@ struct IpAddrPort : public SerializableSequence
     {
         addr.clear();
         port = 0;
+        invalidate();
     }
 
-    std::string str() const
+    std::string str() const override
     {
         if ( empty() )
             return "(NullAddress)";
@@ -68,7 +84,7 @@ struct IpAddrPort : public SerializableSequence
         return buffer;
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( IpAddrPort, addr, port )
+    PROTOCOL_MESSAGE_BOILERPLATE ( IpAddrPort, addr, port, isV4 )
 
 private:
 

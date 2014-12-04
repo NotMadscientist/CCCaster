@@ -175,7 +175,10 @@ void MainUi::broadcast ( RunFuncPtr run )
         netplayConfig.mode.flags = initialConfig.mode.flags;
         netplayConfig.delay = 0;
         netplayConfig.hostPlayer = 1;
-        netplayConfig.broadcastPort = address.port = menu->resultInt;
+        netplayConfig.broadcastPort = menu->resultInt;
+
+        address.port = menu->resultInt;
+        address.invalidate();
 
         config.putInteger ( "lastUsedPort", address.port );
         saveConfig();
@@ -761,8 +764,12 @@ void MainUi::main ( RunFuncPtr run )
         // Update cached UI state
         initialConfig.localName = config.getString ( "displayName" );
         initialConfig.winCount = config.getInteger ( "versusWinCount" );
+
         if ( address.empty() )
+        {
             address.port = config.getInteger ( "lastUsedPort" );
+            address.invalidate();
+        }
 
         int mainSelection = ui->popUntilUserInput()->resultInt;
 

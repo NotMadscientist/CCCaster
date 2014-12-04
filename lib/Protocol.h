@@ -104,7 +104,7 @@ struct Serializable
     template<typename T> const T& getAs() const { return *static_cast<const T *> ( this ); }
 
     // Invalidate any cached data
-    void invalidate() const { md5empty = true; }
+    virtual void invalidate() const { md5empty = true; }
 
     // Return a string representation of this message, defaults to the message type
     virtual std::string str() const { std::stringstream ss; ss << getMsgType(); return ss.str(); }
