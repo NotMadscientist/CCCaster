@@ -634,6 +634,9 @@ void Controller::doResetToDefaults()
     if ( !isJoystick() )
         return;
 
+    // Clear all buttons
+    doClearMapping ( MASK_BUTTONS );
+
     // Default axis mappings
     stick.mappings[EVENT_JOY_AXIS][0][0] = MASK_X_AXIS;
     stick.mappings[EVENT_JOY_AXIS][0][AXIS_POSITIVE] = BIT_RIGHT;
@@ -649,6 +652,7 @@ void Controller::doResetToDefaults()
     stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_DOWN]     = BIT_DOWN;
     stick.mappings[EVENT_JOY_HAT][0][SDL_HAT_LEFT]     = BIT_LEFT;
 
+    // Default deadzone
     stick.deadzone = DEFAULT_DEADZONE;
 }
 
