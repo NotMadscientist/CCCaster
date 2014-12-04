@@ -4,6 +4,7 @@
 #include "NetplayManager.h"
 #include "ChangeMonitor.h"
 #include "SmartSocket.h"
+#include "UdpSocket.h"
 #include "Exceptions.h"
 #include "Enum.h"
 #include "ErrorStringsExt.h"
@@ -136,6 +137,9 @@ struct DllMain
 
     // Sockets that have been redirected to another client
     unordered_set<Socket *> redirectedSockets;
+
+    // Timer for spectator inputs
+    TimerPtr specInputsTimer;
 
 #ifndef RELEASE
     // Local and remote SyncHashes
@@ -414,10 +418,7 @@ struct DllMain
 
                     if ( doneSkipping && remoteIndexedFrame.value > netMan.getIndexedFrame().value + NUM_INPUTS )
                     {
-                        if ( remoteIndexedFrame.parts.index > netMan.getIndex() )
-                            *CC_SKIP_FRAMES_ADDR = 16;
-                        else
-                            *CC_SKIP_FRAMES_ADDR = 4;
+                        *CC_SKIP_FRAMES_ADDR = 1;
                         doneSkipping = false;
                     }
                     else if ( !doneSkipping && *CC_SKIP_FRAMES_ADDR == 0 )
@@ -661,25 +662,35 @@ struct DllMain
             // Don't resend inputs in spectator mode
             if ( clientMode.isSpectate() )
             {
+                // Stop the timer if we're ready
                 if ( ready )
+                {
+                    specInputsTimer.reset();
                     break;
+                }
 
-                // Just keep polling if not ready
-                continue;
+                // Start the timeout since we are waiting
+                if ( !specInputsTimer )
+                {
+                    specInputsTimer.reset ( new Timer ( this ) );
+                    specInputsTimer->start ( DEFAULT_KEEP_ALIVE );
+                }
             }
-
-            // Stop resending inputs if we're ready
-            if ( ready )
+            else
             {
-                resendTimer.reset();
-                break;
-            }
+                // Stop resending inputs if we're ready
+                if ( ready )
+                {
+                    resendTimer.reset();
+                    break;
+                }
 
-            // Start resending inputs since we are waiting
-            if ( !resendTimer )
-            {
-                resendTimer.reset ( new Timer ( this ) );
-                resendTimer->start ( RESEND_INPUTS_INTERVAL );
+                // Start resending inputs since we are waiting
+                if ( !resendTimer )
+                {
+                    resendTimer.reset ( new Timer ( this ) );
+                    resendTimer->start ( RESEND_INPUTS_INTERVAL );
+                }
             }
         }
 
@@ -1467,9 +1478,13 @@ struct DllMain
         }
         else if ( timer == initialTimer.get() )
         {
-            main->procMan.ipcSend ( new ErrorMessage ( "Disconnected!" ) );
             delayedStop ( "Disconnected!" );
             initialTimer.reset();
+        }
+        else if ( timer == specInputsTimer.get() )
+        {
+            delayedStop ( "Timed out!" );
+            specInputsTimer.reset();
         }
         else if ( timer == stopTimer.get() )
         {

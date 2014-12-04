@@ -76,6 +76,8 @@ struct MainApp
         , public Thread
         , protected SpectatorManager
 {
+    IpAddrPort originalAddress;
+
     ExternalIpAddress externaIpAddress;
 
     InitialConfig initialConfig;
@@ -831,6 +833,14 @@ struct MainApp
 
             LOG ( "%s disconnected!", ( socket == ctrlSocket.get() ? "ctrlSocket" : "dataSocket" ) );
 
+            // TODO auto reconnect to original host address
+
+            if ( socket == ctrlSocket.get() && clientMode.isSpectate() )
+            {
+                forwardMsgQueue();
+                return;
+            }
+
             if ( clientMode.isHost() && !isWaitingForUser )
             {
                 resetHost();
@@ -1083,7 +1093,7 @@ struct MainApp
               clientMode, clientMode.flagString(), addr, config.getMsgType() );
 
         options = opt;
-        address = addr;
+        originalAddress = address = addr;
 
         if ( !appDir.empty() )
             options.set ( Options::AppDir, 1, appDir );

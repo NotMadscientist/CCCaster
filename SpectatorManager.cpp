@@ -118,6 +118,9 @@ void SpectatorManager::pushSpectator ( Socket *socketPtr, const IpAddrPort& serv
 
     netManPtr->preserveStartIndex = min ( netManPtr->preserveStartIndex, spectator.pos.parts.index );
 
+    LOG ( "socket=%08x; spectator.pos=[%s]; preserveStartIndex=%u",
+          socketPtr, spectator.pos, netManPtr->preserveStartIndex );
+
     const uint8_t netplayState = netManPtr->getState().value;
     const bool isTraining = netManPtr->config.mode.isTraining();
 
@@ -215,7 +218,8 @@ void SpectatorManager::frameStepSpectators()
         Spectator& spectator = it->second;
         const uint32_t oldIndex = spectator.pos.parts.index;
 
-        LOG ( "socket=%08x; spectator.pos=[%s]", socket, spectator.pos );
+        LOG ( "socket=%08x; spectator.pos=[%s]; preserveStartIndex=%u",
+              socket, spectator.pos, netManPtr->preserveStartIndex );
 
         MsgPtr msgBothInputs = netManPtr->getBothInputs ( spectator.pos );
 
