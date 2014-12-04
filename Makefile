@@ -1,9 +1,9 @@
 VERSION = 2.1
-SUFFIX =
+SUFFIX = a
 NAME = cccaster
 
 # Main programs
-ARCHIVE = $(NAME).v$(VERSION).zip
+ARCHIVE = $(NAME).v$(VERSION)$(SUFFIX).zip
 BINARY = $(NAME).v$(VERSION).exe
 FOLDER = $(NAME)
 DLL = hook.dll
@@ -105,7 +105,7 @@ debugger: $(DEBUGGER)
 $(ARCHIVE): $(BINARY) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER)
 	@echo
 	rm -f $(filter-out %.log,$(filter-out $(ARCHIVE),$(wildcard $(NAME)*.zip)))
-	$(ZIP) $(NAME).v$(VERSION).zip ChangeLog.txt $^
+	$(ZIP) $(ARCHIVE) ChangeLog.txt $^
 	$(GRANT)
 
 $(BINARY): $(MAIN_OBJECTS)
