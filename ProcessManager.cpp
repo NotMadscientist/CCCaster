@@ -151,8 +151,7 @@ void ProcessManager::timerExpired ( Timer *timer )
     LOG ( "Trying to start game (%d)", gameStartCount );
 
     void *hwnd = 0;
-    if ( ! ( hwnd = findWindow ( CC_STARTUP_TITLE_EN ) )
-            && ! ( hwnd = findWindow ( CC_STARTUP_TITLE_JP ) ) )
+    if ( ! ( hwnd = findWindow ( CC_STARTUP_TITLE, false ) ) )
         return;
 
     if ( ! ( hwnd = FindWindowEx ( ( HWND ) hwnd, 0, 0, CC_STARTUP_BUTTON ) ) )
@@ -273,10 +272,10 @@ void ProcessManager::closeGame()
     LOG ( "Closing game" );
 
     // Find and close any lingering windows
-    for ( const string& window : { CC_TITLE, CC_STARTUP_TITLE_EN, CC_STARTUP_TITLE_JP } )
+    for ( const string& window : { CC_TITLE, CC_STARTUP_TITLE } )
     {
         void *hwnd;
-        if ( ( hwnd = findWindow ( window ) ) )
+        if ( ( hwnd = findWindow ( window, false ) ) )
             PostMessage ( ( HWND ) hwnd, WM_CLOSE, 0, 0 );
     }
 }
@@ -400,10 +399,15 @@ array<char, 10> ProcessManager::fetchKeyboardConfig()
     return config;
 }
 
-void *ProcessManager::findWindow ( const string& title )
+void *ProcessManager::findWindow ( const string& title, bool exact )
 {
     static string tmpTitle;
     static HWND tmpHwnd;
+    static bool tmpExact;
+
+    tmpTitle = title;
+    tmpHwnd = 0;
+    tmpExact = exact;
 
     struct _
     {
@@ -415,15 +419,26 @@ void *ProcessManager::findWindow ( const string& title )
             char buffer[4096];
             GetWindowText ( hwnd, buffer, sizeof ( buffer ) );
 
-            if ( tmpTitle == trimmed ( buffer ) )
-                tmpHwnd = hwnd;
+            if ( !tmpHwnd  )
+            {
+                if ( tmpExact )
+                {
+                    if ( trimmed ( buffer ) == tmpTitle )
+                        tmpHwnd = hwnd;
+                }
+                else
+                {
+                    if ( trimmed ( buffer ).find ( tmpTitle ) == 0 )
+                        tmpHwnd = hwnd;
+                }
+            }
+
             return true;
         }
     };
 
-    tmpTitle = title;
-    tmpHwnd = 0;
     EnumWindows ( _::enumWindowsProc, 0 );
+
     return tmpHwnd;
 }
 

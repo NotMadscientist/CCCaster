@@ -104,7 +104,7 @@ public:
     static std::array<char, 10> fetchKeyboardConfig();
 
     // Find the first window handle with the given title (NOT thread safe)
-    static void *findWindow ( const std::string& title );
+    static void *findWindow ( const std::string& title, bool exact = true );
 
     // True if we're running on Wine, this caches the result of the first call (NOT thread safe)
     static bool isWine();

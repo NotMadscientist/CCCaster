@@ -13,8 +13,7 @@
 // Game constants and addresses are prefixed CC
 #define CC_VERSION                  "1.4.0"
 #define CC_TITLE                    "MELTY BLOOD Actress Again Current Code Ver.1.07 Rev." CC_VERSION
-#define CC_STARTUP_TITLE_EN         CC_TITLE " Startup Menu"
-#define CC_STARTUP_TITLE_JP         CC_TITLE " ‹N“®ƒƒjƒ…["
+#define CC_STARTUP_TITLE            CC_TITLE " "
 #define CC_STARTUP_BUTTON           "OK"
 #define CC_NETWORK_CONFIG_FILE      "System\\NetConnect.dat"
 #define CC_NETWORK_USERNAME_KEY     "UserName"
