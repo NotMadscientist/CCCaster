@@ -8,7 +8,7 @@
 #include <memory>
 
 
-#define DEFAULT_CONNECT_TIMEOUT ( 3000 )
+#define DEFAULT_CONNECT_TIMEOUT ( 5000 )
 
 
 #define LOG_SOCKET(SOCKET, FORMAT, ...)                                                                         \
