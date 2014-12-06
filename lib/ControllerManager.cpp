@@ -175,7 +175,15 @@ void ControllerManager::checkJoystick()
 
         auto it = mappings.mappings.find ( controller->getName() );
         if ( it != mappings.mappings.end() && it->second->getMsgType() == MsgType::JoystickMappings )
+        {
             controller->setMappings ( it->second->getAs<JoystickMappings>() );
+        }
+        else
+        {
+            auto it = mappings.mappings.find ( controller->getOrigName() );
+            if ( it != mappings.mappings.end() && it->second->getMsgType() == MsgType::JoystickMappings )
+                controller->setMappings ( it->second->getAs<JoystickMappings>() );
+        }
 
         if ( owner )
             owner->attachedJoystick ( controller );

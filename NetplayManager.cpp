@@ -202,8 +202,8 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player )
 
 uint16_t NetplayManager::getRetryMenuInput ( uint8_t player )
 {
-    // Ignore remote input
-    if ( player != localPlayer )
+    // Ignore remote input on netplay
+    if ( player != localPlayer && config.mode.isNetplay() )
         return 0;
 
     // Auto navigate when final retry menu index has been decided

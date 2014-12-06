@@ -189,6 +189,9 @@ public:
             return stick.name;
     }
 
+    // Get the original name of the controller
+    const std::string& getOrigName() const { return name; }
+
     // Indicates if this is the only controller with its original name
     bool isUniqueName() const;
 
