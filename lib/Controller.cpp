@@ -373,6 +373,8 @@ Controller::Controller ( KeyboardEnum ) : name ( "Keyboard" )
 
     doClearMapping();
     doResetToDefaults();
+
+    LOG_CONTROLLER ( this, "New keyboard" );
 }
 
 Controller::Controller ( SDL_Joystick *joystick ) : name ( SDL_JoystickName ( joystick ) ), joystick ( joystick )
@@ -388,10 +390,14 @@ Controller::Controller ( SDL_Joystick *joystick ) : name ( SDL_JoystickName ( jo
 
     doClearMapping();
     doResetToDefaults();
+
+    LOG_CONTROLLER ( this, "New joystick: origName=%s", name );
 }
 
 Controller::~Controller()
 {
+    LOG_CONTROLLER ( this, "Deleting controller" );
+
     if ( joystick )
         SDL_JoystickClose ( joystick );
 
@@ -495,6 +501,8 @@ string Controller::getMapping ( uint32_t key, const string& placeholder ) const
 
 void Controller::setMappings ( const array<char, 10>& config )
 {
+    LOG_CONTROLLER ( this, "Raw keyboard mappings" );
+
     static const array<uint32_t, 10> bits =
     {
         BIT_DOWN,
@@ -534,6 +542,8 @@ void Controller::setMappings ( const array<char, 10>& config )
 
 void Controller::setMappings ( const KeyboardMappings& mappings )
 {
+    LOG_CONTROLLER ( this, "KeyboardMappings" );
+
     keybd = mappings;
 
     ControllerManager::get().mappingsChanged ( this );
@@ -541,6 +551,8 @@ void Controller::setMappings ( const KeyboardMappings& mappings )
 
 void Controller::setMappings ( const JoystickMappings& mappings )
 {
+    LOG_CONTROLLER ( this, "JoystickMappings" );
+
     stick = mappings;
 
     ControllerManager::get().mappingsChanged ( this );
