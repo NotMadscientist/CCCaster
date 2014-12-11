@@ -165,7 +165,9 @@ int main ( int argc, char *argv[] )
     {
         {
             Options::Unknown, 0, "", "", Arg::None,
-            "Usage: " BINARY " [options] [address] [port]\n"
+            "Usage: " BINARY " [options] [port]\n"
+            "       " BINARY " [options] [address] [port]\n"
+            "       " BINARY " [options] [address]:[port]\n"
             "\n"
             "Options:"
         },
@@ -223,6 +225,7 @@ int main ( int argc, char *argv[] )
             "Examples:\n"
             "  " BINARY " 12345                 Host on port 12345\n"
             "  " BINARY " 12.34.56.78 12345     Connect to 12.34.56.78 on port 12345\n"
+            "  " BINARY " 12.34.56.78:12345     Connect to 12.34.56.78 on port 12345\n"
             "  " BINARY " -b 12345              Broadcast on port 12345\n"
             "  " BINARY " -ot                   Offline training mode.\n"
             "  " BINARY " -o 4 -t               Offline training mode with 4 delay.\n"
