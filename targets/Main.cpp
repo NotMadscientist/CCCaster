@@ -35,7 +35,7 @@ static bool initDirsAndSanityCheck ( bool checkGameExe = true )
 
     appDir.clear();
 
-    if ( GetModuleFileName ( 0, buffer, sizeof ( buffer ) ) )
+    if ( GetModuleFileName ( GetModuleHandle ( 0 ), buffer, sizeof ( buffer ) ) )
     {
         appDir = buffer;
         appDir = appDir.substr ( 0, appDir.find_last_of ( "/\\" ) );

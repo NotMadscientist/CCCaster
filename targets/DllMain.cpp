@@ -1739,7 +1739,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
             char buffer[4096];
             string gameDir;
 
-            if ( GetModuleFileName ( 0, buffer, sizeof ( buffer ) ) )
+            if ( GetModuleFileName ( GetModuleHandle ( 0 ), buffer, sizeof ( buffer ) ) )
             {
                 gameDir = buffer;
                 gameDir = gameDir.substr ( 0, gameDir.find_last_of ( "/\\" ) );
