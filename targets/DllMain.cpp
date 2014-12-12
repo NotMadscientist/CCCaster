@@ -1516,8 +1516,14 @@ struct DllMain
     // DLL callback
     void callback()
     {
+        // Send an ErrorMessage when the game is closed
         if ( ! ( * CC_ALIVE_FLAG_ADDR ) && clientMode.isNetplay() && dataSocket )
-            dataSocket->send ( new ErrorMessage ( "Disconnected!" ) );
+        {
+            MsgPtr msg ( new ErrorMessage ( "Disconnected!" ) );
+            dataSocket->send ( msg );
+            dataSocket->send ( msg );
+            dataSocket->send ( msg );
+        }
 
         // Don't poll unless we're in the correct state
         if ( appState != AppState::Polling )
