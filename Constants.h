@@ -41,6 +41,7 @@
 #define CC_FPS_COUNTER_ADDR         ( ( uint32_t * ) 0x774A70 ) // Value of the displayed FPS counter
 #define CC_PERF_FREQ_ADDR           ( ( uint64_t * ) 0x774A80 ) // Value of QueryPerformanceFrequency for game FPS
 #define CC_SKIPPABLE_FLAG_ADDR      ( ( uint32_t * ) 0x74D99C ) // Flag that indicates a skippable state when in-game
+#define CC_ALIVE_FLAG_ADDR          ( ( uint8_t * )  0x76E650 ) // Flag that indicates the game is alive
 
 // Some game state counter, incremented for each open menu, decremented when menu closes
 #define CC_GAME_STATE_COUNTER_ADDR  ( ( uint32_t * ) 0x767440 )

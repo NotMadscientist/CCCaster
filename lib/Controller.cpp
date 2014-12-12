@@ -173,7 +173,7 @@ void Controller::joystickEvent ( const SDL_JoyAxisEvent& event )
     if ( !state && waitForNeutral )
         waitForNeutral = false;
 
-    // LOG_CONTROLLER ( this, "axis=%d; value=%c; EVENT_JOY_AXIS", event.axis, getAxisSign ( 0, value ) );
+    LOG_CONTROLLER ( this, "axis=%d; value=%c; EVENT_JOY_AXIS", event.axis, getAxisSign ( 0, value ) );
 }
 
 static int getHatNumPadDir ( int hat )
@@ -276,7 +276,7 @@ void Controller::joystickEvent ( const SDL_JoyHatEvent& event )
     if ( !state && waitForNeutral )
         waitForNeutral = false;
 
-    // LOG_CONTROLLER ( this, "hat=%d; value=%d; EVENT_JOY_HAT", event.hat, getHatNumPadDir ( event.value ) );
+    LOG_CONTROLLER ( this, "hat=%d; value=%d; EVENT_JOY_HAT", event.hat, getHatNumPadDir ( event.value ) );
 }
 
 void Controller::joystickEvent ( const SDL_JoyButtonEvent& event )
@@ -340,7 +340,7 @@ void Controller::joystickEvent ( const SDL_JoyButtonEvent& event )
     if ( !state && waitForNeutral )
         waitForNeutral = false;
 
-    // LOG_CONTROLLER ( this, "button=%d; value=%d; EVENT_JOY_BUTTON", event.button, ( event.state == SDL_PRESSED ) );
+    LOG_CONTROLLER ( this, "button=%d; value=%d; EVENT_JOY_BUTTON", event.button, ( event.state == SDL_PRESSED ) );
 }
 
 static unordered_set<string> namesWithIndex;

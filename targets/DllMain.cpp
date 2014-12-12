@@ -1175,6 +1175,13 @@ struct DllMain
                         }
                         return;
 
+                    case MsgType::ErrorMessage:
+                        if ( lazyDisconnect )
+                            return;
+
+                        delayedStop ( msg->getAs<ErrorMessage>().error );
+                        return;
+
                     default:
                         break;
                 }
@@ -1509,6 +1516,9 @@ struct DllMain
     // DLL callback
     void callback()
     {
+        if ( ! ( * CC_ALIVE_FLAG_ADDR ) && clientMode.isNetplay() && dataSocket )
+            dataSocket->send ( new ErrorMessage ( "Disconnected!" ) );
+
         // Don't poll unless we're in the correct state
         if ( appState != AppState::Polling )
             return;

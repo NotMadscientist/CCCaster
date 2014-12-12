@@ -82,7 +82,7 @@ void ControllerManager::checkJoystick()
                 Controller *controller = joysticks[id].get();
                 ASSERT ( controller != 0 );
 
-                // LOG_CONTROLLER ( controller, "id=%d; SDL_JOYAXISMOTION", id );
+                LOG_CONTROLLER ( controller, "id=%d; SDL_JOYAXISMOTION", id );
 
                 controller->joystickEvent ( events[i].jaxis );
                 break;
@@ -94,7 +94,7 @@ void ControllerManager::checkJoystick()
                 Controller *controller = joysticks[id].get();
                 ASSERT ( controller != 0 );
 
-                // LOG_CONTROLLER ( controller, "id=%d; SDL_JOYHATMOTION", id );
+                LOG_CONTROLLER ( controller, "id=%d; SDL_JOYHATMOTION", id );
 
                 controller->joystickEvent ( events[i].jhat );
                 break;
@@ -106,7 +106,7 @@ void ControllerManager::checkJoystick()
                 Controller *controller = joysticks[id].get();
                 ASSERT ( controller != 0 );
 
-                // LOG_CONTROLLER ( controller, "id=%d; SDL_JOYBUTTONDOWN", id );
+                LOG_CONTROLLER ( controller, "id=%d; SDL_JOYBUTTONDOWN", id );
 
                 controller->joystickEvent ( events[i].jbutton );
                 break;
@@ -118,7 +118,7 @@ void ControllerManager::checkJoystick()
                 Controller *controller = joysticks[id].get();
                 ASSERT ( controller != 0 );
 
-                // LOG_CONTROLLER ( controller, "id=%d; SDL_JOYBUTTONUP", id );
+                LOG_CONTROLLER ( controller, "id=%d; SDL_JOYBUTTONUP", id );
 
                 controller->joystickEvent ( events[i].jbutton );
                 break;

@@ -19,9 +19,9 @@ using namespace std;
 
 #define GAME_START_INTERVAL     ( 1000 )
 
-#define GAME_START_ATTEMPTS     ( 20 )
+#define GAME_START_ATTEMPTS     ( 30 )
 
-#define PIPE_CONNECT_TIMEOUT    ( 5000 )
+#define PIPE_CONNECT_TIMEOUT    ( 10000 )
 
 
 string ProcessManager::gameDir;
