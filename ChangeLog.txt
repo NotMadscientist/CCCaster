@@ -1,6 +1,6 @@
 v2.1b:
-- Fix startup issue on Windows XP
-- Faster disconnect when the game is closed by the other player
+- Fix startup issue on Windows XP.
+- Faster disconnect when the game is closed by the other player.
 
 v2.1a:
 - Fix spectate mode getting disconnected at the retry menu.
