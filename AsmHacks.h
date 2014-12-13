@@ -223,4 +223,8 @@ static const Asm detectAutoReplaySave =
         0x59, 0x5E, 0x83, 0xC4, 0x10, 0xC2, 0x04, 0x00              // rest of the code is just shifted down
     } };
 
+// Force the game to go to a certain mode
+static const Asm forceGotoVersus   = { ( void * ) 0x42B475, { 0xEB, 0x3F } }; // jmp 0042B4B6
+static const Asm forceGotoTraining = { ( void * ) 0x42B475, { 0xEB, 0x22 } }; // jmp 0042B499
+
 } // namespace AsmHacks

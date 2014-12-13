@@ -44,17 +44,12 @@ uint16_t NetplayManager::getInitialInput ( uint8_t player )
     if ( player != config.hostPlayer )
         return 0;
 
-    if ( targetMenuState == -1 && targetMenuIndex == -1 )
-    {
-        targetMenuState = 0;
+    // Wait until we know what game mode to go to
+    if ( config.mode.isUnknown() )
+        return 0;
 
-        if ( config.mode.isTraining() )
-            targetMenuIndex = 2; // Training mode is the 2nd option on the main menu
-        else
-            targetMenuIndex = 1; // Versus mode is the 1st option on the main menu
-    }
-
-    return getMenuNavInput();
+    AsmHacks::menuConfirmState = 2;
+    RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
 }
 
 uint16_t NetplayManager::getAutoCharaSelectInput ( uint8_t player )

@@ -2933,6 +2933,54 @@
         <Byte>F8</Byte>
       </After>
     </CodeEntry>
+    <CodeEntry>
+      <Description>Start of mode selection</Description>
+      <Address>0042B475</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>2B475</ModuleNameOffset>
+      <Before>
+        <Byte>E8</Byte>
+        <Byte>4B</Byte>
+        <Byte>09</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+      </Before>
+      <Actual>
+        <Byte>84</Byte>
+        <Byte>C0</Byte>
+      </Actual>
+      <After>
+        <Byte>74</Byte>
+        <Byte>12</Byte>
+        <Byte>0F</Byte>
+        <Byte>B6</Byte>
+        <Byte>05</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Config window stuff</Description>
+      <Address>004A1D4B</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>A1D4B</ModuleNameOffset>
+      <Before>
+        <Byte>45</Byte>
+        <Byte>10</Byte>
+        <Byte>83</Byte>
+        <Byte>E8</Byte>
+        <Byte>01</Byte>
+      </Before>
+      <Actual>
+        <Byte>74</Byte>
+        <Byte>11</Byte>
+      </Actual>
+      <After>
+        <Byte>83</Byte>
+        <Byte>E8</Byte>
+        <Byte>01</Byte>
+        <Byte>75</Byte>
+        <Byte>08</Byte>
+      </After>
+    </CodeEntry>
   </CheatCodes>
   <UserdefinedSymbols/>
   <DisassemblerComments>

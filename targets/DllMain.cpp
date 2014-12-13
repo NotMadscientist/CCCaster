@@ -1286,6 +1286,12 @@ struct DllMain
 
                 clientMode = msg->getAs<ClientMode>();
                 clientMode.flags |= ClientMode::GameStarted;
+
+                if ( clientMode.isTraining() )
+                    WRITE_ASM_HACK ( AsmHacks::forceGotoTraining );
+                else
+                    WRITE_ASM_HACK ( AsmHacks::forceGotoVersus );
+
                 LOG ( "%s: flags={ %s }", clientMode, clientMode.flagString() );
                 break;
 

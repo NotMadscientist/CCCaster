@@ -43,6 +43,7 @@ struct ClientMode : public SerializableSequence
 
     ClientMode& operator= ( const ClientMode& other ) { value = other.value; flags = other.flags; return *this; }
 
+    bool isUnknown() const { return ( value == Unknown ); }
     bool isHost() const { return ( value == Host ); }
     bool isClient() const { return ( value == Client ); }
     bool isSpectateNetplay() const { return ( value == SpectateNetplay ); }
