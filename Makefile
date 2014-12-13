@@ -1,5 +1,5 @@
 VERSION = 2.1
-SUFFIX = b
+SUFFIX = c
 NAME = cccaster
 
 # Main programs
