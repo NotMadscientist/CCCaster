@@ -451,9 +451,12 @@ void Controller::startMapping ( Owner *owner, uint32_t key, const void *window,
     this->options = options;
 
     if ( isKeyboard() )
-        KeyboardManager::get().hook ( this, window, {}, ignore ); // Check all except ignored keys
+        KeyboardManager::get().matchedKeys.clear(); // Check all except ignored keys
     else
-        KeyboardManager::get().hook ( this, window, { VK_ESCAPE }, ignore ); // Only check ESC key
+        KeyboardManager::get().matchedKeys = { VK_ESCAPE }; // Only check ESC key
+
+    KeyboardManager::get().ignoredKeys = ignore;
+    KeyboardManager::get().hook ( this );
 }
 
 void Controller::cancelMapping()

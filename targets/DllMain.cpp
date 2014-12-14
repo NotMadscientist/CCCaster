@@ -1566,6 +1566,8 @@ struct DllMain
     // Destructor
     ~DllMain()
     {
+        KeyboardManager::get().unhook();
+
         syncLog.deinitialize();
 
         procMan.disconnectPipe();

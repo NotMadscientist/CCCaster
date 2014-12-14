@@ -21,6 +21,8 @@ namespace DllHacks
 
 extern void *windowHandle;
 
+extern volatile bool keyboardManagerHooked;
+
 
 void enableOverlay();
 

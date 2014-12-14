@@ -41,6 +41,10 @@ using namespace DllHacks;
 #define INLINE_RECT(rect)               rect.left, rect.top, rect.right, rect.bottom
 
 
+// KeyboardManager's keyboardCallback
+extern LRESULT CALLBACK keyboardCallback ( int, WPARAM, LPARAM );
+
+
 namespace DllHacks
 {
 
@@ -384,9 +388,11 @@ void initializePreLoad()
 }
 
 
-static HHOOK keybdHook = 0;
+volatile bool keyboardManagerHooked = false;
 
-static LRESULT CALLBACK keyboardCallback ( int, WPARAM, LPARAM );
+static HHOOK keyboardHook = 0;
+
+static LRESULT CALLBACK dummyKeyboardCallback ( int, WPARAM, LPARAM );
 
 
 void *windowHandle = 0;
@@ -397,7 +403,7 @@ void initializePostLoad()
     LOG ( "threadId=%08x", GetCurrentThreadId() );
 
     // Hook and ignore keyboard messages to prevent lag from unhandled messages
-    if ( ! ( keybdHook = SetWindowsHookEx ( WH_KEYBOARD, keyboardCallback, 0, GetCurrentThreadId() ) ) )
+    if ( ! ( keyboardHook = SetWindowsHookEx ( WH_KEYBOARD, dummyKeyboardCallback, 0, GetCurrentThreadId() ) ) )
         LOG ( "SetWindowsHookEx failed: %s", WinException::getLastError() );
 
     // Get the handle to the main window
@@ -424,18 +430,24 @@ void deinitialize()
 {
     UnhookDirectX();
 
-    if ( keybdHook )
-        UnhookWindowsHookEx ( keybdHook );
+    if ( keyboardHook )
+        UnhookWindowsHookEx ( keyboardHook );
 
     for ( int i = hookMainLoop.size() - 1; i >= 0; --i )
         hookMainLoop[i].revert();
 }
 
-LRESULT CALLBACK keyboardCallback ( int code, WPARAM wParam, LPARAM lParam )
+LRESULT CALLBACK dummyKeyboardCallback ( int code, WPARAM wParam, LPARAM lParam )
 {
-    // Pass through the Alt and Enter keys
-    if ( code == HC_ACTION && ( wParam == VK_MENU || wParam == VK_RETURN ) )
-        return CallNextHookEx ( 0, code, wParam, lParam );
+    if ( code == HC_ACTION )
+    {
+        if ( keyboardManagerHooked )
+            return keyboardCallback ( code, wParam, lParam );
+
+        // Pass through the Alt and Enter keys when not mapping
+        if ( wParam == VK_MENU || wParam == VK_RETURN )
+            return CallNextHookEx ( 0, code, wParam, lParam );
+    }
 
     return 1;
 }

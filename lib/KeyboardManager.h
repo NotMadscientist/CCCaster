@@ -42,19 +42,29 @@ private:
     void disconnectEvent ( Socket *socket ) override {}
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override;
 
+    // Implementation specific hook / unhook
+    void hookImpl();
+    void unhookImpl();
+
 public:
 
+    // Socket to send KeyboardEvent messages
+    SocketPtr sendSocket;
+
+    // Window to match for keyboard events, 0 to match all, NOT safe to modify when hooked!
+    const void *keyboardWindow = 0;
+
+    // VK codes to match for keyboard events, empty to match all, NOT safe to modify when hooked!
+    std::unordered_set<uint32_t> matchedKeys;
+
+    // VK codes to IGNORE for keyboard events, NOT safe to modify when hooked!
+    std::unordered_set<uint32_t> ignoredKeys;
+
     // Hook keyboard events
-    void hook ( Owner *owner,
-                const void *window = 0,                             // Window to match for keyboard events, 0 for all
-                const std::unordered_set<uint32_t>& keys = {},      // VK codes to match, empty to match all
-                const std::unordered_set<uint32_t>& ignore = {} );  // VK codes to specifically IGNORE
+    void hook ( Owner *owner );
 
     // Unhook keyboard events
     void unhook();
-
-    // Indicates if the keyboard events are already hooked
-    bool isHooked() const;
 
     // Get the singleton instance
     static KeyboardManager& get();

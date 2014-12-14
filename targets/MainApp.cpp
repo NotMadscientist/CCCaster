@@ -549,21 +549,29 @@ struct MainApp
             case ClientMode::SpectateNetplay:
             case ClientMode::SpectateBroadcast:
                 isQueueing = true;
+
                 ctrlSocket->send ( new ConfirmConfig() );
                 startGame();
                 break;
 
             case ClientMode::Host:
-                KeyboardManager::get().hook ( this, MainUi::getConsoleWindow(), { VK_ESCAPE } ); // Waiting again
+                // Waiting again
+                KeyboardManager::get().keyboardWindow = MainUi::getConsoleWindow();
+                KeyboardManager::get().matchedKeys = { VK_ESCAPE };
+                KeyboardManager::get().ignoredKeys.clear();
+                KeyboardManager::get().hook ( this );
+
                 netplayConfig = ui.getNetplayConfig();
                 netplayConfig.sessionId = generateRandomId();
                 netplayConfig.invalidate();
+
                 ctrlSocket->send ( netplayConfig );
                 break;
 
             case ClientMode::Client:
-                ctrlSocket->send ( new ConfirmConfig() );
                 ASSERT ( isFinalConfigReady == true );
+
+                ctrlSocket->send ( new ConfirmConfig() );
                 startGame();
                 break;
 
@@ -1155,6 +1163,8 @@ struct MainApp
     ~MainApp()
     {
         this->join();
+
+        KeyboardManager::get().unhook();
 
         procMan.closeGame();
 
