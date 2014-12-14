@@ -16,18 +16,6 @@ struct Exception
 };
 
 
-struct SDLException : public Exception
-{
-    std::string desc;
-
-    SDLException() {}
-    SDLException ( const char *desc, const std::string& debug, const std::string& user )
-        : Exception ( debug, user ), desc ( desc ) {}
-
-    std::string str() const override;
-};
-
-
 struct WinException : public Exception
 {
     int code = 0;
@@ -56,13 +44,6 @@ inline std::ostream& operator<< ( std::ostream& os, const Exception& exception )
 #define THROW_EXCEPTION(DEBUG, USER, ...)                                                       \
     do {                                                                                        \
         Exception exc ( format ( DEBUG, ## __VA_ARGS__ ), USER );                               \
-        LOG ( "%s", exc );                                                                      \
-        throw exc;                                                                              \
-    } while ( 0 )
-
-#define THROW_SDL_EXCEPTION(DESC, DEBUG, USER, ...)                                             \
-    do {                                                                                        \
-        SDLException exc ( DESC, format ( DEBUG, ## __VA_ARGS__ ), USER );                      \
         LOG ( "%s", exc );                                                                      \
         throw exc;                                                                              \
     } while ( 0 )

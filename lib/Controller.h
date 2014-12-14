@@ -23,18 +23,14 @@
 #define MASK_DIRS           ( 0x0000000Fu )
 #define MASK_BUTTONS        ( 0xFFFFFFF0u )
 
-#define DEFAULT_DEADZONE    ( 25000u )
+#define DEFAULT_DEADZONE    ( 0.8f )
 
 #define MAP_PRESERVE_DIRS   ( 0x01u )
 #define MAP_CONTINUOUSLY    ( 0x02u )
 
-
-// Forward declarations
-struct _SDL_Joystick;
-typedef struct _SDL_Joystick SDL_Joystick;
-struct SDL_JoyAxisEvent;
-struct SDL_JoyHatEvent;
-struct SDL_JoyButtonEvent;
+#define AXIS_CENTERED       ( 0 )
+#define AXIS_POSITIVE       ( 1 )
+#define AXIS_NEGATIVE       ( 2 )
 
 
 struct KeyboardMappings : public SerializableSequence
@@ -57,54 +53,26 @@ struct JoystickMappings : public SerializableSequence
     // Controller unique identifier
     std::string name;
 
-    // event type -> axis/hat/button index -> axis/hat/button value -> mapped key
+    // axis index -> axis value -> mapped key
     //
-    // The neutral axis/hat/button value is mapped to a bit mask of all the mapped values on the same index.
+    // The zero value is mapped to a bit mask of all the mapped values on the same axis index.
     //
-    // Example:                                         Example:
-    //   Axis up      -> 0b0001                           Hat up      -> 0b0001   Hat left  -> 0b0100
-    //   Axis down    -> 0b0010                           Hat down    -> 0b0010   Hat right -> 0b1000
+    // Example:
+    //   Axis up      -> 0b0001
+    //   Axis down    -> 0b0010
     //
-    // Then:                                            Then:
-    //   Axis neutral -> 0b0011                           Hat neutral -> 0b1111
+    // Then:
+    //   Axis neutral -> 0b0011
     //
-    uint32_t mappings[3][256][16];
+    uint32_t axes[256][3];
 
-    // Axis deadzones
-    uint16_t deadzone = DEFAULT_DEADZONE;
+    // button index -> mapped key
+    uint32_t buttons[256];
 
-    // Find a 3-tuple mapping for the given key, returns false if none exist
-    bool find ( uint32_t key, uint8_t& type, uint8_t& index, uint8_t& value ) const
-    {
-        for ( uint8_t i = 0; i < 3; ++i )
-        {
-            for ( uint16_t j = 0; j < 256; ++j )
-            {
-                for ( uint8_t k = 1; k < 16; ++k ) // We skip value=0 since it is the neutral value
-                {
-                    if ( mappings[i][j][k] == key )
-                    {
-                        type = i;
-                        index = j;
-                        value = k;
-                        return true;
-                    }
-                }
-            }
-        }
+    // Axis deadzone
+    float deadzone = DEFAULT_DEADZONE;
 
-        return false;
-    }
-
-    // Find a 3-tuple mapping for the given key, returns false if none exist
-    bool find ( uint32_t key ) const
-    {
-        uint8_t i, j, k;
-
-        return find ( key, i, j, k );
-    }
-
-    PROTOCOL_MESSAGE_BOILERPLATE ( JoystickMappings, name, mappings, deadzone )
+    PROTOCOL_MESSAGE_BOILERPLATE ( JoystickMappings, name, axes, buttons, deadzone )
 };
 
 
@@ -127,8 +95,8 @@ private:
     // Original controller name
     const std::string name;
 
-    // SDL joystick pointer, 0 for keyboard
-    SDL_Joystick *joystick = 0;
+    // Implementation specific joystick pointer, 0 for keyboard
+    void *joystick = 0;
 
     // Joystick any-button state
     uint8_t prevAnyButton = 0, anyButton = 0;
@@ -158,13 +126,12 @@ private:
     void keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown );
 
     // Joystick event callbacks
-    void joystickEvent ( const SDL_JoyAxisEvent& event );
-    void joystickEvent ( const SDL_JoyHatEvent& event );
-    void joystickEvent ( const SDL_JoyButtonEvent& event );
+    void joystickAxisEvent ( uint8_t axis, uint8_t value );
+    void joystickButtonEvent ( uint8_t button, bool isDown );
 
     // Construct a keyboard / joystick controller
     Controller ( KeyboardEnum );
-    Controller ( SDL_Joystick *joystick );
+    Controller ( void *joystick );
 
     // Clear this controller's mapping(s) without callback to ControllerManager
     void doClearMapping ( uint32_t keys = 0xFFFFFFFF );
@@ -228,8 +195,8 @@ public:
     void resetToDefaults();
 
     // Get / set joystick deadzone
-    uint16_t getDeadzone() { return stick.deadzone; }
-    void setDeadzone ( uint16_t deadzone ) { stick.deadzone = deadzone; }
+    float getDeadzone() { return stick.deadzone; }
+    void setDeadzone ( float deadzone ) { stick.deadzone = deadzone; }
 
     // Get the joystick any-button state
     bool getPrevAnyButton() const { return prevAnyButton; }

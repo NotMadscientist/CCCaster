@@ -613,7 +613,7 @@ struct MainApp
                 for ( uint32_t i = 0; i < inputs.size(); ++i )
                 {
                     const uint32_t frame = i + inputs.getStartFrame();
-                    inputs.inputs[i] = ( frame % 5 ? 0 : COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM ) );
+                    inputs.inputs[i] = ( ( frame % 5 ) ? 0 : COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM ) );
                 }
 
                 dataSocket->send ( inputs );

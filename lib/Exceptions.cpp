@@ -19,11 +19,6 @@ string Exception::str() const
     return debug + "; " + user;
 }
 
-string SDLException::str() const
-{
-    return format ( "SDL error: '%s'; %s; %s", desc, debug, user );
-}
-
 string WinException::str() const
 {
     return format ( "[%d] '%s'; %s; %s", code, desc, debug, user );

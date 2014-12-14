@@ -208,7 +208,7 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player )
     uint16_t input = getRawInput ( player );
 
     if ( config.mode.isSpectateNetplay() )
-        input = ( getFrame() % 2 ? 0 : COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM ) );
+        input = ( ( getFrame() % 2 ) ? 0 : COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM ) );
 
     // Don't allow hitting Confirm until 2f after we have stopped moving the cursor. This is a work around
     // for the issue when select is pressed after the cursor moves, but before currentMenuIndex is updated.

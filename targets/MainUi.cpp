@@ -402,23 +402,25 @@ void MainUi::controls()
                 if ( !controller.isJoystick() )
                     continue;
 
-                ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger,
-                                  "Enter a value between 0 and 32768:" ) );
+                ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptString,
+                                  "Enter a value between 0.0 and 1.0:" ),
+                { 0, 0 }, true ); // Don't expand but DO clear
 
-                ui->top<ConsoleUi::Prompt>()->allowNegative = false;
-                ui->top<ConsoleUi::Prompt>()->maxDigits = 5;
-                ui->top<ConsoleUi::Prompt>()->setInitial ( controller.getDeadzone() );
+                ui->top<ConsoleUi::Prompt>()->setInitial ( format ( "%.1f", controller.getDeadzone() ) );
 
                 for ( ;; )
                 {
-                    int ret = ui->popUntilUserInput()->resultInt;
+                    ui->popUntilUserInput();
 
-                    if ( ret < 0 )
+                    if ( ui->top()->resultStr.empty() )
                         break;
 
-                    if ( ret <= 0 || ret >= 32768 )
+                    stringstream ss ( ui->top()->resultStr );
+                    float ret = -1.0f;
+
+                    if ( ! ( ss >> ret ) || ret <= 0.0f || ret >= 1.0f )
                     {
-                        ui->pushBelow ( new ConsoleUi::TextBox ( "Value must be between 0 and 32768!" ) );
+                        ui->pushBelow ( new ConsoleUi::TextBox ( "Value must be a number between 0.0 and 1.0!" ) );
                         continue;
                     }
 

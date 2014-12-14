@@ -2,7 +2,7 @@
 #include "Exceptions.h"
 #include "ErrorStrings.h"
 
-#include <SDL.h>
+#include <allegro5/allegro.h>
 #include <windows.h>
 
 #include <algorithm>
@@ -12,7 +12,11 @@
 using namespace std;
 
 
-#define MAX_EVENT_QUEUE 64
+static ALLEGRO_EVENT_QUEUE *eventQueue = 0;
+
+static ALLEGRO_EVENT event;
+
+extern uint8_t combineAxis ( char type, uint8_t index );
 
 
 void ControllerManager::check ( void *keyboardWindowHandle )
@@ -42,135 +46,105 @@ void ControllerManager::check ( void *keyboardWindowHandle )
         kv.second->prevState = kv.second->state;
     }
 
-    checkJoystick();
-
-    // Workaround for SDL bug 2643
-    if ( shouldReset )
+    while ( al_peek_next_event ( eventQueue, &event ) )
     {
-        LOG ( "Resetting SDL!" );
+        switch ( event.type )
+        {
+            case ALLEGRO_EVENT_JOYSTICK_AXIS:
+            {
+                Controller *controller = joysticks[ ( void * ) event.joystick.id ].get();
 
-        deinitialize();
-        initialize ( owner );
+                ASSERT ( controller != 0 );
 
-        checkJoystick();
+                LOG_CONTROLLER ( controller, "ALLEGRO_EVENT_JOYSTICK_AXIS; stick=%d; axis=%d; pos=%.2f",
+                                 event.joystick.stick, event.joystick.axis, event.joystick.pos );
 
-        shouldReset = false;
+                const uint8_t axis = combineAxis ( 'X' + event.joystick.axis, event.joystick.stick );
+
+                uint8_t value = AXIS_CENTERED;
+                if ( abs ( event.joystick.pos ) > controller->stick.deadzone )
+                    value = ( event.joystick.pos > 0.0f ? AXIS_POSITIVE : AXIS_NEGATIVE );
+
+                controller->joystickAxisEvent ( axis, value );
+                break;
+            }
+
+            case ALLEGRO_EVENT_JOYSTICK_BUTTON_DOWN:
+            {
+                Controller *controller = joysticks[ ( void * ) event.joystick.id ].get();
+
+                ASSERT ( controller != 0 );
+
+                LOG_CONTROLLER ( controller, "ALLEGRO_EVENT_JOYSTICK_BUTTON_DOWN; button=%d", event.joystick.button );
+
+                controller->joystickButtonEvent ( event.joystick.button, true );
+                break;
+            }
+
+            case ALLEGRO_EVENT_JOYSTICK_BUTTON_UP:
+            {
+                Controller *controller = joysticks[ ( void * ) event.joystick.id ].get();
+
+                ASSERT ( controller != 0 );
+
+                LOG_CONTROLLER ( controller, "ALLEGRO_EVENT_JOYSTICK_BUTTON_UP; button=%d", event.joystick.button );
+
+                controller->joystickButtonEvent ( event.joystick.button, false );
+                break;
+            }
+
+            case ALLEGRO_EVENT_JOYSTICK_CONFIGURATION:
+                LOG ( "ALLEGRO_EVENT_JOYSTICK_CONFIGURATION" );
+                refreshJoysticks();
+                break;
+
+            default:
+                LOG ( "Unknown event type (%d)", event.type );
+                break;
+        }
+
+        al_drop_next_event ( eventQueue );
     }
 }
 
-void ControllerManager::checkJoystick()
+void ControllerManager::refreshJoysticks()
 {
-    // Update SDL joystick events
-    SDL_PumpEvents();
-    SDL_Event events[MAX_EVENT_QUEUE];
+    al_reconfigure_joysticks();
 
-    int count = SDL_PeepEvents ( events, sizeof ( events ), SDL_GETEVENT, SDL_JOYAXISMOTION, SDL_JOYDEVICEREMOVED );
+    vector<const ALLEGRO_JOYSTICK *> dead;
 
-    if ( count < 0 )
-        THROW_SDL_EXCEPTION ( SDL_GetError(), "SDL_PeepEvents failed", ERROR_CONTROLLER_CHECK );
-
-    // Save new joysticks so we can add them ordered by instance ID
-    map<int, SDL_Joystick *> newJoysticks;
-
-    for ( int i = 0; i < count; ++i )
+    for ( const auto& kv : joysticks )
     {
-        switch ( events[i].type )
+        ALLEGRO_JOYSTICK *joystick = ( ALLEGRO_JOYSTICK * ) kv.first;
+        Controller *controller = kv.second.get();
+
+        if ( !al_get_joystick_active ( joystick ) )
         {
-            case SDL_JOYAXISMOTION:
-            {
-                SDL_JoystickID id = events[i].jaxis.which;
-                Controller *controller = joysticks[id].get();
-                ASSERT ( controller != 0 );
+            dead.push_back ( joystick );
+            joysticksByName.erase ( controller->getName() );
 
-                LOG_CONTROLLER ( controller, "id=%d; SDL_JOYAXISMOTION", id );
+            LOG_CONTROLLER ( controller, "detached" );
 
-                controller->joystickEvent ( events[i].jaxis );
-                break;
-            }
-
-            case SDL_JOYHATMOTION:
-            {
-                SDL_JoystickID id = events[i].jhat.which;
-                Controller *controller = joysticks[id].get();
-                ASSERT ( controller != 0 );
-
-                LOG_CONTROLLER ( controller, "id=%d; SDL_JOYHATMOTION", id );
-
-                controller->joystickEvent ( events[i].jhat );
-                break;
-            }
-
-            case SDL_JOYBUTTONDOWN:
-            {
-                SDL_JoystickID id = events[i].jbutton.which;
-                Controller *controller = joysticks[id].get();
-                ASSERT ( controller != 0 );
-
-                LOG_CONTROLLER ( controller, "id=%d; SDL_JOYBUTTONDOWN", id );
-
-                controller->joystickEvent ( events[i].jbutton );
-                break;
-            }
-
-            case SDL_JOYBUTTONUP:
-            {
-                SDL_JoystickID id = events[i].jbutton.which;
-                Controller *controller = joysticks[id].get();
-                ASSERT ( controller != 0 );
-
-                LOG_CONTROLLER ( controller, "id=%d; SDL_JOYBUTTONUP", id );
-
-                controller->joystickEvent ( events[i].jbutton );
-                break;
-            }
-
-            case SDL_JOYDEVICEADDED:
-            {
-                SDL_Joystick *joystick = SDL_JoystickOpen ( events[i].jdevice.which );
-                SDL_JoystickID id = SDL_JoystickInstanceID ( joystick );
-
-                // Add new joysticks later, so we can add them ordered by instance ID
-                newJoysticks[id] = joystick;
-                break;
-            }
-
-            case SDL_JOYDEVICEREMOVED:
-            {
-                SDL_JoystickID id = events[i].jdevice.which;
-                Controller *controller = joysticks[id].get();
-                ASSERT ( controller != 0 );
-
-                LOG_CONTROLLER ( controller, "id=%d; SDL_JOYDEVICEREMOVED", id );
-
-                if ( owner )
-                    owner->detachedJoystick ( controller );
-
-                // Workaround SDL bug 2643
-                if ( controller->isUniqueName() )
-                    uniqueNames.erase ( controller->name );
-                else
-                    shouldReset = true;
-
-                joysticksByName.erase ( controller->getName() );
-                joysticks.erase ( id );
-                break;
-            }
-
-            default:
-                LOG ( "Unknown event type (%d)", events[i].type );
-                break;
+            if ( owner )
+                owner->detachedJoystick ( controller );
         }
     }
 
-    // Add joysticks ordered by instance ID
-    for ( const auto& kv : newJoysticks )
+    for ( const ALLEGRO_JOYSTICK *joystick : dead )
+        joysticks.erase ( ( void * ) joystick );
+
+    for ( int i = 0; i < al_get_num_joysticks(); ++i )
     {
-        Controller *controller = new Controller ( kv.second );
+        void *joystick = ( void * ) al_get_joystick ( i );
+
+        if ( joysticks.find ( joystick ) != joysticks.end() )
+            continue;
+
+        Controller *controller = new Controller ( joystick );
+
         ASSERT ( controller != 0 );
 
-        LOG_CONTROLLER ( controller, "id=%d; SDL_JOYDEVICEADDED", kv.first );
-
-        joysticks[kv.first].reset ( controller );
+        joysticks[joystick].reset ( controller );
         joysticksByName[controller->getName()] = controller;
 
         auto it = mappings.mappings.find ( controller->getName() );
@@ -185,14 +159,10 @@ void ControllerManager::checkJoystick()
                 controller->setMappings ( it->second->getAs<JoystickMappings>() );
         }
 
+        LOG_CONTROLLER ( controller, "attached" );
+
         if ( owner )
             owner->attachedJoystick ( controller );
-
-        // Workaround SDL bug 2643
-        if ( uniqueNames.find ( controller->name ) == uniqueNames.end() )
-            uniqueNames.insert ( controller->name );
-        else
-            shouldReset = true;
     }
 }
 
@@ -284,15 +254,20 @@ void ControllerManager::initialize ( Owner *owner )
     if ( initialized )
         return;
 
-    // Disable Xinput so 360 controllers show up with the correct name
-    SDL_SetHint ( SDL_HINT_XINPUT_ENABLED, "0" );
+    if ( !al_init() )
+        THROW_EXCEPTION ( "al_create_event_queue failed!", ERROR_CONTROLLER_INIT );
 
-    // Allow background joystick events
-    SDL_SetHint ( SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1" );
+    eventQueue = al_create_event_queue();
 
-    // Initialize SDL joystick
-    if ( SDL_Init ( SDL_INIT_JOYSTICK ) < 0 )
-        THROW_SDL_EXCEPTION ( SDL_GetError(), "SDL_INIT_JOYSTICK failed", ERROR_CONTROLLER_INIT );
+    if ( !eventQueue )
+        THROW_EXCEPTION ( "al_create_event_queue failed!", ERROR_CONTROLLER_INIT );
+
+    if ( !al_install_joystick() )
+        THROW_EXCEPTION ( "al_install_joystick failed!", ERROR_CONTROLLER_INIT );
+
+    al_register_event_source ( eventQueue, al_get_joystick_event_source() );
+
+    refreshJoysticks();
 
     initialized = true;
 }
@@ -303,7 +278,9 @@ void ControllerManager::deinitialize()
         return;
 
     ControllerManager::get().clear();
-    SDL_Quit();
+
+    al_destroy_event_queue ( eventQueue );
+
     initialized = false;
 }
 

@@ -37,14 +37,8 @@ private:
     Controller keyboard;
 
     // Maps of joystick controller instances
-    std::unordered_map<int, std::shared_ptr<Controller>> joysticks;
+    std::unordered_map<void *, std::shared_ptr<Controller>> joysticks;
     std::unordered_map<std::string, Controller *> joysticksByName;
-
-    // Set of unique joystick names, used to workaround SDL bug 2643
-    std::unordered_set<std::string> uniqueNames;
-
-    // Flag to reinitialize joysticks, used to workaround SDL bug 2643
-    bool shouldReset = false;
 
     // Flag to indicate if initialized
     bool initialized = false;
@@ -54,13 +48,13 @@ private:
     ControllerManager ( const ControllerManager& );
     const ControllerManager& operator= ( const ControllerManager& );
 
-    // Check for joystick events
-    void checkJoystick();
-
 public:
 
     // Check for controller events, matching keyboardWindowHandle if non-zero
     void check ( void *keyboardWindowHandle = 0 );
+
+    // Refresh the list of joysticks, will attach / detach joysticks accordingly
+    void refreshJoysticks();
 
     // Clear controllers
     void clear();
