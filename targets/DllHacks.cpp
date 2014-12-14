@@ -8,7 +8,6 @@
 
 #include <windows.h>
 #include <d3dx9.h>
-#include <MinHook.h>
 
 using namespace std;
 using namespace AsmHacks;
@@ -40,11 +39,6 @@ using namespace DllHacks;
 #define OVERLAY_CHANGE_DELTA            ( 4 + abs ( overlayHeight - newHeight ) / 4 )
 
 #define INLINE_RECT(rect)               rect.left, rect.top, rect.right, rect.bottom
-
-
-extern void startStall();
-
-extern void stopStall();
 
 
 namespace DllHacks
@@ -390,28 +384,6 @@ void initializePreLoad()
 }
 
 
-// Note: this is on the SAME thread as the main thread where callback happens
-MH_WINAPI_HOOK ( LRESULT, CALLBACK, WindowProc, HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
-{
-    switch ( uMsg )
-    {
-        case WM_ENTERSIZEMOVE:  // This happens when the window is starting to be moved / resized
-        case WM_STYLECHANGING:  // This happens when the window is starting to change fullscreen state
-            startStall();
-            break;
-
-        case WM_EXITSIZEMOVE:   // This happens when the window is finished moving / resizing
-        case WM_STYLECHANGED:   // This happens when the window is finished changing fullscreen state
-            stopStall();
-            break;
-    }
-
-    return oWindowProc ( hwnd, uMsg, wParam, lParam );
-}
-
-
-static pWindowProc WindowProc = 0;
-
 static HHOOK keybdHook = 0;
 
 static LRESULT CALLBACK keyboardCallback ( int, WPARAM, LPARAM );
@@ -433,34 +405,12 @@ void initializePostLoad()
         LOG ( "Couldn't find window '%s'", CC_TITLE );
 
     // We can't save replays on Wine because MBAA crashes even without us.
-    // We don't need to hook WindowProc on Wine because the game DOESN'T stop running if moving/resizing.
     // We can't hook DirectX calls on Wine (yet?).
     if ( ProcessManager::isWine() )
     {
         *CC_AUTO_REPLAY_SAVE_ADDR = 0;
         return;
     }
-
-    // // Disable resizing (this has weird behaviour with the viewport size)
-    // const DWORD dwStyle = GetWindowLong ( ( HWND ) windowHandle, GWL_STYLE );
-    // SetWindowLong ( ( HWND ) windowHandle, GWL_STYLE, ( dwStyle | WS_BORDER ) & ~ WS_THICKFRAME );
-
-    // Hook the game's WindowProc
-    WindowProc = ( pWindowProc ) GetWindowLong ( ( HWND ) windowHandle, GWL_WNDPROC );
-
-    LOG ( "WindowProc=%08x", WindowProc );
-
-    MH_STATUS status = MH_Initialize();
-    if ( status != MH_OK )
-        LOG ( "Initialize failed: %s", MH_StatusString ( status ) );
-
-    status = MH_CREATE_HOOK ( WindowProc );
-    if ( status != MH_OK )
-        LOG ( "Create hook failed: %s", MH_StatusString ( status ) );
-
-    status = MH_EnableHook ( ( void * ) WindowProc );
-    if ( status != MH_OK )
-        LOG ( "Enable hook failed: %s", MH_StatusString ( status ) );
 
     // Hook the game's DirectX calls
     string err;
@@ -473,14 +423,6 @@ void initializePostLoad()
 void deinitialize()
 {
     UnhookDirectX();
-
-    if ( WindowProc )
-    {
-        MH_DisableHook ( ( void * ) WindowProc );
-        MH_REMOVE_HOOK ( WindowProc );
-        MH_Uninitialize();
-        WindowProc = 0;
-    }
 
     if ( keybdHook )
         UnhookWindowsHookEx ( keybdHook );

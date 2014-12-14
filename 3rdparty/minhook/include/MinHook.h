@@ -59,7 +59,7 @@ typedef enum MH_STATUS
 	// The hook for the specified target function is not enabled yet, or already disabled.
 	MH_ERROR_DISABLED,
 
-	// The specified pointer is invalid. It points the address of non-allocated and/or non-executable region.
+	// The specified pointer is invalid. It points to the address of non-allocated and/or non-executable region.
 	MH_ERROR_NOT_EXECUTABLE,
 
 	// The specified target function cannot be hooked.
@@ -103,7 +103,7 @@ inline const char *MH_StatusString ( MH_STATUS status )
 			return "[MH_ERROR_DISABLED] The hook for the specified target function is not enabled yet: or already disabled.";
 
 		case MH_ERROR_NOT_EXECUTABLE:
-			return "[MH_ERROR_NOT_EXECUTABLE] The specified pointer is invalid. It points the address of non-allocated and/or non-executable region.";
+			return "[MH_ERROR_NOT_EXECUTABLE] The specified pointer is invalid. It points to the address of non-allocated and/or non-executable region.";
 
 		case MH_ERROR_UNSUPPORTED_FUNCTION:
 			return "[MH_ERROR_UNSUPPORTED_FUNCTION] The specified target function cannot be hooked.";
