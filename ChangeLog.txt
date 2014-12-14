@@ -1,3 +1,10 @@
+v2.1d:
+- In-game mapping automatically moves to next key.
+- Fixed keyboard mapping not working in-game.
+- Fixed diagonals not working for analog joysticks.
+- Internal changes to controller handling, should hopefully fix the rare bug
+  where buttons stop working for a bit. You'll need to reconfigure your controller.
+
 v2.1c:
 - Skip startup configuration window.
 - Also more stable way to choose the game mode (versus/training).
