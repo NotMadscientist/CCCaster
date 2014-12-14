@@ -171,7 +171,7 @@ reset-proto:
 	rm -f lib/ProtocolEnums.h
 	@$(MAKE) proto
 
-depend: version protocol
+depend: version proto
 	$(make_depend)
 
 .depend: $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
