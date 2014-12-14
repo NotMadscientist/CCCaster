@@ -23,7 +23,7 @@
 #define MASK_DIRS           ( 0x0000000Fu )
 #define MASK_BUTTONS        ( 0xFFFFFFF0u )
 
-#define DEFAULT_DEADZONE    ( 0.8f )
+#define DEFAULT_DEADZONE    ( 0.3f )
 
 #define MAP_PRESERVE_DIRS   ( 0x01u )
 #define MAP_CONTINUOUSLY    ( 0x02u )
@@ -196,7 +196,7 @@ public:
 
     // Get / set joystick deadzone
     float getDeadzone() { return stick.deadzone; }
-    void setDeadzone ( float deadzone ) { stick.deadzone = deadzone; }
+    void setDeadzone ( float deadzone ) { stick.deadzone = deadzone; stick.invalidate(); }
 
     // Get the joystick any-button state
     bool getPrevAnyButton() const { return prevAnyButton; }

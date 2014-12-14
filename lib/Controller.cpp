@@ -408,6 +408,8 @@ void Controller::setMappings ( const array<char, 10>& config )
         }
     }
 
+    keybd.invalidate();
+
     ControllerManager::get().mappingsChanged ( this );
 }
 
@@ -416,6 +418,7 @@ void Controller::setMappings ( const KeyboardMappings& mappings )
     LOG_CONTROLLER ( this, "KeyboardMappings" );
 
     keybd = mappings;
+    keybd.invalidate();
 
     ControllerManager::get().mappingsChanged ( this );
 }
@@ -425,6 +428,7 @@ void Controller::setMappings ( const JoystickMappings& mappings )
     LOG_CONTROLLER ( this, "JoystickMappings" );
 
     stick = mappings;
+    stick.invalidate();
 
     ControllerManager::get().mappingsChanged ( this );
 }
@@ -537,6 +541,8 @@ void Controller::doResetToDefaults()
 
     // Default deadzone
     stick.deadzone = DEFAULT_DEADZONE;
+
+    stick.invalidate();
 }
 
 void Controller::resetToDefaults()
