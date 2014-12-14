@@ -111,8 +111,11 @@ struct DllMain
     // Player controllers
     array<Controller *, 2> playerControllers = {{ 0, 0 }};
 
-    // Player controller selector positions
-    array<size_t, 2> playerPositions = {{ 0, 0 }};
+    // Overlay selector positions
+    array<size_t, 2> overlayPositions = {{ 0, 0 }};
+
+    // If the selector position changed
+    array<bool, 2> finishedMapping = {{ false, false }};
 
     // Local player inputs
     array<uint16_t, 2> localInputs = {{ 0, 0 }};
@@ -169,7 +172,7 @@ struct DllMain
                 else if ( !playerControllers[1] )
                 {
                     playerControllers[1] = controller;
-                    playerPositions[1] = 0;
+                    overlayPositions[1] = 0;
                 }
 
             }
@@ -190,7 +193,7 @@ struct DllMain
                 else if ( !playerControllers[0] )
                 {
                     playerControllers[0] = controller;
-                    playerPositions[0] = 0;
+                    overlayPositions[0] = 0;
                 }
             }
         }
@@ -265,14 +268,14 @@ struct DllMain
             options.push_back ( playerControllers[i]->isKeyboard() ? "Done (press enter)" : "Done (press any button)" );
 
             // Toggle overlay if both players are done
-            if ( playerPositions[i] + 1 == options.size()
+            if ( overlayPositions[i] + 1 == options.size()
                     && ( ( playerControllers[i]->isJoystick() && isAnyButtonReleased ( playerControllers[i] ) )
                          || ( playerControllers[i]->isKeyboard() && KeyboardState::isReleased ( VK_RETURN ) ) ) )
             {
-                playerPositions[i] = 0;
+                overlayPositions[i] = 0;
 
-                if ( ( !playerControllers[0] || !playerPositions[0] )
-                        && ( !playerControllers[1] || !playerPositions[1] ) )
+                if ( ( !playerControllers[0] || !overlayPositions[0] )
+                        && ( !playerControllers[1] || !overlayPositions[1] ) )
                 {
                     text[0] = text[1] = text[2] = "";
                     DllHacks::updateOverlay ( text );
@@ -287,9 +290,9 @@ struct DllMain
 
             // Filter keyboard overlay controls when mapping directions
             if ( playerControllers[i]->isKeyboard() && playerControllers[i]->isMapping()
-                    && playerPositions[i] >= 1 && playerPositions[i] <= 4 )
+                    && overlayPositions[i] >= 1 && overlayPositions[i] <= 4 )
             {
-                DllHacks::updateSelector ( i, headerHeight + playerPositions[i], options[playerPositions[i]] );
+                DllHacks::updateSelector ( i, headerHeight + overlayPositions[i], options[overlayPositions[i]] );
                 continue;
             }
 
@@ -307,7 +310,7 @@ struct DllMain
             }
             else if ( playerControllers[i]->isKeyboard()
                       && ( KeyboardState::isReleased ( VK_RETURN ) || KeyboardState::isReleased ( VK_DELETE ) )
-                      && playerPositions[i] >= 1 && playerPositions[i] <= 4 )
+                      && overlayPositions[i] >= 1 && overlayPositions[i] <= 4 )
             {
                 // Press enter / delete to modify direction keys
                 if ( KeyboardState::isReleased ( VK_RETURN ) )
@@ -319,23 +322,23 @@ struct DllMain
                       || ( playerControllers[i]->isKeyboard() && KeyboardState::isPressed ( VK_DOWN ) ) )
             {
                 // Move selector down
-                playerPositions[i] = ( playerPositions[i] + 1 ) % options.size();
+                overlayPositions[i] = ( overlayPositions[i] + 1 ) % options.size();
                 changedPosition = true;
             }
             else if ( ( playerControllers[i]->isJoystick() && isDirectionPressed ( playerControllers[i], 8 ) )
                       || ( playerControllers[i]->isKeyboard() && KeyboardState::isPressed ( VK_UP ) ) )
             {
                 // Move selector up
-                playerPositions[i] = ( playerPositions[i] + options.size() - 1 ) % options.size();
+                overlayPositions[i] = ( overlayPositions[i] + options.size() - 1 ) % options.size();
                 changedPosition = true;
             }
 
-            if ( deleteMapping || mapDirections || changedPosition )
+            if ( deleteMapping || mapDirections || changedPosition || finishedMapping[i] )
             {
-                if ( playerPositions[i] >= 1 && playerPositions[i] < gameInputBits.size() + 1 )
+                if ( overlayPositions[i] >= 1 && overlayPositions[i] < gameInputBits.size() + 1 )
                 {
                     // Convert selector position to game input bit position
-                    const size_t pos = playerPositions[i] - 1 + ( playerControllers[i]->isKeyboard() ? 0 : 4 );
+                    const size_t pos = overlayPositions[i] - 1 + ( playerControllers[i]->isKeyboard() ? 0 : 4 );
 
                     ASSERT ( pos >= 0 );
 
@@ -352,7 +355,7 @@ struct DllMain
                         { VK_ESCAPE, VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT, VK_TOGGLE_OVERLAY },
                         MAP_PRESERVE_DIRS | MAP_CONTINUOUSLY );
                     }
-                    else if ( mapDirections && pos < 4 )
+                    else if ( ( mapDirections || finishedMapping[i] ) && pos < 4 )
                     {
                         ASSERT ( playerControllers[i]->isKeyboard() == true );
 
@@ -370,9 +373,11 @@ struct DllMain
                     // In all other situations cancel the current mapping
                     playerControllers[i]->cancelMapping();
                 }
+
+                finishedMapping[i] = false;
             }
 
-            if ( playerPositions[i] == 0 )
+            if ( overlayPositions[i] == 0 )
             {
                 text[i] = string ( "Press up or down to set keys" )
                           + string ( controllersHeight, '\n' )
@@ -381,7 +386,7 @@ struct DllMain
             }
             else
             {
-                DllHacks::updateSelector ( i, headerHeight + playerPositions[i], options[playerPositions[i]] );
+                DllHacks::updateSelector ( i, headerHeight + overlayPositions[i], options[overlayPositions[i]] );
             }
         }
 
@@ -474,8 +479,8 @@ struct DllMain
 
                 // Only toggle overlay if both players are "done"; ie at the first option; or have no controller
                 if ( toggleOverlay
-                        && ( !playerControllers[0] || !playerPositions[0] )
-                        && ( !playerControllers[1] || !playerPositions[1] ) )
+                        && ( !playerControllers[0] || !overlayPositions[0] )
+                        && ( !playerControllers[1] || !overlayPositions[1] ) )
                 {
                     DllHacks::toggleOverlay();
                 }
@@ -1487,7 +1492,20 @@ struct DllMain
         LOG ( "%s: controller=%08x; key=%08x", controller->getName(), controller, key );
 
         if ( key )
+        {
             saveMappings ( controller );
+
+            if ( controller == playerControllers[0] )
+            {
+                ++overlayPositions[0];
+                finishedMapping[0] = true;
+            }
+            else if ( controller == playerControllers[1] )
+            {
+                ++overlayPositions[1];
+                finishedMapping[1] = true;
+            }
+        }
     }
 
     // Timer callback

@@ -441,7 +441,7 @@ void Controller::startMapping ( Owner *owner, uint32_t key, const void *window,
     else
         cancelMapping();
 
-    LOG ( "Starting mapping %08x", key );
+    LOG_CONTROLLER ( "Starting mapping %08x", key );
 
     if ( state )
         waitForNeutral = true;
@@ -461,7 +461,7 @@ void Controller::startMapping ( Owner *owner, uint32_t key, const void *window,
 
 void Controller::cancelMapping()
 {
-    LOG ( "Cancel mapping %08x", keyToMap );
+    LOG_CONTROLLER ( "Cancel mapping %08x", keyToMap );
 
     KeyboardManager::get().unhook();
 
