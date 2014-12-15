@@ -376,7 +376,14 @@ int main ( int argc, char *argv[] )
     }
     else if ( parser.nonOptionsCount() == 1 )
     {
-        IpAddrPort address = parser.nonOption ( 0 );
+        string str = parser.nonOption ( 0 );
+
+        static const string prefix = "cccaster:";
+
+        if ( str.find ( prefix ) == 0 )
+            str = str.substr ( prefix.size() );
+
+        const IpAddrPort address = str;
 
         if ( ui.initialConfig.mode.value == ClientMode::Unknown )
             ui.initialConfig.mode.value = ( address.addr.empty() ? ClientMode::Host : ClientMode::Client );

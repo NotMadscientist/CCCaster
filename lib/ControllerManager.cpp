@@ -46,7 +46,7 @@ void ControllerManager::check ( void *keyboardWindowHandle )
         kv.second->prevState = kv.second->state;
     }
 
-    while ( al_peek_next_event ( eventQueue, &event ) )
+    while ( al_get_next_event ( eventQueue, &event ) )
     {
         switch ( event.type )
         {
@@ -102,8 +102,6 @@ void ControllerManager::check ( void *keyboardWindowHandle )
                 LOG ( "Unknown event type (%d)", event.type );
                 break;
         }
-
-        al_drop_next_event ( eventQueue );
     }
 }
 
