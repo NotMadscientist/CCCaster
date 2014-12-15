@@ -33,7 +33,7 @@ struct ClientMode : public SerializableSequence
 {
     ENUM_BOILERPLATE ( ClientMode, Host, Client, SpectateNetplay, SpectateBroadcast, Broadcast, Offline )
 
-    enum { Training = 0x01, GameStarted = 0x02, UdpTunnel = 0x04, IsWine = 0x08 };
+    enum { Training = 0x01, GameStarted = 0x02, UdpTunnel = 0x04, IsWine = 0x08, VersusCpu = 0x10 };
 
     uint8_t flags = 0;
 
@@ -55,10 +55,12 @@ struct ClientMode : public SerializableSequence
     bool isLocal() const { return ( value == Broadcast || value == Offline ); }
 
     bool isVersus() const { return !isTraining(); }
+    bool isVersusCpu() const { return ( flags & VersusCpu ) && !isTraining(); }
     bool isTraining() const { return ( flags & Training ); }
     bool isGameStarted() const { return ( flags & GameStarted ); }
     bool isUdpTunnel() const { return ( flags & UdpTunnel ); }
     bool isWine() const { return ( flags & IsWine ); }
+    bool isSinglePlayer() const { return ( isNetplay() || isVersusCpu() ); }
 
     std::string flagString() const
     {
@@ -75,6 +77,9 @@ struct ClientMode : public SerializableSequence
 
         if ( flags & IsWine )
             str += std::string ( str.empty() ? "" : ", " ) + "IsWine";
+
+        if ( flags & VersusCpu )
+            str += std::string ( str.empty() ? "" : ", " ) + "VersusCpu";
 
         return str;
     }

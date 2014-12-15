@@ -37,7 +37,6 @@ void KeyboardState::update()
 
 bool KeyboardState::isDown ( uint32_t vkCode )
 {
-
     auto it = states.find ( vkCode );
 
     if ( it != states.end() )

@@ -227,7 +227,7 @@ void MainUi::offline ( RunFuncPtr run )
 
         delay = menu->resultInt;
 
-        if ( gameMode() )
+        if ( gameModeIncludingVersusCpu() )
         {
             good = true;
             break;
@@ -274,6 +274,28 @@ bool MainUi::gameMode()
         return false;
 
     initialConfig.mode.flags = ( mode == 1 ? ClientMode::Training : 0 );
+    return true;
+}
+
+bool MainUi::gameModeIncludingVersusCpu()
+{
+    ui->pushInFront ( new ConsoleUi::Menu ( "Mode", { "Versus", "Versus CPU", "Training" }, "Cancel" ) );
+    ui->popUntilUserInput ( true ); // Clear popped since we should clear any messages
+
+    int mode = ui->top()->resultInt;
+
+    ui->pop();
+
+    if ( mode < 0 || mode > 2 )
+        return false;
+
+    if ( mode == 0 )
+        initialConfig.mode.flags = 0;
+    else if ( mode == 1 )
+        initialConfig.mode.flags = ClientMode::VersusCpu;
+    else // if ( mode == 2 )
+        initialConfig.mode.flags = ClientMode::Training;
+
     return true;
 }
 
@@ -985,7 +1007,8 @@ void MainUi::spectate ( const SpectateConfig& spectateConfig )
 
     if ( spectateConfig.mode.isBroadcast() )
     {
-        text = "Spectating a broadcast (0 delay)\n\n";
+        text = format ( "Spectating a %s mode broadcast (0 delay)\n\n",
+                        ( spectateConfig.mode.isTraining() ? "training" : "versus" ) );
     }
     else
     {
@@ -998,7 +1021,7 @@ void MainUi::spectate ( const SpectateConfig& spectateConfig )
 
     if ( spectateConfig.initial.netplayState <= NetplayState::CharaSelect )
     {
-        text += "Selecting characters...";
+        text += "Currently selecting characters...";
     }
     else
     {
@@ -1006,6 +1029,8 @@ void MainUi::spectate ( const SpectateConfig& spectateConfig )
                 + " vs "
                 + spectateConfig.formatPlayer ( 2, charaNameFunc );
     }
+
+    text += "\n\n(Press and hold the space-bar to prevent fast-forward)";
 
     ui->pushInFront ( new ConsoleUi::TextBox ( text ), { 1, 0 }, true ); // Expand width and clear
 }

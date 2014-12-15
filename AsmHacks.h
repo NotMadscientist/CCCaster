@@ -224,7 +224,8 @@ static const Asm detectAutoReplaySave =
     } };
 
 // Force the game to go to a certain mode
-static const Asm forceGotoVersus   = { ( void * ) 0x42B475, { 0xEB, 0x3F } }; // jmp 0042B4B6
-static const Asm forceGotoTraining = { ( void * ) 0x42B475, { 0xEB, 0x22 } }; // jmp 0042B499
+static const Asm forceGotoVersus    = { ( void * ) 0x42B475, { 0xEB, 0x3F } }; // jmp 0042B4B6
+static const Asm forceGotoVersusCpu = { ( void * ) 0x42B475, { 0xEB, 0x5C } }; // jmp 0042B4D3
+static const Asm forceGotoTraining  = { ( void * ) 0x42B475, { 0xEB, 0x22 } }; // jmp 0042B499
 
 } // namespace AsmHacks

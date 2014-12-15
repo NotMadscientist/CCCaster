@@ -164,7 +164,7 @@ struct DllMain
                     playerControllers[0]->cancelMapping();
                     playerControllers[0] = 0;
                 }
-                else if ( clientMode.isNetplay() && localPlayer == 1 )
+                else if ( clientMode.isSinglePlayer() && localPlayer == 1 )
                 {
                     // Only one controller (player 1)
                     continue;
@@ -185,7 +185,7 @@ struct DllMain
                     playerControllers[1]->cancelMapping();
                     playerControllers[1] = 0;
                 }
-                else if ( clientMode.isNetplay() && localPlayer == 2 )
+                else if ( clientMode.isSinglePlayer() && localPlayer == 2 )
                 {
                     // Only one controller (player 2)
                     continue;
@@ -212,7 +212,7 @@ struct DllMain
         for ( uint8_t i = 0; i < 2; ++i )
         {
             // Hide / disable other player's overlay in netplay
-            if ( clientMode.isNetplay() && localPlayer != i + 1 )
+            if ( clientMode.isSinglePlayer() && localPlayer != i + 1 )
             {
                 text[i].clear();
                 DllHacks::updateSelector ( i );
@@ -458,9 +458,9 @@ struct DllMain
                     // Sticky controllers to the first available player when anything is pressed EXCEPT start
                     if ( input && ! ( input & COMBINE_INPUT ( 0, CC_BUTTON_START ) ) )
                     {
-                        if ( clientMode.isNetplay() )
+                        if ( clientMode.isSinglePlayer() )
                         {
-                            // Only sticky the local player in netplay
+                            // Only sticky the local player in single player modes
                             if ( !playerControllers[localPlayer - 1]
                                     && controller != playerControllers[localPlayer - 1] )
                             {
@@ -519,6 +519,8 @@ struct DllMain
                         }
                     }
 
+                    // TODO Alt+Number to change rollback
+
 #ifndef RELEASE
                     // Test random delay setting
                     static bool randomize = false;
@@ -542,7 +544,7 @@ struct DllMain
                 }
                 else if ( clientMode.isSpectate() )             // Spectator input
                 {
-                    if ( playerControllers[0] && playerControllers[0]->getState() )
+                    if ( KeyboardState::isDown ( VK_SPACE ) )
                         *CC_SKIP_FRAMES_ADDR = 0;
                 }
                 else
@@ -1296,6 +1298,8 @@ struct DllMain
 
                 if ( clientMode.isTraining() )
                     WRITE_ASM_HACK ( AsmHacks::forceGotoTraining );
+                else if ( clientMode.isVersusCpu() )
+                    WRITE_ASM_HACK ( AsmHacks::forceGotoVersusCpu );
                 else
                     WRITE_ASM_HACK ( AsmHacks::forceGotoVersus );
 

@@ -37,6 +37,7 @@ class MainUi : public Controller::Owner
     bool areYouSure();
 
     bool gameMode();
+    bool gameModeIncludingVersusCpu();
 
     void doneMapping ( Controller *controller, uint32_t key );
 

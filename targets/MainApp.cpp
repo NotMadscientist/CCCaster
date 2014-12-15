@@ -724,9 +724,12 @@ struct MainApp
             netplayConfig.winCount = initialConfig.winCount;
         }
 
+        if ( clientMode.isSpectate() )
+            clientMode.flags = spectateConfig.mode.flags;
+
         ui.display ( format ( "Starting %s mode...", clientMode.isTraining() ? "training" : "versus" ),
                      ! ( clientMode.isClient() || clientMode.isSpectate() ) );
-        // Don't replace last message if not client or spectator
+        // Replace last message if not client or spectator
 
         // Start game (and disconnect sockets) after a small delay since the final configs are still in flight
         startTimer.reset ( new Timer ( this ) );

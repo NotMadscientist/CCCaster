@@ -156,11 +156,18 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player )
         {
             trainingResetState = -1;
         }
-        else if ( trainingResetState > 20 )                                                 // Check for held reset
+        else if ( trainingResetState > 10 )                                                 // Check for held reset
         {
-            // Swap sides if reset button is held for 20f
-            if ( trainingResetType != 2 && ( input & COMBINE_INPUT ( 0, CC_BUTTON_FN2 ) ) )
-                swap ( *CC_P1_X_POSITION_ADDR , *CC_P2_X_POSITION_ADDR );
+            // Swap sides if reset button is held for 10f
+            if ( input & COMBINE_INPUT ( 0, CC_BUTTON_FN2 ) )
+            {
+                if ( trainingResetType == 0 )
+                    swap ( *CC_P1_X_POSITION_ADDR , *CC_P2_X_POSITION_ADDR );
+                else if ( trainingResetType == -1 )
+                    * ( player == 1 ? CC_P1_X_POSITION_ADDR : CC_P2_X_POSITION_ADDR ) = -65536;
+                else if ( trainingResetType == 1 )
+                    * ( player == 1 ? CC_P1_X_POSITION_ADDR : CC_P2_X_POSITION_ADDR ) = 65536;
+            }
 
             trainingResetState = -2;
 
