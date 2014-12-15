@@ -1021,13 +1021,12 @@ void MainUi::spectate ( const SpectateConfig& spectateConfig )
 
     if ( spectateConfig.initial.netplayState <= NetplayState::CharaSelect )
     {
-        text += "Currently selecting characters...";
+        text += format ( "%s vs %s", spectateConfig.names[0], spectateConfig.names[1] );
     }
     else
     {
         text += spectateConfig.formatPlayer ( 1, charaNameFunc )
-                + " vs "
-                + spectateConfig.formatPlayer ( 2, charaNameFunc );
+                + " vs " + spectateConfig.formatPlayer ( 2, charaNameFunc );
     }
 
     text += "\n\n(Press and hold the space-bar to prevent fast-forward)";

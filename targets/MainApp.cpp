@@ -681,6 +681,25 @@ struct MainApp
         else
             options.set ( Options::SessionId, 1, netplayConfig.sessionId );
 
+        if ( clientMode.isClient() && ctrlSocket->isSmart() && ctrlSocket->getAsSmart().isTunnel() )
+            clientMode.flags |= ClientMode::UdpTunnel;
+
+        if ( clientMode.isNetplay() )
+        {
+            netplayConfig.mode.value = clientMode.value;
+            netplayConfig.mode.flags = clientMode.flags = initialConfig.mode.flags;
+            netplayConfig.winCount = initialConfig.winCount;
+            netplayConfig.setNames ( initialConfig.localName, initialConfig.remoteName );
+
+            LOG ( "NetplayConfig: %s; flags={ %s }; delay=%d; rollback=%d; winCount=%d; "
+                  "hostPlayer=%d; names={ '%s', '%s' }", netplayConfig.mode, netplayConfig.mode.flagString(),
+                  netplayConfig.delay, netplayConfig.rollback, netplayConfig.winCount,
+                  netplayConfig.hostPlayer, netplayConfig.names[0], netplayConfig.names[1] );
+        }
+
+        if ( clientMode.isSpectate() )
+            clientMode.flags = spectateConfig.mode.flags;
+
         LOG ( "SessionId '%s'", options.arg ( Options::SessionId ) );
 
         if ( options[Options::Dummy] )
@@ -713,19 +732,6 @@ struct MainApp
                 syncLog.initialize ( appDir + SYNC_LOG_FILE, LOG_VERSION );
             return;
         }
-
-        if ( clientMode.isClient() && ctrlSocket->isSmart() && ctrlSocket->getAsSmart().isTunnel() )
-            clientMode.flags |= ClientMode::UdpTunnel;
-
-        if ( clientMode.isNetplay() )
-        {
-            clientMode.flags = initialConfig.mode.flags;
-            netplayConfig.mode.flags = initialConfig.mode.flags;
-            netplayConfig.winCount = initialConfig.winCount;
-        }
-
-        if ( clientMode.isSpectate() )
-            clientMode.flags = spectateConfig.mode.flags;
 
         ui.display ( format ( "Starting %s mode...", clientMode.isTraining() ? "training" : "versus" ),
                      ! ( clientMode.isClient() || clientMode.isSpectate() ) );
@@ -987,7 +993,6 @@ struct MainApp
 
         ASSERT ( netplayConfig.delay != 0xFF );
 
-        netplayConfig.setNames ( initialConfig.localName, initialConfig.remoteName );
         netplayConfig.invalidate();
 
         procMan.ipcSend ( netplayConfig );

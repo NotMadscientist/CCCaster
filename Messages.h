@@ -171,8 +171,16 @@ struct NetplayConfig : public SerializableSequence
     {
         ASSERT ( hostPlayer == 1 || hostPlayer == 2 );
 
-        names[hostPlayer - 1] = localName;
-        names[2 - hostPlayer] = remoteName;
+        if ( mode.isHost() )
+        {
+            names[hostPlayer - 1] = localName;
+            names[2 - hostPlayer] = remoteName;
+        }
+        else
+        {
+            names[hostPlayer - 1] = remoteName;
+            names[2 - hostPlayer] = localName;
+        }
     }
 
     void clear()

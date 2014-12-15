@@ -1454,9 +1454,10 @@ struct DllMain
                 LOG ( "SessionId '%s'", netMan.config.sessionId );
 
                 LOG ( "NetplayConfig: %s; flags={ %s }; delay=%d; rollback=%d; winCount=%d; "
-                      "hostPlayer=%d; localPlayer=%d; remotePlayer=%d",
+                      "hostPlayer=%d; localPlayer=%d; remotePlayer=%d; names={ '%s', '%s' }",
                       netMan.config.mode, netMan.config.mode.flagString(), netMan.config.delay, netMan.config.rollback,
-                      netMan.config.winCount, netMan.config.hostPlayer, localPlayer, remotePlayer );
+                      netMan.config.winCount, netMan.config.hostPlayer, localPlayer, remotePlayer,
+                      netMan.config.names[0], netMan.config.names[1] );
                 break;
 
             default:
