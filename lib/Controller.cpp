@@ -4,7 +4,6 @@
 #include "Exceptions.h"
 #include "ErrorStrings.h"
 
-#include <allegro5/allegro.h>
 #include <windows.h>
 
 #include <cstdlib>
@@ -32,6 +31,17 @@ static string getVKeyName ( uint32_t vkCode, uint32_t scanCode, bool isExtended 
         return name;
     else
         return format ( "Key Code 0x%02X", vkCode );
+}
+
+static inline char getAxisSign ( uint8_t value )
+{
+    if ( AXIS_POSITIVE )
+        return '+';
+
+    if ( AXIS_NEGATIVE )
+        return '-';
+
+    return '0';
 }
 
 void Controller::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown )
@@ -84,37 +94,6 @@ void Controller::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExte
         owner->doneMapping ( this, key );
 }
 
-uint8_t combineAxis ( char type, uint8_t index )
-{
-    ASSERT ( type >= 'X' && type <= 'Z' );
-
-    ASSERT ( index < 64 );
-
-    return ( ( type - 'X' ) & 3 ) | ( index << 2 );
-}
-
-static void splitAxis ( uint8_t axis, char& type, uint8_t& index )
-{
-    type = 'X' + ( axis & 3 );
-
-    index = ( axis >> 2 );
-}
-
-static char getAxisSign ( uint8_t axis, uint8_t value )
-{
-    if ( value == AXIS_CENTERED )
-        return '0';
-
-    char type;
-    uint8_t index;
-    splitAxis ( axis, type, index );
-
-    if ( type == 'Y' )
-        return ( value == AXIS_POSITIVE ? '-' : '+' );  // Allegro joystick Y-axis is inverted
-    else
-        return ( value == AXIS_POSITIVE ? '+' : '-' );
-}
-
 void Controller::joystickAxisEvent ( uint8_t axis, uint8_t value )
 {
     const uint32_t keyMapped = stick.axes[axis][value];
@@ -140,7 +119,7 @@ void Controller::joystickAxisEvent ( uint8_t axis, uint8_t value )
 
             stick.invalidate();
 
-            LOG_CONTROLLER ( this, "Mapped value=%c to %08x", getAxisSign ( axis, activeValue ), keyToMap );
+            LOG_CONTROLLER ( this, "Mapped value=%c to %08x", getAxisSign ( activeValue ), keyToMap );
 
             Owner *owner = this->owner;
             const uint32_t key = keyToMap;
@@ -177,7 +156,7 @@ void Controller::joystickAxisEvent ( uint8_t axis, uint8_t value )
     if ( !state && waitForNeutral )
         waitForNeutral = false;
 
-    LOG_CONTROLLER ( this, "value=%c", getAxisSign ( axis, value ) );
+    LOG_CONTROLLER ( this, "value=%c", getAxisSign ( value ) );
 }
 
 void Controller::joystickButtonEvent ( uint8_t button, bool isDown )
@@ -277,9 +256,7 @@ Controller::Controller ( KeyboardEnum ) : name ( "Keyboard" )
     LOG_CONTROLLER ( this, "New keyboard" );
 }
 
-Controller::Controller ( void *joystick )
-    : name ( al_get_joystick_name ( ( ALLEGRO_JOYSTICK * ) joystick ) )
-    , joystick ( joystick )
+Controller::Controller ( const string& name, void *joystick ) : name ( name ), joystick ( joystick )
 {
     stick.name = nextName ( name );
     namesWithIndex.insert ( stick.name );
@@ -327,31 +304,31 @@ string Controller::getMapping ( uint32_t key, const string& placeholder ) const
     {
         string mapping;
 
-        for ( uint16_t axis = 0; axis < 256; ++axis )
+        for ( uint8_t axis = 0; axis < MAX_NUM_AXES; ++axis )
         {
             for ( uint8_t value = AXIS_POSITIVE; value <= AXIS_NEGATIVE; ++value )
             {
                 if ( stick.axes[axis][value] != key )
                     continue;
 
-                char type;
-                uint8_t index;
-                splitAxis ( axis, type, index );
+                // char type;
+                // uint8_t index;
+                // splitAxis ( axis, type, index );
 
-                string str;
-                if ( index == 0 )
-                    str = format ( "%c %c-Axis", getAxisSign ( axis, value ), type );
-                else
-                    str = format ( "%c %c-Axis (%u)", getAxisSign ( axis, value ), type, index + 1 );
+                // string str;
+                // if ( index == 0 )
+                //     str = format ( "%c %c-Axis", getAxisSign ( value ), type );
+                // else
+                //     str = format ( "%c %c-Axis (%u)", getAxisSign ( value ), type, index + 1 );
 
-                if ( mapping.empty() )
-                    mapping = str;
-                else
-                    mapping += ", " + str;
+                // if ( mapping.empty() )
+                //     mapping = str;
+                // else
+                //     mapping += ", " + str;
             }
         }
 
-        for ( uint16_t button = 0; button < 256; ++button )
+        for ( uint8_t button = 0; button < MAX_NUM_BUTTONS; ++button )
         {
             if ( stick.buttons[button] != key )
                 continue;
@@ -531,16 +508,16 @@ void Controller::doResetToDefaults()
     // Clear all buttons
     doClearMapping ( MASK_BUTTONS );
 
-    // Default axis mappings
-    for ( uint8_t i = 0; i < 3; ++i )
-    {
-        stick.axes[ combineAxis ( 'X', i ) ][AXIS_CENTERED] = MASK_X_AXIS;
-        stick.axes[ combineAxis ( 'X', i ) ][AXIS_POSITIVE] = BIT_RIGHT;
-        stick.axes[ combineAxis ( 'X', i ) ][AXIS_NEGATIVE] = BIT_LEFT;
-        stick.axes[ combineAxis ( 'Y', i ) ][AXIS_CENTERED] = MASK_Y_AXIS;
-        stick.axes[ combineAxis ( 'Y', i ) ][AXIS_POSITIVE] = BIT_DOWN; // Allegro joystick Y-axis is inverted
-        stick.axes[ combineAxis ( 'Y', i ) ][AXIS_NEGATIVE] = BIT_UP;
-    }
+    // // Default axis mappings
+    // for ( uint8_t i = 0; i < 3; ++i )
+    // {
+    //     stick.axes[ combineAxis ( 'X', i ) ][AXIS_CENTERED] = MASK_X_AXIS;
+    //     stick.axes[ combineAxis ( 'X', i ) ][AXIS_POSITIVE] = BIT_RIGHT;
+    //     stick.axes[ combineAxis ( 'X', i ) ][AXIS_NEGATIVE] = BIT_LEFT;
+    //     stick.axes[ combineAxis ( 'Y', i ) ][AXIS_CENTERED] = MASK_Y_AXIS;
+    //     stick.axes[ combineAxis ( 'Y', i ) ][AXIS_POSITIVE] = BIT_DOWN; // Allegro joystick Y-axis is inverted
+    //     stick.axes[ combineAxis ( 'Y', i ) ][AXIS_NEGATIVE] = BIT_UP;
+    // }
 
     // Default deadzone
     stick.deadzone = DEFAULT_DEADZONE;

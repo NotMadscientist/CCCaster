@@ -32,6 +32,9 @@
 #define AXIS_POSITIVE       ( 1 )
 #define AXIS_NEGATIVE       ( 2 )
 
+#define MAX_NUM_AXES        ( 32 )
+#define MAX_NUM_BUTTONS     ( 128 )
+
 
 struct KeyboardMappings : public SerializableSequence
 {
@@ -64,10 +67,10 @@ struct JoystickMappings : public SerializableSequence
     // Then:
     //   Axis neutral -> 0b0011
     //
-    uint32_t axes[256][3];
+    uint32_t axes[MAX_NUM_AXES][3];
 
     // button index -> mapped key
-    uint32_t buttons[256];
+    uint32_t buttons[MAX_NUM_BUTTONS];
 
     // Axis deadzone
     float deadzone = DEFAULT_DEADZONE;
@@ -131,7 +134,7 @@ private:
 
     // Construct a keyboard / joystick controller
     Controller ( KeyboardEnum );
-    Controller ( void *joystick );
+    Controller ( const std::string& name, void *joystick );
 
     // Clear this controller's mapping(s) without callback to ControllerManager
     void doClearMapping ( uint32_t keys = 0xFFFFFFFF );

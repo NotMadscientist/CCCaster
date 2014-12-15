@@ -60,13 +60,11 @@ DEFINES = -DWIN32_LEAN_AND_MEAN -DWINVER=0x501 -D_WIN32_WINNT=0x501 -D_M_IX86
 DEFINES += -DNAMED_PIPE='"\\\\.\\pipe\\cccaster_pipe"' -DMBAA_EXE='"$(MBAA_EXE)"' -DBINARY='"$(BINARY)"'
 DEFINES += -DHOOK_DLL='"$(FOLDER)\\$(DLL)"' -DLAUNCHER='"$(FOLDER)\\$(LAUNCHER)"' -DFOLDER='"$(FOLDER)\\"'
 INCLUDES = -I$(CURDIR) -I$(CURDIR)/lib -I$(CURDIR)/tests -I$(CURDIR)/3rdparty -I$(CURDIR)/3rdparty/cereal/include
-INCLUDES += -I$(CURDIR)/3rdparty/gtest/include -I$(CURDIR)/3rdparty/Allegro
-INCLUDES += -I$(CURDIR)/3rdparty/minhook/include -I$(CURDIR)/3rdparty/d3dhook
+INCLUDES += -I$(CURDIR)/3rdparty/gtest/include -I$(CURDIR)/3rdparty/minhook/include -I$(CURDIR)/3rdparty/d3dhook
 CC_FLAGS = -m32 $(INCLUDES) $(DEFINES)
 
 # Linker flags
-LD_FLAGS = -m32 -static -L$(CURDIR)/3rdparty/Allegro
-LD_FLAGS += -lallegro -lws2_32 -lpsapi -lwinpthread -lwinmm -lshlwapi -lopengl32 -lgdi32 -lole32
+LD_FLAGS = -m32 -static -lws2_32 -lpsapi -lwinpthread -lwinmm
 
 # Build options
 # DEFINES += -DDISABLE_LOGGING

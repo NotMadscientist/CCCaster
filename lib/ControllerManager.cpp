@@ -2,7 +2,6 @@
 #include "Exceptions.h"
 #include "ErrorStrings.h"
 
-#include <allegro5/allegro.h>
 #include <windows.h>
 
 #include <algorithm>
@@ -10,13 +9,6 @@
 #include <map>
 
 using namespace std;
-
-
-static ALLEGRO_EVENT_QUEUE *eventQueue = 0;
-
-static ALLEGRO_EVENT event;
-
-extern uint8_t combineAxis ( char type, uint8_t index );
 
 
 void ControllerManager::check ( void *keyboardWindowHandle )
@@ -46,122 +38,122 @@ void ControllerManager::check ( void *keyboardWindowHandle )
         kv.second->prevState = kv.second->state;
     }
 
-    while ( al_get_next_event ( eventQueue, &event ) )
-    {
-        switch ( event.type )
-        {
-            case ALLEGRO_EVENT_JOYSTICK_AXIS:
-            {
-                Controller *controller = joysticks[ ( void * ) event.joystick.id ].get();
+    // while ( al_get_next_event ( eventQueue, &event ) )
+    // {
+    //     switch ( event.type )
+    //     {
+    //         case ALLEGRO_EVENT_JOYSTICK_AXIS:
+    //         {
+    //             Controller *controller = joysticks[ ( void * ) event.joystick.id ].get();
 
-                ASSERT ( controller != 0 );
+    //             ASSERT ( controller != 0 );
 
-                LOG_CONTROLLER ( controller, "ALLEGRO_EVENT_JOYSTICK_AXIS; stick=%d; axis=%d; pos=%.2f",
-                                 event.joystick.stick, event.joystick.axis, event.joystick.pos );
+    //             LOG_CONTROLLER ( controller, "ALLEGRO_EVENT_JOYSTICK_AXIS; stick=%d; axis=%d; pos=%.2f",
+    //                              event.joystick.stick, event.joystick.axis, event.joystick.pos );
 
-                const uint8_t axis = combineAxis ( 'X' + event.joystick.axis, event.joystick.stick );
+    //             const uint8_t axis = combineAxis ( 'X' + event.joystick.axis, event.joystick.stick );
 
-                uint8_t value = AXIS_CENTERED;
-                if ( abs ( event.joystick.pos ) > controller->stick.deadzone )
-                    value = ( event.joystick.pos > 0.0f ? AXIS_POSITIVE : AXIS_NEGATIVE );
+    //             uint8_t value = AXIS_CENTERED;
+    //             if ( abs ( event.joystick.pos ) > controller->stick.deadzone )
+    //                 value = ( event.joystick.pos > 0.0f ? AXIS_POSITIVE : AXIS_NEGATIVE );
 
-                controller->joystickAxisEvent ( axis, value );
-                break;
-            }
+    //             controller->joystickAxisEvent ( axis, value );
+    //             break;
+    //         }
 
-            case ALLEGRO_EVENT_JOYSTICK_BUTTON_DOWN:
-            {
-                Controller *controller = joysticks[ ( void * ) event.joystick.id ].get();
+    //         case ALLEGRO_EVENT_JOYSTICK_BUTTON_DOWN:
+    //         {
+    //             Controller *controller = joysticks[ ( void * ) event.joystick.id ].get();
 
-                ASSERT ( controller != 0 );
+    //             ASSERT ( controller != 0 );
 
-                LOG_CONTROLLER ( controller, "ALLEGRO_EVENT_JOYSTICK_BUTTON_DOWN; button=%d", event.joystick.button );
+    //             LOG_CONTROLLER ( controller, "ALLEGRO_EVENT_JOYSTICK_BUTTON_DOWN; button=%d", event.joystick.button );
 
-                controller->joystickButtonEvent ( event.joystick.button, true );
-                break;
-            }
+    //             controller->joystickButtonEvent ( event.joystick.button, true );
+    //             break;
+    //         }
 
-            case ALLEGRO_EVENT_JOYSTICK_BUTTON_UP:
-            {
-                Controller *controller = joysticks[ ( void * ) event.joystick.id ].get();
+    //         case ALLEGRO_EVENT_JOYSTICK_BUTTON_UP:
+    //         {
+    //             Controller *controller = joysticks[ ( void * ) event.joystick.id ].get();
 
-                ASSERT ( controller != 0 );
+    //             ASSERT ( controller != 0 );
 
-                LOG_CONTROLLER ( controller, "ALLEGRO_EVENT_JOYSTICK_BUTTON_UP; button=%d", event.joystick.button );
+    //             LOG_CONTROLLER ( controller, "ALLEGRO_EVENT_JOYSTICK_BUTTON_UP; button=%d", event.joystick.button );
 
-                controller->joystickButtonEvent ( event.joystick.button, false );
-                break;
-            }
+    //             controller->joystickButtonEvent ( event.joystick.button, false );
+    //             break;
+    //         }
 
-            case ALLEGRO_EVENT_JOYSTICK_CONFIGURATION:
-                LOG ( "ALLEGRO_EVENT_JOYSTICK_CONFIGURATION" );
-                refreshJoysticks();
-                break;
+    //         case ALLEGRO_EVENT_JOYSTICK_CONFIGURATION:
+    //             LOG ( "ALLEGRO_EVENT_JOYSTICK_CONFIGURATION" );
+    //             refreshJoysticks();
+    //             break;
 
-            default:
-                LOG ( "Unknown event type (%d)", event.type );
-                break;
-        }
-    }
+    //         default:
+    //             LOG ( "Unknown event type (%d)", event.type );
+    //             break;
+    //     }
+    // }
 }
 
 void ControllerManager::refreshJoysticks()
 {
-    al_reconfigure_joysticks();
+    // al_reconfigure_joysticks();
 
-    vector<const ALLEGRO_JOYSTICK *> dead;
+    // vector<const ALLEGRO_JOYSTICK *> dead;
 
-    for ( const auto& kv : joysticks )
-    {
-        ALLEGRO_JOYSTICK *joystick = ( ALLEGRO_JOYSTICK * ) kv.first;
-        Controller *controller = kv.second.get();
+    // for ( const auto& kv : joysticks )
+    // {
+    //     ALLEGRO_JOYSTICK *joystick = ( ALLEGRO_JOYSTICK * ) kv.first;
+    //     Controller *controller = kv.second.get();
 
-        if ( !al_get_joystick_active ( joystick ) )
-        {
-            dead.push_back ( joystick );
-            joysticksByName.erase ( controller->getName() );
+    //     if ( !al_get_joystick_active ( joystick ) )
+    //     {
+    //         dead.push_back ( joystick );
+    //         joysticksByName.erase ( controller->getName() );
 
-            LOG_CONTROLLER ( controller, "detached" );
+    //         LOG_CONTROLLER ( controller, "detached" );
 
-            if ( owner )
-                owner->detachedJoystick ( controller );
-        }
-    }
+    //         if ( owner )
+    //             owner->detachedJoystick ( controller );
+    //     }
+    // }
 
-    for ( const ALLEGRO_JOYSTICK *joystick : dead )
-        joysticks.erase ( ( void * ) joystick );
+    // for ( const ALLEGRO_JOYSTICK *joystick : dead )
+    //     joysticks.erase ( ( void * ) joystick );
 
-    for ( int i = 0; i < al_get_num_joysticks(); ++i )
-    {
-        void *joystick = ( void * ) al_get_joystick ( i );
+    // for ( int i = 0; i < al_get_num_joysticks(); ++i )
+    // {
+    //     void *joystick = ( void * ) al_get_joystick ( i );
 
-        if ( joysticks.find ( joystick ) != joysticks.end() )
-            continue;
+    //     if ( joysticks.find ( joystick ) != joysticks.end() )
+    //         continue;
 
-        Controller *controller = new Controller ( joystick );
+    //     Controller *controller = new Controller ( joystick );
 
-        ASSERT ( controller != 0 );
+    //     ASSERT ( controller != 0 );
 
-        joysticks[joystick].reset ( controller );
-        joysticksByName[controller->getName()] = controller;
+    //     joysticks[joystick].reset ( controller );
+    //     joysticksByName[controller->getName()] = controller;
 
-        auto it = mappings.mappings.find ( controller->getName() );
-        if ( it != mappings.mappings.end() && it->second->getMsgType() == MsgType::JoystickMappings )
-        {
-            controller->setMappings ( it->second->getAs<JoystickMappings>() );
-        }
-        else
-        {
-            auto it = mappings.mappings.find ( controller->getOrigName() );
-            if ( it != mappings.mappings.end() && it->second->getMsgType() == MsgType::JoystickMappings )
-                controller->setMappings ( it->second->getAs<JoystickMappings>() );
-        }
+    //     auto it = mappings.mappings.find ( controller->getName() );
+    //     if ( it != mappings.mappings.end() && it->second->getMsgType() == MsgType::JoystickMappings )
+    //     {
+    //         controller->setMappings ( it->second->getAs<JoystickMappings>() );
+    //     }
+    //     else
+    //     {
+    //         auto it = mappings.mappings.find ( controller->getOrigName() );
+    //         if ( it != mappings.mappings.end() && it->second->getMsgType() == MsgType::JoystickMappings )
+    //             controller->setMappings ( it->second->getAs<JoystickMappings>() );
+    //     }
 
-        LOG_CONTROLLER ( controller, "attached" );
+    //     LOG_CONTROLLER ( controller, "attached" );
 
-        if ( owner )
-            owner->attachedJoystick ( controller );
-    }
+    //     if ( owner )
+    //         owner->attachedJoystick ( controller );
+    // }
 }
 
 void ControllerManager::mappingsChanged ( Controller *controller )
@@ -252,21 +244,6 @@ void ControllerManager::initialize ( Owner *owner )
     if ( initialized )
         return;
 
-    if ( !al_init() )
-        THROW_EXCEPTION ( "al_create_event_queue failed!", ERROR_CONTROLLER_INIT );
-
-    eventQueue = al_create_event_queue();
-
-    if ( !eventQueue )
-        THROW_EXCEPTION ( "al_create_event_queue failed!", ERROR_CONTROLLER_INIT );
-
-    if ( !al_install_joystick() )
-        THROW_EXCEPTION ( "al_install_joystick failed!", ERROR_CONTROLLER_INIT );
-
-    al_register_event_source ( eventQueue, al_get_joystick_event_source() );
-
-    refreshJoysticks();
-
     initialized = true;
 }
 
@@ -276,8 +253,6 @@ void ControllerManager::deinitialize()
         return;
 
     ControllerManager::get().clear();
-
-    al_destroy_event_queue ( eventQueue );
 
     initialized = false;
 }
