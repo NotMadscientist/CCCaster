@@ -482,6 +482,8 @@ struct DllMain
                         && ( !playerControllers[0] || !overlayPositions[0] )
                         && ( !playerControllers[1] || !overlayPositions[1] ) )
                 {
+                    if ( !DllHacks::isOverlayEnabled() )
+                        ControllerManager::get().refreshJoysticks();
                     DllHacks::toggleOverlay();
                 }
 

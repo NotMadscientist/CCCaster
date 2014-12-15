@@ -288,27 +288,25 @@ void MainUi::doneMapping ( Controller *controller, uint32_t key )
 
 void MainUi::controls()
 {
-    ControllerManager::get().check();
-
-    vector<Controller *> controllers = ControllerManager::get().getControllers();
-
-    vector<string> names;
-    names.reserve ( controllers.size() );
-    for ( Controller *c : controllers )
-        names.push_back ( c->getName() );
-
-    ui->pushRight ( new ConsoleUi::Menu ( "Controllers", names, "Back" ) );
-
     for ( ;; )
     {
-        ConsoleUi::Element *menu = ui->popUntilUserInput ( true ); // Clear popped since we don't care about messages
+        ControllerManager::get().refreshJoysticks();
 
-        if ( menu->resultInt < 0 || menu->resultInt >= ( int ) controllers.size() )
+        vector<Controller *> controllers = ControllerManager::get().getControllers();
+
+        vector<string> names;
+        names.reserve ( controllers.size() );
+        for ( Controller *c : controllers )
+            names.push_back ( c->getName() );
+
+        ui->pushRight ( new ConsoleUi::Menu ( "Controllers", names, "Back" ) );
+        int ret = ui->popUntilUserInput ( true )->resultInt; // Clear popped since we don't care about messages
+        ui->pop();
+
+        if ( ret < 0 || ret >= ( int ) controllers.size() )
             break;
 
-        Controller& controller = *controllers[menu->resultInt];
-
-        ui->clearTop();
+        Controller& controller = *controllers[ret];
 
         int pos = ( controller.isKeyboard() ? 0 : 4 );
 
@@ -330,11 +328,13 @@ void MainUi::controls()
             if ( controller.isJoystick() )
                 options.push_back ( "Set joystick deadzone" );
 
+            // Add instructions above menu
+            ui->pushRight ( new ConsoleUi::TextBox (
+                                controller.getName() + " mappings\n"
+                                "Press Left/Right/Delete to delete a key\n"
+                                "Press Escape to cancel mapping\n" ) );
 
-            ui->pushInFront ( new ConsoleUi::TextBox (
-                                  controller.getName() + " mappings\n"
-                                  "Press Left/Right/Delete to delete a key\n"
-                                  "Press Escape to cancel mapping\n" ) );
+            // Add menu without title
             ui->pushBelow ( new ConsoleUi::Menu ( options, "Back" ) );
             ui->top<ConsoleUi::Menu>()->setPosition ( pos );
             ui->top<ConsoleUi::Menu>()->setDelete ( 2 );
@@ -362,6 +362,7 @@ void MainUi::controls()
                     || ( pos == ( int ) options.size() && !ui->top()->resultStr.empty() ) )
             {
                 ui->pop();
+                ui->pop();
                 break;
             }
 
@@ -374,6 +375,7 @@ void MainUi::controls()
                     saveMappings ( controller );
                 }
 
+                ui->pop();
                 ui->pop();
                 continue;
             }
@@ -391,12 +393,14 @@ void MainUi::controls()
                 }
 
                 ui->pop();
+                ui->pop();
                 continue;
             }
 
             // Set joystick deadzone
             if ( pos == ( int ) gameInputBits.size() + 2 )
             {
+                ui->pop();
                 ui->pop();
 
                 if ( !controller.isJoystick() )
@@ -441,6 +445,7 @@ void MainUi::controls()
 
                 saveMappings ( controller );
                 ui->pop();
+                ui->pop();
                 continue;
             }
 
@@ -469,6 +474,7 @@ void MainUi::controls()
 
             saveMappings ( controller );
             ui->pop();
+            ui->pop();
 
             // Continue mapping
             if ( mappedKey && pos + 1 < ( int ) gameInputBits.size() )
@@ -478,8 +484,6 @@ void MainUi::controls()
             }
         }
     }
-
-    ui->pop();
 }
 
 void MainUi::settings()
