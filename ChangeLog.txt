@@ -1,3 +1,10 @@
+v2.1e:
+- Fixed input drop issue from v2.1d.
+- Fixed hidden stages having incorrect music.
+- Fixed spectator names sometimes being swapped.
+- Added Versus CPU offline mode.
+- Reverted the training reset to what it was like in v2.0d.
+
 v2.1d:
 - In-game mapping automatically moves to next key.
 - Fixed keyboard mapping not working in-game.
@@ -11,16 +18,17 @@ v2.1c:
   (Thanks to plumcot for the assembly code to do these two things)
 
 v2.1b:
-- Fix startup issue on Windows XP.
+- Fixed startup issue on Windows XP.
 - Faster disconnect when the game is closed by the other player.
 
 v2.1a:
-- Fix spectate mode getting disconnected at the retry menu.
+- Fixed spectate mode getting disconnected at the retry menu.
 - Show full instructions at controller config.
 
 v2.1:
 - Can host and connect without port forward. It is still recommended to port forward if possible,
-  since the initial connect will be faster, and it will probably be more stable.
+  since the initial connect will be faster, and it will probably be more stable and more likely to work.
+  Note: this uses UDP hole-punching, which isn't guaranteed to work in all situations.
 - In-game button config with player selection:
   Show or hide overlay with F4 on the keyboard or start button on any controller with start mapped.
   When the overlay is up, move controllers left or right to switch players.
