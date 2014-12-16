@@ -2,7 +2,9 @@ v2.1e:
 - Fixed input drop issue from v2.1d.
 - Fixed hidden stages having incorrect music.
 - Fixed spectator names sometimes being swapped.
+- Fixed some minor issues with spectating, should be more stable now.
 - Added Versus CPU offline mode.
+- Allow choosing 0 delay when netplaying.
 - Reverted the training reset to what it was like in v2.0d.
 
 v2.1d:
