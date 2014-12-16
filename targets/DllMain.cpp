@@ -403,7 +403,7 @@ struct DllMain
 
             case NetplayState::InGame:
                 // Only save rollback states in-game
-                if ( netMan.isRollbackState() )
+                if ( netMan.config.rollback )
                     procMan.saveState ( netMan );
 
             case NetplayState::CharaSelect:
@@ -593,6 +593,19 @@ struct DllMain
                         else
                             localInputs[0] = COMBINE_INPUT ( direction, buttons );
                     }
+                }
+
+                // Test rollback
+                if ( KeyboardState::isPressed ( VK_F9 ) )
+                {
+                    IndexedFrame target = netMan.getIndexedFrame();
+
+                    if ( target.parts.frame <= 60 )
+                        target.parts.frame = 0;
+                    else
+                        target.parts.frame -= 60;
+
+                    procMan.loadState ( target, netMan );
                 }
 #endif
 
@@ -838,8 +851,8 @@ struct DllMain
         // Entering InGame
         if ( state == NetplayState::InGame )
         {
-            if ( netMan.isRollbackState() )
-                procMan.allocateStates();
+            if ( netMan.config.rollback )
+                procMan.allocateStates ( options.arg ( Options::AppDir ) );
         }
 
         // Exiting InGame

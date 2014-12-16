@@ -141,8 +141,8 @@ public:
     // const IndexedFrame& getLastChangedFrame() const { return inputs[remotePlayer - 1].getLastChangedFrame(); }
     // void clearLastChangedFrame() { inputs[remotePlayer - 1].clearLastChangedFrame(); }
 
-    // Check if we are in a rollback state, with 10 frame initial buffer window
-    bool isRollbackState() const { return ( config.rollback && getFrame() >= 10 ); }
+    // // Check if we are in a rollback state, with 10 frame initial buffer window
+    // bool isRollbackState() const { return ( config.rollback && getFrame() >= 10 ); }
 
     // Get / set the current NetplayState
     NetplayState getState() const { return state; }

@@ -153,6 +153,13 @@
       <Address>00555210</Address>
     </CheatEntry>
     <CheatEntry>
+      <ID>262</ID>
+      <Description>"P1 heat"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>00555214</Address>
+    </CheatEntry>
+    <CheatEntry>
       <ID>124</ID>
       <Description>"P1 X"</Description>
       <ShowAsSigned>1</ShowAsSigned>
@@ -854,6 +861,13 @@
       <Color>80000008</Color>
       <VariableType>Byte</VariableType>
       <Address>0076E650</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>263</ID>
+      <Description>"No description"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>005553F8</Address>
     </CheatEntry>
   </CheatEntries>
   <CheatCodes>

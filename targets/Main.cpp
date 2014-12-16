@@ -340,6 +340,7 @@ int main ( int argc, char *argv[] )
         netplayConfig.mode.value = ClientMode::Offline;
         netplayConfig.mode.flags = ui.initialConfig.mode.flags;
         netplayConfig.delay = 0;
+        netplayConfig.rollback = 1;
         netplayConfig.winCount = ui.getConfig().getInteger ( "versusWinCount" );
         netplayConfig.hostPlayer = 1;
 

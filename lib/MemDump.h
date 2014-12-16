@@ -191,6 +191,6 @@ struct MemDumpList
     // Serialization
     void save ( cereal::BinaryOutputArchive& ar ) const;
     void load ( cereal::BinaryInputArchive& ar );
-    bool save ( const char *filename ) const;
-    bool load ( const char *filename );
+    bool save ( const std::string& filename ) const;
+    bool load ( const std::string& filename );
 };

@@ -126,7 +126,7 @@ void ProcessManager::GameState::load()
     ASSERT ( dump == rawBytes + allAddrs.totalSize );
 }
 
-void ProcessManager::allocateStates()
+void ProcessManager::allocateStates ( const string& appDir )
 {
     static const vector<MemDump> playerAddrs =
     {
@@ -145,6 +145,8 @@ void ProcessManager::allocateStates()
         CC_P1_GUARD_BAR_ADDR,
         CC_P1_GUARD_QUALITY_ADDR,
         CC_P1_METER_ADDR,
+        CC_P1_HEAT_ADDR,
+        CC_P1_CATCH_STATE_ADDR,
     };
 
     static const vector<MemDump> miscAddrs =
@@ -196,9 +198,9 @@ void ProcessManager::allocateStates()
 
         allAddrs.update();
 
-        allAddrs.save ( "dump.bin" );
+        allAddrs.save ( appDir + FOLDER "dump.bin" );
 #else
-        allAddrs.load ( "dump.bin" );
+        allAddrs.load ( appDir + FOLDER "dump.bin" );
 #endif
 
         LOG ( "allAddrs.totalSize=%u", allAddrs.totalSize );
