@@ -369,9 +369,6 @@ void initializePreLoad()
     for ( const Asm& hack : hookMainLoop )
         WRITE_ASM_HACK ( hack );
 
-    for ( const Asm& hack : enableDisabledStages )
-        WRITE_ASM_HACK ( hack );
-
     for ( const Asm& hack : hijackControls )
         WRITE_ASM_HACK ( hack );
 
@@ -401,6 +398,10 @@ void *windowHandle = 0;
 void initializePostLoad()
 {
     LOG ( "threadId=%08x", GetCurrentThreadId() );
+
+    // Apparently this needs to be applied AFTER the game loads
+    for ( const Asm& hack : enableDisabledStages )
+        WRITE_ASM_HACK ( hack );
 
     // Hook and ignore keyboard messages to prevent lag from unhandled messages
     if ( ! ( keyboardHook = SetWindowsHookEx ( WH_KEYBOARD, dummyKeyboardCallback, 0, GetCurrentThreadId() ) ) )
