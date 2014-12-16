@@ -15,6 +15,10 @@ struct Version : public SerializableSequence
     std::string revision;
     std::string buildTime;
 
+    Version ( const char *code ) : code ( code ) {}
+
+    Version ( const std::string& code ) : code ( code ) {}
+
     Version ( const std::string& code, const std::string& revision, const std::string& buildTime )
         : code ( code ), revision ( revision ), buildTime ( buildTime ) {}
 
@@ -45,6 +49,13 @@ private:
 
     std::string get ( PartEnum part ) const;
 };
+
+
+// Comparison operator
+bool operator< ( const Version& a, const Version& b );
+inline bool operator<= ( const Version& a, const Version& b ) { return ( a < b ) || a.similar ( b, 2 ); }
+inline bool operator> ( const Version& a, const Version& b ) { return ! ( a <= b ); }
+inline bool operator>= ( const Version& a, const Version& b ) { return ! ( a < b ); }
 
 
 // Stream operator

@@ -1,6 +1,15 @@
 #include "Version.h"
 
+#include <vector>
+
 using namespace std;
+
+
+// List of version that made compatibility breaking changes
+static vector<Version> breakingVersions =
+{
+    "2.1e", // Changed protocol by adding UdpControl::Disconnect
+};
 
 
 string Version::get ( PartEnum part ) const
@@ -53,6 +62,18 @@ bool Version::similar ( const Version& other, uint8_t level ) const
                 return false;
 
         case 1:
+            if ( level == 1 )
+            {
+                for ( const Version& divider : breakingVersions )
+                {
+                    if ( *this >= divider && other < divider )
+                        return false;
+
+                    if ( *this < divider && other >= divider )
+                        return false;
+                }
+            }
+
             if ( minor() != other.minor() )
                 return false;
 
@@ -65,5 +86,27 @@ bool Version::similar ( const Version& other, uint8_t level ) const
     return true;
 }
 
+bool operator< ( const Version& a, const Version& b )
+{
+    if ( a.major() < b.major() )
+        return true;
+
+    if ( a.major() > b.major() )
+        return false;
+
+    if ( a.minor() < b.minor() )
+        return true;
+
+    if ( a.minor() < b.minor() )
+        return false;
+
+    if ( a.suffix() < b.suffix() )
+        return true;
+
+    if ( a.suffix() > b.suffix() )
+        return true;
+
+    return false;
+}
 
 #include "Version.local.h"

@@ -7,11 +7,11 @@
 #define DEFAULT_KEEP_ALIVE ( 10000 )
 
 
-struct UdpConnect : public SerializableSequence
+struct UdpControl : public SerializableSequence
 {
-    ENUM_BOILERPLATE ( UdpConnect, Request, Reply, Final )
+    ENUM_BOILERPLATE ( UdpControl, ConnectRequest, ConnectReply, ConnectFinal, Disconnect )
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( UdpConnect, value )
+    PROTOCOL_MESSAGE_BOILERPLATE ( UdpControl, value )
 };
 
 

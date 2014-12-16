@@ -9,9 +9,10 @@
 
 
 // Default pending socket timeout
-#define DEFAULT_PENDING_TIMEOUT ( 10000 )
+#define DEFAULT_PENDING_TIMEOUT ( 20000 )
 
-// Forward declaration
+
+// Forward declarations
 struct RngState;
 struct NetplayManager;
 struct ProcessManager;

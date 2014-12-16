@@ -39,7 +39,7 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, const Ty
     SocketManager::get().add ( this );
 
     if ( isConnecting() )
-        send ( new UdpConnect ( UdpConnect::Request ) );
+        send ( new UdpControl ( UdpControl::ConnectRequest ) );
 }
 
 UdpSocket::UdpSocket ( Socket::Owner *owner, const SocketShareData& data )
@@ -129,6 +129,26 @@ UdpSocket::~UdpSocket()
 
 void UdpSocket::disconnect()
 {
+    // Send 3 UdpControl::Disconnect messages if not connection-less
+    if ( !isConnectionLess() )
+    {
+        MsgPtr msg ( new UdpControl ( UdpControl::Disconnect ) );
+
+        if ( isClient() )
+        {
+            for ( int i = 0; i < 3; ++i )
+                send ( msg );
+        }
+        else if ( isServer() )
+        {
+            for ( int i = 0; i < 3; ++i )
+            {
+                for ( auto& kv : childSockets )
+                    kv.second->send ( msg );
+            }
+        }
+    }
+
     // Real UDP sockets need to be removed on disconnect
     if ( isReal() )
         SocketManager::get().remove ( this );
@@ -295,18 +315,18 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
 
         switch ( msg->getMsgType() )
         {
-            case MsgType::UdpConnect:
+            case MsgType::UdpControl:
                 if ( isConnecting() )
                 {
-                    switch ( msg->getAs<UdpConnect>().value )
+                    switch ( msg->getAs<UdpControl>().value )
                     {
-                        case UdpConnect::Request:
-                            // UdpConnect::Request should be responded to with a Reply
-                            send ( new UdpConnect ( UdpConnect::Reply ) );
-                            break;
+                        case UdpControl::ConnectRequest:
+                            // UdpControl::ConnectRequest should be responded to with a Reply
+                            send ( new UdpControl ( UdpControl::ConnectReply ) );
+                            return;
 
-                        case UdpConnect::Final:
-                            // UdpConnect::Final means the client connected properly and is now accepted
+                        case UdpControl::ConnectFinal:
+                            // UdpControl::ConnectFinal means the client connected properly and is now accepted
                             state = State::Connected;
 
                             LOG_UDP_SOCKET ( this, "acceptEvent" );
@@ -317,21 +337,34 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
 
                             if ( parentSocket->owner )
                                 parentSocket->owner->acceptEvent ( parentSocket );
-                            break;
+                            return;
 
                         default:
-                            break;
+                            return;
                     }
                     return;
                 }
 
+                if ( msg->getAs<UdpControl>().value == UdpControl::Disconnect )
+                {
+                    LOG_UDP_SOCKET ( this, "disconnectEvent" );
+
+                    Socket::Owner *const owner = this->owner;
+
+                    disconnect();
+
+                    if ( owner )
+                        owner->disconnectEvent ( this );
+                    return;
+                }
+
                 LOG_UDP_SOCKET ( this, "Unexpected '%s' from '%s'", msg, address );
-                break;
+                return;
 
             default:
                 if ( owner )
                     owner->readEvent ( this, msg, getRemoteAddress() );
-                break;
+                return;
         }
     }
     else
@@ -340,15 +373,15 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
 
         switch ( msg->getMsgType() )
         {
-            case MsgType::UdpConnect:
-                // UdpConnect::Reply while connecting indicates this socket is now connected
-                if ( isConnecting() && msg->getAs<UdpConnect>().value == UdpConnect::Reply )
+            case MsgType::UdpControl:
+                // UdpControl::ConnectReply while connecting indicates this socket is now connected
+                if ( isConnecting() && msg->getAs<UdpControl>().value == UdpControl::ConnectReply )
                 {
                     state = State::Connected;
 
                     LOG_UDP_SOCKET ( this, "connectEvent" );
 
-                    send ( new UdpConnect ( UdpConnect::Final ) );
+                    send ( new UdpControl ( UdpControl::ConnectFinal ) );
 
                     gbn->setKeepAlive ( keepAlive );
 
@@ -357,13 +390,26 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
                     return;
                 }
 
+                if ( msg->getAs<UdpControl>().value == UdpControl::Disconnect )
+                {
+                    LOG_UDP_SOCKET ( this, "disconnectEvent" );
+
+                    Socket::Owner *const owner = this->owner;
+
+                    disconnect();
+
+                    if ( owner )
+                        owner->disconnectEvent ( this );
+                    return;
+                }
+
                 LOG_UDP_SOCKET ( this, "Unexpected '%s' from '%s'", msg, address );
-                break;
+                return;
 
             default:
                 if ( owner )
                     owner->readEvent ( this, msg, getRemoteAddress() );
-                break;
+                return;
         }
     }
 }
@@ -418,8 +464,8 @@ void UdpSocket::readEventAddressed ( const MsgPtr& msg, const IpAddrPort& addres
         socket = & ( it->second->getAsUDP() );
     }
     else if ( msg.get()
-              && msg->getMsgType() == MsgType::UdpConnect
-              && msg->getAs<UdpConnect>().value == UdpConnect::Request )
+              && msg->getMsgType() == MsgType::UdpControl
+              && msg->getAs<UdpControl>().value == UdpControl::ConnectRequest )
     {
         // Only a connect request is allowed to open a new child socket
         socket = new UdpSocket ( ChildSocket, this, address );
@@ -526,5 +572,5 @@ void UdpSocket::connect()
     gbn.setKeepAlive ( DEFAULT_KEEP_ALIVE );
     gbn.reset();
 
-    send ( new UdpConnect ( UdpConnect::Request ) );
+    send ( new UdpControl ( UdpControl::ConnectRequest ) );
 }

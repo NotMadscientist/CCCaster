@@ -482,8 +482,20 @@ struct DllMain
                         && ( !playerControllers[0] || !overlayPositions[0] )
                         && ( !playerControllers[1] || !overlayPositions[1] ) )
                 {
-                    if ( !DllHacks::isOverlayEnabled() )
+                    if ( DllHacks::isOverlayEnabled() )
+                    {
+                        // Cancel all mapping if we're disabling the overlay
+                        if ( playerControllers[0] )
+                            playerControllers[0]->cancelMapping();
+                        if ( playerControllers[1] )
+                            playerControllers[1]->cancelMapping();
+                    }
+                    else
+                    {
+                        // Refresh the list of joysticks if we're enabling the overlay
                         ControllerManager::get().refreshJoysticks();
+                    }
+
                     DllHacks::toggleOverlay();
                 }
 
@@ -1547,14 +1559,9 @@ struct DllMain
     // DLL callback
     void callback()
     {
-        // Send an ErrorMessage when the game is closed
+        // Disconnect the socket early if the game is being closed
         if ( ! ( * CC_ALIVE_FLAG_ADDR ) && clientMode.isNetplay() && dataSocket )
-        {
-            MsgPtr msg ( new ErrorMessage ( "Disconnected!" ) );
-            dataSocket->send ( msg );
-            dataSocket->send ( msg );
-            dataSocket->send ( msg );
-        }
+            dataSocket->disconnect();
 
         // Don't poll unless we're in the correct state
         if ( appState != AppState::Polling )

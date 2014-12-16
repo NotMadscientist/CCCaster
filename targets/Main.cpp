@@ -280,7 +280,7 @@ int main ( int argc, char *argv[] )
     SetConsoleCtrlHandler ( consoleCtrl, TRUE );
 
     // Initialize the main directories, this also does a sanity check
-    if ( !initDirsAndSanityCheck ( !opt[Options::Dummy] ) )
+    if ( !initDirsAndSanityCheck ( !opt[Options::Tests] && !opt[Options::Dummy] ) )
     {
         PRINT ( "%s", trimmed ( lastError ) );
         PRINT ( "Press any key to exit." );
