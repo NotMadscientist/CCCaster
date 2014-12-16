@@ -141,9 +141,6 @@ struct DllMain
     // Sockets that have been redirected to another client
     unordered_set<Socket *> redirectedSockets;
 
-    // Timer for spectator inputs
-    TimerPtr specInputsTimer;
-
 #ifndef RELEASE
     // Local and remote SyncHashes
     list<MsgPtr> localSync, remoteSync;
@@ -683,19 +680,9 @@ struct DllMain
             // Don't resend inputs in spectator mode
             if ( clientMode.isSpectate() )
             {
-                // Stop the timer if we're ready
+                // Continue if ready or isGameOver
                 if ( ready || isGameOver )
-                {
-                    specInputsTimer.reset();
                     break;
-                }
-
-                // Start the timeout since we are waiting
-                if ( !specInputsTimer )
-                {
-                    specInputsTimer.reset ( new Timer ( this ) );
-                    specInputsTimer->start ( DEFAULT_KEEP_ALIVE );
-                }
             }
             else
             {
@@ -1245,8 +1232,7 @@ struct DllMain
                         return;
 
                     case MsgType::ErrorMessage:
-                        if ( isGameOver )
-                            delayedStop ( msg->getAs<ErrorMessage>().error );
+                        delayedStop ( msg->getAs<ErrorMessage>().error );
                         return;
 
                     default:
@@ -1378,6 +1364,9 @@ struct DllMain
                 *CC_DAMAGE_LEVEL_ADDR = 2;
                 *CC_TIMER_SPEED_ADDR = 2;
                 *CC_WIN_COUNT_VS_ADDR = ( uint32_t ) ( netMan.config.winCount ? netMan.config.winCount : 2 );
+
+                // *CC_WIN_COUNT_VS_ADDR = 1;
+                // *CC_DAMAGE_LEVEL_ADDR = 4;
 
                 // Wait for final InitialGameState message before going to NetplayState::Initial
                 break;
@@ -1540,11 +1529,6 @@ struct DllMain
             delayedStop ( "Disconnected!" );
             initialTimer.reset();
         }
-        else if ( timer == specInputsTimer.get() )
-        {
-            delayedStop ( "Timed out!" );
-            specInputsTimer.reset();
-        }
         else if ( timer == stopTimer.get() )
         {
             appState = AppState::Stopping;
@@ -1559,9 +1543,20 @@ struct DllMain
     // DLL callback
     void callback()
     {
-        // Disconnect the socket early if the game is being closed
-        if ( ! ( * CC_ALIVE_FLAG_ADDR ) && clientMode.isNetplay() && dataSocket )
-            dataSocket->disconnect();
+        // Check if the game is being closed
+        if ( ! ( * CC_ALIVE_FLAG_ADDR ) )
+        {
+            // Disconnect the main data socket if netplay
+            if ( clientMode.isNetplay() && dataSocket )
+                dataSocket->disconnect();
+
+            // Disconnect all other sockets
+            if ( ctrlSocket )
+                ctrlSocket->disconnect();
+
+            if ( serverCtrlSocket )
+                serverCtrlSocket->disconnect();
+        }
 
         // Don't poll unless we're in the correct state
         if ( appState != AppState::Polling )

@@ -1021,7 +1021,10 @@ void MainUi::spectate ( const SpectateConfig& spectateConfig )
 
     if ( spectateConfig.initial.netplayState <= NetplayState::CharaSelect )
     {
-        text += format ( "%s vs %s", spectateConfig.names[0], spectateConfig.names[1] );
+        if ( spectateConfig.mode.isBroadcast() )
+            text += "Currently selecting characters...";
+        else
+            text += format ( "%s vs %s", spectateConfig.names[0], spectateConfig.names[1] );
     }
     else
     {
@@ -1029,7 +1032,7 @@ void MainUi::spectate ( const SpectateConfig& spectateConfig )
                 + " vs " + spectateConfig.formatPlayer ( 2, charaNameFunc );
     }
 
-    text += "\n\n(Press and hold the space-bar to prevent fast-forward)";
+    text += "\n\n(Press and hold space-bar to prevent fast-forward)";
 
     ui->pushInFront ( new ConsoleUi::TextBox ( text ), { 1, 0 }, true ); // Expand width and clear
 }

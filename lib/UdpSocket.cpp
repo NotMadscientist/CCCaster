@@ -130,7 +130,7 @@ UdpSocket::~UdpSocket()
 void UdpSocket::disconnect()
 {
     // Send 3 UdpControl::Disconnect messages if not connection-less
-    if ( !isConnectionLess() )
+    if ( !isConnectionLess() && !isDisconnected() )
     {
         MsgPtr msg ( new UdpControl ( UdpControl::Disconnect ) );
 

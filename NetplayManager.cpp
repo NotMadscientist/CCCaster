@@ -212,19 +212,25 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player )
     if ( targetMenuState != -1 && targetMenuIndex != -1 )
         return getMenuNavInput();
 
-    uint16_t input = getRawInput ( player );
+    uint16_t input;
 
     if ( config.mode.isSpectateNetplay() )
+    {
         input = ( ( getFrame() % 2 ) ? 0 : COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM ) );
+    }
+    else
+    {
+        input = getRawInput ( player );
 
-    // Don't allow hitting Confirm until 2f after we have stopped moving the cursor. This is a work around
-    // for the issue when select is pressed after the cursor moves, but before currentMenuIndex is updated.
-    if ( hasUpDownInLast2f() )
-        input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
+        // Don't allow hitting Confirm until 2f after we have stopped moving the cursor. This is a work around
+        // for the issue when select is pressed after the cursor moves, but before currentMenuIndex is updated.
+        if ( hasUpDownInLast2f() )
+            input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
 
-    // Limit retry menu selectable options
-    if ( AsmHacks::currentMenuIndex > MAX_RETRY_MENU_INDEX )
-        input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
+        // Limit retry menu selectable options
+        if ( AsmHacks::currentMenuIndex > MAX_RETRY_MENU_INDEX )
+            input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
+    }
 
     // Check if auto replay save is enabled
     if ( *CC_AUTO_REPLAY_SAVE_ADDR && AsmHacks::autoReplaySaveStatePtr )
@@ -246,16 +252,20 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player )
         // Disable menu confirms
         AsmHacks::menuConfirmState = 0;
 
+        // Get the retry menu index for the current transition index
         MsgPtr msgMenuIndex = getRetryMenuIndex ( getIndex() );
 
-        if ( msgMenuIndex )
+        // Check if we're done auto-saving (or not auto-saving)
+        const bool doneAutoSave = ! ( *CC_AUTO_REPLAY_SAVE_ADDR )
+                                  || ( AsmHacks::autoReplaySaveStatePtr && *AsmHacks::autoReplaySaveStatePtr > 100 );
+
+        // Navigate the menu when the menu index is ready AND we're done auto-saving
+        if ( msgMenuIndex && doneAutoSave )
         {
             targetMenuState = 0;
             targetMenuIndex = msgMenuIndex->getAs<MenuIndex>().menuIndex;
             return 0;
         }
-
-        RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
     }
     else if ( config.mode.isNetplay() )
     {
