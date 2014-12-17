@@ -85,14 +85,25 @@ INSTALL = 1
 
 # Build type flags
 DEBUG_FLAGS   = -ggdb3 -O0 -fno-inline -D_GLIBCXX_DEBUG
-LOGGING_FLAGS = -s -Os -O2 -DRELEASE
+ifeq ($(OS),Windows_NT)
+	LOGGING_FLAGS = -s -Os -O2 -DRELEASE
+else
+	LOGGING_FLAGS = -s -Os -O2
+endif
 RELEASE_FLAGS = -s -Os -O2 -fno-rtti -DNDEBUG -DRELEASE -DDISABLE_LOGGING -DDISABLE_ASSERTS
 
 # Build type
 BUILD_TYPE = build_debug
 
+# Default build target
+ifeq ($(OS),Windows_NT)
+	DEFAULT_TARGET = debug
+else
+	DEFAULT_TARGET = logging
+endif
 
-all: debug
+
+all: $(DEFAULT_TARGET)
 
 # target-profile: STRIP = $(TOUCH)
 # target-profile: DEFINES += -DNDEBUG -DRELEASE -DDISABLE_LOGGING -DDISABLE_ASSERTS
@@ -202,7 +213,7 @@ clean-common: clean-proto
 	rm -f .depend .include
 	rm -f *.res *.exe *.dll *.zip $(FOLDER)/*.exe $(FOLDER)/*.dll
 
-clean: clean-common
+clean-debug: clean-common
 	rm -rf build_debug
 
 clean-logging: clean-common
@@ -211,7 +222,10 @@ clean-logging: clean-common
 clean-release: clean-common
 	rm -rf build_release
 
-clean-all: clean clean-logging clean-release
+clean: clean-common
+	rm -rf build_$(DEFAULT_TARGET)
+
+clean-all: clean-debug clean-logging clean-release
 	rm -rf $(FOLDER)
 
 
@@ -302,8 +316,13 @@ ifneq (,$(findstring profile,$(MAKECMDGOALS)))
 main-build: pre-build
 	@$(MAKE) --no-print-directory target-profile BUILD_TYPE=build_debug STRIP=touch
 else
+ifeq ($(DEFAULT_TARGET),logging)
+main-build: pre-build
+	@$(MAKE) --no-print-directory target-logging BUILD_TYPE=build_logging
+else
 main-build: pre-build
 	@$(MAKE) --no-print-directory target-debug BUILD_TYPE=build_debug STRIP=touch
+endif
 endif
 endif
 endif
