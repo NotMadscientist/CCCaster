@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Controller.h"
+#include "JoystickDetector.h"
 
 #include <unordered_map>
 #include <unordered_set>

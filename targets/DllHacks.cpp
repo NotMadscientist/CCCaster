@@ -5,14 +5,20 @@
 #include "ProcessManager.h"
 #include "Algorithms.h"
 #include "Enum.h"
+#include "ControllerManager.h"
 
+#define INITGUID
 #include <windows.h>
 #include <d3dx9.h>
+#include <dbt.h>
+#include <MinHook.h>
 
 using namespace std;
 using namespace AsmHacks;
 using namespace DllHacks;
 
+
+DEFINE_GUID ( GUID_DEVINTERFACE_HID, 0x4D1E55B2L, 0xF16F, 0x11CF, 0x88, 0xCB, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30 );
 
 #define OVERLAY_FONT                    "Tahoma"
 
@@ -384,6 +390,35 @@ void initializePreLoad()
     // WRITE_ASM_HACK ( disableFpsLimit );
 }
 
+// Note: this is on the SAME thread as the main thread where callback happens
+MH_WINAPI_HOOK ( LRESULT, CALLBACK, WindowProc, HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam )
+{
+    switch ( message )
+    {
+        case WM_DEVICECHANGE:
+            switch ( wParam )
+            {
+                case DBT_DEVICEARRIVAL:
+                case DBT_DEVICEREMOVECOMPLETE:
+                    if ( ( ( DEV_BROADCAST_HDR * ) lParam )->dbch_devicetype != DBT_DEVTYP_DEVICEINTERFACE )
+                        break;
+
+                    ControllerManager::get().refreshJoysticks();
+                    break;
+            }
+            return 0;
+
+        default:
+            break;
+    }
+
+    return oWindowProc ( hwnd, message, wParam, lParam );
+}
+
+
+static pWindowProc WindowProc = ( pWindowProc ) CC_WINDOW_PROC_ADDR;
+
+static HDEVNOTIFY notifyHandle = 0;
 
 volatile bool keyboardManagerHooked = false;
 
@@ -411,6 +446,29 @@ void initializePostLoad()
     if ( ! ( windowHandle = ProcessManager::findWindow ( CC_TITLE ) ) )
         LOG ( "Couldn't find window '%s'", CC_TITLE );
 
+    DEV_BROADCAST_DEVICEINTERFACE dbh;
+    memset ( &dbh, 0, sizeof ( dbh ) );
+    dbh.dbcc_size = sizeof ( dbh );
+    dbh.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
+    dbh.dbcc_classguid = GUID_DEVINTERFACE_HID;
+
+    // Register for device notifications
+    if ( ! ( notifyHandle = RegisterDeviceNotification ( windowHandle, &dbh, DEVICE_NOTIFY_WINDOW_HANDLE ) ) )
+        LOG ( "RegisterDeviceNotification failed: %s", WinException::getLastError() );
+
+    // Hook the game's WindowProc
+    MH_STATUS status = MH_Initialize();
+    if ( status != MH_OK )
+        LOG ( "Initialize failed: %s", MH_StatusString ( status ) );
+
+    status = MH_CREATE_HOOK ( WindowProc );
+    if ( status != MH_OK )
+        LOG ( "Create hook failed: %s", MH_StatusString ( status ) );
+
+    status = MH_EnableHook ( ( void * ) WindowProc );
+    if ( status != MH_OK )
+        LOG ( "Enable hook failed: %s", MH_StatusString ( status ) );
+
     // We can't save replays on Wine because MBAA crashes even without us.
     // We can't hook DirectX calls on Wine (yet?).
     if ( ProcessManager::isWine() )
@@ -430,6 +488,17 @@ void initializePostLoad()
 void deinitialize()
 {
     UnhookDirectX();
+
+    if ( notifyHandle )
+        UnregisterDeviceNotification ( notifyHandle );
+
+    if ( WindowProc )
+    {
+        MH_DisableHook ( ( void * ) WindowProc );
+        MH_REMOVE_HOOK ( WindowProc );
+        MH_Uninitialize();
+        WindowProc = 0;
+    }
 
     if ( keyboardHook )
         UnhookWindowsHookEx ( keyboardHook );

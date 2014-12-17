@@ -2,6 +2,15 @@
 #include "Exceptions.h"
 #include "ErrorStrings.h"
 
+// #define INITGUID
+// #define DIRECTINPUT_VERSION 0x0800 /* Need version 8 so IDirectInput8_EnumDevices doesn't leak like a sieve... */
+// #include <dinput.h>
+// #define COBJMACROS
+// #include <wbemcli.h>
+// #include <oleauto.h>
+// #include <xinput.h>
+// #include <devguid.h>
+// #include <dbt.h>
 #include <windows.h>
 
 #include <algorithm>
@@ -99,6 +108,9 @@ void ControllerManager::check ( void *keyboardWindowHandle )
 
 void ControllerManager::refreshJoysticks()
 {
+    if ( !initialized )
+        return;
+
     // al_reconfigure_joysticks();
 
     // vector<const ALLEGRO_JOYSTICK *> dead;
@@ -154,6 +166,28 @@ void ControllerManager::refreshJoysticks()
     //     if ( owner )
     //         owner->attachedJoystick ( controller );
     // }
+}
+
+void ControllerManager::initialize ( Owner *owner )
+{
+    if ( initialized )
+        return;
+
+    initialized = true;
+
+    this->owner = owner;
+}
+
+void ControllerManager::deinitialize()
+{
+    if ( !initialized )
+        return;
+
+    initialized = false;
+
+    this->owner = 0;
+
+    ControllerManager::get().clear();
 }
 
 void ControllerManager::mappingsChanged ( Controller *controller )
@@ -236,26 +270,6 @@ vector<const Controller *> ControllerManager::getControllers() const
 }
 
 ControllerManager::ControllerManager() : keyboard ( Controller::Keyboard ) {}
-
-void ControllerManager::initialize ( Owner *owner )
-{
-    this->owner = owner;
-
-    if ( initialized )
-        return;
-
-    initialized = true;
-}
-
-void ControllerManager::deinitialize()
-{
-    if ( !initialized )
-        return;
-
-    ControllerManager::get().clear();
-
-    initialized = false;
-}
 
 ControllerManager& ControllerManager::get()
 {
