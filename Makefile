@@ -140,28 +140,30 @@ $(FOLDER)/$(LAUNCHER): tools/Launcher.cpp
 $(FOLDER)/states.bin: tools/$(GENERATOR)
 	tools/$(GENERATOR) $(FOLDER)/states.bin
 
-# tools/$(DEBUGGER): DEFINES += -DRELEASE
-# tools/$(DEBUGGER): CC_FLAGS += -s -Os -O2
-# tools/$(DEBUGGER): $(LIB_OBJECTS)
-# 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 tools/Debugger.cpp $(LIB_OBJECTS) $(LD_FLAGS) \
-# -I$(CURDIR)/3rdparty/distorm3/include -L$(CURDIR)/3rdparty/distorm3 -ldistorm3
-# 	@echo
-# 	$(PREFIX)strip $@
-# 	$(CHMOD_X)
-# 	@echo
+# TODO enable this icon when rollback is ready
+# res/icon.res: res/icon.rc res/icon.ico
+# 	$(WINDRES) -F pe-i386 res/icon.rc -O coff -o $@
 
 
+DEBUGGER_LIB_OBJECTS = $(addprefix build_logging/,$(filter-out lib/Version.o lib/LoggerVersion.o,$(LIB_OBJECTS)))
 
-tools/$(GENERATOR): RELEASE_LIB_OBJECTS = $(addprefix build_release/,$(filter-out lib/Version.o,$(LIB_OBJECTS)))
-tools/$(GENERATOR): build_release tools/Generator.cpp $(RELEASE_LIB_OBJECTS)
-	$(CXX) -o $@ $(CC_FLAGS) $(RELEASE_FLAGS) -Wall -std=c++11 tools/Generator.cpp $(RELEASE_LIB_OBJECTS) $(LD_FLAGS)
+tools/$(DEBUGGER): tools/Debugger.cpp $(DEBUGGER_LIB_OBJECTS)
+	$(CXX) -o $@ $(CC_FLAGS) $(LOGGING_FLAGS) -Wall -std=c++11 $^ $(LD_FLAGS) \
+	-I$(CURDIR)/3rdparty/distorm3/include -L$(CURDIR)/3rdparty/distorm3 -ldistorm3
 	@echo
 	$(PREFIX)strip $@
 	$(CHMOD_X)
 	@echo
 
-# res/icon.res: res/icon.rc res/icon.ico
-# 	$(WINDRES) -F pe-i386 res/icon.rc -O coff -o $@
+
+GENERATOR_LIB_OBJECTS = $(addprefix build_release/,$(filter-out lib/Version.o lib/LoggerVersion.o,$(LIB_OBJECTS)))
+
+tools/$(GENERATOR): tools/Generator.cpp $(GENERATOR_LIB_OBJECTS)
+	$(CXX) -o $@ $(CC_FLAGS) $(RELEASE_FLAGS) -Wall -std=c++11 $^ $(LD_FLAGS)
+	@echo
+	$(PREFIX)strip $@
+	$(CHMOD_X)
+	@echo
 
 
 define make_version
