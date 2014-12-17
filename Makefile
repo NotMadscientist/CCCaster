@@ -1,12 +1,17 @@
 VERSION = 2.1
 SUFFIX = e
 NAME = cccaster
+TAG =
+
+ifneq ($(TAG),)
+DOT_TAG = .$(TAG)
+endif
 
 # Main programs
-ARCHIVE = $(NAME).v$(VERSION)$(SUFFIX).zip
-BINARY = $(NAME).v$(VERSION).exe
+ARCHIVE = $(NAME).v$(VERSION)$(SUFFIX)$(DOT_TAG).zip
+BINARY = $(NAME).v$(VERSION)$(DOT_TAG).exe
 FOLDER = $(NAME)
-DLL = hook.dll
+DLL = hook$(DOT_TAG).dll
 LAUNCHER = launcher.exe
 DEBUGGER = debugger.exe
 GENERATOR = generator.exe
@@ -68,7 +73,7 @@ INCLUDES += -I$(CURDIR)/3rdparty/gtest/include -I$(CURDIR)/3rdparty/minhook/incl
 CC_FLAGS = -m32 $(INCLUDES) $(DEFINES)
 
 # Linker flags
-LD_FLAGS = -m32 -static -lws2_32 -lpsapi -lwinpthread -lwinmm
+LD_FLAGS = -m32 -static -lws2_32 -lpsapi -lwinpthread -lwinmm -lole32
 
 # Build options
 # DEFINES += -DDISABLE_LOGGING
@@ -194,7 +199,7 @@ clean-proto:
 	rm -f $(AUTOGEN_HEADERS)
 
 clean-common: clean-proto
-	rm -f .depend .depend .include
+	rm -f .depend .include
 	rm -f *.res *.exe *.dll *.zip $(FOLDER)/*.exe $(FOLDER)/*.dll
 
 clean: clean-common
@@ -206,7 +211,7 @@ clean-logging: clean-common
 clean-release: clean-common
 	rm -rf build_release
 
-clean-full: clean clean-logging clean-release
+clean-all: clean clean-logging clean-release
 	rm -rf $(FOLDER)
 
 

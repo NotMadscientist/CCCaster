@@ -21,6 +21,7 @@
 // Location of the keyboard config in the binary
 #define CC_KEYBOARD_CONFIG_OFFSET   ( 0x14D2C0 )
 
+#define CC_WINDOW_PROC_ADDR         ( ( char * )     0x40D4C0 ) // Location of WindowProc
 #define CC_LOOP_START_ADDR          ( ( char * )     0x40D330 ) // Start of the main event loop
 #define CC_SCREEN_WIDTH_ADDR        ( ( uint32_t * ) 0x54D048 ) // The actual width of the main viewport
 #define CC_DAMAGE_LEVEL_ADDR        ( ( uint32_t * ) 0x553FCC ) // Damage level: default 2
