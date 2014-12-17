@@ -3,11 +3,15 @@ SUFFIX = e
 NAME = cccaster
 TAG =
 
+ifneq ($(TAG),)
+DOT_TAG = .$(TAG)
+endif
+
 # Main programs
-ARCHIVE = $(NAME).v$(VERSION)$(SUFFIX).$(TAG).zip
-BINARY = $(NAME).v$(VERSION).$(TAG).exe
+ARCHIVE = $(NAME).v$(VERSION)$(SUFFIX)$(DOT_TAG).zip
+BINARY = $(NAME).v$(VERSION)$(DOT_TAG).exe
 FOLDER = $(NAME)
-DLL = hook.$(TAG).dll
+DLL = hook$(DOT_TAG).dll
 LAUNCHER = launcher.exe
 DEBUGGER = debugger.exe
 MBAA_EXE = MBAA.exe
