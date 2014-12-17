@@ -562,7 +562,7 @@ struct DllMain
                     break;
                 }
 
-#if 1
+#ifndef RELEASE
                 // Test random input
                 static bool randomize = false;
 
