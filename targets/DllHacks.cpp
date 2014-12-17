@@ -250,7 +250,7 @@ void updateSelector ( uint8_t index, int position, const string& line )
 } // namespace DllHacks
 
 
-// Note: this is on the SAME thread as the main thread where callback happens
+// Note: this is called on the SAME thread as the main application thread
 void PresentFrameBegin ( IDirect3DDevice9 *device )
 {
     if ( !initalizedDirectx )
@@ -390,7 +390,7 @@ void initializePreLoad()
     // WRITE_ASM_HACK ( disableFpsLimit );
 }
 
-// Note: this is on the SAME thread as the main thread where callback happens
+// Note: this is called on the SAME thread as the main application thread
 MH_WINAPI_HOOK ( LRESULT, CALLBACK, WindowProc, HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam )
 {
     switch ( message )

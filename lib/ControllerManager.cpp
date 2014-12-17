@@ -2,15 +2,10 @@
 #include "Exceptions.h"
 #include "ErrorStrings.h"
 
-// #define INITGUID
-// #define DIRECTINPUT_VERSION 0x0800 /* Need version 8 so IDirectInput8_EnumDevices doesn't leak like a sieve... */
-// #include <dinput.h>
-// #define COBJMACROS
-// #include <wbemcli.h>
-// #include <oleauto.h>
-// #include <xinput.h>
-// #include <devguid.h>
-// #include <dbt.h>
+#define INITGUID
+#define DIRECTINPUT_VERSION 0x0800 // Need at least version 8
+#include <dinput.h>
+#define COBJMACROS
 #include <windows.h>
 
 #include <algorithm>
@@ -18,6 +13,11 @@
 #include <map>
 
 using namespace std;
+
+
+static HRESULT comInitRet = E_FAIL;
+
+static IDirectInput8 *dinput = 0;
 
 
 void ControllerManager::check ( void *keyboardWindowHandle )
@@ -106,10 +106,22 @@ void ControllerManager::check ( void *keyboardWindowHandle )
     // }
 }
 
+// Note: this is called on the SAME thread where IDirectInput8_EnumDevices is called (see below)
+static BOOL CALLBACK enumJoysticks ( const DIDEVICEINSTANCE *ddi, void * )
+{
+    LOG ( "%s", ddi->tszProductName );
+
+    return DIENUM_CONTINUE;
+}
+
 void ControllerManager::refreshJoysticks()
 {
     if ( !initialized )
         return;
+
+    HRESULT result = IDirectInput8_EnumDevices ( dinput, DI8DEVCLASS_GAMECTRL, enumJoysticks, 0, DIEDFL_ATTACHEDONLY );
+    if ( result != DI_OK )
+        THROW_EXCEPTION ( "IDirectInput8_EnumDevices failed: 0x%08x", ERROR_CONTROLLER_CHECK, result );
 
     // al_reconfigure_joysticks();
 
@@ -176,6 +188,23 @@ void ControllerManager::initialize ( Owner *owner )
     initialized = true;
 
     this->owner = owner;
+
+    comInitRet = CoInitializeEx ( 0, COINIT_APARTMENTTHREADED );
+    if ( FAILED ( comInitRet ) )
+        comInitRet = CoInitializeEx ( 0, COINIT_MULTITHREADED );
+    if ( FAILED ( comInitRet ) )
+        THROW_EXCEPTION ( "CoInitializeEx failed: 0x%08x", ERROR_CONTROLLER_INIT, comInitRet );
+
+    HRESULT result = CoCreateInstance ( CLSID_DirectInput8, 0, CLSCTX_INPROC_SERVER,
+                                        IID_IDirectInput8, ( void ** ) &dinput );
+    if ( FAILED ( result ) )
+        THROW_EXCEPTION ( "CoCreateInstance failed: 0x%08x", ERROR_CONTROLLER_INIT, result );
+
+    result = IDirectInput8_Initialize ( dinput, GetModuleHandle ( 0 ), DIRECTINPUT_VERSION );
+    if ( FAILED ( result ) )
+        THROW_EXCEPTION ( "IDirectInput8_Initialize failed: 0x%08x", ERROR_CONTROLLER_INIT, result );
+
+    LOG ( "ControllerManager initialized" );
 }
 
 void ControllerManager::deinitialize()
@@ -188,6 +217,20 @@ void ControllerManager::deinitialize()
     this->owner = 0;
 
     ControllerManager::get().clear();
+
+    if ( dinput )
+    {
+        IDirectInput8_Release ( dinput );
+        dinput = 0;
+    }
+
+    if ( SUCCEEDED ( comInitRet ) )
+    {
+        CoUninitialize();
+        comInitRet = E_FAIL;
+    }
+
+    LOG ( "ControllerManager deinitialized" );
 }
 
 void ControllerManager::mappingsChanged ( Controller *controller )

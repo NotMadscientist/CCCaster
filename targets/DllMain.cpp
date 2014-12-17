@@ -1565,6 +1565,9 @@ struct DllMain
 
             if ( serverCtrlSocket )
                 serverCtrlSocket->disconnect();
+
+            appState = AppState::Stopping;
+            EventManager::get().stop();
         }
 
         // Don't poll unless we're in the correct state
