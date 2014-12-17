@@ -1,12 +1,13 @@
 VERSION = 2.1
 SUFFIX = e
 NAME = cccaster
+TAG =
 
 # Main programs
-ARCHIVE = $(NAME).v$(VERSION)$(SUFFIX).zip
-BINARY = $(NAME).v$(VERSION).exe
+ARCHIVE = $(NAME).v$(VERSION)$(SUFFIX).$(TAG).zip
+BINARY = $(NAME).v$(VERSION).$(TAG).exe
 FOLDER = $(NAME)
-DLL = hook.dll
+DLL = hook.$(TAG).dll
 LAUNCHER = launcher.exe
 DEBUGGER = debugger.exe
 MBAA_EXE = MBAA.exe
@@ -193,7 +194,7 @@ clean-proto:
 	rm -f $(AUTOGEN_HEADERS)
 
 clean-common: clean-proto
-	rm -f .depend .depend .include
+	rm -f .depend .include
 	rm -f *.res *.exe *.dll *.zip $(FOLDER)/*.exe $(FOLDER)/*.dll
 
 clean: clean-common
@@ -205,7 +206,7 @@ clean-logging: clean-common
 clean-release: clean-common
 	rm -rf build_release
 
-clean-full: clean clean-logging clean-release
+clean-all: clean clean-logging clean-release
 	rm -rf $(FOLDER)
 
 
