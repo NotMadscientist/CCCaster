@@ -338,7 +338,7 @@ build_release:
 	rsync -a -f"- .git/" -f"+ */" -f"- *" --exclude=".*" . $@
 
 build_release/%.o: %.cpp
-	$(CXX) $(CC_FLAGS) $(RELEASE_FLAGS) -Wall -Wempty-body -std=c++11 -o $@ -c $<
+	$(CXX) $(CC_FLAGS) $(RELEASE_FLAGS) -std=c++11 -o $@ -c $<
 
 build_release/%.o: %.cc
 	$(CXX) $(CC_FLAGS) $(RELEASE_FLAGS) -o $@ -c $<

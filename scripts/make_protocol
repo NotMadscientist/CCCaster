@@ -74,24 +74,30 @@ if [ $? -ne 0 ]; then
   # Check for changes to the final list of enums
   diff $DIR/tmp_enums $DIR/ProtocolEnums.h 1> /dev/null 2>&1
 
+  # Regenerate protocol only if the final list is different
+  if [ $? -ne 0 ]; then
+    SHOULD_REGEN=1
+  fi
+
+  # Use the final list of enums
+  mv -f $DIR/tmp_enums $DIR/ProtocolEnums.h
+
 fi
+
+rm -f $DIR/tmp*
 
 
 #######################################################################################################################
 
 
 # Check if we should regenerate protocol
-if [ $? -ne 0 ] || [ ! -f "$DIR/Protocol.includes.h" ]      \
-                || [ ! -f "$DIR/Protocol.clone.h" ]         \
-                || [ ! -f "$DIR/Protocol.types.h" ]         \
-                || [ ! -f "$DIR/Protocol.strings.h" ]       \
-                || [ ! -f "$DIR/Protocol.decode.h" ]; then
+if [ "$SHOULD_REGEN" = "1" ] || [ ! -f "$DIR/Protocol.includes.h" ]      \
+                             || [ ! -f "$DIR/Protocol.clone.h" ]         \
+                             || [ ! -f "$DIR/Protocol.types.h" ]         \
+                             || [ ! -f "$DIR/Protocol.strings.h" ]       \
+                             || [ ! -f "$DIR/Protocol.decode.h" ]; then
 
   echo Regenerating protocol
-
-  mv -f $DIR/tmp_enums $DIR/ProtocolEnums.h
-
-  rm -f $DIR/tmp*
 
   grep --extended-regexp "$REGEX" "$@" \
     | sed --regexp-extended \
@@ -128,5 +134,3 @@ MsgPtr \2::clone() const { MsgPtr msg ( new \2 ( *this ) ); msg->invalidate(); r
     > $DIR/Protocol.decode.h
 
 fi
-
-rm -f $DIR/tmp*
