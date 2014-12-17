@@ -295,6 +295,7 @@ int main ( int argc, char *argv[] )
         Logger::get().initialize ( appDir + LOG_FILE, LOG_DEFAULT_OPTIONS | PID_IN_FILENAME );
     else
         Logger::get().initialize ( appDir + LOG_FILE );
+    Logger::get().logVersion();
 
     LOG ( "Running from: %s", appDir );
 

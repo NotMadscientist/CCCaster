@@ -1270,11 +1270,13 @@ struct DllMain
 
                 Logger::get().sessionId = options.arg ( Options::SessionId );
                 Logger::get().initialize ( options.arg ( Options::AppDir ) + LOG_FILE );
+                Logger::get().logVersion();
 
                 LOG ( "SessionId '%s'", Logger::get().sessionId );
 
                 syncLog.sessionId = options.arg ( Options::SessionId );
-                syncLog.initialize ( options.arg ( Options::AppDir ) + SYNC_LOG_FILE, LOG_VERSION );
+                syncLog.initialize ( options.arg ( Options::AppDir ) + SYNC_LOG_FILE, 0 );
+                syncLog.logVersion();
                 break;
 
             case MsgType::ControllerMappings:
@@ -1813,6 +1815,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
             srand ( time ( 0 ) );
 
             Logger::get().initialize ( gameDir + LOG_FILE );
+            Logger::get().logVersion();
             LOG ( "DLL_PROCESS_ATTACH" );
 
             // We want the DLL to be able to rebind any previously bound ports

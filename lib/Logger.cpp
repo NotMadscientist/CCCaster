@@ -1,5 +1,4 @@
 #include "Logger.h"
-#include "Version.h"
 #include "Algorithms.h"
 #include "TimerManager.h"
 
@@ -55,23 +54,8 @@ void Logger::initialize ( const string& file, uint32_t options )
         fd = fopen ( this->file.c_str(), same ? "a" : "w" );
     }
 
-    // Only log version if the path changed
-    if ( ( options & LOG_VERSION ) && !same )
-    {
-        if ( !initialized )
-            logId = generateRandomId();
-
-        fprintf ( fd, "LogId '%s'\n", logId.c_str() );
-        fprintf ( fd, "Version '%s' { '%s', '%s', '%s' }\n", LocalVersion.code.c_str(),
-                  LocalVersion.major().c_str(), LocalVersion.minor().c_str(), LocalVersion.suffix().c_str() );
-        fprintf ( fd, "Revision '%s' { isCustom=%d }\n", LocalVersion.revision.c_str(), LocalVersion.isCustom() );
-        fprintf ( fd, "BuildTime '%s'\n", LocalVersion.buildTime.c_str() );
-
-        if ( !sessionId.empty() )
-            fprintf ( fd, "SessionId '%s'\n", sessionId.c_str() );
-
-        fflush ( fd );
-    }
+    if ( !initialized )
+        logId = generateRandomId();
 
     initialized = true;
 }

@@ -727,9 +727,10 @@ struct MainApp
             syncLog.sessionId = ( clientMode.isSpectate() ? spectateConfig.sessionId : netplayConfig.sessionId );
 
             if ( options[Options::PidLog] )
-                syncLog.initialize ( appDir + SYNC_LOG_FILE, LOG_VERSION | PID_IN_FILENAME );
+                syncLog.initialize ( appDir + SYNC_LOG_FILE, PID_IN_FILENAME );
             else
-                syncLog.initialize ( appDir + SYNC_LOG_FILE, LOG_VERSION );
+                syncLog.initialize ( appDir + SYNC_LOG_FILE, 0 );
+            syncLog.logVersion();
             return;
         }
 

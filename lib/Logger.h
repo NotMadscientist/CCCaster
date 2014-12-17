@@ -8,14 +8,13 @@
 #include <ctime>
 
 
-#define LOG_VERSION     ( 0x01 )    // Log version information at the beginning
-#define LOG_GM_TIME     ( 0x02 )    // Log the gmtime timestamp per message
-#define LOG_LOCAL_TIME  ( 0x04 )    // Log the localtime timestamp per message
-#define LOG_FILE_LINE   ( 0x08 )    // Log file:line per message
-#define LOG_FUNC_NAME   ( 0x10 )    // Log the function name per message
-#define PID_IN_FILENAME ( 0x20 )    // Add the PID to the log filename
+#define LOG_GM_TIME     ( 0x01 )    // Log the gmtime timestamp per message
+#define LOG_LOCAL_TIME  ( 0x02 )    // Log the localtime timestamp per message
+#define LOG_FILE_LINE   ( 0x04 )    // Log file:line per message
+#define LOG_FUNC_NAME   ( 0x08 )    // Log the function name per message
+#define PID_IN_FILENAME ( 0x10 )    // Add the PID to the log filename
 
-#define LOG_DEFAULT_OPTIONS ( LOG_VERSION | LOG_GM_TIME | LOG_FILE_LINE | LOG_FUNC_NAME )
+#define LOG_DEFAULT_OPTIONS ( LOG_GM_TIME | LOG_FILE_LINE | LOG_FUNC_NAME )
 
 
 class Logger
@@ -57,6 +56,9 @@ public:
 
     // Flush to file
     void flush();
+
+    // Log the system version
+    void logVersion();
 
     // Log a message with file, line, and function
     void log ( const char *file, int line, const char *func, const char *message );
