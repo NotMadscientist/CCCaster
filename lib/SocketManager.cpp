@@ -137,14 +137,14 @@ void SocketManager::initialize()
     if ( initialized )
         return;
 
+    initialized = true;
+
     // Initialize WinSock
     WSADATA wsaData;
     int error = WSAStartup ( MAKEWORD ( 2, 2 ), &wsaData );
 
     if ( error != NO_ERROR )
         THROW_WIN_EXCEPTION ( error, "WSAStartup failed", ERROR_NETWORK_INIT );
-
-    initialized = true;
 }
 
 void SocketManager::deinitialize()
@@ -152,9 +152,11 @@ void SocketManager::deinitialize()
     if ( !initialized )
         return;
 
-    SocketManager::get().clear();
-    WSACleanup();
     initialized = false;
+
+    SocketManager::get().clear();
+
+    WSACleanup();
 }
 
 SocketManager& SocketManager::get()

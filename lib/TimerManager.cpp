@@ -127,6 +127,8 @@ void TimerManager::initialize()
     if ( initialized )
         return;
 
+    initialized = true;
+
     // Seed the RNG in this thread because Windows has per-thread RNG, and timers are also thread specific
     srand ( time ( 0 ) );
 
@@ -140,8 +142,6 @@ void TimerManager::initialize()
         useHiResTimer = false;
         SetThreadAffinityMask ( GetCurrentThread(), oldMask );
     }
-
-    initialized = true;
 }
 
 void TimerManager::deinitialize()
@@ -149,8 +149,9 @@ void TimerManager::deinitialize()
     if ( !initialized )
         return;
 
-    TimerManager::get().clear();
     initialized = false;
+
+    TimerManager::get().clear();
 }
 
 TimerManager& TimerManager::get()
