@@ -241,7 +241,7 @@ void MainUi::offline ( RunFuncPtr run )
     netplayConfig.mode.value = ClientMode::Offline;
     netplayConfig.mode.flags = initialConfig.mode.flags;
     netplayConfig.delay = delay;
-    netplayConfig.hostPlayer = 1;
+    netplayConfig.hostPlayer = 1; // TODO make this configurable
 
     RUN ( "", netplayConfig );
 

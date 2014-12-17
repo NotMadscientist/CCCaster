@@ -548,8 +548,8 @@ struct DllMain
                 }
                 else if ( clientMode.isLocal() )                // Local input
                 {
-                    if ( playerControllers[0] )
-                        localInputs[0] = getInput ( playerControllers[0] );
+                    if ( playerControllers[localPlayer - 1] )
+                        localInputs[0] = getInput ( playerControllers[localPlayer - 1] );
                 }
                 else if ( clientMode.isSpectate() )             // Spectator input
                 {
@@ -1442,6 +1442,13 @@ struct DllMain
                 }
                 else if ( clientMode.isOffline() )
                 {
+                    ASSERT ( netMan.config.hostPlayer == 1 || netMan.config.hostPlayer == 2 );
+
+                    localPlayer = netMan.config.hostPlayer;
+                    remotePlayer = ( 3 - netMan.config.hostPlayer );
+
+                    netMan.setRemotePlayer ( remotePlayer );
+
                     netplayStateChanged ( NetplayState::Initial );
                 }
 
