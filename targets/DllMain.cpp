@@ -548,8 +548,8 @@ struct DllMain
                 }
                 else if ( clientMode.isLocal() )                // Local input
                 {
-                    if ( playerControllers[0] )
-                        localInputs[0] = getInput ( playerControllers[0] );
+                    if ( playerControllers[localPlayer - 1] )
+                        localInputs[0] = getInput ( playerControllers[localPlayer - 1] );
                 }
                 else if ( clientMode.isSpectate() )             // Spectator input
                 {

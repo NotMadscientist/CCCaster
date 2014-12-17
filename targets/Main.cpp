@@ -342,7 +342,7 @@ int main ( int argc, char *argv[] )
         netplayConfig.delay = 0;
         netplayConfig.rollback = 1;
         netplayConfig.winCount = ui.getConfig().getInteger ( "versusWinCount" );
-        netplayConfig.hostPlayer = 2;
+        netplayConfig.hostPlayer = 1; // TODO make this configurable
 
         if ( opt[Options::Offline].arg && !opt[Options::Tourney] )
         {
