@@ -562,7 +562,7 @@ struct DllMain
                     break;
                 }
 
-#ifndef RELEASE
+#if 1
                 // Test random input
                 static bool randomize = false;
 
@@ -1455,6 +1455,13 @@ struct DllMain
                 }
                 else if ( clientMode.isOffline() )
                 {
+                    ASSERT ( netMan.config.hostPlayer == 1 || netMan.config.hostPlayer == 2 );
+
+                    localPlayer = netMan.config.hostPlayer;
+                    remotePlayer = ( 3 - netMan.config.hostPlayer );
+
+                    netMan.setRemotePlayer ( remotePlayer );
+
                     netplayStateChanged ( NetplayState::Initial );
                 }
 

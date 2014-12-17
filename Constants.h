@@ -135,7 +135,9 @@
 #define CC_P1_GUARD_QUALITY_ADDR    ( ( uint32_t * ) 0x555208 )
 #define CC_P1_METER_ADDR            ( ( uint32_t * ) 0x555210 )
 #define CC_P1_HEAT_ADDR             ( ( uint32_t * ) 0x555214 )
-#define CC_P1_CATCH_STATE_ADDR      ( ( uint32_t * ) 0x5553F8 )
+
+#define CC_P1_CATCH_STATE1_ADDR     ( ( uint32_t * ) 0x5553F4 )
+#define CC_P1_CATCH_STATE2_ADDR     ( ( uint32_t * ) 0x5553F8 )
 
 // #define CC_P2_SEQUENCE_ADDR         ( ( uint32_t * ) ( ( ( char * ) CC_P1_SEQUENCE_ADDR       ) + CC_PLR_STRUCT_SIZE ) )
 // #define CC_P2_SEQ_STATE_ADDR        ( ( uint32_t * ) ( ( ( char * ) CC_P1_SEQ_STATE_ADDR      ) + CC_PLR_STRUCT_SIZE ) )

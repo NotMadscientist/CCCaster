@@ -9,6 +9,7 @@ FOLDER = $(NAME)
 DLL = hook.dll
 LAUNCHER = launcher.exe
 DEBUGGER = debugger.exe
+GENERATOR = generator.exe
 MBAA_EXE = MBAA.exe
 
 # Library sources
