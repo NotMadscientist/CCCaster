@@ -1,0 +1,44 @@
+#!/bin/sh
+
+files="*.cpp *.h tools/*.cpp targets/*.cpp targets/*.h lib/*.cpp lib/*.h tests/*.cpp tests/*.h"
+
+# echo Checking dependencies...
+
+tail -n +1 -- `ls -1 $files | sort | paste -sd " "` | grep "^#include \"\|^==>" > tmp_include
+diff > /dev/null 2>&1 tmp_include .include
+
+if [ $? -ne 0 ]; then
+
+    # echo Dependencies changed!
+
+    mv -f tmp_include .include
+
+    echo "Regenerating .depend"
+
+    $1 $2 -std=c++11 -MM *.cpp         *.h         > tmp_depend1
+    $1 $2 -std=c++11 -MM tools/*.cpp               > tmp_depend2
+    $1 $2 -std=c++11 -MM targets/*.cpp targets/*.h > tmp_depend3
+    $1 $2 -std=c++11 -MM lib/*.cpp     lib/*.h     > tmp_depend4
+    $1 $2 -std=c++11 -MM tests/*.cpp   tests/*.h   > tmp_depend5
+
+    cp /dev/null .depend
+
+    for type in build_debug build_release build_logging; do
+        sed -r "s/^([A-Za-z.]+\.o\: )/$type\/\1/"          tmp_depend1 >> .depend
+        sed -r "s/^([A-Za-z.]+\.o\: )/$type\/tools\/\1/"   tmp_depend2 >> .depend
+        sed -r "s/^([A-Za-z.]+\.o\: )/$type\/targets\/\1/" tmp_depend3 >> .depend
+        sed -r "s/^([A-Za-z.]+\.o\: )/$type\/lib\/\1/"     tmp_depend4 >> .depend
+        sed -r "s/^([A-Za-z.]+\.o\: )/$type\/tests\/\1/"   tmp_depend5 >> .depend
+    done
+
+    rm -f tmp_depend*
+
+    exit 0
+
+fi
+
+# echo Dependencies unchanged
+
+rm -f tmp_include
+touch .depend
+exit 0

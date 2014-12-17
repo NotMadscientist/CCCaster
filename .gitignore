@@ -14,5 +14,6 @@
 Thumbs.db
 cccaster*
 tmp*
+build*
 gmon.out
 profile*.txt

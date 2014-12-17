@@ -411,7 +411,7 @@ public:
     };
 
     // Basic constructor
-    ConsoleUi ( const std::string& title );
+    ConsoleUi ( const std::string& title, bool isWine = false );
 
     // Push an element to the right or below the current one
     void pushRight ( Element *element, const COORD& expand = { 0, 0 } );

@@ -775,7 +775,7 @@ void MainUi::main ( RunFuncPtr run )
 {
     static const vector<string> options = { "Netplay", "Spectate", "Broadcast", "Offline", "Controls", "Settings" };
 
-    ui.reset ( new ConsoleUi ( uiTitle ) );
+    ui.reset ( new ConsoleUi ( uiTitle, ProcessManager::isWine() ) );
     ui->pushRight ( new ConsoleUi::Menu ( uiTitle, options, "Quit" ) );
 
     mainMenu = ui->top<ConsoleUi::Menu>();

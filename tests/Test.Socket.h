@@ -1,22 +1,7 @@
 #pragma once
 
-#include "Logger.h"
-#include "EventManager.h"
-#include "SocketManager.h"
-#include "Socket.h"
-#include "UdpSocket.h"
-#include "TimerManager.h"
-#include "Timer.h"
+
 #include "Protocol.h"
-
-#include <gtest/gtest.h>
-#include <cereal/types/string.hpp>
-
-#include <vector>
-#include <string>
-
-using namespace std;
-
 
 struct TestMessage : public SerializableSequence
 {
@@ -26,6 +11,25 @@ struct TestMessage : public SerializableSequence
 
     PROTOCOL_MESSAGE_BOILERPLATE ( TestMessage, str )
 };
+
+
+#ifndef RELEASE
+
+#include "Logger.h"
+#include "EventManager.h"
+#include "SocketManager.h"
+#include "Socket.h"
+#include "UdpSocket.h"
+#include "TimerManager.h"
+#include "Timer.h"
+
+#include <gtest/gtest.h>
+#include <cereal/types/string.hpp>
+
+#include <vector>
+#include <string>
+
+using namespace std;
 
 
 template<typename T, uint64_t keepAlive, uint64_t timeout>
@@ -375,3 +379,5 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         SocketManager::get().deinitialize();                                                                        \
         TimerManager::get().deinitialize();                                                                         \
     }
+
+#endif

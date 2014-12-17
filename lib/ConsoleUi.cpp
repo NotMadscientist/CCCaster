@@ -1,6 +1,5 @@
 #include "ConsoleUi.h"
 #include "StringUtils.h"
-#include "ProcessManager.h"
 
 #include <windows.h>
 
@@ -24,7 +23,7 @@ const string ConsoleUi::paddedBorders = "*  *";
 static void *consoleWindow = 0;
 
 
-ConsoleUi::ConsoleUi ( const string& title )
+ConsoleUi::ConsoleUi ( const string& title, bool isWine )
 {
     if ( !consoleWindow )
         consoleWindow = GetConsoleWindow();
@@ -32,7 +31,7 @@ ConsoleUi::ConsoleUi ( const string& title )
     SetConsoleTitle ( title.c_str() );
     SetConsoleOutputCP ( 437 );
 
-    if ( ProcessManager::isWine() )
+    if ( isWine )
         return;
 
     // Undocumented console font functions:
