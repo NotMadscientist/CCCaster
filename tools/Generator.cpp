@@ -173,38 +173,36 @@ int main ( int argc, char *argv[] )
     for ( size_t i = 0; i < CC_EFFECTS_ARRAY_COUNT; ++i )
         allAddrs.append ( effectAddrs, CC_EFFECT_ELEMENT_SIZE * i );
 
-    LOG ( "allAddrs.update()" );
-
     allAddrs.update();
 
-    LOG ( "allAddrs.totalSize=%u", allAddrs.totalSize );
+    // LOG ( "allAddrs.totalSize=%u", allAddrs.totalSize );
 
-    LOG ( "allAddrs:" );
-    for ( const MemDump& mem : allAddrs.addrs )
-    {
-        LOG ( "{ %08x, %08x }", mem.getAddr(), mem.getAddr() + mem.size );
+    // LOG ( "allAddrs:" );
+    // for ( const MemDump& mem : allAddrs.addrs )
+    // {
+    //     LOG ( "{ %08x, %08x }", mem.getAddr(), mem.getAddr() + mem.size );
 
-        for ( const MemDumpPtr& ptr0 : mem.ptrs )
-        {
-            ASSERT ( ptr0.parent == &mem );
+    //     for ( const MemDumpPtr& ptr0 : mem.ptrs )
+    //     {
+    //         ASSERT ( ptr0.parent == &mem );
 
-            LOG ( "  [0x%x]+0x%x -> { %u bytes }", ptr0.srcOffset, ptr0.dstOffset, ptr0.size );
+    //         LOG ( "  [0x%x]+0x%x -> { %u bytes }", ptr0.srcOffset, ptr0.dstOffset, ptr0.size );
 
-            for ( const MemDumpPtr& ptr1 : ptr0.ptrs )
-            {
-                ASSERT ( ptr1.parent == &ptr0 );
+    //         for ( const MemDumpPtr& ptr1 : ptr0.ptrs )
+    //         {
+    //             ASSERT ( ptr1.parent == &ptr0 );
 
-                LOG ( "    [0x%x]+0x%x -> { %u bytes }", ptr1.srcOffset, ptr1.dstOffset, ptr1.size );
+    //             LOG ( "    [0x%x]+0x%x -> { %u bytes }", ptr1.srcOffset, ptr1.dstOffset, ptr1.size );
 
-                for ( const MemDumpPtr& ptr2 : ptr1.ptrs )
-                {
-                    ASSERT ( ptr2.parent == &ptr1 );
+    //             for ( const MemDumpPtr& ptr2 : ptr1.ptrs )
+    //             {
+    //                 ASSERT ( ptr2.parent == &ptr1 );
 
-                    LOG ( "      [0x%x]+0x%x -> { %u bytes }", ptr2.srcOffset, ptr2.dstOffset, ptr2.size );
-                }
-            }
-        }
-    }
+    //                 LOG ( "      [0x%x]+0x%x -> { %u bytes }", ptr2.srcOffset, ptr2.dstOffset, ptr2.size );
+    //             }
+    //         }
+    //     }
+    // }
 
     allAddrs.save ( argv[1] );
 

@@ -106,7 +106,7 @@ debugger: tools/$(DEBUGGER)
 generator: tools/$(GENERATOR)
 
 
-$(ARCHIVE): $(BINARY) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER)
+$(ARCHIVE): $(BINARY) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER) $(FOLDER)/states.bin
 	@echo
 	rm -f $(filter-out %.log,$(filter-out $(ARCHIVE),$(wildcard $(NAME)*.zip)))
 	$(ZIP) $(ARCHIVE) ChangeLog.txt $^
@@ -136,8 +136,8 @@ $(FOLDER)/$(LAUNCHER): tools/Launcher.cpp
 	$(CHMOD_X)
 	@echo
 
-# $(FOLDER)/states.bin: tools/$(GENERATOR)
-# 	tools/$(GENERATOR) $(FOLDER)/states.bin
+$(FOLDER)/states.bin: tools/$(GENERATOR)
+	tools/$(GENERATOR) $(FOLDER)/states.bin
 
 # tools/$(DEBUGGER): DEFINES += -DRELEASE
 # tools/$(DEBUGGER): CC_FLAGS += -s -Os -O2
@@ -149,14 +149,13 @@ $(FOLDER)/$(LAUNCHER): tools/Launcher.cpp
 # 	$(CHMOD_X)
 # 	@echo
 
-# tools/$(GENERATOR): DEFINES += -DRELEASE
-# tools/$(GENERATOR): CC_FLAGS += -s -Os -O2
-# tools/$(GENERATOR): $(LIB_OBJECTS)
-# 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 tools/Generator.cpp $(LIB_OBJECTS) $(LD_FLAGS)
-# 	@echo
-# 	$(PREFIX)strip $@
-# 	$(CHMOD_X)
-# 	@echo
+tools/$(GENERATOR): CC_FLAGS += $(RELEASE_FLAGS)
+tools/$(GENERATOR): build_release tools/Generator.cpp $(addprefix build_release/,$(LIB_OBJECTS))
+	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 tools/Generator.cpp $(addprefix build_release/,$(LIB_OBJECTS)) $(LD_FLAGS)
+	@echo
+	$(PREFIX)strip $@
+	$(CHMOD_X)
+	@echo
 
 # res/icon.res: res/icon.rc res/icon.ico
 # 	$(WINDRES) -F pe-i386 res/icon.rc -O coff -o $@
