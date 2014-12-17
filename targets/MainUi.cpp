@@ -881,7 +881,7 @@ static string formatStats ( const PingStats& pingStats )
 void MainUi::display ( const string& message, bool replace )
 {
     if ( !ui )
-        ui.reset ( new ConsoleUi ( uiTitle ) );
+        ui.reset ( new ConsoleUi ( uiTitle, ProcessManager::isWine() ) );
 
     if ( replace && ( ui->empty() || !ui->top()->requiresUser || ui->top() != mainMenu ) )
         ui->pushInFront ( new ConsoleUi::TextBox ( message ), { 1, 0 }, true ); // Expand width and clear
