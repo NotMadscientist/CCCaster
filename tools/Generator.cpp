@@ -7,9 +7,6 @@
 using namespace std;
 
 
-#define LOG_FILE "generator.log"
-
-
 #define CC_UNKNOWN_TIMER_ADDR       ((char *)0x55D1CC) // 4 bytes
 #define CC_DEATHTIMER_ADDR          ((char *)0x55D208) // 4 bytes, lo 2 bytes is death timer, hi 1 byte is intro state
 #define CC_INTROSTATE_ADDR          ((char *)0x55D20B) // 1 bytes, intro state, 2 (intro), 1 (pre-game), 0 (in-game)
@@ -161,8 +158,6 @@ int main ( int argc, char *argv[] )
         return -1;
     }
 
-    Logger::get().initialize ( LOG_FILE, LOG_LOCAL_TIME );
-
     MemDumpList allAddrs;
 
     allAddrs.append ( miscAddrs );
@@ -175,38 +170,36 @@ int main ( int argc, char *argv[] )
 
     allAddrs.update();
 
-    // LOG ( "allAddrs.totalSize=%u", allAddrs.totalSize );
+    // PRINT ( "allAddrs.totalSize=%u", allAddrs.totalSize );
 
-    // LOG ( "allAddrs:" );
+    // PRINT ( "allAddrs:" );
     // for ( const MemDump& mem : allAddrs.addrs )
     // {
-    //     LOG ( "{ %08x, %08x }", mem.getAddr(), mem.getAddr() + mem.size );
+    //     PRINT ( "{ %08x, %08x }", mem.getAddr(), mem.getAddr() + mem.size );
 
     //     for ( const MemDumpPtr& ptr0 : mem.ptrs )
     //     {
     //         ASSERT ( ptr0.parent == &mem );
 
-    //         LOG ( "  [0x%x]+0x%x -> { %u bytes }", ptr0.srcOffset, ptr0.dstOffset, ptr0.size );
+    //         PRINT ( "  [0x%x]+0x%x -> { %u bytes }", ptr0.srcOffset, ptr0.dstOffset, ptr0.size );
 
     //         for ( const MemDumpPtr& ptr1 : ptr0.ptrs )
     //         {
     //             ASSERT ( ptr1.parent == &ptr0 );
 
-    //             LOG ( "    [0x%x]+0x%x -> { %u bytes }", ptr1.srcOffset, ptr1.dstOffset, ptr1.size );
+    //             PRINT ( "    [0x%x]+0x%x -> { %u bytes }", ptr1.srcOffset, ptr1.dstOffset, ptr1.size );
 
     //             for ( const MemDumpPtr& ptr2 : ptr1.ptrs )
     //             {
     //                 ASSERT ( ptr2.parent == &ptr1 );
 
-    //                 LOG ( "      [0x%x]+0x%x -> { %u bytes }", ptr2.srcOffset, ptr2.dstOffset, ptr2.size );
+    //                 PRINT ( "      [0x%x]+0x%x -> { %u bytes }", ptr2.srcOffset, ptr2.dstOffset, ptr2.size );
     //             }
     //         }
     //     }
     // }
 
     allAddrs.save ( argv[1] );
-
-    Logger::get().deinitialize();
 
     return 0;
 }
