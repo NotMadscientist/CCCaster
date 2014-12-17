@@ -450,14 +450,14 @@ bool ProcessManager::isWine()
     if ( isWine >= 0 )
         return isWine;
 
-    HMODULE hntdll = GetModuleHandle ( "ntdll.dll" );
+    HMODULE ntdll = GetModuleHandle ( "ntdll.dll" );
 
-    if ( !hntdll )
+    if ( !ntdll )
     {
         isWine = 0;
         return isWine;
     }
 
-    isWine = ( GetProcAddress ( hntdll, "wine_get_version" ) ? 1 : 0 );
+    isWine = ( GetProcAddress ( ntdll, "wine_get_version" ) ? 1 : 0 );
     return isWine;
 }
