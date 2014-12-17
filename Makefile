@@ -149,9 +149,11 @@ $(FOLDER)/states.bin: tools/$(GENERATOR)
 # 	$(CHMOD_X)
 # 	@echo
 
-tools/$(GENERATOR): CC_FLAGS += $(RELEASE_FLAGS)
-tools/$(GENERATOR): build_release tools/Generator.cpp $(addprefix build_release/,$(LIB_OBJECTS))
-	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 tools/Generator.cpp $(addprefix build_release/,$(LIB_OBJECTS)) $(LD_FLAGS)
+
+
+tools/$(GENERATOR): RELEASE_LIB_OBJECTS = $(addprefix build_release/,$(filter-out lib/Version.o,$(LIB_OBJECTS)))
+tools/$(GENERATOR): build_release tools/Generator.cpp $(RELEASE_LIB_OBJECTS)
+	$(CXX) -o $@ $(CC_FLAGS) $(RELEASE_FLAGS) -Wall -std=c++11 tools/Generator.cpp $(RELEASE_LIB_OBJECTS) $(LD_FLAGS)
 	@echo
 	$(PREFIX)strip $@
 	$(CHMOD_X)
