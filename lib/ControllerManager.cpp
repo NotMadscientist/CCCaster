@@ -157,6 +157,39 @@ void ControllerManager::check()
     // }
 }
 
+static BOOL CALLBACK enumJoystickAxes ( const DIDEVICEOBJECTINSTANCE *ddoi, void *userPtr )
+{
+    if ( ! ( ddoi->dwType & DIDFT_AXIS ) )
+        return DIENUM_CONTINUE;
+
+    // Set maximum range
+    DIPROPRANGE range;
+    range.diph.dwSize = sizeof ( range );
+    range.diph.dwHeaderSize = sizeof ( range.diph );
+    range.diph.dwObj = ddoi->dwType;
+    range.diph.dwHow = DIPH_BYID;
+    range.lMin = -32768;
+    range.lMax = 32767;
+
+    HRESULT result = IDirectInputDevice8_SetProperty ( ( IDirectInputDevice8 * ) userPtr, DIPROP_RANGE, &range.diph );
+    if ( FAILED ( result ) )
+        LOG ( "IDirectInputDevice8_SetProperty DIPROP_RANGE failed: 0x%08x", result );
+
+    // Set 0 deadzone
+    DIPROPDWORD deadzone;
+    deadzone.diph.dwSize = sizeof ( deadzone );
+    deadzone.diph.dwHeaderSize = sizeof ( deadzone.diph );
+    deadzone.diph.dwObj = ddoi->dwType;
+    deadzone.diph.dwHow = DIPH_BYID;
+    deadzone.dwData = 0;
+
+    result = IDirectInputDevice8_SetProperty ( ( IDirectInputDevice8 * ) userPtr, DIPROP_DEADZONE, &deadzone.diph );
+    if ( FAILED ( result ) )
+        LOG ( "IDirectInputDevice8_SetProperty DIPROP_DEADZONE failed: 0x%08x", result );
+
+    return DIENUM_CONTINUE;
+}
+
 void ControllerManager::attachJoystick ( const Guid& guid, const string& name )
 {
     if ( !initialized )
@@ -198,6 +231,11 @@ void ControllerManager::attachJoystick ( const Guid& guid, const string& name )
     result = IDirectInputDevice8_GetCapabilities ( joystick, &ddc );
     if ( FAILED ( result ) )
         THROW_EXCEPTION ( "IDirectInputDevice8_GetCapabilities failed: 0x%08x", ERROR_CONTROLLER_CHECK, result );
+
+    // Initialize the properties for each axis
+    result = IDirectInputDevice8_EnumObjects ( joystick, enumJoystickAxes, joystick, DIDFT_AXIS );
+    if ( FAILED ( result ) )
+        LOG ( "IDirectInputDevice8_EnumObjects failed: 0x%08x", result );
 
     // Create and add the controller
     Controller *controller = new Controller ( name, ( void * ) joystick, ddc.dwAxes, ddc.dwPOVs, ddc.dwButtons );
@@ -252,7 +290,6 @@ void ControllerManager::detachJoystick ( const Guid& guid )
     IDirectInputDevice8_Release ( joystick );
 }
 
-// Note: this is called on the SAME thread where IDirectInput8_EnumDevices is called below
 static BOOL CALLBACK enumJoysticks ( const DIDEVICEINSTANCE *ddi, void *userPtr )
 {
     unordered_map<Guid, string>& activeJoysticks = * ( unordered_map<Guid, string> * ) userPtr;
