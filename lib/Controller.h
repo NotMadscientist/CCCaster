@@ -28,12 +28,13 @@
 #define MAP_PRESERVE_DIRS   ( 0x01u )
 #define MAP_CONTINUOUSLY    ( 0x02u )
 
-#define AXIS_CENTERED       ( 0 )
-#define AXIS_POSITIVE       ( 1 )
-#define AXIS_NEGATIVE       ( 2 )
+#define AXIS_CENTERED       ( 0u )
+#define AXIS_POSITIVE       ( 1u )
+#define AXIS_NEGATIVE       ( 2u )
 
-#define MAX_NUM_AXES        ( 32 )
-#define MAX_NUM_BUTTONS     ( 128 )
+#define MAX_NUM_AXES        ( 32u )
+#define MAX_NUM_HATS        ( 32u )
+#define MAX_NUM_BUTTONS     ( 128u )
 
 
 struct KeyboardMappings : public SerializableSequence
@@ -69,6 +70,23 @@ struct JoystickMappings : public SerializableSequence
     //
     uint32_t axes[MAX_NUM_AXES][3];
 
+    // hat index -> hat value -> mapped key
+    //
+    // Hat values correspond to numpad notation, so 0 is unused
+    //
+    // The 5 value is mapped to a bit mask of all the mapped values on the same hat index.
+    //
+    // Example:
+    //   Hat up      -> 0b0001   Hat left  -> 0b0100
+    //   Hat down    -> 0b0010   Hat right -> 0b1000
+    //
+    // Then:
+    //   Hat neutral -> 0b1111
+    //
+    // Similarly, the 1, 3, 7, 9 values should be mapped to the correct bit masks as well.
+    //
+    uint32_t hats[MAX_NUM_HATS][10];
+
     // button index -> mapped key
     uint32_t buttons[MAX_NUM_BUTTONS];
 
@@ -99,7 +117,10 @@ private:
     const std::string name;
 
     // Implementation specific joystick pointer, 0 for keyboard
-    void *joystick = 0;
+    void *const joystick = 0;
+
+    // Joystick capabilities
+    const uint32_t numAxes = 0, numHats = 0, numButtons = 0;
 
     // Joystick any-button state
     uint8_t prevAnyButton = 0, anyButton = 0;
@@ -130,11 +151,12 @@ private:
 
     // Joystick event callbacks
     void joystickAxisEvent ( uint8_t axis, uint8_t value );
+    void joystickHatEvent ( uint8_t hat, uint8_t value );
     void joystickButtonEvent ( uint8_t button, bool isDown );
 
     // Construct a keyboard / joystick controller
     Controller ( KeyboardEnum );
-    Controller ( const std::string& name, void *joystick );
+    Controller ( const std::string& name, void *joystick, uint32_t numAxes, uint32_t numHats, uint32_t numButtons );
 
     // Clear this controller's mapping(s) without callback to ControllerManager
     void doClearMapping ( uint32_t keys = 0xFFFFFFFF );

@@ -159,6 +159,81 @@ void Controller::joystickAxisEvent ( uint8_t axis, uint8_t value )
     LOG_CONTROLLER ( this, "value=%c", getAxisSign ( value ) );
 }
 
+void Controller::joystickHatEvent ( uint8_t hat, uint8_t value )
+{
+    const uint32_t keyMapped = stick.hats[hat][value];
+
+    if ( keyToMap != 0 && !waitForNeutral && ( value % 2 == 0 ) // Only map up/down/left/right
+            && ! ( ( options & MAP_PRESERVE_DIRS ) && ( stick.hats[hat][5] & MASK_DIRS ) ) )
+    {
+        uint8_t activeValue = 0;
+        if ( active.hats[hat][2] )
+            activeValue = 2;
+        else if ( active.hats[hat][4] )
+            activeValue = 4;
+        else if ( active.hats[hat][6] )
+            activeValue = 6;
+        else if ( active.hats[hat][8] )
+            activeValue = 8;
+
+        // Done mapping if the axis returned to 0
+        if ( value == 5 && activeValue )
+        {
+            doClearMapping ( keyToMap );
+
+            stick.hats[hat][value] = keyToMap;
+
+            // Set bit mask for neutral value
+            stick.hats[hat][5] = ( stick.hats[hat][2] | stick.hats[hat][4] | stick.hats[hat][6] | stick.hats[hat][8] );
+
+            // Set bit masks for diagonal values
+            stick.hats[hat][1] = ( stick.hats[hat][2] | stick.hats[hat][4] );
+            stick.hats[hat][3] = ( stick.hats[hat][2] | stick.hats[hat][6] );
+            stick.hats[hat][7] = ( stick.hats[hat][8] | stick.hats[hat][4] );
+            stick.hats[hat][9] = ( stick.hats[hat][8] | stick.hats[hat][6] );
+
+            stick.invalidate();
+
+            LOG_CONTROLLER ( this, "Mapped value=%d to %08x", activeValue, keyToMap );
+
+            Owner *owner = this->owner;
+            const uint32_t key = keyToMap;
+
+            if ( options & MAP_CONTINUOUSLY )
+                clearActive();
+            else
+                cancelMapping();
+
+            ControllerManager::get().mappingsChanged ( this );
+
+            if ( owner )
+                owner->doneMapping ( this, key );
+        }
+
+        // Otherwise ignore already active joystick mappings
+        if ( activeValue )
+            return;
+
+        active.hats[hat][value] = keyToMap;
+        return;
+    }
+
+    const uint32_t mask = stick.hats[hat][5];
+
+    if ( !mask )
+        return;
+
+    state &= ~mask;
+
+    if ( value != 5 )
+        state |= keyMapped;
+
+    if ( !state && waitForNeutral )
+        waitForNeutral = false;
+
+    LOG_CONTROLLER ( this, "value=%d", value );
+}
+
 void Controller::joystickButtonEvent ( uint8_t button, bool isDown )
 {
     const uint32_t keyMapped = stick.buttons[button];
@@ -256,7 +331,12 @@ Controller::Controller ( KeyboardEnum ) : name ( "Keyboard" )
     LOG_CONTROLLER ( this, "New keyboard" );
 }
 
-Controller::Controller ( const string& name, void *joystick ) : name ( name ), joystick ( joystick )
+Controller::Controller ( const string& name, void *joystick, uint32_t numAxes, uint32_t numHats, uint32_t numButtons )
+    : name ( name )
+    , joystick ( joystick )
+    , numAxes ( min ( numAxes, MAX_NUM_AXES ) )
+    , numHats ( min ( numHats, MAX_NUM_HATS ) )
+    , numButtons ( min ( numButtons, MAX_NUM_BUTTONS ) )
 {
     stick.name = nextName ( name );
     namesWithIndex.insert ( stick.name );
@@ -270,7 +350,7 @@ Controller::Controller ( const string& name, void *joystick ) : name ( name ), j
     doClearMapping();
     doResetToDefaults();
 
-    LOG_CONTROLLER ( this, "New joystick: origName=%s", name );
+    LOG_CONTROLLER ( this, "New joystick: %s; %u axe(s); %u hat(s); %u button(s)", name, numAxes, numHats, numButtons );
 }
 
 Controller::~Controller()
@@ -327,6 +407,8 @@ string Controller::getMapping ( uint32_t key, const string& placeholder ) const
                 //     mapping += ", " + str;
             }
         }
+
+        // TODO hat
 
         for ( uint8_t button = 0; button < MAX_NUM_BUTTONS; ++button )
         {
@@ -455,6 +537,10 @@ void Controller::clearActive()
         for ( auto& b : a )
             b = 0;
 
+    for ( auto& a : active.hats )
+        for ( auto& b : a )
+            b = 0;
+
     for ( auto& a : active.buttons )
         a = 0;
 }
@@ -472,6 +558,18 @@ void Controller::doClearMapping ( uint32_t keys )
     }
 
     for ( auto& a : stick.axes )
+    {
+        for ( auto& b : a )
+        {
+            if ( b & keys )
+            {
+                b = 0;
+                stick.invalidate();
+            }
+        }
+    }
+
+    for ( auto& a : stick.hats )
     {
         for ( auto& b : a )
         {

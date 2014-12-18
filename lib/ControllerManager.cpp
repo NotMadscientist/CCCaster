@@ -15,6 +15,8 @@
 using namespace std;
 
 
+#define JOYSTICK_FLAGS ( DISCL_NONEXCLUSIVE | DISCL_BACKGROUND )
+
 static HRESULT comInitRet = E_FAIL;
 
 static IDirectInput8 *dinput = 0;
@@ -41,10 +43,59 @@ void ControllerManager::check()
         }
     }
 
+    DIJOYSTATE2 djs;
+    HRESULT result;
+
     for ( auto& kv : joysticks )
     {
-        kv.second->prevAnyButton = kv.second->anyButton;
-        kv.second->prevState = kv.second->state;
+        Controller *controller = kv.second.get();
+        IDirectInputDevice8 *joystick = ( IDirectInputDevice8 * ) controller->joystick;
+
+        // Save previous states
+        controller->prevAnyButton = controller->anyButton;
+        controller->prevState = controller->state;
+
+        // Poll device state
+        result = IDirectInputDevice8_Poll ( joystick );
+        if ( result == DIERR_INPUTLOST || result == DIERR_NOTACQUIRED )
+        {
+            IDirectInputDevice8_Acquire ( joystick );
+            result = IDirectInputDevice8_Poll ( joystick );
+        }
+
+        if ( FAILED ( result ) )
+        {
+            LOG ( "IDirectInputDevice8_Poll failed: 0x%08x", result );
+            controller->anyButton = 0;
+            controller->state = 0;
+            continue;
+        }
+
+        // Get device state
+        result = IDirectInputDevice8_GetDeviceState ( joystick, sizeof ( DIJOYSTATE2 ), &djs );
+        if ( result == DIERR_INPUTLOST || result == DIERR_NOTACQUIRED )
+        {
+            IDirectInputDevice8_Acquire ( joystick );
+            result = IDirectInputDevice8_GetDeviceState ( joystick, sizeof ( DIJOYSTATE2 ), &djs );
+        }
+
+        if ( FAILED ( result ) )
+        {
+            LOG ( "IDirectInputDevice8_GetDeviceState failed: 0x%08x", result );
+            controller->anyButton = 0;
+            controller->state = 0;
+            continue;
+        }
+
+        LOG ( "lX=%d; lY=%d; lZ=%d; lRx=%d; lRy=%d; lRz=%d; slider0=%d; slider1=%d; pov0=%d; pov3=%d; pov2=%d; pov3=%d",
+              djs.lX, djs.lY, djs.lZ, djs.lRx, djs.lRy, djs.lRz, djs.rglSlider[0], djs.rglSlider[1],
+              djs.rgdwPOV[0], djs.rgdwPOV[1], djs.rgdwPOV[2], djs.rgdwPOV[3] );
+
+        string buttons;
+        for ( uint32_t i = 0; i < controller->numButtons; ++i )
+            buttons += ( i ? "; " : "" ) + format ( "b%d=%d", i, ( bool ) djs.rgbButtons[i] );
+
+        LOG ( "%s", buttons );
     }
 
     // while ( al_get_next_event ( eventQueue, &event ) )
@@ -130,8 +181,26 @@ void ControllerManager::attachJoystick ( const Guid& guid, const string& name )
     if ( FAILED ( result ) )
         THROW_EXCEPTION ( "IDirectInputDevice8_QueryInterface failed: 0x%08x", ERROR_CONTROLLER_CHECK, result );
 
+    // Enable shared background access
+    result = IDirectInputDevice8_SetCooperativeLevel ( joystick, ( HWND ) windowHandle, JOYSTICK_FLAGS );
+    if ( FAILED ( result ) )
+        THROW_EXCEPTION ( "IDirectInputDevice8_SetCooperativeLevel failed: 0x%08x", ERROR_CONTROLLER_CHECK, result );
+
+    // Use the DIJOYSTATE2 data format
+    result = IDirectInputDevice8_SetDataFormat ( joystick, &c_dfDIJoystick2 );
+    if ( FAILED ( result ) )
+        THROW_EXCEPTION ( "IDirectInputDevice8_SetDataFormat failed: 0x%08x", ERROR_CONTROLLER_CHECK, result );
+
+    DIDEVCAPS ddc;
+    ddc.dwSize = sizeof ( ddc );
+
+    // Get the joystick capabilities
+    result = IDirectInputDevice8_GetCapabilities ( joystick, &ddc );
+    if ( FAILED ( result ) )
+        THROW_EXCEPTION ( "IDirectInputDevice8_GetCapabilities failed: 0x%08x", ERROR_CONTROLLER_CHECK, result );
+
     // Create and add the controller
-    Controller *controller = new Controller ( name, ( void * ) joystick );
+    Controller *controller = new Controller ( name, ( void * ) joystick, ddc.dwAxes, ddc.dwPOVs, ddc.dwButtons );
 
     ASSERT ( controller != 0 );
 
@@ -250,6 +319,8 @@ void ControllerManager::initialize ( Owner *owner )
     result = IDirectInput8_Initialize ( dinput, GetModuleHandle ( 0 ), DIRECTINPUT_VERSION );
     if ( FAILED ( result ) )
         THROW_EXCEPTION ( "IDirectInput8_Initialize failed: 0x%08x", ERROR_CONTROLLER_INIT, result );
+
+    refreshJoysticks();
 
     LOG ( "ControllerManager initialized" );
 }
