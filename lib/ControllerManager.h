@@ -2,6 +2,7 @@
 
 #include "Controller.h"
 #include "JoystickDetector.h"
+#include "Guid.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -38,11 +39,15 @@ private:
     Controller keyboard;
 
     // Maps of joystick controller instances
-    std::unordered_map<void *, std::shared_ptr<Controller>> joysticks;
+    std::unordered_map<Guid, std::shared_ptr<Controller>> joysticks;
     std::unordered_map<std::string, Controller *> joysticksByName;
 
     // Flag to indicate if initialized
     bool initialized = false;
+
+    // Attach / detach a joystick
+    void attachJoystick ( const Guid& guid, const std::string& name );
+    void detachJoystick ( const Guid& guid );
 
     // Private constructor, etc. for singleton class
     ControllerManager();

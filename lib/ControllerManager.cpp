@@ -106,10 +106,93 @@ void ControllerManager::check ( void *keyboardWindowHandle )
     // }
 }
 
-// Note: this is called on the SAME thread where IDirectInput8_EnumDevices is called (see below)
-static BOOL CALLBACK enumJoysticks ( const DIDEVICEINSTANCE *ddi, void * )
+void ControllerManager::attachJoystick ( const Guid& guid, const string& name )
 {
-    LOG ( "%s", ddi->tszProductName );
+    if ( !initialized )
+        return;
+
+    IDirectInputDevice8 *device, *joystick;
+
+    GUID windowsGuid;
+    guid.getGUID ( windowsGuid );
+
+    // Create the DirectInput device, NOTE the pointer returned is only temporarily used
+    HRESULT result = IDirectInput8_CreateDevice ( dinput, windowsGuid, &device, 0 );
+    if ( FAILED ( result ) )
+        THROW_EXCEPTION ( "IDirectInput8_CreateDevice failed: 0x%08x", ERROR_CONTROLLER_CHECK, result );
+
+    // Query for the actual joystick device to use
+    result = IDirectInputDevice8_QueryInterface ( device, IID_IDirectInputDevice8, ( void ** ) &joystick );
+
+    // We no longer need the original DirectInput device pointer
+    IDirectInputDevice8_Release ( device );
+
+    if ( FAILED ( result ) )
+        THROW_EXCEPTION ( "IDirectInputDevice8_QueryInterface failed: 0x%08x", ERROR_CONTROLLER_CHECK, result );
+
+    // Create and add the controller
+    Controller *controller = new Controller ( name, ( void * ) joystick );
+
+    ASSERT ( controller != 0 );
+
+    joysticks[guid].reset ( controller );
+    joysticksByName[controller->getName()] = controller;
+
+    // Update mappings
+    auto it = mappings.mappings.find ( controller->getName() );
+    if ( it != mappings.mappings.end() && it->second->getMsgType() == MsgType::JoystickMappings )
+    {
+        controller->setMappings ( it->second->getAs<JoystickMappings>() );
+    }
+    else
+    {
+        auto it = mappings.mappings.find ( controller->getOrigName() );
+        if ( it != mappings.mappings.end() && it->second->getMsgType() == MsgType::JoystickMappings )
+            controller->setMappings ( it->second->getAs<JoystickMappings>() );
+    }
+
+    LOG_CONTROLLER ( controller, "attached" );
+
+    if ( owner )
+        owner->attachedJoystick ( controller );
+}
+
+void ControllerManager::detachJoystick ( const Guid& guid )
+{
+    if ( !initialized )
+        return;
+
+    // Find and remove the controller
+    auto it = joysticks.find ( guid );
+
+    ASSERT ( it != joysticks.end() );
+
+    Controller *controller = it->second.get();
+    IDirectInputDevice8 *joystick = ( IDirectInputDevice8 * ) controller->joystick;
+
+    LOG_CONTROLLER ( controller, "detached" );
+
+    if ( owner )
+        owner->detachedJoystick ( controller );
+
+    joysticksByName.erase ( controller->getName() );
+    joysticks.erase ( it );
+
+    // Release DirectInput joystick device
+    IDirectInputDevice8_Unacquire ( joystick );
+    IDirectInputDevice8_Release ( joystick );
+}
+
+// Note: this is called on the SAME thread where IDirectInput8_EnumDevices is called below
+static BOOL CALLBACK enumJoysticks ( const DIDEVICEINSTANCE *ddi, void *userPtr )
+{
+    unordered_map<Guid, string>& activeJoysticks = * ( unordered_map<Guid, string> * ) userPtr;
+
+    const Guid guid = ddi->guidInstance;
+
+    LOG ( "%s: guid='%s'", ddi->tszProductName, guid );
+
+    activeJoysticks[guid] = ddi->tszProductName;
 
     return DIENUM_CONTINUE;
 }
@@ -119,65 +202,29 @@ void ControllerManager::refreshJoysticks()
     if ( !initialized )
         return;
 
-    HRESULT result = IDirectInput8_EnumDevices ( dinput, DI8DEVCLASS_GAMECTRL, enumJoysticks, 0, DIEDFL_ATTACHEDONLY );
-    if ( result != DI_OK )
+    unordered_map<Guid, string> activeJoysticks;
+
+    HRESULT result = IDirectInput8_EnumDevices ( dinput, DI8DEVCLASS_GAMECTRL,
+                     enumJoysticks, ( void * ) &activeJoysticks, DIEDFL_ATTACHEDONLY );
+
+    if ( FAILED ( result ) )
         THROW_EXCEPTION ( "IDirectInput8_EnumDevices failed: 0x%08x", ERROR_CONTROLLER_CHECK, result );
 
-    // al_reconfigure_joysticks();
+    for ( const auto& kv : activeJoysticks )
+    {
+        if ( joysticks.find ( kv.first ) != joysticks.end() )
+            continue;
 
-    // vector<const ALLEGRO_JOYSTICK *> dead;
+        attachJoystick ( kv.first, kv.second );
+    }
 
-    // for ( const auto& kv : joysticks )
-    // {
-    //     ALLEGRO_JOYSTICK *joystick = ( ALLEGRO_JOYSTICK * ) kv.first;
-    //     Controller *controller = kv.second.get();
+    for ( const auto& kv : joysticks )
+    {
+        if ( activeJoysticks.find ( kv.first ) != activeJoysticks.end() )
+            continue;
 
-    //     if ( !al_get_joystick_active ( joystick ) )
-    //     {
-    //         dead.push_back ( joystick );
-    //         joysticksByName.erase ( controller->getName() );
-
-    //         LOG_CONTROLLER ( controller, "detached" );
-
-    //         if ( owner )
-    //             owner->detachedJoystick ( controller );
-    //     }
-    // }
-
-    // for ( const ALLEGRO_JOYSTICK *joystick : dead )
-    //     joysticks.erase ( ( void * ) joystick );
-
-    // for ( int i = 0; i < al_get_num_joysticks(); ++i )
-    // {
-    //     void *joystick = ( void * ) al_get_joystick ( i );
-
-    //     if ( joysticks.find ( joystick ) != joysticks.end() )
-    //         continue;
-
-    //     Controller *controller = new Controller ( joystick );
-
-    //     ASSERT ( controller != 0 );
-
-    //     joysticks[joystick].reset ( controller );
-    //     joysticksByName[controller->getName()] = controller;
-
-    //     auto it = mappings.mappings.find ( controller->getName() );
-    //     if ( it != mappings.mappings.end() && it->second->getMsgType() == MsgType::JoystickMappings )
-    //     {
-    //         controller->setMappings ( it->second->getAs<JoystickMappings>() );
-    //     }
-    //     else
-    //     {
-    //         auto it = mappings.mappings.find ( controller->getOrigName() );
-    //         if ( it != mappings.mappings.end() && it->second->getMsgType() == MsgType::JoystickMappings )
-    //             controller->setMappings ( it->second->getAs<JoystickMappings>() );
-    //     }
-
-    //     LOG_CONTROLLER ( controller, "attached" );
-
-    //     if ( owner )
-    //         owner->attachedJoystick ( controller );
-    // }
+        detachJoystick ( kv.first );
+    }
 }
 
 void ControllerManager::initialize ( Owner *owner )

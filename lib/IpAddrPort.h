@@ -1,11 +1,11 @@
 #pragma once
 
 #include "Protocol.h"
+#include "Algorithms.h"
 
 #include <cereal/types/string.hpp>
 
 #include <memory>
-#include <algorithm>
 
 
 struct addrinfo;
@@ -98,12 +98,6 @@ const IpAddrPort NullAddress;
 // Hash function
 namespace std
 {
-
-template<class T> void hash_combine ( size_t& seed, const T& v )
-{
-    hash<T> hasher;
-    seed ^= hasher ( v ) + 0x9e3779b9 + ( seed << 6 ) + ( seed >> 2 );
-}
 
 template<> struct hash<IpAddrPort>
 {
