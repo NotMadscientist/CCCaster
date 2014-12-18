@@ -686,6 +686,8 @@ void MainUi::settings()
 
 void MainUi::initialize()
 {
+    ui.reset ( new ConsoleUi ( uiTitle, ProcessManager::isWine() ) );
+
     // Configurable settings
     config.putInteger ( "alertOnConnect", 3 );
     config.putString ( "alertWavFile", "SystemDefault" );
@@ -709,6 +711,7 @@ void MainUi::initialize()
 
     // Initialize controllers
     ControllerManager::get().initialize ( 0 );
+    ControllerManager::get().windowHandle = getConsoleWindow();
     ControllerManager::get().check();
 
     // Setup default mappings
@@ -783,7 +786,8 @@ void MainUi::main ( RunFuncPtr run )
 {
     static const vector<string> options = { "Netplay", "Spectate", "Broadcast", "Offline", "Controls", "Settings" };
 
-    ui.reset ( new ConsoleUi ( uiTitle, ProcessManager::isWine() ) );
+    ASSERT ( ui.get() != 0 );
+
     ui->pushRight ( new ConsoleUi::Menu ( uiTitle, options, "Quit" ) );
 
     mainMenu = ui->top<ConsoleUi::Menu>();
@@ -888,9 +892,6 @@ static string formatStats ( const PingStats& pingStats )
 
 void MainUi::display ( const string& message, bool replace )
 {
-    if ( !ui )
-        ui.reset ( new ConsoleUi ( uiTitle, ProcessManager::isWine() ) );
-
     if ( replace && ( ui->empty() || !ui->top()->requiresUser || ui->top() != mainMenu ) )
         ui->pushInFront ( new ConsoleUi::TextBox ( message ), { 1, 0 }, true ); // Expand width and clear
     else if ( ui->top()->expandWidth() )
@@ -1060,7 +1061,7 @@ bool MainUi::confirm()
     return ret;
 }
 
-const void *MainUi::getConsoleWindow()
+void *MainUi::getConsoleWindow()
 {
     return ConsoleUi::getConsoleWindow();
 }

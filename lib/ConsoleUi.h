@@ -539,5 +539,5 @@ public:
     }
 
     // Get console window handle
-    static const void *getConsoleWindow();
+    static void *getConsoleWindow();
 };

@@ -56,8 +56,11 @@ private:
 
 public:
 
-    // Check for controller events, matching keyboardWindowHandle if non-zero
-    void check ( void *keyboardWindowHandle = 0 );
+    // Window handle to match for keyboard and joystick events
+    void *windowHandle = 0;
+
+    // Check for controller events
+    void check();
 
     // Refresh the list of joysticks, will attach / detach joysticks accordingly
     void refreshJoysticks();

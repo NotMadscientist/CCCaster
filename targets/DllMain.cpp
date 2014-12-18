@@ -430,7 +430,7 @@ struct DllMain
                 }
 
                 KeyboardState::update();
-                ControllerManager::get().check ( DllHacks::windowHandle );
+                ControllerManager::get().check();
 
                 ASSERT ( localPlayer == 1 || localPlayer == 2 );
 
@@ -1891,6 +1891,7 @@ extern "C" void callback()
             // Joystick and timer must be initialized in the main thread
             TimerManager::get().initialize();
             ControllerManager::get().initialize ( 0 );
+            ControllerManager::get().windowHandle = DllHacks::windowHandle;
 
             // Start polling now
             EventManager::get().startPolling();

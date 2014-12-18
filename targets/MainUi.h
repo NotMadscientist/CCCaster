@@ -79,5 +79,5 @@ public:
 
     const NetplayConfig& getNetplayConfig() const { return netplayConfig; }
 
-    static const void *getConsoleWindow();
+    static void *getConsoleWindow();
 };

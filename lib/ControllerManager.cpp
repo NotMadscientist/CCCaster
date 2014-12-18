@@ -20,12 +20,12 @@ static HRESULT comInitRet = E_FAIL;
 static IDirectInput8 *dinput = 0;
 
 
-void ControllerManager::check ( void *keyboardWindowHandle )
+void ControllerManager::check()
 {
     if ( !initialized )
         return;
 
-    if ( !keyboardWindowHandle || keyboardWindowHandle == ( void * ) GetForegroundWindow() )
+    if ( windowHandle == ( void * ) GetForegroundWindow() )
     {
         // Update keyboard controller state
         keyboard.prevState = keyboard.state;
