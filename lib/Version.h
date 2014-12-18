@@ -51,7 +51,7 @@ private:
 };
 
 
-// Comparison operator
+// Comparison operators
 bool operator< ( const Version& a, const Version& b );
 inline bool operator<= ( const Version& a, const Version& b ) { return ( a < b ) || a.similar ( b, 2 ); }
 inline bool operator> ( const Version& a, const Version& b ) { return ! ( a <= b ); }

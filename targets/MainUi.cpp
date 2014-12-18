@@ -661,9 +661,17 @@ void MainUi::settings()
                 break;
 
             case 5:
-                ui->pushInFront ( new ConsoleUi::TextBox ( format ( "%s\n\nRevision %s\n\nBuilt on %s\n\n"
+                ui->pushInFront ( new ConsoleUi::TextBox ( format ( "%s%s\n\nRevision %s\n\nBuilt on %s\n\n"
                                   "Created by Madscientist\n\nPress any key to go back",
-                                  uiTitle, LocalVersion.revision, LocalVersion.buildTime ) ),
+                                  uiTitle,
+#if defined(DEBUG)
+                                  " (debug)",
+#elif defined(LOGGING)
+                                  " (logging)",
+#else
+                                  "",
+#endif
+                                  LocalVersion.revision, LocalVersion.buildTime ) ),
                 { 0, 0 }, true ); // Don't expand but DO clear
                 system ( "@pause > nul" );
                 break;
