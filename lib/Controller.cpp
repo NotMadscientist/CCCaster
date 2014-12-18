@@ -16,7 +16,7 @@ static string getVKeyName ( uint32_t vkCode, uint32_t scanCode, bool isExtended 
 {
     switch ( vkCode )
     {
-#include "KeyboardMappings.h"
+#include "KeyboardVKeyNames.h"
 
         default:
             break;

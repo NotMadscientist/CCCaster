@@ -251,7 +251,7 @@ format:
     --keep-one-line-blocks      	\
     --align-pointer=name        	\
     --align-reference=type      	\
-$(filter-out CharacterSelect.cpp lib/KeyboardMappings.h AsmHacks.h,$(NON_GEN_SRCS) $(NON_GEN_HEADERS))
+$(filter-out CharacterSelect.cpp lib/KeyboardVKeyNames.h AsmHacks.h,$(NON_GEN_SRCS) $(NON_GEN_HEADERS))
 
 count:
 	@wc -l $(NON_GEN_SRCS) $(NON_GEN_HEADERS) | sort -nr | head -n 10 && echo '    ...'
