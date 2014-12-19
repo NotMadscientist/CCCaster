@@ -309,11 +309,13 @@ int main ( int argc, char *argv[] )
     }
 
 #ifndef RELEASE
-    // Run the unit test suite and exit
+    // Run the unit test suite
     if ( opt[Options::Tests] )
     {
         int result = RunAllTests ( argc, argv );
         Logger::get().deinitialize();
+        PRINT ( "Press any key to exit." );
+        system ( "@pause > nul" );
         return result;
     }
 #endif
