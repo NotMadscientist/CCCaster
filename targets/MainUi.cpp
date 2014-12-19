@@ -346,7 +346,7 @@ void MainUi::controls()
             options.push_back ( "Reset to defaults" );
 
             if ( controller.isJoystick() )
-                options.push_back ( "Set joystick deadzone" );
+                options.push_back ( format ( "Set joystick deadzone (%.2f)", controller.getDeadzone() ) );
 
             // Add instructions above menu
             ui->pushRight ( new ConsoleUi::TextBox (
@@ -389,20 +389,23 @@ void MainUi::controls()
             // Clear all
             if ( pos == ( int ) gameInputBits.size() )
             {
+                ui->pop();
+                ui->pop();
+
                 if ( areYouSure() )
                 {
                     controller.clearAllMappings();
                     saveMappings ( controller );
                 }
-
-                ui->pop();
-                ui->pop();
                 continue;
             }
 
             // Reset to defaults
             if ( pos == ( int ) gameInputBits.size() + 1 )
             {
+                ui->pop();
+                ui->pop();
+
                 if ( areYouSure() )
                 {
                     if ( controller.isKeyboard() )
@@ -411,9 +414,6 @@ void MainUi::controls()
                         controller.resetToDefaults();
                     saveMappings ( controller );
                 }
-
-                ui->pop();
-                ui->pop();
                 continue;
             }
 
@@ -426,9 +426,8 @@ void MainUi::controls()
                 if ( !controller.isJoystick() )
                     continue;
 
-                ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptString,
-                                  "Enter a value between 0.0 and 1.0:" ),
-                { 0, 0 }, true ); // Don't expand but DO clear
+                ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptString,
+                                                        "Enter a value between 0.0 and 1.0:" ) );
 
                 ui->top<ConsoleUi::Prompt>()->setInitial ( format ( "%.2f", controller.getDeadzone() ) );
 

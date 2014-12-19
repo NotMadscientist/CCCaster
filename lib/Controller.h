@@ -279,7 +279,7 @@ public:
     void resetToDefaults();
 
     // Get / set joystick deadzone
-    float getDeadzone() { return joystickMappings.deadzone; }
+    float getDeadzone() { return joystickMappings.deadzone / 32767.0f; }
     void setDeadzone ( float deadzone )
     {
         joystickMappings.deadzone = ( uint32_t ) clamped<float> ( deadzone * 32767, MIN_DEADZONE, MAX_DEADZONE );
