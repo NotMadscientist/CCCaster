@@ -97,6 +97,25 @@ struct JoystickMappings : public SerializableSequence
 };
 
 
+struct JoystickState
+{
+    uint8_t axes[MAX_NUM_AXES];
+    uint8_t hats[MAX_NUM_HATS];
+    uint8_t buttons = 0;
+
+    JoystickState() { clear(); }
+
+    void clear()
+    {
+        for ( auto& a : axes )
+            a = AXIS_CENTERED;
+        for ( auto& a : hats )
+            a = 5;
+        buttons = 0;
+    }
+};
+
+
 class Controller : public KeyboardManager::Owner
 {
 public:
@@ -122,17 +141,20 @@ private:
     // Joystick capabilities
     const uint32_t numAxes = 0, numHats = 0, numButtons = 0;
 
-    // Joystick any-button state
+    // Joystick states
+    JoystickState joystickPrevState, joystickState, joystickMapState;
+
+    // Controller any-button states
     uint8_t prevAnyButton = 0, anyButton = 0;
 
-    // Controller state
+    // Controller states
     uint32_t prevState = 0, state = 0;
 
     // Keyboard mappings
-    KeyboardMappings keybd;
+    KeyboardMappings keyboardMappings;
 
     // Joystick mappings
-    JoystickMappings stick;
+    JoystickMappings joystickMappings;
 
     // The current key to map to an event
     uint32_t keyToMap = 0;
@@ -142,9 +164,6 @@ private:
 
     // Mappings options
     uint8_t options = 0;
-
-    // The currently active joystick mappings for the above key
-    JoystickMappings active;
 
     // Keyboard event callback
     void keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown );
@@ -164,9 +183,6 @@ private:
     // Reset this joystick's mapping(s) without callback to ControllerManager
     void doResetToDefaults();
 
-    // Clear active joytstick mappings
-    void clearActive();
-
 public:
 
     // Basic destructor
@@ -176,9 +192,9 @@ public:
     const std::string& getName() const
     {
         if ( isKeyboard() )
-            return keybd.name;
+            return keyboardMappings.name;
         else
-            return stick.name;
+            return joystickMappings.name;
     }
 
     // Get the original name of the controller
@@ -194,9 +210,9 @@ public:
     MsgPtr getMappings() const
     {
         if ( isKeyboard() )
-            return keybd.clone();
+            return keyboardMappings.clone();
         else
-            return stick.clone();
+            return joystickMappings.clone();
     }
 
     // Set the mappings for this controller
@@ -220,8 +236,8 @@ public:
     void resetToDefaults();
 
     // Get / set joystick deadzone
-    float getDeadzone() { return stick.deadzone; }
-    void setDeadzone ( float deadzone ) { stick.deadzone = deadzone; stick.invalidate(); }
+    float getDeadzone() { return joystickMappings.deadzone; }
+    void setDeadzone ( float deadzone ) { joystickMappings.deadzone = deadzone; joystickMappings.invalidate(); }
 
     // Get the joystick any-button state
     bool getPrevAnyButton() const { return prevAnyButton; }

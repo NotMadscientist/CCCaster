@@ -35,10 +35,10 @@ void ControllerManager::check()
 
         for ( uint8_t i = 0; i < 32; ++i )
         {
-            if ( !keyboard.keybd.codes[i] )
+            if ( !keyboard.keyboardMappings.codes[i] )
                 continue;
 
-            if ( GetKeyState ( keyboard.keybd.codes[i] ) & 0x80 )
+            if ( GetKeyState ( keyboard.keyboardMappings.codes[i] ) & 0x80 )
                 keyboard.state |= ( 1u << i );
         }
     }
@@ -52,6 +52,7 @@ void ControllerManager::check()
         IDirectInputDevice8 *joystick = ( IDirectInputDevice8 * ) controller->joystick;
 
         // Save previous states
+        controller->joystickPrevState = controller->joystickState;
         controller->prevAnyButton = controller->anyButton;
         controller->prevState = controller->state;
 
@@ -97,64 +98,6 @@ void ControllerManager::check()
 
         LOG ( "%s", buttons );
     }
-
-    // while ( al_get_next_event ( eventQueue, &event ) )
-    // {
-    //     switch ( event.type )
-    //     {
-    //         case ALLEGRO_EVENT_JOYSTICK_AXIS:
-    //         {
-    //             Controller *controller = joysticks[ ( void * ) event.joystick.id ].get();
-
-    //             ASSERT ( controller != 0 );
-
-    //             LOG_CONTROLLER ( controller, "ALLEGRO_EVENT_JOYSTICK_AXIS; stick=%d; axis=%d; pos=%.2f",
-    //                              event.joystick.stick, event.joystick.axis, event.joystick.pos );
-
-    //             const uint8_t axis = combineAxis ( 'X' + event.joystick.axis, event.joystick.stick );
-
-    //             uint8_t value = AXIS_CENTERED;
-    //             if ( abs ( event.joystick.pos ) > controller->stick.deadzone )
-    //                 value = ( event.joystick.pos > 0.0f ? AXIS_POSITIVE : AXIS_NEGATIVE );
-
-    //             controller->joystickAxisEvent ( axis, value );
-    //             break;
-    //         }
-
-    //         case ALLEGRO_EVENT_JOYSTICK_BUTTON_DOWN:
-    //         {
-    //             Controller *controller = joysticks[ ( void * ) event.joystick.id ].get();
-
-    //             ASSERT ( controller != 0 );
-
-    //             LOG_CONTROLLER ( controller, "ALLEGRO_EVENT_JOYSTICK_BUTTON_DOWN; button=%d", event.joystick.button );
-
-    //             controller->joystickButtonEvent ( event.joystick.button, true );
-    //             break;
-    //         }
-
-    //         case ALLEGRO_EVENT_JOYSTICK_BUTTON_UP:
-    //         {
-    //             Controller *controller = joysticks[ ( void * ) event.joystick.id ].get();
-
-    //             ASSERT ( controller != 0 );
-
-    //             LOG_CONTROLLER ( controller, "ALLEGRO_EVENT_JOYSTICK_BUTTON_UP; button=%d", event.joystick.button );
-
-    //             controller->joystickButtonEvent ( event.joystick.button, false );
-    //             break;
-    //         }
-
-    //         case ALLEGRO_EVENT_JOYSTICK_CONFIGURATION:
-    //             LOG ( "ALLEGRO_EVENT_JOYSTICK_CONFIGURATION" );
-    //             refreshJoysticks();
-    //             break;
-
-    //         default:
-    //             LOG ( "Unknown event type (%d)", event.type );
-    //             break;
-    //     }
-    // }
 }
 
 static BOOL CALLBACK enumJoystickAxes ( const DIDEVICEOBJECTINSTANCE *ddoi, void *userPtr )
