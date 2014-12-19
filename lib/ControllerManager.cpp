@@ -87,9 +87,9 @@ void ControllerManager::check()
     DIJOYSTATE2 djs;
     HRESULT result;
 
-    for ( auto& kv : joysticks )
+    for ( auto it = joysticks.begin(); it != joysticks.end(); )
     {
-        Controller *controller = kv.second.get();
+        Controller *controller = it->second.get();
         const JoystickInfo info = controller->joystick.info;
         IDirectInputDevice8 *const device = ( IDirectInputDevice8 * ) info.device;
         const uint32_t deadzone = controller->joystickMappings.deadzone;
@@ -108,8 +108,9 @@ void ControllerManager::check()
 
         if ( FAILED ( result ) )
         {
-            LOG ( "IDirectInputDevice8_Poll failed: 0x%08x", result );
-            controller->state = 0;
+            LOG_CONTROLLER ( controller, "IDirectInputDevice8_Poll failed: 0x%08x", result );
+            LOG ( "Detaching joystick: %s", it->first );
+            detachJoystick ( ( it++ )->first );
             continue;
         }
 
@@ -123,8 +124,9 @@ void ControllerManager::check()
 
         if ( FAILED ( result ) )
         {
-            LOG ( "IDirectInputDevice8_GetDeviceState failed: 0x%08x", result );
-            controller->state = 0;
+            LOG_CONTROLLER ( controller, "IDirectInputDevice8_GetDeviceState failed: 0x%08x", result );
+            LOG ( "Detaching joystick: %s", it->first );
+            detachJoystick ( ( it++ )->first );
             continue;
         }
 
@@ -192,6 +194,8 @@ void ControllerManager::check()
             LOG_CONTROLLER ( controller, "button%u: %s", button, ( value ? "0 -> 1" : "1 -> 0" ) );
             controller->joystickButtonEvent ( button, value );
         }
+
+        ++it;
     }
 }
 
@@ -401,15 +405,20 @@ void ControllerManager::refreshJoysticks()
         if ( joysticks.find ( kv.first ) != joysticks.end() )
             continue;
 
+        LOG ( "Attaching joystick: %s", kv.first );
         attachJoystick ( kv.first, kv.second );
     }
 
-    for ( const auto& kv : joysticks )
+    for ( auto it = joysticks.begin(); it != joysticks.end(); )
     {
-        if ( activeJoysticks.find ( kv.first ) != activeJoysticks.end() )
+        if ( activeJoysticks.find ( it->first ) != activeJoysticks.end() )
+        {
+            ++it;
             continue;
+        }
 
-        detachJoystick ( kv.first );
+        LOG ( "Detaching joystick: %s", it->first );
+        detachJoystick ( ( it++ )->first );
     }
 }
 

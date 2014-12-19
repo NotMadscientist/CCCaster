@@ -184,8 +184,10 @@ private:
 
     struct JoystickInternalState
     {
+        // Joystick information
         const JoystickInfo info;
 
+        // Joystick states
         JoystickState prevState, state;
 
         JoystickInternalState() {}
