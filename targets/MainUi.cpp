@@ -430,7 +430,7 @@ void MainUi::controls()
                                   "Enter a value between 0.0 and 1.0:" ),
                 { 0, 0 }, true ); // Don't expand but DO clear
 
-                ui->top<ConsoleUi::Prompt>()->setInitial ( format ( "%.1f", controller.getDeadzone() ) );
+                ui->top<ConsoleUi::Prompt>()->setInitial ( format ( "%.2f", controller.getDeadzone() ) );
 
                 for ( ;; )
                 {
