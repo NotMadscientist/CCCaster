@@ -6,11 +6,12 @@
 #include <unordered_map>
 #include <string>
 #include <array>
+#include <algorithm>
 
 
 #define LOG_CONTROLLER(CONTROLLER, FORMAT, ...)                                                                 \
-    LOG ( "%s: controller=%08x; joystick=%08x; state=%08x; " FORMAT,                                            \
-          CONTROLLER->getName(), CONTROLLER, CONTROLLER->joystick, CONTROLLER->state, ## __VA_ARGS__ )
+    LOG ( "%s: controller=%08x; device=%08x; state=%08x; " FORMAT,                                              \
+          CONTROLLER->getName(), CONTROLLER, CONTROLLER->joystick.device, CONTROLLER->state, ## __VA_ARGS__ )
 
 
 #define BIT_UP              ( 0x00000001u )
@@ -27,6 +28,7 @@
 
 #define MAP_PRESERVE_DIRS   ( 0x01u )
 #define MAP_CONTINUOUSLY    ( 0x02u )
+#define MAP_WAIT_NEUTRAL    ( 0x04u )
 
 #define AXIS_CENTERED       ( 0u )
 #define AXIS_POSITIVE       ( 1u )
@@ -105,6 +107,21 @@ struct JoystickState
 
     JoystickState() { clear(); }
 
+    bool isNeutral() const
+    {
+        for ( auto& a : axes )
+        {
+            if ( a != AXIS_CENTERED )
+                return false;
+        }
+        for ( auto& a : hats )
+        {
+            if ( a != 5 )
+                return false;
+        }
+        return ( buttons == 0 );
+    }
+
     void clear()
     {
         for ( auto& a : axes )
@@ -135,18 +152,6 @@ private:
     // Original controller name
     const std::string name;
 
-    // Implementation specific joystick pointer, 0 for keyboard
-    void *const joystick = 0;
-
-    // Joystick capabilities
-    const uint32_t numAxes = 0, numHats = 0, numButtons = 0;
-
-    // Joystick states
-    JoystickState joystickPrevState, joystickState, joystickMapState;
-
-    // Controller any-button states
-    uint8_t prevAnyButton = 0, anyButton = 0;
-
     // Controller states
     uint32_t prevState = 0, state = 0;
 
@@ -156,14 +161,40 @@ private:
     // Joystick mappings
     JoystickMappings joystickMappings;
 
-    // The current key to map to an event
-    uint32_t keyToMap = 0;
+    struct JoystickInternalState
+    {
+        // Implementation specific device pointer, 0 for keyboard
+        void *const device = 0;
 
-    // Flag to wait for neutral state before mapping
-    bool waitForNeutral = false;
+        // Joystick capabilities
+        const uint32_t numAxes = 0, numHats = 0, numButtons = 0;
 
-    // Mappings options
-    uint8_t options = 0;
+        // Joystick states
+        JoystickState prevState, state;
+
+        JoystickInternalState() {}
+        JoystickInternalState ( void *device, uint32_t numAxes, uint32_t numHats, uint32_t numButtons )
+            : device ( device )
+            , numAxes ( std::min ( numAxes, MAX_NUM_AXES ) )
+            , numHats ( std::min ( numHats, MAX_NUM_HATS ) )
+            , numButtons ( std::min ( numButtons, MAX_NUM_BUTTONS ) ) {}
+    };
+
+    JoystickInternalState joystick;
+
+    struct MappingInternalState
+    {
+        // The current key to map to an event
+        uint32_t key = 0;
+
+        // Mappings options
+        uint8_t options = 0;
+
+        // The current active joystick state
+        JoystickState active;
+    };
+
+    MappingInternalState mapping;
 
     // Keyboard event callback
     void keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown );
@@ -175,7 +206,7 @@ private:
 
     // Construct a keyboard / joystick controller
     Controller ( KeyboardEnum );
-    Controller ( const std::string& name, void *joystick, uint32_t numAxes, uint32_t numHats, uint32_t numButtons );
+    Controller ( const std::string& name, void *device, uint32_t numAxes, uint32_t numHats, uint32_t numButtons );
 
     // Clear this controller's mapping(s) without callback to ControllerManager
     void doClearMapping ( uint32_t keys = 0xFFFFFFFF );
@@ -226,7 +257,7 @@ public:
                         const std::unordered_set<uint32_t>& ignore = {},    // VK codes to IGNORE
                         uint8_t options = 0 );                              // Mapping options
     void cancelMapping();
-    bool isMapping() const { return ( keyToMap != 0 ); }
+    bool isMapping() const { return ( mapping.key != 0 ); }
 
     // Clear this controller's mapping(s)
     void clearMapping ( uint32_t keys );
@@ -240,16 +271,16 @@ public:
     void setDeadzone ( float deadzone ) { joystickMappings.deadzone = deadzone; joystickMappings.invalidate(); }
 
     // Get the joystick any-button state
-    bool getPrevAnyButton() const { return prevAnyButton; }
-    bool getAnyButton() const { return anyButton; }
+    bool getPrevAnyButton() const { return joystick.prevState.buttons; }
+    bool getAnyButton() const { return joystick.state.buttons; }
 
     // Get the controller state
     uint32_t getPrevState() const { return prevState; }
     uint32_t getState() const { return state; }
 
     // Indicates if this is a keyboard / joystick controller
-    bool isKeyboard() const { return ( joystick == 0 ); }
-    bool isJoystick() const { return ( joystick != 0 ); }
+    bool isKeyboard() const { return ( joystick.device == 0 ); }
+    bool isJoystick() const { return ( joystick.device != 0 ); }
 
     // Save / load mappings for this controller
     bool saveMappings ( const std::string& file ) const;

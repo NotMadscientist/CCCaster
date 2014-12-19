@@ -49,11 +49,10 @@ void ControllerManager::check()
     for ( auto& kv : joysticks )
     {
         Controller *controller = kv.second.get();
-        IDirectInputDevice8 *joystick = ( IDirectInputDevice8 * ) controller->joystick;
+        IDirectInputDevice8 *joystick = ( IDirectInputDevice8 * ) controller->joystick.device;
 
         // Save previous states
-        controller->joystickPrevState = controller->joystickState;
-        controller->prevAnyButton = controller->anyButton;
+        controller->joystick.prevState = controller->joystick.state;
         controller->prevState = controller->state;
 
         // Poll device state
@@ -67,7 +66,6 @@ void ControllerManager::check()
         if ( FAILED ( result ) )
         {
             LOG ( "IDirectInputDevice8_Poll failed: 0x%08x", result );
-            controller->anyButton = 0;
             controller->state = 0;
             continue;
         }
@@ -83,7 +81,6 @@ void ControllerManager::check()
         if ( FAILED ( result ) )
         {
             LOG ( "IDirectInputDevice8_GetDeviceState failed: 0x%08x", result );
-            controller->anyButton = 0;
             controller->state = 0;
             continue;
         }
@@ -93,7 +90,7 @@ void ControllerManager::check()
               djs.rgdwPOV[0], djs.rgdwPOV[1], djs.rgdwPOV[2], djs.rgdwPOV[3] );
 
         string buttons;
-        for ( uint32_t i = 0; i < controller->numButtons; ++i )
+        for ( uint32_t i = 0; i < controller->joystick.numButtons; ++i )
             buttons += ( i ? "; " : "" ) + format ( "b%d=%d", i, ( bool ) djs.rgbButtons[i] );
 
         LOG ( "%s", buttons );
@@ -218,7 +215,7 @@ void ControllerManager::detachJoystick ( const Guid& guid )
     ASSERT ( it != joysticks.end() );
 
     Controller *controller = it->second.get();
-    IDirectInputDevice8 *joystick = ( IDirectInputDevice8 * ) controller->joystick;
+    IDirectInputDevice8 *joystick = ( IDirectInputDevice8 * ) controller->joystick.device;
 
     LOG_CONTROLLER ( controller, "detached" );
 
