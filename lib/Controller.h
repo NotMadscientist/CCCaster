@@ -46,10 +46,10 @@ struct KeyboardMappings : public SerializableSequence
     // Controller unique identifier
     std::string name;
 
-    // bit index -> virtual key code
+    // Bit index -> virtual key code
     uint32_t codes[32] = {{ 0 }};
 
-    // bit index -> key name
+    // Bit index -> key name
     std::string names[32];
 
     PROTOCOL_MESSAGE_BOILERPLATE ( KeyboardMappings, name, codes, names )
@@ -61,7 +61,7 @@ struct JoystickMappings : public SerializableSequence
     // Controller unique identifier
     std::string name;
 
-    // axis index -> axis value -> mapped key
+    // Axis index -> axis value -> mapped key
     //
     // The zero value is mapped to a bit mask of all the mapped values on the same axis index.
     //
@@ -74,27 +74,27 @@ struct JoystickMappings : public SerializableSequence
     //
     uint32_t axes[MAX_NUM_AXES][3] = {{ 0 }};
 
-    // hat index -> hat value -> mapped key
+    // Hat index -> hat value -> mapped key
     //
     // Hat values correspond to numpad notation, so 0 is unused
     //
     // The 5 value is mapped to a bit mask of all the mapped values on the same hat index.
     //
     // Example:
-    //   Hat up      -> 0b0001   Hat left  -> 0b0100
-    //   Hat down    -> 0b0010   Hat right -> 0b1000
+    //   Hat 8 (up)      -> 0b0001   Hat 4 (left)  -> 0b0100
+    //   Hat 2 (down)    -> 0b0010   Hat 6 (right) -> 0b1000
     //
     // Then:
-    //   Hat neutral -> 0b1111
+    //   Hat 5 (neutral) -> 0b1111
     //
     // Similarly, the 1, 3, 7, 9 values should be mapped to the correct bit masks as well.
     //
     uint32_t hats[MAX_NUM_HATS][10] = {{ 0 }};
 
-    // button index -> mapped key
+    // Button index -> mapped key
     uint32_t buttons[MAX_NUM_BUTTONS] = {{ 0 }};
 
-    // axis deadzone range (0,32767)
+    // Axis deadzone range (0,32767)
     uint32_t deadzone = DEFAULT_DEADZONE;
 
     PROTOCOL_MESSAGE_BOILERPLATE ( JoystickMappings, name, axes, hats, buttons, deadzone )
