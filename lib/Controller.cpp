@@ -379,6 +379,8 @@ Controller::~Controller()
         --count;
     else
         origNameCount.erase ( name );
+
+    KeyboardManager::get().unhook();
 }
 
 string Controller::getMapping ( uint32_t key, const string& placeholder ) const
@@ -532,20 +534,24 @@ void Controller::startMapping ( Owner *owner, uint32_t key, const void *window,
     this->mapping.key = key;
     this->mapping.options = options;
 
+    if ( options & MAP_NO_KEYBD_HOOK )
+        return;
+
     if ( isKeyboard() )
         KeyboardManager::get().matchedKeys.clear(); // Check all except ignored keys
     else
         KeyboardManager::get().matchedKeys = { VK_ESCAPE }; // Only check ESC key
 
     KeyboardManager::get().ignoredKeys = ignore;
-    KeyboardManager::get().hook ( this );
+    KeyboardManager::get().hook ( this, ! ( options & MAP_NO_EVENT_THREAD ) );
 }
 
 void Controller::cancelMapping()
 {
     LOG_CONTROLLER ( this, "Cancel mapping %08x", mapping.key );
 
-    KeyboardManager::get().unhook();
+    if ( ! ( mapping.options & MAP_NO_KEYBD_HOOK ) )
+        KeyboardManager::get().unhook();
 
     owner = 0;
     mapping.key = 0;

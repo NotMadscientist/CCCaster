@@ -31,6 +31,8 @@
 #define MAP_PRESERVE_DIRS   ( 0x01u )
 #define MAP_CONTINUOUSLY    ( 0x02u )
 #define MAP_WAIT_NEUTRAL    ( 0x04u )
+#define MAP_NO_KEYBD_HOOK   ( 0x08u )
+#define MAP_NO_EVENT_THREAD ( 0x10u )
 
 #define AXIS_CENTERED       ( 0u )
 #define AXIS_POSITIVE       ( 1u )

@@ -25,7 +25,7 @@ using namespace std;
     do {                                                                                        \
         ControllerManager::get().deinitialize();                                                \
         run ( ADDRESS, CONFIG );                                                                \
-        ControllerManager::get().initialize ( 0 );                                              \
+        ControllerManager::get().initialize ( this );                                           \
     } while ( 0 )
 
 
@@ -297,8 +297,21 @@ bool MainUi::gameModeIncludingVersusCpu()
     return true;
 }
 
+void MainUi::detachedJoystick ( Controller *controller )
+{
+    LOG ( "controller=%08x; currentController=%08x", controller, currentController );
+
+    if ( controller != currentController )
+        return;
+
+    currentController = 0;
+    EventManager::get().stop();
+}
+
 void MainUi::doneMapping ( Controller *controller, uint32_t key )
 {
+    ASSERT ( controller == currentController );
+
     LOG ( "%s: controller=%08x; key=%08x", controller->getName(), controller, key );
 
     mappedKey = key;
@@ -471,29 +484,47 @@ void MainUi::controls()
             // Map selected key
             ui->top<ConsoleUi::Menu>()->overlayCurrentPosition ( format ( "%-11s: ...", gameInputBits[pos].first ) );
 
-            AutoManager _;
-
-            if ( controller.isKeyboard() )
+            try
             {
-                controller.startMapping ( this, gameInputBits[pos].second, getConsoleWindow() );
+                currentController = &controller;
 
-                EventManager::get().start();
+                LOG ( "currentController=%08x", currentController );
+
+                AutoManager _;
+
+                if ( controller.isKeyboard() )
+                {
+                    controller.startMapping ( this, gameInputBits[pos].second, getConsoleWindow() );
+
+                    EventManager::get().start();
+                }
+                else
+                {
+                    ControllerManager::get().check(); // Flush joystick events before mapping
+
+                    if ( currentController )
+                    {
+                        controller.startMapping ( this, gameInputBits[pos].second, getConsoleWindow() );
+
+                        EventManager::get().startPolling();
+
+                        while ( EventManager::get().poll ( 1 ) )
+                            ControllerManager::get().check();
+                    }
+                }
             }
-            else
+            catch ( ... )
             {
-                ControllerManager::get().check(); // Flush joystick events before mapping
-
-                controller.startMapping ( this, gameInputBits[pos].second, getConsoleWindow() );
-
-                EventManager::get().startPolling();
-
-                while ( EventManager::get().poll ( 1 ) )
-                    ControllerManager::get().check();
             }
+
+            ui->pop();
+            ui->pop();
+
+            if ( !currentController )
+                break;
 
             saveMappings ( controller );
-            ui->pop();
-            ui->pop();
+            currentController = 0;
 
             // Continue mapping
             if ( mappedKey && pos + 1 < ( int ) gameInputBits.size() )
@@ -709,7 +740,7 @@ void MainUi::initialize()
     initialConfig.winCount = config.getInteger ( "versusWinCount" );
 
     // Initialize controllers
-    ControllerManager::get().initialize ( 0 );
+    ControllerManager::get().initialize ( this );
     ControllerManager::get().windowHandle = getConsoleWindow();
     ControllerManager::get().check();
 

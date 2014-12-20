@@ -47,10 +47,6 @@ DEFINE_GUID ( GUID_DEVINTERFACE_HID, 0x4D1E55B2L, 0xF16F, 0x11CF, 0x88, 0xCB, 0x
 #define INLINE_RECT(rect)               rect.left, rect.top, rect.right, rect.bottom
 
 
-// KeyboardManager's keyboardCallback
-extern LRESULT CALLBACK keyboardCallback ( int, WPARAM, LPARAM );
-
-
 namespace DllHacks
 {
 
@@ -438,10 +434,6 @@ void initializePostLoad()
     for ( const Asm& hack : enableDisabledStages )
         WRITE_ASM_HACK ( hack );
 
-    // Hook and ignore keyboard messages to prevent lag from unhandled messages
-    if ( ! ( keyboardHook = SetWindowsHookEx ( WH_KEYBOARD, dummyKeyboardCallback, 0, GetCurrentThreadId() ) ) )
-        LOG ( "SetWindowsHookEx failed: %s", WinException::getLastError() );
-
     // Get the handle to the main window
     if ( ! ( windowHandle = ProcessManager::findWindow ( CC_TITLE ) ) )
         LOG ( "Couldn't find window '%s'", CC_TITLE );
@@ -500,26 +492,8 @@ void deinitialize()
         WindowProc = 0;
     }
 
-    if ( keyboardHook )
-        UnhookWindowsHookEx ( keyboardHook );
-
     for ( int i = hookMainLoop.size() - 1; i >= 0; --i )
         hookMainLoop[i].revert();
-}
-
-LRESULT CALLBACK dummyKeyboardCallback ( int code, WPARAM wParam, LPARAM lParam )
-{
-    if ( code == HC_ACTION )
-    {
-        if ( keyboardManagerHooked )
-            return keyboardCallback ( code, wParam, lParam );
-
-        // Pass through the Alt and Enter keys when not mapping
-        if ( wParam == VK_MENU || wParam == VK_RETURN )
-            return CallNextHookEx ( 0, code, wParam, lParam );
-    }
-
-    return 1;
 }
 
 } // namespace DllHacks

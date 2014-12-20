@@ -61,7 +61,7 @@ public:
     std::unordered_set<uint32_t> ignoredKeys;
 
     // Hook keyboard events
-    void hook ( Owner *owner );
+    void hook ( Owner *owner, bool eventThread );
 
     // Unhook keyboard events
     void unhook();

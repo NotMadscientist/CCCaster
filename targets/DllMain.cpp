@@ -266,7 +266,7 @@ struct DllMain
 
             // Toggle overlay if both players are done
             if ( overlayPositions[i] + 1 == options.size()
-                    && ( ( playerControllers[i]->isJoystick() && isAnyButtonReleased ( playerControllers[i] ) )
+                    && ( ( playerControllers[i]->isJoystick() && isAnyButtonPressed ( playerControllers[i] ) )
                          || ( playerControllers[i]->isKeyboard() && KeyboardState::isReleased ( VK_RETURN ) ) ) )
             {
                 overlayPositions[i] = 0;
@@ -347,10 +347,13 @@ struct DllMain
                     }
                     else if ( pos >= 4 && pos < gameInputBits.size() )
                     {
+                        uint8_t options = ( MAP_PRESERVE_DIRS | MAP_CONTINUOUSLY | MAP_NO_EVENT_THREAD );
+                        if ( playerControllers[i]->isJoystick() )
+                            options |= MAP_NO_KEYBD_HOOK;
+
                         // Map a button only
                         playerControllers[i]->startMapping ( this, gameInputBits[pos].second, DllHacks::windowHandle,
-                        { VK_ESCAPE, VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT, VK_TOGGLE_OVERLAY },
-                        MAP_PRESERVE_DIRS | MAP_CONTINUOUSLY );
+                        { VK_ESCAPE, VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT, VK_TOGGLE_OVERLAY }, options );
                     }
                     else if ( ( mapDirections || finishedMapping[i] ) && pos < 4 )
                     {
@@ -1758,12 +1761,12 @@ private:
                && ( ( getPrevInput ( controller ) & MASK_DIRS ) != dir );
     }
 
-    static bool isAnyButtonReleased ( const Controller *controller )
+    static bool isAnyButtonPressed ( const Controller *controller )
     {
         if ( !controller )
             return false;
 
-        return ( !controller->getAnyButton() && controller->getPrevAnyButton() );
+        return ( controller->getAnyButton() && !controller->getPrevAnyButton() );
     }
 };
 

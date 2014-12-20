@@ -320,9 +320,3 @@ int64_t getRegVal ( uint8_t type, const CONTEXT& context )
             exit ( -1 );
     }
 }
-
-
-// TODO this needs a better solution
-#include "KeyboardManager.h"
-void KeyboardManager::hookImpl() {}
-void KeyboardManager::unhookImpl() {}

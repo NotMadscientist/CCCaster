@@ -212,9 +212,3 @@ int main ( int argc, char *argv[] )
 
     return 0;
 }
-
-
-// TODO this needs a better solution
-#include "KeyboardManager.h"
-void KeyboardManager::hookImpl() {}
-void KeyboardManager::unhookImpl() {}

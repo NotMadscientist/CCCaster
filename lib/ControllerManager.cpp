@@ -143,7 +143,7 @@ void ControllerManager::check()
         if ( axisMask & 0x08u )
             axes[axis++] = mapAxisValue ( djs.lRx, deadzone );
         if ( axisMask & 0x10u )
-            axes[axis++] = mapAxisValue ( djs.lRy, deadzone );
+            axes[axis++] = mapAxisValue ( -djs.lRy, deadzone ); // DirectInput, like most APIs, reports inverted Y-axis
         if ( axisMask & 0x20u )
             axes[axis++] = mapAxisValue ( djs.lRz, deadzone );
         if ( axisMask & 0x40u )
@@ -282,7 +282,10 @@ void ControllerManager::attachJoystick ( const Guid& guid, const string& name )
     // Create the DirectInput device, NOTE the pointer returned is only temporarily used
     HRESULT result = IDirectInput8_CreateDevice ( dinput, windowsGuid, &tmp, 0 );
     if ( FAILED ( result ) )
-        THROW_EXCEPTION ( "IDirectInput8_CreateDevice failed: 0x%08x", ERROR_CONTROLLER_CHECK, result );
+    {
+        LOG ( "IDirectInput8_CreateDevice failed: 0x%08x", result );
+        return;
+    }
 
     // Query for the actual joystick device to use
     result = IDirectInputDevice8_QueryInterface ( tmp, IID_IDirectInputDevice8, ( void ** ) &device );
@@ -291,17 +294,23 @@ void ControllerManager::attachJoystick ( const Guid& guid, const string& name )
     IDirectInputDevice8_Release ( tmp );
 
     if ( FAILED ( result ) )
-        THROW_EXCEPTION ( "IDirectInputDevice8_QueryInterface failed: 0x%08x", ERROR_CONTROLLER_CHECK, result );
+    {
+        LOG ( "IDirectInputDevice8_QueryInterface failed: 0x%08x", result );
+        return;
+    }
 
     // Enable shared background access
     result = IDirectInputDevice8_SetCooperativeLevel ( device, ( HWND ) windowHandle, JOYSTICK_FLAGS );
     if ( FAILED ( result ) )
-        THROW_EXCEPTION ( "IDirectInputDevice8_SetCooperativeLevel failed: 0x%08x", ERROR_CONTROLLER_CHECK, result );
+        LOG ( "IDirectInputDevice8_SetCooperativeLevel failed: 0x%08x", result ); // Non-fatal
 
     // Use the DIJOYSTATE2 data format
     result = IDirectInputDevice8_SetDataFormat ( device, &c_dfDIJoystick2 );
     if ( FAILED ( result ) )
-        THROW_EXCEPTION ( "IDirectInputDevice8_SetDataFormat failed: 0x%08x", ERROR_CONTROLLER_CHECK, result );
+    {
+        LOG ( "IDirectInputDevice8_SetDataFormat failed: 0x%08x", result );
+        return;
+    }
 
     DIDEVCAPS ddc;
     ddc.dwSize = sizeof ( ddc );
@@ -309,7 +318,10 @@ void ControllerManager::attachJoystick ( const Guid& guid, const string& name )
     // Get the joystick capabilities
     result = IDirectInputDevice8_GetCapabilities ( device, &ddc );
     if ( FAILED ( result ) )
-        THROW_EXCEPTION ( "IDirectInputDevice8_GetCapabilities failed: 0x%08x", ERROR_CONTROLLER_CHECK, result );
+    {
+        LOG ( "IDirectInputDevice8_GetCapabilities failed: 0x%08x", result );
+        return;
+    }
 
     JoystickInfo info;
     info.device = device;
@@ -319,7 +331,10 @@ void ControllerManager::attachJoystick ( const Guid& guid, const string& name )
     // Initialize the properties for each axis
     result = IDirectInputDevice8_EnumObjects ( device, enumJoystickAxes, &info, DIDFT_AXIS );
     if ( FAILED ( result ) )
+    {
         LOG ( "IDirectInputDevice8_EnumObjects failed: 0x%08x", result );
+        return;
+    }
 
     // Create and add the controller
     Controller *controller = new Controller ( name, info );

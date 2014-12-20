@@ -15,7 +15,7 @@ typedef void ( * RunFuncPtr ) ( const IpAddrPort& address, const Serializable& c
 class ConsoleUi;
 
 
-class MainUi : public Controller::Owner
+class MainUi : public Controller::Owner, public ControllerManager::Owner
 {
     std::shared_ptr<ConsoleUi> ui;
 
@@ -24,6 +24,8 @@ class MainUi : public Controller::Owner
     IpAddrPort address;
 
     NetplayConfig netplayConfig;
+
+    Controller *currentController = 0;
 
     uint32_t mappedKey = 0;
 
@@ -39,7 +41,10 @@ class MainUi : public Controller::Owner
     bool gameMode();
     bool gameModeIncludingVersusCpu();
 
-    void doneMapping ( Controller *controller, uint32_t key );
+    void doneMapping ( Controller *controller, uint32_t key ) override;
+
+    void attachedJoystick ( Controller *controller ) override {};
+    void detachedJoystick ( Controller *controller ) override;
 
     void saveConfig();
     void loadConfig();
