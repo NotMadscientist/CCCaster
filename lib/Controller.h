@@ -31,8 +31,6 @@
 #define MAP_PRESERVE_DIRS   ( 0x01u )
 #define MAP_CONTINUOUSLY    ( 0x02u )
 #define MAP_WAIT_NEUTRAL    ( 0x04u )
-#define MAP_NO_KEYBD_HOOK   ( 0x08u )
-#define MAP_NO_EVENT_THREAD ( 0x10u )
 
 #define AXIS_CENTERED       ( 0u )
 #define AXIS_POSITIVE       ( 1u )
@@ -268,10 +266,7 @@ public:
     void setMappings ( const JoystickMappings& mappings );
 
     // Start / cancel mapping for the given key
-    void startMapping ( Owner *owner, uint32_t key,
-                        const void *window = 0,                             // Window to match for keyboard events
-                        const std::unordered_set<uint32_t>& ignore = {},    // VK codes to IGNORE
-                        uint8_t options = 0 );                              // Mapping options
+    void startMapping ( Owner *owner, uint32_t key, uint8_t options = 0 );
     void cancelMapping();
     bool isMapping() const { return ( mapping.key != 0 ); }
 
@@ -307,4 +302,5 @@ public:
     bool loadMappings ( const std::string& file );
 
     friend class ControllerManager;
+    friend class DllControllerManager;
 };

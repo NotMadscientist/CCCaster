@@ -2,6 +2,7 @@
 #include "UdpSocket.h"
 #include "Logger.h"
 #include "Exceptions.h"
+#include "KeyboardState.h"
 
 #include <windows.h>
 
@@ -56,29 +57,8 @@ static LRESULT CALLBACK keyboardCallback ( int code, WPARAM wParam, LPARAM lPara
     return CallNextHookEx ( 0, code, wParam, lParam );
 }
 
-
-void KeyboardManager::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
-{
-    ASSERT ( socket == recvSocket.get() );
-
-    if ( !msg.get() || msg->getMsgType() != MsgType::KeyboardEvent )
-    {
-        LOG ( "Unexpected '%s'", msg );
-        return;
-    }
-
-    const uint32_t vkCode = msg->getAs<KeyboardEvent>().vkCode;
-    const uint32_t scanCode = msg->getAs<KeyboardEvent>().scanCode;
-    const bool isExtended = msg->getAs<KeyboardEvent>().isExtended;
-    const bool isDown = msg->getAs<KeyboardEvent>().isDown;
-
-    LOG ( "vkCode=%u; scanCode=%u; isExtended=%u; isDown=%u", vkCode, scanCode, isExtended, isDown );
-
-    if ( owner )
-        owner->keyboardEvent ( vkCode, scanCode, isExtended, isDown );
-}
-
 static HHOOK keyboardHook = 0;
+
 
 class KeyboardThread : public Thread
 {
@@ -162,12 +142,39 @@ public:
 
 static ThreadPtr keyboardThread;
 
+
+void KeyboardManager::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
+{
+    ASSERT ( socket == recvSocket.get() );
+
+    if ( !msg.get() || msg->getMsgType() != MsgType::KeyboardEvent )
+    {
+        LOG ( "Unexpected '%s'", msg );
+        return;
+    }
+
+    const uint32_t vkCode = msg->getAs<KeyboardEvent>().vkCode;
+    const uint32_t scanCode = msg->getAs<KeyboardEvent>().scanCode;
+    const bool isExtended = msg->getAs<KeyboardEvent>().isExtended;
+    const bool isDown = msg->getAs<KeyboardEvent>().isDown;
+
+    KeyboardState::states[vkCode] = isDown;
+    // KeyboardState::previous[vkCode] = !isDown;
+
+    LOG ( "vkCode=0x%02X; scanCode=%u; isExtended=%u; isDown=%u", vkCode, scanCode, isExtended, isDown );
+
+    if ( owner )
+        owner->keyboardEvent ( vkCode, scanCode, isExtended, isDown );
+}
+
 void KeyboardManager::hook ( Owner *owner, bool eventThread )
 {
-    if ( recvSocket || sendSocket )
+    if ( isHooked() )
         return;
 
     LOG ( "Hooking keyboard manager" );
+
+    KeyboardState::update();
 
     this->owner = owner;
 
@@ -197,6 +204,8 @@ void KeyboardManager::unhook()
 {
     LOG ( "Unhooking keyboard manager" );
 
+    KeyboardState::clear();
+
     keyboardThread.reset();
 
     if ( keyboardHook )
@@ -211,6 +220,11 @@ void KeyboardManager::unhook()
     this->owner = 0;
 
     LOG ( "Unhooked keyboard manager" );
+}
+
+bool KeyboardManager::isHooked() const
+{
+    return ( recvSocket || sendSocket );
 }
 
 KeyboardManager& KeyboardManager::get()

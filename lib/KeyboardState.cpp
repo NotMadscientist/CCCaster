@@ -1,4 +1,5 @@
 #include "KeyboardState.h"
+#include "KeyboardManager.h"
 
 #include <windows.h>
 
@@ -31,6 +32,9 @@ void KeyboardState::update()
 {
     previous = states;
 
+    if ( KeyboardManager::get().isHooked() )
+        return;
+
     for ( auto& kv : states )
         kv.second = getKeyState ( kv.first );
 }
@@ -42,5 +46,5 @@ bool KeyboardState::isDown ( uint32_t vkCode )
     if ( it != states.end() )
         return it->second;
 
-    return states[vkCode] = getKeyState ( vkCode );
+    return ( states[vkCode] = getKeyState ( vkCode ) );
 }

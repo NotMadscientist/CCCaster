@@ -1036,20 +1036,6 @@ struct MainApp
         }
     }
 
-    // ControllerManager callbacks
-    void attachedJoystick ( Controller *controller ) override
-    {
-    }
-
-    void detachedJoystick ( Controller *controller ) override
-    {
-    }
-
-    // Controller callback
-    void doneMapping ( Controller *controller, uint32_t key ) override
-    {
-    }
-
     // Timer callback
     void timerExpired ( Timer *timer ) override
     {

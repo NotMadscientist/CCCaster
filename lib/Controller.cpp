@@ -81,8 +81,8 @@ void Controller::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExte
     if ( isJoystick() && vkCode != VK_ESCAPE )
         return;
 
-    // Only use keyboard down events for mapping
-    if ( !isDown && mapping.key != 0 )
+    // Only use keyboard up events for mapping
+    if ( isKeyboard() && ( isDown || mapping.key == 0 ) )
         return;
 
     Owner *owner = this->owner;
@@ -117,7 +117,8 @@ void Controller::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExte
     if ( ! ( mapping.options & MAP_CONTINUOUSLY ) )
         cancelMapping();
 
-    ControllerManager::get().mappingsChanged ( this );
+    if ( key )
+        ControllerManager::get().mappingsChanged ( this );
 
     if ( owner )
         owner->doneMapping ( this, key );
@@ -391,7 +392,7 @@ string Controller::getMapping ( uint32_t key, const string& placeholder ) const
     if ( isKeyboard() )
     {
         for ( uint8_t i = 0; i < 32; ++i )
-            if ( key & ( 1u << i ) && keyboardMappings.codes[i] )
+            if ( ( key & ( 1u << i ) ) && keyboardMappings.codes[i] )
                 return keyboardMappings.names[i];
 
         return "";
@@ -517,8 +518,7 @@ void Controller::setMappings ( const JoystickMappings& mappings )
     ControllerManager::get().mappingsChanged ( this );
 }
 
-void Controller::startMapping ( Owner *owner, uint32_t key, const void *window,
-                                const unordered_set<uint32_t>& ignore, uint8_t options )
+void Controller::startMapping ( Owner *owner, uint32_t key, uint8_t options )
 {
     if ( this->mapping.options & MAP_CONTINUOUSLY )
         mapping.active.clear();
@@ -533,25 +533,11 @@ void Controller::startMapping ( Owner *owner, uint32_t key, const void *window,
     this->owner = owner;
     this->mapping.key = key;
     this->mapping.options = options;
-
-    if ( options & MAP_NO_KEYBD_HOOK )
-        return;
-
-    if ( isKeyboard() )
-        KeyboardManager::get().matchedKeys.clear(); // Check all except ignored keys
-    else
-        KeyboardManager::get().matchedKeys = { VK_ESCAPE }; // Only check ESC key
-
-    KeyboardManager::get().ignoredKeys = ignore;
-    KeyboardManager::get().hook ( this, ! ( options & MAP_NO_EVENT_THREAD ) );
 }
 
 void Controller::cancelMapping()
 {
     LOG_CONTROLLER ( this, "Cancel mapping %08x", mapping.key );
-
-    if ( ! ( mapping.options & MAP_NO_KEYBD_HOOK ) )
-        KeyboardManager::get().unhook();
 
     owner = 0;
     mapping.key = 0;

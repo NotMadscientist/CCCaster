@@ -490,11 +490,11 @@ void MainUi::controls()
 
                 LOG ( "currentController=%08x", currentController );
 
-                AutoManager _;
+                AutoManager _ ( currentController, getConsoleWindow() );
 
                 if ( controller.isKeyboard() )
                 {
-                    controller.startMapping ( this, gameInputBits[pos].second, getConsoleWindow() );
+                    controller.startMapping ( this, gameInputBits[pos].second );
 
                     EventManager::get().start();
                 }
@@ -504,7 +504,7 @@ void MainUi::controls()
 
                     if ( currentController )
                     {
-                        controller.startMapping ( this, gameInputBits[pos].second, getConsoleWindow() );
+                        controller.startMapping ( this, gameInputBits[pos].second );
 
                         EventManager::get().startPolling();
 

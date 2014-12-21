@@ -36,4 +36,6 @@ public:
     {
         return ( !isDown ( vkCode ) && wasDown ( vkCode ) );
     }
+
+    friend class KeyboardManager;
 };

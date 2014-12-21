@@ -3,6 +3,7 @@
 #include "Messages.h"
 #include "IpAddrPort.h"
 #include "Controller.h"
+#include "ControllerManager.h"
 #include "KeyValueStore.h"
 
 #include <string>

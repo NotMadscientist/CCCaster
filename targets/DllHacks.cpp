@@ -416,12 +416,6 @@ static pWindowProc WindowProc = ( pWindowProc ) CC_WINDOW_PROC_ADDR;
 
 static HDEVNOTIFY notifyHandle = 0;
 
-volatile bool keyboardManagerHooked = false;
-
-static HHOOK keyboardHook = 0;
-
-static LRESULT CALLBACK dummyKeyboardCallback ( int, WPARAM, LPARAM );
-
 
 void *windowHandle = 0;
 
