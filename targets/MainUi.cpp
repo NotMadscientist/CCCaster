@@ -818,6 +818,7 @@ void MainUi::main ( RunFuncPtr run )
 
     ASSERT ( ui.get() != 0 );
 
+    ui->clearAll();
     ui->pushRight ( new ConsoleUi::Menu ( uiTitle, options, "Quit" ) );
 
     mainMenu = ui->top<ConsoleUi::Menu>();

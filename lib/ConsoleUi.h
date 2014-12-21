@@ -496,6 +496,13 @@ public:
         ConsoleCore::GetInstance()->ClearScreen();
     }
 
+    // Clear all elements
+    void clearAll()
+    {
+        ConsoleCore::GetInstance()->ClearScreen();
+        stack.clear();
+    }
+
     // Clear the top element (visually)
     void clearTop() const
     {
