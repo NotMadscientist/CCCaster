@@ -81,8 +81,8 @@ void Controller::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExte
     if ( isJoystick() && vkCode != VK_ESCAPE )
         return;
 
-    // Only use keyboard up events for mapping
-    if ( isKeyboard() && ( isDown || mapping.key == 0 ) )
+    // Only use keyboard down events for mapping
+    if ( isKeyboard() && ! ( isDown && mapping.key ) )
         return;
 
     Owner *owner = this->owner;
@@ -457,6 +457,8 @@ string Controller::getMapping ( uint32_t key, const string& placeholder ) const
 
 void Controller::setMappings ( const array<char, 10>& config )
 {
+    ASSERT ( isKeyboard() == true );
+
     LOG_CONTROLLER ( this, "Raw keyboard mappings" );
 
     static const array<uint32_t, 10> bits =
@@ -472,6 +474,8 @@ void Controller::setMappings ( const array<char, 10>& config )
         CC_BUTTON_E << 8,
         CC_BUTTON_START << 8,
     };
+
+    doClearMapping();
 
     for ( uint8_t i = 0; i < 10; ++i )
     {
@@ -500,6 +504,8 @@ void Controller::setMappings ( const array<char, 10>& config )
 
 void Controller::setMappings ( const KeyboardMappings& mappings )
 {
+    ASSERT ( isKeyboard() == true );
+
     LOG_CONTROLLER ( this, "KeyboardMappings" );
 
     keyboardMappings = mappings;
@@ -510,6 +516,8 @@ void Controller::setMappings ( const KeyboardMappings& mappings )
 
 void Controller::setMappings ( const JoystickMappings& mappings )
 {
+    ASSERT ( isJoystick() == true );
+
     LOG_CONTROLLER ( this, "JoystickMappings" );
 
     joystickMappings = mappings;

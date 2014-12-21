@@ -14,7 +14,7 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
 {
     bool toggleOverlay = false;
 
-    if ( KeyboardState::isReleased ( VK_TOGGLE_OVERLAY ) )
+    if ( KeyboardState::isPressed ( VK_TOGGLE_OVERLAY ) )
         toggleOverlay = true;
 
     for ( Controller *controller : allControllers )
@@ -209,7 +209,7 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
         // Toggle overlay if both players are done
         if ( overlayPositions[i] + 1 == options.size()
                 && ( ( playerControllers[i]->isJoystick() && isAnyButtonPressed ( playerControllers[i] ) )
-                     || ( playerControllers[i]->isKeyboard() && KeyboardState::isReleased ( VK_RETURN ) ) ) )
+                     || ( playerControllers[i]->isKeyboard() && KeyboardState::isPressed ( VK_RETURN ) ) ) )
         {
             overlayPositions[i] = 0;
 
@@ -250,7 +250,8 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
             deleteMapping = true;
         }
         else if ( playerControllers[i]->isKeyboard()
-                  && ( KeyboardState::isReleased ( VK_RETURN ) || KeyboardState::isReleased ( VK_DELETE ) )
+                  && ( KeyboardState::isReleased ( VK_RETURN )      // Use Return key released to prevent the
+                       || KeyboardState::isPressed ( VK_DELETE ) )  // same key event from being mapped immediately.
                   && overlayPositions[i] >= 1 && overlayPositions[i] <= 4 )
         {
             // Press enter / delete to modify direction keys
