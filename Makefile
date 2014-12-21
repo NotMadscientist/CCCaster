@@ -131,21 +131,22 @@ $(BINARY): $(addprefix $(BUILD_TYPE)/,$(MAIN_OBJECTS))
 	$(CHMOD_X)
 	@echo
 
-$(FOLDER)/$(DLL): $(addprefix $(BUILD_TYPE)/,$(DLL_OBJECTS))
-	@mkdir -p $(FOLDER)
+$(FOLDER)/$(DLL): $(addprefix $(BUILD_TYPE)/,$(DLL_OBJECTS)) | $(FOLDER)
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(addprefix $(BUILD_TYPE)/,$(DLL_OBJECTS)) -shared $(LD_FLAGS) -ld3dx9
 	@echo
 	$(STRIP) $@
 	$(GRANT)
 	@echo
 
-$(FOLDER)/$(LAUNCHER): tools/Launcher.cpp
-	@mkdir -p $(FOLDER)
+$(FOLDER)/$(LAUNCHER): tools/Launcher.cpp | $(FOLDER)
 	$(CXX) -o $@ tools/Launcher.cpp -m32 -s -Os -O2 -Wall -static -mwindows
 	@echo
 	$(PREFIX)strip $@
 	$(CHMOD_X)
 	@echo
+
+$(FOLDER):
+	mkdir -p $@
 
 # $(FOLDER)/states.bin: tools/$(GENERATOR)
 # 	tools/$(GENERATOR) $(FOLDER)/states.bin
@@ -210,8 +211,7 @@ clean-proto:
 	rm -f $(AUTOGEN_HEADERS)
 
 clean-common: clean-proto
-	rm -f .depend .include
-	rm -f *.res *.exe *.dll *.zip $(FOLDER)/*.exe $(FOLDER)/*.dll
+	rm -f .depend .include $(filter-out $(wildcard $(FOLDER)/*.log),$(wildcard $(FOLDER)/*))
 
 clean-debug: clean-common
 	rm -rf build_debug
@@ -226,7 +226,6 @@ clean: clean-common
 	rm -rf build_$(DEFAULT_TARGET)
 
 clean-all: clean-debug clean-logging clean-release
-	rm -rf $(FOLDER)
 
 
 check:
