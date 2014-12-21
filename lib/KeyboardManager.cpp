@@ -2,11 +2,13 @@
 #include "UdpSocket.h"
 #include "Logger.h"
 #include "Exceptions.h"
-#include "KeyboardState.h"
 
 #include <windows.h>
 
 using namespace std;
+
+
+static SocketPtr sendSocket;
 
 
 static LRESULT CALLBACK keyboardCallback ( int code, WPARAM wParam, LPARAM lParam )
@@ -23,7 +25,7 @@ static LRESULT CALLBACK keyboardCallback ( int code, WPARAM wParam, LPARAM lPara
                 const KeyboardManager& km = KeyboardManager::get();
 
                 // Ignore key if socket is unconnected
-                if ( !km.sendSocket || !km.sendSocket->isConnected() )
+                if ( !sendSocket || !sendSocket->isConnected() )
                     break;
 
                 // Ignore key if the window does not match
@@ -45,7 +47,7 @@ static LRESULT CALLBACK keyboardCallback ( int code, WPARAM wParam, LPARAM lPara
                 const bool isDown = ( wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN );
 
                 // Send KeyboardEvent message and return 1 to eat the keyboard event
-                km.sendSocket->send ( new KeyboardEvent ( vkCode, scanCode, isExtended, isDown ) );
+                sendSocket->send ( new KeyboardEvent ( vkCode, scanCode, isExtended, isDown ) );
                 return 1;
             }
 
@@ -56,8 +58,6 @@ static LRESULT CALLBACK keyboardCallback ( int code, WPARAM wParam, LPARAM lPara
 
     return CallNextHookEx ( 0, code, wParam, lParam );
 }
-
-static HHOOK keyboardHook = 0;
 
 
 class KeyboardThread : public Thread
@@ -106,7 +106,7 @@ public:
     void run() override
     {
         // The keyboard hook needs a dedicated event loop (in the same thread?)
-        keyboardHook = SetWindowsHookEx ( WH_KEYBOARD_LL, keyboardCallback, GetModuleHandle ( 0 ), 0 );
+        HHOOK keyboardHook = SetWindowsHookEx ( WH_KEYBOARD_LL, keyboardCallback, GetModuleHandle ( 0 ), 0 );
 
         if ( !keyboardHook )
         {
@@ -158,43 +158,30 @@ void KeyboardManager::readEvent ( Socket *socket, const MsgPtr& msg, const IpAdd
     const bool isExtended = msg->getAs<KeyboardEvent>().isExtended;
     const bool isDown = msg->getAs<KeyboardEvent>().isDown;
 
-    KeyboardState::states[vkCode] = isDown;
-    // KeyboardState::previous[vkCode] = !isDown;
-
     LOG ( "vkCode=0x%02X; scanCode=%u; isExtended=%u; isDown=%u", vkCode, scanCode, isExtended, isDown );
 
     if ( owner )
         owner->keyboardEvent ( vkCode, scanCode, isExtended, isDown );
 }
 
-void KeyboardManager::hook ( Owner *owner, bool eventThread )
+void KeyboardManager::hook ( Owner *owner, bool externalHook )
 {
     if ( isHooked() )
         return;
 
     LOG ( "Hooking keyboard manager" );
 
-    KeyboardState::update();
+    hooked = true;
 
     this->owner = owner;
 
-    recvSocket = UdpSocket::bind ( this, 0 );
-    sendSocket = UdpSocket::bind ( 0, { "127.0.0.1", recvSocket->address.port } );
-
-    if ( eventThread )
+    if ( !externalHook )
     {
+        recvSocket = UdpSocket::bind ( this, 0 );
+        sendSocket = UdpSocket::bind ( 0, { "127.0.0.1", recvSocket->address.port } );
+
         keyboardThread.reset ( new KeyboardThread() );
         keyboardThread->start();
-    }
-    else
-    {
-        keyboardHook = SetWindowsHookEx ( WH_KEYBOARD_LL, keyboardCallback, GetModuleHandle ( 0 ), 0 );
-
-        if ( !keyboardHook )
-        {
-            LOG ( "SetWindowsHookEx failed: %s", WinException::getLastError() );
-            return;
-        }
     }
 
     LOG ( "Hooked keyboard manager" );
@@ -204,27 +191,20 @@ void KeyboardManager::unhook()
 {
     LOG ( "Unhooking keyboard manager" );
 
-    KeyboardState::clear();
-
     keyboardThread.reset();
-
-    if ( keyboardHook )
-    {
-        UnhookWindowsHookEx ( keyboardHook );
-        keyboardHook = 0;
-    }
-
     sendSocket.reset();
     recvSocket.reset();
 
-    this->owner = 0;
+    owner = 0;
+
+    hooked = false;
 
     LOG ( "Unhooked keyboard manager" );
 }
 
 bool KeyboardManager::isHooked() const
 {
-    return ( recvSocket || sendSocket );
+    return hooked;
 }
 
 KeyboardManager& KeyboardManager::get()

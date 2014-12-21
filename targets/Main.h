@@ -66,7 +66,7 @@ struct AutoManager
         KeyboardManager::get().keyboardWindow = window;
         KeyboardManager::get().matchedKeys = keys;
         KeyboardManager::get().ignoredKeys = ignore;
-        KeyboardManager::get().hook ( main, true );
+        KeyboardManager::get().hook ( main );
     }
 
     ~AutoManager()

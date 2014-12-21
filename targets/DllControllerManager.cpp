@@ -65,6 +65,9 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
 
             // Disable keyboard events, since we use GetKeyState for regular controller inputs
             KeyboardManager::get().unhook();
+
+            // Re-enable Escape to exit
+            AsmHacks::enableEscapeToExit = true;
         }
         else
         {
@@ -75,7 +78,10 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
             KeyboardManager::get().keyboardWindow = DllHacks::windowHandle;
             KeyboardManager::get().matchedKeys.clear();
             KeyboardManager::get().ignoredKeys.clear();
-            KeyboardManager::get().hook ( this, false );
+            KeyboardManager::get().hook ( this, true );
+
+            // Disable Escape to exit
+            AsmHacks::enableEscapeToExit = false;
         }
 
         DllHacks::toggleOverlay();
@@ -214,6 +220,7 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
                 DllHacks::updateOverlay ( text );
                 DllHacks::toggleOverlay();
                 KeyboardManager::get().unhook();
+                AsmHacks::enableEscapeToExit = true;
                 return;
             }
         }

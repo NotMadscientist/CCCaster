@@ -559,7 +559,7 @@ struct MainApp
                 KeyboardManager::get().keyboardWindow = MainUi::getConsoleWindow();
                 KeyboardManager::get().matchedKeys = { VK_ESCAPE };
                 KeyboardManager::get().ignoredKeys.clear();
-                KeyboardManager::get().hook ( this, true );
+                KeyboardManager::get().hook ( this );
 
                 netplayConfig = ui.getNetplayConfig();
                 netplayConfig.sessionId = generateRandomId();

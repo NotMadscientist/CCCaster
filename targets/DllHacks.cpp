@@ -5,6 +5,7 @@
 #include "ProcessManager.h"
 #include "Algorithms.h"
 #include "Enum.h"
+#include "KeyboardManager.h"
 #include "ControllerManager.h"
 
 #define INITGUID
@@ -381,6 +382,7 @@ void initializePreLoad()
         WRITE_ASM_HACK ( hack );
 
     WRITE_ASM_HACK ( detectAutoReplaySave );
+    WRITE_ASM_HACK ( hijackEscapeKey );
 
     // TODO find an alternative because this doesn't work on Wine
     // WRITE_ASM_HACK ( disableFpsLimit );
@@ -391,6 +393,31 @@ MH_WINAPI_HOOK ( LRESULT, CALLBACK, WindowProc, HWND hwnd, UINT message, WPARAM 
 {
     switch ( message )
     {
+        case WM_KEYDOWN:
+            // Ignore repeated keys
+            if ( ( lParam >> 30 ) & 1 )
+                break;
+
+        case WM_KEYUP:
+        {
+            // Only inject keyboard events when hooked
+            if ( !KeyboardManager::get().isHooked() )
+                break;
+
+            const uint32_t vkCode = wParam;
+            const uint32_t scanCode = ( lParam >> 16 ) & 127;
+            const bool isExtended = ( lParam >> 24 ) & 1;
+            const bool isDown = ( lParam >> 31 ) & 1;
+
+            LOG ( "vkCode=0x%02X; scanCode=%u; isExtended=%u; isDown=%u", vkCode, scanCode, isExtended, isDown );
+
+            // Note: this doesn't actually eat the keyboard event, which is actually acceptable
+            // for the in-game overlay UI, since we need to mix usage with GetKeyState.
+            if ( KeyboardManager::get().owner )
+                KeyboardManager::get().owner->keyboardEvent ( vkCode, scanCode, isExtended, isDown );
+            break;
+        }
+
         case WM_DEVICECHANGE:
             switch ( wParam )
             {

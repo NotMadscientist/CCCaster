@@ -315,7 +315,6 @@ void MainUi::doneMapping ( Controller *controller, uint32_t key )
     LOG ( "%s: controller=%08x; key=%08x", controller->getName(), controller, key );
 
     mappedKey = key;
-
     EventManager::get().stop();
 }
 

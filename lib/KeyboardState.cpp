@@ -1,5 +1,4 @@
 #include "KeyboardState.h"
-#include "KeyboardManager.h"
 
 #include <windows.h>
 
@@ -31,9 +30,6 @@ void KeyboardState::clear()
 void KeyboardState::update()
 {
     previous = states;
-
-    if ( KeyboardManager::get().isHooked() )
-        return;
 
     for ( auto& kv : states )
         kv.second = getKeyState ( kv.first );
