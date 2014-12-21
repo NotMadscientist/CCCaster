@@ -38,6 +38,9 @@ extern uint32_t roundStartCounter;
 // Auto replay save state, is set to 1 (loading), then 100 (saving), finally 255 (saved).
 extern uint32_t *autoReplaySaveStatePtr;
 
+// Flag to enable / disable the Escape key function that exits game (initially true).
+extern uint8_t enableEscapeToExit;
+
 
 // Struct for storing assembly code
 struct Asm
@@ -220,12 +223,30 @@ static const Asm detectAutoReplaySave =
     { ( void * ) 0x482D9B, {
         0x8D, 0x88, 0xD0, 0x00, 0x00, 0x00,                         // lea ecx,[eax+000000D0]
         0x89, 0x0D, INLINE_DWORD ( &autoReplaySaveStatePtr ),       // mov [&autoReplaySaveStatePtr],ecx
-        0x59, 0x5E, 0x83, 0xC4, 0x10, 0xC2, 0x04, 0x00              // rest of the code is just shifted down
+        // Rest of the code is unchanged, just shifted down
+        0x59, 0x5E, 0x83, 0xC4, 0x10, 0xC2, 0x04, 0x00
     } };
 
 // Force the game to go to a certain mode
 static const Asm forceGotoVersus    = { ( void * ) 0x42B475, { 0xEB, 0x3F } }; // jmp 0042B4B6
 static const Asm forceGotoVersusCpu = { ( void * ) 0x42B475, { 0xEB, 0x5C } }; // jmp 0042B4D3
 static const Asm forceGotoTraining  = { ( void * ) 0x42B475, { 0xEB, 0x22 } }; // jmp 0042B499
+
+// Hijack the game's Escape key so we can control when it exits the game
+static const Asm hijackEscapeKey =
+    { ( void * ) 0x4A0070, {
+        0x80, 0x3D, INLINE_DWORD ( &enableEscapeToExit ), 0x00,     // cmp byte ptr [&enableEscapeToExit],00
+        0xA0, INLINE_DWORD ( 0x5544F1 ),                            // mov ax,[005544F1]
+        0x75, 0x03,                                                 // jne skip
+        0x66, 0x31, 0xC0,                                           // xor ax,ax
+                                                                    // skip:
+        0x24, 0x80,                                                 // and al,80
+        // Rest of the code is unchanged, just shifted down
+        0x33, 0xC9,                                                 // xor ecx,ecx
+        0x3C, 0x80,                                                 // cmp al,80
+        0x0F, 0x94, 0xC1,                                           // sete cl
+        0x8B, 0xC1,                                                 // mov eax,ecx
+        0xC3,                                                       // ret
+    } };
 
 } // namespace AsmHacks

@@ -15,11 +15,13 @@ if [ $? -ne 0 ]; then
 
     echo "Regenerating .depend"
 
-    $1 $2 -std=c++11 -MM *.cpp         *.h         > tmp_depend1
-    $1 $2 -std=c++11 -MM tools/*.cpp               > tmp_depend2
-    $1 $2 -std=c++11 -MM targets/*.cpp targets/*.h > tmp_depend3
-    $1 $2 -std=c++11 -MM lib/*.cpp     lib/*.h     > tmp_depend4
+    $1 $2 -std=c++11 -MM *.cpp         *.h         > tmp_depend1 & \
+    $1 $2 -std=c++11 -MM tools/*.cpp               > tmp_depend2 & \
+    $1 $2 -std=c++11 -MM targets/*.cpp targets/*.h > tmp_depend3 & \
+    $1 $2 -std=c++11 -MM lib/*.cpp     lib/*.h     > tmp_depend4 & \
     $1 $2 -std=c++11 -MM tests/*.cpp   tests/*.h   > tmp_depend5
+
+    wait
 
     cp /dev/null .depend
 

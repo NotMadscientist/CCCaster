@@ -25,9 +25,6 @@ static void *consoleWindow = 0;
 
 ConsoleUi::ConsoleUi ( const string& title, bool isWine )
 {
-    if ( !consoleWindow )
-        consoleWindow = GetConsoleWindow();
-
     SetConsoleTitle ( title.c_str() );
     SetConsoleOutputCP ( 437 );
 
@@ -137,7 +134,7 @@ void ConsoleUi::pushInFront ( ConsoleUi::Element *element, const COORD& expand )
     initalizeAndPush ( element, expand );
 }
 
-const void *ConsoleUi::getConsoleWindow()
+void *ConsoleUi::getConsoleWindow()
 {
     if ( !consoleWindow )
         consoleWindow = GetConsoleWindow();

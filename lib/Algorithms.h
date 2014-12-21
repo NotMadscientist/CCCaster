@@ -97,3 +97,16 @@ inline T incremented ( T x )
     ++x;
     return x;
 }
+
+
+// Hash hash_combine function
+namespace std
+{
+
+template<class T> void hash_combine ( size_t& seed, const T& v )
+{
+    hash<T> hasher;
+    seed ^= hasher ( v ) + 0x9e3779b9 + ( seed << 6 ) + ( seed >> 2 );
+}
+
+} // namespace std

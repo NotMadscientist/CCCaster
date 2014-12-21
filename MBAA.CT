@@ -863,11 +863,11 @@
       <Address>0076E650</Address>
     </CheatEntry>
     <CheatEntry>
-      <ID>263</ID>
-      <Description>"No description"</Description>
+      <ID>260</ID>
+      <Description>"Escape key"</Description>
       <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>005553F8</Address>
+      <VariableType>Byte</VariableType>
+      <Address>005544F1</Address>
     </CheatEntry>
   </CheatEntries>
   <CheatCodes>
@@ -2993,6 +2993,33 @@
         <Byte>01</Byte>
         <Byte>75</Byte>
         <Byte>08</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Function that checks the Escape key</Description>
+      <Address>004A0070</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>A0070</ModuleNameOffset>
+      <Before>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+      </Before>
+      <Actual>
+        <Byte>A0</Byte>
+        <Byte>F1</Byte>
+        <Byte>44</Byte>
+        <Byte>55</Byte>
+        <Byte>00</Byte>
+      </Actual>
+      <After>
+        <Byte>24</Byte>
+        <Byte>80</Byte>
+        <Byte>33</Byte>
+        <Byte>C9</Byte>
+        <Byte>3C</Byte>
       </After>
     </CodeEntry>
   </CheatCodes>

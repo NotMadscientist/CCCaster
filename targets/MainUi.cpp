@@ -25,7 +25,7 @@ using namespace std;
     do {                                                                                        \
         ControllerManager::get().deinitialize();                                                \
         run ( ADDRESS, CONFIG );                                                                \
-        ControllerManager::get().initialize ( 0 );                                              \
+        ControllerManager::get().initialize ( this );                                           \
     } while ( 0 )
 
 
@@ -297,12 +297,24 @@ bool MainUi::gameModeIncludingVersusCpu()
     return true;
 }
 
+void MainUi::detachedJoystick ( Controller *controller )
+{
+    LOG ( "controller=%08x; currentController=%08x", controller, currentController );
+
+    if ( controller != currentController )
+        return;
+
+    currentController = 0;
+    EventManager::get().stop();
+}
+
 void MainUi::doneMapping ( Controller *controller, uint32_t key )
 {
+    ASSERT ( controller == currentController );
+
     LOG ( "%s: controller=%08x; key=%08x", controller->getName(), controller, key );
 
     mappedKey = key;
-
     EventManager::get().stop();
 }
 
@@ -346,7 +358,7 @@ void MainUi::controls()
             options.push_back ( "Reset to defaults" );
 
             if ( controller.isJoystick() )
-                options.push_back ( "Set joystick deadzone" );
+                options.push_back ( format ( "Set joystick deadzone (%.2f)", controller.getDeadzone() ) );
 
             // Add instructions above menu
             ui->pushRight ( new ConsoleUi::TextBox (
@@ -389,20 +401,23 @@ void MainUi::controls()
             // Clear all
             if ( pos == ( int ) gameInputBits.size() )
             {
+                ui->pop();
+                ui->pop();
+
                 if ( areYouSure() )
                 {
                     controller.clearAllMappings();
                     saveMappings ( controller );
                 }
-
-                ui->pop();
-                ui->pop();
                 continue;
             }
 
             // Reset to defaults
             if ( pos == ( int ) gameInputBits.size() + 1 )
             {
+                ui->pop();
+                ui->pop();
+
                 if ( areYouSure() )
                 {
                     if ( controller.isKeyboard() )
@@ -411,9 +426,6 @@ void MainUi::controls()
                         controller.resetToDefaults();
                     saveMappings ( controller );
                 }
-
-                ui->pop();
-                ui->pop();
                 continue;
             }
 
@@ -426,11 +438,10 @@ void MainUi::controls()
                 if ( !controller.isJoystick() )
                     continue;
 
-                ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptString,
-                                  "Enter a value between 0.0 and 1.0:" ),
-                { 0, 0 }, true ); // Don't expand but DO clear
+                ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptString,
+                                                        "Enter a value between 0.0 and 1.0:" ) );
 
-                ui->top<ConsoleUi::Prompt>()->setInitial ( format ( "%.1f", controller.getDeadzone() ) );
+                ui->top<ConsoleUi::Prompt>()->setInitial ( format ( "%.2f", controller.getDeadzone() ) );
 
                 for ( ;; )
                 {
@@ -472,29 +483,47 @@ void MainUi::controls()
             // Map selected key
             ui->top<ConsoleUi::Menu>()->overlayCurrentPosition ( format ( "%-11s: ...", gameInputBits[pos].first ) );
 
-            AutoManager _;
-
-            if ( controller.isKeyboard() )
+            try
             {
-                controller.startMapping ( this, gameInputBits[pos].second, getConsoleWindow() );
+                currentController = &controller;
 
-                EventManager::get().start();
+                LOG ( "currentController=%08x", currentController );
+
+                AutoManager _ ( currentController, getConsoleWindow() );
+
+                if ( controller.isKeyboard() )
+                {
+                    controller.startMapping ( this, gameInputBits[pos].second );
+
+                    EventManager::get().start();
+                }
+                else
+                {
+                    ControllerManager::get().check(); // Flush joystick events before mapping
+
+                    if ( currentController )
+                    {
+                        controller.startMapping ( this, gameInputBits[pos].second );
+
+                        EventManager::get().startPolling();
+
+                        while ( EventManager::get().poll ( 1 ) )
+                            ControllerManager::get().check();
+                    }
+                }
             }
-            else
+            catch ( ... )
             {
-                ControllerManager::get().check(); // Flush joystick events before mapping
-
-                controller.startMapping ( this, gameInputBits[pos].second, getConsoleWindow() );
-
-                EventManager::get().startPolling();
-
-                while ( EventManager::get().poll ( 1 ) )
-                    ControllerManager::get().check();
             }
+
+            ui->pop();
+            ui->pop();
+
+            if ( !currentController )
+                break;
 
             saveMappings ( controller );
-            ui->pop();
-            ui->pop();
+            currentController = 0;
 
             // Continue mapping
             if ( mappedKey && pos + 1 < ( int ) gameInputBits.size() )
@@ -661,9 +690,17 @@ void MainUi::settings()
                 break;
 
             case 5:
-                ui->pushInFront ( new ConsoleUi::TextBox ( format ( "%s\n\nRevision %s\n\nBuilt on %s\n\n"
+                ui->pushInFront ( new ConsoleUi::TextBox ( format ( "%s%s\n\nRevision %s\n\nBuilt on %s\n\n"
                                   "Created by Madscientist\n\nPress any key to go back",
-                                  uiTitle, LocalVersion.revision, LocalVersion.buildTime ) ),
+                                  uiTitle,
+#if defined(DEBUG)
+                                  " (debug)",
+#elif defined(LOGGING)
+                                  " (logging)",
+#else
+                                  "",
+#endif
+                                  LocalVersion.revision, LocalVersion.buildTime ) ),
                 { 0, 0 }, true ); // Don't expand but DO clear
                 system ( "@pause > nul" );
                 break;
@@ -678,6 +715,8 @@ void MainUi::settings()
 
 void MainUi::initialize()
 {
+    ui.reset ( new ConsoleUi ( uiTitle, ProcessManager::isWine() ) );
+
     // Configurable settings
     config.putInteger ( "alertOnConnect", 3 );
     config.putString ( "alertWavFile", "SystemDefault" );
@@ -700,7 +739,8 @@ void MainUi::initialize()
     initialConfig.winCount = config.getInteger ( "versusWinCount" );
 
     // Initialize controllers
-    ControllerManager::get().initialize ( 0 );
+    ControllerManager::get().initialize ( this );
+    ControllerManager::get().windowHandle = getConsoleWindow();
     ControllerManager::get().check();
 
     // Setup default mappings
@@ -775,7 +815,9 @@ void MainUi::main ( RunFuncPtr run )
 {
     static const vector<string> options = { "Netplay", "Spectate", "Broadcast", "Offline", "Controls", "Settings" };
 
-    ui.reset ( new ConsoleUi ( uiTitle, ProcessManager::isWine() ) );
+    ASSERT ( ui.get() != 0 );
+
+    ui->clearAll();
     ui->pushRight ( new ConsoleUi::Menu ( uiTitle, options, "Quit" ) );
 
     mainMenu = ui->top<ConsoleUi::Menu>();
@@ -880,9 +922,6 @@ static string formatStats ( const PingStats& pingStats )
 
 void MainUi::display ( const string& message, bool replace )
 {
-    if ( !ui )
-        ui.reset ( new ConsoleUi ( uiTitle, ProcessManager::isWine() ) );
-
     if ( replace && ( ui->empty() || !ui->top()->requiresUser || ui->top() != mainMenu ) )
         ui->pushInFront ( new ConsoleUi::TextBox ( message ), { 1, 0 }, true ); // Expand width and clear
     else if ( ui->top()->expandWidth() )
@@ -1052,7 +1091,7 @@ bool MainUi::confirm()
     return ret;
 }
 
-const void *MainUi::getConsoleWindow()
+void *MainUi::getConsoleWindow()
 {
     return ConsoleUi::getConsoleWindow();
 }

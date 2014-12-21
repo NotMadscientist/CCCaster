@@ -14,6 +14,8 @@
     NAME ( Enum value ) : value ( value ) {}                                                                    \
     std::string str() const override {                                                                          \
         static const std::vector<std::string> list = split ( "Unknown, " #__VA_ARGS__, ", " );                  \
+        if ( value >= list.size() )                                                                             \
+            return format ( "Unknown (%u)", value );                                                            \
         return #NAME "::" + list[value];                                                                        \
     }                                                                                                           \
     bool operator== ( const NAME& other ) const { return value == other.value; }                                \
@@ -22,7 +24,7 @@
     bool operator!= ( Enum other ) const { return value != other; }
 
 
-// Enum type with auto generated strings values
+// Enum type with auto-generated string values
 #define ENUM(NAME, ...)                                                                                         \
     struct NAME : public EnumBase {                                                                             \
         ENUM_BOILERPLATE ( NAME, __VA_ARGS__ )                                                                  \

@@ -121,7 +121,7 @@ public:
 
         HDEVNOTIFY notifyHandle = RegisterDeviceNotification ( windowHandle, &dbh, DEVICE_NOTIFY_WINDOW_HANDLE );
         if ( ! notifyHandle )
-            THROW_WIN_EXCEPTION ( GetLastError(), "CreateWindowEx failed", ERROR_CONTROLLER_INIT );
+            THROW_WIN_EXCEPTION ( GetLastError(), "RegisterDeviceNotification failed", ERROR_CONTROLLER_INIT );
 
         MSG message;
         BOOL ret;

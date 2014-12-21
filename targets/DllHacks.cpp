@@ -5,6 +5,7 @@
 #include "ProcessManager.h"
 #include "Algorithms.h"
 #include "Enum.h"
+#include "KeyboardManager.h"
 #include "ControllerManager.h"
 
 #define INITGUID
@@ -45,10 +46,6 @@ DEFINE_GUID ( GUID_DEVINTERFACE_HID, 0x4D1E55B2L, 0xF16F, 0x11CF, 0x88, 0xCB, 0x
 #define OVERLAY_CHANGE_DELTA            ( 4 + abs ( overlayHeight - newHeight ) / 4 )
 
 #define INLINE_RECT(rect)               rect.left, rect.top, rect.right, rect.bottom
-
-
-// KeyboardManager's keyboardCallback
-extern LRESULT CALLBACK keyboardCallback ( int, WPARAM, LPARAM );
 
 
 namespace DllHacks
@@ -250,7 +247,7 @@ void updateSelector ( uint8_t index, int position, const string& line )
 } // namespace DllHacks
 
 
-// Note: this is on the SAME thread as the main thread where callback happens
+// Note: this is called on the SAME thread as the main application thread
 void PresentFrameBegin ( IDirect3DDevice9 *device )
 {
     if ( !initalizedDirectx )
@@ -385,16 +382,42 @@ void initializePreLoad()
         WRITE_ASM_HACK ( hack );
 
     WRITE_ASM_HACK ( detectAutoReplaySave );
+    WRITE_ASM_HACK ( hijackEscapeKey );
 
     // TODO find an alternative because this doesn't work on Wine
     // WRITE_ASM_HACK ( disableFpsLimit );
 }
 
-// Note: this is on the SAME thread as the main thread where callback happens
+// Note: this is called on the SAME thread as the main application thread
 MH_WINAPI_HOOK ( LRESULT, CALLBACK, WindowProc, HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam )
 {
     switch ( message )
     {
+        case WM_KEYDOWN:
+            // Ignore repeated keys
+            if ( ( lParam >> 30 ) & 1 )
+                break;
+
+        case WM_KEYUP:
+        {
+            // Only inject keyboard events when hooked
+            if ( !KeyboardManager::get().isHooked() )
+                break;
+
+            const uint32_t vkCode = wParam;
+            const uint32_t scanCode = ( lParam >> 16 ) & 127;
+            const bool isExtended = ( lParam >> 24 ) & 1;
+            const bool isDown = ( lParam >> 31 ) & 1;
+
+            LOG ( "vkCode=0x%02X; scanCode=%u; isExtended=%u; isDown=%u", vkCode, scanCode, isExtended, isDown );
+
+            // Note: this doesn't actually eat the keyboard event, which is actually acceptable
+            // for the in-game overlay UI, since we need to mix usage with GetKeyState.
+            if ( KeyboardManager::get().owner )
+                KeyboardManager::get().owner->keyboardEvent ( vkCode, scanCode, isExtended, isDown );
+            break;
+        }
+
         case WM_DEVICECHANGE:
             switch ( wParam )
             {
@@ -420,12 +443,6 @@ static pWindowProc WindowProc = ( pWindowProc ) CC_WINDOW_PROC_ADDR;
 
 static HDEVNOTIFY notifyHandle = 0;
 
-volatile bool keyboardManagerHooked = false;
-
-static HHOOK keyboardHook = 0;
-
-static LRESULT CALLBACK dummyKeyboardCallback ( int, WPARAM, LPARAM );
-
 
 void *windowHandle = 0;
 
@@ -437,10 +454,6 @@ void initializePostLoad()
     // Apparently this needs to be applied AFTER the game loads
     for ( const Asm& hack : enableDisabledStages )
         WRITE_ASM_HACK ( hack );
-
-    // Hook and ignore keyboard messages to prevent lag from unhandled messages
-    if ( ! ( keyboardHook = SetWindowsHookEx ( WH_KEYBOARD, dummyKeyboardCallback, 0, GetCurrentThreadId() ) ) )
-        LOG ( "SetWindowsHookEx failed: %s", WinException::getLastError() );
 
     // Get the handle to the main window
     if ( ! ( windowHandle = ProcessManager::findWindow ( CC_TITLE ) ) )
@@ -500,26 +513,8 @@ void deinitialize()
         WindowProc = 0;
     }
 
-    if ( keyboardHook )
-        UnhookWindowsHookEx ( keyboardHook );
-
     for ( int i = hookMainLoop.size() - 1; i >= 0; --i )
         hookMainLoop[i].revert();
-}
-
-LRESULT CALLBACK dummyKeyboardCallback ( int code, WPARAM wParam, LPARAM lParam )
-{
-    if ( code == HC_ACTION )
-    {
-        if ( keyboardManagerHooked )
-            return keyboardCallback ( code, wParam, lParam );
-
-        // Pass through the Alt and Enter keys when not mapping
-        if ( wParam == VK_MENU || wParam == VK_RETURN )
-            return CallNextHookEx ( 0, code, wParam, lParam );
-    }
-
-    return 1;
 }
 
 } // namespace DllHacks

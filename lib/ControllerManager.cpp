@@ -2,15 +2,10 @@
 #include "Exceptions.h"
 #include "ErrorStrings.h"
 
-// #define INITGUID
-// #define DIRECTINPUT_VERSION 0x0800 /* Need version 8 so IDirectInput8_EnumDevices doesn't leak like a sieve... */
-// #include <dinput.h>
-// #define COBJMACROS
-// #include <wbemcli.h>
-// #include <oleauto.h>
-// #include <xinput.h>
-// #include <devguid.h>
-// #include <dbt.h>
+#define INITGUID
+#define DIRECTINPUT_VERSION 0x0800 // Need at least version 8
+#include <dinput.h>
+#define COBJMACROS
 #include <windows.h>
 
 #include <algorithm>
@@ -20,12 +15,60 @@
 using namespace std;
 
 
-void ControllerManager::check ( void *keyboardWindowHandle )
+#define JOYSTICK_FLAGS  ( DISCL_NONEXCLUSIVE | DISCL_BACKGROUND )
+
+#define AXIS_MAX        ( 32767 )
+
+#define AXIS_MIN        ( -32768 )
+
+
+static HRESULT comInitRet = E_FAIL;
+
+static IDirectInput8 *dinput = 0;
+
+
+static inline uint8_t mapAxisValue ( LONG value, uint32_t deadzone )
+{
+    if ( abs ( value ) > ( LONG ) deadzone )
+        return ( value > 0 ? AXIS_POSITIVE : AXIS_NEGATIVE );
+
+    return AXIS_CENTERED;
+}
+
+static inline uint8_t mapHatValue ( uint32_t value )
+{
+    static const uint8_t values[] =
+    {
+        8, // Up
+        9, // Up-right
+        6, // Right
+        3, // Down-right
+        2, // Down
+        1, // Down-left
+        4, // Left
+        7, // Up-left
+    };
+
+    if ( LOWORD ( value ) == 0xFFFF )
+        return 5;
+
+    // The original value has range [0,36000), starting with 0 as north, and rotating clockwise.
+    // So we need to round the value down to the range [0, 8).
+    value %= 36000;
+    value /= 4500;
+
+    ASSERT ( value < 8 );
+
+    return values[value];
+}
+
+
+void ControllerManager::check()
 {
     if ( !initialized )
         return;
 
-    if ( !keyboardWindowHandle || keyboardWindowHandle == ( void * ) GetForegroundWindow() )
+    if ( windowHandle == ( void * ) GetForegroundWindow() )
     {
         // Update keyboard controller state
         keyboard.prevState = keyboard.state;
@@ -33,77 +76,330 @@ void ControllerManager::check ( void *keyboardWindowHandle )
 
         for ( uint8_t i = 0; i < 32; ++i )
         {
-            if ( !keyboard.keybd.codes[i] )
+            if ( !keyboard.keyboardMappings.codes[i] )
                 continue;
 
-            if ( GetKeyState ( keyboard.keybd.codes[i] ) & 0x80 )
+            if ( GetKeyState ( keyboard.keyboardMappings.codes[i] ) & 0x80 )
                 keyboard.state |= ( 1u << i );
         }
     }
 
-    for ( auto& kv : joysticks )
+    DIJOYSTATE2 djs;
+    HRESULT result;
+
+    for ( auto it = joysticks.begin(); it != joysticks.end(); )
     {
-        kv.second->prevAnyButton = kv.second->anyButton;
-        kv.second->prevState = kv.second->state;
+        Controller *controller = it->second.get();
+        const JoystickInfo info = controller->joystick.info;
+        IDirectInputDevice8 *const device = ( IDirectInputDevice8 * ) info.device;
+        const uint32_t deadzone = controller->joystickMappings.deadzone;
+
+        // Save previous states
+        controller->joystick.prevState = controller->joystick.state;
+        controller->prevState = controller->state;
+
+        // Poll device state
+        result = IDirectInputDevice8_Poll ( device );
+        if ( result == DIERR_INPUTLOST || result == DIERR_NOTACQUIRED )
+        {
+            IDirectInputDevice8_Acquire ( device );
+            result = IDirectInputDevice8_Poll ( device );
+        }
+
+        if ( FAILED ( result ) )
+        {
+            LOG_CONTROLLER ( controller, "IDirectInputDevice8_Poll failed: 0x%08x", result );
+            LOG ( "Detaching joystick: %s", it->first );
+            detachJoystick ( ( it++ )->first );
+            continue;
+        }
+
+        // Get device state
+        result = IDirectInputDevice8_GetDeviceState ( device, sizeof ( DIJOYSTATE2 ), &djs );
+        if ( result == DIERR_INPUTLOST || result == DIERR_NOTACQUIRED )
+        {
+            IDirectInputDevice8_Acquire ( device );
+            result = IDirectInputDevice8_GetDeviceState ( device, sizeof ( DIJOYSTATE2 ), &djs );
+        }
+
+        if ( FAILED ( result ) )
+        {
+            LOG_CONTROLLER ( controller, "IDirectInputDevice8_GetDeviceState failed: 0x%08x", result );
+            LOG ( "Detaching joystick: %s", it->first );
+            detachJoystick ( ( it++ )->first );
+            continue;
+        }
+
+        const uint8_t axisMask = info.axisMask;
+        uint8_t *const axes = controller->joystick.state.axes;
+        uint8_t axis = 0;
+
+        if ( axisMask & 0x01u )
+            axes[axis++] = mapAxisValue ( djs.lX, deadzone );
+        if ( axisMask & 0x02u )
+            axes[axis++] = mapAxisValue ( -djs.lY, deadzone ); // DirectInput, like most APIs, reports inverted Y-axis
+        if ( axisMask & 0x04u )
+            axes[axis++] = mapAxisValue ( djs.lZ, deadzone );
+        if ( axisMask & 0x08u )
+            axes[axis++] = mapAxisValue ( djs.lRx, deadzone );
+        if ( axisMask & 0x10u )
+            axes[axis++] = mapAxisValue ( -djs.lRy, deadzone ); // DirectInput, like most APIs, reports inverted Y-axis
+        if ( axisMask & 0x20u )
+            axes[axis++] = mapAxisValue ( djs.lRz, deadzone );
+        if ( axisMask & 0x40u )
+            axes[axis++] = mapAxisValue ( djs.rglSlider[0], deadzone );
+        if ( axisMask & 0x80u )
+            axes[axis++] = mapAxisValue ( djs.rglSlider[1], deadzone );
+
+        ASSERT ( axis == info.numAxes );
+
+        uint8_t *const prevAxes = controller->joystick.prevState.axes;
+
+        for ( axis = 0; axis < info.numAxes; ++axis )
+        {
+            if ( axes[axis] == prevAxes[axis] )
+                continue;
+
+            LOG_CONTROLLER ( controller, "axis%u: %u -> %u", axis, prevAxes[axis], axes[axis] );
+            controller->joystickAxisEvent ( axis, axes[axis] );
+        }
+
+        uint8_t *const hats = controller->joystick.state.hats;
+        uint8_t *const prevHats = controller->joystick.prevState.hats;
+
+        for ( uint8_t hat = 0; hat < info.numHats; ++hat )
+        {
+            hats[hat] = mapHatValue ( djs.rgdwPOV[hat] );
+
+            if ( hats[hat] == prevHats[hat] )
+                continue;
+
+            LOG_CONTROLLER ( controller, "hat%u: %u -> %u", hat, prevHats[hat], hats[hat] );
+            controller->joystickHatEvent ( hat, hats[hat] );
+        }
+
+        uint32_t& buttons = controller->joystick.state.buttons;
+        buttons = 0;
+
+        const uint32_t prevButtons = controller->joystick.prevState.buttons;
+
+        for ( uint8_t button = 0; button < info.numButtons; ++button )
+        {
+            const uint8_t value = ( djs.rgbButtons[button] ? 1 : 0 );
+            buttons |= ( value << button );
+
+            if ( ( buttons & ( 1u << button ) ) == ( prevButtons & ( 1u << button ) ) )
+                continue;
+
+            LOG_CONTROLLER ( controller, "button%u: %s", button, ( value ? "0 -> 1" : "1 -> 0" ) );
+            controller->joystickButtonEvent ( button, value );
+        }
+
+        ++it;
+    }
+}
+
+static BOOL CALLBACK enumJoystickAxes ( const DIDEVICEOBJECTINSTANCE *ddoi, void *userPtr )
+{
+    if ( ! ( ddoi->dwType & DIDFT_AXIS ) )
+        return DIENUM_CONTINUE;
+
+    JoystickInfo& info = * ( JoystickInfo * ) userPtr;
+
+    if ( info.numAxes >= MAX_NUM_AXES )
+        return DIENUM_CONTINUE;
+
+    bool added = false;
+
+#define CHECK_ADD_AXIS(INDEX, GUID_CONSTANT, NAME)                                                  \
+    do {                                                                                            \
+        if ( added )                                                                                \
+            break;                                                                                  \
+        if ( info.axisMask & ( 1u << INDEX ) )                                                      \
+            break;                                                                                  \
+        if ( Guid ( ddoi->guidType ) == Guid ( GUID_CONSTANT ) ) {                                  \
+            ++info.numAxes;                                                                         \
+            if ( info.axisNames.size() < INDEX + 1 )                                                \
+                info.axisNames.resize ( INDEX + 1 );                                                \
+            info.axisNames[INDEX] = NAME;                                                           \
+            info.axisMask |= ( 1u << INDEX );                                                       \
+            added = true;                                                                           \
+        }                                                                                           \
+    } while ( 0 )
+
+    CHECK_ADD_AXIS ( 0, GUID_XAxis, "X-Axis" );
+    CHECK_ADD_AXIS ( 1, GUID_YAxis, "Y-Axis" );
+    CHECK_ADD_AXIS ( 2, GUID_ZAxis, "Z-Axis" );
+    CHECK_ADD_AXIS ( 3, GUID_RxAxis, "X-Axis (2)" );
+    CHECK_ADD_AXIS ( 4, GUID_RyAxis, "Y-Axis (2)" );
+    CHECK_ADD_AXIS ( 5, GUID_RzAxis, "Z-Axis (2)" );
+    CHECK_ADD_AXIS ( 6, GUID_Slider, "Slider" );
+    CHECK_ADD_AXIS ( 7, GUID_Slider, "Slider (2)" );
+
+    if ( !added )
+        return DIENUM_CONTINUE;
+
+    HRESULT result;
+
+    // Set maximum range
+    DIPROPRANGE range;
+    range.diph.dwSize = sizeof ( range );
+    range.diph.dwHeaderSize = sizeof ( range.diph );
+    range.diph.dwObj = ddoi->dwType;
+    range.diph.dwHow = DIPH_BYID;
+    range.lMin = AXIS_MIN;
+    range.lMax = AXIS_MAX;
+
+    result = IDirectInputDevice8_SetProperty ( ( IDirectInputDevice8 * ) info.device, DIPROP_RANGE, &range.diph );
+    if ( FAILED ( result ) )
+        LOG ( "IDirectInputDevice8_SetProperty DIPROP_RANGE failed: 0x%08x", result );
+
+    // Set 0 deadzone
+    DIPROPDWORD deadzone;
+    deadzone.diph.dwSize = sizeof ( deadzone );
+    deadzone.diph.dwHeaderSize = sizeof ( deadzone.diph );
+    deadzone.diph.dwObj = ddoi->dwType;
+    deadzone.diph.dwHow = DIPH_BYID;
+    deadzone.dwData = 0;
+
+    result = IDirectInputDevice8_SetProperty ( ( IDirectInputDevice8 * ) info.device, DIPROP_DEADZONE, &deadzone.diph );
+    if ( FAILED ( result ) )
+        LOG ( "IDirectInputDevice8_SetProperty DIPROP_DEADZONE failed: 0x%08x", result );
+
+    return DIENUM_CONTINUE;
+}
+
+void ControllerManager::attachJoystick ( const Guid& guid, const string& name )
+{
+    if ( !initialized )
+        return;
+
+    IDirectInputDevice8 *tmp, *device;
+
+    GUID windowsGuid;
+    guid.getGUID ( windowsGuid );
+
+    // Create the DirectInput device, NOTE the pointer returned is only temporarily used
+    HRESULT result = IDirectInput8_CreateDevice ( dinput, windowsGuid, &tmp, 0 );
+    if ( FAILED ( result ) )
+    {
+        LOG ( "IDirectInput8_CreateDevice failed: 0x%08x", result );
+        return;
     }
 
-    // while ( al_get_next_event ( eventQueue, &event ) )
-    // {
-    //     switch ( event.type )
-    //     {
-    //         case ALLEGRO_EVENT_JOYSTICK_AXIS:
-    //         {
-    //             Controller *controller = joysticks[ ( void * ) event.joystick.id ].get();
+    // Query for the actual joystick device to use
+    result = IDirectInputDevice8_QueryInterface ( tmp, IID_IDirectInputDevice8, ( void ** ) &device );
 
-    //             ASSERT ( controller != 0 );
+    // We no longer need the original DirectInput device pointer
+    IDirectInputDevice8_Release ( tmp );
 
-    //             LOG_CONTROLLER ( controller, "ALLEGRO_EVENT_JOYSTICK_AXIS; stick=%d; axis=%d; pos=%.2f",
-    //                              event.joystick.stick, event.joystick.axis, event.joystick.pos );
+    if ( FAILED ( result ) )
+    {
+        LOG ( "IDirectInputDevice8_QueryInterface failed: 0x%08x", result );
+        return;
+    }
 
-    //             const uint8_t axis = combineAxis ( 'X' + event.joystick.axis, event.joystick.stick );
+    // Enable shared background access
+    result = IDirectInputDevice8_SetCooperativeLevel ( device, ( HWND ) windowHandle, JOYSTICK_FLAGS );
+    if ( FAILED ( result ) )
+        LOG ( "IDirectInputDevice8_SetCooperativeLevel failed: 0x%08x", result ); // Non-fatal
 
-    //             uint8_t value = AXIS_CENTERED;
-    //             if ( abs ( event.joystick.pos ) > controller->stick.deadzone )
-    //                 value = ( event.joystick.pos > 0.0f ? AXIS_POSITIVE : AXIS_NEGATIVE );
+    // Use the DIJOYSTATE2 data format
+    result = IDirectInputDevice8_SetDataFormat ( device, &c_dfDIJoystick2 );
+    if ( FAILED ( result ) )
+    {
+        LOG ( "IDirectInputDevice8_SetDataFormat failed: 0x%08x", result );
+        return;
+    }
 
-    //             controller->joystickAxisEvent ( axis, value );
-    //             break;
-    //         }
+    DIDEVCAPS ddc;
+    ddc.dwSize = sizeof ( ddc );
 
-    //         case ALLEGRO_EVENT_JOYSTICK_BUTTON_DOWN:
-    //         {
-    //             Controller *controller = joysticks[ ( void * ) event.joystick.id ].get();
+    // Get the joystick capabilities
+    result = IDirectInputDevice8_GetCapabilities ( device, &ddc );
+    if ( FAILED ( result ) )
+    {
+        LOG ( "IDirectInputDevice8_GetCapabilities failed: 0x%08x", result );
+        return;
+    }
 
-    //             ASSERT ( controller != 0 );
+    JoystickInfo info;
+    info.device = device;
+    info.numHats = min<uint64_t> ( MAX_NUM_HATS, ddc.dwPOVs );
+    info.numButtons = min<uint64_t> ( MAX_NUM_BUTTONS, ddc.dwButtons );
 
-    //             LOG_CONTROLLER ( controller, "ALLEGRO_EVENT_JOYSTICK_BUTTON_DOWN; button=%d", event.joystick.button );
+    // Initialize the properties for each axis
+    result = IDirectInputDevice8_EnumObjects ( device, enumJoystickAxes, &info, DIDFT_AXIS );
+    if ( FAILED ( result ) )
+    {
+        LOG ( "IDirectInputDevice8_EnumObjects failed: 0x%08x", result );
+        return;
+    }
 
-    //             controller->joystickButtonEvent ( event.joystick.button, true );
-    //             break;
-    //         }
+    // Create and add the controller
+    Controller *controller = new Controller ( name, info );
 
-    //         case ALLEGRO_EVENT_JOYSTICK_BUTTON_UP:
-    //         {
-    //             Controller *controller = joysticks[ ( void * ) event.joystick.id ].get();
+    ASSERT ( controller != 0 );
 
-    //             ASSERT ( controller != 0 );
+    joysticks[guid].reset ( controller );
+    joysticksByName[controller->getName()] = controller;
 
-    //             LOG_CONTROLLER ( controller, "ALLEGRO_EVENT_JOYSTICK_BUTTON_UP; button=%d", event.joystick.button );
+    // Update mappings
+    auto it = mappings.mappings.find ( controller->getName() );
+    if ( it != mappings.mappings.end() && it->second->getMsgType() == MsgType::JoystickMappings )
+    {
+        controller->setMappings ( it->second->getAs<JoystickMappings>() );
+    }
+    else
+    {
+        auto it = mappings.mappings.find ( controller->getOrigName() );
+        if ( it != mappings.mappings.end() && it->second->getMsgType() == MsgType::JoystickMappings )
+            controller->setMappings ( it->second->getAs<JoystickMappings>() );
+    }
 
-    //             controller->joystickButtonEvent ( event.joystick.button, false );
-    //             break;
-    //         }
+    LOG_CONTROLLER ( controller, "attached" );
 
-    //         case ALLEGRO_EVENT_JOYSTICK_CONFIGURATION:
-    //             LOG ( "ALLEGRO_EVENT_JOYSTICK_CONFIGURATION" );
-    //             refreshJoysticks();
-    //             break;
+    if ( owner )
+        owner->attachedJoystick ( controller );
+}
 
-    //         default:
-    //             LOG ( "Unknown event type (%d)", event.type );
-    //             break;
-    //     }
-    // }
+void ControllerManager::detachJoystick ( const Guid& guid )
+{
+    if ( !initialized )
+        return;
+
+    // Find and remove the controller
+    auto it = joysticks.find ( guid );
+
+    ASSERT ( it != joysticks.end() );
+
+    Controller *controller = it->second.get();
+    IDirectInputDevice8 *const device = ( IDirectInputDevice8 * ) controller->joystick.info.device;
+
+    LOG_CONTROLLER ( controller, "detached" );
+
+    if ( owner )
+        owner->detachedJoystick ( controller );
+
+    joysticksByName.erase ( controller->getName() );
+    joysticks.erase ( it );
+
+    // Release DirectInput joystick device
+    IDirectInputDevice8_Unacquire ( device );
+    IDirectInputDevice8_Release ( device );
+}
+
+static BOOL CALLBACK enumJoysticks ( const DIDEVICEINSTANCE *ddi, void *userPtr )
+{
+    unordered_map<Guid, string>& activeJoysticks = * ( unordered_map<Guid, string> * ) userPtr;
+
+    const Guid guid = ddi->guidInstance;
+
+    LOG ( "%s: guid='%s'", ddi->tszProductName, guid );
+
+    activeJoysticks[guid] = ddi->tszProductName;
+
+    return DIENUM_CONTINUE;
 }
 
 void ControllerManager::refreshJoysticks()
@@ -111,61 +407,34 @@ void ControllerManager::refreshJoysticks()
     if ( !initialized )
         return;
 
-    // al_reconfigure_joysticks();
+    unordered_map<Guid, string> activeJoysticks;
 
-    // vector<const ALLEGRO_JOYSTICK *> dead;
+    HRESULT result = IDirectInput8_EnumDevices ( dinput, DI8DEVCLASS_GAMECTRL,
+                     enumJoysticks, ( void * ) &activeJoysticks, DIEDFL_ATTACHEDONLY );
 
-    // for ( const auto& kv : joysticks )
-    // {
-    //     ALLEGRO_JOYSTICK *joystick = ( ALLEGRO_JOYSTICK * ) kv.first;
-    //     Controller *controller = kv.second.get();
+    if ( FAILED ( result ) )
+        THROW_EXCEPTION ( "IDirectInput8_EnumDevices failed: 0x%08x", ERROR_CONTROLLER_CHECK, result );
 
-    //     if ( !al_get_joystick_active ( joystick ) )
-    //     {
-    //         dead.push_back ( joystick );
-    //         joysticksByName.erase ( controller->getName() );
+    for ( const auto& kv : activeJoysticks )
+    {
+        if ( joysticks.find ( kv.first ) != joysticks.end() )
+            continue;
 
-    //         LOG_CONTROLLER ( controller, "detached" );
+        LOG ( "Attaching joystick: %s", kv.first );
+        attachJoystick ( kv.first, kv.second );
+    }
 
-    //         if ( owner )
-    //             owner->detachedJoystick ( controller );
-    //     }
-    // }
+    for ( auto it = joysticks.begin(); it != joysticks.end(); )
+    {
+        if ( activeJoysticks.find ( it->first ) != activeJoysticks.end() )
+        {
+            ++it;
+            continue;
+        }
 
-    // for ( const ALLEGRO_JOYSTICK *joystick : dead )
-    //     joysticks.erase ( ( void * ) joystick );
-
-    // for ( int i = 0; i < al_get_num_joysticks(); ++i )
-    // {
-    //     void *joystick = ( void * ) al_get_joystick ( i );
-
-    //     if ( joysticks.find ( joystick ) != joysticks.end() )
-    //         continue;
-
-    //     Controller *controller = new Controller ( joystick );
-
-    //     ASSERT ( controller != 0 );
-
-    //     joysticks[joystick].reset ( controller );
-    //     joysticksByName[controller->getName()] = controller;
-
-    //     auto it = mappings.mappings.find ( controller->getName() );
-    //     if ( it != mappings.mappings.end() && it->second->getMsgType() == MsgType::JoystickMappings )
-    //     {
-    //         controller->setMappings ( it->second->getAs<JoystickMappings>() );
-    //     }
-    //     else
-    //     {
-    //         auto it = mappings.mappings.find ( controller->getOrigName() );
-    //         if ( it != mappings.mappings.end() && it->second->getMsgType() == MsgType::JoystickMappings )
-    //             controller->setMappings ( it->second->getAs<JoystickMappings>() );
-    //     }
-
-    //     LOG_CONTROLLER ( controller, "attached" );
-
-    //     if ( owner )
-    //         owner->attachedJoystick ( controller );
-    // }
+        LOG ( "Detaching joystick: %s", it->first );
+        detachJoystick ( ( it++ )->first );
+    }
 }
 
 void ControllerManager::initialize ( Owner *owner )
@@ -176,6 +445,25 @@ void ControllerManager::initialize ( Owner *owner )
     initialized = true;
 
     this->owner = owner;
+
+    comInitRet = CoInitializeEx ( 0, COINIT_APARTMENTTHREADED );
+    if ( FAILED ( comInitRet ) )
+        comInitRet = CoInitializeEx ( 0, COINIT_MULTITHREADED );
+    if ( FAILED ( comInitRet ) )
+        THROW_EXCEPTION ( "CoInitializeEx failed: 0x%08x", ERROR_CONTROLLER_INIT, comInitRet );
+
+    HRESULT result = CoCreateInstance ( CLSID_DirectInput8, 0, CLSCTX_INPROC_SERVER,
+                                        IID_IDirectInput8, ( void ** ) &dinput );
+    if ( FAILED ( result ) )
+        THROW_EXCEPTION ( "CoCreateInstance failed: 0x%08x", ERROR_CONTROLLER_INIT, result );
+
+    result = IDirectInput8_Initialize ( dinput, GetModuleHandle ( 0 ), DIRECTINPUT_VERSION );
+    if ( FAILED ( result ) )
+        THROW_EXCEPTION ( "IDirectInput8_Initialize failed: 0x%08x", ERROR_CONTROLLER_INIT, result );
+
+    refreshJoysticks();
+
+    LOG ( "ControllerManager initialized" );
 }
 
 void ControllerManager::deinitialize()
@@ -188,6 +476,20 @@ void ControllerManager::deinitialize()
     this->owner = 0;
 
     ControllerManager::get().clear();
+
+    if ( dinput )
+    {
+        IDirectInput8_Release ( dinput );
+        dinput = 0;
+    }
+
+    if ( SUCCEEDED ( comInitRet ) )
+    {
+        CoUninitialize();
+        comInitRet = E_FAIL;
+    }
+
+    LOG ( "ControllerManager deinitialized" );
 }
 
 void ControllerManager::mappingsChanged ( Controller *controller )

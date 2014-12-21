@@ -73,7 +73,7 @@ INCLUDES += -I$(CURDIR)/3rdparty/gtest/include -I$(CURDIR)/3rdparty/minhook/incl
 CC_FLAGS = -m32 $(INCLUDES) $(DEFINES)
 
 # Linker flags
-LD_FLAGS = -m32 -static -lws2_32 -lpsapi -lwinpthread -lwinmm -lole32
+LD_FLAGS = -m32 -static -lws2_32 -lpsapi -lwinpthread -lwinmm -lole32 -ldinput
 
 # Build options
 # DEFINES += -DDISABLE_LOGGING
@@ -85,15 +85,26 @@ LD_FLAGS = -m32 -static -lws2_32 -lpsapi -lwinpthread -lwinmm -lole32
 INSTALL = 1
 
 # Build type flags
-DEBUG_FLAGS   = -ggdb3 -O0 -fno-inline -D_GLIBCXX_DEBUG
-LOGGING_FLAGS = -s -Os -O2 -DRELEASE
+DEBUG_FLAGS = -ggdb3 -O0 -fno-inline -D_GLIBCXX_DEBUG -DDEBUG
+ifeq ($(OS),Windows_NT)
+	LOGGING_FLAGS = -s -Os -O2 -DLOGGING -DRELEASE
+else
+	LOGGING_FLAGS = -s -Os -O2 -DLOGGING
+endif
 RELEASE_FLAGS = -s -Os -O2 -fno-rtti -DNDEBUG -DRELEASE -DDISABLE_LOGGING -DDISABLE_ASSERTS
 
 # Build type
 BUILD_TYPE = build_debug
 
+# Default build target
+ifeq ($(OS),Windows_NT)
+	DEFAULT_TARGET = debug
+else
+	DEFAULT_TARGET = logging
+endif
 
-all: debug
+
+all: $(DEFAULT_TARGET)
 
 # target-profile: STRIP = $(TOUCH)
 # target-profile: DEFINES += -DNDEBUG -DRELEASE -DDISABLE_LOGGING -DDISABLE_ASSERTS
@@ -121,24 +132,26 @@ $(BINARY): $(addprefix $(BUILD_TYPE)/,$(MAIN_OBJECTS))
 	$(CHMOD_X)
 	@echo
 
-$(FOLDER)/$(DLL): $(addprefix $(BUILD_TYPE)/,$(DLL_OBJECTS))
-	@mkdir -p $(FOLDER)
+$(FOLDER)/$(DLL): $(addprefix $(BUILD_TYPE)/,$(DLL_OBJECTS)) | $(FOLDER)
 	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(addprefix $(BUILD_TYPE)/,$(DLL_OBJECTS)) -shared $(LD_FLAGS) -ld3dx9
 	@echo
 	$(STRIP) $@
 	$(GRANT)
 	@echo
 
-$(FOLDER)/$(LAUNCHER): tools/Launcher.cpp
-	@mkdir -p $(FOLDER)
+$(FOLDER)/$(LAUNCHER): tools/Launcher.cpp | $(FOLDER)
 	$(CXX) -o $@ tools/Launcher.cpp -m32 -s -Os -O2 -Wall -static -mwindows
 	@echo
 	$(PREFIX)strip $@
 	$(CHMOD_X)
 	@echo
 
-$(FOLDER)/states.bin: tools/$(GENERATOR)
+$(FOLDER)/states.bin: tools/$(GENERATOR) | $(FOLDER)
 	tools/$(GENERATOR) $(FOLDER)/states.bin
+
+$(FOLDER):
+	mkdir -p $@
+
 
 # TODO enable this icon when rollback is ready
 # res/icon.res: res/icon.rc res/icon.ico
@@ -203,10 +216,9 @@ clean-proto:
 	rm -f $(AUTOGEN_HEADERS)
 
 clean-common: clean-proto
-	rm -f .depend .include
-	rm -f *.res *.exe *.dll *.zip $(FOLDER)/*.exe $(FOLDER)/*.dll
+	rm -f .depend .include $(filter-out $(wildcard $(FOLDER)/*.log),$(wildcard $(FOLDER)/*))
 
-clean: clean-common
+clean-debug: clean-common
 	rm -rf build_debug
 
 clean-logging: clean-common
@@ -215,8 +227,10 @@ clean-logging: clean-common
 clean-release: clean-common
 	rm -rf build_release
 
-clean-all: clean clean-logging clean-release
-	rm -rf $(FOLDER)
+clean: clean-common
+	rm -rf build_$(DEFAULT_TARGET)
+
+clean-all: clean-debug clean-logging clean-release
 
 
 check:
@@ -241,7 +255,7 @@ format:
     --keep-one-line-blocks      	\
     --align-pointer=name        	\
     --align-reference=type      	\
-$(filter-out CharacterSelect.cpp lib/KeyboardMappings.h AsmHacks.h,$(NON_GEN_SRCS) $(NON_GEN_HEADERS))
+$(filter-out CharacterSelect.cpp lib/KeyboardVKeyNames.h AsmHacks.h,$(NON_GEN_SRCS) $(NON_GEN_HEADERS))
 
 count:
 	@wc -l $(NON_GEN_SRCS) $(NON_GEN_HEADERS) | sort -nr | head -n 10 && echo '    ...'
@@ -306,8 +320,13 @@ ifneq (,$(findstring profile,$(MAKECMDGOALS)))
 main-build: pre-build
 	@$(MAKE) --no-print-directory target-profile BUILD_TYPE=build_debug STRIP=touch
 else
+ifeq ($(DEFAULT_TARGET),logging)
+main-build: pre-build
+	@$(MAKE) --no-print-directory target-logging BUILD_TYPE=build_logging
+else
 main-build: pre-build
 	@$(MAKE) --no-print-directory target-debug BUILD_TYPE=build_debug STRIP=touch
+endif
 endif
 endif
 endif

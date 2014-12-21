@@ -13,6 +13,8 @@ case VK_PRIOR:          return "Page Up";
 case VK_NEXT:           return "Page Down";
 case VK_NUMLOCK:        return "Num Lock";
 case VK_RETURN:         return "Enter";
+case VK_SPACE:          return "Space";
+case VK_BACK:           return "Backspace";
 case VK_DIVIDE:         return "NumPad /";
 case VK_MULTIPLY:       return "NumPad *";
 case VK_SUBTRACT:       return "NumPad -";

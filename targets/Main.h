@@ -4,8 +4,6 @@
 #include "ProcessManager.h"
 #include "SocketManager.h"
 #include "Socket.h"
-#include "ControllerManager.h"
-#include "Controller.h"
 #include "TimerManager.h"
 #include "Timer.h"
 #include "KeyboardManager.h"
@@ -25,8 +23,6 @@
 struct Main
         : public ProcessManager::Owner
         , public Socket::Owner
-        , public ControllerManager::Owner
-        , public Controller::Owner
         , public Timer::Owner
 {
     OptionsMessage options;
