@@ -34,7 +34,7 @@ v2.1:
 - In-game button config with player selection:
   Show or hide overlay with F4 on the keyboard or start button on any controller with start mapped.
   When the overlay is up, move controllers left or right to switch players.
-- Change delay during netplay by pressing Ctrl+Number on the keyboard.
+- Change delay during netplay by pressing Ctrl + Number on the keyboard.
 - Improved spectating:
   Spectating always starts from the beginning of the most recent game.
   New spectators will be redirected to spectate from existing spectators.

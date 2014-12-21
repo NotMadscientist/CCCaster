@@ -120,7 +120,7 @@ generator: tools/$(GENERATOR)
 $(ARCHIVE): $(BINARY) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER)
 	@echo
 	rm -f $(filter-out %.log,$(filter-out $(ARCHIVE),$(wildcard $(NAME)*.zip)))
-	$(ZIP) $(ARCHIVE) ChangeLog.txt $^
+	$(ZIP) $(ARCHIVE) ReadMe.txt ChangeLog.txt $^
 	$(GRANT)
 
 $(BINARY): $(addprefix $(BUILD_TYPE)/,$(MAIN_OBJECTS))

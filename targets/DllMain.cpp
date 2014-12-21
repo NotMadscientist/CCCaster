@@ -185,16 +185,13 @@ struct DllMain
 
                     if ( GetKeyState ( VK_CONTROL ) & 0x80 )
                     {
-                        for ( uint8_t i = 0; i < 10; ++i )
+                        for ( uint8_t delay = 0; delay < 10; ++delay )
                         {
-                            // Offset by -1, so Ctrl+0 sets delay 10
-                            const uint8_t delay = 1 + ( i + 9 ) % 10;
-
                             if ( delay == netMan.getDelay() )
                                 continue;
 
-                            // Ctrl+Number or Ctrl+Numpad#
-                            if ( ( GetKeyState ( '0' + i ) & 0x80 ) || ( GetKeyState ( VK_NUMPAD0 + i ) & 0x80 ) )
+                            if ( ( GetKeyState ( '0' + delay ) & 0x80 )                 // Ctrl + Number
+                                    || ( GetKeyState ( VK_NUMPAD0 + delay ) & 0x80 ) )  // Ctrl + Numpad Number
                             {
                                 shouldChangeDelayRollback = true;
                                 changeConfig.indexedFrame = netMan.getIndexedFrame();
