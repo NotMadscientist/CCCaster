@@ -1,6 +1,7 @@
 #include "Main.h"
 #include "Thread.h"
 #include "DllHacks.h"
+#include "DllOverlayUi.h"
 #include "NetplayManager.h"
 #include "ChangeMonitor.h"
 #include "SmartSocket.h"
@@ -174,7 +175,7 @@ struct DllMain
                 KeyboardState::update();
                 ControllerManager::get().check();
 
-                if ( DllHacks::isOverlayEnabled() )             // Overlay UI input
+                if ( DllOverlayUi::isEnabled() )                // Overlay UI input
                 {
                     localInputs[0] = localInputs[1] = 0;
                 }
@@ -305,7 +306,7 @@ struct DllMain
                 }
                 else if ( clientMode.isLocal() )
                 {
-                    if ( playerControllers[1] && !DllHacks::isOverlayEnabled() )
+                    if ( playerControllers[1] && !DllOverlayUi::isEnabled() )
                         localInputs[1] = getInput ( playerControllers[1] );
 
                     netMan.setInput ( remotePlayer, localInputs[1] );
@@ -507,7 +508,7 @@ struct DllMain
     {
         ASSERT ( netMan.getState() != state );
 
-        DllHacks::disableOverlay();
+        DllOverlayUi::disable();
 
         // Entering InGame
         if ( state == NetplayState::InGame )

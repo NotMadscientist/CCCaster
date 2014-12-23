@@ -1,5 +1,7 @@
 #include "DllControllerManager.h"
+#include "DllOverlayUi.h"
 #include "DllHacks.h"
+#include "AsmHacks.h"
 #include "KeyboardState.h"
 
 #include <windows.h>
@@ -24,7 +26,7 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
             toggleOverlay = true;
         }
 
-        if ( DllHacks::isOverlayEnabled() )
+        if ( DllOverlayUi::isEnabled() )
             continue;
 
         uint16_t input = getInput ( controller );
@@ -55,7 +57,7 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
             && ( !playerControllers[0] || overlayPositions[0] == 0 )
             && ( !playerControllers[1] || overlayPositions[1] == 0 ) )
     {
-        if ( DllHacks::isOverlayEnabled() )
+        if ( DllOverlayUi::isEnabled() )
         {
             // Cancel all mapping if we're disabling the overlay
             if ( playerControllers[0] )
@@ -84,11 +86,11 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
             AsmHacks::enableEscapeToExit = false;
         }
 
-        DllHacks::toggleOverlay();
+        DllOverlayUi::toggle();
         toggleOverlay = false;
     }
 
-    if ( !DllHacks::isOverlayEnabled() )
+    if ( !DllOverlayUi::isEnabled() )
         return;
 
     // Check all controllers
@@ -154,7 +156,7 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
         if ( isSinglePlayer && localPlayer != i + 1 )
         {
             text[i].clear();
-            DllHacks::updateSelector ( i );
+            DllOverlayUi::updateSelector ( i );
             continue;
         }
 
@@ -162,7 +164,7 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
         if ( !playerControllers[i] )
         {
             text[i] = ( i == 0 ? "Press Left on P1 controller" : "Press Right on P2 controller" );
-            DllHacks::updateSelector ( i );
+            DllOverlayUi::updateSelector ( i );
             continue;
         }
 
@@ -217,8 +219,8 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
                     && ( !playerControllers[1] || !overlayPositions[1] ) )
             {
                 text[0] = text[1] = text[2] = "";
-                DllHacks::updateOverlay ( text );
-                DllHacks::toggleOverlay();
+                DllOverlayUi::updateText ( text );
+                DllOverlayUi::toggle();
                 KeyboardManager::get().unhook();
                 AsmHacks::enableEscapeToExit = true;
                 return;
@@ -233,7 +235,7 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
         if ( playerControllers[i]->isKeyboard() && playerControllers[i]->isMapping()
                 && overlayPositions[i] >= 1 && overlayPositions[i] <= 4 )
         {
-            DllHacks::updateSelector ( i, headerHeight + overlayPositions[i], options[overlayPositions[i]] );
+            DllOverlayUi::updateSelector ( i, headerHeight + overlayPositions[i], options[overlayPositions[i]] );
             continue;
         }
 
@@ -321,15 +323,15 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
             text[i] = string ( "Press Up or Down to set keys" )
                       + string ( controllersHeight, '\n' )
                       + playerControllers[i]->getName();
-            DllHacks::updateSelector ( i, controllersHeight, playerControllers[i]->getName() );
+            DllOverlayUi::updateSelector ( i, controllersHeight, playerControllers[i]->getName() );
         }
         else
         {
-            DllHacks::updateSelector ( i, headerHeight + overlayPositions[i], options[overlayPositions[i]] );
+            DllOverlayUi::updateSelector ( i, headerHeight + overlayPositions[i], options[overlayPositions[i]] );
         }
     }
 
-    DllHacks::updateOverlay ( text );
+    DllOverlayUi::updateText ( text );
 }
 
 void DllControllerManager::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown )

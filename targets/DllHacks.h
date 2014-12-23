@@ -2,9 +2,6 @@
 
 #include "AsmHacks.h"
 
-#include <string>
-#include <array>
-
 
 #define WRITE_ASM_HACK(ASM_HACK)                                                                                    \
     do {                                                                                                            \
@@ -21,24 +18,10 @@ namespace DllHacks
 
 extern void *windowHandle;
 
-
-void enableOverlay();
-
-void disableOverlay();
-
-void toggleOverlay();
-
-void updateOverlay ( const std::array<std::string, 3>& newText );
-
-void updateSelector ( uint8_t index, int position = 0, const std::string& line = "" );
-
-bool isOverlayEnabled();
-
-
 void initializePreLoad();
 
 void initializePostLoad();
 
 void deinitialize();
 
-} // namespace DllHacks
+}
