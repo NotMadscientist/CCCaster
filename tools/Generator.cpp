@@ -7,6 +7,9 @@
 using namespace std;
 
 
+#define LOG_FILE "generator.log"
+
+
 #define CC_UNKNOWN_TIMER_ADDR       ((char *)0x55D1CC) // 4 bytes
 #define CC_DEATHTIMER_ADDR          ((char *)0x55D208) // 4 bytes, lo 2 bytes is death timer, hi 1 byte is intro state
 #define CC_INTROSTATE_ADDR          ((char *)0x55D20B) // 1 bytes, intro state, 2 (intro), 1 (pre-game), 0 (in-game)
@@ -111,9 +114,23 @@ static const vector<MemDump> playerAddrs =
     CC_P1_GUARD_QUALITY_ADDR,
     CC_P1_METER_ADDR,
     CC_P1_HEAT_ADDR,
+    CC_P1_SPRITE_ANGLE_ADDR,
 
-    CC_P1_CATCH_STATE1_ADDR,
-    CC_P1_CATCH_STATE2_ADDR,
+    // CC_P1_CATCH_STATE1_ADDR,
+    // CC_P1_CATCH_STATE2_ADDR,
+    // CC_P1_CATCH_STATE3_ADDR,
+    // CC_P1_CATCH_STATE4_ADDR,
+    // CC_P1_CATCH_STATE5_ADDR,
+    // CC_P1_CATCH_STATE6_ADDR,
+    // CC_P1_CATCH_STATE7_ADDR,
+    // CC_P1_CATCH_STATE8_ADDR,
+
+    // { ( void * ) 0x555450, 4, {         // mov eax,[edi+0000031C]
+    //     MemDumpPtr ( 0, 0x38, 4, {      // mov ecx,[eax+38]
+    //         MemDumpPtr ( 0, 0, 4 ),     // mov esi,[ecx]
+    //         MemDumpPtr ( 0, 8, 4 )      // mov ebp,[ecx+08]
+    //     } )
+    // } },
 };
 
 static const vector<MemDump> miscAddrs =
@@ -146,8 +163,13 @@ static const vector<MemDump> miscAddrs =
     // { CC_P2_SUPER_TIMER5_ADDR, 4 },
 };
 
-static const MemDump effectAddrs ( CC_EFFECTS_ARRAY_ADDR, CC_EFFECT_ELEMENT_SIZE,
-{ MemDumpPtr ( 0x320, 0x38, 4, { MemDumpPtr ( 0, 0, 4, { MemDumpPtr ( 0, 0, 4 ) } ) } ) } );
+static const MemDump effectAddrs ( CC_EFFECTS_ARRAY_ADDR, CC_EFFECT_ELEMENT_SIZE, {
+    MemDumpPtr ( 0x320, 0x38, 4, {
+        MemDumpPtr ( 0, 0, 4, {
+            MemDumpPtr ( 0, 0, 4 )
+        } )
+    } )
+} );
 
 
 int main ( int argc, char *argv[] )
@@ -157,6 +179,8 @@ int main ( int argc, char *argv[] )
         PRINT ( "No output file specified!" );
         return -1;
     }
+
+    Logger::get().initialize ( LOG_FILE, LOG_LOCAL_TIME );
 
     MemDumpList allAddrs;
 
@@ -170,36 +194,37 @@ int main ( int argc, char *argv[] )
 
     allAddrs.update();
 
-    // PRINT ( "allAddrs.totalSize=%u", allAddrs.totalSize );
+    LOG ( "allAddrs.totalSize=%u", allAddrs.totalSize );
 
-    // PRINT ( "allAddrs:" );
-    // for ( const MemDump& mem : allAddrs.addrs )
-    // {
-    //     PRINT ( "{ %08x, %08x }", mem.getAddr(), mem.getAddr() + mem.size );
+    LOG ( "allAddrs:" );
+    for ( const MemDump& mem : allAddrs.addrs )
+    {
+        LOG ( "{ %08x, %08x }", mem.getAddr(), mem.getAddr() + mem.size );
 
-    //     for ( const MemDumpPtr& ptr0 : mem.ptrs )
-    //     {
-    //         ASSERT ( ptr0.parent == &mem );
+        for ( const MemDumpPtr& ptr0 : mem.ptrs )
+        {
+            ASSERT ( ptr0.parent == &mem );
 
-    //         PRINT ( "  [0x%x]+0x%x -> { %u bytes }", ptr0.srcOffset, ptr0.dstOffset, ptr0.size );
+            LOG ( "  [0x%x]+0x%x -> { %u bytes }", ptr0.srcOffset, ptr0.dstOffset, ptr0.size );
 
-    //         for ( const MemDumpPtr& ptr1 : ptr0.ptrs )
-    //         {
-    //             ASSERT ( ptr1.parent == &ptr0 );
+            for ( const MemDumpPtr& ptr1 : ptr0.ptrs )
+            {
+                ASSERT ( ptr1.parent == &ptr0 );
 
-    //             PRINT ( "    [0x%x]+0x%x -> { %u bytes }", ptr1.srcOffset, ptr1.dstOffset, ptr1.size );
+                LOG ( "    [0x%x]+0x%x -> { %u bytes }", ptr1.srcOffset, ptr1.dstOffset, ptr1.size );
 
-    //             for ( const MemDumpPtr& ptr2 : ptr1.ptrs )
-    //             {
-    //                 ASSERT ( ptr2.parent == &ptr1 );
+                for ( const MemDumpPtr& ptr2 : ptr1.ptrs )
+                {
+                    ASSERT ( ptr2.parent == &ptr1 );
 
-    //                 PRINT ( "      [0x%x]+0x%x -> { %u bytes }", ptr2.srcOffset, ptr2.dstOffset, ptr2.size );
-    //             }
-    //         }
-    //     }
-    // }
+                    LOG ( "      [0x%x]+0x%x -> { %u bytes }", ptr2.srcOffset, ptr2.dstOffset, ptr2.size );
+                }
+            }
+        }
+    }
 
     allAddrs.save ( argv[1] );
 
+    Logger::get().deinitialize();
     return 0;
 }

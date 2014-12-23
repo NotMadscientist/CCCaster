@@ -277,10 +277,10 @@ struct DllMain
                 {
                     IndexedFrame target = netMan.getIndexedFrame();
 
-                    if ( target.parts.frame <= 60 )
+                    if ( target.parts.frame <= 30 )
                         target.parts.frame = 0;
                     else
-                        target.parts.frame -= 60;
+                        target.parts.frame -= 30;
 
                     procMan.loadState ( target, netMan );
                 }

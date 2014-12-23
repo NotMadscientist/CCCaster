@@ -224,6 +224,13 @@
       <Address>00555256</Address>
     </CheatEntry>
     <CheatEntry>
+      <ID>287</ID>
+      <Description>"P1 sprite rotation angle"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0x555430</Address>
+    </CheatEntry>
+    <CheatEntry>
       <ID>222</ID>
       <Description>"P2 seq (see framedisplay)"</Description>
       <Color>80000008</Color>
@@ -289,6 +296,13 @@
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
       <Address>0556830</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>288</ID>
+      <Description>"P2 sprite rotation angle"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0x555F2C</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>158</ID>
@@ -786,7 +800,7 @@
     </CheatEntry>
     <CheatEntry>
       <ID>242</ID>
-      <Description>"No description"</Description>
+      <Description>""</Description>
       <ShowAsHex>1</ShowAsHex>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
@@ -794,7 +808,7 @@
     </CheatEntry>
     <CheatEntry>
       <ID>243</ID>
-      <Description>"No description"</Description>
+      <Description>""</Description>
       <ShowAsHex>1</ShowAsHex>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
@@ -805,7 +819,7 @@
     </CheatEntry>
     <CheatEntry>
       <ID>246</ID>
-      <Description>"No description"</Description>
+      <Description>""</Description>
       <ShowAsHex>1</ShowAsHex>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
@@ -817,7 +831,7 @@
     </CheatEntry>
     <CheatEntry>
       <ID>245</ID>
-      <Description>"No description"</Description>
+      <Description>""</Description>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
       <Address>0067C108</Address>
@@ -868,6 +882,48 @@
       <Color>80000008</Color>
       <VariableType>Byte</VariableType>
       <Address>005544F1</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>263</ID>
+      <Description>""</Description>
+      <ShowAsHex>1</ShowAsHex>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0x555F4C</Address>
+      <Offsets>
+        <Offset>38</Offset>
+      </Offsets>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>265</ID>
+      <Description>""</Description>
+      <ShowAsHex>1</ShowAsHex>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0x555F4C</Address>
+      <Offsets>
+        <Offset>0</Offset>
+        <Offset>38</Offset>
+      </Offsets>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>264</ID>
+      <Description>""</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0x555F4C</Address>
+      <Offsets>
+        <Offset>0</Offset>
+        <Offset>0</Offset>
+        <Offset>38</Offset>
+      </Offsets>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>289</ID>
+      <Description>"current Player 1 struct progress"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0x5552DC</Address>
     </CheatEntry>
   </CheatEntries>
   <CheatCodes>
@@ -3020,6 +3076,31 @@
         <Byte>33</Byte>
         <Byte>C9</Byte>
         <Byte>3C</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Function that processes some of each player's state</Description>
+      <Address>00461CF0</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>61CF0</ModuleNameOffset>
+      <Before>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+      </Before>
+      <Actual>
+        <Byte>83</Byte>
+        <Byte>EC</Byte>
+        <Byte>08</Byte>
+      </Actual>
+      <After>
+        <Byte>53</Byte>
+        <Byte>55</Byte>
+        <Byte>56</Byte>
+        <Byte>57</Byte>
+        <Byte>8B</Byte>
       </After>
     </CodeEntry>
   </CheatCodes>

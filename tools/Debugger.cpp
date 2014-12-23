@@ -10,7 +10,7 @@
 using namespace std;
 
 
-#define LOG_FILE "dump.log"
+#define LOG_FILE "debugger.log"
 
 const uint8_t breakpointConstant = 0xCC;
 

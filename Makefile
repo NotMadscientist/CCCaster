@@ -169,10 +169,10 @@ tools/$(DEBUGGER): tools/Debugger.cpp $(DEBUGGER_LIB_OBJECTS)
 	@echo
 
 
-GENERATOR_LIB_OBJECTS = $(addprefix build_release/,$(filter-out lib/Version.o lib/LoggerVersion.o,$(LIB_OBJECTS)))
+GENERATOR_LIB_OBJECTS = $(addprefix build_logging/,$(filter-out lib/Version.o lib/LoggerVersion.o,$(LIB_OBJECTS)))
 
 tools/$(GENERATOR): tools/Generator.cpp $(GENERATOR_LIB_OBJECTS)
-	$(CXX) -o $@ $(CC_FLAGS) $(RELEASE_FLAGS) -Wall -std=c++11 $^ $(LD_FLAGS)
+	$(CXX) -o $@ $(CC_FLAGS) $(LOGGING_FLAGS) -Wall -std=c++11 $^ $(LD_FLAGS)
 	@echo
 	$(PREFIX)strip $@
 	$(CHMOD_X)
@@ -255,7 +255,8 @@ format:
     --keep-one-line-blocks      	\
     --align-pointer=name        	\
     --align-reference=type      	\
-$(filter-out CharacterSelect.cpp lib/KeyboardVKeyNames.h AsmHacks.h,$(NON_GEN_SRCS) $(NON_GEN_HEADERS))
+$(filter-out tools/Generator.cpp CharacterSelect.cpp lib/KeyboardVKeyNames.h AsmHacks.h,\
+	$(NON_GEN_SRCS) $(NON_GEN_HEADERS))
 
 count:
 	@wc -l $(NON_GEN_SRCS) $(NON_GEN_HEADERS) | sort -nr | head -n 10 && echo '    ...'

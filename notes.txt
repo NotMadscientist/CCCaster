@@ -1,0 +1,12 @@
+0x555134 Player 1 struct start
+0x555140 start of relevant stuff
+0x555160 to 0x555180 ???
+0x555188 to 0x555190 ???
+0x555240 ???
+0x555284 ???
+
+... WIP ...
+
+0x555C30 struct end
+
+Any untagged DWORD address ranges just contain POD without pointers.
