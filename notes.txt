@@ -6,9 +6,9 @@
 0x555284 ???
 0x5552EC ???
 0x5552F4 to 0x555310 ???
-0x55532C is a pointer
+0x55532C 4 byte pointer
     [0x24] 1 byte
-    [0x30] 2 bytes
+    [0x30] 2 byte
 0x555330 to 0x55534C ???
 0x55535C to 0x5553CC ???
 0x5553CC is a pointer but it seems to just point to player struct stuff?
@@ -21,9 +21,19 @@
 0x55542C ???
 0x55544C ??? pointer?
 0x555450 aaaaaaa huge pointer
+0x555454 another pointer
+0x555458 another pointer
+0x555460 4 byte pointer
+    [0x0] 4 byte pointer
+        [0x4] 4 byte pointer
+            [0xC] 4 byte
+0x55546C pointer to data that doesn't change?
+0x55550C ???
 
 ... WIP ...
 
 0x555C30 struct end
 
 Any untagged DWORD address ranges just contain POD without pointers.
+
+Need to identify which heap address ranges contain static data.
