@@ -211,11 +211,11 @@ struct DllMain
                     if ( KeyboardState::isPressed ( VK_F11 ) )
                         randomize = !randomize;
 
-                    if ( randomize && rand() % 5 == 0 )
+                    if ( randomize && ( rand() % 30 ) == ( clientMode.isHost() ? 0 : 15 ) )
                     {
                         shouldChangeDelayRollback = true;
                         changeConfig.indexedFrame = netMan.getIndexedFrame();
-                        changeConfig.delay = 1 + rand() % 9;
+                        changeConfig.delay = rand() % 10;
                         dataSocket->send ( changeConfig );
                     }
 #endif
