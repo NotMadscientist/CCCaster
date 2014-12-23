@@ -26,6 +26,7 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
             toggleOverlay = true;
         }
 
+        // Don't sticky controllers if the overlay is enabled
         if ( DllOverlayUi::isEnabled() )
             continue;
 
@@ -44,10 +45,15 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
             }
             else
             {
+                // Sticky player 1 then player 2 optimistically
                 if ( !playerControllers[0] && controller != playerControllers[1] )
+                {
                     playerControllers[0] = controller;
+                }
                 else if ( !playerControllers[1] && controller != playerControllers[0] )
+                {
                     playerControllers[1] = controller;
+                }
             }
         }
     }
@@ -344,6 +350,7 @@ void DllControllerManager::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, b
             // Convert selector position to game input bit position
             const size_t pos = overlayPositions[i] - 1;
 
+            // Ignore specific control keys when mapping keyboard buttons
             if ( pos >= 4 && pos < gameInputBits.size()
                     && ( vkCode == VK_TOGGLE_OVERLAY
                          || vkCode == VK_ESCAPE
