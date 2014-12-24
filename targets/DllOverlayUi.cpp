@@ -338,11 +338,26 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
     if ( viewport.Width != * CC_SCREEN_WIDTH_ADDR )
         return;
 
+    // Calculate message width if showing one
+    float messageWidth = 0.0f;
+    if ( isShowingMessage() )
+    {
+        RECT rect;
+        rect.top = rect.left = 0;
+        rect.right = 1;
+        rect.bottom = OVERLAY_FONT_HEIGHT;
+
+        DrawText ( overlayText[2], rect, DT_CALCRECT, D3DCOLOR_XRGB ( 0, 0, 0 ) );
+
+        messageWidth = rect.right + 2 * OVERLAY_TEXT_BORDER;
+    }
+
     // Scaling factor for the overlay background
+    const float scaleX = ( isShowingMessage() ? messageWidth / viewport.Width : 1.0f );
     const float scaleY = float ( overlayHeight + 2 * OVERLAY_TEXT_BORDER ) / viewport.Height;
 
     D3DXMATRIX translate, scale;
-    D3DXMatrixScaling ( &scale, 1.0f, scaleY, 1.0f );
+    D3DXMatrixScaling ( &scale, scaleX, scaleY, 1.0f );
     D3DXMatrixTranslation ( &translate, 0.0f, 1.0f - scaleY, 0.0f );
     device->SetTransform ( D3DTS_VIEW, & ( scale = scale * translate ) );
 
