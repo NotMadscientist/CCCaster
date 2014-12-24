@@ -58,6 +58,13 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
         }
     }
 
+    // Show message takes priority
+    if ( DllOverlayUi::isShowingMessage() )
+    {
+        DllOverlayUi::updateMessage();
+        return;
+    }
+
     // Only toggle overlay if both players are "done"; ie at the first option; or have no controller
     if ( toggleOverlay
             && ( !playerControllers[0] || overlayPositions[0] == 0 )

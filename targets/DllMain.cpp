@@ -197,6 +197,7 @@ struct DllMain
                                 shouldChangeDelayRollback = true;
                                 changeConfig.indexedFrame = netMan.getIndexedFrame();
                                 changeConfig.delay = delay;
+                                changeConfig.invalidate();
                                 dataSocket->send ( changeConfig );
                                 break;
                             }
@@ -210,13 +211,17 @@ struct DllMain
                     static bool randomize = false;
 
                     if ( KeyboardState::isPressed ( VK_F11 ) )
+                    {
                         randomize = !randomize;
+                        DllOverlayUi::showMessage ( randomize ? "Enabled random delay" : "Disabled random delay" );
+                    }
 
-                    if ( randomize && ( rand() % 30 ) == ( clientMode.isHost() ? 0 : 15 ) )
+                    if ( randomize && rand() % 30 == 0 )
                     {
                         shouldChangeDelayRollback = true;
                         changeConfig.indexedFrame = netMan.getIndexedFrame();
                         changeConfig.delay = rand() % 10;
+                        changeConfig.invalidate();
                         dataSocket->send ( changeConfig );
                     }
 #endif
@@ -242,7 +247,11 @@ struct DllMain
                 static bool randomize = false;
 
                 if ( KeyboardState::isPressed ( VK_F12 ) )
+                {
                     randomize = !randomize;
+                    localInputs [ clientMode.isLocal() ? 1 : 0 ] = 0;
+                    DllOverlayUi::showMessage ( randomize ? "Enabled random inputs" : "Disabled random inputs" );
+                }
 
                 if ( randomize )
                 {
@@ -263,10 +272,7 @@ struct DllMain
                         if ( netMan.getState().value == NetplayState::CharaSelect )
                             buttons &= ~ ( CC_BUTTON_B | CC_BUTTON_CANCEL );
 
-                        if ( clientMode.isLocal() )
-                            localInputs[1] = COMBINE_INPUT ( direction, buttons );
-                        else
-                            localInputs[0] = COMBINE_INPUT ( direction, buttons );
+                        localInputs [ clientMode.isLocal() ? 1 : 0 ] = COMBINE_INPUT ( direction, buttons );
                     }
                 }
 #endif
@@ -420,11 +426,15 @@ struct DllMain
         {
             shouldChangeDelayRollback = false;
 
-            if ( changeConfig.delay != 0xFF )
+            if ( changeConfig.delay != 0xFF && changeConfig.delay != netMan.getDelay() )
             {
+                LOG ( "Delayed was changed %u -> %u", netMan.getDelay(), changeConfig.delay );
+                DllOverlayUi::showMessage ( format ( "Delay was changed to %u", changeConfig.delay ) );
                 netMan.setDelay ( changeConfig.delay );
-                // netMan.setRollback ( changeConfig.rollback );
+                procMan.ipcSend ( changeConfig );
             }
+
+            // TODO set rollback
         }
 
 #ifndef RELEASE
@@ -508,7 +518,8 @@ struct DllMain
     {
         ASSERT ( netMan.getState() != state );
 
-        DllOverlayUi::disable();
+        if ( !DllOverlayUi::isShowingMessage() )
+            DllOverlayUi::disable();
 
         // Entering InGame
         if ( state == NetplayState::InGame )
@@ -849,6 +860,8 @@ struct DllMain
                         return;
 
                     case MsgType::ChangeConfig:
+                        // Only use the ChangeConfig if it is for a later frame than the current ChangeConfig.
+                        // If for the same frame, then the host's ChangeConfig always takes priority.
                         if ( ( msg->getAs<ChangeConfig>().indexedFrame.value > changeConfig.indexedFrame.value )
                                 || ( msg->getAs<ChangeConfig>().indexedFrame.value == changeConfig.indexedFrame.value
                                      && clientMode.isClient() ) )

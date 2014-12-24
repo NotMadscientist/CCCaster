@@ -44,7 +44,7 @@ ENUM ( Overlay, Disabled, Disabling, Enabled, Enabling );
 
 static Overlay overlayState = Overlay::Disabled;
 
-static int overlayHeight = 0, oldHeight = 0, newHeight = 0;
+static int overlayHeight = 0, oldHeight = 0, newHeight = 0, messageTimeout = 0;
 
 static array<string, 3> overlayText;
 
@@ -93,7 +93,7 @@ void toggle()
         enable();
 }
 
-void updateText ( const array<string, 3>& newText )
+void updateText ( const array<string, 3>& text )
 {
     if ( ProcessManager::isWine() )
         return;
@@ -116,7 +116,7 @@ void updateText ( const array<string, 3>& newText )
             break;
 
         case Overlay::Enabled:
-            newHeight = getTextHeight ( newText );
+            newHeight = getTextHeight ( text );
 
             if ( newHeight > overlayHeight )
                 break;
@@ -124,11 +124,11 @@ void updateText ( const array<string, 3>& newText )
             if ( newHeight == overlayHeight )
                 oldHeight = overlayHeight;
 
-            overlayText = newText;
+            overlayText = text;
             break;
 
         case Overlay::Enabling:
-            newHeight = getTextHeight ( newText );
+            newHeight = getTextHeight ( text );
 
             if ( overlayHeight != newHeight )
                 break;
@@ -152,7 +152,56 @@ bool isEnabled()
     if ( ProcessManager::isWine() )
         return false;
 
-    return ( overlayState != Overlay::Disabled );
+    return ( overlayState != Overlay::Disabled ) && ( messageTimeout <= 0 );
+}
+
+
+void showMessage ( const string& text, int timeout )
+{
+    if ( ProcessManager::isWine() )
+        return;
+
+    messageTimeout = ( timeout / 17 );
+    overlayText = { "", "", text };
+    drawSelector = { false, false };
+
+    enable();
+
+    LOG ( "messageTimeout=%d; text='%s'", messageTimeout, overlayText[2] );
+}
+
+void updateMessage()
+{
+    if ( ProcessManager::isWine() )
+        return;
+
+    LOG ( "messageTimeout=%d; text='%s'", messageTimeout, overlayText[2] );
+
+    updateText ( overlayText );
+
+    if ( messageTimeout == 1 )
+    {
+        if ( overlayState == Overlay::Disabled )
+            messageTimeout = 0;
+        return;
+    }
+
+    if ( messageTimeout <= 2 )
+    {
+        disable();
+        messageTimeout = 1;
+        return;
+    }
+
+    --messageTimeout;
+}
+
+bool isShowingMessage()
+{
+    if ( ProcessManager::isWine() )
+        return false;
+
+    return ( messageTimeout > 0 );
 }
 
 
@@ -301,7 +350,7 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
     device->SetFVF ( Vertex::format );
     device->DrawPrimitive ( D3DPT_TRIANGLESTRIP, 0, 2 );
 
-    // Only draw text if fully enabled
+    // Only draw text if fully enabled or showing a message
     if ( overlayState != Overlay::Enabled )
         return;
 
