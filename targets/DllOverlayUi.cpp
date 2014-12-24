@@ -168,16 +168,12 @@ void showMessage ( const string& text, int timeout )
     drawSelector = { false, false };
 
     enable();
-
-    LOG ( "messageTimeout=%d; text='%s'", messageTimeout, overlayText[2] );
 }
 
 void updateMessage()
 {
     if ( ProcessManager::isWine() )
         return;
-
-    LOG ( "messageTimeout=%d; text='%s'", messageTimeout, overlayText[2] );
 
     updateText ( overlayText );
 
