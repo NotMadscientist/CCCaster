@@ -103,6 +103,7 @@ void updateText ( const array<string, 3>& text )
         default:
         case Overlay::Disabled:
             overlayHeight = oldHeight = newHeight = 0;
+            overlayText = { "", "", "" };
             return;
 
         case Overlay::Disabling:
@@ -113,6 +114,7 @@ void updateText ( const array<string, 3>& text )
 
             overlayState = Overlay::Disabled;
             oldHeight = 0;
+            overlayText = { "", "", "" };
             break;
 
         case Overlay::Enabled:

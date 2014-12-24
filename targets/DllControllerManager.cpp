@@ -231,8 +231,6 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
             if ( ( !playerControllers[0] || !overlayPositions[0] )
                     && ( !playerControllers[1] || !overlayPositions[1] ) )
             {
-                text[0] = text[1] = text[2] = "";
-                DllOverlayUi::updateText ( text );
                 DllOverlayUi::toggle();
                 KeyboardManager::get().unhook();
                 AsmHacks::enableEscapeToExit = true;
