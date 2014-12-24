@@ -1228,10 +1228,10 @@ struct DllMain
 
 #ifndef RELEASE
         ChangeMonitor::get().addRef ( this, Variable ( Variable::MenuConfirmState ), AsmHacks::menuConfirmState );
-        // ChangeMonitor::get().addRef ( this, Variable ( Variable::GameStateCounter ), *CC_GAME_STATE_COUNTER_ADDR );
         ChangeMonitor::get().addRef ( this, Variable ( Variable::CurrentMenuIndex ), AsmHacks::currentMenuIndex );
-        ChangeMonitor::get().addPtrToRef ( this, Variable ( Variable::AutoReplaySave ),
-                                           const_cast<const uint32_t *&> ( AsmHacks::autoReplaySaveStatePtr ), 0u );
+        // ChangeMonitor::get().addRef ( this, Variable ( Variable::GameStateCounter ), *CC_GAME_STATE_COUNTER_ADDR );
+        // ChangeMonitor::get().addPtrToRef ( this, Variable ( Variable::AutoReplaySave ),
+        //                                    const_cast<const uint32_t *&> ( AsmHacks::autoReplaySaveStatePtr ), 0u );
 #endif
     }
 
