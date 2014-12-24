@@ -211,7 +211,7 @@ clean-proto:
 	rm -f $(AUTOGEN_HEADERS)
 
 clean-common: clean-proto
-	rm -f .depend .include $(filter-out $(wildcard $(FOLDER)/*.log),$(wildcard $(FOLDER)/*))
+	rm -f .depend .include $(filter-out $(wildcard $(FOLDER)/*.log),$(wildcard $(FOLDER)/*)) *.zip
 
 clean-debug: clean-common
 	rm -rf build_debug
