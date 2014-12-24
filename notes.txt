@@ -1,25 +1,34 @@
 0x555134 Player 1 struct start
 0x555140 start of relevant stuff
+
 0x555160 to 0x555180 ???
 0x555188 to 0x555190 ???
 0x555240 ???
 0x555284 ???
 0x5552EC ???
 0x5552F4 to 0x555310 ???
+
 0x55532C 4 byte pointer
     [0x24] 1 byte
     [0x30] 2 byte
+
 0x555330 to 0x55534C ???
 0x55535C to 0x5553CC ???
+
 0x5553CC is a pointer but it seems to just point to player struct stuff?
+
 0x5553D0 to 0x5553EC ???
+
 0x5553EC is a pointer but it seems to just point to player struct stuff?
 0x5553F0 is a pointer but it seems to just point to player struct stuff?
 0x5553FC points to the beginning of the player struct?
 0x555400 is a pointer but it seems to just point to player struct stuff?
+
 0x555404 to 0x555410 ???
 0x55542C ???
+
 0x55544C ??? pointer?
+
 0x555450 aaaaaaa huge pointer
 0x555454 another pointer
 0x555458 another pointer
@@ -27,8 +36,11 @@
     [0x0] 4 byte pointer
         [0x4] 4 byte pointer
             [0xC] 4 byte
+
 0x55546C pointer to data that doesn't change?
+
 0x55550C ???
+
 0x555518 to 0x55561A input history (directions)
 0x55561A to 0x55571C input history (A button)
 0x55571C to 0x55581E input history (B button)
@@ -36,10 +48,12 @@
 0x555920 to 0x555A22 input history (D button)
 0x555A22 to 0x555B24 input history (E button)
 
-... WIP ...
+0x555B2C to 0x555C30 ???
 
-0x555C30 struct end
+0x555C30 Player 1 struct end
 
 Any untagged DWORD address ranges just contain POD without pointers.
 
 Need to identify which heap address ranges contain static data.
+
+Need to identify character specifics and puppet characters.
