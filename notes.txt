@@ -29,6 +29,12 @@
             [0xC] 4 byte
 0x55546C pointer to data that doesn't change?
 0x55550C ???
+0x555518 to 0x55561A input history (directions)
+0x55561A to 0x55571C input history (A button)
+0x55571C to 0x55581E input history (B button)
+0x55581E to 0x555920 input history (C button)
+0x555920 to 0x555A22 input history (D button)
+0x555A22 to 0x555B24 input history (E button)
 
 ... WIP ...
 
