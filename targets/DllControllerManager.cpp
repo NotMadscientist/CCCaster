@@ -221,7 +221,7 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
         // Finally add done option
         options.push_back ( playerControllers[i]->isKeyboard() ? "Done (press Enter)" : "Done (press any button)" );
 
-        // Toggle overlay if both players are done
+        // Disable overlay if both players are done
         if ( overlayPositions[i] + 1 == options.size()
                 && ( ( playerControllers[i]->isJoystick() && isAnyButtonPressed ( playerControllers[i] ) )
                      || ( playerControllers[i]->isKeyboard() && KeyboardState::isPressed ( VK_RETURN ) ) ) )
@@ -231,7 +231,7 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
             if ( ( !playerControllers[0] || !overlayPositions[0] )
                     && ( !playerControllers[1] || !overlayPositions[1] ) )
             {
-                DllOverlayUi::toggle();
+                DllOverlayUi::disable();
                 KeyboardManager::get().unhook();
                 AsmHacks::enableEscapeToExit = true;
                 return;
