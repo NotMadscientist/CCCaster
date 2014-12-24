@@ -25,6 +25,7 @@ public:
 
     bool fillFakeInputs = false;
 
+    // Get a single input for the given index:frame, returns 0 if none.
     T get ( uint32_t index, uint32_t frame ) const
     {
         if ( index >= inputs.size() )
@@ -39,6 +40,7 @@ public:
         return inputs[index][frame];
     }
 
+    // Get n inputs starting from the given index:frame, ASSERTS if not enough.
     void get ( uint32_t index, uint32_t frame, T *t, size_t n ) const
     {
         ASSERT ( index < inputs.size() );
@@ -48,13 +50,18 @@ public:
                     inputs[index].begin() + frame + n, t );
     }
 
+    // Set a single input for the given index:frame, CANNOT change existing inputs.
     void set ( uint32_t index, uint32_t frame, T t )
     {
+        if ( inputs.size() > index && inputs[index].size() > frame )
+            return;
+
         resize ( index, frame );
 
         inputs[index][frame] = t;
     }
 
+    // Fill n inputs with the same given value starting from the given index:frame, CAN change existing inputs.
     void set ( uint32_t index, uint32_t frame, T t, size_t n )
     {
         resize ( index, frame, n, true );
@@ -63,6 +70,7 @@ public:
                     inputs[index].begin() + frame + n, t );
     }
 
+    // Set n inputs starting from the given index:frame, CAN change existing inputs.
     void set ( uint32_t index, uint32_t frame, const T *t, size_t n )
     {
         // TODO refill inputs when faked inputs change
@@ -85,6 +93,7 @@ public:
         std::copy ( t, t + n, &inputs[index][frame] );
     }
 
+    // Resize the container so that it can contain inputs up to index:frame+n.
     void resize ( uint32_t index, uint32_t frame, size_t n = 1, bool isReal = true )
     {
         if ( index >= inputs.size() )

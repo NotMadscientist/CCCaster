@@ -1,6 +1,7 @@
 #include "Main.h"
 #include "Thread.h"
 #include "DllHacks.h"
+#include "DllOverlayUi.h"
 #include "NetplayManager.h"
 #include "ChangeMonitor.h"
 #include "SmartSocket.h"
@@ -174,7 +175,7 @@ struct DllMain
                 KeyboardState::update();
                 ControllerManager::get().check();
 
-                if ( DllHacks::isOverlayEnabled() )             // Overlay UI input
+                if ( DllOverlayUi::isEnabled() )                // Overlay UI input
                 {
                     localInputs[0] = localInputs[1] = 0;
                 }
@@ -185,20 +186,18 @@ struct DllMain
 
                     if ( GetKeyState ( VK_CONTROL ) & 0x80 )
                     {
-                        for ( uint8_t i = 0; i < 10; ++i )
+                        for ( uint8_t delay = 0; delay < 10; ++delay )
                         {
-                            // Offset by -1, so Ctrl+0 sets delay 10
-                            const uint8_t delay = 1 + ( i + 9 ) % 10;
-
                             if ( delay == netMan.getDelay() )
                                 continue;
 
-                            // Ctrl+Number or Ctrl+Numpad#
-                            if ( ( GetKeyState ( '0' + i ) & 0x80 ) || ( GetKeyState ( VK_NUMPAD0 + i ) & 0x80 ) )
+                            if ( ( GetKeyState ( '0' + delay ) & 0x80 )                 // Ctrl + Number
+                                    || ( GetKeyState ( VK_NUMPAD0 + delay ) & 0x80 ) )  // Ctrl + Numpad Number
                             {
                                 shouldChangeDelayRollback = true;
                                 changeConfig.indexedFrame = netMan.getIndexedFrame();
                                 changeConfig.delay = delay;
+                                changeConfig.invalidate();
                                 dataSocket->send ( changeConfig );
                                 break;
                             }
@@ -212,13 +211,17 @@ struct DllMain
                     static bool randomize = false;
 
                     if ( KeyboardState::isPressed ( VK_F11 ) )
+                    {
                         randomize = !randomize;
+                        DllOverlayUi::showMessage ( randomize ? "Enabled random delay" : "Disabled random delay" );
+                    }
 
-                    if ( randomize && rand() % 5 == 0 )
+                    if ( randomize && rand() % 30 == 0 )
                     {
                         shouldChangeDelayRollback = true;
                         changeConfig.indexedFrame = netMan.getIndexedFrame();
-                        changeConfig.delay = 1 + rand() % 9;
+                        changeConfig.delay = rand() % 10;
+                        changeConfig.invalidate();
                         dataSocket->send ( changeConfig );
                     }
 #endif
@@ -244,7 +247,11 @@ struct DllMain
                 static bool randomize = false;
 
                 if ( KeyboardState::isPressed ( VK_F12 ) )
+                {
                     randomize = !randomize;
+                    localInputs [ clientMode.isLocal() ? 1 : 0 ] = 0;
+                    DllOverlayUi::showMessage ( randomize ? "Enabled random inputs" : "Disabled random inputs" );
+                }
 
                 if ( randomize )
                 {
@@ -265,10 +272,7 @@ struct DllMain
                         if ( netMan.getState().value == NetplayState::CharaSelect )
                             buttons &= ~ ( CC_BUTTON_B | CC_BUTTON_CANCEL );
 
-                        if ( clientMode.isLocal() )
-                            localInputs[1] = COMBINE_INPUT ( direction, buttons );
-                        else
-                            localInputs[0] = COMBINE_INPUT ( direction, buttons );
+                        localInputs [ clientMode.isLocal() ? 1 : 0 ] = COMBINE_INPUT ( direction, buttons );
                     }
                 }
 
@@ -321,7 +325,7 @@ struct DllMain
                 }
                 else if ( clientMode.isLocal() )
                 {
-                    if ( playerControllers[1] && !DllHacks::isOverlayEnabled() )
+                    if ( playerControllers[1] && !DllOverlayUi::isEnabled() )
                         localInputs[1] = getInput ( playerControllers[1] );
 
                     netMan.setInput ( remotePlayer, localInputs[1] );
@@ -435,11 +439,15 @@ struct DllMain
         {
             shouldChangeDelayRollback = false;
 
-            if ( changeConfig.delay != 0xFF )
+            if ( changeConfig.delay != 0xFF && changeConfig.delay != netMan.getDelay() )
             {
+                LOG ( "Delayed was changed %u -> %u", netMan.getDelay(), changeConfig.delay );
+                DllOverlayUi::showMessage ( format ( "Delay was changed to %u", changeConfig.delay ) );
                 netMan.setDelay ( changeConfig.delay );
-                // netMan.setRollback ( changeConfig.rollback );
+                procMan.ipcSend ( changeConfig );
             }
+
+            // TODO set rollback
         }
 
 #ifndef RELEASE
@@ -523,7 +531,8 @@ struct DllMain
     {
         ASSERT ( netMan.getState() != state );
 
-        DllHacks::disableOverlay();
+        if ( !DllOverlayUi::isShowingMessage() )
+            DllOverlayUi::disable();
 
         // Entering InGame
         if ( state == NetplayState::InGame )
@@ -864,6 +873,8 @@ struct DllMain
                         return;
 
                     case MsgType::ChangeConfig:
+                        // Only use the ChangeConfig if it is for a later frame than the current ChangeConfig.
+                        // If for the same frame, then the host's ChangeConfig always takes priority.
                         if ( ( msg->getAs<ChangeConfig>().indexedFrame.value > changeConfig.indexedFrame.value )
                                 || ( msg->getAs<ChangeConfig>().indexedFrame.value == changeConfig.indexedFrame.value
                                      && clientMode.isClient() ) )
@@ -1243,10 +1254,10 @@ struct DllMain
 
 #ifndef RELEASE
         ChangeMonitor::get().addRef ( this, Variable ( Variable::MenuConfirmState ), AsmHacks::menuConfirmState );
-        // ChangeMonitor::get().addRef ( this, Variable ( Variable::GameStateCounter ), *CC_GAME_STATE_COUNTER_ADDR );
         ChangeMonitor::get().addRef ( this, Variable ( Variable::CurrentMenuIndex ), AsmHacks::currentMenuIndex );
-        ChangeMonitor::get().addPtrToRef ( this, Variable ( Variable::AutoReplaySave ),
-                                           const_cast<const uint32_t *&> ( AsmHacks::autoReplaySaveStatePtr ), 0u );
+        // ChangeMonitor::get().addRef ( this, Variable ( Variable::GameStateCounter ), *CC_GAME_STATE_COUNTER_ADDR );
+        // ChangeMonitor::get().addPtrToRef ( this, Variable ( Variable::AutoReplaySave ),
+        //                                    const_cast<const uint32_t *&> ( AsmHacks::autoReplaySaveStatePtr ), 0u );
 #endif
     }
 

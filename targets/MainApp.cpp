@@ -1030,6 +1030,10 @@ struct MainApp
                     ctrlSocket->send ( msg );
                 return;
 
+            case MsgType::ChangeConfig:
+                ui.display ( format ( "Delay was changed to %u", msg->getAs<ChangeConfig>().delay ) );
+                return;
+
             default:
                 LOG ( "Unexpected ipcReadEvent ( '%s' )", msg );
                 return;

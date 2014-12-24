@@ -7,6 +7,8 @@ if len ( sys.argv ) < 3 :
     exit ( 0 )
 
 
+HEADER_LENGTH = 5
+
 REGEX_FULL = '^[^ ]+ \[[0-9]+\] NetplayState::([A-Za-z]+) \[([0-9]+):([0-9]+)\] ([A-Za-z]+: .+)$'
 REGEX_SHORT = '^([A-Za-z]+) \[([0-9]+):([0-9]+)\] ([A-Za-z]+: .+)$'
 
@@ -35,12 +37,12 @@ for k in range ( 2, len ( sys.argv ) ):
 
     count = 0
     regex = [ None, None ]
-    index = [ 4, 4 ]
+    index = [ HEADER_LENGTH, HEADER_LENGTH ]
 
 
     # Check SessionId
-    if log[0][4] != log[1][4]:
-        printMismatch ( 4, 4, k )
+    if log[0][HEADER_LENGTH] != log[1][HEADER_LENGTH]:
+        printMismatch ( HEADER_LENGTH, HEADER_LENGTH, k )
         continue
 
 

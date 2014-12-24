@@ -347,7 +347,7 @@ struct ChangeConfig : public SerializableSequence
 
     std::string str() const override { return format ( "ChangeConfig[%s,%u,%u]", indexedFrame, delay, rollback ); }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( ChangeConfig, delay, rollback );
+    PROTOCOL_MESSAGE_BOILERPLATE ( ChangeConfig, indexedFrame.value, delay, rollback );
 };
 
 

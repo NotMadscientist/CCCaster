@@ -121,7 +121,7 @@ generator: tools/$(GENERATOR)
 $(ARCHIVE): $(BINARY) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER) $(FOLDER)/states.bin
 	@echo
 	rm -f $(filter-out %.log,$(filter-out $(ARCHIVE),$(wildcard $(NAME)*.zip)))
-	$(ZIP) $(ARCHIVE) ChangeLog.txt $^
+	$(ZIP) $(ARCHIVE) ReadMe.txt ChangeLog.txt $^
 	$(GRANT)
 
 $(BINARY): $(addprefix $(BUILD_TYPE)/,$(MAIN_OBJECTS))
@@ -216,7 +216,7 @@ clean-proto:
 	rm -f $(AUTOGEN_HEADERS)
 
 clean-common: clean-proto
-	rm -f .depend .include $(filter-out $(wildcard $(FOLDER)/*.log),$(wildcard $(FOLDER)/*))
+	rm -f .depend .include $(filter-out $(wildcard $(FOLDER)/*.log),$(wildcard $(FOLDER)/*)) *.zip
 
 clean-debug: clean-common
 	rm -rf build_debug
