@@ -98,23 +98,90 @@ using namespace std;
 
 static const vector<MemDump> playerAddrs =
 {
-    CC_P1_SEQUENCE_ADDR,
-    CC_P1_SEQ_STATE_ADDR,
-    CC_P1_HEALTH_ADDR,
-    CC_P1_RED_HEALTH_ADDR,
-    CC_P1_X_POSITION_ADDR,
-    CC_P1_Y_POSITION_ADDR,
-    CC_P1_X_PREV_POS_ADDR,
-    CC_P1_Y_PREV_POS_ADDR,
-    CC_P1_X_VELOCITY_ADDR,
-    CC_P1_Y_VELOCITY_ADDR,
-    CC_P1_X_ACCELERATION_ADDR,
-    CC_P1_Y_ACCELERATION_ADDR,
-    CC_P1_GUARD_BAR_ADDR,
-    CC_P1_GUARD_QUALITY_ADDR,
-    CC_P1_METER_ADDR,
-    CC_P1_HEAT_ADDR,
-    CC_P1_SPRITE_ANGLE_ADDR,
+    { 0x555140, 0x555160 },
+    { 0x555160, 0x555180 }, // ???
+    { 0x555180, 0x555188 },
+    { 0x555188, 0x555190 }, // ???
+    { 0x555190, 0x555240 },
+    ( uint32_t * ) 0x555240, // ???
+    { 0x555244, 0x555284 },
+    ( uint32_t * ) 0x555284, // ???
+    { 0x555288, 0x5552EC },
+    ( uint32_t * ) 0x5552EC, // ???
+    { 0x5552F0, 0x5552F4 },
+    { 0x5552F4, 0x555310 }, // ???
+    { 0x555310, 0x55532C },
+
+    { ( void * ) 0x55532C, 4, {
+        MemDumpPtr ( 0, 0x24, 1 ),
+        MemDumpPtr ( 0, 0x30, 2 )
+    } },
+
+    { 0x555330, 0x55534C }, // ???
+    { 0x55534C, 0x55535C },
+    { 0x55535C, 0x5553CC }, // ???
+
+    { ( void * ) 0x5553CC, 4 }, // is a pointer but it seems to just point to player struct stuff?
+
+    { 0x5553D0, 0x5553EC }, // ???
+
+    { ( void * ) 0x5553EC, 4 }, // is a pointer but it seems to just point to player struct stuff?
+    { ( void * ) 0x5553F0, 4 }, // is a pointer but it seems to just point to player struct stuff?
+    { 0x5553F4, 0x5553FC },
+    { ( void * ) 0x5553FC, 4 }, // points to the beginning of the player struct?
+    { ( void * ) 0x555400, 4 }, // is a pointer but it seems to just point to player struct stuff?
+
+    { 0x555404, 0x555410 }, // ???
+    { 0x555410, 0x55542C },
+    ( uint32_t * ) 0x55542C, // ???
+    { 0x555430, 0x55544C },
+    { ( void * ) 0x55544C, 4 }, // ??? pointer?
+
+    { ( void * ) 0x555450, 4 }, // aaaaaaa huge pointer
+    { ( void * ) 0x555454, 4 }, // another pointer
+    { ( void * ) 0x555458, 4 }, // another pointer
+    { 0x55545C, 0x555460 },
+    { ( void * ) 0x555460, 4, {
+        MemDumpPtr ( 0, 0x0, 4, {
+            MemDumpPtr ( 0, 0x4, 4, {
+                MemDumpPtr ( 0, 0xC, 4 )
+            } )
+        } )
+    } },
+
+    { 0x555464, 0x55546C },
+    { ( void * ) 0x55546C, 4 }, // pointer to data that doesn't change?
+    { 0x555470, 0x55550C },
+    ( uint32_t * ) 0x55550C, // ???
+    { 0x555510, 0x555518 },
+
+    { 0x555518, 0x55561A }, // input history (directions)
+    { 0x55561A, 0x55571C }, // input history (A button)
+    { 0x55571C, 0x55581E }, // input history (B button)
+    { 0x55581E, 0x555920 }, // input history (C button)
+    { 0x555920, 0x555A22 }, // input history (D button)
+    { 0x555A22, 0x555B24 }, // input history (E button)
+
+    { 0x555B24, 0x555B2C },
+    { 0x555B2C, 0x555C30 }, // ???
+
+    // CC_P1_SEQUENCE_ADDR,
+    // CC_P1_SEQ_STATE_ADDR,
+    // CC_P1_HEALTH_ADDR,
+    // CC_P1_RED_HEALTH_ADDR,
+    // CC_P1_X_POSITION_ADDR,
+    // CC_P1_Y_POSITION_ADDR,
+    // CC_P1_X_PREV_POS_ADDR,
+    // CC_P1_Y_PREV_POS_ADDR,
+    // CC_P1_X_VELOCITY_ADDR,
+    // CC_P1_Y_VELOCITY_ADDR,
+    // CC_P1_X_ACCELERATION_ADDR,
+    // CC_P1_Y_ACCELERATION_ADDR,
+    // CC_P1_GUARD_BAR_ADDR,
+    // CC_P1_GUARD_QUALITY_ADDR,
+    // CC_P1_METER_ADDR,
+    // CC_P1_HEAT_ADDR,
+    // CC_P1_SPRITE_ANGLE_ADDR,
 
     // CC_P1_CATCH_STATE1_ADDR,
     // CC_P1_CATCH_STATE2_ADDR,
@@ -180,7 +247,7 @@ int main ( int argc, char *argv[] )
         return -1;
     }
 
-    Logger::get().initialize ( LOG_FILE, LOG_LOCAL_TIME );
+    Logger::get().initialize ( LOG_FILE, 0 );
 
     MemDumpList allAddrs;
 
@@ -199,7 +266,7 @@ int main ( int argc, char *argv[] )
     LOG ( "allAddrs:" );
     for ( const MemDump& mem : allAddrs.addrs )
     {
-        LOG ( "{ %08x, %08x }", mem.getAddr(), mem.getAddr() + mem.size );
+        LOG ( "{ 0x%06X, 0x%06X }", mem.getAddr(), mem.getAddr() + mem.size );
 
         for ( const MemDumpPtr& ptr0 : mem.ptrs )
         {

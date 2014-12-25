@@ -320,6 +320,15 @@ struct DllMain
 
                 if ( specialPauseReady && isAnyDirectionPressed ( playerControllers[localPlayer - 1] ) )
                     *CC_PAUSE_FLAG_ADDR = 0;
+
+                // When specially paused, use [ and ] to frame step
+                if ( specialPauseReady && *CC_PAUSE_FLAG_ADDR )
+                {
+                    if ( KeyboardState::isPressed ( VK_OEM_4 ) )            // [ to frame step back
+                        ;
+                    else if ( KeyboardState::isPressed ( VK_OEM_6 ) )       // ] to frame step forward
+                        ;
+                }
 #endif
 
                 // Assign local player input

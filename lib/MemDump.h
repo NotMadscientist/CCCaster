@@ -129,6 +129,14 @@ struct MemDump : public MemDumpBase
     MemDump ( void *addr, size_t size, const std::vector<MemDumpPtr>& ptrs )
         : MemDumpBase ( size, ptrs ), addr ( ( char * ) addr ) {}
 
+    // Construct a memory dump with a memory range
+    MemDump ( uint32_t start, uint32_t end )
+        : MemDumpBase ( end - start ), addr ( ( char * ) start ) {}
+
+    // Construct a memory dump with a memory range, with child pointers
+    MemDump ( uint32_t start, uint32_t end, const std::vector<MemDumpPtr>& ptrs )
+        : MemDumpBase ( end - start, ptrs ), addr ( ( char * ) start ) {}
+
     // Copy constructor
     MemDump ( const MemDump& a )
         : MemDumpBase ( a.size, a.ptrs ), addr ( a.addr ) {}

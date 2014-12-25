@@ -101,6 +101,7 @@ bool ProcessManager::loadState ( IndexedFrame indexedFrame, NetplayManager& netM
             netMan.indexedFrame = it->indexedFrame;
             it->load();
 
+            // TODO enable this after rollback is ready
             // Erase all other states after the current one.
             // Note it.base() returns 1 after the position of it, but moving forward.
             for ( auto jt = it.base(); jt != statesList.end(); ++jt )
