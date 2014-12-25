@@ -14,3 +14,12 @@ Other notes:
     You can change the netplay delay in-game by pressing Ctrl + Number on the keyboard.
 
     You can press and hold down the space-bar to prevent fast-forward when spectating.
+
+
+Running under Wine:
+
+    Must create a 32bit Wine prefix, see: http://askubuntu.com/a/257505
+
+    No in-game button config unless someone can figure out how to hook DirectX9 under Wine.
+
+    Can't save replays because MBAA.exe crashes when saving replays under Wine.
