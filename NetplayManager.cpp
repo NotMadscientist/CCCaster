@@ -114,7 +114,7 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player )
     }
 
     // If the pause menu is up
-    if ( * ( config.mode.isTraining() ? CC_TRAINING_PAUSE_ADDR : CC_VERSUS_PAUSE_ADDR ) )
+    if ( *CC_PAUSE_FLAG_ADDR )
     {
         AsmHacks::menuConfirmState = 2;
 

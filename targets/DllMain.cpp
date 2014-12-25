@@ -1504,4 +1504,3 @@ extern "C" void callback()
 }
 
 } // namespace AsmHacks
-

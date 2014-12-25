@@ -883,6 +883,13 @@
       <Address>0076E650</Address>
     </CheatEntry>
     <CheatEntry>
+      <ID>306</ID>
+      <Description>"pause flag"</Description>
+      <Color>80000008</Color>
+      <VariableType>Byte</VariableType>
+      <Address>0055D203</Address>
+    </CheatEntry>
+    <CheatEntry>
       <ID>260</ID>
       <Description>"Escape key"</Description>
       <Color>80000008</Color>

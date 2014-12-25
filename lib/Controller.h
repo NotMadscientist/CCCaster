@@ -121,7 +121,7 @@ struct JoystickState
             if ( a != 5 )
                 return false;
         }
-        return ( buttons == 0 );
+        return true;
     }
 
     void clear()

@@ -334,7 +334,7 @@ endif
 
 
 build_debug:
-	rsync -a -f"- .git/" -f"+ */" -f"- *" --exclude=".*" . $@
+	rsync -a -f"- .git/" -f"- build_*/" -f"+ */" -f"- *" --exclude=".*" . $@
 
 build_debug/%.o: %.cpp | build_debug
 	$(CXX) $(CC_FLAGS) $(DEBUG_FLAGS) -Wall -Wempty-body -std=c++11 -o $@ -c $<
@@ -347,7 +347,7 @@ build_debug/%.o: %.c | build_debug
 
 
 build_logging:
-	rsync -a -f"- .git/" -f"+ */" -f"- *" --exclude=".*" . $@
+	rsync -a -f"- .git/" -f"- build_*/" -f"+ */" -f"- *" --exclude=".*" . $@
 
 build_logging/%.o: %.cpp | build_logging
 	$(CXX) $(CC_FLAGS) $(LOGGING_FLAGS) -Wall -Wempty-body -std=c++11 -o $@ -c $<
@@ -360,7 +360,7 @@ build_logging/%.o: %.c | build_logging
 
 
 build_release:
-	rsync -a -f"- .git/" -f"+ */" -f"- *" --exclude=".*" . $@
+	rsync -a -f"- .git/" -f"- build_*/" -f"+ */" -f"- *" --exclude=".*" . $@
 
 build_release/%.o: %.cpp | build_release
 	$(CXX) $(CC_FLAGS) $(RELEASE_FLAGS) -std=c++11 -o $@ -c $<
