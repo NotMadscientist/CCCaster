@@ -276,18 +276,50 @@ struct DllMain
                     }
                 }
 
+                static bool specialPauseReady = false;
+                const bool pauseMenu = * ( clientMode.isTraining() ? CC_TRAINING_PAUSE_ADDR : CC_VERSUS_PAUSE_ADDR );
+
+                if ( pauseMenu )
+                {
+                    if ( isButtonPressed ( playerControllers[localPlayer - 1], CC_BUTTON_CONFIRM )
+                            && AsmHacks::currentMenuIndex == ( clientMode.isTraining() ? 13 : 3 ) )
+                        specialPauseReady = true;
+                    else if ( isButtonPressed ( playerControllers[localPlayer - 1], CC_BUTTON_START ) )
+                        specialPauseReady = false;
+                }
+
                 // Test rollback
                 if ( KeyboardState::isPressed ( VK_F9 ) )
                 {
-                    IndexedFrame target = netMan.getIndexedFrame();
-
-                    if ( target.parts.frame <= 30 )
-                        target.parts.frame = 0;
+                    if ( *CC_PAUSE_FLAG_ADDR )
+                    {
+                        *CC_PAUSE_FLAG_ADDR = 0;
+                    }
                     else
-                        target.parts.frame -= 30;
+                    {
+                        IndexedFrame target = netMan.getIndexedFrame();
 
-                    procMan.loadState ( target, netMan );
+                        if ( target.parts.frame <= 30 )
+                            target.parts.frame = 0;
+                        else
+                            target.parts.frame -= 30;
+
+                        procMan.loadState ( target, netMan );
+
+                        if ( specialPauseReady )
+                        {
+                            *CC_PAUSE_FLAG_ADDR = 1;
+                        }
+                        else
+                        {
+                            netMan.setInput ( localPlayer, COMBINE_INPUT ( 0, CC_BUTTON_START ),
+                                              netMan.getFrame() + netMan.getDelay(), true );
+                        }
+                    }
                 }
+
+                if ( specialPauseReady && isAnyDirectionPressed ( playerControllers[localPlayer - 1] ) )
+                    *CC_PAUSE_FLAG_ADDR = 0;
 #endif
 
                 // Assign local player input
@@ -325,8 +357,8 @@ struct DllMain
                 }
                 else if ( clientMode.isLocal() )
                 {
-                    if ( playerControllers[1] && !DllOverlayUi::isEnabled() )
-                        localInputs[1] = getInput ( playerControllers[1] );
+                    if ( playerControllers[remotePlayer - 1] && !DllOverlayUi::isEnabled() )
+                        localInputs[1] = getInput ( playerControllers[remotePlayer - 1] );
 
                     netMan.setInput ( remotePlayer, localInputs[1] );
                 }
@@ -1255,7 +1287,7 @@ struct DllMain
 #ifndef RELEASE
         ChangeMonitor::get().addRef ( this, Variable ( Variable::MenuConfirmState ), AsmHacks::menuConfirmState );
         ChangeMonitor::get().addRef ( this, Variable ( Variable::CurrentMenuIndex ), AsmHacks::currentMenuIndex );
-        // ChangeMonitor::get().addRef ( this, Variable ( Variable::GameStateCounter ), *CC_GAME_STATE_COUNTER_ADDR );
+        // ChangeMonitor::get().addRef ( this, Variable ( Variable::GameStateCounter ), *CC_MENU_STATE_COUNTER_ADDR );
         // ChangeMonitor::get().addPtrToRef ( this, Variable ( Variable::AutoReplaySave ),
         //                                    const_cast<const uint32_t *&> ( AsmHacks::autoReplaySaveStatePtr ), 0u );
 #endif

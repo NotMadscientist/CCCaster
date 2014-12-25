@@ -85,6 +85,14 @@ struct DllControllerUtils
                && ( ( getPrevInput ( controller ) & MASK_DIRS ) != dir );
     }
 
+    static bool isAnyDirectionPressed ( const Controller *controller )
+    {
+        if ( !controller )
+            return false;
+
+        return ( getInput ( controller ) & MASK_DIRS ) && ! ( getPrevInput ( controller ) & MASK_DIRS );
+    }
+
     static bool isAnyButtonPressed ( const Controller *controller )
     {
         if ( !controller )

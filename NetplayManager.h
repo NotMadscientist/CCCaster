@@ -57,9 +57,9 @@ class NetplayManager
     // Type of the training mode reset
     int32_t trainingResetType = 0;
 
-    // The value of *CC_GAME_STATE_COUNTER_ADDR at the beginning of the RetryMenu state.
+    // The value of *CC_MENU_STATE_COUNTER_ADDR at the beginning of the RetryMenu state.
     // This is used to determine if any other menus are open in front of the retry menu.
-    uint32_t retryMenuGameStateCounter = 0;
+    uint32_t retryMenuStateCounter = 0;
 
     // The starting value of CC_WORLD_TIMER_ADDR, where frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime.
     // This is reset to the current world time whenever the NetplayState changes, ie a state transition happens.
@@ -153,6 +153,7 @@ public:
     uint16_t getRawInput ( uint8_t player ) const { return getRawInput ( player, getFrame() ); }
     uint16_t getRawInput ( uint8_t player, uint32_t frame ) const;
     void setInput ( uint8_t player, uint16_t input );
+    void setInput ( uint8_t player, uint16_t input, uint32_t frame, bool canChange = false );
 
     // Get / set batch inputs for the given player
     MsgPtr getInputs ( uint8_t player ) const;

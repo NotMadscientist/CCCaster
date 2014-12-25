@@ -50,11 +50,12 @@ public:
                     inputs[index].begin() + frame + n, t );
     }
 
-    // Set a single input for the given index:frame, CANNOT change existing inputs.
-    void set ( uint32_t index, uint32_t frame, T t )
+    // Set a single input for the given index:frame.
+    void set ( uint32_t index, uint32_t frame, T t, bool canChange = false )
     {
-        if ( inputs.size() > index && inputs[index].size() > frame )
-            return;
+        if ( !canChange )
+            if ( inputs.size() > index && inputs[index].size() > frame )
+                return;
 
         resize ( index, frame );
 

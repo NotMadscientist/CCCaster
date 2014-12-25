@@ -870,7 +870,7 @@
     </CheatEntry>
     <CheatEntry>
       <ID>250</ID>
-      <Description>"Game state counter"</Description>
+      <Description>"menu state counter"</Description>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
       <Address>0x767440</Address>

@@ -241,7 +241,7 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player )
     }
 
     // Allow saving replays; when manual replay save is selected or any replay save menu is open
-    if ( AsmHacks::currentMenuIndex == 2 || *CC_GAME_STATE_COUNTER_ADDR > retryMenuGameStateCounter )
+    if ( AsmHacks::currentMenuIndex == 2 || *CC_MENU_STATE_COUNTER_ADDR > retryMenuStateCounter )
     {
         AsmHacks::menuConfirmState = 2;
         return input;
@@ -516,8 +516,8 @@ void NetplayManager::setState ( NetplayState state )
             localRetryMenuIndex = -1;
             remoteRetryMenuIndex = -1;
 
-            // The actual retry menu is opened at position *CC_GAME_STATE_COUNTER_ADDR + 1
-            retryMenuGameStateCounter = *CC_GAME_STATE_COUNTER_ADDR + 1;
+            // The actual retry menu is opened at position *CC_MENU_STATE_COUNTER_ADDR + 1
+            retryMenuStateCounter = *CC_MENU_STATE_COUNTER_ADDR + 1;
         }
 
         // Exiting RetryMenu
@@ -588,15 +588,20 @@ uint16_t NetplayManager::getRawInput ( uint8_t player, uint32_t frame ) const
 
 void NetplayManager::setInput ( uint8_t player, uint16_t input )
 {
+    // TODO for rollback
+    // if ( state == NetplayState::InGame )
+    //     setInput ( player, input, getFrame() + config.getOffset );
+    // else
+
+    setInput ( player, input, getFrame() + config.delay );
+}
+
+void NetplayManager::setInput ( uint8_t player, uint16_t input, uint32_t frame, bool canChange )
+{
     ASSERT ( player == 1 || player == 2 );
     ASSERT ( getIndex() >= startIndex );
 
-    // TODO for rollback
-    // if ( state == NetplayState::InGame )
-    //     inputs[player - 1].set ( getIndex() - startIndex, getFrame() + config.getOffset(), input );
-    // else
-
-    inputs[player - 1].set ( getIndex() - startIndex, getFrame() + config.delay, input );
+    inputs[player - 1].set ( getIndex() - startIndex, frame, input, canChange );
 }
 
 MsgPtr NetplayManager::getInputs ( uint8_t player ) const
