@@ -130,6 +130,36 @@ static BOOL WINAPI consoleCtrl ( DWORD ctrl )
     return TRUE;
 }
 
+static IpAddrPort tryParseIpAddrPort ( const string& str )
+{
+    IpAddrPort address;
+
+    try
+    {
+        address = str;
+        lastError.clear();
+    }
+    catch ( const Exception& exc )
+    {
+        address.clear();
+        lastError = exc.user;
+    }
+#ifdef NDEBUG
+    catch ( const std::exception& exc )
+    {
+        address.clear();
+        lastError = format ( "Error: %s", exc.what() );
+    }
+    catch ( ... )
+    {
+        address.clear();
+        lastError = "Unknown error!";
+    }
+#endif
+
+    return address;
+}
+
 
 int main ( int argc, char *argv[] )
 {
@@ -386,21 +416,24 @@ int main ( int argc, char *argv[] )
         if ( str.find ( prefix ) == 0 )
             str = str.substr ( prefix.size() );
 
-        const IpAddrPort address = str;
+        const IpAddrPort address = tryParseIpAddrPort ( str );
 
         if ( ui.initialConfig.mode.value == ClientMode::Unknown )
             ui.initialConfig.mode.value = ( address.addr.empty() ? ClientMode::Host : ClientMode::Client );
 
-        run ( address, ui.initialConfig );
+        if ( lastError.empty() )
+            run ( address, ui.initialConfig );
     }
     else if ( parser.nonOptionsCount() == 2 )
     {
-        IpAddrPort address = string ( parser.nonOption ( 0 ) ) + ":" + parser.nonOption ( 1 );
+        const string str = string ( parser.nonOption ( 0 ) ) + ":" + parser.nonOption ( 1 );
+        const IpAddrPort address = tryParseIpAddrPort ( str );
 
         if ( ui.initialConfig.mode.value == ClientMode::Unknown )
             ui.initialConfig.mode.value = ( address.addr.empty() ? ClientMode::Host : ClientMode::Client );
 
-        run ( address, ui.initialConfig );
+        if ( lastError.empty() )
+            run ( address, ui.initialConfig );
     }
     else if ( opt[Options::NoUi] )
     {
