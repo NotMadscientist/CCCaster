@@ -706,7 +706,8 @@ struct MainApp
         {
             ASSERT ( clientMode.value == ClientMode::Client || clientMode.isSpectate() == true );
 
-            ui.display ( "Dummy is ready", false ); // Don't replace last message
+            ui.display ( format ( "Dummy is ready%s", clientMode.isTraining() ? " (training)" : "" ),
+                         false ); // Don't replace last message
 
             isDummyReady = true;
 

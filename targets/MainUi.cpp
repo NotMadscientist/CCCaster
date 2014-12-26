@@ -842,6 +842,9 @@ void MainUi::main ( RunFuncPtr run )
         initialConfig.localName = config.getString ( "displayName" );
         initialConfig.winCount = config.getInteger ( "versusWinCount" );
 
+        // Reset flags
+        initialConfig.mode.flags = 0;
+
         if ( address.empty() && config.getInteger ( "lastUsedPort" ) > 0 )
         {
             address.port = config.getInteger ( "lastUsedPort" );

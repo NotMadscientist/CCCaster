@@ -6,6 +6,8 @@
 
 using namespace std;
 
+#define USER_AGENT "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)"
+
 
 HttpGet::HttpGet ( Owner *owner, const string& url ) : owner ( owner ), url ( url )
 {
@@ -49,7 +51,7 @@ void HttpGet::connectEvent ( Socket *socket )
 {
     ASSERT ( this->socket.get() == socket );
 
-    string request = format ( "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", path, host );
+    string request = format ( "GET %s HTTP/1.1\r\nUser-Agent: %s\r\nHost: %s\r\n\r\n", path, USER_AGENT, host );
 
     LOG ( "Sending request:\n%s", request );
 
