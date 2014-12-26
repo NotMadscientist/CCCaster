@@ -418,6 +418,8 @@ void Socket::readEvent()
     // Raw read mode
     if ( isRaw )
     {
+        LOG ( "Read [ %u bytes ] from '%s'", bufferLen, address );
+
         if ( owner )
             owner->readEvent ( this, bufferStart, bufferLen, address );
         return;

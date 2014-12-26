@@ -9,7 +9,8 @@ using namespace std;
 #define USER_AGENT "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)"
 
 
-HttpGet::HttpGet ( Owner *owner, const string& url ) : owner ( owner ), url ( url )
+HttpGet::HttpGet ( Owner *owner, const string& url, uint64_t timeout )
+    : owner ( owner ), url ( url ), timeout ( timeout )
 {
     if ( url.substr ( 0, 8 ) == "https://" )
         THROW_EXCEPTION ( "url='%s'", "Unsupported https protocol!", url );
@@ -55,6 +56,9 @@ void HttpGet::connectEvent ( Socket *socket )
 
     LOG ( "Sending request:\n%s", request );
 
+    timer.reset ( new Timer ( this ) );
+    timer->start ( timeout );
+
     if ( !socket->send ( &request[0], request.size() ) )
         disconnectEvent ( socket );
 }
@@ -62,6 +66,20 @@ void HttpGet::connectEvent ( Socket *socket )
 void HttpGet::disconnectEvent ( Socket *socket )
 {
     ASSERT ( this->socket.get() == socket );
+
+    if ( tryParse() )
+        return;
+
+    if ( owner )
+        owner->failedHttp ( this );
+}
+
+void HttpGet::timerExpired ( Timer *timer )
+{
+    ASSERT ( this->timer.get() == timer );
+
+    if ( tryParse() )
+        return;
 
     if ( owner )
         owner->failedHttp ( this );
@@ -71,38 +89,62 @@ void HttpGet::readEvent ( Socket *socket, const char *data, size_t len, const Ip
 {
     ASSERT ( this->socket.get() == socket );
 
-    string buffer ( data, len );
+    buffer += string ( data, len );
 
-    LOG ( "Got response:\n%s", buffer );
+    timer->start ( timeout );
+
+    tryParse();
+}
+
+bool HttpGet::tryParse()
+{
+    LOG ( "Trying to parse response:\n%s", buffer );
 
     stringstream ss ( buffer );
+    string header;
+    uint32_t contentLength = 0;
 
-    // Get status code
-    ss >> buffer >> code;
+    // Get header and status code
+    ss >> header >> code;
 
     // Skip all the headers
-    while ( getline ( ss, buffer ) )
+    while ( getline ( ss, header ) )
     {
-        if ( buffer == "\r" )
+        LOG ( "Header: '%s'", trimmed ( header ) );
+
+        if ( header.find ( "Content-Length:" ) == 0 )
+        {
+            stringstream ss ( header );
+            ss >> header >> contentLength;
+
+            LOG ( "contentLength=%u", contentLength );
+
+            continue;
+        }
+
+        if ( header == "\r" )
             break;
     }
 
     // Sanity check
     if ( !ss.good() )
-    {
-        disconnectEvent ( socket );
-        return;
-    }
+        return false;
 
     // Get remaining bytes
     size_t remaining = ss.rdbuf()->in_avail();
-    ASSERT ( len >= remaining );
+
+    if ( remaining < contentLength )
+        return false;
+
+    ASSERT ( buffer.size() >= remaining );
+
     this->data.resize ( remaining );
     ss.rdbuf()->sgetn ( &this->data[0], remaining );
 
-    // Disconnect the socket to disable further events
-    socket->disconnect();
+    socket.reset();
+    timer.reset();
 
     if ( owner )
         owner->receivedHttp ( this, code, this->data );
+    return true;
 }
