@@ -86,7 +86,9 @@ bool hook ( const string& exe_path, const string& dll_path, bool high_priority )
     if ( high_priority )
         flags |= HIGH_PRIORITY_CLASS;
 
-    if ( !CreateProcess ( exe_path.c_str(), 0, 0, 0, TRUE, flags, 0, 0, &si, &pi ) )
+    const string dir_path = exe_path.substr ( 0, exe_path.find_last_of ( "/\\" ) );
+
+    if ( !CreateProcess ( exe_path.c_str(), 0, 0, 0, TRUE, flags, 0, dir_path.c_str(), &si, &pi ) )
     {
         // MessageBox ( 0, "Could not create process.", "launcher error", MB_OK );
         return false;
