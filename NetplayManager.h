@@ -153,7 +153,7 @@ public:
     uint16_t getRawInput ( uint8_t player ) const { return getRawInput ( player, getFrame() ); }
     uint16_t getRawInput ( uint8_t player, uint32_t frame ) const;
     void setInput ( uint8_t player, uint16_t input );
-    void setInput ( uint8_t player, uint16_t input, uint32_t frame, bool canChange = false );
+    void assignInput ( uint8_t player, uint16_t input, uint32_t frame );
 
     // Get / set batch inputs for the given player
     MsgPtr getInputs ( uint8_t player ) const;

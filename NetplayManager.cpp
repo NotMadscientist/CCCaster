@@ -588,20 +588,23 @@ uint16_t NetplayManager::getRawInput ( uint8_t player, uint32_t frame ) const
 
 void NetplayManager::setInput ( uint8_t player, uint16_t input )
 {
+    ASSERT ( player == 1 || player == 2 );
+    ASSERT ( getIndex() >= startIndex );
+
     // TODO for rollback
     // if ( state == NetplayState::InGame )
     //     setInput ( player, input, getFrame() + config.getOffset );
     // else
 
-    setInput ( player, input, getFrame() + config.delay );
+    inputs[player - 1].set ( getIndex() - startIndex, getFrame() + config.delay, input );
 }
 
-void NetplayManager::setInput ( uint8_t player, uint16_t input, uint32_t frame, bool canChange )
+void NetplayManager::assignInput ( uint8_t player, uint16_t input, uint32_t frame )
 {
     ASSERT ( player == 1 || player == 2 );
     ASSERT ( getIndex() >= startIndex );
 
-    inputs[player - 1].set ( getIndex() - startIndex, frame, input, canChange );
+    inputs[player - 1].assign ( getIndex() - startIndex, frame, input );
 }
 
 MsgPtr NetplayManager::getInputs ( uint8_t player ) const

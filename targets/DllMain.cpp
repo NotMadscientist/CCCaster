@@ -312,8 +312,8 @@ struct DllMain
                         }
                         else
                         {
-                            netMan.setInput ( localPlayer, COMBINE_INPUT ( 0, CC_BUTTON_START ),
-                                              netMan.getFrame() + netMan.getDelay(), true );
+                            netMan.assignInput ( localPlayer, COMBINE_INPUT ( 0, CC_BUTTON_START ),
+                                                 netMan.getFrame() + netMan.getDelay() );
                         }
                     }
                 }
