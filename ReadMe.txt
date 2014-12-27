@@ -11,6 +11,8 @@ How to host without port forward:
 
 Other notes:
 
+    If you use an analog controller, make sure to adjust the deadzone, else you might get weird inputs.
+
     You can change the netplay delay in-game by pressing Ctrl + Number on the keyboard.
 
     You can press and hold down the space-bar to prevent fast-forward when spectating.

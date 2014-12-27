@@ -25,6 +25,7 @@ string appDir;
 
 void runMain ( const IpAddrPort& address, const Serializable& config );
 void runFake ( const IpAddrPort& address, const Serializable& config );
+void stopMain();
 
 
 static bool initDirsAndSanityCheck ( bool checkGameExe = true )
@@ -112,8 +113,7 @@ static void deinitialize()
         return;
     deinitialized = true;
 
-    EventManager::get().release();
-    Logger::get().deinitialize();
+    stopMain();
     exit ( 0 );
 }
 

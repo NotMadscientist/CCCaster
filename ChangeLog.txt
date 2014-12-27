@@ -1,3 +1,7 @@
+v2.1f:
+- Fixed getting stuck on fetching IP address.
+- Fixed startup issue when launching from the browser.
+
 v2.1e:
 - Fixed input drop issue from v2.1d.
 - Fixed hidden stages having incorrect music.

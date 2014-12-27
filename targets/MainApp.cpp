@@ -28,6 +28,10 @@ extern string lastError;
 
 extern string appDir;
 
+static Mutex uiMutex;
+
+static CondVar uiCondVar;
+
 
 // static string getClipboard()
 // {
@@ -99,10 +103,6 @@ struct MainApp
     bool isWaitingForUser = false;
 
     bool userConfirmed = false;
-
-    Mutex uiMutex;
-
-    CondVar uiCondVar;
 
     SocketPtr uiSendSocket, uiRecvSocket;
 
@@ -1254,4 +1254,11 @@ void runMain ( const IpAddrPort& address, const Serializable& config )
 
 void runFake ( const IpAddrPort& address, const Serializable& config )
 {
+}
+
+void stopMain()
+{
+    LOCK ( uiMutex );
+    uiCondVar.signal();
+    EventManager::get().release();
 }
