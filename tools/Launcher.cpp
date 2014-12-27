@@ -86,11 +86,17 @@ bool hook ( const string& exe_path, const string& dll_path, bool high_priority )
     if ( high_priority )
         flags |= HIGH_PRIORITY_CLASS;
 
+    char buffer[exe_path.size() + 1];
+    strcpy ( buffer, exe_path.c_str() );
+
     const string dir_path = exe_path.substr ( 0, exe_path.find_last_of ( "/\\" ) );
 
-    if ( !CreateProcess ( exe_path.c_str(), 0, 0, 0, TRUE, flags, 0, dir_path.c_str(), &si, &pi ) )
+    if ( !CreateProcessA ( 0, buffer, 0, 0, TRUE, flags, 0, dir_path.c_str(), &si, &pi ) )
     {
-        // MessageBox ( 0, "Could not create process.", "launcher error", MB_OK );
+        char buffer[4096];
+        snprintf ( buffer, sizeof ( buffer ), "exe='%s'\ndir='%s'\nCould not create process [%u].",
+                   exe_path.c_str(), dir_path.c_str(), GetLastError() );
+        MessageBox ( 0, buffer, "launcher error", MB_OK );
         return false;
     }
 
