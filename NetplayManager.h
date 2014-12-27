@@ -137,12 +137,9 @@ public:
     // During any other state, this is the beginning of the current game's Loading state.
     uint32_t getSpectateStartIndex() const { return spectateStartIndex; }
 
-    // // Get / clear the last changed frame (for rollback)
-    // const IndexedFrame& getLastChangedFrame() const { return inputs[remotePlayer - 1].getLastChangedFrame(); }
-    // void clearLastChangedFrame() { inputs[remotePlayer - 1].clearLastChangedFrame(); }
-
-    // // Check if we are in a rollback state, with 10 frame initial buffer window
-    // bool isRollbackState() const { return ( config.rollback && getFrame() >= 10 ); }
+    // Get / clear the last changed frame (for rollback)
+    const IndexedFrame& getLastChangedFrame() const { return inputs[remotePlayer - 1].getLastChangedFrame(); }
+    void clearLastChangedFrame() { inputs[remotePlayer - 1].clearLastChangedFrame(); }
 
     // Get / set the current NetplayState
     NetplayState getState() const { return state; }
@@ -187,9 +184,9 @@ public:
     uint8_t getDelay() const { return config.delay; }
     void setDelay ( uint8_t delay ) { config.delay = delay; }
 
-    // // Get / set input rollback frames
-    // uint8_t getRollback() const { return config.rollback; }
-    // void setRollback ( uint8_t rollback ) { config.rollback = rollback; }
+    // Get / set input rollback frames
+    uint8_t getRollback() const { return config.rollback; }
+    void setRollback ( uint8_t rollback ) { config.rollback = rollback; }
 
     // Get input offset frames
     uint8_t getOffset() const { return config.getOffset(); }

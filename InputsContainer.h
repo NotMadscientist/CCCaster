@@ -15,15 +15,15 @@ protected:
     // Mapping: index -> frame -> input
     std::vector<std::vector<T>> inputs;
 
-    // Mapping: index -> frame -> boolean
-    std::vector<std::vector<bool>> real;
+    // // Mapping: index -> frame -> boolean
+    // std::vector<std::vector<bool>> real;
 
-    // // Last frame of input that changed
-    // IndexedFrame lastChangedFrame = {{ UINT_MAX, UINT_MAX }};
+    // Last frame of input that changed
+    IndexedFrame lastChangedFrame = {{ UINT_MAX, UINT_MAX }};
 
 public:
 
-    bool fillFakeInputs = false;
+    // bool fillFakeInputs = false;
 
     // Get a single input for the given index:frame, returns 0 if none.
     T get ( uint32_t index, uint32_t frame ) const
@@ -83,18 +83,18 @@ public:
     {
         // TODO refill inputs when faked inputs change
 
-        // IndexedFrame f;
-        // size_t i;
+        IndexedFrame f;
+        size_t i;
 
-        // for ( i = 0, f = {{ frame, index }}; i < n; ++i, ++f.parts.frame )
-        // {
-        //     if ( get ( f.parts.index, f.parts.frame ) == t[i] )
-        //         continue;
+        for ( i = 0, f = {{ frame, index }}; i < n; ++i, ++f.parts.frame )
+        {
+            if ( get ( f.parts.index, f.parts.frame ) == t[i] )
+                continue;
 
-        //     // Indicate changed if the input is different from the last known input
-        //     lastChangedFrame.value = std::min ( lastChangedFrame.value, f.value );
-        //     break;
-        // }
+            // Indicate changed if the input is different from the last known input
+            lastChangedFrame.value = std::min ( lastChangedFrame.value, f.value );
+            break;
+        }
 
         resize ( index, frame, n, true );
 
@@ -131,7 +131,7 @@ public:
     void clear()
     {
         inputs.clear();
-        real.clear();
+        // real.clear();
     }
 
     bool empty() const { return inputs.empty(); }
@@ -169,13 +169,13 @@ public:
         else
             inputs.erase ( inputs.begin(), inputs.begin() + index );
 
-        if ( index + 1 >= real.size() )
-            real.clear();
-        else
-            real.erase ( real.begin(), real.begin() + index );
+        // if ( index + 1 >= real.size() )
+        //     real.clear();
+        // else
+        //     real.erase ( real.begin(), real.begin() + index );
     }
 
-    // const IndexedFrame& getLastChangedFrame() const { return lastChangedFrame; }
+    const IndexedFrame& getLastChangedFrame() const { return lastChangedFrame; }
 
-    // void clearLastChangedFrame() { lastChangedFrame = {{ UINT_MAX, UINT_MAX }}; }
+    void clearLastChangedFrame() { lastChangedFrame = {{ UINT_MAX, UINT_MAX }}; }
 };

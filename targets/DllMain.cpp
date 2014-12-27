@@ -393,8 +393,8 @@ struct DllMain
                 break;
         }
 
-        // // Clear the last changed frame before we get new inputs
-        // netMan.clearLastChangedFrame();
+        // Clear the last changed frame before we get new inputs
+        netMan.clearLastChangedFrame();
 
         for ( ;; )
         {
@@ -437,19 +437,19 @@ struct DllMain
             }
         }
 
-        // // Only do rollback related stuff while in-game
-        // if ( netMan.getState() == NetplayState::InGame && netMan.isRollbackState()
-        //         && netMan.getLastChangedFrame().value < netMan.getIndexedFrame().value )
-        // {
-        //     LOG_SYNC ( "Rollback: %s -> %s", netMan.getIndexedFrame(), netMan.getLastChangedFrame() );
+        // Only do rollback related stuff while in-game
+        if ( netMan.getState() == NetplayState::InGame && netMan.config.rollback
+                && netMan.getLastChangedFrame().value < netMan.getIndexedFrame().value )
+        {
+            LOG_SYNC ( "Rollback: %s -> %s", netMan.getIndexedFrame(), netMan.getLastChangedFrame() );
 
-        //     // Indicate we're re-running (save the frame first)
-        //     fastFwdStopFrame = netMan.getIndexedFrame();
+            // Indicate we're re-running (save the frame first)
+            fastFwdStopFrame = netMan.getIndexedFrame();
 
-        //     // Reset the game state (this resets game state and netMan state)
-        //     procMan.loadState ( netMan.getLastChangedFrame(), netMan );
-        //     return;
-        // }
+            // Reset the game state (this resets game state and netMan state)
+            procMan.loadState ( netMan.getLastChangedFrame(), netMan );
+            return;
+        }
 
         // Update the RngState if necessary
         if ( shouldSyncRngState )
@@ -494,7 +494,7 @@ struct DllMain
 #ifndef RELEASE
         // Log the RngState once every 5 seconds after CharaSelect, except in Loading, Skippable, and RetryMenu states.
         // This effectively also logs whenever the frame becomes zero, ie when the index is incremented.
-        if ( dataSocket && dataSocket->isConnected() && netMan.getFrame() % ( 5 * 60 ) == 0
+        if ( dataSocket && dataSocket->isConnected() && netMan.getFrame() % ( 5 * 60 ) == 0 && !netMan.config.rollback
                 && netMan.getState().value >= NetplayState::CharaSelect && netMan.getState() != NetplayState::Loading
                 && netMan.getState() != NetplayState::Skippable && netMan.getState() != NetplayState::RetryMenu )
         {

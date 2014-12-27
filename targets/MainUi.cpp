@@ -956,44 +956,76 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
 
     ASSERT ( ui.get() != 0 );
 
+    int networkDelay = computeDelay ( pingStats.latency );
+
     ui->pushInFront ( new ConsoleUi::TextBox (
                           initialConfig.remoteName + " connected"
                           "\n\n" + formatStats ( pingStats ) ), { 1, 0 }, true ); // Expand width and clear
 
-    ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter delay:" ) );
+    // TODO implement this as a slider or something
+
+    ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter rollback:" ) );
 
     ui->top<ConsoleUi::Prompt>()->allowNegative = false;
     ui->top<ConsoleUi::Prompt>()->maxDigits = 3;
-    ui->top<ConsoleUi::Prompt>()->setInitial ( computeDelay ( pingStats.latency ) );
+    ui->top<ConsoleUi::Prompt>()->setInitial ( 2 * networkDelay ); // TODO clamp or scale the rollback
 
     for ( ;; )
     {
-        ConsoleUi::Element *menu = ui->popUntilUserInput ( true ); // Clear popped since we don't care about messages
+
+        ConsoleUi::Element *menu = ui->popUntilUserInput();
 
         if ( menu->resultInt < 0 )
             break;
 
-        ui->clearBelow ( false );
-
-        if ( menu->resultInt >= 0xFF )
+        if ( menu->resultInt > 0xFF )
         {
-            ui->pushBelow ( new ConsoleUi::TextBox ( ERROR_INVALID_DELAY ) );
+            ui->pushRight ( new ConsoleUi::TextBox ( ERROR_INVALID_ROLLBACK ) );
             continue;
         }
 
-        netplayConfig.delay = menu->resultInt;
-        netplayConfig.rollback = 0; // TODO select rollback
-        netplayConfig.winCount = config.getInteger ( "versusWinCount" );
-#ifdef RELEASE
-        netplayConfig.hostPlayer = 1 + ( rand() % 2 );
-#else
-        netplayConfig.hostPlayer = 1; // Host is always player 1 for easier debugging
-#endif
-        ret = true;
-        break;
-    }
+        ui->clearRight();
 
-    ui->pop();
+        netplayConfig.rollback = menu->resultInt;
+
+        // TODO set and display effective delay, not the network delay
+
+        ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter delay:" ) );
+
+        ui->top<ConsoleUi::Prompt>()->allowNegative = false;
+        ui->top<ConsoleUi::Prompt>()->maxDigits = 3;
+        ui->top<ConsoleUi::Prompt>()->setInitial ( networkDelay );
+
+        for ( ;; )
+        {
+            menu = ui->popUntilUserInput();
+
+            if ( menu->resultInt < 0 )
+                break;
+
+            if ( menu->resultInt >= 0xFF )
+            {
+                ui->pushRight ( new ConsoleUi::TextBox ( ERROR_INVALID_DELAY ) );
+                continue;
+            }
+
+            netplayConfig.delay = menu->resultInt;
+            netplayConfig.winCount = config.getInteger ( "versusWinCount" );
+#ifdef RELEASE
+            netplayConfig.hostPlayer = 1 + ( rand() % 2 );
+#else
+            netplayConfig.hostPlayer = 1; // Host is always player 1 for easier debugging
+#endif
+
+            ret = true;
+            ui->pop();
+            break;
+        }
+
+        ui->pop();
+        if ( ret )
+            break;
+    }
 
     if ( ret )
     {

@@ -14,3 +14,5 @@
 #define ERROR_INVALID_HOST_CONFIG   "Host sent invalid configuration!"
 
 #define ERROR_INVALID_DELAY         "Delay must be less than 255!"
+
+#define ERROR_INVALID_ROLLBACK      "Rollback must be less than 256!"

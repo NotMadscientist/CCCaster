@@ -434,7 +434,7 @@ void NetplayManager::setRemotePlayer ( uint8_t player )
     localPlayer = 3 - player;
     remotePlayer = player;
 
-    inputs[player - 1].fillFakeInputs = ( config.rollback > 0 );
+    // inputs[player - 1].fillFakeInputs = ( config.rollback > 0 );
 }
 
 void NetplayManager::updateFrame()
@@ -591,12 +591,10 @@ void NetplayManager::setInput ( uint8_t player, uint16_t input )
     ASSERT ( player == 1 || player == 2 );
     ASSERT ( getIndex() >= startIndex );
 
-    // TODO for rollback
-    // if ( state == NetplayState::InGame )
-    //     setInput ( player, input, getFrame() + config.getOffset );
-    // else
-
-    inputs[player - 1].set ( getIndex() - startIndex, getFrame() + config.delay, input );
+    if ( state == NetplayState::InGame )
+        inputs[player - 1].set ( getIndex() - startIndex, getFrame() + config.getOffset(), input );
+    else
+        inputs[player - 1].set ( getIndex() - startIndex, getFrame() + config.delay, input );
 }
 
 void NetplayManager::assignInput ( uint8_t player, uint16_t input, uint32_t frame )
@@ -721,12 +719,6 @@ bool NetplayManager::isRemoteInputReady() const
         return true;
     }
 
-    // if ( isRollbackState() && state == NetplayState::InGame )
-    // {
-    //     return ( ( inputs[remotePlayer - 1].getEndIndexedFrame ( startIndex ).value + config.rollback )
-    //              > indexedFrame.value + 1 );
-    // }
-
     if ( inputs[remotePlayer - 1].empty() )
     {
         LOG ( "[%s] No remote inputs (index)", indexedFrame );
@@ -754,10 +746,12 @@ bool NetplayManager::isRemoteInputReady() const
 
     ASSERT ( inputs[remotePlayer - 1].getEndFrame() >= 1 );
 
-    if ( ( inputs[remotePlayer - 1].getEndFrame() - 1 ) < getFrame() )
+    const uint8_t offset = ( state == NetplayState::InGame ? config.getOffset() : 0 );
+
+    if ( ( inputs[remotePlayer - 1].getEndFrame() - 1 + offset ) < getFrame() )
     {
-        LOG ( "[%s] remoteFrame = %u < localFrame=%u",
-              indexedFrame, inputs[remotePlayer - 1].getEndFrame() - 1, getFrame() );
+        LOG ( "[%s] remoteFrame = %u < localFrame=%u; delay=%u; rollback=%u",
+              indexedFrame, inputs[remotePlayer - 1].getEndFrame() - 1, getFrame(), config.delay, config.rollback );
 
         return false;
     }
