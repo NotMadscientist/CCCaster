@@ -106,7 +106,8 @@ SocketPtr TcpSocket::accept ( Socket::Owner *owner )
 
     if ( newFd == INVALID_SOCKET )
     {
-        LOG_SOCKET ( this, "%s; accept failed", WinException::getAsString ( WSAGetLastError() ) );
+        int error = WSAGetLastError();
+        LOG_SOCKET ( this, "[%d] %s; accept failed", error, WinException::getAsString ( error ) );
         return 0;
     }
 

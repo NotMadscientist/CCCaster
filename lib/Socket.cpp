@@ -385,7 +385,8 @@ void Socket::readEvent()
 
     if ( error )
     {
-        LOG_SOCKET ( this, "%s; %s failed", ( isTCP() ? "recv" : "recvfrom" ), WinException::getAsString ( error ) );
+        LOG_SOCKET ( this, "[%d] %s; %s failed",
+                     error, WinException::getAsString ( error ), ( isTCP() ? "recv" : "recvfrom" ) );
 
         // Skip blocking reads
         if ( error == WSAEWOULDBLOCK )
