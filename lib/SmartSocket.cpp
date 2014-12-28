@@ -279,13 +279,22 @@ void SmartSocket::disconnectEvent ( Socket *socket )
     }
     else if ( socket == vpsSocket.get() )
     {
+        LOG_SMART_SOCKET ( this, "vpsSocket disconnected" );
+
+        vpsSocket.reset();
+
         // TODO reconnect but throttle attempts over a time period in case the VPS is down
         // vpsSocket = TcpSocket::connect ( this, vpsAddress, true ); // Raw socket
 
-        LOG_SMART_SOCKET ( this, "vpsSocket disconnected" );
+        if ( isConnected() || isServer() )
+            return;
 
-        // We can ignore this disconnect and still mostly function properly
-        vpsSocket.reset();
+        Socket::Owner *const owner = this->owner;
+
+        disconnect();
+
+        if ( owner )
+            owner->disconnectEvent ( this );
     }
     else
     {

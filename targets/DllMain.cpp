@@ -50,7 +50,7 @@ using namespace std;
 #define LOG_SYNC(FORMAT, ...)                                                                                   \
     LOG_TO ( syncLog, "%s [%u] %s [%s] " FORMAT,                                                                \
              gameModeStr ( *CC_GAME_MODE_ADDR ), *CC_GAME_MODE_ADDR,                                            \
-             netMan.getState(), netMan.getIndexedFrame(), __VA_ARGS__ )
+             netMan.getState(), netMan.getIndexedFrame(), ## __VA_ARGS__ )
 
 
 // Main application state
