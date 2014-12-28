@@ -11,7 +11,7 @@ How to host without port forward:
 
 Other notes:
 
-    Run Add_Handler_Protocol.bat as admin to launch directly from http://seemeinmelty.meteor.com/
+    Run Add_Handler_Protocol.bat once as admin to launch directly from http://seemeinmelty.meteor.com/
 
     If you use an analog controller, make sure to adjust the deadzone, else you might get weird inputs.
 
