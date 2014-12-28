@@ -17,3 +17,6 @@ contrib/astyle binary
 # Readme files
 README.txt text eol=crlf
 ChangeLog.txt text eol=crlf
+
+# Special files
+Add_Handler_Protocol.bat text eol=crlf
