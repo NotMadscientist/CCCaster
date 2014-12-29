@@ -210,6 +210,7 @@ static const vector<MemDump> miscAddrs =
     CC_CAMERA_X_ADDR,
     CC_CAMERA_Y_ADDR,
     CC_METER_ANIMATION_ADDR,
+    CC_WORLD_TIMER_ADDR,
 
     CC_RNGSTATE0_ADDR,
     CC_RNGSTATE1_ADDR,

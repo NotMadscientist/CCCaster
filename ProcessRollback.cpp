@@ -7,7 +7,8 @@
 using namespace std;
 
 
-#define NUM_ROLLBACK_STATES         ( 120 )
+#define NUM_ROLLBACK_STATES ( 256 )
+
 
 static MemDumpList allAddrs;
 
@@ -87,7 +88,8 @@ void ProcessManager::saveState ( const NetplayManager& netMan )
 
 bool ProcessManager::loadState ( IndexedFrame indexedFrame, NetplayManager& netMan )
 {
-    LOG ( "Trying to load state: indexedFrame=%s", indexedFrame );
+    LOG ( "Trying to load state: indexedFrame=%s; statesList={ %s ... %s }",
+          indexedFrame, statesList.front().indexedFrame, statesList.back().indexedFrame );
 
     for ( auto it = statesList.rbegin(); it != statesList.rend(); ++it )
     {

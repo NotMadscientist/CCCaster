@@ -324,14 +324,14 @@ struct DllMain
                 if ( specialPauseReady && isAnyDirectionPressed ( playerControllers[localPlayer - 1] ) )
                     *CC_PAUSE_FLAG_ADDR = 0;
 
-                // When specially paused, use [ and ] to frame step
-                if ( specialPauseReady && *CC_PAUSE_FLAG_ADDR )
-                {
-                    if ( KeyboardState::isPressed ( VK_OEM_4 ) )            // [ to frame step back
-                        ;
-                    else if ( KeyboardState::isPressed ( VK_OEM_6 ) )       // ] to frame step forward
-                        ;
-                }
+                // // TODO When specially paused, use [ and ] to frame step
+                // if ( specialPauseReady && *CC_PAUSE_FLAG_ADDR )
+                // {
+                //     if ( KeyboardState::isPressed ( VK_OEM_4 ) )            // [ to frame step back
+                //         ;
+                //     else if ( KeyboardState::isPressed ( VK_OEM_6 ) )       // ] to frame step forward
+                //         ;
+                // }
 #endif
 
                 // Assign local player input
@@ -444,13 +444,20 @@ struct DllMain
         if ( netMan.getState() == NetplayState::InGame && netMan.config.rollback
                 && netMan.getLastChangedFrame().value < netMan.getIndexedFrame().value )
         {
-            LOG_SYNC ( "Rollback: %s -> %s", netMan.getIndexedFrame(), netMan.getLastChangedFrame() );
+            const string before = format ( "%s [%u] %s [%s]",
+                                           gameModeStr ( *CC_GAME_MODE_ADDR ), *CC_GAME_MODE_ADDR,
+                                           netMan.getState(), netMan.getIndexedFrame() );
 
-            // Indicate we're re-running (save the frame first)
+            // Indicate we're re-running to the current frame
             fastFwdStopFrame = netMan.getIndexedFrame();
 
-            // Reset the game state (this resets game state and netMan state)
+            // Start fast-forwarding now
+            *CC_SKIP_FRAMES_ADDR = 1;
+
+            // Reset the game state (this resets game state AND netMan state)
             procMan.loadState ( netMan.getLastChangedFrame(), netMan );
+
+            LOG_TO ( syncLog, "%s Rollback: [%s]", before, netMan.getIndexedFrame() );
             return;
         }
 
@@ -497,7 +504,7 @@ struct DllMain
 #ifndef RELEASE
         // Log the RngState once every 5 seconds after CharaSelect, except in Loading, Skippable, and RetryMenu states.
         // This effectively also logs whenever the frame becomes zero, ie when the index is incremented.
-        if ( dataSocket && dataSocket->isConnected() && netMan.getFrame() % ( 5 * 60 ) == 0 && !netMan.config.rollback
+        if ( dataSocket && dataSocket->isConnected() && netMan.getFrame() % ( 5 * 60 ) == 0
                 && netMan.getState().value >= NetplayState::CharaSelect && netMan.getState() != NetplayState::Loading
                 && netMan.getState() != NetplayState::Skippable && netMan.getState() != NetplayState::RetryMenu )
         {
@@ -507,28 +514,31 @@ struct DllMain
 
             LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
 
-            // Check for desyncs by periodically sending hashes
-            MsgPtr msgSyncHash ( new SyncHash ( netMan.getIndexedFrame(), msgRngState->getAs<RngState>() ) );
-
-            dataSocket->send ( msgSyncHash );
-
-            localSync.push_back ( msgSyncHash );
-
-            while ( !localSync.empty() && !remoteSync.empty() )
+            if ( !netMan.config.rollback )
             {
-                if ( localSync.front()->getAs<SyncHash>() == remoteSync.front()->getAs<SyncHash>() )
+                // Check for desyncs by periodically sending hashes
+                MsgPtr msgSyncHash ( new SyncHash ( netMan.getIndexedFrame(), msgRngState->getAs<RngState>() ) );
+
+                dataSocket->send ( msgSyncHash );
+
+                localSync.push_back ( msgSyncHash );
+
+                while ( !localSync.empty() && !remoteSync.empty() )
                 {
-                    localSync.pop_front();
-                    remoteSync.pop_front();
-                    continue;
+                    if ( localSync.front()->getAs<SyncHash>() == remoteSync.front()->getAs<SyncHash>() )
+                    {
+                        localSync.pop_front();
+                        remoteSync.pop_front();
+                        continue;
+                    }
+
+                    LOG_SYNC ( "Desync: local=[%s]; remote=[%s]",
+                               localSync.front()->getAs<SyncHash>().indexedFrame,
+                               remoteSync.front()->getAs<SyncHash>().indexedFrame );
+
+                    delayedStop ( "Desync!" );
+                    return;
                 }
-
-                LOG_SYNC ( "Desync: local=[%s]; remote=[%s]",
-                           localSync.front()->getAs<SyncHash>().indexedFrame,
-                           remoteSync.front()->getAs<SyncHash>().indexedFrame );
-
-                delayedStop ( "Desync!" );
-                return;
             }
         }
 #endif

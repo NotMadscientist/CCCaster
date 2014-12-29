@@ -171,6 +171,8 @@ union IndexedFrame
     uint64_t value;
 };
 
+const IndexedFrame MaxIndexedFrame = {{ UINT_MAX, UINT_MAX }};
+
 inline std::ostream& operator<< ( std::ostream& os, const IndexedFrame& indexedFrame )
 {
     return ( os << indexedFrame.parts.index << ':' << indexedFrame.parts.frame );

@@ -167,6 +167,16 @@ struct NetplayConfig : public SerializableSequence
             return delay - rollback;
     }
 
+    uint8_t getReverseOffset() const
+    {
+        ASSERT ( delay != 0xFF );
+
+        if ( delay < rollback )
+            return rollback;
+        else
+            return delay - rollback;
+    }
+
     void setNames ( const std::string& localName, const std::string& remoteName )
     {
         ASSERT ( hostPlayer == 1 || hostPlayer == 2 );
