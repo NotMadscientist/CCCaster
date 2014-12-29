@@ -543,6 +543,9 @@ struct DllMain
         }
 #endif
 
+        // Cleared last played sound effects
+        memset ( AsmHacks::sfxFilterArray, 0, CC_SFX_ARRAY_LEN );
+
         // Log inputs every frame
         LOG_SYNC ( "Inputs: %04x %04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
     }

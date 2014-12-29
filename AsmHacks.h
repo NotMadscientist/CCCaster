@@ -41,9 +41,8 @@ extern uint32_t *autoReplaySaveStatePtr;
 // Flag to enable / disable the Escape key function that exits game (initially true).
 extern uint8_t enableEscapeToExit;
 
-extern uint32_t sfxArray[CC_SFX_ARRAY_LEN];
-
-extern uint32_t sfxFilter[CC_SFX_ARRAY_LEN];
+// Array of sound effects that were played last frame, set any SFX to 1 to prevent playback.
+extern uint8_t sfxFilterArray[CC_SFX_ARRAY_LEN];
 
 
 // Struct for storing assembly code
@@ -252,5 +251,37 @@ static const Asm hijackEscapeKey =
         0x8B, 0xC1,                                                 // mov eax,ecx
         0xC3,                                                       // ret
     } };
+
+// Keep track of already played sound effects and prevent playing duplicates
+static const AsmList filterRepeatedSfx =
+{
+    { ( void * ) 0x4DDEB3, {
+        0xB8, INLINE_DWORD ( sfxFilterArray ),                      // mov eax,sfxFilterArray
+        0x80, 0x3C, 0x30, 0x00,                                     // cmp byte ptr [eax+esi],00
+        0xEB, 0x74                                                  // jmp 0x4DDF32
+    } },
+    { ( void * ) 0x4DDF32, {
+        0xC6, 0x04, 0x30, 0x01,                                     // mov byte ptr [eax+esi],01
+        0x58,                                                       // pop eax
+        0x0F, 0x8f, 0xE6, 0x02, 0x00, 0x00,                         // jg 0x4DE223 (skipSFX)
+        0xEB, 0x65                                                  // jmp 0x4DDFA4
+    } },
+    { ( void * ) 0x4DDFA4, {
+        0x8B, 0x3C, 0xB5, INLINE_DWORD ( 0x76C6F8 ),                // mov edi,[esi*4+0076C6F8]
+        0xE9, 0x67, 0x02, 0x00, 0x00                                // jmp 0x4DE217 (playSFX)
+    } },
+    { ( void * ) 0x4DE210, {
+        0x50,                                                       // push eax
+        0xE9, 0x9D, 0xFC, 0xFF, 0xFF,                               // jmp 0x4DDEB3
+        0x90                                                        // nop
+                                                                    // playSFX:
+                                                                    // test edi,edi
+                                                                    // je 0x4DE220
+                                                                    // call 0x4F3A0
+                                                                    // add ebp,01
+                                                                    // add esi,01
+                                                                    // skipSFX:
+    } },
+};
 
 } // namespace AsmHacks

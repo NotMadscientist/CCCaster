@@ -50,6 +50,9 @@ private:
         // The pointer to the raw bytes in the state pool
         char *rawBytes;
 
+        // Array of sound effects to filter
+        uint8_t sfxFilterArray[CC_SFX_ARRAY_LEN];
+
         // Save / load the game state
         void save();
         void load();

@@ -37,9 +37,7 @@ uint32_t *autoReplaySaveStatePtr = 0;
 
 uint8_t enableEscapeToExit = true;
 
-uint32_t sfxArray[CC_SFX_ARRAY_LEN] = { 0 };
-
-uint32_t sfxFilter[CC_SFX_ARRAY_LEN] = { 0 };
+uint8_t sfxFilterArray[CC_SFX_ARRAY_LEN] = { 0 };
 
 
 int Asm::write() const

@@ -1,5 +1,6 @@
 #include "ProcessManager.h"
 #include "MemDump.h"
+#include "AsmHacks.h"
 
 #include <utility>
 #include <algorithm>
@@ -25,6 +26,8 @@ void ProcessManager::GameState::save()
     for ( const MemDump& mem : allAddrs.addrs )
         mem.saveDump ( dump );
 
+    memcpy ( sfxFilterArray, AsmHacks::sfxFilterArray, CC_SFX_ARRAY_LEN );
+
     ASSERT ( dump == rawBytes + allAddrs.totalSize );
 }
 
@@ -36,6 +39,8 @@ void ProcessManager::GameState::load()
 
     for ( const MemDump& mem : allAddrs.addrs )
         mem.loadDump ( dump );
+
+    memcpy ( AsmHacks::sfxFilterArray, sfxFilterArray, CC_SFX_ARRAY_LEN );
 
     ASSERT ( dump == rawBytes + allAddrs.totalSize );
 }
@@ -106,7 +111,13 @@ bool ProcessManager::loadState ( IndexedFrame indexedFrame, NetplayManager& netM
             // Erase all other states after the current one.
             // Note it.base() returns 1 after the position of it, but moving forward.
             for ( auto jt = it.base(); jt != statesList.end(); ++jt )
+            {
                 freeStack.push ( jt->rawBytes - memoryPool.get() );
+
+                // Merge all the erased sfxFilterArrays
+                for ( size_t i = 0; i < CC_SFX_ARRAY_LEN; ++i )
+                    AsmHacks::sfxFilterArray[i] |= jt->sfxFilterArray[i];
+            }
             statesList.erase ( it.base(), statesList.end() );
             return true;
         }
