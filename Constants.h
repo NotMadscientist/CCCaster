@@ -159,6 +159,10 @@
 #define CC_CAMERA_X_ADDR            ( ( int * )      0x564B14 )
 #define CC_CAMERA_Y_ADDR            ( ( int * )      0x564B18 )
 
+// Array of sound effect flags, each byte corresponds to a specific SFX, set to 1 to start
+#define CC_SFX_ARRAY_ADDR           ( ( uint8_t * )  0x76E008 )
+#define CC_SFX_ARRAY_LEN            ( 1500 )
+
 
 // Asm hacks are prefixed MM (for modified memory), they should be written to safe locations
 #define MM_HOOK_CALL1_ADDR          ( ( char * )     0x40D032 )

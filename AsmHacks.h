@@ -41,6 +41,10 @@ extern uint32_t *autoReplaySaveStatePtr;
 // Flag to enable / disable the Escape key function that exits game (initially true).
 extern uint8_t enableEscapeToExit;
 
+extern uint32_t sfxArray[CC_SFX_ARRAY_LEN];
+
+extern uint32_t sfxFilter[CC_SFX_ARRAY_LEN];
+
 
 // Struct for storing assembly code
 struct Asm
