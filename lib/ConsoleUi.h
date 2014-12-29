@@ -546,7 +546,7 @@ public:
     // Clear to the right of the top element (visually)
     void clearRight() const
     {
-        if ( stack.empty() || stack.size() == 1 )
+        if ( stack.empty() )
         {
             ConsoleCore::GetInstance()->ClearScreen();
         }
