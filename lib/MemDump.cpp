@@ -180,7 +180,7 @@ void MemDumpList::load ( BinaryInputArchive& ar )
     }
 }
 
-bool MemDumpList::save ( const char *filename ) const
+bool MemDumpList::save ( const string& filename ) const
 {
     string data;
 
@@ -204,7 +204,7 @@ bool MemDumpList::save ( const char *filename ) const
     data.append ( md5, sizeof ( md5 ) );
 
     // Try to write to the file
-    ofstream fout ( filename, ofstream::binary );
+    ofstream fout ( filename.c_str(), ofstream::binary );
     bool good = fout.good();
     if ( good )
         good = fout.write ( &data[0], data.size() ).good();
@@ -212,12 +212,12 @@ bool MemDumpList::save ( const char *filename ) const
     return good;
 }
 
-bool MemDumpList::load ( const char *filename )
+bool MemDumpList::load ( const string& filename )
 {
     string data;
 
     // Open file
-    ifstream fin ( filename, ifstream::binary );
+    ifstream fin ( filename.c_str(), ifstream::binary );
     bool good = fin.good();
 
     if ( good )

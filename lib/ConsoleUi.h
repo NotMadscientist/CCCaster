@@ -503,23 +503,30 @@ public:
         stack.clear();
     }
 
+    bool hasBorder() const
+    {
+        for ( size_t i = 2; i < stack.size(); ++i )
+        {
+            if ( top()->pos.X >= stack[stack.size() - i]->pos.X
+                    && top()->pos.X + top()->size.X <= stack[stack.size() - i]->pos.X + stack[stack.size() - i]->size.X
+                    && top()->pos.Y > stack[stack.size() - i]->pos.Y )
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     // Clear the top element (visually)
     void clearTop() const
     {
         if ( stack.empty() || stack.size() == 1 )
-        {
             ConsoleCore::GetInstance()->ClearScreen();
-        }
-        else if ( top()->pos.X == stack[stack.size() - 2]->pos.X            // If the top element is just underneath
-                  && top()->pos.Y > stack[stack.size() - 2]->pos.Y          // another element that is at least the
-                  && top()->size.X <= stack[stack.size() - 2]->size.X )     // same width, preserve the border
-        {
+        else if ( hasBorder() )
             CharacterBox::Draw ( { top()->pos.X, short ( top()->pos.Y + 1 ) }, MAX_SCREEN_SIZE, ' ' );
-        }
         else
-        {
             CharacterBox::Draw ( top()->pos, MAX_SCREEN_SIZE, ' ' );
-        }
     }
 
     // Clear below the top element (visually)
@@ -540,9 +547,18 @@ public:
     void clearRight() const
     {
         if ( stack.empty() )
+        {
             ConsoleCore::GetInstance()->ClearScreen();
+        }
+        else if ( hasBorder() )
+        {
+            const COORD pos = { short ( top()->pos.X + top()->size.X ), short ( top()->pos.Y + 1 ) };
+            CharacterBox::Draw ( pos, MAX_SCREEN_SIZE, ' ' );
+        }
         else
+        {
             CharacterBox::Draw ( { short ( top()->pos.X + top()->size.X ), top()->pos.Y }, MAX_SCREEN_SIZE, ' ' );
+        }
     }
 
     // Get console window handle
