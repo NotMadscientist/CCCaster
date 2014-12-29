@@ -125,6 +125,8 @@ void SocketManager::remove ( Socket *socket )
 void SocketManager::clear()
 {
     LOG ( "Clearing sockets" );
+    for ( auto it = allocatedSockets.begin(); it != allocatedSockets.end(); )
+        ( *it++ )->disconnect();
     activeSockets.clear();
     allocatedSockets.clear();
     changed = true;

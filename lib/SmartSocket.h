@@ -22,6 +22,9 @@ class SmartSocket : public Socket, public Socket::Owner, public Timer::Owner
     // Socket that connects to the notification and tunnel server
     SocketPtr vpsSocket;
 
+    // Current tunnel server to try
+    std::vector<IpAddrPort>::const_iterator vpsAddress;
+
     // Timeout for UDP tunnel match
     TimerPtr connectTimer;
 

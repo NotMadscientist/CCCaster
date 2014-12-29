@@ -233,9 +233,7 @@ struct MainApp
         AutoManager _;
 
         if ( clientMode.isBroadcast() )
-        {
             externaIpAddress.start();
-        }
 
         // Open the game immediately
         startGame();
@@ -410,9 +408,6 @@ struct MainApp
 
     void mergePingStats()
     {
-        dataSocket.reset();
-        serverDataSocket.reset();
-
         LOG ( "PingStats (local): latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
               pinger.getStats().getMean(), pinger.getStats().getWorst(),
               pinger.getStats().getStdErr(), pinger.getStats().getStdDev(), pinger.getPacketLoss() );

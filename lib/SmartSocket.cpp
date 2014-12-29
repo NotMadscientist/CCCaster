@@ -12,7 +12,7 @@ using namespace std;
 
 #define SEND_INTERVAL ( 50 )
 
-const IpAddrPort vpsAddress = "192.210.227.23:3939";
+const vector<IpAddrPort> relayServers = { "192.210.227.23:3939", "104.206.199.123:3939" };
 
 /* Tunnel protocol
 
@@ -135,7 +135,8 @@ SmartSocket::SmartSocket ( Socket::Owner *owner, uint16_t port, Socket::Protocol
 
     this->state = State::Listening;
 
-    vpsSocket = TcpSocket::connect ( this, vpsAddress, true ); // Raw socket
+    vpsAddress = relayServers.cbegin();
+    vpsSocket = TcpSocket::connect ( this, *vpsAddress, true ); // Raw socket
 
     try
     {
@@ -168,7 +169,8 @@ SmartSocket::SmartSocket ( Socket::Owner *owner, const IpAddrPort& address, Sock
 
     if ( forceTun )
     {
-        vpsSocket = TcpSocket::connect ( this, vpsAddress, true );
+        vpsAddress = relayServers.cbegin();
+        vpsSocket = TcpSocket::connect ( this, *vpsAddress, true );
         return;
     }
 
@@ -261,7 +263,8 @@ void SmartSocket::disconnectEvent ( Socket *socket )
 
         directSocket.reset();
 
-        vpsSocket = TcpSocket::connect ( this, vpsAddress, true );
+        vpsAddress = relayServers.cbegin();
+        vpsSocket = TcpSocket::connect ( this, *vpsAddress, true ); // Raw socket
 
         if ( owner )
             owner->switchedToUdpTunnel ( this );
@@ -281,10 +284,17 @@ void SmartSocket::disconnectEvent ( Socket *socket )
     {
         LOG_SMART_SOCKET ( this, "vpsSocket disconnected" );
 
-        vpsSocket.reset();
+        ASSERT ( vpsAddress != relayServers.cend() );
 
-        // TODO reconnect but throttle attempts over a time period in case the VPS is down
-        // vpsSocket = TcpSocket::connect ( this, vpsAddress, true ); // Raw socket
+        ++vpsAddress;
+
+        if ( vpsAddress != relayServers.cend() )
+        {
+            vpsSocket = TcpSocket::connect ( this, *vpsAddress, true ); // Raw socket
+            return;
+        }
+
+        vpsSocket.reset();
 
         if ( isConnected() || isServer() )
             return;
@@ -370,7 +380,9 @@ void SmartSocket::timerExpired ( Timer *timer )
                 const TunnelClient& tunClient = kv.second;
                 const UdpData data ( isClient(), tunClient.matchId );
 
-                tunSocket->send ( data.buffer, sizeof ( data.buffer ), vpsAddress );
+                ASSERT ( vpsAddress != relayServers.cend() );
+
+                tunSocket->send ( data.buffer, sizeof ( data.buffer ), *vpsAddress );
 
                 if ( !tunClient.address.empty() )
                     tunSocket->send ( NullMsg, tunClient.address );
@@ -380,7 +392,9 @@ void SmartSocket::timerExpired ( Timer *timer )
         {
             const UdpData data ( isClient(), matchId );
 
-            tunSocket->send ( data.buffer, sizeof ( data.buffer ), vpsAddress );
+            ASSERT ( vpsAddress != relayServers.cend() );
+
+            tunSocket->send ( data.buffer, sizeof ( data.buffer ), *vpsAddress );
 
             if ( !tunAddress.empty() )
                 tunSocket->send ( NullMsg, tunAddress );
@@ -430,7 +444,9 @@ void SmartSocket::gotMatch ( uint32_t matchId )
     {
         this->matchId = matchId;
 
-        tunSocket = UdpSocket::bind ( this, vpsAddress );
+        ASSERT ( vpsAddress != relayServers.cend() );
+
+        tunSocket = UdpSocket::bind ( this, *vpsAddress );
     }
 
     if ( sendTimer )
