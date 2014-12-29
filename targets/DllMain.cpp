@@ -26,6 +26,9 @@ using namespace std;
 // The main log file path
 #define LOG_FILE                    FOLDER "dll.log"
 
+// The number of milliseconds to wait for the initial connect
+#define INITIAL_CONNECT_TIMEOUT     ( 30000 )
+
 // The number of milliseconds to wait to perform a delayed stop so that ErrorMessages are received in time
 #define DELAYED_STOP                ( 100 )
 
@@ -47,7 +50,7 @@ using namespace std;
 #define LOG_SYNC(FORMAT, ...)                                                                                   \
     LOG_TO ( syncLog, "%s [%u] %s [%s] " FORMAT,                                                                \
              gameModeStr ( *CC_GAME_MODE_ADDR ), *CC_GAME_MODE_ADDR,                                            \
-             netMan.getState(), netMan.getIndexedFrame(), __VA_ARGS__ )
+             netMan.getState(), netMan.getIndexedFrame(), ## __VA_ARGS__ )
 
 
 // Main application state
@@ -1164,7 +1167,7 @@ struct DllMain
                     }
 
                     initialTimer.reset ( new Timer ( this ) );
-                    initialTimer->start ( DEFAULT_PENDING_TIMEOUT );
+                    initialTimer->start ( INITIAL_CONNECT_TIMEOUT );
 
                     // Wait for dataSocket to be connected before changing to NetplayState::Initial
                 }

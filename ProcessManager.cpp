@@ -181,14 +181,7 @@ void ProcessManager::openGame ( const string& appDir, bool highPriority )
     LOG ( "appDir='%s'", appDir );
     LOG ( "gameDir='%s'", gameDir );
 
-    string command;
-
-    if ( gameDir.empty() )
-        command = "cd \"" + appDir + "\" && ";
-    else
-        command = "cd \"" + gameDir + "\" && ";
-
-    command += "\"" + appDir + LAUNCHER "\" \"" + MBAA_EXE "\" \"" + appDir + HOOK_DLL "\"";
+    string command = "\"" + appDir + LAUNCHER "\" \"" + gameDir + MBAA_EXE "\" \"" + appDir + HOOK_DLL "\"";
 
     if ( highPriority )
         command += " --high";

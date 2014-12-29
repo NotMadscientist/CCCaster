@@ -1,5 +1,5 @@
 VERSION = 2.1
-SUFFIX = e
+SUFFIX = f
 NAME = cccaster
 TAG =
 
@@ -121,7 +121,7 @@ generator: tools/$(GENERATOR)
 $(ARCHIVE): $(BINARY) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER) $(FOLDER)/states.bin
 	@echo
 	rm -f $(filter-out %.log,$(filter-out $(ARCHIVE),$(wildcard $(NAME)*.zip)))
-	$(ZIP) $(ARCHIVE) ReadMe.txt ChangeLog.txt $^
+	$(ZIP) $(ARCHIVE) ReadMe.txt ChangeLog.txt Add_Handler_Protocol.bat $^
 	$(GRANT)
 
 $(BINARY): $(addprefix $(BUILD_TYPE)/,$(MAIN_OBJECTS))

@@ -17,9 +17,13 @@ bool hookDLL ( const string& dll_path, const PROCESS_INFORMATION *pi )
     HANDLE hThread = CreateRemoteThread ( pi->hProcess, 0, 0, pLoadLibrary, dll_addr, 0, 0 );
     if ( !hThread )
     {
+        char buffer[4096];
+        snprintf ( buffer, sizeof ( buffer ), "Could not create remote thread [%d].", ( int ) GetLastError() );
+        MessageBox ( 0, buffer, "launcher error", MB_OK );
+
+        // Cleanup
         VirtualFreeEx ( pi->hProcess, dll_addr, 0, MEM_RELEASE );
         TerminateProcess ( pi->hProcess, -1 );
-        // MessageBox ( 0, "Could not create remote thread.", "launcher error", MB_OK );
         return false;
     }
 
@@ -70,14 +74,19 @@ bool hook ( const string& exe_path, const string& dll_path, bool high_priority )
 
     if ( !GetFileAttributesEx ( exe_path.c_str(), GetFileExInfoStandard, &exe_info ) )
     {
-        // MessageBox ( 0, "Could not open MBAACC files. This should be contained in the same folder as MBAA.exe.",
-        //              "launcher error", MB_OK);
+        char buffer[4096];
+        snprintf ( buffer, sizeof ( buffer ), "Couldn't find exe='%s'\nError [%d].",
+                   exe_path.c_str(), ( int ) GetLastError() );
+        MessageBox ( 0, buffer, "launcher error", MB_OK );
         return false;
     }
 
     if ( !GetFileAttributesEx ( dll_path.c_str(), GetFileExInfoStandard, &dat_info ) )
     {
-        // MessageBox ( 0, dll_path.c_str(), "launcher error", MB_OK | MB_ICONEXCLAMATION );
+        char buffer[4096];
+        snprintf ( buffer, sizeof ( buffer ), "Couldn't find dll='%s'\nError [%d].",
+                   dll_path.c_str(), ( int ) GetLastError() );
+        MessageBox ( 0, buffer, "launcher error", MB_OK );
         return false;
     }
 
@@ -86,9 +95,17 @@ bool hook ( const string& exe_path, const string& dll_path, bool high_priority )
     if ( high_priority )
         flags |= HIGH_PRIORITY_CLASS;
 
-    if ( !CreateProcess ( exe_path.c_str(), 0, 0, 0, TRUE, flags, 0, 0, &si, &pi ) )
+    char buffer[exe_path.size() + 1];
+    strcpy ( buffer, exe_path.c_str() );
+
+    const string dir_path = exe_path.substr ( 0, exe_path.find_last_of ( "/\\" ) );
+
+    if ( !CreateProcessA ( 0, buffer, 0, 0, TRUE, flags, 0, dir_path.c_str(), &si, &pi ) )
     {
-        // MessageBox ( 0, "Could not create process.", "launcher error", MB_OK );
+        char buffer[4096];
+        snprintf ( buffer, sizeof ( buffer ), "exe='%s'\ndir='%s'\nCould not create process [%d].",
+                   exe_path.c_str(), dir_path.c_str(), ( int ) GetLastError() );
+        MessageBox ( 0, buffer, "launcher error", MB_OK );
         return false;
     }
 
@@ -149,7 +166,5 @@ int main ( int argc, char *argv[] )
     if ( argc > 2 && hook ( argv[1], argv[2], ( argc > 3 && string ( argv[3] ) == "--high" ) ) )
         return 0;
 
-    // MessageBox ( 0, "Could not hook into MBAA.exe\n\nDo you have GameGuard or something running?",
-    //              "launcher error", MB_OK | MB_ICONEXCLAMATION);
     return -1;
 }

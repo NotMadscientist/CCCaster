@@ -28,6 +28,10 @@ extern string lastError;
 
 extern string appDir;
 
+static Mutex uiMutex;
+
+static CondVar uiCondVar;
+
 
 // static string getClipboard()
 // {
@@ -99,10 +103,6 @@ struct MainApp
     bool isWaitingForUser = false;
 
     bool userConfirmed = false;
-
-    Mutex uiMutex;
-
-    CondVar uiCondVar;
 
     SocketPtr uiSendSocket, uiRecvSocket;
 
@@ -233,9 +233,7 @@ struct MainApp
         AutoManager _;
 
         if ( clientMode.isBroadcast() )
-        {
             externaIpAddress.start();
-        }
 
         // Open the game immediately
         startGame();
@@ -410,9 +408,6 @@ struct MainApp
 
     void mergePingStats()
     {
-        dataSocket.reset();
-        serverDataSocket.reset();
-
         LOG ( "PingStats (local): latency=%.2f ms; worst=%.2f ms; stderr=%.2f ms; stddev=%.2f ms; packetLoss=%d%%",
               pinger.getStats().getMean(), pinger.getStats().getWorst(),
               pinger.getStats().getStdErr(), pinger.getStats().getStdDev(), pinger.getPacketLoss() );
@@ -706,7 +701,8 @@ struct MainApp
         {
             ASSERT ( clientMode.value == ClientMode::Client || clientMode.isSpectate() == true );
 
-            ui.display ( "Dummy is ready", false ); // Don't replace last message
+            ui.display ( format ( "Dummy is ready%s", clientMode.isTraining() ? " (training)" : "" ),
+                         false ); // Don't replace last message
 
             isDummyReady = true;
 
@@ -1253,4 +1249,11 @@ void runMain ( const IpAddrPort& address, const Serializable& config )
 
 void runFake ( const IpAddrPort& address, const Serializable& config )
 {
+}
+
+void stopMain()
+{
+    LOCK ( uiMutex );
+    uiCondVar.signal();
+    EventManager::get().release();
 }

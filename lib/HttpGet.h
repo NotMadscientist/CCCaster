@@ -1,11 +1,15 @@
 #pragma once
 
 #include "Socket.h"
+#include "Timer.h"
 
 #include <string>
 
 
-class HttpGet : public Socket::Owner
+#define DEFAULT_GET_TIMEOUT ( 5000 )
+
+
+class HttpGet : public Socket::Owner, public Timer::Owner
 {
 public:
 
@@ -26,19 +30,27 @@ private:
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override {}
     void readEvent ( Socket *socket, const char *data, size_t len, const IpAddrPort& address ) override;
 
+    void timerExpired ( Timer *timer ) override;
+
+    bool tryParse();
+
     SocketPtr socket;
+
+    TimerPtr timer;
 
     std::string host, path;
 
     int code = -1;
 
-    std::string data;
+    std::string buffer, data;
 
 public:
 
     const std::string url;
 
-    HttpGet ( Owner *owner, const std::string& url );
+    const uint64_t timeout;
+
+    HttpGet ( Owner *owner, const std::string& url, uint64_t timeout = DEFAULT_GET_TIMEOUT );
 
     void start();
 

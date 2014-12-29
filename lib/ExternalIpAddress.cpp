@@ -25,7 +25,7 @@ void ExternalIpAddress::receivedHttp ( HttpGet *httpGet, int code, const string&
 
     LOG ( "Received HTTP response (%d): '%s'", code, data );
 
-    if ( code != 200 )
+    if ( code != 200 || data.size() < 7 ) // Min IPv4 length, eg "1.1.1.1" TODO actually validate this
     {
         failedHttp ( httpGet );
         return;
