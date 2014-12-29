@@ -10,8 +10,6 @@
 template<typename T>
 class InputsContainer
 {
-protected:
-
     // Mapping: index -> frame -> input
     std::vector<std::vector<T>> inputs;
 
@@ -21,6 +19,25 @@ protected:
     // Last frame of input that changed
     IndexedFrame lastChangedFrame = MaxIndexedFrame;
 
+    T lastInputBefore ( uint32_t index ) const
+    {
+        if ( inputs.empty() || index == 0 )
+            return 0;
+
+        if ( index > inputs.size() )
+            index = inputs.size();
+
+        do
+        {
+            --index;
+            if ( !inputs[index].empty() )
+                return inputs[index].back();
+        }
+        while ( index > 0 );
+
+        return 0;
+    }
+
 public:
 
     // bool fillFakeInputs = false;
@@ -28,11 +45,8 @@ public:
     // Get a single input for the given index:frame, returns 0 if none.
     T get ( uint32_t index, uint32_t frame ) const
     {
-        if ( index >= inputs.size() )
-            return 0;
-
-        if ( inputs[index].empty() )
-            return 0;
+        if ( index >= inputs.size() || inputs[index].empty() )
+            return lastInputBefore ( index );
 
         if ( frame >= inputs[index].size() )
             return inputs[index].back();
@@ -104,10 +118,17 @@ public:
     // Resize the container so that it can contain inputs up to index:frame+n.
     void resize ( uint32_t index, uint32_t frame, size_t n = 1, bool isReal = true )
     {
-        if ( index >= inputs.size() )
-            inputs.resize ( index + 1 );
+        T last = 0;
 
-        const T last = ( inputs[index].empty() ? 0 : inputs[index].back() );
+        if ( index >= inputs.size() )
+        {
+            last = lastInputBefore ( inputs.size() );
+            inputs.resize ( index + 1 );
+        }
+        else
+        {
+            last = inputs[index].back();
+        }
 
         if ( frame + n > inputs[index].size() )
             inputs[index].resize ( frame + n, last );
