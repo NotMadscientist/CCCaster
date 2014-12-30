@@ -122,7 +122,8 @@ generator: tools/$(GENERATOR)
 $(ARCHIVE): $(BINARY) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER)
 	@echo
 	rm -f $(wildcard $(NAME)*.zip)
-	$(ZIP) $(ARCHIVE) ReadMe.txt ChangeLog.txt Add_Handler_Protocol.bat $^
+	$(ZIP) $(ARCHIVE) ReadMe.txt ChangeLog.txt $^
+	$(ZIP) $(ARCHIVE) -j scripts/Add_Handler_Protocol.bat
 	$(GRANT)
 
 $(BINARY): $(addprefix $(BUILD_PREFIX)/,$(MAIN_OBJECTS))
