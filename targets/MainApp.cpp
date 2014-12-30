@@ -1256,4 +1256,7 @@ void stopMain()
     LOCK ( uiMutex );
     uiCondVar.signal();
     EventManager::get().release();
+    KeyboardManager::get().unhook();
+    SocketManager::get().deinitialize();
+    TimerManager::get().deinitialize();
 }
