@@ -1,9 +1,7 @@
-v2.1h:
-- Prevent changing delay (via Ctrl + Number) if the game is not focused.
-
 v2.1g:
-- Fixed incorrectly repeated input at round start.
+- Fixed incorrectly repeated input at round start and after training mode reset.
 - Fixed occasional connect timeout caused by relay server being down.
+- Prevent changing delay (via Ctrl + Number) if the game is not focused.
 
 v2.1f:
 - Fixed getting stuck on fetching IP address.

@@ -136,6 +136,7 @@
 #define CC_P1_GUARD_BAR_ADDR        ( ( uint32_t * ) 0x5551F4 )
 #define CC_P1_GUARD_QUALITY_ADDR    ( ( uint32_t * ) 0x555208 )
 #define CC_P1_METER_ADDR            ( ( uint32_t * ) 0x555210 )
+#define CC_P1_FACING_FLAG_ADDR      ( ( uint8_t * )  0x555444 ) // 0 facing left, 1 facing right
 
 #define CC_P2_SEQUENCE_ADDR         ( ( uint32_t * ) ( ( ( char * ) CC_P1_SEQUENCE_ADDR       ) + CC_PLR_STRUCT_SIZE ) )
 #define CC_P2_SEQ_STATE_ADDR        ( ( uint32_t * ) ( ( ( char * ) CC_P1_SEQ_STATE_ADDR      ) + CC_PLR_STRUCT_SIZE ) )
@@ -152,6 +153,7 @@
 #define CC_P2_GUARD_BAR_ADDR        ( ( uint32_t * ) ( ( ( char * ) CC_P1_GUARD_BAR_ADDR      ) + CC_PLR_STRUCT_SIZE ) )
 #define CC_P2_GUARD_QUALITY_ADDR    ( ( uint32_t * ) ( ( ( char * ) CC_P1_GUARD_QUALITY_ADDR  ) + CC_PLR_STRUCT_SIZE ) )
 #define CC_P2_METER_ADDR            ( ( uint32_t * ) ( ( ( char * ) CC_P1_METER_ADDR          ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_FACING_FLAG_ADDR      ( ( uint8_t * )  ( ( ( char * ) CC_P1_FACING_FLAG_ADDR    ) + CC_PLR_STRUCT_SIZE ) )
 
 // Camera addresses
 #define CC_CAMERA_X_ADDR            ( ( int * )      0x564B14 )
