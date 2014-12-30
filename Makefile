@@ -121,7 +121,7 @@ generator: tools/$(GENERATOR)
 
 $(ARCHIVE): $(BINARY) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER)
 	@echo
-	rm -f $(filter-out %.log,$(filter-out $(ARCHIVE),$(wildcard $(NAME)*.zip)))
+	rm -f $(wildcard $(NAME)*.zip)
 	$(ZIP) $(ARCHIVE) ReadMe.txt ChangeLog.txt Add_Handler_Protocol.bat $^
 	$(GRANT)
 
