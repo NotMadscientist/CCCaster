@@ -130,7 +130,18 @@ public:
     uint32_t getFrame() const { return indexedFrame.parts.frame; }
     uint32_t getIndex() const { return indexedFrame.parts.index; }
     IndexedFrame getIndexedFrame() const { return indexedFrame; }
+    uint32_t getRemoteIndex() const;
+    uint32_t getRemoteFrame() const;
     IndexedFrame getRemoteIndexedFrame() const;
+
+    // Get the delta between local and remote frames, returns 0 if the index is different
+    int getRemoteFrameDelta() const
+    {
+        if ( getIndex() == getRemoteIndex() )
+            return ( int ) getFrame() - ( int ) getRemoteFrame();
+
+        return 0;
+    }
 
     // Get the index for spectators to start inputs on.
     // During CharaSelect state, this is the beginning of the current CharaSelect state.

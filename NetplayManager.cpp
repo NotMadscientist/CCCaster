@@ -747,7 +747,7 @@ bool NetplayManager::isRemoteInputReady() const
     ASSERT ( inputs[remotePlayer - 1].getEndFrame() >= 1 );
 
     // TODO make sure this makes sense, and also limit to max rollbackable frame
-    const uint8_t offset = ( state == NetplayState::InGame ? config.getReverseOffset() : 0 );
+    const uint8_t offset = ( state == NetplayState::InGame ? config.getReverseOffset() / 2 : 0 );
 
     if ( ( inputs[remotePlayer - 1].getEndFrame() - 1 + offset ) < getFrame() )
     {
@@ -812,6 +812,26 @@ bool NetplayManager::isRngStateReady ( bool shouldSyncRngState ) const
     }
 
     return true;
+}
+
+uint32_t NetplayManager::getRemoteIndex() const
+{
+    uint32_t remoteIndex = inputs[remotePlayer - 1].getEndIndex() + startIndex;
+
+    if ( remoteIndex > 0 )
+        --remoteIndex;
+
+    return remoteIndex;
+}
+
+uint32_t NetplayManager::getRemoteFrame() const
+{
+    uint32_t remoteFrame = inputs[remotePlayer - 1].getEndFrame();
+
+    if ( remoteFrame > 0 )
+        --remoteFrame;
+
+    return remoteFrame;
 }
 
 IndexedFrame NetplayManager::getRemoteIndexedFrame() const

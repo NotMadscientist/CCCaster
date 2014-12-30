@@ -284,6 +284,15 @@ void updateSelector ( uint8_t index, int position, const string& line )
     drawSelector[index] = true;
 }
 
+
+#ifndef RELEASE
+
+string debugText;
+
+int debugTextAlign = 0;
+
+#endif
+
 } // namespace DllOverlayUi
 
 
@@ -329,8 +338,10 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
         background->Unlock();
     }
 
+#ifdef RELEASE
     if ( overlayState == Overlay::Disabled )
         return;
+#endif
 
     D3DVIEWPORT9 viewport;
     device->GetViewport ( &viewport );
@@ -338,6 +349,23 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
     // Only draw in the main viewport; there should only be one with this width
     if ( viewport.Width != * CC_SCREEN_WIDTH_ADDR )
         return;
+
+#ifndef RELEASE
+    if ( !debugText.empty() )
+    {
+        RECT rect;
+        rect.top = rect.left = 0;
+        rect.right = viewport.Width;
+        rect.bottom = viewport.Height;
+
+        DrawText ( debugText, rect, DT_WORDBREAK |
+                   ( debugTextAlign == 0 ? DT_CENTER : ( debugTextAlign < 0 ? DT_LEFT : DT_RIGHT ) ),
+                   D3DCOLOR_XRGB ( 255, 255, 255 ) );
+    }
+
+    if ( overlayState == Overlay::Disabled )
+        return;
+#endif
 
     // Calculate message width if showing one
     float messageWidth = 0.0f;

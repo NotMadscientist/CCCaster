@@ -971,7 +971,7 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
 
     ui->top<ConsoleUi::Prompt>()->allowNegative = false;
     ui->top<ConsoleUi::Prompt>()->maxDigits = 3;
-    ui->top<ConsoleUi::Prompt>()->setInitial ( 2 * networkDelay ); // TODO clamp or scale the rollback
+    ui->top<ConsoleUi::Prompt>()->setInitial ( clamped ( 2 * networkDelay, 0, NUM_INPUTS / 2 ) ); // TODO scale this
 
     for ( ;; )
     {
@@ -981,9 +981,9 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
         if ( menu->resultInt < 0 )
             break;
 
-        if ( menu->resultInt > 0xFF )
+        if ( menu->resultInt > NUM_INPUTS / 2 )
         {
-            ui->pushRight ( new ConsoleUi::TextBox ( ERROR_INVALID_ROLLBACK ) );
+            ui->pushRight ( new ConsoleUi::TextBox ( format ( ERROR_INVALID_ROLLBACK, 1 + NUM_INPUTS / 2 ) ) );
             continue;
         }
 
