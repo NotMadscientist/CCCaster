@@ -14,8 +14,8 @@ using namespace std;
 
 static const vector<IpAddrPort> relayServers =
 {
+    "104.206.199.123:3939",
     "192.210.227.23:3939",
-    "104.206.199.123:3939"
 };
 
 /* Tunnel protocol
@@ -294,6 +294,7 @@ void SmartSocket::disconnectEvent ( Socket *socket )
 
         if ( vpsAddress != relayServers.cend() )
         {
+            connectTimer.reset();
             vpsSocket = TcpSocket::connect ( this, *vpsAddress, true ); // Raw socket
             return;
         }
