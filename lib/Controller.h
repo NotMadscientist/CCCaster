@@ -26,7 +26,7 @@
 
 #define MIN_DEADZONE        ( 328 )     // 328   / 32767 ~ 0.01
 #define MAX_DEADZONE        ( 32439 )   // 32439 / 32767 ~ 0.99
-#define DEFAULT_DEADZONE    ( 9830 )    // 9830  / 32767 ~ 0.30
+#define DEFAULT_DEADZONE    ( 25000 )   // 25000 / 32767 ~ 0.76
 
 #define MAP_PRESERVE_DIRS   ( 0x01u )
 #define MAP_CONTINUOUSLY    ( 0x02u )
