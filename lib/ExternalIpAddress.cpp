@@ -10,7 +10,7 @@ using namespace std;
 const string ExternalIpAddress::Unknown = "unknown";
 
 // Web services to query for external IP address
-static vector<string> externalIpServices =
+static const vector<string> externalIpServices =
 {
     "http://checkip.amazonaws.com",
     "http://ifcfg.net",

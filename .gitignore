@@ -9,8 +9,8 @@
 .svn
 .directory
 .unison*
-.depend
-.include
+.depend*
+.include*
 Thumbs.db
 cccaster*
 tmp*

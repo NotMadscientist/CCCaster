@@ -2,18 +2,20 @@
 
 files="*.cpp *.h tools/*.cpp targets/*.cpp targets/*.h lib/*.cpp lib/*.h tests/*.cpp tests/*.h"
 
+branch=`git rev-parse --abbrev-ref HEAD`
+
 # echo Checking dependencies...
 
 tail -n +1 -- `ls -1 $files | sort | paste -sd " "` | grep "^#include \"\|^==>" > tmp_include
-diff > /dev/null 2>&1 tmp_include .include
+diff > /dev/null 2>&1 tmp_include .include_$branch
 
 if [ $? -ne 0 ]; then
 
     # echo Dependencies changed!
 
-    mv -f tmp_include .include
+    mv -f tmp_include .include_$branch
 
-    echo "Regenerating .depend"
+    echo "Regenerating .depend_$branch"
 
     $1 $2 -std=c++11 -MM *.cpp         *.h         > tmp_depend1 & \
     $1 $2 -std=c++11 -MM tools/*.cpp               > tmp_depend2 & \
@@ -23,14 +25,14 @@ if [ $? -ne 0 ]; then
 
     wait
 
-    cp /dev/null .depend
+    cp /dev/null .depend_$branch
 
-    for type in build_debug build_release build_logging; do
-        sed -r "s/^([A-Za-z.]+\.o\: )/$type\/\1/"          tmp_depend1 >> .depend
-        sed -r "s/^([A-Za-z.]+\.o\: )/$type\/tools\/\1/"   tmp_depend2 >> .depend
-        sed -r "s/^([A-Za-z.]+\.o\: )/$type\/targets\/\1/" tmp_depend3 >> .depend
-        sed -r "s/^([A-Za-z.]+\.o\: )/$type\/lib\/\1/"     tmp_depend4 >> .depend
-        sed -r "s/^([A-Za-z.]+\.o\: )/$type\/tests\/\1/"   tmp_depend5 >> .depend
+    for type in build_debug_$branch build_release_$branch build_logging_$branch; do
+        sed -r "s/^([A-Za-z.]+\.o\: )/$type\/\1/"          tmp_depend1 >> .depend_$branch
+        sed -r "s/^([A-Za-z.]+\.o\: )/$type\/tools\/\1/"   tmp_depend2 >> .depend_$branch
+        sed -r "s/^([A-Za-z.]+\.o\: )/$type\/targets\/\1/" tmp_depend3 >> .depend_$branch
+        sed -r "s/^([A-Za-z.]+\.o\: )/$type\/lib\/\1/"     tmp_depend4 >> .depend_$branch
+        sed -r "s/^([A-Za-z.]+\.o\: )/$type\/tests\/\1/"   tmp_depend5 >> .depend_$branch
     done
 
     rm -f tmp_depend*
@@ -42,5 +44,5 @@ fi
 # echo Dependencies unchanged
 
 rm -f tmp_include
-touch .depend
+touch .depend_$branch
 exit 0

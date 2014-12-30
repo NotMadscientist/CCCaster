@@ -2,6 +2,7 @@ VERSION = 2.1
 SUFFIX = g
 NAME = cccaster
 TAG =
+BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 
 ifneq ($(TAG),)
 DOT_TAG = .$(TAG)
@@ -95,6 +96,7 @@ RELEASE_FLAGS = -s -Os -O2 -fno-rtti -DNDEBUG -DRELEASE -DDISABLE_LOGGING -DDISA
 
 # Build type
 BUILD_TYPE = build_debug
+BUILD_PREFIX = $(BUILD_TYPE)_$(BRANCH)
 
 # Default build target
 ifeq ($(OS),Windows_NT)
@@ -120,20 +122,21 @@ generator: tools/$(GENERATOR)
 
 $(ARCHIVE): $(BINARY) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER) $(FOLDER)/states.bin
 	@echo
-	rm -f $(filter-out %.log,$(filter-out $(ARCHIVE),$(wildcard $(NAME)*.zip)))
-	$(ZIP) $(ARCHIVE) ReadMe.txt ChangeLog.txt Add_Handler_Protocol.bat $^
+	rm -f $(wildcard $(NAME)*.zip)
+	$(ZIP) $(ARCHIVE) ReadMe.txt ChangeLog.txt $^
+	$(ZIP) $(ARCHIVE) -j scripts/Add_Handler_Protocol.bat
 	$(GRANT)
 
-$(BINARY): $(addprefix $(BUILD_TYPE)/,$(MAIN_OBJECTS))
+$(BINARY): $(addprefix $(BUILD_PREFIX)/,$(MAIN_OBJECTS))
 	rm -f $(filter-out $(BINARY),$(wildcard $(NAME)*.exe))
-	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(addprefix $(BUILD_TYPE)/,$(MAIN_OBJECTS)) $(LD_FLAGS)
+	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(addprefix $(BUILD_PREFIX)/,$(MAIN_OBJECTS)) $(LD_FLAGS)
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
 	@echo
 
-$(FOLDER)/$(DLL): $(addprefix $(BUILD_TYPE)/,$(DLL_OBJECTS)) | $(FOLDER)
-	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(addprefix $(BUILD_TYPE)/,$(DLL_OBJECTS)) -shared $(LD_FLAGS) -ld3dx9
+$(FOLDER)/$(DLL): $(addprefix $(BUILD_PREFIX)/,$(DLL_OBJECTS)) | $(FOLDER)
+	$(CXX) -o $@ $(CC_FLAGS) -Wall -std=c++11 $(addprefix $(BUILD_PREFIX)/,$(DLL_OBJECTS)) -shared $(LD_FLAGS) -ld3dx9
 	@echo
 	$(STRIP) $@
 	$(GRANT)
@@ -158,7 +161,8 @@ $(FOLDER):
 # 	$(WINDRES) -F pe-i386 res/icon.rc -O coff -o $@
 
 
-DEBUGGER_LIB_OBJECTS = $(addprefix build_logging/,$(filter-out lib/Version.o lib/LoggerVersion.o,$(LIB_OBJECTS)))
+LOGGING_PREFIX = build_logging_$(BRANCH)
+DEBUGGER_LIB_OBJECTS = $(addprefix $(LOGGING_PREFIX)/,$(filter-out lib/Version.o lib/LoggerVersion.o,$(LIB_OBJECTS)))
 
 tools/$(DEBUGGER): tools/Debugger.cpp $(DEBUGGER_LIB_OBJECTS)
 	$(CXX) -o $@ $(CC_FLAGS) $(LOGGING_FLAGS) -Wall -std=c++11 $^ $(LD_FLAGS) \
@@ -169,7 +173,7 @@ tools/$(DEBUGGER): tools/Debugger.cpp $(DEBUGGER_LIB_OBJECTS)
 	@echo
 
 
-GENERATOR_LIB_OBJECTS = $(addprefix build_logging/,$(filter-out lib/Version.o lib/LoggerVersion.o,$(LIB_OBJECTS)))
+GENERATOR_LIB_OBJECTS = $(addprefix $(LOGGING_PREFIX)/,$(filter-out lib/Version.o lib/LoggerVersion.o,$(LIB_OBJECTS)))
 
 tools/$(GENERATOR): tools/Generator.cpp $(GENERATOR_LIB_OBJECTS)
 	$(CXX) -o $@ $(CC_FLAGS) $(LOGGING_FLAGS) -Wall -std=c++11 $^ $(LD_FLAGS)
@@ -205,7 +209,7 @@ reset-proto:
 depend: version proto
 	$(make_depend)
 
-.depend: $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
+.depend_$(BRANCH): $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
 	$(make_version)
 	$(make_protocol)
 	$(make_depend)
@@ -216,19 +220,19 @@ clean-proto:
 	rm -f $(AUTOGEN_HEADERS)
 
 clean-common: clean-proto
-	rm -f .depend .include $(filter-out $(wildcard $(FOLDER)/*.log),$(wildcard $(FOLDER)/*)) *.zip
+	rm -f .depend_$(BRANCH) .include_$(BRANCH) $(filter-out $(wildcard $(FOLDER)/*.log),$(wildcard $(FOLDER)/*)) *.zip
 
 clean-debug: clean-common
-	rm -rf build_debug
+	rm -rf build_debug_$(BRANCH)
 
 clean-logging: clean-common
-	rm -rf build_logging
+	rm -rf build_logging_$(BRANCH)
 
 clean-release: clean-common
-	rm -rf build_release
+	rm -rf build_release_$(BRANCH)
 
 clean: clean-common
-	rm -rf build_$(DEFAULT_TARGET)
+	rm -rf build_$(DEFAULT_TARGET)_$(BRANCH)
 
 clean-all: clean-debug clean-logging clean-release
 
@@ -272,7 +276,7 @@ ifeq (,$(findstring format,$(MAKECMDGOALS)))
 ifeq (,$(findstring count,$(MAKECMDGOALS)))
 ifeq (,$(findstring install,$(MAKECMDGOALS)))
 ifeq (,$(findstring sdl,$(MAKECMDGOALS)))
--include .depend
+-include .depend_$(BRANCH)
 endif
 endif
 endif
@@ -333,41 +337,41 @@ endif
 endif
 
 
-build_debug:
+build_debug_$(BRANCH):
 	rsync -a -f"- .git/" -f"- build_*/" -f"+ */" -f"- *" --exclude=".*" . $@
 
-build_debug/%.o: %.cpp | build_debug
+build_debug_$(BRANCH)/%.o: %.cpp | build_debug_$(BRANCH)
 	$(CXX) $(CC_FLAGS) $(DEBUG_FLAGS) -Wall -Wempty-body -std=c++11 -o $@ -c $<
 
-build_debug/%.o: %.cc | build_debug
+build_debug_$(BRANCH)/%.o: %.cc | build_debug_$(BRANCH)
 	$(CXX) $(CC_FLAGS) $(DEBUG_FLAGS) -o $@ -c $<
 
-build_debug/%.o: %.c | build_debug
+build_debug_$(BRANCH)/%.o: %.c | build_debug_$(BRANCH)
 	$(GCC) $(filter-out -fno-rtti,$(CC_FLAGS) $(DEBUG_FLAGS)) -Wno-attributes -o $@ -c $<
 
 
-build_logging:
+build_logging_$(BRANCH):
 	rsync -a -f"- .git/" -f"- build_*/" -f"+ */" -f"- *" --exclude=".*" . $@
 
-build_logging/%.o: %.cpp | build_logging
+build_logging_$(BRANCH)/%.o: %.cpp | build_logging_$(BRANCH)
 	$(CXX) $(CC_FLAGS) $(LOGGING_FLAGS) -Wall -Wempty-body -std=c++11 -o $@ -c $<
 
-build_logging/%.o: %.cc | build_logging
+build_logging_$(BRANCH)/%.o: %.cc | build_logging_$(BRANCH)
 	$(CXX) $(CC_FLAGS) $(LOGGING_FLAGS) -o $@ -c $<
 
-build_logging/%.o: %.c | build_logging
+build_logging_$(BRANCH)/%.o: %.c | build_logging_$(BRANCH)
 	$(GCC) $(filter-out -fno-rtti,$(CC_FLAGS) $(LOGGING_FLAGS)) -Wno-attributes -o $@ -c $<
 
 
-build_release:
+build_release_$(BRANCH):
 	rsync -a -f"- .git/" -f"- build_*/" -f"+ */" -f"- *" --exclude=".*" . $@
 
-build_release/%.o: %.cpp | build_release
+build_release_$(BRANCH)/%.o: %.cpp | build_release_$(BRANCH)
 	$(CXX) $(CC_FLAGS) $(RELEASE_FLAGS) -std=c++11 -o $@ -c $<
 
-build_release/%.o: %.cc | build_release
+build_release_$(BRANCH)/%.o: %.cc | build_release_$(BRANCH)
 	$(CXX) $(CC_FLAGS) $(RELEASE_FLAGS) -o $@ -c $<
 
-build_release/%.o: %.c | build_release
+build_release_$(BRANCH)/%.o: %.c | build_release_$(BRANCH)
 	$(GCC) $(filter-out -fno-rtti,$(CC_FLAGS) $(RELEASE_FLAGS)) -Wno-attributes -o $@ -c $<
 

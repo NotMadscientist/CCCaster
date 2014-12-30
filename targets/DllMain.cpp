@@ -187,15 +187,15 @@ struct DllMain
                     if ( playerControllers[localPlayer - 1] )
                         localInputs[0] = getInput ( playerControllers[localPlayer - 1] );
 
-                    if ( GetKeyState ( VK_CONTROL ) & 0x80 )
+                    if ( KeyboardState::isDown ( VK_CONTROL ) )
                     {
                         for ( uint8_t delay = 0; delay < 10; ++delay )
                         {
                             if ( delay == netMan.getDelay() )
                                 continue;
 
-                            if ( ( GetKeyState ( '0' + delay ) & 0x80 )                 // Ctrl + Number
-                                    || ( GetKeyState ( VK_NUMPAD0 + delay ) & 0x80 ) )  // Ctrl + Numpad Number
+                            if ( KeyboardState::isPressed ( '0' + delay )                   // Ctrl + Number
+                                    || KeyboardState::isPressed ( VK_NUMPAD0 + delay ) )    // Ctrl + Numpad Number
                             {
                                 shouldChangeDelayRollback = true;
                                 changeConfig.indexedFrame = netMan.getIndexedFrame();

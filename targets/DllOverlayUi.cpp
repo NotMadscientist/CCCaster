@@ -1,4 +1,5 @@
 #include "DllOverlayUi.h"
+#include "DllHacks.h"
 #include "ProcessManager.h"
 #include "Enum.h"
 
@@ -191,7 +192,9 @@ void updateMessage()
         return;
     }
 
-    --messageTimeout;
+    // Don't timeout message when backgrounded
+    if ( DllHacks::windowHandle == GetForegroundWindow() )
+        --messageTimeout;
 }
 
 bool isShowingMessage()

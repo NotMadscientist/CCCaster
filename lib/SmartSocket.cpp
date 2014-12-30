@@ -12,7 +12,11 @@ using namespace std;
 
 #define SEND_INTERVAL ( 50 )
 
-const vector<IpAddrPort> relayServers = { "192.210.227.23:3939", "104.206.199.123:3939" };
+static const vector<IpAddrPort> relayServers =
+{
+    "192.210.227.23:3939",
+    "104.206.199.123:3939"
+};
 
 /* Tunnel protocol
 
