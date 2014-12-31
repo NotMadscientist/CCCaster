@@ -149,7 +149,7 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player )
             else
                 trainingResetType = 0;
 
-            return COMBINE_INPUT ( 0, CC_BUTTON_FN2 );
+            input |= COMBINE_INPUT ( 0, CC_BUTTON_FN2 );
         }
         else if ( ( trainingResetState == -2 || trainingResetState >= 0 )
                   && ! ( input & COMBINE_INPUT ( 0, CC_BUTTON_FN2 ) ) )                     // Completed reset
@@ -167,11 +167,14 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player )
                     * ( player == 1 ? CC_P1_X_POSITION_ADDR : CC_P2_X_POSITION_ADDR ) = -65536;
                 else if ( trainingResetType == 1 )
                     * ( player == 1 ? CC_P1_X_POSITION_ADDR : CC_P2_X_POSITION_ADDR ) = 65536;
+
+                if ( trainingResetType != 2 )
+                    swap ( *CC_P1_FACING_FLAG_ADDR , *CC_P2_FACING_FLAG_ADDR );
             }
 
             trainingResetState = -2;
 
-            return COMBINE_INPUT ( 0, CC_BUTTON_FN2 );
+            input |= COMBINE_INPUT ( 0, CC_BUTTON_FN2 );
         }
         else if ( trainingResetState >= 0 )                                                 // Reset in progress
         {
@@ -195,7 +198,7 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player )
 
             ++trainingResetState;
 
-            return COMBINE_INPUT ( 0, CC_BUTTON_FN2 );
+            input |= COMBINE_INPUT ( 0, CC_BUTTON_FN2 );
         }
     }
 

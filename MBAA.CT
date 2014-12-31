@@ -231,6 +231,13 @@
       <Address>0x555430</Address>
     </CheatEntry>
     <CheatEntry>
+      <ID>307</ID>
+      <Description>"P1 is facing right flag"</Description>
+      <Color>80000008</Color>
+      <VariableType>Byte</VariableType>
+      <Address>00555444</Address>
+    </CheatEntry>
+    <CheatEntry>
       <ID>222</ID>
       <Description>"P2 seq (see framedisplay)"</Description>
       <Color>80000008</Color>
