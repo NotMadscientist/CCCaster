@@ -29,4 +29,13 @@ void updateMessage();
 
 bool isShowingMessage();
 
+
+#ifndef RELEASE
+
+extern std::string debugText;
+
+extern int debugTextAlign;
+
+#endif
+
 }
