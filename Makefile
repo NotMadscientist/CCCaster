@@ -214,7 +214,8 @@ clean-proto:
 	rm -f $(AUTOGEN_HEADERS)
 
 clean-common: clean-proto
-	rm -f .depend_$(BRANCH) .include_$(BRANCH) $(filter-out $(wildcard $(FOLDER)/*.log),$(wildcard $(FOLDER)/*)) *.zip
+	rm -f .depend_$(BRANCH) .include_$(BRANCH) *.zip tools/*.exe \
+$(filter-out $(wildcard $(FOLDER)/*.mappings) $(wildcard $(FOLDER)/*.log),$(wildcard $(FOLDER)/*))
 
 clean-debug: clean-common
 	rm -rf build_debug_$(BRANCH)
