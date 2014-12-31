@@ -258,7 +258,11 @@ struct DllMain
 
                 if ( randomize )
                 {
-                    if ( netMan.getFrame() % 2 )
+                    bool shouldRandomize = ( netMan.getFrame() % 2 );
+                    if ( netMan.getState() == NetplayState::InGame && netMan.config.rollback )
+                        shouldRandomize = ( netMan.getFrame() % 150 == 0 ); // every 2.5s
+
+                    if ( shouldRandomize )
                     {
                         uint16_t direction = ( rand() % 10 );
 
@@ -513,6 +517,8 @@ struct DllMain
             ASSERT ( msgRngState.get() != 0 );
 
             LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
+            LOG_SYNC ( "P1: hp=%u; x=%d; y=%d", *CC_P1_HEALTH_ADDR, *CC_P1_X_POSITION_ADDR, *CC_P1_Y_POSITION_ADDR );
+            LOG_SYNC ( "P2: hp=%u; x=%d; y=%d", *CC_P2_HEALTH_ADDR, *CC_P2_X_POSITION_ADDR, *CC_P2_Y_POSITION_ADDR );
 
             if ( !netMan.config.rollback )
             {
