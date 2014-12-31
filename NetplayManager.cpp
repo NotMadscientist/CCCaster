@@ -436,8 +436,6 @@ void NetplayManager::setRemotePlayer ( uint8_t player )
 
     localPlayer = 3 - player;
     remotePlayer = player;
-
-    // inputs[player - 1].fillFakeInputs = ( config.rollback > 0 );
 }
 
 void NetplayManager::updateFrame()
@@ -852,4 +850,19 @@ IndexedFrame NetplayManager::getRemoteIndexedFrame() const
         --indexedFrame.parts.index;
 
     return indexedFrame;
+}
+
+IndexedFrame NetplayManager::getLastChangedFrame() const
+{
+    IndexedFrame indexedFrame = inputs[remotePlayer - 1].getLastChangedFrame();
+
+    if ( indexedFrame.value == MaxIndexedFrame.value )
+        return MaxIndexedFrame;
+
+    return { indexedFrame.parts.frame, startIndex + indexedFrame.parts.index };
+}
+
+void NetplayManager::clearLastChangedFrame()
+{
+    inputs[remotePlayer - 1].clearLastChangedFrame();
 }

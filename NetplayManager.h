@@ -149,16 +149,8 @@ public:
     uint32_t getSpectateStartIndex() const { return spectateStartIndex; }
 
     // Get / clear the last changed frame (for rollback)
-    IndexedFrame getLastChangedFrame() const
-    {
-        const IndexedFrame indexedFrame = inputs[remotePlayer - 1].getLastChangedFrame();
-
-        if ( indexedFrame.value == MaxIndexedFrame.value )
-            return MaxIndexedFrame;
-
-        return { indexedFrame.parts.frame, startIndex + indexedFrame.parts.index };
-    }
-    void clearLastChangedFrame() { inputs[remotePlayer - 1].clearLastChangedFrame(); }
+    IndexedFrame getLastChangedFrame() const;
+    void clearLastChangedFrame();
 
     // Get / set the current NetplayState
     NetplayState getState() const { return state; }
