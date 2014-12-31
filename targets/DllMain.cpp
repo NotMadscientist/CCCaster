@@ -547,6 +547,9 @@ struct DllMain
                 }
             }
         }
+
+        DllOverlayUi::debugText = format ( "%+d", netMan.getRemoteFrameDelta() );
+        DllOverlayUi::debugTextAlign = 1;
 #endif
 
         // Cleared last played sound effects
