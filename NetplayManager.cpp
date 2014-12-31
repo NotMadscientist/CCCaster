@@ -168,7 +168,8 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player )
                 else if ( trainingResetType == 1 )
                     * ( player == 1 ? CC_P1_X_POSITION_ADDR : CC_P2_X_POSITION_ADDR ) = 65536;
 
-                swap ( *CC_P1_FACING_FLAG_ADDR , *CC_P2_FACING_FLAG_ADDR );
+                if ( trainingResetType != 2 )
+                    swap ( *CC_P1_FACING_FLAG_ADDR , *CC_P2_FACING_FLAG_ADDR );
             }
 
             trainingResetState = -2;
