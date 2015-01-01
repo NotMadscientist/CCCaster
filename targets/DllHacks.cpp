@@ -150,10 +150,6 @@ void initializePostLoad()
         LOG ( "InitDirectX failed: %s", err );
     else if ( ! ( err = HookDirectX() ).empty() )
         LOG ( "HookDirectX failed: %s", err );
-
-    // TODO find an alternative because this doesn't work on Wine
-    WRITE_ASM_HACK ( disableFpsLimit );
-    WRITE_ASM_HACK ( disableFpsCounter );
 }
 
 void deinitialize()

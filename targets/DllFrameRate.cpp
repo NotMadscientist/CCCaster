@@ -2,6 +2,7 @@
 #include "TimerManager.h"
 #include "Constants.h"
 #include "ProcessManager.h"
+#include "AsmHacks.h"
 
 #include <d3dx9.h>
 
@@ -12,9 +13,23 @@ using namespace DllFrameRate;
 namespace DllFrameRate
 {
 
-uint8_t desiredFps = 61;
+uint8_t desiredFps = 60;
 
-double actualFps = 61.0;
+double actualFps = 60.0;
+
+bool isEnabled = false;
+
+
+void enable()
+{
+    // TODO find an alternative because this doesn't work on Wine
+    WRITE_ASM_HACK ( AsmHacks::disableFpsLimit );
+    WRITE_ASM_HACK ( AsmHacks::disableFpsCounter );
+
+    isEnabled = true;
+
+    LOG ( "Enabling alternate FPS control!" );
+}
 
 }
 
@@ -25,7 +40,7 @@ void PresentFrameEnd ( IDirect3DDevice9 *device )
     if ( ProcessManager::isWine() )
         return;
 
-    if ( *CC_SKIP_FRAMES_ADDR )
+    if ( !isEnabled || *CC_SKIP_FRAMES_ADDR )
         return;
 
     static uint64_t last1f = 0, last5f = 0, last30f = 0, last60f = 0;
@@ -70,7 +85,7 @@ void PresentFrameEnd ( IDirect3DDevice9 *device )
 
         actualFps = 1000.0 / ( ( now - last60f ) / 60.0 );
 
-        *CC_FPS_COUNTER_ADDR = ( uint32_t ) actualFps;
+        *CC_FPS_COUNTER_ADDR = uint32_t ( actualFps + 0.5 );
 
         counter = 0;
         last60f = now;

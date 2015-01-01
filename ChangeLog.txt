@@ -1,6 +1,6 @@
 v2.1h:
-- Improved FPS stability.
 - Can set max allowed delay when hosting.
+- Optional FPS control setting, try this if you often get FPS drops.
 
 v2.1g:
 - Fixed incorrectly repeated input at round start and after training mode reset.

@@ -13,6 +13,7 @@
 #include "CharacterSelect.h"
 #include "SpectatorManager.h"
 #include "DllControllerManager.h"
+#include "DllFrameRate.h"
 
 #include <windows.h>
 
@@ -967,6 +968,9 @@ struct DllMain
                 syncLog.sessionId = options.arg ( Options::SessionId );
                 syncLog.initialize ( options.arg ( Options::AppDir ) + SYNC_LOG_FILE, 0 );
                 syncLog.logVersion();
+
+                if ( options[Options::AltFpsControl] )
+                    DllFrameRate::enable();
                 break;
 
             case MsgType::ControllerMappings:

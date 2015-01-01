@@ -10,4 +10,6 @@ extern uint8_t desiredFps;
 
 extern double actualFps;
 
+void enable();
+
 }
