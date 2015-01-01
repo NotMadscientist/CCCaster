@@ -39,9 +39,6 @@ void initializePreLoad()
 
     WRITE_ASM_HACK ( detectAutoReplaySave );
     WRITE_ASM_HACK ( hijackEscapeKey );
-
-    // TODO find an alternative because this doesn't work on Wine
-    // WRITE_ASM_HACK ( disableFpsLimit );
 }
 
 // Note: this is called on the SAME thread as the main application thread
@@ -140,6 +137,7 @@ void initializePostLoad()
 
     // We can't save replays on Wine because MBAA crashes even without us.
     // We can't hook DirectX calls on Wine (yet?).
+    // We can't override the FPS limit (yet?).
     if ( ProcessManager::isWine() )
     {
         *CC_AUTO_REPLAY_SAVE_ADDR = 0;
@@ -152,6 +150,10 @@ void initializePostLoad()
         LOG ( "InitDirectX failed: %s", err );
     else if ( ! ( err = HookDirectX() ).empty() )
         LOG ( "HookDirectX failed: %s", err );
+
+    // TODO find an alternative because this doesn't work on Wine
+    WRITE_ASM_HACK ( disableFpsLimit );
+    WRITE_ASM_HACK ( disableFpsCounter );
 }
 
 void deinitialize()

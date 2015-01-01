@@ -428,10 +428,6 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
     }
 }
 
-void PresentFrameEnd ( IDirect3DDevice9 *device )
-{
-}
-
 void InvalidateDeviceObjects()
 {
     if ( initalizedDirectX )

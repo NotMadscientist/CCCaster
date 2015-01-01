@@ -22,10 +22,8 @@ void Pinger::start()
     ASSERT ( pingInterval > 0 );
     ASSERT ( numPings > 0 );
 
-    TimerManager::get().updateNow();
-
     if ( owner )
-        owner->sendPing ( this, MsgPtr ( new Ping ( TimerManager::get().getNow() ) ) );
+        owner->sendPing ( this, MsgPtr ( new Ping ( TimerManager::get().getNow ( true ) ) ) );
 
     pingCount = 1;
 

@@ -86,7 +86,6 @@ struct DllMain
     RefChangeMonitor<Variable, uint32_t> worldTimerMoniter;
 
     // Timeout for each call to EventManager::poll
-    // TODO figure out if there is any way to increase this, maybe dynamically?
     uint64_t pollTimeout = 1;
 
     // Timer for resending inputs while waiting
@@ -1223,7 +1222,7 @@ struct DllMain
         if ( appState != AppState::Polling )
             return;
 
-        // Check if the world timer changed, this calls hasChanged if changed
+        // Check if the world timer changed, this calls hasChanged if changed, which calls frameStep
         worldTimerMoniter.check();
     }
 
