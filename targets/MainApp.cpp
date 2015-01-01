@@ -398,6 +398,24 @@ struct MainApp
         if ( clientMode.isHost() )
         {
             mergePingStats();
+
+            const int delay = computeDelay ( this->pingStats.latency );
+            const int maxDelay = ui.getConfig().getInteger ( "maxAllowedDelay" );
+
+            if ( delay > maxDelay )
+            {
+                if ( !ctrlSocket || !ctrlSocket->isConnected() )
+                    return;
+
+                ctrlSocket->send ( new ErrorMessage ( format (
+                        "Calculated delay %u is greater than max allowed delay %u!", delay, maxDelay ) ) );
+
+                pushPendingSocket ( this, ctrlSocket );
+
+                ctrlSocket.reset();
+                return;
+            }
+
             getUserConfirmation();
         }
         else

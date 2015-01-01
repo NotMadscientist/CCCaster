@@ -66,10 +66,44 @@ void MainUi::netplay ( RunFuncPtr run )
 
         if ( address.addr.empty() )
         {
-            config.putInteger ( "lastUsedPort", address.port );
+            config.setInteger ( "lastUsedPort", address.port );
             saveConfig();
 
-            if ( !gameMode() )
+            ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter max allowed delay:" ) );
+
+            ui->top<ConsoleUi::Prompt>()->allowNegative = false;
+            ui->top<ConsoleUi::Prompt>()->maxDigits = 3;
+            ui->top<ConsoleUi::Prompt>()->setInitial ( clamped ( config.getInteger ( "maxAllowedDelay" ), 0, 254 ) );
+
+            bool good = false;
+
+            for ( ;; )
+            {
+                ConsoleUi::Element *menu = ui->popUntilUserInput();
+
+                if ( menu->resultInt < 0 )
+                    break;
+
+                ui->clearTop();
+
+                if ( menu->resultInt >= 0xFF )
+                {
+                    ui->pushBelow ( new ConsoleUi::TextBox ( ERROR_INVALID_DELAY ) );
+                    continue;
+                }
+
+                setMaxDelay ( menu->resultInt );
+
+                if ( gameMode ( false ) ) // Show in front
+                {
+                    good = true;
+                    break;
+                }
+            }
+
+            ui->pop();
+
+            if ( !good )
                 continue;
 
             initialConfig.mode.value = ClientMode::Host;
@@ -167,7 +201,7 @@ void MainUi::broadcast ( RunFuncPtr run )
             continue;
         }
 
-        if ( !gameMode() )
+        if ( !gameMode ( true ) ) // Show below
             continue;
 
         netplayConfig.clear();
@@ -180,7 +214,7 @@ void MainUi::broadcast ( RunFuncPtr run )
         address.port = menu->resultInt;
         address.invalidate();
 
-        config.putInteger ( "lastUsedPort", address.port );
+        config.setInteger ( "lastUsedPort", address.port );
         saveConfig();
 
         RUN ( "", netplayConfig );
@@ -225,7 +259,7 @@ void MainUi::offline ( RunFuncPtr run )
 
         delay = menu->resultInt;
 
-        if ( gameModeIncludingVersusCpu() )
+        if ( offlineGameMode() )
         {
             good = true;
             break;
@@ -259,10 +293,16 @@ bool MainUi::areYouSure()
     return ( ret == 0 );
 }
 
-bool MainUi::gameMode()
+bool MainUi::gameMode ( bool below )
 {
-    ui->pushBelow ( new ConsoleUi::Menu ( "Mode", { "Versus", "Training" }, "Cancel" ) );
-    ui->popUntilUserInput ( true ); // Clear popped since we should clear any messages
+    ConsoleUi::Menu *menu = new ConsoleUi::Menu ( "Mode", { "Versus", "Training" }, "Cancel" );
+
+    if ( below )
+        ui->pushBelow ( menu );
+    else
+        ui->pushInFront ( menu );
+
+    ui->popUntilUserInput ( true ); // Clear other messages since we're starting the game now
 
     int mode = ui->top()->resultInt;
 
@@ -275,24 +315,27 @@ bool MainUi::gameMode()
     return true;
 }
 
-bool MainUi::gameModeIncludingVersusCpu()
+bool MainUi::offlineGameMode()
 {
-    ui->pushInFront ( new ConsoleUi::Menu ( "Mode", { "Versus", "Versus CPU", "Training" }, "Cancel" ) );
-    ui->popUntilUserInput ( true ); // Clear popped since we should clear any messages
+    ui->pushInFront ( new ConsoleUi::Menu ( "Mode", { "Training", "Versus", "Versus CPU" }, "Cancel" ) );
+    ui->top<ConsoleUi::Menu>()->setPosition ( config.getInteger ( "lastOfflineMenuPosition" ) - 1 );
 
-    int mode = ui->top()->resultInt;
+    int mode = ui->popUntilUserInput ( true )->resultInt; // Clear other messages since we're starting the game now
 
     ui->pop();
 
     if ( mode < 0 || mode > 2 )
         return false;
 
+    config.setInteger ( "lastOfflineMenuPosition", mode + 1 );
+    saveConfig();
+
     if ( mode == 0 )
-        initialConfig.mode.flags = 0;
-    else if ( mode == 1 )
-        initialConfig.mode.flags = ClientMode::VersusCpu;
-    else // if ( mode == 2 )
         initialConfig.mode.flags = ClientMode::Training;
+    else if ( mode == 1 )
+        initialConfig.mode.flags = 0;
+    else // if ( mode == 2 )
+        initialConfig.mode.flags = ClientMode::VersusCpu;
 
     return true;
 }
@@ -574,7 +617,7 @@ void MainUi::settings()
                 if ( alertType < 0 || alertType > 3 )
                     break;
 
-                config.putInteger ( "alertOnConnect", ( alertType + 1 ) % 4 );
+                config.setInteger ( "alertOnConnect", ( alertType + 1 ) % 4 );
                 saveConfig();
 
                 if ( alertType == 0 || alertType == 3 )
@@ -630,7 +673,7 @@ void MainUi::settings()
 
                 if ( ui->top()->resultInt >= 0 && ui->top()->resultInt <= 1 )
                 {
-                    config.putInteger ( "fullCharacterName", ( ui->top()->resultInt + 1 ) % 2 );
+                    config.setInteger ( "fullCharacterName", ( ui->top()->resultInt + 1 ) % 2 );
                     saveConfig();
                 }
 
@@ -647,7 +690,7 @@ void MainUi::settings()
 
                 if ( ui->top()->resultInt >= 0 && ui->top()->resultInt <= 1 )
                 {
-                    config.putInteger ( "highCpuPriority", ( ui->top()->resultInt + 1 ) % 2 );
+                    config.setInteger ( "highCpuPriority", ( ui->top()->resultInt + 1 ) % 2 );
                     saveConfig();
                 }
 
@@ -681,7 +724,7 @@ void MainUi::settings()
                         continue;
                     }
 
-                    config.putInteger ( "versusWinCount", ui->top()->resultInt );
+                    config.setInteger ( "versusWinCount", ui->top()->resultInt );
                     saveConfig();
                     break;
                 }
@@ -717,17 +760,19 @@ void MainUi::initialize()
 {
     ui.reset ( new ConsoleUi ( uiTitle, ProcessManager::isWine() ) );
 
-    // Configurable settings
-    config.putInteger ( "alertOnConnect", 3 );
+    // Configurable settings (defaults)
+    config.setInteger ( "alertOnConnect", 3 );
     config.putString ( "alertWavFile", "SystemDefault" );
     config.putString ( "displayName", ProcessManager::fetchGameUserName() );
-    config.putInteger ( "fullCharacterName", 0 );
-    config.putInteger ( "highCpuPriority", 1 );
-    config.putInteger ( "versusWinCount", 2 );
+    config.setInteger ( "fullCharacterName", 0 );
+    config.setInteger ( "highCpuPriority", 1 );
+    config.setInteger ( "versusWinCount", 2 );
+    config.setInteger ( "maxAllowedDelay", 4 );
 
-    // Cached UI state
-    config.putInteger ( "lastUsedPort", -1 );
-    config.putInteger ( "lastMainMenuPosition", 0 );
+    // Cached UI state (defaults)
+    config.setInteger ( "lastUsedPort", -1 );
+    config.setInteger ( "lastMainMenuPosition", -1 );
+    config.setInteger ( "lastOfflineMenuPosition", -1 );
 
     // Load and save main config (this creates the config file on the first time)
     loadConfig();
@@ -860,7 +905,7 @@ void MainUi::main ( RunFuncPtr run )
 
         if ( mainSelection >= 0 && mainSelection <= 3 )
         {
-            config.putInteger ( "lastMainMenuPosition", mainSelection + 1 );
+            config.setInteger ( "lastMainMenuPosition", mainSelection + 1 );
             saveConfig();
         }
 
@@ -898,9 +943,46 @@ void MainUi::main ( RunFuncPtr run )
     ControllerManager::get().deinitialize();
 }
 
-static int computeDelay ( const Statistics& latency )
+bool MainUi::promptMaxDelay()
 {
-    return ( int ) ceil ( latency.getMean() / ( 1000.0 / 60 ) );
+    ui->clearAll();
+    ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter max allowed delay:" ) );
+
+    ui->top<ConsoleUi::Prompt>()->allowNegative = false;
+    ui->top<ConsoleUi::Prompt>()->maxDigits = 3;
+    ui->top<ConsoleUi::Prompt>()->setInitial ( clamped ( config.getInteger ( "maxAllowedDelay" ), 0, 254 ) );
+
+    bool good = false;
+
+    for ( ;; )
+    {
+        ConsoleUi::Element *menu = ui->popUntilUserInput();
+
+        if ( menu->resultInt < 0 )
+            break;
+
+        ui->clearTop();
+
+        if ( menu->resultInt >= 0xFF )
+        {
+            ui->pushBelow ( new ConsoleUi::TextBox ( ERROR_INVALID_DELAY ) );
+            continue;
+        }
+
+        setMaxDelay ( menu->resultInt );
+        good = true;
+        break;
+    }
+
+    ui->pop();
+
+    return good;
+}
+
+void MainUi::setMaxDelay ( uint8_t maxDelay )
+{
+    config.setInteger ( "maxAllowedDelay", maxDelay );
+    saveConfig();
 }
 
 static string formatStats ( const PingStats& pingStats )

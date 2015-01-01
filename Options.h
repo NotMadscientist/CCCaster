@@ -11,7 +11,7 @@
 // Set of command line options
 ENUM ( Options,
        // Regular options
-       Help, GameDir, Tunnel, Training, Broadcast, Spectate, Offline, NoUi, Tourney,
+       Help, GameDir, Tunnel, Training, Broadcast, Spectate, Offline, NoUi, Tourney, MaxDelay,
        // Debug options
        Tests, Stdout, FakeUi, Dummy, StrictVersion, PidLog,
        // Special options

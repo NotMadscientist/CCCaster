@@ -15,7 +15,7 @@ public:
     void putString ( const std::string& key, const std::string& str );
 
     int getInteger ( const std::string& key ) const;
-    void putInteger ( const std::string& key, int i );
+    void setInteger ( const std::string& key, int i );
 
     bool save ( const std::string& file ) const;
     bool load ( const std::string& file );
