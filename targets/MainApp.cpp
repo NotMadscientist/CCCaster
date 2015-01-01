@@ -404,15 +404,15 @@ struct MainApp
 
             if ( delay > maxDelay )
             {
-                if ( !ctrlSocket || !ctrlSocket->isConnected() )
-                    return;
+                if ( ctrlSocket && ctrlSocket->isConnected() )
+                {
+                    ctrlSocket->send ( new ErrorMessage ( format (
+                            "Calculated delay %u is greater than max allowed delay %u!", delay, maxDelay ) ) );
 
-                ctrlSocket->send ( new ErrorMessage ( format (
-                        "Calculated delay %u is greater than max allowed delay %u!", delay, maxDelay ) ) );
+                    pushPendingSocket ( this, ctrlSocket );
+                }
 
-                pushPendingSocket ( this, ctrlSocket );
-
-                ctrlSocket.reset();
+                resetHost();
                 return;
             }
 
