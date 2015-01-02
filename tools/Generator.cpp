@@ -121,36 +121,44 @@ static const vector<MemDump> playerAddrs =
     { 0x55534C, 0x55535C },
     { 0x55535C, 0x5553CC }, // ???
 
-    { ( void * ) 0x5553CC, 4 }, // is a pointer but it seems to just point to player struct stuff?
+    { ( void * ) 0x5553CC, 4 }, // pointer to player struct?
 
     { 0x5553D0, 0x5553EC }, // ???
 
-    { ( void * ) 0x5553EC, 4 }, // is a pointer but it seems to just point to player struct stuff?
-    { ( void * ) 0x5553F0, 4 }, // is a pointer but it seems to just point to player struct stuff?
+    { ( void * ) 0x5553EC, 4 }, // pointer to player struct?
+    { ( void * ) 0x5553F0, 4 }, // pointer to player struct?
+
     { 0x5553F4, 0x5553FC },
-    { ( void * ) 0x5553FC, 4 }, // points to the beginning of the player struct?
-    { ( void * ) 0x555400, 4 }, // is a pointer but it seems to just point to player struct stuff?
+
+    { ( void * ) 0x5553FC, 4 }, // pointer to player struct?
+    { ( void * ) 0x555400, 4 }, // pointer to player struct?
 
     { 0x555404, 0x555410 }, // ???
     { 0x555410, 0x55542C },
     ( uint32_t * ) 0x55542C, // ???
     { 0x555430, 0x55544C },
-    { ( void * ) 0x55544C, 4 }, // ??? pointer?
 
-    { ( void * ) 0x555450, 4 }, // aaaaaaa huge pointer
-    { ( void * ) 0x555454, 4 }, // another pointer
-    { ( void * ) 0x555458, 4 }, // another pointer
+    // { ( void * ) 0x55544C, 4 }, // graphics pointer? this is accessed all the time even when paused
+    // { ( void * ) 0x555450, 4 }, // graphics pointer? this is accessed all the time even when paused
+    // { ( void * ) 0x555454, 4 }, // graphics pointer? this is accessed all the time even when paused
+
+    { ( void * ) 0x555458, 4 }, // pointer to player struct?
+
     { 0x55545C, 0x555460 },
-    { ( void * ) 0x555460, 4, {
-        MemDumpPtr ( 0, 0x0, 4, {
-            MemDumpPtr ( 0, 0x4, 4, {
-                MemDumpPtr ( 0, 0xC, 4 )
-            } )
-        } )
-    } },
+
+    // graphics pointer(s)? these are accessed all the time even when paused
+    // { ( void * ) 0x555460, 4, {
+    //     MemDumpPtr ( 0, 0x0, 4, {
+    //         MemDumpPtr ( 0, 0x4, 4, {
+    //             MemDumpPtr ( 0, 0xC, 4 )
+    //         } )
+    //     } )
+    // } },
 
     { 0x555464, 0x55546C },
-    { ( void * ) 0x55546C, 4 }, // pointer to data that doesn't change?
+
+    // { ( void * ) 0x55546C, 4 }, // graphics pointer? this is accessed all the time even when paused
+
     { 0x555470, 0x55550C },
     ( uint32_t * ) 0x55550C, // ???
     { 0x555510, 0x555518 },
@@ -164,40 +172,6 @@ static const vector<MemDump> playerAddrs =
 
     { 0x555B24, 0x555B2C },
     { 0x555B2C, 0x555C30 }, // ???
-
-    // CC_P1_SEQUENCE_ADDR,
-    // CC_P1_SEQ_STATE_ADDR,
-    // CC_P1_HEALTH_ADDR,
-    // CC_P1_RED_HEALTH_ADDR,
-    // CC_P1_X_POSITION_ADDR,
-    // CC_P1_Y_POSITION_ADDR,
-    // CC_P1_X_PREV_POS_ADDR,
-    // CC_P1_Y_PREV_POS_ADDR,
-    // CC_P1_X_VELOCITY_ADDR,
-    // CC_P1_Y_VELOCITY_ADDR,
-    // CC_P1_X_ACCELERATION_ADDR,
-    // CC_P1_Y_ACCELERATION_ADDR,
-    // CC_P1_GUARD_BAR_ADDR,
-    // CC_P1_GUARD_QUALITY_ADDR,
-    // CC_P1_METER_ADDR,
-    // CC_P1_HEAT_ADDR,
-    // CC_P1_SPRITE_ANGLE_ADDR,
-
-    // CC_P1_CATCH_STATE1_ADDR,
-    // CC_P1_CATCH_STATE2_ADDR,
-    // CC_P1_CATCH_STATE3_ADDR,
-    // CC_P1_CATCH_STATE4_ADDR,
-    // CC_P1_CATCH_STATE5_ADDR,
-    // CC_P1_CATCH_STATE6_ADDR,
-    // CC_P1_CATCH_STATE7_ADDR,
-    // CC_P1_CATCH_STATE8_ADDR,
-
-    // { ( void * ) 0x555450, 4, {         // mov eax,[edi+0000031C]
-    //     MemDumpPtr ( 0, 0x38, 4, {      // mov ecx,[eax+38]
-    //         MemDumpPtr ( 0, 0, 4 ),     // mov esi,[ecx]
-    //         MemDumpPtr ( 0, 8, 4 )      // mov ebp,[ecx+08]
-    //     } )
-    // } },
 };
 
 static const vector<MemDump> miscAddrs =

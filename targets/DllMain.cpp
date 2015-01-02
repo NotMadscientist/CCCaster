@@ -283,50 +283,50 @@ struct DllMain
                     }
                 }
 
-                static bool specialPauseReady = false;
-                const bool pauseMenu = * ( clientMode.isTraining() ? CC_TRAINING_PAUSE_ADDR : CC_VERSUS_PAUSE_ADDR );
+                // static bool specialPauseReady = false;
+                // const bool pauseMenu = * ( clientMode.isTraining() ? CC_TRAINING_PAUSE_ADDR : CC_VERSUS_PAUSE_ADDR );
 
-                if ( pauseMenu )
-                {
-                    if ( isButtonPressed ( playerControllers[localPlayer - 1], CC_BUTTON_CONFIRM )
-                            && AsmHacks::currentMenuIndex == ( clientMode.isTraining() ? 13 : 3 ) )
-                        specialPauseReady = true;
-                    else if ( isButtonPressed ( playerControllers[localPlayer - 1], CC_BUTTON_START ) )
-                        specialPauseReady = false;
-                }
+                // if ( pauseMenu )
+                // {
+                //     if ( isButtonPressed ( playerControllers[localPlayer - 1], CC_BUTTON_CONFIRM )
+                //             && AsmHacks::currentMenuIndex == ( clientMode.isTraining() ? 13 : 3 ) )
+                //         specialPauseReady = true;
+                //     else if ( isButtonPressed ( playerControllers[localPlayer - 1], CC_BUTTON_START ) )
+                //         specialPauseReady = false;
+                // }
 
                 // Test rollback
                 if ( KeyboardState::isPressed ( VK_F9 ) )
                 {
-                    if ( *CC_PAUSE_FLAG_ADDR )
-                    {
-                        *CC_PAUSE_FLAG_ADDR = 0;
-                    }
+                    // if ( *CC_PAUSE_FLAG_ADDR )
+                    // {
+                    //     *CC_PAUSE_FLAG_ADDR = 0;
+                    // }
+                    // else
+                    // {
+                    IndexedFrame target = netMan.getIndexedFrame();
+
+                    if ( target.parts.frame <= 30 )
+                        target.parts.frame = 0;
                     else
-                    {
-                        IndexedFrame target = netMan.getIndexedFrame();
+                        target.parts.frame -= 30;
 
-                        if ( target.parts.frame <= 30 )
-                            target.parts.frame = 0;
-                        else
-                            target.parts.frame -= 30;
+                    procMan.loadState ( target, netMan );
 
-                        procMan.loadState ( target, netMan );
-
-                        if ( specialPauseReady )
-                        {
-                            *CC_PAUSE_FLAG_ADDR = 1;
-                        }
-                        else
-                        {
-                            netMan.assignInput ( localPlayer, COMBINE_INPUT ( 0, CC_BUTTON_START ),
-                                                 netMan.getFrame() + netMan.getDelay() );
-                        }
-                    }
+                    //     if ( specialPauseReady )
+                    //     {
+                    //         *CC_PAUSE_FLAG_ADDR = 1;
+                    //     }
+                    //     else
+                    //     {
+                    //         netMan.assignInput ( localPlayer, COMBINE_INPUT ( 0, CC_BUTTON_START ),
+                    //                              netMan.getFrame() + netMan.getDelay() );
+                    //     }
+                    // }
                 }
 
-                if ( specialPauseReady && isAnyDirectionPressed ( playerControllers[localPlayer - 1] ) )
-                    *CC_PAUSE_FLAG_ADDR = 0;
+                // if ( specialPauseReady && isAnyDirectionPressed ( playerControllers[localPlayer - 1] ) )
+                //     *CC_PAUSE_FLAG_ADDR = 0;
 
                 // // TODO When specially paused, use [ and ] to frame step
                 // if ( specialPauseReady && *CC_PAUSE_FLAG_ADDR )
@@ -340,7 +340,14 @@ struct DllMain
 
                 // Assign local player input
                 if ( !clientMode.isSpectate() )
-                    netMan.setInput ( localPlayer, localInputs[0] );
+                {
+#ifndef RELEASE
+                    if ( netMan.getState() == NetplayState::InGame && netMan.config.rollback )
+                        netMan.assignInput ( localPlayer, localInputs[0], netMan.getFrame() + netMan.getOffset() );
+                    else
+#endif
+                        netMan.setInput ( localPlayer, localInputs[0] );
+                }
 
                 if ( clientMode.isNetplay() )
                 {
@@ -517,8 +524,6 @@ struct DllMain
             ASSERT ( msgRngState.get() != 0 );
 
             LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
-            LOG_SYNC ( "P1: hp=%u; x=%d; y=%d", *CC_P1_HEALTH_ADDR, *CC_P1_X_POSITION_ADDR, *CC_P1_Y_POSITION_ADDR );
-            LOG_SYNC ( "P2: hp=%u; x=%d; y=%d", *CC_P2_HEALTH_ADDR, *CC_P2_X_POSITION_ADDR, *CC_P2_Y_POSITION_ADDR );
 
             if ( !netMan.config.rollback )
             {
@@ -555,8 +560,10 @@ struct DllMain
         // Cleared last played sound effects
         memset ( AsmHacks::sfxFilterArray, 0, CC_SFX_ARRAY_LEN );
 
-        // Log inputs every frame
+        // Log some state every frame
         LOG_SYNC ( "Inputs: %04x %04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
+        LOG_SYNC ( "P1: hp=%u; x=%d; y=%d", *CC_P1_HEALTH_ADDR, *CC_P1_X_POSITION_ADDR, *CC_P1_Y_POSITION_ADDR );
+        LOG_SYNC ( "P2: hp=%u; x=%d; y=%d", *CC_P2_HEALTH_ADDR, *CC_P2_X_POSITION_ADDR, *CC_P2_Y_POSITION_ADDR );
     }
 
     void frameStepRerun()

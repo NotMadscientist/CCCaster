@@ -266,6 +266,20 @@
       <Address>00555CEC</Address>
     </CheatEntry>
     <CheatEntry>
+      <ID>322</ID>
+      <Description>"P2 guard bar"</Description>
+      <Color>80000008</Color>
+      <VariableType>Float</VariableType>
+      <Address>0555CF0</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>323</ID>
+      <Description>"P2 guard quality"</Description>
+      <Color>80000008</Color>
+      <VariableType>Float</VariableType>
+      <Address>0555D04</Address>
+    </CheatEntry>
+    <CheatEntry>
       <ID>125</ID>
       <Description>"P2 X"</Description>
       <ShowAsSigned>1</ShowAsSigned>
@@ -706,7 +720,7 @@
       <Address>0076E008</Address>
       <CheatEntries>
         <CheatEntry>
-          <ID>307</ID>
+          <ID>308</ID>
           <Description>"5[E] initial charge SFX flag"</Description>
           <Color>80000008</Color>
           <VariableType>Byte</VariableType>
@@ -913,55 +927,6 @@
       <Address>005544F1</Address>
     </CheatEntry>
     <CheatEntry>
-      <ID>292</ID>
-      <Description>""</Description>
-      <ShowAsHex>1</ShowAsHex>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>0x555F4C</Address>
-      <CheatEntries>
-        <CheatEntry>
-          <ID>263</ID>
-          <Description>""</Description>
-          <ShowAsHex>1</ShowAsHex>
-          <Color>80000008</Color>
-          <VariableType>4 Bytes</VariableType>
-          <Address>0x555F4C</Address>
-          <Offsets>
-            <Offset>38</Offset>
-          </Offsets>
-          <CheatEntries>
-            <CheatEntry>
-              <ID>265</ID>
-              <Description>""</Description>
-              <ShowAsHex>1</ShowAsHex>
-              <Color>80000008</Color>
-              <VariableType>4 Bytes</VariableType>
-              <Address>0x555F4C</Address>
-              <Offsets>
-                <Offset>0</Offset>
-                <Offset>38</Offset>
-              </Offsets>
-              <CheatEntries>
-                <CheatEntry>
-                  <ID>264</ID>
-                  <Description>""</Description>
-                  <Color>80000008</Color>
-                  <VariableType>4 Bytes</VariableType>
-                  <Address>0x555F4C</Address>
-                  <Offsets>
-                    <Offset>0</Offset>
-                    <Offset>0</Offset>
-                    <Offset>38</Offset>
-                  </Offsets>
-                </CheatEntry>
-              </CheatEntries>
-            </CheatEntry>
-          </CheatEntries>
-        </CheatEntry>
-      </CheatEntries>
-    </CheatEntry>
-    <CheatEntry>
       <ID>293</ID>
       <Description>""</Description>
       <ShowAsHex>1</ShowAsHex>
@@ -979,21 +944,67 @@
           <Offsets>
             <Offset>24</Offset>
           </Offsets>
-          <CheatEntries>
-            <CheatEntry>
-              <ID>291</ID>
-              <Description>""</Description>
-              <ShowAsHex>1</ShowAsHex>
-              <Color>80000008</Color>
-              <VariableType>4 Bytes</VariableType>
-              <Address>0x55532C</Address>
-              <Offsets>
-                <Offset>30</Offset>
-              </Offsets>
-            </CheatEntry>
-          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>291</ID>
+          <Description>""</Description>
+          <ShowAsHex>1</ShowAsHex>
+          <Color>80000008</Color>
+          <VariableType>4 Bytes</VariableType>
+          <Address>0x55532C</Address>
+          <Offsets>
+            <Offset>30</Offset>
+          </Offsets>
         </CheatEntry>
       </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>309</ID>
+      <Description>""</Description>
+      <ShowAsHex>1</ShowAsHex>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0x5553CC</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>313</ID>
+      <Description>""</Description>
+      <ShowAsHex>1</ShowAsHex>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0x5553EC</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>312</ID>
+      <Description>""</Description>
+      <ShowAsHex>1</ShowAsHex>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0x5553F0</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>311</ID>
+      <Description>""</Description>
+      <ShowAsHex>1</ShowAsHex>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0x5553FC</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>310</ID>
+      <Description>""</Description>
+      <ShowAsHex>1</ShowAsHex>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0x555400</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>314</ID>
+      <Description>""</Description>
+      <ShowAsHex>1</ShowAsHex>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0x55544C</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>295</ID>
@@ -1002,19 +1013,6 @@
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
       <Address>0x555450</Address>
-      <CheatEntries>
-        <CheatEntry>
-          <ID>297</ID>
-          <Description>""</Description>
-          <ShowAsHex>1</ShowAsHex>
-          <Color>80000008</Color>
-          <VariableType>4 Bytes</VariableType>
-          <Address>0x555450</Address>
-          <Offsets>
-            <Offset>0</Offset>
-          </Offsets>
-        </CheatEntry>
-      </CheatEntries>
     </CheatEntry>
     <CheatEntry>
       <ID>296</ID>
@@ -1023,19 +1021,14 @@
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
       <Address>0x555454</Address>
-      <CheatEntries>
-        <CheatEntry>
-          <ID>299</ID>
-          <Description>""</Description>
-          <ShowAsHex>1</ShowAsHex>
-          <Color>80000008</Color>
-          <VariableType>4 Bytes</VariableType>
-          <Address>0x555454</Address>
-          <Offsets>
-            <Offset>0</Offset>
-          </Offsets>
-        </CheatEntry>
-      </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>315</ID>
+      <Description>""</Description>
+      <ShowAsHex>1</ShowAsHex>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0x555458</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>300</ID>
@@ -1086,6 +1079,49 @@
           </CheatEntries>
         </CheatEntry>
       </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>316</ID>
+      <Description>""</Description>
+      <ShowAsHex>1</ShowAsHex>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0x55546C</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>317</ID>
+      <Description>"No description"</Description>
+      <Color>80000008</Color>
+      <VariableType>Float</VariableType>
+      <Address>0053D7D4</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>321</ID>
+      <Description>"No description"</Description>
+      <Color>80000008</Color>
+      <VariableType>Float</VariableType>
+      <Address>0053D7D4</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>320</ID>
+      <Description>"No description"</Description>
+      <Color>80000008</Color>
+      <VariableType>Float</VariableType>
+      <Address>0053D7D4</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>319</ID>
+      <Description>"No description"</Description>
+      <Color>80000008</Color>
+      <VariableType>Float</VariableType>
+      <Address>0053D7D4</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>318</ID>
+      <Description>"No description"</Description>
+      <Color>80000008</Color>
+      <VariableType>Float</VariableType>
+      <Address>0053D7D4</Address>
     </CheatEntry>
   </CheatEntries>
   <CheatCodes>
@@ -3321,6 +3357,87 @@
         <Byte>14</Byte>
         <Byte>01</Byte>
         <Byte>0F</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Call function that calculates regular damage</Description>
+      <Address>00471570</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>71570</ModuleNameOffset>
+      <Before>
+        <Byte>53</Byte>
+        <Byte>56</Byte>
+        <Byte>55</Byte>
+        <Byte>8B</Byte>
+        <Byte>C7</Byte>
+      </Before>
+      <Actual>
+        <Byte>E8</Byte>
+        <Byte>3B</Byte>
+        <Byte>5D</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+      </Actual>
+      <After>
+        <Byte>83</Byte>
+        <Byte>C4</Byte>
+        <Byte>0C</Byte>
+        <Byte>80</Byte>
+        <Byte>3D</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Call function that calculates chip damage</Description>
+      <Address>00471430</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>71430</ModuleNameOffset>
+      <Before>
+        <Byte>24</Byte>
+        <Byte>CC</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+      </Before>
+      <Actual>
+        <Byte>E8</Byte>
+        <Byte>7B</Byte>
+        <Byte>5E</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+      </Actual>
+      <After>
+        <Byte>89</Byte>
+        <Byte>44</Byte>
+        <Byte>24</Byte>
+        <Byte>5C</Byte>
+        <Byte>DB</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Call function that calculates certain throw damage</Description>
+      <Address>0045D4FF</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>5D4FF</ModuleNameOffset>
+      <Before>
+        <Byte>00</Byte>
+        <Byte>50</Byte>
+        <Byte>56</Byte>
+        <Byte>8B</Byte>
+        <Byte>C5</Byte>
+      </Before>
+      <Actual>
+        <Byte>E8</Byte>
+        <Byte>AC</Byte>
+        <Byte>9D</Byte>
+        <Byte>01</Byte>
+        <Byte>00</Byte>
+      </Actual>
+      <After>
+        <Byte>83</Byte>
+        <Byte>C4</Byte>
+        <Byte>0C</Byte>
+        <Byte>8B</Byte>
+        <Byte>C8</Byte>
       </After>
     </CodeEntry>
   </CheatCodes>
