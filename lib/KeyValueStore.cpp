@@ -34,7 +34,7 @@ int KeyValueStore::getInteger ( const string& key ) const
     return i;
 }
 
-void KeyValueStore::putInteger ( const string& key, int i )
+void KeyValueStore::setInteger ( const string& key, int i )
 {
     settings[key] = format ( i );
     types[key] = Type::Integer;
@@ -93,7 +93,7 @@ bool KeyValueStore::load ( const string& file )
                         ss >> i;
                         if ( ss.fail() )
                             continue;
-                        putInteger ( it->first, i );
+                        setInteger ( it->first, i );
                         break;
                     }
 

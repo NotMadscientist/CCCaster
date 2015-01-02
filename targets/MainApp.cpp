@@ -398,6 +398,24 @@ struct MainApp
         if ( clientMode.isHost() )
         {
             mergePingStats();
+
+            const int delay = computeDelay ( this->pingStats.latency );
+            const int maxDelay = ui.getConfig().getInteger ( "maxAllowedDelay" );
+
+            if ( delay > maxDelay )
+            {
+                if ( ctrlSocket && ctrlSocket->isConnected() )
+                {
+                    ctrlSocket->send ( new ErrorMessage ( format (
+                            "Calculated delay %u is greater than max allowed delay %u!", delay, maxDelay ) ) );
+
+                    pushPendingSocket ( this, ctrlSocket );
+                }
+
+                resetHost();
+                return;
+            }
+
             getUserConfirmation();
         }
         else
@@ -1113,6 +1131,9 @@ struct MainApp
             options.set ( Options::Offline, 1 );
             options.set ( Options::NoUi, 1 );
         }
+
+        if ( ui.getConfig().getInteger ( "alternateFpsControl" ) )
+            options.set ( Options::AltFpsControl, 1 );
 
 #ifndef RELEASE
         if ( !options[Options::StrictVersion] )

@@ -13,6 +13,7 @@
 #include "CharacterSelect.h"
 #include "SpectatorManager.h"
 #include "DllControllerManager.h"
+#include "DllFrameRate.h"
 
 #include <windows.h>
 
@@ -86,7 +87,6 @@ struct DllMain
     RefChangeMonitor<Variable, uint32_t> worldTimerMoniter;
 
     // Timeout for each call to EventManager::poll
-    // TODO figure out if there is any way to increase this, maybe dynamically?
     uint64_t pollTimeout = 1;
 
     // Timer for resending inputs while waiting
@@ -1044,6 +1044,9 @@ struct DllMain
                 syncLog.sessionId = options.arg ( Options::SessionId );
                 syncLog.initialize ( options.arg ( Options::AppDir ) + SYNC_LOG_FILE, 0 );
                 syncLog.logVersion();
+
+                if ( options[Options::AltFpsControl] )
+                    DllFrameRate::enable();
                 break;
 
             case MsgType::ControllerMappings:
@@ -1299,7 +1302,7 @@ struct DllMain
         if ( appState != AppState::Polling )
             return;
 
-        // Check if the world timer changed, this calls hasChanged if changed
+        // Check if the world timer changed, this calls hasChanged if changed, which calls frameStep
         worldTimerMoniter.check();
     }
 

@@ -77,8 +77,7 @@ bool EventManager::poll ( uint64_t timeout )
 
     ASSERT ( timeout > 0 );
 
-    TimerManager::get().updateNow();
-    uint64_t now = TimerManager::get().getNow();
+    uint64_t now = TimerManager::get().getNow ( true );
     const uint64_t end = now + timeout;
 
     timeBeginPeriod ( 1 ); // for select, see comment in SocketManager
@@ -90,8 +89,7 @@ bool EventManager::poll ( uint64_t timeout )
         if ( !running )
             break;
 
-        TimerManager::get().updateNow();
-        now = TimerManager::get().getNow();
+        now = TimerManager::get().getNow ( true );
     }
 
     timeEndPeriod ( 1 ); // for select, see comment in SocketManager

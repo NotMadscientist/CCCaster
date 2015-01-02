@@ -57,6 +57,7 @@ public:
 
     // Get the current time in milliseconds
     uint64_t getNow() const { return now; }
+    uint64_t getNow ( bool update ) { if ( update ) updateNow(); return now; }
 
     // Get the next time when a timer will expire
     uint64_t getNextExpiry() const { return nextExpiry; }

@@ -15,6 +15,12 @@ typedef void ( * RunFuncPtr ) ( const IpAddrPort& address, const Serializable& c
 
 class ConsoleUi;
 
+// Function that computes the delay from the latency
+inline int computeDelay ( const Statistics& latency )
+{
+    return ( int ) ceil ( latency.getMean() / ( 1000.0 / 60 ) );
+}
+
 
 class MainUi : public Controller::Owner, public ControllerManager::Owner
 {
@@ -39,8 +45,8 @@ class MainUi : public Controller::Owner, public ControllerManager::Owner
 
     bool areYouSure();
 
-    bool gameMode();
-    bool gameModeIncludingVersusCpu();
+    bool gameMode ( bool below );
+    bool offlineGameMode();
 
     void doneMapping ( Controller *controller, uint32_t key ) override;
 
@@ -68,6 +74,10 @@ public:
     void initialize();
 
     void main ( RunFuncPtr run );
+
+    bool promptMaxDelay();
+
+    void setMaxDelay ( uint8_t maxDelay );
 
     void display ( const std::string& message, bool replace = true );
 

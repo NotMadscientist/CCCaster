@@ -113,8 +113,7 @@ void Logger::log ( const char *file, int line, const char *func, const char *mes
 
         strftime ( buffer, sizeof ( buffer ), "%H:%M:%S", ts );
 
-        TimerManager::get().updateNow();
-        uint64_t now = TimerManager::get().getNow();
+        const uint64_t now = TimerManager::get().getNow ( true );
 
         fprintf ( fd, "%s.%03u:", buffer, ( uint32_t ) ( now % 1000 ) );
         hasPrefix = true;

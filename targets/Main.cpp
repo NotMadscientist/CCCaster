@@ -210,6 +210,11 @@ int main ( int argc, char *argv[] )
         { Options::Spectate,  0, "s",  "spectate", Arg::None,     "  --spectate, -s     Force spectator mode.\n" },
 
         {
+            Options::MaxDelay, 0, "m", "max", Arg::Numeric,
+            "  --max, -m D        Set max allowed delay to D.\n"
+        },
+
+        {
             Options::Offline, 0, "o", "offline", Arg::OptionalNumeric,
             "  --offline, -o D    Force offline mode.\n"
             "                     D is the optional delay, defaults to 0.\n"
@@ -272,6 +277,27 @@ int main ( int argc, char *argv[] )
         argv0 = argv[0];
         --argc;
         ++argv;
+    }
+
+    static const string protocolPrefix = "cccaster:";
+    vector<string> tmpNewArgs;
+    vector<char *> tmpCharPtrs;
+
+    // Strip protocol prefix and tokenize the first arg
+    if ( argc > 0 && string ( argv[0] ).find ( protocolPrefix ) == 0 )
+    {
+        argv[0] += protocolPrefix.size();
+
+        tmpNewArgs = split ( argv[0] );
+
+        for ( string& newArg : tmpNewArgs )
+        {
+            newArg += '\0';
+            tmpCharPtrs.push_back ( &newArg[0] );
+        }
+
+        argv = &tmpCharPtrs[0];
+        argc = ( int ) tmpNewArgs.size();
     }
 
     Stats stats ( desc, argc, argv );
@@ -357,6 +383,15 @@ int main ( int argc, char *argv[] )
     if ( opt[Options::Spectate] )
         ui.initialConfig.mode.value = ClientMode::SpectateNetplay;
 
+    if ( opt[Options::MaxDelay] )
+    {
+        uint32_t maxDelay = 0;
+        stringstream ss ( opt[Options::MaxDelay].arg );
+
+        if ( ( ss >> maxDelay ) && ( maxDelay < 0xFF ) )
+            ui.setMaxDelay ( maxDelay );
+    }
+
     RunFuncPtr run = ( opt[Options::FakeUi] ? runFake : runMain );
 
     // Warn on invalid command line opt
@@ -410,20 +445,18 @@ int main ( int argc, char *argv[] )
     }
     else if ( parser.nonOptionsCount() == 1 )
     {
-        string str = parser.nonOption ( 0 );
-
-        static const string prefix = "cccaster:";
-
-        if ( str.find ( prefix ) == 0 )
-            str = str.substr ( prefix.size() );
-
-        const IpAddrPort address = tryParseIpAddrPort ( str );
+        const IpAddrPort address = tryParseIpAddrPort ( parser.nonOption ( 0 ) );
 
         if ( ui.initialConfig.mode.value == ClientMode::Unknown )
             ui.initialConfig.mode.value = ( address.addr.empty() ? ClientMode::Host : ClientMode::Client );
 
         if ( lastError.empty() )
-            run ( address, ui.initialConfig );
+        {
+#ifdef RELEASE
+            if ( ui.initialConfig.mode.value == ClientMode::Client || opt[Options::MaxDelay] || ui.promptMaxDelay() )
+#endif
+                run ( address, ui.initialConfig );
+        }
     }
     else if ( parser.nonOptionsCount() == 2 )
     {

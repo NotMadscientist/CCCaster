@@ -1,5 +1,5 @@
 VERSION = 2.1
-SUFFIX = g
+SUFFIX = h
 NAME = cccaster
 TAG =
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
@@ -221,7 +221,7 @@ clean-proto:
 
 clean-common: clean-proto
 	rm -f .depend_$(BRANCH) .include_$(BRANCH) *.zip tools/*.exe \
-$(filter-out $(wildcard $(FOLDER)/*.log),$(wildcard $(FOLDER)/*))
+$(filter-out $(wildcard $(FOLDER)/*.mappings) $(wildcard $(FOLDER)/*.log),$(wildcard $(FOLDER)/*))
 
 clean-debug: clean-common
 	rm -rf build_debug_$(BRANCH)
