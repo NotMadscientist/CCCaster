@@ -480,7 +480,10 @@ struct DllMain
             // Reset the game state (this resets game state AND netMan state)
             procMan.loadState ( netMan.getLastChangedFrame(), netMan );
 
-            LOG_TO ( syncLog, "%s Rollback: [%s]", before, netMan.getIndexedFrame() );
+            LOG_TO ( syncLog, "%s Rollback: target=[%u:%d]; actual=[%u:%d]",
+                     before, netMan.getLastChangedFrame(), netMan.getIndexedFrame() );
+
+            // LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
             return;
         }
 
@@ -592,6 +595,8 @@ struct DllMain
         // Disable FPS limit while fast-forwarding
         if ( fastFwdStopFrame.value )
             *CC_SKIP_FRAMES_ADDR = 1;
+
+        // LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
     }
 
     void frameStep()
