@@ -92,6 +92,18 @@ using namespace std;
 #define CC_EFFECTS_ARRAY_COUNT      ( 1000 )
 #define CC_EFFECT_ELEMENT_SIZE      ( 0x33C )
 
+#define CC_P1_MAIDS_TAG_STATE1_ADDR ( ( uint32_t * ) 0x557DBC )
+#define CC_P1_MAIDS_TAG_STATE2_ADDR ( ( uint32_t * ) 0x557E6C )
+#define CC_P1_MAIDS_TAG_STATE3_ADDR ( ( uint32_t * ) 0x557E70 )
+#define CC_P1_MAIDS_TAG_STATE4_ADDR ( ( uint32_t * ) 0x557E78 )
+#define CC_P1_MAIDS_TAG_STATE5_ADDR ( ( uint32_t * ) 0x557FC0 )
+
+#define CC_P2_MAIDS_TAG_STATE1_ADDR ( ( uint32_t * ) ( ( ( char * ) CC_P1_MAIDS_TAG_STATE1_ADDR ) + 524 ) )
+#define CC_P2_MAIDS_TAG_STATE2_ADDR ( ( uint32_t * ) ( ( ( char * ) CC_P1_MAIDS_TAG_STATE2_ADDR ) + 524 ) )
+#define CC_P2_MAIDS_TAG_STATE3_ADDR ( ( uint32_t * ) ( ( ( char * ) CC_P1_MAIDS_TAG_STATE3_ADDR ) + 524 ) )
+#define CC_P2_MAIDS_TAG_STATE4_ADDR ( ( uint32_t * ) ( ( ( char * ) CC_P1_MAIDS_TAG_STATE4_ADDR ) + 524 ) )
+#define CC_P2_MAIDS_TAG_STATE5_ADDR ( ( uint32_t * ) ( ( ( char * ) CC_P1_MAIDS_TAG_STATE5_ADDR ) + 524 ) )
+
 
 static const vector<MemDump> playerAddrs =
 {
@@ -184,6 +196,18 @@ static const vector<MemDump> miscAddrs =
     CC_WORLD_TIMER_ADDR,
     CC_DEATH_TIMER_ADDR,
     CC_INTRO_STATE_ADDR,
+
+    // TODO this is incomplete
+    CC_P1_MAIDS_TAG_STATE1_ADDR,
+    CC_P1_MAIDS_TAG_STATE2_ADDR,
+    CC_P1_MAIDS_TAG_STATE3_ADDR,
+    CC_P1_MAIDS_TAG_STATE4_ADDR,
+    CC_P1_MAIDS_TAG_STATE5_ADDR,
+    CC_P2_MAIDS_TAG_STATE1_ADDR,
+    CC_P2_MAIDS_TAG_STATE2_ADDR,
+    CC_P2_MAIDS_TAG_STATE3_ADDR,
+    CC_P2_MAIDS_TAG_STATE4_ADDR,
+    CC_P2_MAIDS_TAG_STATE5_ADDR,
 
     CC_RNGSTATE0_ADDR,
     CC_RNGSTATE1_ADDR,

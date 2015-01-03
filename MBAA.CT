@@ -773,6 +773,41 @@
       <Address>00564200</Address>
     </CheatEntry>
     <CheatEntry>
+      <ID>419</ID>
+      <Description>"Maids tag state 1"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>00557DBC</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>420</ID>
+      <Description>"Maids tag state 2"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>00557E6C</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>421</ID>
+      <Description>"Maids tag state 3"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>00557E70</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>422</ID>
+      <Description>"Maids tag state 4"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>00557E78</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>424</ID>
+      <Description>"Maids tag state 5"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>00557FC0</Address>
+    </CheatEntry>
+    <CheatEntry>
       <ID>208</ID>
       <Description>"Skip frames"</Description>
       <Color>80000008</Color>
