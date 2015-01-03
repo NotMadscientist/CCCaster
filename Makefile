@@ -221,7 +221,7 @@ clean-proto:
 
 clean-common: clean-proto
 	rm -f .depend_$(BRANCH) .include_$(BRANCH) *.zip tools/*.exe \
-$(filter-out $(wildcard $(FOLDER)/*.mappings) $(wildcard $(FOLDER)/*.log),$(wildcard $(FOLDER)/*))
+$(filter-out $(FOLDER)/config.ini $(wildcard $(FOLDER)/*.mappings) $(wildcard $(FOLDER)/*.log),$(wildcard $(FOLDER)/*))
 
 clean-debug: clean-common
 	rm -rf build_debug_$(BRANCH)
