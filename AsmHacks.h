@@ -9,7 +9,7 @@
 
 #define WRITE_ASM_HACK(ASM_HACK)                                                                                    \
     do {                                                                                                            \
-        int error = ASM_HACK.write();                                                                               \
+        const int error = ASM_HACK.write();                                                                         \
         if ( error != 0 ) {                                                                                         \
             LOG ( "[%d] %s; %s failed; addr=%08x",                                                                  \
                   error, WinException::getAsString ( error ), #ASM_HACK, ASM_HACK.addr );                           \
@@ -29,6 +29,8 @@
 #define INLINE_NOP_TWO_TIMES { 0x90, 0x90 }
 
 #define INLINE_NOP_THREE_TIMES { 0x90, 0x90, 0x90 }
+
+#define INLINE_NOP_SEVEN_TIMES { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 }
 
 
 namespace AsmHacks
@@ -295,5 +297,8 @@ static const AsmList filterRepeatedSfx =
                                                                     // skipSFX:
     } },
 };
+
+// Disables the code that sets the intro state to 0. This is so we can manually set it during rollback.
+static const Asm hijackIntroState = { ( void * ) 0x45C1F2, INLINE_NOP_SEVEN_TIMES };
 
 } // namespace AsmHacks

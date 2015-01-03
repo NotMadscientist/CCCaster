@@ -53,6 +53,13 @@ using namespace std;
              gameModeStr ( *CC_GAME_MODE_ADDR ), *CC_GAME_MODE_ADDR,                                            \
              netMan.getState(), netMan.getIndexedFrame(), ## __VA_ARGS__ )
 
+#define LOG_SYNC_CHARACTER(N)                                                                                   \
+    LOG_SYNC ( "P%u: seq=%u; st=%u; hp=%u; rh=%u; gb=%u; gq=%u; mt=%u; ht=%u; x=%d; y=%d",                      \
+               N, *CC_P ## N ## _SEQUENCE_ADDR, *CC_P ## N ## _SEQ_STATE_ADDR, *CC_P ## N ## _HEALTH_ADDR,      \
+               *CC_P ## N ## _RED_HEALTH_ADDR, *CC_P ## N ## _GUARD_BAR_ADDR,                                   \
+               *CC_P ## N ## _GUARD_QUALITY_ADDR,  *CC_P ## N ## _METER_ADDR, *CC_P ## N ## _HEAT_ADDR,         \
+               *CC_P ## N ## _X_POSITION_ADDR, *CC_P ## N ## _Y_POSITION_ADDR );
+
 
 // Main application state
 static ENUM ( AppState, Uninitialized, Polling, Stopping, Deinitialized ) appState = AppState::Uninitialized;
@@ -173,7 +180,7 @@ struct DllMain
 
                 ASSERT ( localPlayer == 1 || localPlayer == 2 );
 
-                checkOverlay ( netMan.getState().value == NetplayState::CharaSelect || clientMode.isNetplay() );
+                checkOverlay ( netMan.getState() == NetplayState::CharaSelect || clientMode.isNetplay() );
 
                 KeyboardState::update();
                 ControllerManager::get().check();
@@ -260,23 +267,27 @@ struct DllMain
                 {
                     bool shouldRandomize = ( netMan.getFrame() % 2 );
                     if ( netMan.getState() == NetplayState::InGame && netMan.config.rollback )
-                        shouldRandomize = ( netMan.getFrame() % 150 == 0 ); // every 2.5s
+                        shouldRandomize = ( netMan.getFrame() % 150 < 50 );
 
                     if ( shouldRandomize )
                     {
                         uint16_t direction = ( rand() % 10 );
 
                         // Reduce the chances of moving the cursor at retry menu
-                        if ( netMan.getState().value == NetplayState::RetryMenu && ( rand() % 2 ) )
+                        if ( netMan.getState() == NetplayState::RetryMenu && ( rand() % 2 ) )
                             direction = 0;
 
                         uint16_t buttons = ( rand() % 0x1000 );
 
+                        // Disable attack buttons during rollback for now
+                        if ( netMan.getState() == NetplayState::InGame && netMan.config.rollback )
+                            buttons &= CC_BUTTON_D;
+
                         // Prevent hitting some non-essential buttons
-                        buttons &= ~ ( CC_BUTTON_D | CC_BUTTON_FN1 | CC_BUTTON_FN2 | CC_BUTTON_START );
+                        buttons &= ~ ( CC_BUTTON_FN1 | CC_BUTTON_FN2 | CC_BUTTON_START );
 
                         // Prevent going back at character select
-                        if ( netMan.getState().value == NetplayState::CharaSelect )
+                        if ( netMan.getState() == NetplayState::CharaSelect )
                             buttons &= ~ ( CC_BUTTON_B | CC_BUTTON_CANCEL );
 
                         localInputs [ clientMode.isLocal() ? 1 : 0 ] = COMBINE_INPUT ( direction, buttons );
@@ -352,7 +363,7 @@ struct DllMain
                 if ( clientMode.isNetplay() )
                 {
                     // Special netplay retry menu behaviour, only select final option after both sides have selected
-                    if ( netMan.getState().value == NetplayState::RetryMenu )
+                    if ( netMan.getState() == NetplayState::RetryMenu )
                     {
                         MsgPtr msgMenuIndex = netMan.getLocalRetryMenuIndex();
 
@@ -562,8 +573,10 @@ struct DllMain
 
         // Log some state every frame
         LOG_SYNC ( "Inputs: %04x %04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
-        LOG_SYNC ( "P1: hp=%u; x=%d; y=%d", *CC_P1_HEALTH_ADDR, *CC_P1_X_POSITION_ADDR, *CC_P1_Y_POSITION_ADDR );
-        LOG_SYNC ( "P2: hp=%u; x=%d; y=%d", *CC_P2_HEALTH_ADDR, *CC_P2_X_POSITION_ADDR, *CC_P2_Y_POSITION_ADDR );
+        LOG_SYNC_CHARACTER ( 1 );
+        LOG_SYNC_CHARACTER ( 2 );
+        LOG_SYNC ( "CC_INTRO_STATE=%u; CC_ROUND_TIMER=%u; CC_REAL_TIMER=%u",
+                   *CC_INTRO_STATE_ADDR, *CC_ROUND_TIMER_ADDR, *CC_REAL_TIMER_ADDR );
     }
 
     void frameStepRerun()
@@ -585,6 +598,10 @@ struct DllMain
 
         // Check for changes to important variables for state transitions
         ChangeMonitor::get().check();
+
+        // Need to manually set the intro state to 0 during rollback
+        if ( netMan.getState() == NetplayState::InGame && netMan.getFrame() > 224 && *CC_INTRO_STATE_ADDR )
+            *CC_INTRO_STATE_ADDR = 0;
 
         // Perform the frame step
         if ( fastFwdStopFrame.value )
@@ -1238,6 +1255,16 @@ struct DllMain
 
                 // *CC_WIN_COUNT_VS_ADDR = 1;
                 // *CC_DAMAGE_LEVEL_ADDR = 4;
+
+                // Rollback specific game hacks
+                if ( netMan.config.rollback )
+                {
+                    // Manually control intro state
+                    WRITE_ASM_HACK ( AsmHacks::hijackIntroState );
+
+                    // Disable auto replay save
+                    *CC_AUTO_REPLAY_SAVE_ADDR = 0;
+                }
 
                 LOG ( "SessionId '%s'", netMan.config.sessionId );
 

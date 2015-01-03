@@ -38,6 +38,8 @@
 #define CC_P1_WINS_ADDR             ( ( uint32_t * ) 0x559550 ) // P1 number of wins
 #define CC_P2_WINS_ADDR             ( ( uint32_t * ) 0x559580 ) // P2 number of wins
 #define CC_ROUND_COUNT_ADDR         ( ( uint32_t * ) 0x5550E0 ) // Round count
+#define CC_DEATH_TIMER_ADDR         ( ( uint16_t * ) 0x55D208 ) // KO slowdown timer
+#define CC_INTRO_STATE_ADDR         ( ( uint8_t * )  0x55D20B ) // 2 (intro), 1 (pre-game), 0 (in-game)
 
 #define CC_STAGE_SELECTOR_ADDR      ( ( uint32_t * ) 0x74FD98 ) // Currently selected stage, can be assigned to directly
 #define CC_FPS_COUNTER_ADDR         ( ( uint32_t * ) 0x774A70 ) // Value of the displayed FPS counter
@@ -143,10 +145,17 @@
 #define CC_P1_SPRITE_ANGLE_ADDR     ( ( uint32_t * ) 0x555430 )
 #define CC_P1_FACING_FLAG_ADDR      ( ( uint8_t * )  0x555444 ) // 0 facing left, 1 facing right
 
-#define CC_P2_HEALTH_ADDR           ( ( uint32_t * ) ( ( ( char * ) CC_P1_HEALTH_ADDR      ) + CC_PLR_STRUCT_SIZE ) )
-#define CC_P2_X_POSITION_ADDR       ( ( int32_t * )  ( ( ( char * ) CC_P1_X_POSITION_ADDR  ) + CC_PLR_STRUCT_SIZE ) )
-#define CC_P2_Y_POSITION_ADDR       ( ( int32_t * )  ( ( ( char * ) CC_P1_Y_POSITION_ADDR  ) + CC_PLR_STRUCT_SIZE ) )
-#define CC_P2_FACING_FLAG_ADDR      ( ( uint8_t * )  ( ( ( char * ) CC_P1_FACING_FLAG_ADDR ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_SEQUENCE_ADDR         ( ( uint32_t * ) ( ( ( char * ) CC_P1_SEQUENCE_ADDR      ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_SEQ_STATE_ADDR        ( ( uint32_t * ) ( ( ( char * ) CC_P1_SEQ_STATE_ADDR     ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_HEALTH_ADDR           ( ( uint32_t * ) ( ( ( char * ) CC_P1_HEALTH_ADDR        ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_RED_HEALTH_ADDR       ( ( uint32_t * ) ( ( ( char * ) CC_P1_RED_HEALTH_ADDR    ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_GUARD_BAR_ADDR        ( ( uint32_t * ) ( ( ( char * ) CC_P1_GUARD_BAR_ADDR     ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_GUARD_QUALITY_ADDR    ( ( uint32_t * ) ( ( ( char * ) CC_P1_GUARD_QUALITY_ADDR ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_METER_ADDR            ( ( uint32_t * ) ( ( ( char * ) CC_P1_METER_ADDR         ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_HEAT_ADDR             ( ( uint32_t * ) ( ( ( char * ) CC_P1_HEAT_ADDR          ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_X_POSITION_ADDR       ( ( int32_t * )  ( ( ( char * ) CC_P1_X_POSITION_ADDR    ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_Y_POSITION_ADDR       ( ( int32_t * )  ( ( ( char * ) CC_P1_Y_POSITION_ADDR    ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_FACING_FLAG_ADDR      ( ( uint8_t * )  ( ( ( char * ) CC_P1_FACING_FLAG_ADDR   ) + CC_PLR_STRUCT_SIZE ) )
 
 // Camera addresses
 #define CC_CAMERA_X_ADDR            ( ( int * )      0x564B14 )

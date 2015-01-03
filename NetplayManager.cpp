@@ -10,9 +10,10 @@
 using namespace std;
 
 
-// Only allow first 3 options (once again, chara select, save replay).
+// Max allowed retry menu index (once again, chara select, save replay).
+// Prevent saving replays during rollback for obvious reasons.
 // Prevent saving replays on Wine because MBAA crashes even without us.
-#define MAX_RETRY_MENU_INDEX ( config.mode.isWine() ? 1 : 2 )
+#define MAX_RETRY_MENU_INDEX ( ( config.rollback || config.mode.isWine() ) ? 1 : 2 )
 
 // Extra number to add to preserveStartIndex, this is a safety buffer for chained spectators.
 #define PRESERVE_START_INDEX_BUFFER ( 5 )

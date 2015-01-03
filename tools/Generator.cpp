@@ -11,8 +11,6 @@ using namespace std;
 
 
 #define CC_UNKNOWN_TIMER_ADDR       ((char *)0x55D1CC) // 4 bytes
-#define CC_DEATHTIMER_ADDR          ((char *)0x55D208) // 4 bytes, lo 2 bytes is death timer, hi 1 byte is intro state
-#define CC_INTROSTATE_ADDR          ((char *)0x55D20B) // 1 bytes, intro state, 2 (intro), 1 (pre-game), 0 (in-game)
 #define CC_OUTROSTATE_ADDR          ((char *)0x563948) // 4 bytes, start from 2, goes to 3 (for timeouts?)
 
 #define CC_PLR_ARRAY_ADDR           ((char *)0x555134) // player info
@@ -83,7 +81,6 @@ using namespace std;
 
 #define CC_INTRO_FX2_ARRAY_START    ((char *)0x76E6F4)
 #define CC_INTRO_FX2_ARRAY_END      ((char *)0x76E7CC)
-
 
 #define CC_P1_SPELL_CIRCLE_ADDR     ( ( float * )    0x5641A4 )
 #define CC_P2_SPELL_CIRCLE_ADDR     ( ( float * )    0x564200 )
@@ -185,24 +182,24 @@ static const vector<MemDump> miscAddrs =
     CC_CAMERA_Y_ADDR,
     CC_METER_ANIMATION_ADDR,
     CC_WORLD_TIMER_ADDR,
+    CC_DEATH_TIMER_ADDR,
+    CC_INTRO_STATE_ADDR,
 
     CC_RNGSTATE0_ADDR,
     CC_RNGSTATE1_ADDR,
     CC_RNGSTATE2_ADDR,
     { CC_RNGSTATE3_ADDR, CC_RNGSTATE3_SIZE },
 
-    // { CC_CAMERA_XY2_ADDR, 8 },
-
-    // { CC_P1_SUPER_TIMER1_ADDR, 8 },
-    // { CC_P1_SUPER_TIMER2_ADDR, 8 },
-    // { CC_P1_SUPER_TIMER3_ADDR, 8 },
-    // { CC_P1_SUPER_TIMER4_ADDR, 4 },
-    // { CC_P1_SUPER_TIMER5_ADDR, 4 },
-    // { CC_P2_SUPER_TIMER1_ADDR, 8 },
-    // { CC_P2_SUPER_TIMER2_ADDR, 8 },
-    // { CC_P2_SUPER_TIMER3_ADDR, 8 },
-    // { CC_P2_SUPER_TIMER4_ADDR, 4 },
-    // { CC_P2_SUPER_TIMER5_ADDR, 4 },
+    { CC_P1_SUPER_TIMER1_ADDR, 8 },
+    { CC_P1_SUPER_TIMER2_ADDR, 8 },
+    { CC_P1_SUPER_TIMER3_ADDR, 8 },
+    { CC_P1_SUPER_TIMER4_ADDR, 4 },
+    { CC_P1_SUPER_TIMER5_ADDR, 4 },
+    { CC_P2_SUPER_TIMER1_ADDR, 8 },
+    { CC_P2_SUPER_TIMER2_ADDR, 8 },
+    { CC_P2_SUPER_TIMER3_ADDR, 8 },
+    { CC_P2_SUPER_TIMER4_ADDR, 4 },
+    { CC_P2_SUPER_TIMER5_ADDR, 4 },
 };
 
 static const MemDump effectAddrs ( CC_EFFECTS_ARRAY_ADDR, CC_EFFECT_ELEMENT_SIZE, {
@@ -228,8 +225,10 @@ int main ( int argc, char *argv[] )
 
     allAddrs.append ( miscAddrs );
 
-    allAddrs.append ( playerAddrs );                        // Player 1
-    allAddrs.append ( playerAddrs, CC_PLR_STRUCT_SIZE );    // Player 2
+    allAddrs.append ( playerAddrs );                            // Player 1
+    allAddrs.append ( playerAddrs, CC_PLR_STRUCT_SIZE );        // Player 2
+    allAddrs.append ( playerAddrs, 2 * CC_PLR_STRUCT_SIZE );    // Puppet 1
+    allAddrs.append ( playerAddrs, 3 * CC_PLR_STRUCT_SIZE );    // Puppet 2
 
     for ( size_t i = 0; i < CC_EFFECTS_ARRAY_COUNT; ++i )
         allAddrs.append ( effectAddrs, CC_EFFECT_ELEMENT_SIZE * i );
