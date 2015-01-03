@@ -34,9 +34,6 @@ void initializePreLoad()
     for ( const Asm& hack : hijackMenu )
         WRITE_ASM_HACK ( hack );
 
-    for ( const Asm& hack : detectRoundStart )
-        WRITE_ASM_HACK ( hack );
-
     for ( const Asm& hack : filterRepeatedSfx )
         WRITE_ASM_HACK ( hack );
 

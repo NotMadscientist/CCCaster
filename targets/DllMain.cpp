@@ -54,7 +54,7 @@ using namespace std;
              netMan.getState(), netMan.getIndexedFrame(), ## __VA_ARGS__ )
 
 #define LOG_SYNC_CHARACTER(N)                                                                                   \
-    LOG_SYNC ( "P%u: seq=%u; st=%u; hp=%u; rh=%u; gb=%u; gq=%u; mt=%u; ht=%u; x=%d; y=%d",                      \
+    LOG_SYNC ( "P%u: seq=%u; st=%u; hp=%u; rh=%u; gb=%.1f; gq=%.1f; mt=%u; ht=%u; x=%d; y=%d",                  \
                N, *CC_P ## N ## _SEQUENCE_ADDR, *CC_P ## N ## _SEQ_STATE_ADDR, *CC_P ## N ## _HEALTH_ADDR,      \
                *CC_P ## N ## _RED_HEALTH_ADDR, *CC_P ## N ## _GUARD_BAR_ADDR,                                   \
                *CC_P ## N ## _GUARD_QUALITY_ADDR,  *CC_P ## N ## _METER_ADDR, *CC_P ## N ## _HEAT_ADDR,         \
@@ -73,12 +73,13 @@ static Mutex deinitMutex;
 static void deinitialize();
 
 // Enum of variables to monitor
-ENUM ( Variable, WorldTime, GameMode, RoundStart, SkippableFlag,
+ENUM ( Variable, WorldTime, GameMode, SkippableFlag, IntroState,
        MenuConfirmState, AutoReplaySave, GameStateCounter, CurrentMenuIndex );
 
 
 struct DllMain
         : public Main
+        , public RefChangeMonitor<Variable, uint8_t>::Owner
         , public RefChangeMonitor<Variable, uint32_t>::Owner
         , public PtrToRefChangeMonitor<Variable, uint32_t>::Owner
         , public SpectatorManager
@@ -571,6 +572,9 @@ struct DllMain
         // Cleared last played sound effects
         memset ( AsmHacks::sfxFilterArray, 0, CC_SFX_ARRAY_LEN );
 
+        if ( netMan.getState() != NetplayState::InGame )
+            return;
+
         // Log some state every frame
         LOG_SYNC ( "Inputs: %04x %04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
         LOG_SYNC_CHARACTER ( 1 );
@@ -733,6 +737,25 @@ struct DllMain
     }
 
     // ChangeMonitor callback
+    void hasChanged ( Variable var, uint8_t previous, uint8_t current ) override
+    {
+        switch ( var.value )
+        {
+            case Variable::IntroState:
+                if ( current != 1 )
+                    break;
+
+                // In-game happens when intro state is 1, ie when players can start moving
+                LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
+                netplayStateChanged ( NetplayState::InGame );
+                break;
+
+            default:
+                LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
+                break;
+        }
+    }
+
     void hasChanged ( Variable var, uint32_t previous, uint32_t current ) override
     {
         switch ( var.value )
@@ -744,12 +767,6 @@ struct DllMain
             case Variable::GameMode:
                 LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
                 gameModeChanged ( previous, current );
-                break;
-
-            case Variable::RoundStart:
-                // In-game happens after round start, when players can start moving
-                LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
-                netplayStateChanged ( NetplayState::InGame );
                 break;
 
             case Variable::SkippableFlag:
@@ -1352,8 +1369,8 @@ struct DllMain
         netplayStateChanged ( NetplayState::PreInitial );
 
         ChangeMonitor::get().addRef ( this, Variable ( Variable::GameMode ), *CC_GAME_MODE_ADDR );
-        ChangeMonitor::get().addRef ( this, Variable ( Variable::RoundStart ), AsmHacks::roundStartCounter );
         ChangeMonitor::get().addRef ( this, Variable ( Variable::SkippableFlag ), *CC_SKIPPABLE_FLAG_ADDR );
+        ChangeMonitor::get().addRef ( this, Variable ( Variable::IntroState ), *CC_INTRO_STATE_ADDR );
 
 #ifndef RELEASE
         ChangeMonitor::get().addRef ( this, Variable ( Variable::MenuConfirmState ), AsmHacks::menuConfirmState );
