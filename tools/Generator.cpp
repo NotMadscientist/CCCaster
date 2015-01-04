@@ -16,18 +16,6 @@ using namespace std;
 #define CC_CAMERA_XY1_ADDR          ((char *)0x555124) // 8 bytes, unstable
 #define CC_CAMERA_XY2_ADDR          ((char *)0x5585E8) // 8 bytes
 
-#define CC_P1_SUPER_TIMER1_ADDR     ((char *)0x558684) // 8 bytes, L then R timer
-#define CC_P1_SUPER_TIMER2_ADDR     ((char *)0x558784) // 8 bytes, L then R timer
-#define CC_P1_SUPER_TIMER3_ADDR     ((char *)0x558884) // 8 bytes, L then R timer
-#define CC_P1_SUPER_TIMER4_ADDR     ((char *)0x558908) // 4 bytes
-#define CC_P1_SUPER_TIMER5_ADDR     ((char *)0x558910) // 4 bytes
-
-#define CC_P2_SUPER_TIMER1_ADDR     ((char *)0x558990) // 8 bytes, L then R timer
-#define CC_P2_SUPER_TIMER2_ADDR     ((char *)0x558A90) // 8 bytes, L then R timer
-#define CC_P2_SUPER_TIMER3_ADDR     ((char *)0x558B90) // 8 bytes, L then R timer
-#define CC_P2_SUPER_TIMER4_ADDR     ((char *)0x558C14) // 4 bytes
-#define CC_P2_SUPER_TIMER5_ADDR     ((char *)0x558C1C) // 4 bytes
-
 // 0x559550 - P1 wins
 // 0x559580 - P2 wins
 // 0x5595B4 - super flash flag
@@ -75,6 +63,14 @@ using namespace std;
 #define CC_INTRO_FX2_ARRAY_START    ((char *)0x76E6F4)
 #define CC_INTRO_FX2_ARRAY_END      ((char *)0x76E7CC)
 
+
+
+
+
+
+
+
+
 #define CC_P1_EXTRA_STRUCT_ADDR     ( ( char * )     0x557DB8 )
 #define CC_P2_EXTRA_STRUCT_ADDR     ( ( char * )     0x557FC4 )
 #define CC_EXTRA_STRUCT_SIZE        ( 0x20C )
@@ -88,6 +84,21 @@ using namespace std;
 #define CC_EFFECTS_ARRAY_ADDR       ( ( char * )     0x67BDE8 )
 #define CC_EFFECTS_ARRAY_COUNT      ( 1000 )
 #define CC_EFFECT_ELEMENT_SIZE      ( 0x33C )
+
+#define CC_SUPER_FLASH_PAUSE_ADDR   ( ( uint32_t * ) 0x5595B4 )
+#define CC_SUPER_FLASH_TIMER_ADDR   ( ( uint32_t * ) 0x562A48 )
+
+#define CC_P1_SUPER_TIMER1_ADDR     ( ( uint64_t * ) 0x558684 ) // L then R timer
+#define CC_P1_SUPER_TIMER2_ADDR     ( ( uint64_t * ) 0x558784 ) // L then R timer
+#define CC_P1_SUPER_TIMER3_ADDR     ( ( uint64_t * ) 0x558884 ) // L then R timer
+#define CC_P1_SUPER_TIMER4_ADDR     ( ( uint32_t * ) 0x558908 )
+#define CC_P1_SUPER_TIMER5_ADDR     ( ( uint32_t * ) 0x558910 )
+
+#define CC_P2_SUPER_TIMER1_ADDR     ( ( uint64_t * ) 0x558990 ) // L then R timer
+#define CC_P2_SUPER_TIMER2_ADDR     ( ( uint64_t * ) 0x558A90 ) // L then R timer
+#define CC_P2_SUPER_TIMER3_ADDR     ( ( uint64_t * ) 0x558B90 ) // L then R timer
+#define CC_P2_SUPER_TIMER4_ADDR     ( ( uint32_t * ) 0x558C14 )
+#define CC_P2_SUPER_TIMER5_ADDR     ( ( uint32_t * ) 0x558C1C )
 
 
 static const vector<MemDump> playerAddrs =
@@ -187,16 +198,19 @@ static const vector<MemDump> miscAddrs =
     CC_RNGSTATE2_ADDR,
     { CC_RNGSTATE3_ADDR, CC_RNGSTATE3_SIZE },
 
-    { CC_P1_SUPER_TIMER1_ADDR, 8 },
-    { CC_P1_SUPER_TIMER2_ADDR, 8 },
-    { CC_P1_SUPER_TIMER3_ADDR, 8 },
-    { CC_P1_SUPER_TIMER4_ADDR, 4 },
-    { CC_P1_SUPER_TIMER5_ADDR, 4 },
-    { CC_P2_SUPER_TIMER1_ADDR, 8 },
-    { CC_P2_SUPER_TIMER2_ADDR, 8 },
-    { CC_P2_SUPER_TIMER3_ADDR, 8 },
-    { CC_P2_SUPER_TIMER4_ADDR, 4 },
-    { CC_P2_SUPER_TIMER5_ADDR, 4 },
+    CC_SUPER_FLASH_PAUSE_ADDR,
+    CC_SUPER_FLASH_TIMER_ADDR,
+
+    CC_P1_SUPER_TIMER1_ADDR,
+    CC_P1_SUPER_TIMER2_ADDR,
+    CC_P1_SUPER_TIMER3_ADDR,
+    CC_P1_SUPER_TIMER4_ADDR,
+    CC_P1_SUPER_TIMER5_ADDR,
+    CC_P2_SUPER_TIMER1_ADDR,
+    CC_P2_SUPER_TIMER2_ADDR,
+    CC_P2_SUPER_TIMER3_ADDR,
+    CC_P2_SUPER_TIMER4_ADDR,
+    CC_P2_SUPER_TIMER5_ADDR,
 
     { CC_P1_EXTRA_STRUCT_ADDR, CC_EXTRA_STRUCT_SIZE },
     { CC_P2_EXTRA_STRUCT_ADDR, CC_EXTRA_STRUCT_SIZE },
