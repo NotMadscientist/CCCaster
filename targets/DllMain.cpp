@@ -480,7 +480,7 @@ struct DllMain
             // Reset the game state (this resets game state AND netMan state)
             procMan.loadState ( netMan.getLastChangedFrame(), netMan );
 
-            LOG_TO ( syncLog, "%s Rollback: target=[%u:%d]; actual=[%u:%d]",
+            LOG_TO ( syncLog, "%s Rollback: target=[%s]; actual=[%s]",
                      before, netMan.getLastChangedFrame(), netMan.getIndexedFrame() );
 
             // LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
