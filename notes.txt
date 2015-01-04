@@ -51,6 +51,75 @@
 0x555B2C to 0x555C30 ???
 
 0x555C30 Player 1 struct end
+0x555C30 Player 2 struct start (previous+0xAFC)
+0x55672C Puppet 1 struct start (previous+0xAFC)
+0x557228 Puppet 2 struct start (previous+0xAFC)
+
+
+
+
+
+0x557DB8 Player 1 extra struct start
+
+0x557DB8 to 0x557DBC maids tag state
+
+0x557DDC to 0x557DF4 ???
+0x557DF4 float
+0x557DF8 ???
+
+0x557E00 accessed when paused
+
+0x557E04 some health constant?
+
+0x557E08 to 0x557E10 accessed when paused
+
+0x557E1C to 0x557E20 accessed when paused
+
+0x557E24 ???
+
+0x557E28 to 0x557E30 accessed when paused
+
+0x557E38 accessed when paused
+
+0x557E40 to 0x557E48 accessed when paused
+
+0x557E50 accessed when paused
+
+0x557E58 1 byte
+
+0x557E59 1 byte, accessed when paused
+0x557E5A 2 byte ???
+0x557E5C accessed when paused
+0x557E60 accessed when paused
+0x557E64 accessed when paused
+0x557E68 accessed when paused
+0x557E6C 1 byte, accessed when paused
+0x557E6D 1 byte, accessed when paused
+
+0x557E6E 2 byte
+
+0x557E7C to 0x557EB4 accessed when paused
+
+0x557EB4 2 byte, accessed when paused
+0x557EB6 2 byte, accessed when paused
+0x557EB8 to 0x557F38 accessed when paused
+0x557F38 2 byte, accessed when paused
+0x557F3A 2 byte, accessed when paused
+0x557F3C to 0x557F64 accessed when paused
+0x557F64 2 byte, accessed when paused
+0x557F66 2 byte, accessed when paused
+0x557F68 to 0x557F90
+0x557F90 2 byte, accessed when paused
+0x557F92 2 byte, accessed when paused?
+0x557F94 to 0x557FBC accessed when paused
+
+0x557FC4 Player 2 combo struct start
+
+
+
+
+
+
 
 Any untagged DWORD address ranges just contain POD without pointers.
 

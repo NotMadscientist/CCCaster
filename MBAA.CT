@@ -1115,49 +1115,6 @@
         </CheatEntry>
       </CheatEntries>
     </CheatEntry>
-    <CheatEntry>
-      <ID>316</ID>
-      <Description>""</Description>
-      <ShowAsHex>1</ShowAsHex>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>0x55546C</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>317</ID>
-      <Description>"No description"</Description>
-      <Color>80000008</Color>
-      <VariableType>Float</VariableType>
-      <Address>0053D7D4</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>321</ID>
-      <Description>"No description"</Description>
-      <Color>80000008</Color>
-      <VariableType>Float</VariableType>
-      <Address>0053D7D4</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>320</ID>
-      <Description>"No description"</Description>
-      <Color>80000008</Color>
-      <VariableType>Float</VariableType>
-      <Address>0053D7D4</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>319</ID>
-      <Description>"No description"</Description>
-      <Color>80000008</Color>
-      <VariableType>Float</VariableType>
-      <Address>0053D7D4</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>318</ID>
-      <Description>"No description"</Description>
-      <Color>80000008</Color>
-      <VariableType>Float</VariableType>
-      <Address>0053D7D4</Address>
-    </CheatEntry>
   </CheatEntries>
   <CheatCodes>
     <CodeEntry>

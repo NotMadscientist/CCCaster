@@ -13,13 +13,6 @@ using namespace std;
 #define CC_UNKNOWN_TIMER_ADDR       ((char *)0x55D1CC) // 4 bytes
 #define CC_OUTROSTATE_ADDR          ((char *)0x563948) // 4 bytes, start from 2, goes to 3 (for timeouts?)
 
-#define CC_PLR_ARRAY_ADDR           ((char *)0x555134) // player info
-#define CC_PLR_STRUCT_LEN           (2812)
-#define CC_PLR_STRUCT_HEADER        (12)               // stuff that doesn't change
-
-#define CC_HUD_ARRAY_ADDR           ((char *)0x557DD8) // combo info
-#define CC_HUD_STRUCT_LEN           (524)
-
 #define CC_CAMERA_XY1_ADDR          ((char *)0x555124) // 8 bytes, unstable
 #define CC_CAMERA_XY2_ADDR          ((char *)0x5585E8) // 8 bytes
 
@@ -82,6 +75,10 @@ using namespace std;
 #define CC_INTRO_FX2_ARRAY_START    ((char *)0x76E6F4)
 #define CC_INTRO_FX2_ARRAY_END      ((char *)0x76E7CC)
 
+#define CC_P1_EXTRA_STRUCT_ADDR     ( ( char * )     0x557DB8 )
+#define CC_P2_EXTRA_STRUCT_ADDR     ( ( char * )     0x557FC4 )
+#define CC_EXTRA_STRUCT_SIZE        ( 0x20C )
+
 #define CC_P1_SPELL_CIRCLE_ADDR     ( ( float * )    0x5641A4 )
 #define CC_P2_SPELL_CIRCLE_ADDR     ( ( float * )    0x564200 )
 
@@ -91,18 +88,6 @@ using namespace std;
 #define CC_EFFECTS_ARRAY_ADDR       ( ( char * )     0x67BDE8 )
 #define CC_EFFECTS_ARRAY_COUNT      ( 1000 )
 #define CC_EFFECT_ELEMENT_SIZE      ( 0x33C )
-
-#define CC_P1_MAIDS_TAG_STATE1_ADDR ( ( uint32_t * ) 0x557DBC )
-#define CC_P1_MAIDS_TAG_STATE2_ADDR ( ( uint32_t * ) 0x557E6C )
-#define CC_P1_MAIDS_TAG_STATE3_ADDR ( ( uint32_t * ) 0x557E70 )
-#define CC_P1_MAIDS_TAG_STATE4_ADDR ( ( uint32_t * ) 0x557E78 )
-#define CC_P1_MAIDS_TAG_STATE5_ADDR ( ( uint32_t * ) 0x557FC0 )
-
-#define CC_P2_MAIDS_TAG_STATE1_ADDR ( ( uint32_t * ) ( ( ( char * ) CC_P1_MAIDS_TAG_STATE1_ADDR ) + 524 ) )
-#define CC_P2_MAIDS_TAG_STATE2_ADDR ( ( uint32_t * ) ( ( ( char * ) CC_P1_MAIDS_TAG_STATE2_ADDR ) + 524 ) )
-#define CC_P2_MAIDS_TAG_STATE3_ADDR ( ( uint32_t * ) ( ( ( char * ) CC_P1_MAIDS_TAG_STATE3_ADDR ) + 524 ) )
-#define CC_P2_MAIDS_TAG_STATE4_ADDR ( ( uint32_t * ) ( ( ( char * ) CC_P1_MAIDS_TAG_STATE4_ADDR ) + 524 ) )
-#define CC_P2_MAIDS_TAG_STATE5_ADDR ( ( uint32_t * ) ( ( ( char * ) CC_P1_MAIDS_TAG_STATE5_ADDR ) + 524 ) )
 
 
 static const vector<MemDump> playerAddrs =
@@ -118,7 +103,7 @@ static const vector<MemDump> playerAddrs =
     { 0x555288, 0x5552EC },
     ( uint32_t * ) 0x5552EC, // ???
     { 0x5552F0, 0x5552F4 },
-    { 0x5552F4, 0x555310 }, // ???
+    { 0x5552F4, 0x555310 }, // ??? 0x5552F6, 2 bytes: Sion bullets, inverse counter
     { 0x555310, 0x55532C },
 
     { ( void * ) 0x55532C, 4, {
@@ -197,18 +182,6 @@ static const vector<MemDump> miscAddrs =
     CC_DEATH_TIMER_ADDR,
     CC_INTRO_STATE_ADDR,
 
-    // TODO this is incomplete
-    CC_P1_MAIDS_TAG_STATE1_ADDR,
-    CC_P1_MAIDS_TAG_STATE2_ADDR,
-    CC_P1_MAIDS_TAG_STATE3_ADDR,
-    CC_P1_MAIDS_TAG_STATE4_ADDR,
-    CC_P1_MAIDS_TAG_STATE5_ADDR,
-    CC_P2_MAIDS_TAG_STATE1_ADDR,
-    CC_P2_MAIDS_TAG_STATE2_ADDR,
-    CC_P2_MAIDS_TAG_STATE3_ADDR,
-    CC_P2_MAIDS_TAG_STATE4_ADDR,
-    CC_P2_MAIDS_TAG_STATE5_ADDR,
-
     CC_RNGSTATE0_ADDR,
     CC_RNGSTATE1_ADDR,
     CC_RNGSTATE2_ADDR,
@@ -224,6 +197,9 @@ static const vector<MemDump> miscAddrs =
     { CC_P2_SUPER_TIMER3_ADDR, 8 },
     { CC_P2_SUPER_TIMER4_ADDR, 4 },
     { CC_P2_SUPER_TIMER5_ADDR, 4 },
+
+    { CC_P1_EXTRA_STRUCT_ADDR, CC_EXTRA_STRUCT_SIZE },
+    { CC_P2_EXTRA_STRUCT_ADDR, CC_EXTRA_STRUCT_SIZE },
 };
 
 static const MemDump effectAddrs ( CC_EFFECTS_ARRAY_ADDR, CC_EFFECT_ELEMENT_SIZE, {

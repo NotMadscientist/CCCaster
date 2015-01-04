@@ -579,7 +579,7 @@ struct DllMain
             return;
 
         // Log some state every frame
-        LOG_SYNC ( "Inputs: %04x %04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
+        LOG_SYNC ( "Inputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
         LOG_SYNC_CHARACTER ( 1 );
         LOG_SYNC_CHARACTER ( 2 );
         LOG_SYNC ( "CC_INTRO_STATE=%u; CC_ROUND_TIMER=%u; CC_REAL_TIMER=%u",
