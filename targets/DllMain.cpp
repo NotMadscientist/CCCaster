@@ -308,7 +308,7 @@ struct DllMain
                 // }
 
                 // Test rollback
-                if ( KeyboardState::isPressed ( VK_F9 ) )
+                if ( KeyboardState::isPressed ( VK_F9 ) && netMan.getState() == NetplayState::InGame )
                 {
                     // if ( *CC_PAUSE_FLAG_ADDR )
                     // {
@@ -747,7 +747,7 @@ struct DllMain
         switch ( var.value )
         {
             case Variable::IntroState:
-                if ( current != 1 )
+                if ( ! ( previous == 2 && current == 1 && netMan.getState() == NetplayState::Skippable ) )
                     break;
 
                 // In-game happens when intro state is 1, ie when players can start moving
