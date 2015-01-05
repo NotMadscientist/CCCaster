@@ -8,7 +8,7 @@ ifneq ($(TAG),)
 DOT_TAG = .$(TAG)
 endif
 
-# Main programs
+# Main program files
 ARCHIVE = $(NAME).v$(VERSION)$(SUFFIX)$(DOT_TAG).zip
 BINARY = $(NAME).v$(VERSION)$(DOT_TAG).exe
 FOLDER = $(NAME)
@@ -17,6 +17,7 @@ LAUNCHER = launcher.exe
 DEBUGGER = debugger.exe
 GENERATOR = generator.exe
 MBAA_EXE = MBAA.exe
+ROLLBACK_DATA = data.bin
 
 # Library sources
 GTEST_CC_SRCS = 3rdparty/gtest/fused-src/gtest/gtest-all.cc
@@ -69,6 +70,7 @@ endif
 DEFINES = -DWIN32_LEAN_AND_MEAN -DWINVER=0x501 -D_WIN32_WINNT=0x501 -D_M_IX86
 DEFINES += -DNAMED_PIPE='"\\\\.\\pipe\\cccaster_pipe"' -DMBAA_EXE='"$(MBAA_EXE)"' -DBINARY='"$(BINARY)"'
 DEFINES += -DHOOK_DLL='"$(FOLDER)\\$(DLL)"' -DLAUNCHER='"$(FOLDER)\\$(LAUNCHER)"' -DFOLDER='"$(FOLDER)\\"'
+DEFINES += -DROLLBACK_DATA='"$(FOLDER)\\$(ROLLBACK_DATA)"'
 INCLUDES = -I$(CURDIR) -I$(CURDIR)/lib -I$(CURDIR)/tests -I$(CURDIR)/3rdparty -I$(CURDIR)/3rdparty/cereal/include
 INCLUDES += -I$(CURDIR)/3rdparty/gtest/include -I$(CURDIR)/3rdparty/minhook/include -I$(CURDIR)/3rdparty/d3dhook
 CC_FLAGS = -m32 $(INCLUDES) $(DEFINES)
@@ -120,7 +122,7 @@ debugger: tools/$(DEBUGGER)
 generator: tools/$(GENERATOR)
 
 
-$(ARCHIVE): $(BINARY) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER) $(FOLDER)/states.bin
+$(ARCHIVE): $(BINARY) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER) $(FOLDER)/$(ROLLBACK_DATA)
 	@echo
 	rm -f $(wildcard $(NAME)*.zip)
 	$(ZIP) $(ARCHIVE) ReadMe.txt ChangeLog.txt $^
@@ -149,8 +151,8 @@ $(FOLDER)/$(LAUNCHER): tools/Launcher.cpp | $(FOLDER)
 	$(CHMOD_X)
 	@echo
 
-$(FOLDER)/states.bin: tools/$(GENERATOR) | $(FOLDER)
-	tools/$(GENERATOR) $(FOLDER)/states.bin
+$(FOLDER)/$(ROLLBACK_DATA): tools/$(GENERATOR) | $(FOLDER)
+	tools/$(GENERATOR) $(FOLDER)/$(ROLLBACK_DATA)
 
 $(FOLDER):
 	mkdir -p $@

@@ -48,7 +48,7 @@ void ProcessManager::GameState::load()
 void ProcessManager::allocateStates ( const string& appDir )
 {
     if ( allAddrs.empty() )
-        allAddrs.load ( appDir + FOLDER "states.bin" );
+        allAddrs.load ( appDir + ROLLBACK_DATA );
 
     memoryPool.reset ( new char[NUM_ROLLBACK_STATES * allAddrs.totalSize], deleteArray<char> );
 
