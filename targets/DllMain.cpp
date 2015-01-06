@@ -280,10 +280,6 @@ struct DllMain
 
                         uint16_t buttons = ( rand() % 0x1000 );
 
-                        // Disable attack buttons during rollback for now
-                        if ( netMan.getState() == NetplayState::InGame && netMan.config.rollback )
-                            buttons &= CC_BUTTON_D;
-
                         // Prevent hitting some non-essential buttons
                         buttons &= ~ ( CC_BUTTON_FN1 | CC_BUTTON_FN2 | CC_BUTTON_START );
 
