@@ -547,9 +547,8 @@ struct DllMain
         if ( netMan.getIndexedFrame().value >= fastFwdStopFrame.value )
             fastFwdStopFrame.value = 0;
 
-        // Disable FPS limit while fast-forwarding
-        if ( fastFwdStopFrame.value )
-            *CC_SKIP_FRAMES_ADDR = 1;
+        // Disable FPS limit only while fast-forwarding
+        *CC_SKIP_FRAMES_ADDR = ( fastFwdStopFrame.value ? 1 : 0 );
 
         // LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
     }
