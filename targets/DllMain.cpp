@@ -573,15 +573,17 @@ struct DllMain
         // Cleared last played sound effects
         memset ( AsmHacks::sfxFilterArray, 0, CC_SFX_ARRAY_LEN );
 
+        // Log input state every frame
+        LOG_SYNC ( "Inputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
+
         if ( netMan.getState() != NetplayState::InGame )
             return;
 
-        // Log some state every frame
-        LOG_SYNC ( "Inputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
+        // Log extra state while in-game
         LOG_SYNC_CHARACTER ( 1 );
         LOG_SYNC_CHARACTER ( 2 );
-        LOG_SYNC ( "CC_INTRO_STATE=%u; CC_ROUND_TIMER=%u; CC_REAL_TIMER=%u",
-                   *CC_INTRO_STATE_ADDR, *CC_ROUND_TIMER_ADDR, *CC_REAL_TIMER_ADDR );
+        LOG_SYNC ( "roundOverTimer=%d; CC_INTRO_STATE=%u; CC_ROUND_TIMER=%u; CC_REAL_TIMER=%u",
+                   roundOverTimer, *CC_INTRO_STATE_ADDR, *CC_ROUND_TIMER_ADDR, *CC_REAL_TIMER_ADDR );
     }
 
     void frameStepRerun()
