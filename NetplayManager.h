@@ -103,7 +103,7 @@ class NetplayManager
     uint16_t getMenuNavInput();
 
     // Detect if a key has been pressed by either player in the last 2 frames
-    bool hasUpDownInLast2f() const;
+    bool hasUpDownInLast2f ( uint8_t player ) const;
     bool hasButtonInPrev2f ( uint8_t player, uint16_t button ) const;
 
     // Get the buffered preserveStartIndex

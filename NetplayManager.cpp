@@ -120,7 +120,7 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player )
 
         // Don't allow hitting Confirm until 2f after we have stopped moving the cursor. This is a work around
         // for the issue when select is pressed after the cursor moves, but before currentMenuIndex is updated.
-        if ( hasUpDownInLast2f() )
+        if ( hasUpDownInLast2f ( player ) )
             input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
 
         // Disable returning to main menu; 16 and 6 are the menu positions for training and versus mode respectively
@@ -227,7 +227,7 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player )
 
         // Don't allow hitting Confirm until 2f after we have stopped moving the cursor. This is a work around
         // for the issue when select is pressed after the cursor moves, but before currentMenuIndex is updated.
-        if ( hasUpDownInLast2f() )
+        if ( hasUpDownInLast2f ( config.mode.isNetplay() ? player : 0 ) )
             input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
 
         // Limit retry menu selectable options
@@ -394,19 +394,31 @@ uint16_t NetplayManager::getMenuNavInput()
     return 0;
 }
 
-bool NetplayManager::hasUpDownInLast2f() const
+bool NetplayManager::hasUpDownInLast2f ( uint8_t player ) const
 {
     for ( size_t i = 0; i < 2; ++i )
     {
         if ( i > getFrame() )
             break;
 
-        const uint16_t p1dir = 0xF & getRawInput ( 1, getFrame() - i );
+        if ( player == 0 )
+        {
+            const uint16_t p1dir = 0xF & getRawInput ( 1, getFrame() - i );
 
-        const uint16_t p2dir = 0xF & getRawInput ( 2, getFrame() - i );
+            const uint16_t p2dir = 0xF & getRawInput ( 2, getFrame() - i );
 
-        if ( ( p1dir == 2 ) || ( p1dir == 8 ) || ( p2dir == 2 ) || ( p2dir == 8 ) )
-            return true;
+            if ( ( p1dir == 2 ) || ( p1dir == 8 ) || ( p2dir == 2 ) || ( p2dir == 8 ) )
+                return true;
+        }
+        else
+        {
+            ASSERT ( player == 1 || player == 2 );
+
+            const uint16_t dir = 0xF & getRawInput ( player, getFrame() - i );
+
+            if ( ( dir == 2 ) || ( dir == 8 ) )
+                return true;
+        }
     }
 
     return false;
@@ -511,14 +523,14 @@ void NetplayManager::setState ( NetplayState state )
 
                 startIndex = newStartIndex;
             }
+
+            localRetryMenuIndex = -1;
+            remoteRetryMenuIndex = -1;
         }
 
         // Entering RetryMenu
         if ( state == NetplayState::RetryMenu )
         {
-            localRetryMenuIndex = -1;
-            remoteRetryMenuIndex = -1;
-
             // The actual retry menu is opened at position *CC_GAME_STATE_COUNTER_ADDR + 1
             retryMenuGameStateCounter = *CC_GAME_STATE_COUNTER_ADDR + 1;
         }

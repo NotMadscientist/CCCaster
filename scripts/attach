@@ -8,11 +8,11 @@ function ctrl_c() {
     rm -f tmp_*
 }
 
-ps -W | grep MBAA.exe | sed -r 's/^\s+([0-9]+).+$/\1/' | xargs gdbserver > tmp_0 2>&1 --attach '127.0.0.1:0' &
+ps -W | grep MBAA.exe | sed -r 's/^\s+([0-9]+).+$/\1/' | xargs gdbserver > tmp_1 2>&1 --attach '127.0.0.1:0' &
 
 sleep 1
 
-grep 'Listening on port' tmp_0 | sed -r 's/^[^0-9]+([0-9]+).*$/target remote 127.0.0.1:\1/' > tmp_2
+grep 'Listening on port' tmp_1 | sed -r 's/^[^0-9]+([0-9]+).*$/target remote 127.0.0.1:\1/' > tmp_2
 
 cat tmp_2 gdb_dll.txt > tmp_3
 
