@@ -7,7 +7,6 @@ trap ctrl_c INT
 
 function ctrl_c() {
     killall gdbserver.exe
-    killall MBAA.exe
     rm -f tmp_*
     exit 0
 }
