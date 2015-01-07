@@ -155,6 +155,7 @@ public:
     // Get / set the current NetplayState
     NetplayState getState() const { return state; }
     void setState ( NetplayState state );
+    bool isInGame() const { return state == NetplayState::InGame; }
 
     // Get / set the input for the current frame given the player
     uint16_t getInput ( uint8_t player );

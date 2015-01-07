@@ -593,7 +593,7 @@ void NetplayManager::setInput ( uint8_t player, uint16_t input )
     ASSERT ( player == 1 || player == 2 );
     ASSERT ( getIndex() >= startIndex );
 
-    if ( state == NetplayState::InGame )
+    if ( isInGame() )
         inputs[player - 1].set ( getIndex() - startIndex, getFrame() + config.getOffset(), input );
     else
         inputs[player - 1].set ( getIndex() - startIndex, getFrame() + config.delay, input );
@@ -749,7 +749,7 @@ bool NetplayManager::isRemoteInputReady() const
     ASSERT ( inputs[remotePlayer - 1].getEndFrame() >= 1 );
 
     // TODO make sure this makes sense, and also limit to max rollbackable frame
-    const uint8_t offset = ( state == NetplayState::InGame ? config.getReverseOffset() / 2 : 0 );
+    const uint8_t offset = ( isInGame() ? config.getReverseOffset() / 2 : 0 );
 
     if ( ( inputs[remotePlayer - 1].getEndFrame() - 1 + offset ) < getFrame() )
     {

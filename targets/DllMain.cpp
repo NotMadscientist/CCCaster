@@ -219,15 +219,15 @@ struct DllMain
 
 #ifndef RELEASE
                     // Test random delay setting
-                    static bool randomize = false;
+                    static bool randomDelay = false;
 
                     if ( KeyboardState::isPressed ( VK_F11 ) )
                     {
-                        randomize = !randomize;
-                        DllOverlayUi::showMessage ( randomize ? "Enabled random delay" : "Disabled random delay" );
+                        randomDelay = !randomDelay;
+                        DllOverlayUi::showMessage ( randomDelay ? "Enabled random delay" : "Disabled random delay" );
                     }
 
-                    if ( randomize && rand() % 30 == 0 )
+                    if ( randomDelay && rand() % 30 == 0 )
                     {
                         shouldChangeDelayRollback = true;
                         changeConfig.indexedFrame = netMan.getIndexedFrame();
@@ -255,19 +255,19 @@ struct DllMain
 
 #ifndef RELEASE
                 // Test random input
-                static bool randomize = false;
+                static bool randomInputs = false;
 
                 if ( KeyboardState::isPressed ( VK_F12 ) )
                 {
-                    randomize = !randomize;
+                    randomInputs = !randomInputs;
                     localInputs [ clientMode.isLocal() ? 1 : 0 ] = 0;
-                    DllOverlayUi::showMessage ( randomize ? "Enabled random inputs" : "Disabled random inputs" );
+                    DllOverlayUi::showMessage ( randomInputs ? "Enabled random inputs" : "Disabled random inputs" );
                 }
 
-                if ( randomize )
+                if ( randomInputs )
                 {
                     bool shouldRandomize = ( netMan.getFrame() % 2 );
-                    if ( netMan.getState() == NetplayState::InGame && netMan.config.rollback )
+                    if ( netMan.isInGame() && netMan.config.rollback )
                         shouldRandomize = ( netMan.getFrame() % 150 < 50 );
 
                     if ( shouldRandomize )
@@ -291,27 +291,9 @@ struct DllMain
                     }
                 }
 
-                // static bool specialPauseReady = false;
-                // const bool pauseMenu = * ( clientMode.isTraining() ? CC_TRAINING_PAUSE_ADDR : CC_VERSUS_PAUSE_ADDR );
-
-                // if ( pauseMenu )
-                // {
-                //     if ( isButtonPressed ( playerControllers[localPlayer - 1], CC_BUTTON_CONFIRM )
-                //             && AsmHacks::currentMenuIndex == ( clientMode.isTraining() ? 13 : 3 ) )
-                //         specialPauseReady = true;
-                //     else if ( isButtonPressed ( playerControllers[localPlayer - 1], CC_BUTTON_START ) )
-                //         specialPauseReady = false;
-                // }
-
-                // Test rollback
-                if ( KeyboardState::isPressed ( VK_F9 ) && netMan.getState() == NetplayState::InGame )
+                // Test one time rollback
+                if ( KeyboardState::isPressed ( VK_F9 ) && netMan.isInGame() )
                 {
-                    // if ( *CC_PAUSE_FLAG_ADDR )
-                    // {
-                    //     *CC_PAUSE_FLAG_ADDR = 0;
-                    // }
-                    // else
-                    // {
                     IndexedFrame target = netMan.getIndexedFrame();
 
                     if ( target.parts.frame <= 30 )
@@ -320,37 +302,14 @@ struct DllMain
                         target.parts.frame -= 30;
 
                     procMan.loadState ( target, netMan );
-
-                    //     if ( specialPauseReady )
-                    //     {
-                    //         *CC_PAUSE_FLAG_ADDR = 1;
-                    //     }
-                    //     else
-                    //     {
-                    //         netMan.assignInput ( localPlayer, COMBINE_INPUT ( 0, CC_BUTTON_START ),
-                    //                              netMan.getFrame() + netMan.getDelay() );
-                    //     }
-                    // }
                 }
-
-                // if ( specialPauseReady && isAnyDirectionPressed ( playerControllers[localPlayer - 1] ) )
-                //     *CC_PAUSE_FLAG_ADDR = 0;
-
-                // // TODO When specially paused, use [ and ] to frame step
-                // if ( specialPauseReady && *CC_PAUSE_FLAG_ADDR )
-                // {
-                //     if ( KeyboardState::isPressed ( VK_OEM_4 ) )            // [ to frame step back
-                //         ;
-                //     else if ( KeyboardState::isPressed ( VK_OEM_6 ) )       // ] to frame step forward
-                //         ;
-                // }
 #endif
 
                 // Assign local player input
                 if ( !clientMode.isSpectate() )
                 {
 #ifndef RELEASE
-                    if ( netMan.getState() == NetplayState::InGame && netMan.config.rollback )
+                    if ( netMan.isInGame() && netMan.config.rollback )
                         netMan.assignInput ( localPlayer, localInputs[0], netMan.getFrame() + netMan.getOffset() );
                     else
 #endif
@@ -460,7 +419,7 @@ struct DllMain
         }
 
         // Only do rollback related stuff while in-game
-        if ( netMan.getState() == NetplayState::InGame && netMan.config.rollback
+        if ( netMan.isInGame() && netMan.config.rollback
                 && netMan.getLastChangedFrame().value < netMan.getIndexedFrame().value )
         {
             const string before = format ( "%s [%u] %s [%s]",
@@ -605,7 +564,7 @@ struct DllMain
         ChangeMonitor::get().check();
 
         // Need to manually set the intro state to 0 during rollback
-        if ( netMan.getState() == NetplayState::InGame && netMan.getFrame() > 224 && *CC_INTRO_STATE_ADDR )
+        if ( netMan.isInGame() && netMan.getFrame() > 224 && *CC_INTRO_STATE_ADDR )
             *CC_INTRO_STATE_ADDR = 0;
 
         // Perform the frame step
@@ -772,7 +731,7 @@ struct DllMain
 
             case Variable::SkippableFlag:
                 if ( clientMode.isTraining()
-                        || ! ( previous == 0 && current == 1 && netMan.getState() == NetplayState::InGame ) )
+                        || ! ( previous == 0 && current == 1 && netMan.isInGame() ) )
                     break;
 
                 // Check for game over since we just entered a skippable state
