@@ -284,7 +284,7 @@ struct DllMain
                 if ( randomInputs )
                 {
                     bool shouldRandomize = ( netMan.getFrame() % 2 );
-                    if ( netMan.isInGame() && netMan.config.rollback )
+                    if ( netMan.isInRollback() )
                         shouldRandomize = ( netMan.getFrame() % 150 < 50 );
 
                     if ( shouldRandomize )
@@ -313,8 +313,8 @@ struct DllMain
                 if ( !clientMode.isSpectate() )
                 {
 #ifndef RELEASE
-                    if ( netMan.isInGame() && netMan.config.rollback )
-                        netMan.assignInput ( localPlayer, localInputs[0], netMan.getFrame() + netMan.getOffset() );
+                    if ( netMan.isInRollback() )
+                        netMan.assignInput ( localPlayer, localInputs[0], netMan.getFrame() + netMan.getDelay() );
                     else
 #endif
                         netMan.setInput ( localPlayer, localInputs[0] );
@@ -478,9 +478,8 @@ struct DllMain
         }
 #endif
 
-        // Only do rollback related stuff while in-game
-        if ( netMan.isInGame() && netMan.config.rollback
-                && netMan.getLastChangedFrame().value < netMan.getIndexedFrame().value )
+        // Only rollback when necessary
+        if ( netMan.isInRollback() && netMan.getLastChangedFrame().value < netMan.getIndexedFrame().value )
         {
             const string before = format ( "%s [%u] %s [%s]",
                                            gameModeStr ( *CC_GAME_MODE_ADDR ), *CC_GAME_MODE_ADDR,
@@ -1332,11 +1331,11 @@ struct DllMain
 
                 LOG ( "SessionId '%s'", netMan.config.sessionId );
 
-                LOG ( "NetplayConfig: %s; flags={ %s }; delay=%d; rollback=%d; winCount=%d; "
+                LOG ( "NetplayConfig: %s; flags={ %s }; delay=%d; rollback=%d; rollbackDelay=%d; winCount=%d; "
                       "hostPlayer=%d; localPlayer=%d; remotePlayer=%d; names={ '%s', '%s' }",
                       netMan.config.mode, netMan.config.mode.flagString(), netMan.config.delay, netMan.config.rollback,
-                      netMan.config.winCount, netMan.config.hostPlayer, localPlayer, remotePlayer,
-                      netMan.config.names[0], netMan.config.names[1] );
+                      netMan.config.rollbackDelay, netMan.config.winCount, netMan.config.hostPlayer,
+                      localPlayer, remotePlayer, netMan.config.names[0], netMan.config.names[1] );
                 break;
 
             default:

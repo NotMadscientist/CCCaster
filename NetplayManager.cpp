@@ -605,8 +605,8 @@ void NetplayManager::setInput ( uint8_t player, uint16_t input )
     ASSERT ( player == 1 || player == 2 );
     ASSERT ( getIndex() >= startIndex );
 
-    if ( isInGame() )
-        inputs[player - 1].set ( getIndex() - startIndex, getFrame() + config.getOffset(), input );
+    if ( isInRollback() )
+        inputs[player - 1].set ( getIndex() - startIndex, getFrame() + config.rollbackDelay, input );
     else
         inputs[player - 1].set ( getIndex() - startIndex, getFrame() + config.delay, input );
 }
@@ -760,13 +760,14 @@ bool NetplayManager::isRemoteInputReady() const
 
     ASSERT ( inputs[remotePlayer - 1].getEndFrame() >= 1 );
 
-    // TODO make sure this makes sense, and also limit to max rollbackable frame
-    const uint8_t offset = ( isInGame() ? config.getReverseOffset() / 2 : 0 );
+    // TODO make sure this makes sense, and also limit to max saved frame
+    const uint8_t maxFramesAhead = ( isInRollback() ? config.rollback : 0 );
 
-    if ( ( inputs[remotePlayer - 1].getEndFrame() - 1 + offset ) < getFrame() )
+    if ( ( inputs[remotePlayer - 1].getEndFrame() - 1 + maxFramesAhead ) < getFrame() )
     {
-        LOG ( "[%s] remoteFrame = %u < localFrame=%u; delay=%u; rollback=%u",
-              indexedFrame, inputs[remotePlayer - 1].getEndFrame() - 1, getFrame(), config.delay, config.rollback );
+        LOG ( "[%s] remoteFrame = %u < localFrame=%u; delay=%u; rollback=%u; rollbackDelay=%u",
+              indexedFrame, inputs[remotePlayer - 1].getEndFrame() - 1, getFrame(),
+              config.delay, config.rollback, config.rollbackDelay );
 
         return false;
     }

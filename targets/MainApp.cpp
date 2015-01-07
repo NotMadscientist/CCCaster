@@ -399,7 +399,7 @@ struct MainApp
         {
             mergePingStats();
 
-            const int delay = computeDelay ( this->pingStats.latency );
+            const int delay = computeDelay ( this->pingStats.latency.getMean() );
             const int maxDelay = ui.getConfig().getInteger ( "maxAllowedDelay" );
 
             if ( delay > maxDelay )
@@ -479,6 +479,7 @@ struct MainApp
         this->netplayConfig.mode.flags = netplayConfig.mode.flags;
         this->netplayConfig.delay = netplayConfig.delay;
         this->netplayConfig.rollback = netplayConfig.rollback;
+        this->netplayConfig.rollbackDelay = netplayConfig.rollbackDelay;
         this->netplayConfig.winCount = netplayConfig.winCount;
         this->netplayConfig.hostPlayer = netplayConfig.hostPlayer;
         this->netplayConfig.sessionId = netplayConfig.sessionId;
@@ -704,9 +705,9 @@ struct MainApp
             netplayConfig.winCount = initialConfig.winCount;
             netplayConfig.setNames ( initialConfig.localName, initialConfig.remoteName );
 
-            LOG ( "NetplayConfig: %s; flags={ %s }; delay=%d; rollback=%d; winCount=%d; "
+            LOG ( "NetplayConfig: %s; flags={ %s }; delay=%d; rollback=%d; rollbackDelay=%d; winCount=%d; "
                   "hostPlayer=%d; names={ '%s', '%s' }", netplayConfig.mode, netplayConfig.mode.flagString(),
-                  netplayConfig.delay, netplayConfig.rollback, netplayConfig.winCount,
+                  netplayConfig.delay, netplayConfig.rollback, netplayConfig.rollbackDelay, netplayConfig.winCount,
                   netplayConfig.hostPlayer, netplayConfig.names[0], netplayConfig.names[1] );
         }
 

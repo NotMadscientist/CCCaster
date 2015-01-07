@@ -16,9 +16,9 @@ typedef void ( * RunFuncPtr ) ( const IpAddrPort& address, const Serializable& c
 class ConsoleUi;
 
 // Function that computes the delay from the latency
-inline int computeDelay ( const Statistics& latency )
+inline int computeDelay ( double latency )
 {
-    return ( int ) ceil ( latency.getMean() / ( 1000.0 / 60 ) );
+    return ( int ) ceil ( latency / ( 1000.0 / 60 ) );
 }
 
 

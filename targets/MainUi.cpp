@@ -113,6 +113,8 @@ void MainUi::netplay ( RunFuncPtr run )
             initialConfig.mode.value = ClientMode::Client;
         }
 
+        netplayConfig.clear();
+
         RUN ( address, initialConfig );
 
         ui->popNonUserInput();
@@ -915,7 +917,7 @@ void MainUi::main ( RunFuncPtr run )
             address.invalidate();
         }
 
-        int mainSelection = ui->popUntilUserInput()->resultInt;
+        const int mainSelection = ui->popUntilUserInput()->resultInt;
 
         if ( mainSelection < 0 || mainSelection >= ( int ) options.size() )
             break;
@@ -1014,7 +1016,7 @@ static string formatStats ( const PingStats& pingStats )
                "\n%-" INDENT_STATS "sStdDev: %.2f ms"
                "\n%-" INDENT_STATS "sPacket Loss: %d%%"
 #endif
-               , format ( "Delay: %d", computeDelay ( pingStats.latency ) ), pingStats.latency.getMean()
+               , format ( "Delay: %d", computeDelay ( pingStats.latency.getMean() ) ), pingStats.latency.getMean()
 #ifndef NDEBUG
                , "", pingStats.latency.getWorst()
                , "", pingStats.latency.getStdErr()
@@ -1060,19 +1062,22 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
 
     ASSERT ( ui.get() != 0 );
 
-    int networkDelay = computeDelay ( pingStats.latency );
+    const int delay = computeDelay ( pingStats.latency.getMean() );
+    const int delay2sd = computeDelay ( 2 * pingStats.latency.getStdDev() );
+
+    netplayConfig.delay = delay + 1;
 
     ui->pushInFront ( new ConsoleUi::TextBox (
                           initialConfig.remoteName + " connected"
                           "\n\n" + formatStats ( pingStats ) ), { 1, 0 }, true ); // Expand width and clear
 
-    // TODO implement this as a slider or something
+    // TODO maybe implement this as a slider or something
 
     ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter rollback:" ) );
 
     ui->top<ConsoleUi::Prompt>()->allowNegative = false;
     ui->top<ConsoleUi::Prompt>()->maxDigits = 3;
-    ui->top<ConsoleUi::Prompt>()->setInitial ( clamped ( 2 * networkDelay, 0, NUM_INPUTS / 2 ) ); // TODO scale this
+    ui->top<ConsoleUi::Prompt>()->setInitial ( clamped ( delay + delay2sd, 0, NUM_INPUTS / 2 ) );
 
     for ( ;; )
     {
@@ -1090,15 +1095,13 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
 
         ui->clearRight();
 
-        netplayConfig.rollback = menu->resultInt;
-
-        // TODO set and display effective delay, not the network delay
+        const int rollback = netplayConfig.rollback = menu->resultInt;
 
         ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter delay:" ) );
 
         ui->top<ConsoleUi::Prompt>()->allowNegative = false;
         ui->top<ConsoleUi::Prompt>()->maxDigits = 3;
-        ui->top<ConsoleUi::Prompt>()->setInitial ( networkDelay );
+        ui->top<ConsoleUi::Prompt>()->setInitial ( clamped ( delay - rollback, 0, delay ) );
 
         for ( ;; )
         {
@@ -1113,7 +1116,7 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
                 continue;
             }
 
-            netplayConfig.delay = menu->resultInt;
+            netplayConfig.rollbackDelay = menu->resultInt;
             netplayConfig.winCount = config.getInteger ( "versusWinCount" );
 #ifdef RELEASE
             netplayConfig.hostPlayer = 1 + ( rand() % 2 );
@@ -1134,7 +1137,7 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
     if ( ret )
     {
         ui->pushBelow ( new ConsoleUi::TextBox ( format ( "Using %u delay%s",
-                        netplayConfig.delay,
+                        ( netplayConfig.rollback ? netplayConfig.rollbackDelay : netplayConfig.delay ),
                         ( netplayConfig.rollback ? format ( ", %u rollback", netplayConfig.rollback ) : "" ) ) ),
         { 1, 0 } ); // Expand width
 
@@ -1167,7 +1170,7 @@ void MainUi::connected ( const NetplayConfig& netplayConfig )
     ASSERT ( ui.get() != 0 );
 
     ui->pushInFront ( new ConsoleUi::TextBox ( format ( "Host chose %u delay%s",
-                      netplayConfig.delay,
+                      ( netplayConfig.rollback ? netplayConfig.rollbackDelay : netplayConfig.delay ),
                       ( netplayConfig.rollback ? format ( ", %u rollback", netplayConfig.rollback ) : "" ) ) ),
     { 1, 0 }, true ); // Expand width and clear
 }

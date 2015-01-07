@@ -156,6 +156,7 @@ public:
     NetplayState getState() const { return state; }
     void setState ( NetplayState state );
     bool isInGame() const { return state == NetplayState::InGame; }
+    bool isInRollback() const { return isInGame() && config.rollback; }
 
     // Get / set the input for the current frame given the player
     uint16_t getInput ( uint8_t player );
@@ -193,15 +194,18 @@ public:
     void setRetryMenuIndex ( uint32_t index, int8_t menuIndex );
 
     // Get / set input delay frames
-    uint8_t getDelay() const { return config.delay; }
-    void setDelay ( uint8_t delay ) { config.delay = delay; }
+    uint8_t getDelay() const { return ( isInRollback() ? config.rollbackDelay : config.delay ); }
+    void setDelay ( uint8_t delay )
+    {
+        if ( isInRollback() )
+            config.rollbackDelay = delay;
+        else
+            config.delay = delay;
+    }
 
     // Get / set input rollback frames
     uint8_t getRollback() const { return config.rollback; }
     void setRollback ( uint8_t rollback ) { config.rollback = rollback; }
-
-    // Get input offset frames
-    uint8_t getOffset() const { return config.getOffset(); }
 
     friend class ProcessManager;
 };

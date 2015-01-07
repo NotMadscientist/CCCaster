@@ -146,7 +146,7 @@ struct InitialConfig : public SerializableSequence
 struct NetplayConfig : public SerializableSequence
 {
     ClientMode mode;
-    uint8_t delay = 0xFF, rollback = 0;
+    uint8_t delay = 0xFF, rollback = 0, rollbackDelay = 0;
     uint8_t winCount = 2;
     uint8_t hostPlayer = 0;
     uint16_t broadcastPort = 0;
@@ -156,26 +156,6 @@ struct NetplayConfig : public SerializableSequence
 
     // Session ID
     std::string sessionId;
-
-    uint8_t getOffset() const
-    {
-        ASSERT ( delay != 0xFF );
-
-        if ( delay < rollback )
-            return 0;
-        else
-            return delay - rollback;
-    }
-
-    uint8_t getReverseOffset() const
-    {
-        ASSERT ( delay != 0xFF );
-
-        if ( delay < rollback )
-            return rollback;
-        else
-            return delay - rollback;
-    }
 
     void setNames ( const std::string& localName, const std::string& remoteName )
     {
@@ -197,7 +177,7 @@ struct NetplayConfig : public SerializableSequence
     {
         mode.clear();
         delay = 0xFF;
-        rollback = hostPlayer = 0;
+        rollback = rollbackDelay = hostPlayer = 0;
         winCount = 2;
         broadcastPort = 0;
         names[0].clear();
@@ -205,8 +185,8 @@ struct NetplayConfig : public SerializableSequence
         sessionId.clear();
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( NetplayConfig,
-                                   mode, delay, rollback, winCount, hostPlayer, broadcastPort, names, sessionId )
+    PROTOCOL_MESSAGE_BOILERPLATE ( NetplayConfig, mode, delay, rollback, rollbackDelay,
+                                   winCount, hostPlayer, broadcastPort, names, sessionId )
 };
 
 
