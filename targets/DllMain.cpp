@@ -290,19 +290,6 @@ struct DllMain
                         localInputs [ clientMode.isLocal() ? 1 : 0 ] = COMBINE_INPUT ( direction, buttons );
                     }
                 }
-
-                // Test one time rollback
-                if ( KeyboardState::isPressed ( VK_F9 ) && netMan.isInGame() )
-                {
-                    IndexedFrame target = netMan.getIndexedFrame();
-
-                    if ( target.parts.frame <= 30 )
-                        target.parts.frame = 0;
-                    else
-                        target.parts.frame -= 30;
-
-                    procMan.loadState ( target, netMan );
-                }
 #endif
 
                 // Assign local player input
@@ -417,6 +404,62 @@ struct DllMain
                 }
             }
         }
+
+#ifndef RELEASE
+        // Test one time rollback
+        if ( KeyboardState::isPressed ( VK_F9 ) && netMan.isInGame() )
+        {
+            IndexedFrame target = netMan.getIndexedFrame();
+
+            if ( target.parts.frame <= 30 )
+                target.parts.frame = 0;
+            else
+                target.parts.frame -= 30;
+
+            procMan.loadState ( target, netMan );
+        }
+
+        // Test random rollback
+        static bool randomRollback = false;
+        static const uint32_t rollUpTo = 10;
+
+        if ( KeyboardState::isPressed ( VK_F10 ) )
+        {
+            randomRollback = !randomRollback;
+            DllOverlayUi::showMessage ( randomRollback ? "Enabled random rollback" : "Disabled random rollback" );
+        }
+
+        if ( randomRollback && netMan.isInGame() && ( netMan.getFrame() % 150 < 50 ) )
+        {
+            const uint32_t distance = 1 + ( rand() % rollUpTo );
+
+            IndexedFrame target = netMan.getIndexedFrame();
+
+            if ( target.parts.frame <= distance )
+                target.parts.frame = 0;
+            else
+                target.parts.frame -= distance;
+
+            const string before = format ( "%s [%u] %s [%s]",
+                                           gameModeStr ( *CC_GAME_MODE_ADDR ), *CC_GAME_MODE_ADDR,
+                                           netMan.getState(), netMan.getIndexedFrame() );
+
+            // Indicate we're re-running to the current frame
+            fastFwdStopFrame = netMan.getIndexedFrame();
+
+            // Start fast-forwarding now
+            *CC_SKIP_FRAMES_ADDR = 1;
+
+            // Reset the game state (this resets game state AND netMan state)
+            procMan.loadState ( target, netMan );
+
+            LOG_TO ( syncLog, "%s Rollback: target=[%s]; actual=[%s]",
+                     before, target, netMan.getIndexedFrame() );
+
+            // LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
+            return;
+        }
+#endif
 
         // Only do rollback related stuff while in-game
         if ( netMan.isInGame() && netMan.config.rollback
