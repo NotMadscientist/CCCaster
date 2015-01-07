@@ -27,6 +27,9 @@ using namespace std;
 // The main log file path
 #define LOG_FILE                    FOLDER "dll.log"
 
+// The number of frames to delay checking round over state during rollback, MUST be less than the outro animation
+#define ROLLBACK_ROUND_OVER_DELAY   ( 30 )
+
 // The number of milliseconds to wait for the initial connect
 #define INITIAL_CONNECT_TIMEOUT     ( 30000 )
 
@@ -134,6 +137,12 @@ struct DllMain
     // Sockets that have been redirected to another client
     unordered_set<Socket *> redirectedSockets;
 
+    // Timer to delay checking round over state during rollback
+    int roundOverTimer = -1;
+
+    // Cached game point flags
+    uint32_t lastP1GamePointFlag = 0, lastP2GamePointFlag = 0;
+
 #ifndef RELEASE
     // Local and remote SyncHashes
     list<MsgPtr> localSync, remoteSync;
@@ -152,9 +161,17 @@ struct DllMain
                 break;
 
             case NetplayState::InGame:
-                // Only save rollback states in-game
                 if ( netMan.config.rollback )
+                {
+                    // Only save rollback states in-game
                     procMan.saveState ( netMan );
+
+                    if ( roundOverTimer >= ROLLBACK_ROUND_OVER_DELAY )
+                        checkRoundOver();
+
+                    if ( roundOverTimer >= 0 )
+                        ++roundOverTimer;
+                }
 
             case NetplayState::CharaSelect:
             case NetplayState::Loading:
@@ -389,8 +406,8 @@ struct DllMain
             }
             else
             {
-                // Stop resending inputs if we're ready
-                if ( ready )
+                // Stop resending inputs if we're ready or isGameOver
+                if ( ready || isGameOver )
                 {
                     resendTimer.reset();
                     break;
@@ -635,6 +652,8 @@ struct DllMain
         // Entering InGame
         if ( state == NetplayState::InGame )
         {
+            roundOverTimer = -1;
+
             if ( netMan.config.rollback )
                 procMan.allocateStates ( options.arg ( Options::AppDir ) );
         }
@@ -740,6 +759,32 @@ struct DllMain
         stopTimer->start ( DELAYED_STOP );
     }
 
+    void startRoundOverCountDown()
+    {
+        ASSERT ( netMan.config.rollback > 0 );
+
+        roundOverTimer = 0;
+    }
+
+    void checkRoundOver()
+    {
+        if ( ! ( netMan.getState() == NetplayState::InGame && *CC_SKIPPABLE_FLAG_ADDR ) )
+        {
+            ASSERT ( netMan.config.rollback > 0 );
+            roundOverTimer = -1;
+            return;
+        }
+
+        // Check for game over since we just entered a skippable state
+        updateGameOverFlags();
+
+        // Enable lazy disconnect if someone just won a game (netplay only)
+        lazyDisconnect = ( clientMode.isNetplay() && isGameOver );
+
+        // Update NetplayState
+        netplayStateChanged ( NetplayState::Skippable );
+    }
+
     // ChangeMonitor callback
     void hasChanged ( Variable var, uint8_t previous, uint8_t current ) override
     {
@@ -778,15 +823,13 @@ struct DllMain
                         || ! ( previous == 0 && current == 1 && netMan.isInGame() ) )
                     break;
 
-                // Check for game over since we just entered a skippable state
-                updateGameOverFlags();
-
                 // When the SkippableFlag is set while InGame (not training mode), we are in a Skippable state
                 LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
-                netplayStateChanged ( NetplayState::Skippable );
 
-                // Enable lazy disconnect if someone just won a game (netplay only)
-                lazyDisconnect = ( clientMode.isNetplay() && isGameOver );
+                if ( netMan.config.rollback ) // Delay the check during rollback
+                    startRoundOverCountDown();
+                else
+                    checkRoundOver();
                 break;
 
             default:

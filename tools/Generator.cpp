@@ -181,6 +181,8 @@ static const vector<MemDump> playerAddrs =
 
 static const vector<MemDump> miscAddrs =
 {
+    // { 0x18FEA0, 0x190000 },
+
     CC_P1_SPELL_CIRCLE_ADDR,
     CC_P2_SPELL_CIRCLE_ADDR,
     CC_HIT_SPARKS_ADDR,
@@ -192,6 +194,10 @@ static const vector<MemDump> miscAddrs =
     CC_WORLD_TIMER_ADDR,
     CC_DEATH_TIMER_ADDR,
     CC_INTRO_STATE_ADDR,
+    CC_INPUT_STATE_ADDR,
+    CC_SKIPPABLE_FLAG_ADDR,
+    CC_P1_WINS_ADDR,
+    CC_P2_WINS_ADDR,
 
     CC_RNGSTATE0_ADDR,
     CC_RNGSTATE1_ADDR,

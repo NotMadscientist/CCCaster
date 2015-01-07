@@ -35,9 +35,12 @@
 #define CC_REAL_TIMER_ADDR          ( ( uint32_t * ) 0x562A40 ) // Counts up from 0 after round start
 #define CC_TRAINING_PAUSE_ADDR      ( ( uint32_t * ) 0x562A64 ) // 1 when paused
 #define CC_VERSUS_PAUSE_ADDR        ( ( uint32_t * ) 0x564B30 ) // 0xFFFFFFFF when paused
+#define CC_P1_GAME_POINT_FLAG_ADDR  ( ( uint32_t * ) 0x559548 ) // P1 game point flag
+#define CC_P2_GAME_POINT_FLAG_ADDR  ( ( uint32_t * ) 0x55954C ) // P2 game point flag
 #define CC_P1_WINS_ADDR             ( ( uint32_t * ) 0x559550 ) // P1 number of wins
 #define CC_P2_WINS_ADDR             ( ( uint32_t * ) 0x559580 ) // P2 number of wins
 #define CC_ROUND_COUNT_ADDR         ( ( uint32_t * ) 0x5550E0 ) // Round count
+#define CC_INPUT_STATE_ADDR         ( ( uint8_t * )  0x562A6F ) // TODO figure out what the values mean
 #define CC_DEATH_TIMER_ADDR         ( ( uint16_t * ) 0x55D208 ) // KO slowdown timer
 #define CC_INTRO_STATE_ADDR         ( ( uint8_t * )  0x55D20B ) // 2 (character intros), 1 (pre-game), 0 (in-game)
 

@@ -443,6 +443,13 @@
       <Address>00563948</Address>
     </CheatEntry>
     <CheatEntry>
+      <ID>425</ID>
+      <Description>"??? state (determines if inputs work, and ???)"</Description>
+      <Color>80000008</Color>
+      <VariableType>Byte</VariableType>
+      <Address>0x562A6F</Address>
+    </CheatEntry>
+    <CheatEntry>
       <ID>89</ID>
       <Description>"number frames to skip"</Description>
       <Color>80000008</Color>
@@ -572,11 +579,50 @@
       </CheatEntries>
     </CheatEntry>
     <CheatEntry>
+      <ID>88</ID>
+      <Description>"P1 wins"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>00559550</Address>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>431</ID>
+          <Description>"is game point for P1"</Description>
+          <Color>80000008</Color>
+          <VariableType>4 Bytes</VariableType>
+          <Address>00559548</Address>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>432</ID>
+      <Description>"P2 wins"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>00559580</Address>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>251</ID>
+          <Description>"is game point for P2"</Description>
+          <Color>80000008</Color>
+          <VariableType>4 Bytes</VariableType>
+          <Address>0055954C</Address>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
       <ID>65</ID>
       <Description>"Stage selector"</Description>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
       <Address>0074FD98</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>254</ID>
+      <Description>"Round count"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0x5550E0</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>56</ID>
@@ -586,32 +632,11 @@
       <Address>00553FCC</Address>
     </CheatEntry>
     <CheatEntry>
-      <ID>88</ID>
-      <Description>"P1 wins"</Description>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>00559550</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>251</ID>
-      <Description>"P2 wins"</Description>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>00559580</Address>
-    </CheatEntry>
-    <CheatEntry>
       <ID>57</ID>
       <Description>"Win count (VS)"</Description>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
       <Address>00553FDC</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>254</ID>
-      <Description>"Round count"</Description>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>0x5550E0</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>197</ID>
@@ -3430,6 +3455,130 @@
         <Byte>0C</Byte>
         <Byte>8B</Byte>
         <Byte>C8</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Retry menu input step 1</Description>
+      <Address>0001F5A1</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>1F5A0</ModuleNameOffset>
+      <Before>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+      </Before>
+      <Actual>
+        <Byte>83</Byte>
+        <Byte>EC</Byte>
+        <Byte>10</Byte>
+      </Actual>
+      <After>
+        <Byte>85</Byte>
+        <Byte>D2</Byte>
+        <Byte>75</Byte>
+        <Byte>08</Byte>
+        <Byte>89</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Retry menu input step 2</Description>
+      <Address>0006B880</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>6B87F</ModuleNameOffset>
+      <Before>
+        <Byte>18</Byte>
+        <Byte>8B</Byte>
+        <Byte>44</Byte>
+        <Byte>24</Byte>
+        <Byte>2C</Byte>
+      </Before>
+      <Actual>
+        <Byte>09</Byte>
+        <Byte>08</Byte>
+      </Actual>
+      <After>
+        <Byte>8B</Byte>
+        <Byte>44</Byte>
+        <Byte>24</Byte>
+        <Byte>30</Byte>
+        <Byte>85</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Retry menu input step 3</Description>
+      <Address>000398B1</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>398B0</ModuleNameOffset>
+      <Before>
+        <Byte>FF</Byte>
+        <Byte>8B</Byte>
+        <Byte>4C</Byte>
+        <Byte>24</Byte>
+        <Byte>0C</Byte>
+      </Before>
+      <Actual>
+        <Byte>8B</Byte>
+        <Byte>44</Byte>
+        <Byte>24</Byte>
+        <Byte>10</Byte>
+      </Actual>
+      <After>
+        <Byte>6A</Byte>
+        <Byte>00</Byte>
+        <Byte>53</Byte>
+        <Byte>51</Byte>
+        <Byte>8D</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Retry menu input step 4</Description>
+      <Address>00082351</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>82350</ModuleNameOffset>
+      <Before>
+        <Byte>9F</Byte>
+        <Byte>C0</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+      </Before>
+      <Actual>
+        <Byte>8B</Byte>
+        <Byte>44</Byte>
+        <Byte>24</Byte>
+        <Byte>64</Byte>
+      </Actual>
+      <After>
+        <Byte>74</Byte>
+        <Byte>15</Byte>
+        <Byte>8B</Byte>
+        <Byte>8F</Byte>
+        <Byte>C0</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Retry menu input step 5</Description>
+      <Address>00082382</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>82381</ModuleNameOffset>
+      <Before>
+        <Byte>04</Byte>
+        <Byte>8B</Byte>
+        <Byte>4C</Byte>
+        <Byte>24</Byte>
+        <Byte>60</Byte>
+      </Before>
+      <Actual>
+        <Byte>50</Byte>
+      </Actual>
+      <After>
+        <Byte>51</Byte>
+        <Byte>8B</Byte>
+        <Byte>CF</Byte>
+        <Byte>E8</Byte>
+        <Byte>56</Byte>
       </After>
     </CodeEntry>
   </CheatCodes>
