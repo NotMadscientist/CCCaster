@@ -30,13 +30,13 @@ using namespace std;
 // The minimum number of frames that must run normally, before we're allowed to do another rollback
 #define MIN_ROLLBACK_SPACING        ( 2 )
 
-// The number of frames to delay checking round over state during rollback, MUST be less than the outro animation
+// The number of frames to delay checking round over state during rollback, must be LESS than the outro animation
 #define ROLLBACK_ROUND_OVER_DELAY   ( 30 )
 
 // The number of milliseconds to wait for the initial connect
 #define INITIAL_CONNECT_TIMEOUT     ( 30000 )
 
-// The number of milliseconds to wait to perform a delayed stop so that ErrorMessages are received in time
+// The number of milliseconds to wait to perform a delayed stop so that ErrorMessages are received before sockets die
 #define DELAYED_STOP                ( 100 )
 
 // The number of milliseconds before resending inputs while waiting for more inputs
@@ -795,7 +795,7 @@ struct DllMain
         THROW_EXCEPTION ( "gameModeChanged(%u, %u)", ERROR_INVALID_GAME_MODE, previous, current );
     }
 
-    void delayedStop ( string error )
+    void delayedStop ( const string& error )
     {
         if ( !error.empty() )
             procMan.ipcSend ( new ErrorMessage ( error ) );
