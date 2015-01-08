@@ -1049,8 +1049,7 @@ struct DllMain
                         return;
 
                     case MsgType::MenuIndex:
-                        if ( netMan.getState() == NetplayState::RetryMenu )
-                            netMan.setRemoteRetryMenuIndex ( msg->getAs<MenuIndex>().menuIndex );
+                        netMan.setRemoteRetryMenuIndex ( msg->getAs<MenuIndex>().menuIndex );
                         return;
 
                     case MsgType::ChangeConfig:
