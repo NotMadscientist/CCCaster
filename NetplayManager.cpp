@@ -642,10 +642,13 @@ void NetplayManager::setInputs ( uint8_t player, const PlayerInputs& playerInput
         return;
 
     ASSERT ( player == 1 || player == 2 );
+    ASSERT ( getIndex() >= startIndex );
     ASSERT ( playerInputs.getIndex() >= startIndex );
 
+    const uint32_t checkStartingFromIndex = ( isInRollback() ? getIndex() - startIndex : UINT_MAX );
+
     inputs[player - 1].set ( playerInputs.getIndex() - startIndex, playerInputs.getStartFrame(),
-                             &playerInputs.inputs[0], playerInputs.size() );
+                             &playerInputs.inputs[0], playerInputs.size(), checkStartingFromIndex );
 }
 
 MsgPtr NetplayManager::getBothInputs ( IndexedFrame& pos ) const

@@ -88,19 +88,22 @@ public:
     }
 
     // Set n inputs starting from the given index:frame, CAN change existing inputs.
-    void set ( uint32_t index, uint32_t frame, const T *t, size_t n )
+    void set ( uint32_t index, uint32_t frame, const T *t, size_t n, uint32_t checkStartingFromIndex = UINT_MAX )
     {
-        IndexedFrame f;
-        size_t i;
-
-        for ( i = 0, f = {{ frame, index }}; i < n; ++i, ++f.parts.frame )
+        if ( index >= checkStartingFromIndex )
         {
-            if ( get ( f.parts.index, f.parts.frame ) == t[i] )
-                continue;
+            IndexedFrame f;
+            size_t i;
 
-            // Indicate changed if the input is different from the last known input
-            lastChangedFrame.value = std::min ( lastChangedFrame.value, f.value );
-            break;
+            for ( i = 0, f = {{ frame, index }}; i < n; ++i, ++f.parts.frame )
+            {
+                if ( get ( f.parts.index, f.parts.frame ) == t[i] )
+                    continue;
+
+                // Indicate changed if the input is different from the last known input
+                lastChangedFrame.value = std::min ( lastChangedFrame.value, f.value );
+                break;
+            }
         }
 
         resize ( index, frame, n, true );
