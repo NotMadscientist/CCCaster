@@ -140,6 +140,9 @@ struct DllMain
     // Timer to delay checking round over state during rollback
     int roundOverTimer = -1;
 
+    // If we faked the last Skippable state, and should transition to RetryMenu ASAP
+    bool fakedSkippableState = false;
+
 #ifndef RELEASE
     // Local and remote SyncHashes
     list<MsgPtr> localSync, remoteSync;
@@ -282,7 +285,7 @@ struct DllMain
                 {
                     bool shouldRandomize = ( netMan.getFrame() % 2 );
                     if ( netMan.isInRollback() )
-                        shouldRandomize = ( netMan.getFrame() % 150 < 50 );
+                        shouldRandomize = ( netMan.getFrame() % 120 < 30 );
 
                     if ( shouldRandomize )
                     {
@@ -623,6 +626,10 @@ struct DllMain
         netMan.updateFrame();
         procMan.clearInputs();
 
+        // If we faked the previous Skippable state, transition to RetryMenu immediately
+        if ( fakedSkippableState && netMan.getState() == NetplayState::Skippable )
+            netplayStateChanged ( NetplayState::RetryMenu );
+
         // Check for changes to important variables for state transitions
         ChangeMonitor::get().check();
 
@@ -677,12 +684,22 @@ struct DllMain
         // Entering RetryMenu (enable lazy disconnect on netplay)
         if ( state == NetplayState::RetryMenu )
         {
+            // During rollback, we might miss the intermediate Skippable state, so we have to fake it
+            if ( netMan.getState() == NetplayState::InGame )
+            {
+                roundOverTimer = -1;
+                fakedSkippableState = true;
+                netMan.setState ( NetplayState::Skippable );
+                return;
+            }
+
             lazyDisconnect = clientMode.isNetplay();
 
             // Clear state flags
             isGameOver = false;
             wasLastRoundDoubleGamePointDraw = false;
             localRetryMenuIndexSent = false;
+            fakedSkippableState = false;
         }
         else if ( lazyDisconnect )
         {
