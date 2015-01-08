@@ -569,6 +569,7 @@ uint16_t NetplayManager::getInput ( uint8_t player )
             return getCharaSelectInput ( player );
 
         case NetplayState::Loading:
+        case NetplayState::Skippable:
             // If spectating or the remote inputs index is ahead, then we should mash to skip.
             if ( config.mode.isSpectate()
                     || ( ( startIndex + inputs[remotePlayer - 1].getEndIndex() ) > getIndex() + 1 ) )
@@ -576,8 +577,6 @@ uint16_t NetplayManager::getInput ( uint8_t player )
                 AsmHacks::menuConfirmState = 2;
                 RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
             }
-
-        case NetplayState::Skippable:
             return getSkippableInput ( player );
 
         case NetplayState::InGame:
@@ -730,7 +729,7 @@ void NetplayManager::setBothInputs ( const BothInputs& bothInputs )
 
 bool NetplayManager::isRemoteInputReady() const
 {
-    if ( state.value < NetplayState::CharaSelect
+    if ( state.value < NetplayState::CharaSelect || state.value == NetplayState::Skippable
             || state.value == NetplayState::Loading || state.value == NetplayState::RetryMenu )
     {
         return true;
