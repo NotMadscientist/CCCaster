@@ -278,7 +278,7 @@ struct RngState : public SerializableSequence
                + toBase64 ( &rngState3[0], rngState3.size() ) + " }";
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( RngState, index, rngState0, rngState1, rngState2, rngState3 );
+    PROTOCOL_MESSAGE_BOILERPLATE ( RngState, index, rngState0, rngState1, rngState2, rngState3 )
 };
 
 
@@ -301,7 +301,7 @@ struct SyncHash : public SerializableSequence
         return ( memcmp ( hash, other.hash, sizeof ( hash ) ) == 0 );
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( SyncHash, indexedFrame.value, hash );
+    PROTOCOL_MESSAGE_BOILERPLATE ( SyncHash, indexedFrame.value, hash )
 };
 
 
@@ -315,7 +315,7 @@ struct MenuIndex : public SerializableSequence
 
     std::string str() const override { return format ( "MenuIndex[%u,%d]", index, menuIndex ); }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( MenuIndex, index, menuIndex );
+    PROTOCOL_MESSAGE_BOILERPLATE ( MenuIndex, index, menuIndex )
 };
 
 
@@ -337,7 +337,19 @@ struct ChangeConfig : public SerializableSequence
 
     std::string str() const override { return format ( "ChangeConfig[%s,%u,%u]", indexedFrame, delay, rollback ); }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( ChangeConfig, indexedFrame.value, delay, rollback );
+    PROTOCOL_MESSAGE_BOILERPLATE ( ChangeConfig, indexedFrame.value, delay, rollback )
+};
+
+
+struct TransitionIndex : public SerializableMessage
+{
+    uint32_t index = 0;
+
+    TransitionIndex ( uint32_t index ) : index ( index ) {}
+
+    std::string str() const override { return format ( "TransitionIndex[%u]", index ); }
+
+    PROTOCOL_MESSAGE_BOILERPLATE ( TransitionIndex, index )
 };
 
 

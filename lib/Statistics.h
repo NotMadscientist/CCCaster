@@ -95,6 +95,6 @@ public:
         count += stats.count;
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( Statistics, count, worst, mean, sumOfSquaredDeltas );
+    PROTOCOL_MESSAGE_BOILERPLATE ( Statistics, count, worst, mean, sumOfSquaredDeltas )
 };
 

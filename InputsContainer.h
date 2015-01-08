@@ -81,7 +81,7 @@ public:
     // Fill n inputs with the same given value starting from the given index:frame, CAN change existing inputs.
     void set ( uint32_t index, uint32_t frame, T t, size_t n )
     {
-        resize ( index, frame, n, true );
+        resize ( index, frame, n );
 
         std::fill ( inputs[index].begin() + frame,
                     inputs[index].begin() + frame + n, t );
@@ -106,13 +106,13 @@ public:
             }
         }
 
-        resize ( index, frame, n, true );
+        resize ( index, frame, n );
 
         std::copy ( t, t + n, &inputs[index][frame] );
     }
 
     // Resize the container so that it can contain inputs up to index:frame+n.
-    void resize ( uint32_t index, uint32_t frame, size_t n = 1, bool isReal = true )
+    void resize ( uint32_t index, uint32_t frame, size_t n = 1 )
     {
         T last = 0;
 
@@ -121,7 +121,7 @@ public:
             last = lastInputBefore ( inputs.size() );
             inputs.resize ( index + 1 );
         }
-        else
+        else if ( !inputs[index].empty() )
         {
             last = inputs[index].back();
         }

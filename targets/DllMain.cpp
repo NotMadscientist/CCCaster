@@ -690,6 +690,9 @@ struct DllMain
                 roundOverTimer = -1;
                 fakedSkippableState = true;
                 netMan.setState ( NetplayState::Skippable );
+
+                if ( dataSocket )
+                    dataSocket->send ( new TransitionIndex ( netMan.getIndex() ) );
                 return;
             }
 
@@ -713,6 +716,9 @@ struct DllMain
         }
 
         netMan.setState ( state );
+
+        if ( dataSocket )
+            dataSocket->send ( new TransitionIndex ( netMan.getIndex() ) );
     }
 
     void gameModeChanged ( uint32_t previous, uint32_t current )
@@ -1057,6 +1063,10 @@ struct DllMain
                             shouldChangeDelayRollback = true;
                             changeConfig = msg->getAs<ChangeConfig>();
                         }
+                        return;
+
+                    case MsgType::TransitionIndex:
+                        netMan.setRemoteIndex ( msg->getAs<TransitionIndex>().index );
                         return;
 
                     case MsgType::ErrorMessage:

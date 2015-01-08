@@ -207,5 +207,8 @@ public:
     uint8_t getRollback() const { return config.rollback; }
     void setRollback ( uint8_t rollback ) { config.rollback = rollback; }
 
+    // Set remote transition index
+    void setRemoteIndex ( uint32_t remoteIndex );
+
     friend class ProcessManager;
 };

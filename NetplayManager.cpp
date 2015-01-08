@@ -883,3 +883,13 @@ void NetplayManager::clearLastChangedFrame()
 {
     inputs[remotePlayer - 1].clearLastChangedFrame();
 }
+
+void NetplayManager::setRemoteIndex ( uint32_t remoteIndex )
+{
+    if ( remoteIndex < startIndex )
+        return;
+
+    LOG ( "remoteIndex=%u", remoteIndex );
+
+    inputs[remotePlayer - 1].resize ( remoteIndex - startIndex, 0, 0 );
+}
