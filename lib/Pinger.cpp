@@ -44,7 +44,7 @@ void Pinger::stop()
     pinging = false;
 }
 
-void Pinger::clear()
+void Pinger::reset()
 {
     stop();
 
@@ -59,12 +59,12 @@ void Pinger::gotPong ( const MsgPtr& ping )
 
     if ( pinging )
     {
-        uint64_t now = TimerManager::get().getNow();
+        const uint64_t now = TimerManager::get().getNow();
 
         if ( now < ping->getAs<Ping>().timestamp )
             return;
 
-        uint64_t latency = ( now - ping->getAs<Ping>().timestamp ) / 2;
+        const uint64_t latency = ( now - ping->getAs<Ping>().timestamp ) / 2;
 
         LOG ( "latency=%llu ms", latency );
 

@@ -11,6 +11,8 @@ struct Ping : public SerializableMessage
 
     Ping ( uint64_t timestamp ) : timestamp ( timestamp ) {}
 
+    std::string str() const override { return format ( "Ping[%llu]", timestamp ); }
+
     PROTOCOL_MESSAGE_BOILERPLATE ( Ping, timestamp )
 };
 
@@ -56,7 +58,7 @@ public:
 
     void stop();
 
-    void clear();
+    void reset();
 
     void gotPong ( const MsgPtr& ping );
 

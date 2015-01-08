@@ -78,7 +78,7 @@ struct MainApp
         , public ExternalIpAddress::Owner
         , public KeyboardManager::Owner
         , public Thread
-        , protected SpectatorManager
+        , public SpectatorManager
 {
     IpAddrPort originalAddress;
 
@@ -1248,7 +1248,7 @@ private:
 
         netplayConfig.clear();
 
-        pinger.clear();
+        pinger.reset();
         pingStats.clear();
 
         uiSendSocket.reset();

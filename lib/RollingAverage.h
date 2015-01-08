@@ -5,13 +5,16 @@ template<typename T, size_t N>
 class RollingAverage
 {
     T values[N];
-    T sum;
+
+    T sum, average;
+
     size_t index, num;
 
 public:
 
-    RollingAverage() : sum ( 0 ), index ( 0 ), num ( 0 ) {}
-    RollingAverage ( T initial ) : sum ( initial ), index ( 1 ), num ( 1 ) {}
+    RollingAverage() { reset(); }
+
+    RollingAverage ( T initial ) { reset ( initial ); }
 
     void set ( T value )
     {
@@ -22,6 +25,8 @@ public:
         else
             sum -= values[index];
 
+        average = sum / num;
+
         values[index] = value;
 
         index = ( index + 1 ) % N;
@@ -29,19 +34,17 @@ public:
 
     T get() const
     {
-        ASSERT ( num > 0 );
-
-        return sum / num;
+        return average;
     }
 
     void reset()
     {
-        sum = index = num = 0;
+        sum = average = index = num = 0;
     }
 
     void reset ( T initial )
     {
-        sum = initial;
+        sum = average = initial;
         index = num = 1;
     }
 
