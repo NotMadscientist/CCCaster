@@ -140,9 +140,6 @@ struct DllMain
     // Timer to delay checking round over state during rollback
     int roundOverTimer = -1;
 
-    // Cached game point flags
-    uint32_t lastP1GamePointFlag = 0, lastP2GamePointFlag = 0;
-
 #ifndef RELEASE
     // Local and remote SyncHashes
     list<MsgPtr> localSync, remoteSync;
@@ -464,17 +461,20 @@ struct DllMain
             // Indicate we're re-running to the current frame
             fastFwdStopFrame = netMan.getIndexedFrame();
 
-            // Start fast-forwarding now
-            *CC_SKIP_FRAMES_ADDR = 1;
-
             // Reset the game state (this resets game state AND netMan state)
-            procMan.loadState ( target, netMan );
+            if ( procMan.loadState ( target, netMan ) )
+            {
+                // Start fast-forwarding now
+                *CC_SKIP_FRAMES_ADDR = 1;
 
-            LOG_TO ( syncLog, "%s Rollback: target=[%s]; actual=[%s]",
-                     before, target, netMan.getIndexedFrame() );
+                LOG_TO ( syncLog, "%s Rollback: target=[%s]; actual=[%s]",
+                         before, target, netMan.getIndexedFrame() );
 
-            // LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
-            return;
+                // LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
+                return;
+            }
+
+            LOG_TO ( syncLog, "%s Rollback to target=[%s] failed!", before, target );
         }
 #endif
 
@@ -488,17 +488,20 @@ struct DllMain
             // Indicate we're re-running to the current frame
             fastFwdStopFrame = netMan.getIndexedFrame();
 
-            // Start fast-forwarding now
-            *CC_SKIP_FRAMES_ADDR = 1;
-
             // Reset the game state (this resets game state AND netMan state)
-            procMan.loadState ( netMan.getLastChangedFrame(), netMan );
+            if ( procMan.loadState ( netMan.getLastChangedFrame(), netMan ) )
+            {
+                // Start fast-forwarding now
+                *CC_SKIP_FRAMES_ADDR = 1;
 
-            LOG_TO ( syncLog, "%s Rollback: target=[%s]; actual=[%s]",
-                     before, netMan.getLastChangedFrame(), netMan.getIndexedFrame() );
+                LOG_TO ( syncLog, "%s Rollback: target=[%s]; actual=[%s]",
+                         before, netMan.getLastChangedFrame(), netMan.getIndexedFrame() );
 
-            // LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
-            return;
+                // LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
+                return;
+            }
+
+            LOG_TO ( syncLog, "%s Rollback to target=[%s] failed!", before, netMan.getLastChangedFrame() );
         }
 
         // Update the RngState if necessary
@@ -773,6 +776,8 @@ struct DllMain
             roundOverTimer = -1;
             return;
         }
+
+        roundOverTimer = -1;
 
         // Check for game over since we just entered a skippable state
         updateGameOverFlags();
