@@ -140,7 +140,6 @@ void initializePostLoad()
 
     // We can't save replays on Wine because MBAA crashes even without us.
     // We can't hook DirectX calls on Wine (yet?).
-    // We can't override the FPS limit (yet?).
     if ( ProcessManager::isWine() )
     {
         *CC_AUTO_REPLAY_SAVE_ADDR = 0;

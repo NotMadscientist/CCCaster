@@ -16,7 +16,7 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
 {
     bool toggleOverlay = false;
 
-    if ( KeyboardState::isPressed ( VK_TOGGLE_OVERLAY ) )
+    if ( KeyboardState::isPressed ( VK_TOGGLE_OVERLAY ) && !ProcessManager::isWine() )
         toggleOverlay = true;
 
     for ( Controller *controller : allControllers )

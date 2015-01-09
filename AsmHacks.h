@@ -125,8 +125,7 @@ static const AsmList enableDisabledStages =
     { ( void * ) 0x7695EC, { 0xAA, 0xCC, 0x1E, 0x40 } },
 };
 
-// Disable the FPS limit by setting the game's perceived perf freq to 1.
-// TODO find an alternative because this doesn't work on Wine
+// Disable the FPS limit by setting the game's perceived perf freq to 1
 static const Asm disableFpsLimit = { CC_PERF_FREQ_ADDR, { INLINE_DWORD ( 1 ), INLINE_DWORD ( 0 ) } };
 
 // Disable the code that updates the FPS counter

@@ -39,10 +39,6 @@ void enable()
 
 void PresentFrameEnd ( IDirect3DDevice9 *device )
 {
-    // TODO find an alternative because this doesn't work on Wine
-    if ( ProcessManager::isWine() )
-        return;
-
     if ( !isEnabled || *CC_SKIP_FRAMES_ADDR )
         return;
 
