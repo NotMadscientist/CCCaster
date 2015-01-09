@@ -611,7 +611,10 @@ void NetplayManager::setInput ( uint8_t player, uint16_t input )
     //     inputs[player - 1].set ( getIndex() - startIndex, getFrame() + config.getOffset(), input );
     // else
 
-    inputs[player - 1].set ( getIndex() - startIndex, getFrame() + config.delay, input );
+    if ( state == NetplayState::RetryMenu )
+        inputs[player - 1].set ( getIndex() - startIndex, getFrame(), input );
+    else
+        inputs[player - 1].set ( getIndex() - startIndex, getFrame() + config.delay, input );
 }
 
 MsgPtr NetplayManager::getInputs ( uint8_t player ) const
