@@ -60,11 +60,11 @@ using namespace std;
              netMan.getState(), netMan.getIndexedFrame(), ## __VA_ARGS__ )
 
 #define LOG_SYNC_CHARACTER(N)                                                                                   \
-    LOG_SYNC ( "P%u: seq=%u; st=%u; hp=%u; rh=%u; gb=%.1f; gq=%.1f; mt=%u; ht=%u; x=%d; y=%d",                  \
-               N, *CC_P ## N ## _SEQUENCE_ADDR, *CC_P ## N ## _SEQ_STATE_ADDR, *CC_P ## N ## _HEALTH_ADDR,      \
-               *CC_P ## N ## _RED_HEALTH_ADDR, *CC_P ## N ## _GUARD_BAR_ADDR,                                   \
-               *CC_P ## N ## _GUARD_QUALITY_ADDR,  *CC_P ## N ## _METER_ADDR, *CC_P ## N ## _HEAT_ADDR,         \
-               *CC_P ## N ## _X_POSITION_ADDR, *CC_P ## N ## _Y_POSITION_ADDR );
+    LOG_SYNC ( "P%u: C=%u; M=%u seq=%u; st=%u; hp=%u; rh=%u; gb=%.1f; gq=%.1f; mt=%u; ht=%u; x=%d; y=%d",       \
+               N, *CC_P ## N ## CHARACTER_ADDR, *CC_P ## N ## MOON_SELECTOR_ADDR, *CC_P ## N ## _SEQUENCE_ADDR, \
+               *CC_P ## N ## _SEQ_STATE_ADDR, *CC_P ## N ## _HEALTH_ADDR, *CC_P ## N ## _RED_HEALTH_ADDR,       \
+               *CC_P ## N ## _GUARD_BAR_ADDR, *CC_P ## N ## _GUARD_QUALITY_ADDR,  *CC_P ## N ## _METER_ADDR,    \
+               *CC_P ## N ## _HEAT_ADDR, *CC_P ## N ## _X_POSITION_ADDR, *CC_P ## N ## _Y_POSITION_ADDR )
 
 
 // Main application state
@@ -561,7 +561,7 @@ struct DllMain
 
             LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
 
-            if ( !netMan.config.rollback )
+            if ( !netMan.isInRollback() )
             {
                 // Check for desyncs by periodically sending hashes
                 MsgPtr msgSyncHash ( new SyncHash ( netMan.getIndexedFrame(), msgRngState->getAs<RngState>() ) );
