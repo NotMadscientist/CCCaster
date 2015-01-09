@@ -269,6 +269,8 @@ struct RngState : public SerializableSequence
 
     RngState ( uint32_t index ) : index ( index ) {}
 
+    std::string str() const override { return format ( "RngState[%u]", index ); }
+
     std::string dump() const
     {
         return format ( "index=%u; { ", index )

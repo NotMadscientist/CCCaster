@@ -33,7 +33,7 @@ uint16_t NetplayManager::getPreInitialInput ( uint8_t player )
         return 0;
 
     AsmHacks::menuConfirmState = 2;
-    RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
+    RETURN_MASH_INPUT ( 0, CC_BUTTON_CONFIRM );
 }
 
 uint16_t NetplayManager::getInitialInput ( uint8_t player )
@@ -50,7 +50,7 @@ uint16_t NetplayManager::getInitialInput ( uint8_t player )
         return 0;
 
     AsmHacks::menuConfirmState = 2;
-    RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
+    RETURN_MASH_INPUT ( 0, CC_BUTTON_CONFIRM );
 }
 
 uint16_t NetplayManager::getAutoCharaSelectInput ( uint8_t player )
@@ -69,7 +69,7 @@ uint16_t NetplayManager::getAutoCharaSelectInput ( uint8_t player )
 
     *CC_STAGE_SELECTOR_ADDR = initial.stage;
 
-    RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
+    RETURN_MASH_INPUT ( 0, CC_BUTTON_CONFIRM );
 }
 
 uint16_t NetplayManager::getCharaSelectInput ( uint8_t player )
@@ -94,10 +94,10 @@ uint16_t NetplayManager::getCharaSelectInput ( uint8_t player )
 uint16_t NetplayManager::getSkippableInput ( uint8_t player )
 {
     if ( config.mode.isSpectate() )
-        RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
+        RETURN_MASH_INPUT ( 0, CC_BUTTON_CONFIRM );
 
-    // Only allow the A button here
-    return ( getRawInput ( player ) & COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM ) );
+    // Only allow the confirm and cancel here
+    return ( getRawInput ( player ) & COMBINE_INPUT ( 0, CC_BUTTON_CONFIRM | CC_BUTTON_CANCEL ) );
 }
 
 uint16_t NetplayManager::getInGameInput ( uint8_t player )
@@ -220,7 +220,7 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player )
 
     if ( config.mode.isSpectateNetplay() )
     {
-        input = ( ( getFrame() % 2 ) ? 0 : COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM ) );
+        input = ( ( getFrame() % 2 ) ? 0 : COMBINE_INPUT ( 0, CC_BUTTON_CONFIRM ) );
     }
     else
     {
@@ -379,7 +379,7 @@ uint16_t NetplayManager::getMenuNavInput()
     else if ( targetMenuState == 39 )                                       // Mash final menu selection
     {
         AsmHacks::menuConfirmState = 2;
-        RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
+        RETURN_MASH_INPUT ( 0, CC_BUTTON_CONFIRM );
     }
     else if ( targetMenuIndex != ( int8_t ) AsmHacks::currentMenuIndex )    // Keep navigating
     {
@@ -575,7 +575,7 @@ uint16_t NetplayManager::getInput ( uint8_t player )
                     || ( ( startIndex + inputs[remotePlayer - 1].getEndIndex() ) > getIndex() + 1 ) )
             {
                 AsmHacks::menuConfirmState = 2;
-                RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
+                RETURN_MASH_INPUT ( 0, CC_BUTTON_CONFIRM );
             }
             return getSkippableInput ( player );
 

@@ -125,9 +125,6 @@ struct DllMain
     // If we should disconnect at the next NetplayState change
     bool lazyDisconnect = false;
 
-    // If the game is over now (after checking P1 and P2 health values)
-    bool isGameOver = false;
-
     // If the delay and/or rollback should be changed
     bool shouldChangeDelayRollback = false;
 
@@ -404,14 +401,14 @@ struct DllMain
             // Don't resend inputs in spectator mode
             if ( clientMode.isSpectate() )
             {
-                // Continue if ready or isGameOver
-                if ( ready || isGameOver )
+                // Continue if ready
+                if ( ready )
                     break;
             }
             else
             {
-                // Stop resending inputs if we're ready or isGameOver
-                if ( ready || isGameOver )
+                // Stop resending inputs if we're ready
+                if ( ready )
                 {
                     resendTimer.reset();
                     break;
@@ -663,17 +660,22 @@ struct DllMain
         if ( !DllOverlayUi::isShowingMessage() )
             DllOverlayUi::disable();
 
+        // Leaving Skippable
+        if ( netMan.getState() == NetplayState::Skippable )
+        {
+            roundOverTimer = -1;
+            lazyDisconnect = fakedSkippableState = false;
+        }
+
         // Entering InGame
         if ( state == NetplayState::InGame )
         {
-            roundOverTimer = -1;
-
             if ( netMan.config.rollback )
                 procMan.allocateStates ( options.arg ( Options::AppDir ) );
         }
 
-        // Exiting InGame
-        if ( state != NetplayState::InGame )
+        // Leaving InGame
+        if ( netMan.getState() == NetplayState::InGame )
         {
             if ( netMan.config.rollback )
                 procMan.deallocateStates();
@@ -682,13 +684,18 @@ struct DllMain
         // Entering CharaSelect OR entering InGame
         if ( !clientMode.isOffline() && ( state == NetplayState::CharaSelect || state == NetplayState::InGame ) )
         {
-            shouldSyncRngState = !isGameOver;
-            LOG ( "[%s] shouldSyncRngState=%u", netMan.getIndexedFrame(), shouldSyncRngState );
+            shouldSyncRngState = true;
         }
 
-        // Entering RetryMenu (enable lazy disconnect on netplay)
+        // Entering RetryMenu
         if ( state == NetplayState::RetryMenu )
         {
+            // Lazy disconnect now during netplay
+            lazyDisconnect = clientMode.isNetplay();
+
+            // Resent retry menu index flag
+            localRetryMenuIndexSent = false;
+
             // During rollback, we might miss the intermediate Skippable state, so we have to fake it
             if ( netMan.getState() == NetplayState::InGame )
             {
@@ -700,19 +707,12 @@ struct DllMain
                     dataSocket->send ( new TransitionIndex ( netMan.getIndex() ) );
                 return;
             }
-
-            lazyDisconnect = clientMode.isNetplay();
-
-            // Clear state flags
-            isGameOver = false;
-            wasLastRoundDoubleGamePointDraw = false;
-            localRetryMenuIndexSent = false;
-            fakedSkippableState = false;
         }
         else if ( lazyDisconnect )
         {
             lazyDisconnect = false;
 
+            // If not entering RetryMenu and we're already disconnected...
             if ( !dataSocket || !dataSocket->isConnected() )
             {
                 delayedStop ( "Disconnected!" );
@@ -806,12 +806,6 @@ struct DllMain
         }
 
         roundOverTimer = -1;
-
-        // Check for game over since we just entered a skippable state
-        updateGameOverFlags();
-
-        // Enable lazy disconnect if someone just won a game (netplay only)
-        lazyDisconnect = ( clientMode.isNetplay() && isGameOver );
 
         // Update NetplayState
         netplayStateChanged ( NetplayState::Skippable );
@@ -1484,42 +1478,6 @@ struct DllMain
     }
 
 private:
-
-    bool wasLastRoundDoubleGamePointDraw = false;
-
-    void updateGameOverFlags()
-    {
-        const bool isKnockOut = ( ( *CC_P1_HEALTH_ADDR ) == 0 ) || ( ( *CC_P2_HEALTH_ADDR ) == 0 );
-        const bool isTimeOut = ( ( *CC_ROUND_TIMER_ADDR ) == 0 );
-
-        if ( !isKnockOut && !isTimeOut )
-        {
-            isGameOver = false;
-        }
-        else
-        {
-            const bool isP1GamePoint = ( ( *CC_P1_WINS_ADDR ) + 1 == ( *CC_WIN_COUNT_VS_ADDR ) );
-            const bool isP2GamePoint = ( ( *CC_P2_WINS_ADDR ) + 1 == ( *CC_WIN_COUNT_VS_ADDR ) );
-            const bool didP1Win = ( ( *CC_P1_HEALTH_ADDR ) > ( *CC_P2_HEALTH_ADDR ) );
-            const bool didP2Win = ( ( *CC_P1_HEALTH_ADDR ) < ( *CC_P2_HEALTH_ADDR ) );
-            const bool isDraw = ( ( *CC_P1_HEALTH_ADDR ) == ( *CC_P2_HEALTH_ADDR ) );
-
-            if ( ( isP1GamePoint && didP1Win ) || ( isP2GamePoint && didP2Win ) )
-                isGameOver = true;
-            else if ( isP1GamePoint && isP2GamePoint && isDraw && wasLastRoundDoubleGamePointDraw )
-                isGameOver = true;
-            else
-                isGameOver = false;
-
-            LOG ( "[%s] p1wins=%u; p2wins=%u; p1health=%u; p2health=%u; wasLastRoundDoubleGamePointDraw=%u",
-                  netMan.getIndexedFrame(), *CC_P1_WINS_ADDR, *CC_P2_WINS_ADDR, *CC_P1_HEALTH_ADDR, *CC_P2_HEALTH_ADDR,
-                  wasLastRoundDoubleGamePointDraw );
-
-            wasLastRoundDoubleGamePointDraw = ( isP1GamePoint && isP2GamePoint && isDraw );
-        }
-
-        LOG ( "[%s] isGameOver=%u", netMan.getIndexedFrame(), ( isGameOver ? 1 : 0 ) );
-    }
 
     void saveMappings ( const Controller *controller ) const override
     {
