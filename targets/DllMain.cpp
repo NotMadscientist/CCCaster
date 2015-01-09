@@ -600,9 +600,9 @@ struct DllMain
 
         if ( netMan.getState() == NetplayState::CharaSelect )
         {
-            LOG_SYNC ( "P1: C=%u; M=%u; P2: C=%u M=%u",
-                       *CC_P1_CHARACTER_ADDR, *CC_P1_MOON_SELECTOR_ADDR,
-                       *CC_P2_CHARACTER_ADDR, *CC_P2_MOON_SELECTOR_ADDR );
+            LOG_SYNC ( "P1: sel=%u; C=%u; M=%u; P2: sel=%u; C=%u M=%u",
+                       *CC_P1_SELECTOR_MODE_ADDR, *CC_P1_CHARACTER_ADDR, *CC_P1_MOON_SELECTOR_ADDR,
+                       *CC_P2_SELECTOR_MODE_ADDR, *CC_P2_CHARACTER_ADDR, *CC_P2_MOON_SELECTOR_ADDR );
             return;
         }
 
