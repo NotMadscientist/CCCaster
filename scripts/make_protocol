@@ -58,7 +58,7 @@ if [ $? -ne 0 ]; then
   do
 
     # Check if the message is deleted
-    grep > /dev/null --fixed-strings "$message" $DIR/tmp_deleted
+    grep > /dev/null "^$message$" $DIR/tmp_deleted
 
     if [ $? -eq 0 ]; then
       echo "$message // Deleted message" >> $DIR/tmp_enums

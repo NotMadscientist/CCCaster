@@ -605,9 +605,17 @@ void NetplayManager::setInput ( uint8_t player, uint16_t input )
     ASSERT ( getIndex() >= startIndex );
 
     if ( isInRollback() )
+    {
         inputs[player - 1].set ( getIndex() - startIndex, getFrame() + config.rollbackDelay, input );
+    }
+    else if ( state == NetplayState::RetryMenu )
+    {
+        inputs[player - 1].set ( getIndex() - startIndex, getFrame(), input );
+    }
     else
+    {
         inputs[player - 1].set ( getIndex() - startIndex, getFrame() + config.delay, input );
+    }
 }
 
 void NetplayManager::assignInput ( uint8_t player, uint16_t input, uint32_t frame )
