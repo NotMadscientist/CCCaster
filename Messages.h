@@ -288,11 +288,19 @@ struct SyncHash : public SerializableSequence
 {
     IndexedFrame indexedFrame = {{ 0, 0 }};
 
-    char hash[16];
+    char hash[20];
 
-    SyncHash ( IndexedFrame indexedFrame, const RngState& rngState ) : indexedFrame ( indexedFrame )
+    SyncHash ( IndexedFrame indexedFrame, const RngState& rngState,
+               uint8_t chara1, uint8_t moon1, uint8_t chara2, uint8_t moon2 )
     {
+        this->indexedFrame = indexedFrame;
+
         getMD5 ( ( char * ) &rngState.rngState0, sizeof ( uint32_t ) * 3 + CC_RNGSTATE3_SIZE, hash );
+
+        hash[16] = chara1;
+        hash[17] = moon1;
+        hash[18] = chara2;
+        hash[19] = moon2;
     }
 
     bool operator== ( const SyncHash& other ) const
@@ -302,6 +310,8 @@ struct SyncHash : public SerializableSequence
 
         return ( memcmp ( hash, other.hash, sizeof ( hash ) ) == 0 );
     }
+
+    std::string str() const override { return format ( "SyncHash[%s]", indexedFrame ); }
 
     PROTOCOL_MESSAGE_BOILERPLATE ( SyncHash, indexedFrame.value, hash )
 };

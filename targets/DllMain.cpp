@@ -561,31 +561,34 @@ struct DllMain
 
             LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
 
-            if ( !netMan.isInRollback() )
+            // Check for desyncs by periodically sending hashes
+            if ( netMan.getFrame() == 0 || !netMan.isInRollback() )
             {
-                // Check for desyncs by periodically sending hashes
-                MsgPtr msgSyncHash ( new SyncHash ( netMan.getIndexedFrame(), msgRngState->getAs<RngState>() ) );
+                MsgPtr msgSyncHash ( new SyncHash ( netMan.getIndexedFrame(), msgRngState->getAs<RngState>(),
+                                                    *CC_P1_CHARACTER_ADDR, *CC_P1_MOON_SELECTOR_ADDR,
+                                                    *CC_P2_CHARACTER_ADDR, *CC_P2_MOON_SELECTOR_ADDR ) );
 
                 dataSocket->send ( msgSyncHash );
 
                 localSync.push_back ( msgSyncHash );
+            }
 
-                while ( !localSync.empty() && !remoteSync.empty() )
+            // Compare current lists of sync hashes
+            while ( !localSync.empty() && !remoteSync.empty() )
+            {
+                if ( localSync.front()->getAs<SyncHash>() == remoteSync.front()->getAs<SyncHash>() )
                 {
-                    if ( localSync.front()->getAs<SyncHash>() == remoteSync.front()->getAs<SyncHash>() )
-                    {
-                        localSync.pop_front();
-                        remoteSync.pop_front();
-                        continue;
-                    }
-
-                    LOG_SYNC ( "Desync: local=[%s]; remote=[%s]",
-                               localSync.front()->getAs<SyncHash>().indexedFrame,
-                               remoteSync.front()->getAs<SyncHash>().indexedFrame );
-
-                    delayedStop ( "Desync!" );
-                    return;
+                    localSync.pop_front();
+                    remoteSync.pop_front();
+                    continue;
                 }
+
+                LOG_SYNC ( "Desync: local=[%s]; remote=[%s]",
+                           localSync.front()->getAs<SyncHash>().indexedFrame,
+                           remoteSync.front()->getAs<SyncHash>().indexedFrame );
+
+                delayedStop ( "Desync!" );
+                return;
             }
         }
 
@@ -602,8 +605,8 @@ struct DllMain
         if ( netMan.getState() == NetplayState::CharaSelect )
         {
             LOG_SYNC ( "P1: C=%u; M=%u; P2: C=%u M=%u",
-                       CC_P1_CHARACTER_ADDR, CC_P1_MOON_SELECTOR_ADDR,
-                       CC_P2_CHARACTER_ADDR, CC_P2_MOON_SELECTOR_ADDR );
+                       *CC_P1_CHARACTER_ADDR, *CC_P1_MOON_SELECTOR_ADDR,
+                       *CC_P2_CHARACTER_ADDR, *CC_P2_MOON_SELECTOR_ADDR );
             return;
         }
 
