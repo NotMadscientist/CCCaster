@@ -22,6 +22,9 @@ bool isEnabled = false;
 
 void enable()
 {
+    if ( isEnabled )
+        return;
+
     // TODO find an alternative because this doesn't work on Wine
     WRITE_ASM_HACK ( AsmHacks::disableFpsLimit );
     WRITE_ASM_HACK ( AsmHacks::disableFpsCounter );

@@ -14,7 +14,6 @@
 #include "SpectatorManager.h"
 #include "DllControllerManager.h"
 #include "DllFrameRate.h"
-#include "FrameStepPinger.h"
 
 #include <windows.h>
 
@@ -28,11 +27,8 @@ using namespace std;
 // The main log file path
 #define LOG_FILE                    FOLDER "dll.log"
 
-// The number of frames per ping, used to calculate the local vs remote frame delta
-#define PING_FRAME_INTERVAL         ( 30 )
-
-// The minimum number of frames that must run normally, before we're allowed to do another rollback
-#define MIN_ROLLBACK_SPACING        ( 2 )
+// The number of milliseconds to poll during rollback
+#define ROLLBACK_POLL_TIMEOUT       ( 3 )
 
 // The number of frames to delay checking round over state during rollback, must be LESS than the outro animation
 #define ROLLBACK_ROUND_OVER_DELAY   ( 30 )
@@ -92,7 +88,6 @@ struct DllMain
         , public RefChangeMonitor<Variable, uint8_t>::Owner
         , public RefChangeMonitor<Variable, uint32_t>::Owner
         , public PtrToRefChangeMonitor<Variable, uint32_t>::Owner
-        , public FrameStepPinger::Owner
         , public SpectatorManager
         , public DllControllerManager
 {
@@ -151,12 +146,6 @@ struct DllMain
     // If we faked the last Skippable state, and should transition to RetryMenu ASAP
     bool fakedSkippableState = false;
 
-    // We should only rollback if this timer is full
-    int rollbackTimer = MIN_ROLLBACK_SPACING;
-
-    // Frame step pinger
-    FrameStepPinger pinger;
-
 #ifndef RELEASE
     // Local and remote SyncHashes
     list<MsgPtr> localSync, remoteSync;
@@ -179,10 +168,6 @@ struct DllMain
                 {
                     // Only save rollback states in-game
                     procMan.saveState ( netMan );
-
-                    // Ping every N frames to calculate remote frame offset
-                    if ( ( netMan.getFrame() + 1 ) % PING_FRAME_INTERVAL == 0 )
-                        pinger.sendFramePing ( netMan.getFrame() );
 
                     // Delayed round over check
                     if ( roundOverTimer >= ROLLBACK_ROUND_OVER_DELAY )
@@ -304,7 +289,7 @@ struct DllMain
                 {
                     bool shouldRandomize = ( netMan.getFrame() % 2 );
                     if ( netMan.isInRollback() )
-                        shouldRandomize = ( netMan.getFrame() % 120 < 30 );
+                        shouldRandomize = ( netMan.getFrame() % 150 < 50 );
 
                     if ( shouldRandomize )
                     {
@@ -398,8 +383,7 @@ struct DllMain
         }
 
         // Clear the last changed frame before we get new inputs
-        if ( rollbackTimer == MIN_ROLLBACK_SPACING )
-            netMan.clearLastChangedFrame();
+        netMan.clearLastChangedFrame();
 
         for ( ;; )
         {
@@ -501,18 +485,8 @@ struct DllMain
         }
 #endif
 
-        if ( rollbackTimer < MIN_ROLLBACK_SPACING )
-        {
-            --rollbackTimer;
-
-            if ( rollbackTimer < 0 )
-                rollbackTimer = MIN_ROLLBACK_SPACING;
-        }
-
         // Only rollback when necessary
-        if ( netMan.isInRollback()
-                && rollbackTimer == MIN_ROLLBACK_SPACING
-                && netMan.getLastChangedFrame().value < netMan.getIndexedFrame().value )
+        if ( netMan.isInRollback() && netMan.getLastChangedFrame().value < netMan.getIndexedFrame().value )
         {
             const string before = format ( "%s [%u] %s [%s]",
                                            gameModeStr ( *CC_GAME_MODE_ADDR ), *CC_GAME_MODE_ADDR,
@@ -531,9 +505,6 @@ struct DllMain
                          before, netMan.getLastChangedFrame(), netMan.getIndexedFrame() );
 
                 // LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
-
-                netMan.clearLastChangedFrame();
-                --rollbackTimer;
                 return;
             }
 
@@ -691,10 +662,6 @@ struct DllMain
         // Clear the last overlay message
         if ( !DllOverlayUi::isShowingMessage() )
             DllOverlayUi::disable();
-
-        // Reset the frame step pinger
-        if ( netMan.config.rollback )
-            pinger.reset ( ( netMan.config.delay * 1000 ) / 60 );
 
         // Entering InGame
         if ( state == NetplayState::InGame )
@@ -1113,12 +1080,6 @@ struct DllMain
                         delayedStop ( msg->getAs<ErrorMessage>().error );
                         return;
 
-                    case MsgType::FramePing:
-                    case MsgType::FramePong:
-                        if ( netMan.config.rollback )
-                            pinger.gotFramePing ( msg );
-                        return;
-
                     default:
                         break;
                 }
@@ -1174,15 +1135,6 @@ struct DllMain
         }
 
         LOG ( "Unexpected '%s' from socket=%08x", msg, socket );
-    }
-
-    // FrameStepPinger callback
-    void sendFramePing ( FrameStepPinger *pinger, const MsgPtr& ping ) override
-    {
-        ASSERT ( pinger == &this->pinger );
-
-        if ( dataSocket && dataSocket->isConnected() )
-            dataSocket->send ( ping );
     }
 
     // ProcessManager callbacks
@@ -1411,6 +1363,12 @@ struct DllMain
 
                     // Disable auto replay save
                     *CC_AUTO_REPLAY_SAVE_ADDR = 0;
+
+                    // Use alternate FPS control
+                    DllFrameRate::enable();
+
+                    // Increase poll timeout because we run faster now
+                    pollTimeout = ROLLBACK_POLL_TIMEOUT;
                 }
 
                 LOG ( "SessionId '%s'", netMan.config.sessionId );
@@ -1491,7 +1449,6 @@ struct DllMain
     DllMain()
         : SpectatorManager ( &netMan, &procMan )
         , worldTimerMoniter ( this, Variable::WorldTime, *CC_WORLD_TIMER_ADDR )
-        , pinger ( this )
     {
         // Timer and controller initialization is not done here because of threading issues
 
