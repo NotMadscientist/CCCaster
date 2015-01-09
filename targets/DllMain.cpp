@@ -49,21 +49,21 @@ using namespace std;
 #define MAX_ROOT_SPECTATORS         ( 1 )
 
 // Indicates if this client should redirect spectators
-#define SHOULD_REDIRECT_SPECTATORS  ( clientMode.isSpectate()                                                   \
-                                      ? numSpectators() >= MAX_SPECTATORS                                       \
+#define SHOULD_REDIRECT_SPECTATORS  ( clientMode.isSpectate()                                                       \
+                                      ? numSpectators() >= MAX_SPECTATORS                                           \
                                       : numSpectators() >= MAX_ROOT_SPECTATORS )
 
 
-#define LOG_SYNC(FORMAT, ...)                                                                                   \
-    LOG_TO ( syncLog, "%s [%u] %s [%s] " FORMAT,                                                                \
-             gameModeStr ( *CC_GAME_MODE_ADDR ), *CC_GAME_MODE_ADDR,                                            \
+#define LOG_SYNC(FORMAT, ...)                                                                                       \
+    LOG_TO ( syncLog, "%s [%u] %s [%s] " FORMAT,                                                                    \
+             gameModeStr ( *CC_GAME_MODE_ADDR ), *CC_GAME_MODE_ADDR,                                                \
              netMan.getState(), netMan.getIndexedFrame(), ## __VA_ARGS__ )
 
-#define LOG_SYNC_CHARACTER(N)                                                                                   \
-    LOG_SYNC ( "P%u: C=%u; M=%u seq=%u; st=%u; hp=%u; rh=%u; gb=%.1f; gq=%.1f; mt=%u; ht=%u; x=%d; y=%d",       \
-               N, *CC_P ## N ## CHARACTER_ADDR, *CC_P ## N ## MOON_SELECTOR_ADDR, *CC_P ## N ## _SEQUENCE_ADDR, \
-               *CC_P ## N ## _SEQ_STATE_ADDR, *CC_P ## N ## _HEALTH_ADDR, *CC_P ## N ## _RED_HEALTH_ADDR,       \
-               *CC_P ## N ## _GUARD_BAR_ADDR, *CC_P ## N ## _GUARD_QUALITY_ADDR,  *CC_P ## N ## _METER_ADDR,    \
+#define LOG_SYNC_CHARACTER(N)                                                                                       \
+    LOG_SYNC ( "P%u: C=%u; M=%u seq=%u; st=%u; hp=%u; rh=%u; gb=%.1f; gq=%.1f; mt=%u; ht=%u; x=%d; y=%d",           \
+               N, *CC_P ## N ## _CHARACTER_ADDR, *CC_P ## N ## _MOON_SELECTOR_ADDR, *CC_P ## N ## _SEQUENCE_ADDR,   \
+               *CC_P ## N ## _SEQ_STATE_ADDR, *CC_P ## N ## _HEALTH_ADDR, *CC_P ## N ## _RED_HEALTH_ADDR,           \
+               *CC_P ## N ## _GUARD_BAR_ADDR, *CC_P ## N ## _GUARD_QUALITY_ADDR,  *CC_P ## N ## _METER_ADDR,        \
                *CC_P ## N ## _HEAT_ADDR, *CC_P ## N ## _X_POSITION_ADDR, *CC_P ## N ## _Y_POSITION_ADDR )
 
 
@@ -598,6 +598,14 @@ struct DllMain
 
         // Log input state every frame
         LOG_SYNC ( "Inputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
+
+        if ( netMan.getState() == NetplayState::CharaSelect )
+        {
+            LOG_SYNC ( "P1: C=%u; M=%u; P2: C=%u M=%u",
+                       CC_P1_CHARACTER_ADDR, CC_P1_MOON_SELECTOR_ADDR,
+                       CC_P2_CHARACTER_ADDR, CC_P2_MOON_SELECTOR_ADDR );
+            return;
+        }
 
         if ( netMan.getState() != NetplayState::InGame )
             return;
