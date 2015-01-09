@@ -589,7 +589,6 @@ void MainUi::settings()
         "Show full character name",
         "Game CPU priority",
         "Versus mode win count",
-        "Use alternate FPS control",
         "About",
     };
 
@@ -736,23 +735,6 @@ void MainUi::settings()
                 break;
 
             case 5:
-                ui->pushInFront ( new ConsoleUi::Menu ( "Use alt. FPS control? Try this if you often get FPS drops",
-                { "Yes", "No" }, "Cancel" ),
-                { 0, 0 }, true ); // Don't expand but DO clear
-
-                ui->top<ConsoleUi::Menu>()->setPosition ( ( config.getInteger ( "alternateFpsControl" ) + 1 ) % 2 );
-                ui->popUntilUserInput();
-
-                if ( ui->top()->resultInt >= 0 && ui->top()->resultInt <= 1 )
-                {
-                    config.setInteger ( "alternateFpsControl", ( ui->top()->resultInt + 1 ) % 2 );
-                    saveConfig();
-                }
-
-                ui->pop();
-                break;
-
-            case 6:
                 ui->pushInFront ( new ConsoleUi::TextBox ( format ( "%s%s\n\nRevision %s\n\nBuilt on %s\n\n"
                                   "Created by Madscientist\n\nPress any key to go back",
                                   uiTitle,
@@ -788,7 +770,6 @@ void MainUi::initialize()
     config.setInteger ( "highCpuPriority", 1 );
     config.setInteger ( "versusWinCount", 2 );
     config.setInteger ( "maxAllowedDelay", 4 );
-    config.setInteger ( "alternateFpsControl", 0 );
 
     // Cached UI state (defaults)
     config.setInteger ( "lastUsedPort", -1 );

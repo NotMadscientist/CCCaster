@@ -1133,9 +1133,6 @@ struct MainApp
             options.set ( Options::NoUi, 1 );
         }
 
-        if ( ui.getConfig().getInteger ( "alternateFpsControl" ) )
-            options.set ( Options::AltFpsControl, 1 );
-
 #ifndef RELEASE
         if ( !options[Options::StrictVersion] )
             options.set ( Options::StrictVersion, 3 );

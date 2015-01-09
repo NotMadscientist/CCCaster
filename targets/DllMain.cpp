@@ -13,7 +13,6 @@
 #include "CharacterSelect.h"
 #include "SpectatorManager.h"
 #include "DllControllerManager.h"
-#include "DllFrameRate.h"
 
 #include <windows.h>
 
@@ -27,8 +26,8 @@ using namespace std;
 // The main log file path
 #define LOG_FILE                    FOLDER "dll.log"
 
-// The number of milliseconds to poll during rollback
-#define ROLLBACK_POLL_TIMEOUT       ( 3 )
+// The number of milliseconds to poll for events each frame
+#define POLL_TIMEOUT                ( 3 )
 
 // The number of frames to delay checking round over state during rollback, must be LESS than the outro animation
 #define ROLLBACK_ROUND_OVER_DELAY   ( 30 )
@@ -99,9 +98,6 @@ struct DllMain
 
     // ChangeMonitor for CC_WORLD_TIMER_ADDR
     RefChangeMonitor<Variable, uint32_t> worldTimerMoniter;
-
-    // Timeout for each call to EventManager::poll
-    uint64_t pollTimeout = 1;
 
     // Timer for resending inputs while waiting
     TimerPtr resendTimer;
@@ -385,7 +381,7 @@ struct DllMain
         for ( ;; )
         {
             // Poll until we are ready to run
-            if ( !EventManager::get().poll ( pollTimeout ) )
+            if ( !EventManager::get().poll ( POLL_TIMEOUT ) )
             {
                 appState = AppState::Stopping;
                 return;
@@ -1172,9 +1168,6 @@ struct DllMain
                 syncLog.sessionId = options.arg ( Options::SessionId );
                 syncLog.initialize ( options.arg ( Options::AppDir ) + SYNC_LOG_FILE, 0 );
                 syncLog.logVersion();
-
-                if ( options[Options::AltFpsControl] )
-                    DllFrameRate::enable();
                 break;
 
             case MsgType::ControllerMappings:
@@ -1368,12 +1361,6 @@ struct DllMain
 
                     // Disable auto replay save
                     *CC_AUTO_REPLAY_SAVE_ADDR = 0;
-
-                    // Use alternate FPS control
-                    DllFrameRate::enable();
-
-                    // Increase poll timeout because we run faster now
-                    pollTimeout = ROLLBACK_POLL_TIMEOUT;
                 }
 
                 LOG ( "SessionId '%s'", netMan.config.sessionId );

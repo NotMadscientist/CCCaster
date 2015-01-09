@@ -6,6 +6,7 @@
 #include "Algorithms.h"
 #include "KeyboardManager.h"
 #include "ControllerManager.h"
+#include "DllFrameRate.h"
 
 #define INITGUID
 #include <windows.h>
@@ -39,6 +40,8 @@ void initializePreLoad()
 
     WRITE_ASM_HACK ( detectAutoReplaySave );
     WRITE_ASM_HACK ( hijackEscapeKey );
+
+    DllFrameRate::enable();
 }
 
 // Note: this is called on the SAME thread as the main application thread
