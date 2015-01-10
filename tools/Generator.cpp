@@ -10,29 +10,10 @@ using namespace std;
 #define LOG_FILE "generator.log"
 
 
-#define CC_UNKNOWN_TIMER_ADDR       ((char *)0x55D1CC) // 4 bytes
-#define CC_OUTROSTATE_ADDR          ((char *)0x563948) // 4 bytes, start from 2, goes to 3 (for timeouts?)
 
-#define CC_CAMERA_XY1_ADDR          ((char *)0x555124) // 8 bytes, unstable
-#define CC_CAMERA_XY2_ADDR          ((char *)0x5585E8) // 8 bytes
 
-// 0x559550 - P1 wins
-// 0x559580 - P2 wins
-// 0x5595B4 - super flash flag
-#define CC_UNKNOWN_ADDR_START       ((char *)0x559550)
-#define CC_UNKNOWN_ADDR_END         ((char *)0x55B3C8)
 
-#define CC_UNKNOWN2_ADDR_START      ((char *)0x55DEA0)
-#define CC_UNKNOWN2_ADDR_END        ((char *)0x55DF30)
 
-// 0x562A3C - round timer
-// 0x562A40 - real timer
-// 0x562A48 - super flash timer
-// 0x562A58 - ??? timer
-// 0x562A5C - game mode?
-// 0x562A6C - round over state
-#define CC_TIMERS_ADDR_START        ((char *)0x562A3C)
-#define CC_TIMERS_ADDR_END          ((char *)0x562A70)
 
 // P1 and P2 status messages
 // - indicates rebeat, crits, max, circuit break, etc...
@@ -99,6 +80,10 @@ using namespace std;
 #define CC_P2_SUPER_TIMER3_ADDR     ( ( uint64_t * ) 0x558B90 ) // L then R timer
 #define CC_P2_SUPER_TIMER4_ADDR     ( ( uint32_t * ) 0x558C14 )
 #define CC_P2_SUPER_TIMER5_ADDR     ( ( uint32_t * ) 0x558C1C )
+
+#define CC_CAMERA_SCALE_1_ADDR      ( ( float * )    0x54EB70 ) // zoom
+#define CC_CAMERA_SCALE_2_ADDR      ( ( float * )    0x54EB74 ) // zoom
+#define CC_CAMERA_SCALE_3_ADDR      ( ( float * )    0x54EB78 )
 
 
 static const vector<MemDump> playerAddrs =
@@ -182,25 +167,17 @@ static const vector<MemDump> playerAddrs =
 
 static const vector<MemDump> miscAddrs =
 {
+    // The stack range before calling the main dll callback
     // { 0x18FEA0, 0x190000 },
 
-    CC_P1_SPELL_CIRCLE_ADDR,
-    CC_P2_SPELL_CIRCLE_ADDR,
-    CC_HIT_SPARKS_ADDR,
+    // Game state
     CC_ROUND_TIMER_ADDR,
     CC_REAL_TIMER_ADDR,
-    CC_CAMERA_X_ADDR,
-    CC_CAMERA_Y_ADDR,
-    CC_METER_ANIMATION_ADDR,
     CC_WORLD_TIMER_ADDR,
     CC_DEATH_TIMER_ADDR,
     CC_INTRO_STATE_ADDR,
     CC_INPUT_STATE_ADDR,
     CC_SKIPPABLE_FLAG_ADDR,
-    CC_P1_GAME_POINT_FLAG_ADDR,
-    CC_P2_GAME_POINT_FLAG_ADDR,
-    CC_P1_WINS_ADDR,
-    CC_P2_WINS_ADDR,
 
     CC_RNGSTATE0_ADDR,
     CC_RNGSTATE1_ADDR,
@@ -210,6 +187,7 @@ static const vector<MemDump> miscAddrs =
     CC_SUPER_FLASH_PAUSE_ADDR,
     CC_SUPER_FLASH_TIMER_ADDR,
 
+    // Player state
     CC_P1_SUPER_TIMER1_ADDR,
     CC_P1_SUPER_TIMER2_ADDR,
     CC_P1_SUPER_TIMER3_ADDR,
@@ -223,6 +201,27 @@ static const vector<MemDump> miscAddrs =
 
     { CC_P1_EXTRA_STRUCT_ADDR, CC_EXTRA_STRUCT_SIZE },
     { CC_P2_EXTRA_STRUCT_ADDR, CC_EXTRA_STRUCT_SIZE },
+
+    CC_P1_WINS_ADDR,
+    CC_P2_WINS_ADDR,
+
+    CC_P1_GAME_POINT_FLAG_ADDR,
+    CC_P2_GAME_POINT_FLAG_ADDR,
+
+    // Graphical state
+    CC_HIT_SPARKS_ADDR,
+
+    CC_METER_ANIMATION_ADDR,
+
+    CC_P1_SPELL_CIRCLE_ADDR,
+    CC_P2_SPELL_CIRCLE_ADDR,
+
+    CC_CAMERA_SCALE_1_ADDR,
+    CC_CAMERA_SCALE_2_ADDR,
+    CC_CAMERA_SCALE_3_ADDR,
+
+    CC_CAMERA_X_ADDR,
+    CC_CAMERA_Y_ADDR,
 };
 
 static const MemDump effectAddrs ( CC_EFFECTS_ARRAY_ADDR, CC_EFFECT_ELEMENT_SIZE, {

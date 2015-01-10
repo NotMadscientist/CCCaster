@@ -327,44 +327,28 @@
     </CheatEntry>
     <CheatEntry>
       <ID>158</ID>
-      <Description>"camera scale1"</Description>
+      <Description>"camera scale 1 (zoom)"</Description>
       <Color>80000008</Color>
       <VariableType>Float</VariableType>
       <Address>0054EB70</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>159</ID>
-      <Description>"camera scale2"</Description>
+      <Description>"camera scale 2 (zoom)"</Description>
       <Color>80000008</Color>
       <VariableType>Float</VariableType>
       <Address>0054EB74</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>160</ID>
-      <Description>"camera scale3"</Description>
+      <Description>"camera scale 3"</Description>
       <Color>80000008</Color>
       <VariableType>Float</VariableType>
       <Address>0054EB78</Address>
     </CheatEntry>
     <CheatEntry>
-      <ID>129</ID>
-      <Description>"camera X"</Description>
-      <ShowAsSigned>1</ShowAsSigned>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>00555124</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>132</ID>
-      <Description>"camera Y"</Description>
-      <ShowAsSigned>1</ShowAsSigned>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>00555128</Address>
-    </CheatEntry>
-    <CheatEntry>
       <ID>156</ID>
-      <Description>"camera X (2)"</Description>
+      <Description>"camera X"</Description>
       <ShowAsSigned>1</ShowAsSigned>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
@@ -372,7 +356,7 @@
     </CheatEntry>
     <CheatEntry>
       <ID>157</ID>
-      <Description>"camera Y (2)"</Description>
+      <Description>"camera Y"</Description>
       <ShowAsSigned>1</ShowAsSigned>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
