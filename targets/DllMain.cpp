@@ -579,7 +579,23 @@ struct DllMain
         // Compare current lists of sync hashes
         while ( !localSync.empty() && !remoteSync.empty() )
         {
-            if ( localSync.front()->getAs<SyncHash>() == remoteSync.front()->getAs<SyncHash>() )
+
+#define L localSync.front()->getAs<SyncHash>()
+#define R remoteSync.front()->getAs<SyncHash>()
+
+            while ( !remoteSync.empty() && L.indexedFrame.value > R.indexedFrame.value )
+                remoteSync.pop_front();
+
+            if ( remoteSync.empty() )
+                break;
+
+            while ( !localSync.empty() && R.indexedFrame.value > L.indexedFrame.value )
+                localSync.pop_front();
+
+            if ( localSync.empty() )
+                break;
+
+            if ( L == R )
             {
                 localSync.pop_front();
                 remoteSync.pop_front();
@@ -587,8 +603,11 @@ struct DllMain
             }
 
             LOG_TO ( syncLog, "Desync:" );
-            LOG_TO ( syncLog, "< %s", localSync.front()->getAs<SyncHash>().dump() );
-            LOG_TO ( syncLog, "> %s", remoteSync.front()->getAs<SyncHash>().dump() );
+            LOG_TO ( syncLog, "< %s", L.dump() );
+            LOG_TO ( syncLog, "> %s", R.dump() );
+
+#undef L
+#undef R
 
             syncLog.deinitialize();
 
