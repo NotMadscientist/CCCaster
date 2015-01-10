@@ -143,9 +143,6 @@ struct DllMain
     // Timer to delay checking round over state during rollback
     int roundOverTimer = -1;
 
-    // If we faked the last Skippable state, and should transition to RetryMenu ASAP
-    bool fakedSkippableState = false;
-
 #ifndef RELEASE
     // Local and remote SyncHashes
     list<MsgPtr> localSync, remoteSync;
@@ -645,10 +642,6 @@ struct DllMain
         netMan.updateFrame();
         procMan.clearInputs();
 
-        // If we faked the previous Skippable state, transition to RetryMenu immediately
-        if ( fakedSkippableState && netMan.getState() == NetplayState::Skippable )
-            netplayStateChanged ( NetplayState::RetryMenu );
-
         // Check for changes to important variables for state transitions
         ChangeMonitor::get().check();
 
@@ -682,7 +675,7 @@ struct DllMain
         if ( netMan.getState() == NetplayState::Skippable )
         {
             roundOverTimer = -1;
-            lazyDisconnect = fakedSkippableState = false;
+            lazyDisconnect = false;
         }
 
         // Entering InGame
@@ -713,18 +706,6 @@ struct DllMain
 
             // Reset retry menu index flag
             localRetryMenuIndexSent = false;
-
-            // During rollback, we might miss the intermediate Skippable state, so we have to fake it
-            if ( netMan.getState() == NetplayState::InGame )
-            {
-                roundOverTimer = -1;
-                fakedSkippableState = true;
-                netMan.setState ( NetplayState::Skippable );
-
-                if ( dataSocket && dataSocket->isConnected() )
-                    dataSocket->send ( new TransitionIndex ( netMan.getIndex() ) );
-                return;
-            }
         }
         else if ( lazyDisconnect )
         {
