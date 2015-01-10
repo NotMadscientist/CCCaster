@@ -688,6 +688,8 @@ struct MainApp
 
     void startGame()
     {
+        KeyboardManager::get().unhook();
+
         if ( clientMode.isLocal() )
             options.set ( Options::SessionId, 1, generateRandomId() );
         else if ( clientMode.isSpectate() )

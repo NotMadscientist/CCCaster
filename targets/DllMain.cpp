@@ -41,6 +41,9 @@ using namespace std;
 // The number of milliseconds before resending inputs while waiting for more inputs
 #define RESEND_INPUTS_INTERVAL      ( 100 )
 
+// The maximum number of milliseconds to wait for inputs before timeout
+#define MAX_WAIT_INPUTS_INTERVAL    ( 10000 )
+
 // The maximum number of spectators allowed for ClientMode::Spectate
 #define MAX_SPECTATORS              ( 15 )
 
@@ -101,6 +104,9 @@ struct DllMain
 
     // Timer for resending inputs while waiting
     TimerPtr resendTimer;
+
+    // Timer for waiting for inputs
+    int waitInputsTimer = -1;
 
     // Indicates if we should sync the game RngState on this frame
     bool shouldSyncRngState = false;
@@ -407,6 +413,7 @@ struct DllMain
                 if ( ready )
                 {
                     resendTimer.reset();
+                    waitInputsTimer = -1;
                     break;
                 }
 
@@ -415,6 +422,7 @@ struct DllMain
                 {
                     resendTimer.reset ( new Timer ( this ) );
                     resendTimer->start ( RESEND_INPUTS_INTERVAL );
+                    waitInputsTimer = 0;
                 }
             }
         }
@@ -1390,6 +1398,11 @@ struct DllMain
         {
             dataSocket->send ( netMan.getInputs ( localPlayer ) );
             resendTimer->start ( RESEND_INPUTS_INTERVAL );
+
+            ++waitInputsTimer;
+
+            if ( waitInputsTimer > ( MAX_WAIT_INPUTS_INTERVAL / RESEND_INPUTS_INTERVAL ) )
+                delayedStop ( "Timed out!" );
         }
         else if ( timer == initialTimer.get() )
         {
