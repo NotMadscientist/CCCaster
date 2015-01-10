@@ -117,10 +117,11 @@ static const vector<MemDump> playerAddrs =
     { 0x5552F4, 0x555310 }, // ??? 0x5552F6, 2 bytes: Sion bullets, inverse counter
     { 0x555310, 0x55532C },
 
-    { ( void * ) 0x55532C, 4, {
-        MemDumpPtr ( 0, 0x24, 1 ),
-        MemDumpPtr ( 0, 0x30, 2 )
-    } },
+    { ( void * ) 0x55532C, 4 },
+    // { ( void * ) 0x55532C, 4, {
+    //     MemDumpPtr ( 0, 0x24, 1 ), // segfaulted on this once
+    //     MemDumpPtr ( 0, 0x30, 2 )
+    // } },
 
     { 0x555330, 0x55534C }, // ???
     { 0x55534C, 0x55535C },
