@@ -237,8 +237,10 @@ struct SpectateConfig : public SerializableSequence
     InitialGameState initial;
 
     SpectateConfig ( const NetplayConfig& netplayConfig, uint8_t state )
-        : mode ( netplayConfig.mode ), delay ( netplayConfig.delay ), rollback ( netplayConfig.rollback )
-        , winCount ( netplayConfig.winCount ), hostPlayer ( netplayConfig.hostPlayer ), names ( netplayConfig.names )
+        : mode ( netplayConfig.mode )
+        , delay ( netplayConfig.rollback ? netplayConfig.rollbackDelay : netplayConfig.delay )
+        , rollback ( netplayConfig.rollback ), winCount ( netplayConfig.winCount )
+        , hostPlayer ( netplayConfig.hostPlayer ), names ( netplayConfig.names )
         , sessionId ( netplayConfig.sessionId ), initial ( { 0, 0 }, state, netplayConfig.mode.isTraining() ) {}
 
     std::string formatPlayer ( uint8_t player, CharaNameFunc charaNameFunc ) const

@@ -711,7 +711,7 @@ struct DllMain
             // Lazy disconnect now during netplay
             lazyDisconnect = clientMode.isNetplay();
 
-            // Resent retry menu index flag
+            // Reset retry menu index flag
             localRetryMenuIndexSent = false;
 
             // During rollback, we might miss the intermediate Skippable state, so we have to fake it
