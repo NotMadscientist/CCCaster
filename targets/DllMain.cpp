@@ -13,6 +13,7 @@
 #include "CharacterSelect.h"
 #include "SpectatorManager.h"
 #include "DllControllerManager.h"
+#include "DllFrameRate.h"
 
 #include <windows.h>
 
@@ -552,6 +553,13 @@ struct DllMain
             // TODO set rollback
         }
 
+        const int delta = netMan.getRemoteFrameDelta();
+
+        if ( delta < 0 )
+            DllFrameRate::desiredFps = 61;
+        else
+            DllFrameRate::desiredFps = 60;
+
 #ifndef RELEASE
         // Log the RngState once every 5 seconds after CharaSelect, except in Loading, Skippable, and RetryMenu states.
         // This effectively also logs whenever the frame becomes zero, ie when the index is incremented.
@@ -596,7 +604,7 @@ struct DllMain
             }
         }
 
-        DllOverlayUi::debugText = format ( "%+d [%s]", netMan.getRemoteFrameDelta(), netMan.getIndexedFrame() );
+        DllOverlayUi::debugText = format ( "%+d [%s]", delta, netMan.getIndexedFrame() );
         DllOverlayUi::debugTextAlign = 1;
 #endif
 

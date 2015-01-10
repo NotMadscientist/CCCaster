@@ -40,8 +40,6 @@ void initializePreLoad()
 
     WRITE_ASM_HACK ( detectAutoReplaySave );
     WRITE_ASM_HACK ( hijackEscapeKey );
-
-    DllFrameRate::enable();
 }
 
 // Note: this is called on the SAME thread as the main application thread
@@ -106,6 +104,9 @@ void *windowHandle = 0;
 void initializePostLoad()
 {
     LOG ( "threadId=%08x", GetCurrentThreadId() );
+
+    // Apparently this needs to be applied AFTER the game loads
+    DllFrameRate::enable();
 
     // Apparently this needs to be applied AFTER the game loads
     for ( const Asm& hack : enableDisabledStages )
