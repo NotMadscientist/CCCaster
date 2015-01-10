@@ -20,6 +20,8 @@ using namespace DllOverlayUi;
 
 #define OVERLAY_TEXT_COLOR              D3DCOLOR_XRGB ( 255, 255, 255 )
 
+#define OVERLAY_DEBUG_COLOR             D3DCOLOR_XRGB ( 255, 0, 0 )
+
 #define OVERLAY_TEXT_BORDER             ( 10 )
 
 #define OVERLAY_SELECTOR_L_COLOR        D3DCOLOR_XRGB ( 210, 0, 0 )
@@ -360,7 +362,7 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
 
         DrawText ( debugText, rect, DT_WORDBREAK |
                    ( debugTextAlign == 0 ? DT_CENTER : ( debugTextAlign < 0 ? DT_LEFT : DT_RIGHT ) ),
-                   D3DCOLOR_XRGB ( 255, 255, 255 ) );
+                   OVERLAY_DEBUG_COLOR );
     }
 
     if ( overlayState == Overlay::Disabled )

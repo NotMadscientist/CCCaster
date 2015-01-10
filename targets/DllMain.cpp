@@ -29,8 +29,8 @@ using namespace std;
 // The number of milliseconds to poll for events each frame
 #define POLL_TIMEOUT                ( 3 )
 
-// The number of frames to delay checking round over state during rollback, must be LESS than the outro animation
-#define ROLLBACK_ROUND_OVER_DELAY   ( 30 )
+// The extra number of frames to delay checking round over state during rollback
+#define ROLLBACK_ROUND_OVER_DELAY   ( 5 )
 
 // The number of milliseconds to wait for the initial connect
 #define INITIAL_CONNECT_TIMEOUT     ( 30000 )
@@ -163,11 +163,11 @@ struct DllMain
                     procMan.saveState ( netMan );
 
                     // Delayed round over check
-                    if ( roundOverTimer >= ROLLBACK_ROUND_OVER_DELAY )
+                    if ( roundOverTimer == 0 )
                         checkRoundOver();
 
-                    if ( roundOverTimer >= 0 )
-                        ++roundOverTimer;
+                    if ( roundOverTimer > 0 )
+                        --roundOverTimer;
                 }
 
             case NetplayState::CharaSelect:
@@ -588,7 +588,7 @@ struct DllMain
             }
         }
 
-        DllOverlayUi::debugText = format ( "%+d", netMan.getRemoteFrameDelta() );
+        DllOverlayUi::debugText = format ( "%+d [%s]", netMan.getRemoteFrameDelta(), netMan.getIndexedFrame() );
         DllOverlayUi::debugTextAlign = 1;
 #endif
 
@@ -799,8 +799,7 @@ struct DllMain
     void startRoundOverCountDown()
     {
         ASSERT ( netMan.config.rollback > 0 );
-
-        roundOverTimer = 0;
+        roundOverTimer = netMan.config.rollback + ROLLBACK_ROUND_OVER_DELAY;
     }
 
     void checkRoundOver()
