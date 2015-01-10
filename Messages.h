@@ -292,6 +292,8 @@ struct SyncHash : public SerializableSequence
 
     char hash[16];
 
+    uint32_t roundTimer = 0, realTimer = 0;
+
     struct CharaHash
     {
         uint32_t seq, seqState, health, redHealth, meter, heat;
@@ -312,6 +314,12 @@ struct SyncHash : public SerializableSequence
         if ( memcmp ( hash, other.hash, sizeof ( hash ) ) )
             return false;
 
+        if ( roundTimer != other.roundTimer )
+            return false;
+
+        if ( realTimer != other.realTimer )
+            return false;
+
         if ( memcmp ( &chara[0], &other.chara[0], sizeof ( CharaHash ) ) )
             return false;
 
@@ -325,7 +333,8 @@ struct SyncHash : public SerializableSequence
 
     std::string dump() const
     {
-        std::string str = format ( "[%s] %s", indexedFrame, toBase64 ( hash, sizeof ( hash ) ) );
+        std::string str = format ( "[%s] %s; roundTimer=%u; realTimer=%u",
+                                   indexedFrame, toBase64 ( hash, sizeof ( hash ) ), roundTimer, realTimer );
 
         for ( uint8_t i = 0; i < 2; ++i )
         {
@@ -342,7 +351,7 @@ struct SyncHash : public SerializableSequence
 
     void save ( cereal::BinaryOutputArchive& ar ) const override
     {
-        ar ( indexedFrame.value, hash );
+        ar ( indexedFrame.value, hash, roundTimer, realTimer );
         char buffer [ sizeof ( CharaHash ) ];
         memcpy ( buffer, &chara[0], sizeof ( CharaHash ) );
         ar ( buffer );
@@ -352,7 +361,7 @@ struct SyncHash : public SerializableSequence
 
     void load ( cereal::BinaryInputArchive& ar ) override
     {
-        ar ( indexedFrame.value, hash );
+        ar ( indexedFrame.value, hash, roundTimer, realTimer );
         char buffer [ sizeof ( CharaHash ) ];
         ar ( buffer );
         memcpy ( &chara[0], buffer, sizeof ( CharaHash ) );
