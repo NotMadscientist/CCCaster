@@ -561,47 +561,42 @@ struct DllMain
             DllFrameRate::desiredFps = 60;
 
 #ifndef RELEASE
-        // Log the RngState once every 5 seconds after CharaSelect, except in Loading, Skippable, and RetryMenu states.
-        // This effectively also logs whenever the frame becomes zero, ie when the index is incremented.
-        if ( dataSocket && dataSocket->isConnected() && netMan.getFrame() % ( 5 * 60 ) == 0
+        if ( dataSocket && dataSocket->isConnected()
+                && ( ( netMan.getFrame() % ( 5 * 60 ) == 0 ) || ( netMan.getFrame() % 150 == 149 ) )
                 && netMan.getState().value >= NetplayState::CharaSelect && netMan.getState() != NetplayState::Loading
                 && netMan.getState() != NetplayState::Skippable && netMan.getState() != NetplayState::RetryMenu )
         {
-            MsgPtr msgRngState = procMan.getRngState ( netMan.getIndex() );
-
-            ASSERT ( msgRngState.get() != 0 );
-
-            LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
+            // MsgPtr msgRngState = procMan.getRngState ( netMan.getIndex() );
+            // ASSERT ( msgRngState.get() != 0 );
+            // LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
 
             // Check for desyncs by periodically sending hashes
-            if ( netMan.getFrame() == 0 || !netMan.isInRollback() )
+            if ( !netMan.isInRollback() || ( netMan.getFrame() == 0 ) || ( netMan.getFrame() % 150 == 149 ) )
             {
-                MsgPtr msgSyncHash ( new SyncHash ( netMan.getIndexedFrame(), msgRngState->getAs<RngState>(),
-                                                    *CC_P1_CHARACTER_ADDR, *CC_P1_MOON_SELECTOR_ADDR,
-                                                    *CC_P2_CHARACTER_ADDR, *CC_P2_MOON_SELECTOR_ADDR ) );
-
+                MsgPtr msgSyncHash ( new SyncHash ( netMan.getIndexedFrame() ) );
                 dataSocket->send ( msgSyncHash );
-
                 localSync.push_back ( msgSyncHash );
             }
+        }
 
-            // Compare current lists of sync hashes
-            while ( !localSync.empty() && !remoteSync.empty() )
+        // Compare current lists of sync hashes
+        while ( !localSync.empty() && !remoteSync.empty() )
+        {
+            if ( localSync.front()->getAs<SyncHash>() == remoteSync.front()->getAs<SyncHash>() )
             {
-                if ( localSync.front()->getAs<SyncHash>() == remoteSync.front()->getAs<SyncHash>() )
-                {
-                    localSync.pop_front();
-                    remoteSync.pop_front();
-                    continue;
-                }
-
-                LOG_SYNC ( "Desync: local=[%s]; remote=[%s]",
-                           localSync.front()->getAs<SyncHash>().indexedFrame,
-                           remoteSync.front()->getAs<SyncHash>().indexedFrame );
-
-                delayedStop ( "Desync!" );
-                return;
+                localSync.pop_front();
+                remoteSync.pop_front();
+                continue;
             }
+
+            LOG_TO ( syncLog, "Desync:" );
+            LOG_TO ( syncLog, "< %s", localSync.front()->getAs<SyncHash>().dump() );
+            LOG_TO ( syncLog, "> %s", remoteSync.front()->getAs<SyncHash>().dump() );
+
+            syncLog.deinitialize();
+
+            delayedStop ( "Desync!" );
+            return;
         }
 
         DllOverlayUi::debugText = format ( "%+d [%s]", delta, netMan.getIndexedFrame() );
@@ -757,7 +752,7 @@ struct DllMain
                 || current == CC_GAME_MODE_TITLE
                 || current == CC_GAME_MODE_MAIN
                 || current == CC_GAME_MODE_LOADING_DEMO
-                || ( previous == CC_GAME_MODE_LOADING_DEMO && current == CC_GAME_MODE_INGAME )
+                || ( previous == CC_GAME_MODE_LOADING_DEMO && current == CC_GAME_MODE_IN_GAME )
                 || current == CC_GAME_MODE_HIGH_SCORES )
         {
             ASSERT ( netMan.getState() == NetplayState::PreInitial || netMan.getState() == NetplayState::Initial );
@@ -784,7 +779,7 @@ struct DllMain
             return;
         }
 
-        if ( current == CC_GAME_MODE_INGAME )
+        if ( current == CC_GAME_MODE_IN_GAME )
         {
             // Versus mode in-game starts with character intros, which is a skippable state
             if ( netMan.config.mode.isVersus() )

@@ -288,32 +288,75 @@ struct SyncHash : public SerializableSequence
 {
     IndexedFrame indexedFrame = {{ 0, 0 }};
 
-    char hash[20];
+    char hash[16];
 
-    SyncHash ( IndexedFrame indexedFrame, const RngState& rngState,
-               uint8_t chara1, uint8_t moon1, uint8_t chara2, uint8_t moon2 )
+    struct CharaHash
     {
-        this->indexedFrame = indexedFrame;
+        uint32_t seq, seqState, health, redHealth, meter, heat;
+        float guardBar, guardQuality;
+        int32_t x, y;
+        uint16_t chara, moon; // 16bit for struct alignment
+    };
 
-        getMD5 ( ( char * ) &rngState.rngState0, sizeof ( uint32_t ) * 3 + CC_RNGSTATE3_SIZE, hash );
+    std::array<CharaHash, 2> chara;
 
-        hash[16] = chara1;
-        hash[17] = moon1;
-        hash[18] = chara2;
-        hash[19] = moon2;
-    }
+    SyncHash ( IndexedFrame indexedFrame );
 
     bool operator== ( const SyncHash& other ) const
     {
         if ( indexedFrame.value != other.indexedFrame.value )
             return false;
 
-        return ( memcmp ( hash, other.hash, sizeof ( hash ) ) == 0 );
+        if ( memcmp ( hash, other.hash, sizeof ( hash ) ) )
+            return false;
+
+        if ( memcmp ( &chara[0], &other.chara[0], sizeof ( CharaHash ) ) )
+            return false;
+
+        if ( memcmp ( &chara[1], &other.chara[1], sizeof ( CharaHash ) ) )
+            return false;
+
+        return true;
     }
 
     std::string str() const override { return format ( "SyncHash[%s]", indexedFrame ); }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( SyncHash, indexedFrame.value, hash )
+    std::string dump() const
+    {
+        std::string str = format ( "[%s] %s", indexedFrame, toBase64 ( hash, sizeof ( hash ) ) );
+
+        for ( uint8_t i = 0; i < 2; ++i )
+        {
+            str += format ( "; P%u: C=%u; M=%u seq=%u; st=%u; hp=%u; rh=%u; gb=%.1f; gq=%.1f; mt=%u; ht=%u; x=%d; y=%d",
+                            i + 1, chara[i].chara, chara[i].moon, chara[i].seq, chara[i].seqState, chara[i].health,
+                            chara[i].redHealth, chara[i].guardBar, chara[i].guardQuality, chara[i].meter, chara[i].heat,
+                            chara[i].x, chara[i].y );
+        }
+
+        return str;
+    }
+
+    EMPTY_MESSAGE_BOILERPLATE ( SyncHash )
+
+    void save ( cereal::BinaryOutputArchive& ar ) const override
+    {
+        ar ( indexedFrame.value, hash );
+        char buffer [ sizeof ( CharaHash ) ];
+        memcpy ( buffer, &chara[0], sizeof ( CharaHash ) );
+        ar ( buffer );
+        memcpy ( buffer, &chara[1], sizeof ( CharaHash ) );
+        ar ( buffer );
+    }
+
+    void load ( cereal::BinaryInputArchive& ar ) override
+    {
+        ar ( indexedFrame.value, hash );
+        char buffer [ sizeof ( CharaHash ) ];
+        ar ( buffer );
+        memcpy ( &chara[0], buffer, sizeof ( CharaHash ) );
+        ar ( buffer );
+        memcpy ( &chara[1], buffer, sizeof ( CharaHash ) );
+    }
 };
 
 

@@ -92,7 +92,7 @@
 #define CC_GAME_MODE_MAIN           ( 25 )
 #define CC_GAME_MODE_CHARA_SELECT   ( 20 )
 #define CC_GAME_MODE_LOADING        ( 8 )
-#define CC_GAME_MODE_INGAME         ( 1 )
+#define CC_GAME_MODE_IN_GAME        ( 1 )
 #define CC_GAME_MODE_RETRY          ( 5 )
 
 // Character select data, can be assigned to directly at the character select screen
@@ -216,7 +216,7 @@ inline const char *gameModeStr ( uint32_t gameMode )
         case CC_GAME_MODE_LOADING:
             return "Loading";
 
-        case CC_GAME_MODE_INGAME:
+        case CC_GAME_MODE_IN_GAME:
             return "In-game";
 
         case CC_GAME_MODE_RETRY:
