@@ -124,6 +124,8 @@
 #define CC_SELECT_MOON              ( 1 )
 #define CC_SELECT_COLOR             ( 2 )
 
+// Total size of a single player structure.
+// Note: there are FOUR player structs in memory, due to the puppet characters.
 #define CC_PLR_STRUCT_SIZE          ( 0xAFC )
 
 // Player addresses
