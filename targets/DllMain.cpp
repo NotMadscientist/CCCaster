@@ -532,6 +532,12 @@ struct DllMain
         if ( !DllOverlayUi::isShowingMessage() )
             DllOverlayUi::disable();
 
+        // Leaving Initial or AutoCharaSelect
+        if ( netMan.getState() == NetplayState::Initial || netMan.getState() == NetplayState::AutoCharaSelect )
+        {
+            SetForegroundWindow ( ( HWND ) DllHacks::windowHandle );
+        }
+
         // Entering InGame
         if ( state == NetplayState::InGame )
         {
@@ -750,8 +756,6 @@ struct DllMain
         netplayStateChanged ( NetplayState::Initial );
 
         initialTimer.reset();
-
-        SetForegroundWindow ( ( HWND ) DllHacks::windowHandle );
     }
 
     void disconnectEvent ( Socket *socket ) override
