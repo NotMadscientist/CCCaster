@@ -76,6 +76,10 @@ using namespace std;
 #define CC_CAMERA_SCALE_2_ADDR      ( ( float * )    0x54EB74 ) // zoom
 #define CC_CAMERA_SCALE_3_ADDR      ( ( float * )    0x54EB78 )
 
+#define CC_INPUT_STATE_ADDR         ( ( uint8_t * )  0x562A6F ) // TODO figure out what the values mean
+#define CC_DEATH_TIMER_INIT_ADDR    ( ( uint16_t * ) 0x562A6C ) // Initializes the KO slowdown timer
+#define CC_DEATH_TIMER_ADDR         ( ( uint16_t * ) 0x55D208 ) // KO slowdown timer
+
 
 static const vector<MemDump> playerAddrs =
 {
@@ -166,6 +170,7 @@ static const vector<MemDump> miscAddrs =
     CC_ROUND_TIMER_ADDR,
     CC_REAL_TIMER_ADDR,
     CC_WORLD_TIMER_ADDR,
+    CC_DEATH_TIMER_INIT_ADDR,
     CC_DEATH_TIMER_ADDR,
     CC_INTRO_STATE_ADDR,
     CC_INPUT_STATE_ADDR,
