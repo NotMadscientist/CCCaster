@@ -645,6 +645,8 @@ struct DllMain
 
     void frameStepRerun()
     {
+        // We don't save any states while re-running because the inputs are faked
+
         // Stop fast-forwarding once we're reached the frame we want
         if ( netMan.getIndexedFrame().value >= fastFwdStopFrame.value )
             fastFwdStopFrame.value = 0;

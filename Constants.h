@@ -8,6 +8,7 @@
 
 // Number of frames of inputs to send per message
 #define NUM_INPUTS                  ( 30 )
+#define MAX_ROLLBACK                ( 9 )
 
 
 // Game constants and addresses are prefixed CC

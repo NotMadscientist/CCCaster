@@ -1058,7 +1058,7 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
 
     ui->top<ConsoleUi::Prompt>()->allowNegative = false;
     ui->top<ConsoleUi::Prompt>()->maxDigits = 3;
-    ui->top<ConsoleUi::Prompt>()->setInitial ( clamped ( delay + delay2sd, 0, NUM_INPUTS / 2 ) );
+    ui->top<ConsoleUi::Prompt>()->setInitial ( clamped ( delay + delay2sd, 0, MAX_ROLLBACK ) );
 
     for ( ;; )
     {
@@ -1070,7 +1070,7 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
 
         if ( menu->resultInt > NUM_INPUTS / 2 )
         {
-            ui->pushRight ( new ConsoleUi::TextBox ( format ( ERROR_INVALID_ROLLBACK, 1 + NUM_INPUTS / 2 ) ) );
+            ui->pushRight ( new ConsoleUi::TextBox ( format ( ERROR_INVALID_ROLLBACK, 1 + MAX_ROLLBACK ) ) );
             continue;
         }
 
