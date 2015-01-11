@@ -69,17 +69,8 @@ using namespace std;
 #define CC_SUPER_FLASH_PAUSE_ADDR   ( ( uint32_t * ) 0x5595B4 )
 #define CC_SUPER_FLASH_TIMER_ADDR   ( ( uint32_t * ) 0x562A48 )
 
-#define CC_P1_SUPER_TIMER1_ADDR     ( ( uint64_t * ) 0x558684 ) // L then R timer
-#define CC_P1_SUPER_TIMER2_ADDR     ( ( uint64_t * ) 0x558784 ) // L then R timer
-#define CC_P1_SUPER_TIMER3_ADDR     ( ( uint64_t * ) 0x558884 ) // L then R timer
-#define CC_P1_SUPER_TIMER4_ADDR     ( ( uint32_t * ) 0x558908 )
-#define CC_P1_SUPER_TIMER5_ADDR     ( ( uint32_t * ) 0x558910 )
-
-#define CC_P2_SUPER_TIMER1_ADDR     ( ( uint64_t * ) 0x558990 ) // L then R timer
-#define CC_P2_SUPER_TIMER2_ADDR     ( ( uint64_t * ) 0x558A90 ) // L then R timer
-#define CC_P2_SUPER_TIMER3_ADDR     ( ( uint64_t * ) 0x558B90 ) // L then R timer
-#define CC_P2_SUPER_TIMER4_ADDR     ( ( uint32_t * ) 0x558C14 )
-#define CC_P2_SUPER_TIMER5_ADDR     ( ( uint32_t * ) 0x558C1C )
+#define CC_SUPER_STATE_ARRAY_ADDR   ( ( char * )     0x558608 )
+#define CC_SUPER_STATE_ARRAY_SIZE   ( 5 * 0x30C )
 
 #define CC_CAMERA_SCALE_1_ADDR      ( ( float * )    0x54EB70 ) // zoom
 #define CC_CAMERA_SCALE_2_ADDR      ( ( float * )    0x54EB74 ) // zoom
@@ -88,6 +79,7 @@ using namespace std;
 
 static const vector<MemDump> playerAddrs =
 {
+    { 0x555130, 0x555140 }, // ??? 0x555130 1 byte: some timer flag
     { 0x555140, 0x555160 },
     { 0x555160, 0x555180 }, // ???
     { 0x555180, 0x555188 },
@@ -162,7 +154,7 @@ static const vector<MemDump> playerAddrs =
     { 0x555A22, 0x555B24 }, // input history (E button)
 
     { 0x555B24, 0x555B2C },
-    { 0x555B2C, 0x555C30 }, // ???
+    { 0x555B2C, 0x555C2C }, // ???
 };
 
 static const vector<MemDump> miscAddrs =
@@ -187,18 +179,9 @@ static const vector<MemDump> miscAddrs =
     CC_SUPER_FLASH_PAUSE_ADDR,
     CC_SUPER_FLASH_TIMER_ADDR,
 
-    // Player state
-    CC_P1_SUPER_TIMER1_ADDR,
-    CC_P1_SUPER_TIMER2_ADDR,
-    CC_P1_SUPER_TIMER3_ADDR,
-    CC_P1_SUPER_TIMER4_ADDR,
-    CC_P1_SUPER_TIMER5_ADDR,
-    CC_P2_SUPER_TIMER1_ADDR,
-    CC_P2_SUPER_TIMER2_ADDR,
-    CC_P2_SUPER_TIMER3_ADDR,
-    CC_P2_SUPER_TIMER4_ADDR,
-    CC_P2_SUPER_TIMER5_ADDR,
+    { CC_SUPER_STATE_ARRAY_ADDR, CC_SUPER_STATE_ARRAY_SIZE },
 
+    // Player state
     { CC_P1_EXTRA_STRUCT_ADDR, CC_EXTRA_STRUCT_SIZE },
     { CC_P2_EXTRA_STRUCT_ADDR, CC_EXTRA_STRUCT_SIZE },
 
