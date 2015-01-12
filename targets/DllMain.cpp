@@ -146,6 +146,12 @@ struct DllMain
 #ifndef RELEASE
     // Local and remote SyncHashes
     list<MsgPtr> localSync, remoteSync;
+
+    // Random testing flags
+    bool randomInputs = false;
+    bool randomDelay = false;
+    bool randomRollback = false;
+    const uint32_t rollUpTo = 10;
 #endif
 
 
@@ -237,8 +243,6 @@ struct DllMain
 
 #ifndef RELEASE
                     // Test random delay setting
-                    static bool randomDelay = false;
-
                     if ( KeyboardState::isPressed ( VK_F11 ) )
                     {
                         randomDelay = !randomDelay;
@@ -273,8 +277,6 @@ struct DllMain
 
 #ifndef RELEASE
                 // Test random input
-                static bool randomInputs = false;
-
                 if ( KeyboardState::isPressed ( VK_F12 ) )
                 {
                     randomInputs = !randomInputs;
@@ -440,9 +442,6 @@ struct DllMain
         }
 
         // Test random rollback
-        static bool randomRollback = false;
-        static const uint32_t rollUpTo = 10;
-
         if ( KeyboardState::isPressed ( VK_F10 ) )
         {
             randomRollback = !randomRollback;
@@ -611,7 +610,10 @@ struct DllMain
 
             syncLog.deinitialize();
 
-            delayedStop ( "Desync!" );
+            // delayedStop ( "Desync!" );
+
+            randomInputs = false;
+            localInputs [ clientMode.isLocal() ? 1 : 0 ] = 0;
             return;
         }
 
