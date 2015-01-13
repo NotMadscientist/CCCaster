@@ -1189,6 +1189,8 @@ struct DllMain
                 syncLog.sessionId = options.arg ( Options::SessionId );
                 syncLog.initialize ( options.arg ( Options::AppDir ) + SYNC_LOG_FILE, 0 );
                 syncLog.logVersion();
+
+                randomInputs = options[Options::SyncTest];
                 break;
 
             case MsgType::ControllerMappings:

@@ -246,6 +246,12 @@ int main ( int argc, char *argv[] )
             "                     -SS means commit ID must match.\n"
             "                     -SSS means build time must match.\n"
         },
+
+        {
+            Options::SyncTest, 0, "Y", "synctest", Arg::None,
+            "  --synctest, -Y     Test synchronization.\n"
+            "                     TODO rollback/delay arguments.\n"
+        },
 #else
         { Options::Tunnel, 0, "", "tunnel", Arg::None, 0 },
         { Options::Dummy, 0, "", "dummy", Arg::None, 0 },

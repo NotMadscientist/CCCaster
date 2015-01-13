@@ -496,12 +496,30 @@ struct MainApp
         // Disable keyboard hooks for the UI
         KeyboardManager::get().unhook();
 
-        // The dummy auto-confirms any settings
-        if ( options[Options::Dummy] )
+        // Auto-confirm any settings if necessary
+        if ( options[Options::Dummy] || options[Options::SyncTest] )
         {
             isWaitingForUser = true;
             userConfirmed = true;
-            gotUserConfirmation();
+
+            if ( clientMode.isHost() )
+            {
+                // TODO parse these from SyncTest arg
+                netplayConfig.delay = 0;
+                netplayConfig.rollback = 9;
+                netplayConfig.rollbackDelay = 0;
+                netplayConfig.hostPlayer = 1;
+                netplayConfig.sessionId = generateRandomId();
+                netplayConfig.invalidate();
+
+                ctrlSocket->send ( netplayConfig );
+
+                gotConfirmConfig();
+            }
+            else
+            {
+                gotUserConfirmation();
+            }
             return;
         }
 

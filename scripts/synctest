@@ -1,0 +1,20 @@
+#!/bin/sh
+
+INTERVAL=1
+COUNT=1
+
+# trap ctrl-c and call ctrl_c()
+trap ctrl_c INT
+
+function ctrl_c() {
+    killall MBAA.exe
+    exit 0
+}
+
+while :
+do
+    scripts/debug $@
+    cp -rv cccaster /d/desyncs/desync_$COUNT
+    COUNT=$((COUNT+1))
+    sleep $INTERVAL
+done
