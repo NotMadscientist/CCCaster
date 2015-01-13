@@ -608,8 +608,7 @@ struct DllMain
 #undef L
 #undef R
 
-            syncLog.deinitialize();
-
+            // syncLog.deinitialize();
             // delayedStop ( "Desync!" );
 
             randomInputs = false;
