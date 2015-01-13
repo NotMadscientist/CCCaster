@@ -1068,7 +1068,7 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
         if ( menu->resultInt < 0 )
             break;
 
-        if ( menu->resultInt > NUM_INPUTS / 2 )
+        if ( menu->resultInt > MAX_ROLLBACK )
         {
             ui->pushRight ( new ConsoleUi::TextBox ( format ( ERROR_INVALID_ROLLBACK, 1 + MAX_ROLLBACK ) ) );
             continue;
