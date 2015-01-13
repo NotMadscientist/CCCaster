@@ -125,16 +125,16 @@ static const vector<MemDump> playerAddrs =
     ( uint32_t * ) 0x55542C, // ???
     { 0x555430, 0x55544C },
 
-    { ( void * ) 0x55544C, 4 }, // graphics pointer? this is accessed all the time even when paused
+    // { ( void * ) 0x55544C, 4 }, // graphics pointer? this is accessed all the time even when paused
     { ( void * ) 0x555450, 4 }, // graphics pointer? this is accessed all the time even when paused
-    { ( void * ) 0x555454, 4 }, // graphics pointer? this is accessed all the time even when paused
+    // { ( void * ) 0x555454, 4 }, // graphics pointer? this is accessed all the time even when paused
 
     { ( void * ) 0x555458, 4 }, // pointer to player struct?
 
     { 0x55545C, 0x555460 },
 
     // graphics pointer(s)? these are accessed all the time even when paused
-    { ( void * ) 0x555460, 4 },
+    // { ( void * ) 0x555460, 4 },
     // { ( void * ) 0x555460, 4, {
     //     MemDumpPtr ( 0, 0x0, 4, {
     //         MemDumpPtr ( 0, 0x4, 4, {
@@ -145,7 +145,7 @@ static const vector<MemDump> playerAddrs =
 
     { 0x555464, 0x55546C },
 
-    { ( void * ) 0x55546C, 4 }, // graphics pointer? this is accessed all the time even when paused
+    // { ( void * ) 0x55546C, 4 }, // graphics pointer? this is accessed all the time even when paused
 
     { 0x555470, 0x55550C },
     ( uint32_t * ) 0x55550C, // ???
