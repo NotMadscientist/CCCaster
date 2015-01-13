@@ -562,10 +562,6 @@ struct DllMain
                 && netMan.getState().value >= NetplayState::CharaSelect && netMan.getState() != NetplayState::Loading
                 && netMan.getState() != NetplayState::Skippable && netMan.getState() != NetplayState::RetryMenu )
         {
-            // MsgPtr msgRngState = procMan.getRngState ( netMan.getIndex() );
-            // ASSERT ( msgRngState.get() != 0 );
-            // LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
-
             // Check for desyncs by periodically sending hashes
             if ( !netMan.isInRollback() || ( netMan.getFrame() == 0 ) || ( netMan.getFrame() % 150 == 149 ) )
             {
@@ -608,8 +604,8 @@ struct DllMain
 #undef L
 #undef R
 
-            // syncLog.deinitialize();
-            // delayedStop ( "Desync!" );
+            syncLog.deinitialize();
+            delayedStop ( "Desync!" );
 
             randomInputs = false;
             localInputs [ clientMode.isLocal() ? 1 : 0 ] = 0;
@@ -623,9 +619,15 @@ struct DllMain
         // Cleared last played sound effects
         memset ( AsmHacks::sfxFilterArray, 0, CC_SFX_ARRAY_LEN );
 
-        // Log input state every frame
-        LOG_SYNC ( "Inputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
+#ifndef DISABLE_LOGGING
+        MsgPtr msgRngState = procMan.getRngState ( 0 );
+        ASSERT ( msgRngState.get() != 0 );
 
+        // Log input and RNG state every frame
+        LOG_SYNC ( "Inputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
+        LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
+
+        // Log extra state during chara select
         if ( netMan.getState() == NetplayState::CharaSelect )
         {
             LOG_SYNC ( "P1: sel=%u; C=%u; M=%u; P2: sel=%u; C=%u M=%u",
@@ -634,14 +636,16 @@ struct DllMain
             return;
         }
 
-        if ( netMan.getState() != NetplayState::InGame )
-            return;
-
         // Log extra state while in-game
-        LOG_SYNC_CHARACTER ( 1 );
-        LOG_SYNC_CHARACTER ( 2 );
-        LOG_SYNC ( "roundOverTimer=%d; CC_INTRO_STATE=%u; CC_ROUND_TIMER=%u; CC_REAL_TIMER=%u",
-                   roundOverTimer, *CC_INTRO_STATE_ADDR, *CC_ROUND_TIMER_ADDR, *CC_REAL_TIMER_ADDR );
+        if ( netMan.getState() == NetplayState::InGame )
+        {
+            LOG_SYNC_CHARACTER ( 1 );
+            LOG_SYNC_CHARACTER ( 2 );
+            LOG_SYNC ( "roundOverTimer=%d; CC_INTRO_STATE=%u; CC_ROUND_TIMER=%u; CC_REAL_TIMER=%u",
+                       roundOverTimer, *CC_INTRO_STATE_ADDR, *CC_ROUND_TIMER_ADDR, *CC_REAL_TIMER_ADDR );
+            return;
+        }
+#endif
     }
 
     void frameStepRerun()
