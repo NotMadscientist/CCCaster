@@ -13,7 +13,7 @@ ENUM ( Options,
        // Regular options
        Help, GameDir, Tunnel, Training, Broadcast, Spectate, Offline, NoUi, Tourney, MaxDelay,
        // Debug options
-       Tests, Stdout, FakeUi, Dummy, StrictVersion, PidLog, SyncTest,
+       Tests, Stdout, FakeUi, Dummy, StrictVersion, PidLog, SyncTest, Replay,
        // Special options
        NoFork, AppDir, SessionId );
 

@@ -620,10 +620,15 @@ void NetplayManager::setInput ( uint8_t player, uint16_t input )
 
 void NetplayManager::assignInput ( uint8_t player, uint16_t input, uint32_t frame )
 {
-    ASSERT ( player == 1 || player == 2 );
-    ASSERT ( getIndex() >= startIndex );
+    assignInput ( player, input, { getIndex(), frame } );
+}
 
-    inputs[player - 1].assign ( getIndex() - startIndex, frame, input );
+void NetplayManager::assignInput ( uint8_t player, uint16_t input, IndexedFrame indexedFrame )
+{
+    ASSERT ( player == 1 || player == 2 );
+    ASSERT ( indexedFrame.parts.index >= startIndex );
+
+    inputs[player - 1].assign ( indexedFrame.parts.index - startIndex, indexedFrame.parts.frame, input );
 }
 
 MsgPtr NetplayManager::getInputs ( uint8_t player ) const

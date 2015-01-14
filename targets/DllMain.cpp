@@ -14,6 +14,7 @@
 #include "SpectatorManager.h"
 #include "DllControllerManager.h"
 #include "DllFrameRate.h"
+#include "ReplayManager.h"
 
 #include <windows.h>
 
@@ -147,13 +148,16 @@ struct DllMain
     // Local and remote SyncHashes
     list<MsgPtr> localSync, remoteSync;
 
-    // Random testing flags
+    // Debug testing flags
     bool randomInputs = false;
     bool randomDelay = false;
     bool randomRollback = false;
-    const uint32_t rollUpTo = 10;
-#endif
+    uint32_t rollUpTo = 10;
+    bool replayInputs = false;
 
+    // ReplayManager instance
+    ReplayManager repMan;
+#endif
 
     void frameStepNormal()
     {
@@ -309,6 +313,69 @@ struct DllMain
 
                         localInputs [ clientMode.isLocal() ? 1 : 0 ] = COMBINE_INPUT ( direction, buttons );
                     }
+                }
+
+                // Replay inputs and rollback
+                if ( replayInputs )
+                {
+                    ASSERT ( repMan.getGameMode ( netMan.getIndexedFrame() ) == *CC_GAME_MODE_ADDR );
+                    ASSERT ( repMan.getStateStr ( netMan.getIndexedFrame() ) == netMan.getState().str() );
+
+                    // Inputs
+                    const auto& inputs = repMan.getInputs ( netMan.getIndexedFrame() );
+                    netMan.setInput ( 1, inputs.p1 );
+                    netMan.setInput ( 2, inputs.p2 );
+
+                    const IndexedFrame target = repMan.getRollbackTarget ( netMan.getIndexedFrame() );
+
+                    // Rollback
+                    if ( netMan.isInRollback() && target.value < netMan.getIndexedFrame().value )
+                    {
+                        // Reinputs
+                        const auto& reinputs = repMan.getReinputs ( netMan.getIndexedFrame() );
+                        for ( const auto& inputs : reinputs )
+                        {
+                            netMan.assignInput ( 1, inputs.p1, inputs.indexedFrame );
+                            netMan.assignInput ( 2, inputs.p2, inputs.indexedFrame );
+                        }
+
+                        const string before = format ( "%s [%u] %s [%s]",
+                                                       gameModeStr ( *CC_GAME_MODE_ADDR ), *CC_GAME_MODE_ADDR,
+                                                       netMan.getState(), netMan.getIndexedFrame() );
+
+                        // Indicate we're re-running to the current frame
+                        fastFwdStopFrame = netMan.getIndexedFrame();
+
+                        // Reset the game state (this resets game state AND netMan state)
+                        if ( procMan.loadState ( target, netMan ) )
+                        {
+                            // Start fast-forwarding now
+                            *CC_SKIP_FRAMES_ADDR = 1;
+
+                            LOG_TO ( syncLog, "%s Rollback: target=[%s]; actual=[%s]",
+                                     before, target, netMan.getIndexedFrame() );
+
+                            LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
+                            return;
+                        }
+
+                        LOG_TO ( syncLog, "%s Rollback to target=[%s] failed!", before, target );
+
+                        ASSERT_IMPOSSIBLE;
+                    }
+
+                    // RngState
+                    if ( netMan.getFrame() == 0 && ( netMan.getState() == NetplayState::CharaSelect
+                                                     || netMan.getState() == NetplayState::InGame ) )
+                    {
+                        MsgPtr msgRngState = repMan.getRngState ( netMan.getIndexedFrame() );
+
+                        ASSERT ( msgRngState.get() != 0 );
+
+                        procMan.setRngState ( msgRngState->getAs<RngState>() );
+                    }
+
+                    break;
                 }
 #endif
 
@@ -1190,7 +1257,15 @@ struct DllMain
                 syncLog.initialize ( options.arg ( Options::AppDir ) + SYNC_LOG_FILE, 0 );
                 syncLog.logVersion();
 
-                randomInputs = options[Options::SyncTest];
+                if ( options[Options::Replay] )
+                {
+                    replayInputs = true;
+                    repMan.load ( options.arg ( Options::Replay ) );
+                }
+                else
+                {
+                    randomInputs = options[Options::SyncTest];
+                }
                 break;
 
             case MsgType::ControllerMappings:

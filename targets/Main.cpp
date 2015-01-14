@@ -232,25 +232,26 @@ int main ( int argc, char *argv[] )
 
 #ifndef RELEASE
         { Options::Unknown,   0,  "",       "", Arg::None,        "Debug options:" },
-        { Options::Tests,     0,  "",  "tests", Arg::None,        "  --tests            Run unit tests and exit." },
-        { Options::Stdout,    0,  "", "stdout", Arg::None,        "  --stdout,          Output logs to stdout"},
-        { Options::Tunnel,    0, "T", "tunnel", Arg::None,        "  --tunnel, -T       Force UDP tunnel" },
-        { Options::Dummy,     0, "D",  "dummy", Arg::None,        "  --dummy, -D        Client mode with fake inputs" },
-        { Options::PidLog,    0, "P", "pidlog", Arg::None,        "  --pidlog, -P       Tag log files with the PID" },
-        { Options::FakeUi,    0, "F",   "fake", Arg::None,        "  --fake, -F         Fake UI mode\n" },
+        { Options::Tests,     0,  "",  "tests", Arg::None,        "  --tests              Run unit tests and exit" },
+        { Options::Stdout,    0,  "", "stdout", Arg::None,        "  --stdout,            Output logs to stdout"},
+        { Options::Tunnel,    0, "T", "tunnel", Arg::None,        "  --tunnel, -T         Force UDP tunnel" },
+        { Options::Dummy,     0, "D",  "dummy", Arg::None,        "  --dummy, -D          Dummy with fake inputs" },
+        { Options::PidLog,    0, "P", "pidlog", Arg::None,        "  --pidlog, -P         Tag log files with the PID" },
+        { Options::FakeUi,    0, "F",   "fake", Arg::None,        "  --fake, -F           Fake UI mode" },
+        { Options::Replay,    0, "R", "replay", Arg::Required,    "  --replay, -R file    Replay the given file\n" },
 
         {
             Options::StrictVersion, 0, "S", "strict", Arg::None,
-            "  --strict, -S       Strict version match, can be stacked up to 3 times.\n"
-            "                     -S means version suffix must match.\n"
-            "                     -SS means commit ID must match.\n"
-            "                     -SSS means build time must match.\n"
+            "  --strict, -S         Strict version match, can be stacked up to 3 times.\n"
+            "                       -S means version suffix must match.\n"
+            "                       -SS means commit ID must match.\n"
+            "                       -SSS means build time must match.\n"
         },
 
         {
             Options::SyncTest, 0, "Y", "synctest", Arg::None,
-            "  --synctest, -Y     Test synchronization.\n"
-            "                     TODO rollback/delay arguments.\n"
+            "  --synctest, -Y       Test synchronization.\n"
+            "                       TODO rollback/delay arguments.\n"
         },
 #else
         { Options::Tunnel, 0, "", "tunnel", Arg::None, 0 },
@@ -268,8 +269,8 @@ int main ( int argc, char *argv[] )
             "  " BINARY " 12.34.56.78 12345     Connect to 12.34.56.78 on port 12345\n"
             "  " BINARY " 12.34.56.78:12345     Connect to 12.34.56.78 on port 12345\n"
             "  " BINARY " -b 12345              Broadcast on port 12345\n"
-            "  " BINARY " -ot                   Offline training mode.\n"
-            "  " BINARY " -o 4 -t               Offline training mode with 4 delay.\n"
+            "  " BINARY " -ot                   Offline training mode\n"
+            "  " BINARY " -o 4 -t               Offline training mode with 4 delay\n"
         },
 
         { 0, 0, 0, 0, 0, 0 }
