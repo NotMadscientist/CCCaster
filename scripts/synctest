@@ -2,6 +2,7 @@
 
 INTERVAL=1
 COUNT=1
+FOLDER="/d/desyncs"
 
 # trap ctrl-c and call ctrl_c()
 trap ctrl_c INT
@@ -13,8 +14,30 @@ function ctrl_c() {
 
 while :
 do
+    if [ -d "$FOLDER/desync_`printf %03d $COUNT`" ]; then
+        COUNT=$((COUNT+1))
+    else
+        break
+    fi
+done
+
+while :
+do
+
     scripts/debug $@
-    cp -rv cccaster /d/desyncs/desync_$COUNT
-    COUNT=$((COUNT+1))
+
+    tail -n5 cccaster/sync.log | grep --quiet Desync
+
+    if (( $? == 0 )); then
+
+        echo "$FOLDER/desync_`printf %03d $COUNT`"
+
+        cp -rv cccaster /d/desyncs/desync_`printf %03d $COUNT`
+
+        COUNT=$((COUNT+1))
+
+    fi
+
     sleep $INTERVAL
+
 done
