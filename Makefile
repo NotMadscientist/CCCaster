@@ -226,10 +226,7 @@ clean-logging: clean-common
 clean-release: clean-common
 	rm -rf build_release_$(BRANCH)
 
-clean: clean-common
-	rm -rf build_$(DEFAULT_TARGET)_$(BRANCH)
-
-clean-all: clean-debug clean-logging clean-release
+clean: clean-debug clean-logging clean-release
 
 
 check:
