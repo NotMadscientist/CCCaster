@@ -794,7 +794,7 @@ struct DllMain
         if ( state == NetplayState::InGame )
         {
             if ( netMan.config.rollback )
-                procMan.allocateStates ( options.arg ( Options::AppDir ) );
+                procMan.allocateStates();
         }
 
         // Leaving InGame

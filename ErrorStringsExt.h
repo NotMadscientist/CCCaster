@@ -16,3 +16,5 @@
 #define ERROR_INVALID_DELAY         "Delay must be less than 255!"
 
 #define ERROR_INVALID_ROLLBACK      "Rollback must be less than %u!"
+
+#define ERROR_BAD_ROLLBACK_DATA     "Rollback data is corrupted!\nTry reinstalling?"

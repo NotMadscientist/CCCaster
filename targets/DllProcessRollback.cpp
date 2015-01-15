@@ -1,6 +1,7 @@
 #include "ProcessManager.h"
 #include "MemDump.h"
 #include "AsmHacks.h"
+#include "ErrorStringsExt.h"
 
 #include <utility>
 #include <algorithm>
@@ -10,7 +11,12 @@ using namespace std;
 
 #define NUM_ROLLBACK_STATES ( 256 )
 
+// Linked rollback memory data (binary format)
+extern const unsigned char binary_res_rollback_bin_start;
+extern const unsigned char binary_res_rollback_bin_end;
+extern const unsigned char binary_res_rollback_bin_size;
 
+// Parsed rollback memory data
 static MemDumpList allAddrs;
 
 template<typename T>
@@ -45,10 +51,13 @@ void ProcessManager::GameState::load()
     ASSERT ( dump == rawBytes + allAddrs.totalSize );
 }
 
-void ProcessManager::allocateStates ( const string& appDir )
+void ProcessManager::allocateStates()
 {
     if ( allAddrs.empty() )
-        allAddrs.load ( appDir + ROLLBACK_DATA );
+        allAddrs.load ( ( char * ) &binary_res_rollback_bin_start, ( size_t ) &binary_res_rollback_bin_size );
+
+    if ( allAddrs.empty() )
+        THROW_EXCEPTION ( "Failed to load rollback data!", ERROR_BAD_ROLLBACK_DATA );
 
     memoryPool.reset ( new char[NUM_ROLLBACK_STATES * allAddrs.totalSize], deleteArray<char> );
 

@@ -155,7 +155,7 @@ public:
     void setRngState ( const RngState& rngState );
 
     // Allocate / deallocate memory for saving game states
-    void allocateStates ( const std::string& appDir );
+    void allocateStates();
     void deallocateStates();
 
     // Save / load current game state

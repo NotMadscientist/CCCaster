@@ -17,3 +17,4 @@ tmp*
 build*
 gmon.out
 profile*.txt
+rollback.*

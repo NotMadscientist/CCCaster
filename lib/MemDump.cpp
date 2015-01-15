@@ -194,7 +194,7 @@ bool MemDumpList::save ( const string& filename ) const
     }
     catch ( ... )
     {
-        // TODO LOG OR THROW
+        // TODO log or throw something?
         return false;
     }
 
@@ -236,37 +236,45 @@ bool MemDumpList::load ( const string& filename )
 
     if ( !good )
     {
-        // TODO LOG OR THROW
+        // TODO log or throw something?
+        clear();
         return false;
     }
 
-    if ( data.size() <= 16 )
+    return load ( &data[0], data.size() );
+}
+
+bool MemDumpList::load ( const char *data, size_t size )
+{
+    if ( size <= 16 )
     {
-        // TODO LOG OR THROW
+        // TODO log or throw something?
+        clear();
         return false;
     }
 
     // Check MD5
     char md5[16];
-    copy ( data.begin() + ( data.size() - 16 ), data.end(), md5 );
-    data.resize ( data.size() - 16 );
+    copy ( data + size - 16, data + size, md5 );
 
-    if ( ! checkMD5 ( data, md5 ) )
+    if ( ! checkMD5 ( data, size - 16, md5 ) )
     {
-        // TODO LOG OR THROW
+        // TODO log or throw something?
+        clear();
         return false;
     }
 
     // Try to deserialize this class
     try
     {
-        istringstream ss ( data, ostringstream::binary );
+        istringstream ss ( string ( data, size ), ostringstream::binary );
         BinaryInputArchive archive ( ss );
         load ( archive );
     }
     catch ( ... )
     {
-        // TODO LOG OR THROW
+        // TODO log or throw something?
+        clear();
         return false;
     }
 

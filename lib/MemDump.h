@@ -164,8 +164,18 @@ struct MemDumpList
     // List of memory dumps
     std::vector<MemDump> addrs;
 
+    // Clear all addresses
+    void clear()
+    {
+        totalSize = 0;
+        addrs.clear();
+    }
+
     // True only if addrs.empty()
-    bool empty() { return addrs.empty(); }
+    bool empty() const
+    {
+        return addrs.empty();
+    }
 
     // Append a single memory dump
     void append ( const MemDump& mem )
@@ -193,7 +203,7 @@ struct MemDumpList
             append ( addr, addAddrOffset );
     }
 
-    // Update the list of memory dumps: merge continuous address ranges, and compute total size
+    // Update the list of memory dumps: merge continuous address ranges, then compute total size
     void update();
 
     // Serialization
@@ -201,4 +211,5 @@ struct MemDumpList
     void load ( cereal::BinaryInputArchive& ar );
     bool save ( const std::string& filename ) const;
     bool load ( const std::string& filename );
+    bool load ( const char *data, size_t size );
 };
