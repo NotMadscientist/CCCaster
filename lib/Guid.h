@@ -52,5 +52,5 @@ inline bool operator!= ( const Guid& a, const Guid& b ) { return ! ( a == b ); }
 // Stream operators
 inline std::ostream& operator<< ( std::ostream& os, const Guid& a )
 {
-    return ( os << toBase64 ( a.guid, sizeof ( a.guid ) ) );
+    return ( os << formatAsHex ( a.guid, sizeof ( a.guid ) ) );
 }

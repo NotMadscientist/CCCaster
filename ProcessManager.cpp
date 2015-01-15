@@ -70,9 +70,12 @@ MsgPtr ProcessManager::getRngState ( uint32_t index ) const
 
 void ProcessManager::setRngState ( const RngState& rngState )
 {
+    LOG ( "rngState=%s", rngState.dump() );
+
     *CC_RNGSTATE0_ADDR = rngState.rngState0;
     *CC_RNGSTATE1_ADDR = rngState.rngState1;
     *CC_RNGSTATE2_ADDR = rngState.rngState2;
+
     copy ( rngState.rngState3.begin(), rngState.rngState3.end(), CC_RNGSTATE3_ADDR );
 }
 

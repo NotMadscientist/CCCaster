@@ -142,7 +142,7 @@ public:
 
     bool empty ( size_t index ) const
     {
-        if ( index + 1 > inputs.size() )
+        if ( index >= inputs.size() )
             return true;
 
         return inputs[index].empty();
@@ -163,7 +163,7 @@ public:
 
     uint32_t getEndFrame ( size_t index ) const
     {
-        if ( index + 1 > inputs.size() )
+        if ( index >= inputs.size() )
             return 0;
 
         return inputs[index].size();

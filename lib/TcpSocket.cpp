@@ -131,7 +131,7 @@ bool TcpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
     LOG ( "Encoded '%s' to [ %u bytes ]", msg, buffer.size() );
 
     if ( !buffer.empty() && buffer.size() <= 256 )
-        LOG ( "Base64 : %s", toBase64 ( buffer ) );
+        LOG ( "Hex: %s", formatAsHex ( buffer ) );
 
     return Socket::send ( &buffer[0], buffer.size() );
 }
