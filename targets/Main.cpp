@@ -237,9 +237,7 @@ int main ( int argc, char *argv[] )
         { Options::Tunnel,    0, "T", "tunnel", Arg::None,        "  --tunnel, -T         Force UDP tunnel" },
         { Options::Dummy,     0, "D",  "dummy", Arg::None,        "  --dummy, -D          Dummy with fake inputs" },
         { Options::PidLog,    0, "P", "pidlog", Arg::None,        "  --pidlog, -P         Tag log files with the PID" },
-        { Options::FakeUi,    0, "F",   "fake", Arg::None,        "  --fake, -F           Fake UI mode" },
-        { Options::Replay,    0, "R", "replay", Arg::Required,    "  --replay, -R file    Replay the given file" },
-        { Options::Real,      0, "L",   "real", Arg::None,        "  --real, -L           TODO explain\n" },
+        { Options::FakeUi,    0, "F",   "fake", Arg::None,        "  --fake, -F           Fake UI mode\n" },
 
         {
             Options::StrictVersion, 0, "S", "strict", Arg::None,
@@ -253,6 +251,12 @@ int main ( int argc, char *argv[] )
             Options::SyncTest, 0, "Y", "synctest", Arg::None,
             "  --synctest, -Y       Test synchronization.\n"
             "                       TODO rollback/delay arguments.\n"
+        },
+
+        {
+            Options::Replay, 0, "R", "replay", Arg::Required,
+            "  --replay, -R args    Replay the given file with options.\n"
+            "                       TODO list possible arguments.\n"
         },
 #else
         { Options::Tunnel, 0, "", "tunnel", Arg::None, 0 },

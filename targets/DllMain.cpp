@@ -63,6 +63,7 @@ using namespace std;
              gameModeStr ( *CC_GAME_MODE_ADDR ), *CC_GAME_MODE_ADDR,                                                \
              netMan.getState(), netMan.getIndexedFrame(), ## __VA_ARGS__ )
 
+// TODO add ; after M=%u and log colour just in case
 #define LOG_SYNC_CHARACTER(N)                                                                                       \
     LOG_SYNC ( "P%u: C=%u; M=%u seq=%u; st=%u; hp=%u; rh=%u; gb=%.1f; gq=%.1f; mt=%u; ht=%u; x=%d; y=%d",           \
                N, *CC_P ## N ## _CHARACTER_ADDR, *CC_P ## N ## _MOON_SELECTOR_ADDR, *CC_P ## N ## _SEQUENCE_ADDR,   \
@@ -154,6 +155,7 @@ struct DllMain
     bool randomRollback = false;
     uint32_t rollUpTo = 10;
     bool replayInputs = false;
+    uint32_t replayStartIndex = 0;
 
     // ReplayManager instance
     ReplayManager repMan;
@@ -699,6 +701,7 @@ struct DllMain
         MsgPtr msgRngState = procMan.getRngState ( 0 );
         ASSERT ( msgRngState.get() != 0 );
 
+        // TODO swap these two log statements
         // Log state every frame
         LOG_SYNC ( "Inputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
         LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
@@ -706,6 +709,7 @@ struct DllMain
         // Log extra state during chara select
         if ( netMan.getState() == NetplayState::CharaSelect )
         {
+            // TODO add ; after second C=%u and log colour just in case
             LOG_SYNC ( "P1: sel=%u; C=%u; M=%u; P2: sel=%u; C=%u M=%u",
                        *CC_P1_SELECTOR_MODE_ADDR, *CC_P1_CHARACTER_ADDR, *CC_P1_MOON_SELECTOR_ADDR,
                        *CC_P2_SELECTOR_MODE_ADDR, *CC_P2_CHARACTER_ADDR, *CC_P2_MOON_SELECTOR_ADDR );
@@ -848,7 +852,12 @@ struct DllMain
             return;
         }
 
-        if ( netMan.getState() == NetplayState::Initial && netMan.config.mode.isSpectate()
+        if ( netMan.getState() == NetplayState::Initial
+#ifdef RELEASE
+                && netMan.config.mode.isSpectate()
+#else
+                && ( netMan.config.mode.isSpectate() || replayInputs )
+#endif
                 && netMan.initial.netplayState > NetplayState::CharaSelect )
         {
             // Spectate mode needs to auto select characters if starting after CharaSelect
@@ -1266,17 +1275,33 @@ struct DllMain
                 syncLog.initialize ( options.arg ( Options::AppDir ) + SYNC_LOG_FILE, 0 );
                 syncLog.logVersion();
 
+#ifndef RELEASE
                 if ( options[Options::Replay] )
                 {
-                    replayInputs = true;
-                    const string replayFile = options.arg ( Options::AppDir ) + options.arg ( Options::Replay );
-                    const bool good = repMan.load ( replayFile, options[Options::Real] );
+                    const vector<string> args = split ( options.arg ( Options::Replay ) );
+
+                    ASSERT ( args.empty() == false );
+
+                    const string replayFile = options.arg ( Options::AppDir ) + args[0];
+                    const bool real = find ( args.begin(), args.end(), "real" ) != args.end();
+
+                    auto it = find ( args.begin(), args.end(), "start" );
+                    if ( it != args.end() )
+                        ++it;
+                    if ( it != args.end() )
+                        replayStartIndex = lexical_cast<int> ( *it );
+
+                    const bool good = repMan.load ( replayFile, real );
+
                     ASSERT ( good == true );
+
+                    replayInputs = true;
                 }
                 else
                 {
                     randomInputs = options[Options::SyncTest];
                 }
+#endif
                 break;
 
             case MsgType::ControllerMappings:

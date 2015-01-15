@@ -15,9 +15,6 @@
 // Convert a boolean value to a type
 template<bool> struct bool2type {};
 
-// Split a format string into first parameter and rest of string
-void splitFormat ( const std::string& fmt, std::string& first, std::string& rest );
-
 // Format bytes as a hex string
 std::string formatAsHex ( const std::string& bytes );
 std::string formatAsHex ( const void *bytes, size_t len );
@@ -33,7 +30,7 @@ inline std::string lowerCase ( std::string str ) { for ( char& c : str ) c = std
 inline std::string upperCase ( std::string str ) { for ( char& c : str ) c = std::toupper ( c ); return str; }
 
 
-// String formatting functions
+// Format a single printable value
 template<typename T>
 inline std::string format ( const T& val )
 {
@@ -42,6 +39,7 @@ inline std::string format ( const T& val )
     return ss.str();
 }
 
+// Format a string, correctly escaping any % characters
 template<>
 inline std::string format<std::string> ( const std::string& val )
 {
@@ -53,18 +51,24 @@ inline std::string format<std::string> ( const std::string& val )
     return val.substr ( 0, i ) + "%" + format ( val.substr ( i + 2 ) );
 }
 
+// For non-integer types
 template<typename T>
-void printToString ( char *buffer, size_t len, const char *fmt, const T& val, bool2type<false> ) // non-integer types
+inline void printToString ( char *buffer, size_t len, const char *fmt, const T& val, bool2type<false> )
 {
     std::snprintf ( buffer, len, fmt, format ( val ).c_str() );
 }
 
+// For integer types
 template<typename T>
-void printToString ( char *buffer, size_t len, const char *fmt, const T& val, bool2type<true> ) // integer types
+inline void printToString ( char *buffer, size_t len, const char *fmt, const T& val, bool2type<true> )
 {
     std::snprintf ( buffer, len, fmt, val );
 }
 
+// Split a format string into first parameter and rest of string
+void splitFormat ( const std::string& fmt, std::string& first, std::string& rest );
+
+// Format a string with arguments
 template<typename T, typename ... V>
 inline std::string format ( const std::string& fmt, const T& val, V ... vals )
 {
@@ -84,3 +88,13 @@ inline std::string format ( const std::string& fmt, const T& val, V ... vals )
     return buffer + format ( rest, vals... );
 }
 
+
+// Lexical cast
+template <typename T>
+inline T lexical_cast ( const std::string& str )
+{
+    T val;
+    std::stringstream ss ( str );
+    ss >> val;
+    return val;
+}

@@ -1,9 +1,10 @@
 #!/bin/sh
 
-REGEX='^[^ ]+ \[([0-9]+)\] NetplayState::([A-Za-z]+) \[([0-9]+):([0-9]+)\] ([A-Za-z]+): (.+)$'
+REGEX='^[^ ]+ \[([0-9]+)\] NetplayState::([A-Za-z]+) \[([0-9]+):([0-9]+)\] ([A-Za-z0-9]+): (.+)$'
 
 cat $1 \
   | sed --quiet '/CharaSelect/,$p' \
-  | grep 'Inputs\|Rollback\|Reinputs\|:0] RngState' \
+  | grep 'Inputs\|Rollback\|Reinputs\|:0] RngState\|:0] P1\|:0] P2' \
   | sed --regexp-extended "s/$REGEX/\1 \2 \3 \4 \5 \6/" \
-  | sed --regexp-extended 's/target=\[([0-9]+):([0-9]+)\]; actual=\[[0-9]+:[0-9]+\]/\1 \2/'
+  | sed --regexp-extended 's/target=\[([0-9]+):([0-9]+)\]; actual=\[[0-9]+:[0-9]+\]/\1 \2/' \
+  | sed --regexp-extended 's/(P[12]) C=([0-9]+); M=([0-9]+).+$/\1 \2 \3/'

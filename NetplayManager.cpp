@@ -102,6 +102,7 @@ uint16_t NetplayManager::getSkippableInput ( uint8_t player )
 
 uint16_t NetplayManager::getInGameInput ( uint8_t player )
 {
+    // TODO disable this and check if it is still an issue
     // Workaround for round start desync, since inputs have effects during a small period after round start.
     if ( getFrame() < 10 )
         return 0;
@@ -775,7 +776,6 @@ bool NetplayManager::isRemoteInputReady() const
 
     ASSERT ( inputs[remotePlayer - 1].getEndFrame() >= 1 );
 
-    // TODO make sure this makes sense, and also limit to max saved frame
     const uint8_t maxFramesAhead = ( isInRollback() ? config.rollback : 0 );
 
     if ( ( inputs[remotePlayer - 1].getEndFrame() - 1 + maxFramesAhead ) < getFrame() )

@@ -31,6 +31,8 @@ private:
 
     std::vector<std::vector<std::vector<Inputs>>> reinputs;
 
+    std::vector<MsgPtr> initialStates;
+
 public:
 
     bool load ( const std::string& replayFile, bool real );

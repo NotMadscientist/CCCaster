@@ -131,6 +131,20 @@ bool ReplayManager::load ( const string& replayFile, bool real )
 
                 reinputs.back().back().push_back ( i );
             }
+            else if ( tag == "P1" )
+            {
+                if ( gameMode != CC_GAME_MODE_IN_GAME )
+                    continue;
+
+                // TODO parse initial game state
+            }
+            else if ( tag == "P2" )
+            {
+                if ( gameMode != CC_GAME_MODE_IN_GAME )
+                    continue;
+
+                // TODO parse initial game state
+            }
             else
             {
                 THROW_EXCEPTION ( "Unhandled tag: '%s'", "Invalid replay file!", tag );
