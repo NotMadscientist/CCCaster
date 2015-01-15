@@ -621,7 +621,7 @@ void NetplayManager::setInput ( uint8_t player, uint16_t input )
 
 void NetplayManager::assignInput ( uint8_t player, uint16_t input, uint32_t frame )
 {
-    assignInput ( player, input, { getIndex(), frame } );
+    assignInput ( player, input, { frame, getIndex() } );
 }
 
 void NetplayManager::assignInput ( uint8_t player, uint16_t input, IndexedFrame indexedFrame )
