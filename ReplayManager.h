@@ -9,26 +9,43 @@
 
 class ReplayManager
 {
-
 public:
 
-    struct Input
+    struct Inputs
     {
         IndexedFrame indexedFrame;
         uint16_t p1, p2;
     };
 
-    void load ( const std::string& replayFile );
+private:
+
+    std::vector<uint32_t> modes;
+
+    std::vector<std::string> states;
+
+    std::vector<std::vector<Inputs>> inputs;
+
+    std::vector<MsgPtr> rngStates;
+
+    std::vector<std::vector<IndexedFrame>> rollbacks;
+
+    std::vector<std::vector<std::vector<Inputs>>> reinputs;
+
+public:
+
+    bool load ( const std::string& replayFile );
 
     uint32_t getGameMode ( IndexedFrame indexedFrame );
 
-    std::string getStateStr ( IndexedFrame indexedFrame );
+    const std::string& getStateStr ( IndexedFrame indexedFrame );
 
-    const Input& getInputs ( IndexedFrame indexedFrame );
+    const Inputs& getInputs ( IndexedFrame indexedFrame );
 
     IndexedFrame getRollbackTarget ( IndexedFrame indexedFrame );
 
-    const std::vector<Input>& getReinputs ( IndexedFrame indexedFrame );
+    const std::vector<Inputs>& getReinputs ( IndexedFrame indexedFrame );
 
     MsgPtr getRngState ( IndexedFrame indexedFrame );
+
+    uint32_t getLastIndex() const;
 };

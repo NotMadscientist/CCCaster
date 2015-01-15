@@ -13,7 +13,7 @@ using namespace DllFrameRate;
 namespace DllFrameRate
 {
 
-uint8_t desiredFps = 60;
+double desiredFps = 60.0;
 
 double actualFps = 60.0;
 

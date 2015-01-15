@@ -280,41 +280,6 @@ struct DllMain
                 }
 
 #ifndef RELEASE
-                // Test random input
-                if ( KeyboardState::isPressed ( VK_F12 ) )
-                {
-                    randomInputs = !randomInputs;
-                    localInputs [ clientMode.isLocal() ? 1 : 0 ] = 0;
-                    DllOverlayUi::showMessage ( randomInputs ? "Enabled random inputs" : "Disabled random inputs" );
-                }
-
-                if ( randomInputs )
-                {
-                    bool shouldRandomize = ( netMan.getFrame() % 2 );
-                    if ( netMan.isInRollback() )
-                        shouldRandomize = ( netMan.getFrame() % 150 < 50 );
-
-                    if ( shouldRandomize )
-                    {
-                        uint16_t direction = ( rand() % 10 );
-
-                        // Reduce the chances of moving the cursor at retry menu
-                        if ( netMan.getState() == NetplayState::RetryMenu && ( rand() % 2 ) )
-                            direction = 0;
-
-                        uint16_t buttons = ( rand() % 0x1000 );
-
-                        // Prevent hitting some non-essential buttons
-                        buttons &= ~ ( CC_BUTTON_FN1 | CC_BUTTON_FN2 | CC_BUTTON_START );
-
-                        // Prevent going back at character select
-                        if ( netMan.getState() == NetplayState::CharaSelect )
-                            buttons &= ~ ( CC_BUTTON_B | CC_BUTTON_CANCEL );
-
-                        localInputs [ clientMode.isLocal() ? 1 : 0 ] = COMBINE_INPUT ( direction, buttons );
-                    }
-                }
-
                 // Replay inputs and rollback
                 if ( replayInputs )
                 {
@@ -376,6 +341,41 @@ struct DllMain
                     }
 
                     break;
+                }
+
+                // Test random input
+                if ( KeyboardState::isPressed ( VK_F12 ) )
+                {
+                    randomInputs = !randomInputs;
+                    localInputs [ clientMode.isLocal() ? 1 : 0 ] = 0;
+                    DllOverlayUi::showMessage ( randomInputs ? "Enabled random inputs" : "Disabled random inputs" );
+                }
+
+                if ( randomInputs )
+                {
+                    bool shouldRandomize = ( netMan.getFrame() % 2 );
+                    if ( netMan.isInRollback() )
+                        shouldRandomize = ( netMan.getFrame() % 150 < 50 );
+
+                    if ( shouldRandomize )
+                    {
+                        uint16_t direction = ( rand() % 10 );
+
+                        // Reduce the chances of moving the cursor at retry menu
+                        if ( netMan.getState() == NetplayState::RetryMenu && ( rand() % 2 ) )
+                            direction = 0;
+
+                        uint16_t buttons = ( rand() % 0x1000 );
+
+                        // Prevent hitting some non-essential buttons
+                        buttons &= ~ ( CC_BUTTON_FN1 | CC_BUTTON_FN2 | CC_BUTTON_START );
+
+                        // Prevent going back at character select
+                        if ( netMan.getState() == NetplayState::CharaSelect )
+                            buttons &= ~ ( CC_BUTTON_B | CC_BUTTON_CANCEL );
+
+                        localInputs [ clientMode.isLocal() ? 1 : 0 ] = COMBINE_INPUT ( direction, buttons );
+                    }
                 }
 #endif
 
@@ -495,58 +495,61 @@ struct DllMain
         }
 
 #ifndef RELEASE
-        // Test one time rollback
-        if ( KeyboardState::isPressed ( VK_F9 ) && netMan.isInGame() )
+        if ( !replayInputs )
         {
-            IndexedFrame target = netMan.getIndexedFrame();
-
-            if ( target.parts.frame <= 30 )
-                target.parts.frame = 0;
-            else
-                target.parts.frame -= 30;
-
-            procMan.loadState ( target, netMan );
-        }
-
-        // Test random rollback
-        if ( KeyboardState::isPressed ( VK_F10 ) )
-        {
-            randomRollback = !randomRollback;
-            DllOverlayUi::showMessage ( randomRollback ? "Enabled random rollback" : "Disabled random rollback" );
-        }
-
-        if ( randomRollback && netMan.isInGame() && ( netMan.getFrame() % 150 < 50 ) )
-        {
-            const uint32_t distance = 1 + ( rand() % rollUpTo );
-
-            IndexedFrame target = netMan.getIndexedFrame();
-
-            if ( target.parts.frame <= distance )
-                target.parts.frame = 0;
-            else
-                target.parts.frame -= distance;
-
-            const string before = format ( "%s [%u] %s [%s]",
-                                           gameModeStr ( *CC_GAME_MODE_ADDR ), *CC_GAME_MODE_ADDR,
-                                           netMan.getState(), netMan.getIndexedFrame() );
-
-            // Indicate we're re-running to the current frame
-            fastFwdStopFrame = netMan.getIndexedFrame();
-
-            // Reset the game state (this resets game state AND netMan state)
-            if ( procMan.loadState ( target, netMan ) )
+            // Test one time rollback
+            if ( KeyboardState::isPressed ( VK_F9 ) && netMan.isInGame() )
             {
-                // Start fast-forwarding now
-                *CC_SKIP_FRAMES_ADDR = 1;
+                IndexedFrame target = netMan.getIndexedFrame();
 
-                LOG_TO ( syncLog, "%s Rollback: target=[%s]; actual=[%s]",
-                         before, target, netMan.getIndexedFrame() );
+                if ( target.parts.frame <= 30 )
+                    target.parts.frame = 0;
+                else
+                    target.parts.frame -= 30;
 
-                LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
-                return;
+                procMan.loadState ( target, netMan );
             }
 
-            LOG_TO ( syncLog, "%s Rollback to target=[%s] failed!", before, target );
+            // Test random rollback
+            if ( KeyboardState::isPressed ( VK_F10 ) )
+            {
+                randomRollback = !randomRollback;
+                DllOverlayUi::showMessage ( randomRollback ? "Enabled random rollback" : "Disabled random rollback" );
+            }
+
+            if ( randomRollback && netMan.isInGame() && ( netMan.getFrame() % 150 < 50 ) )
+            {
+                const uint32_t distance = 1 + ( rand() % rollUpTo );
+
+                IndexedFrame target = netMan.getIndexedFrame();
+
+                if ( target.parts.frame <= distance )
+                    target.parts.frame = 0;
+                else
+                    target.parts.frame -= distance;
+
+                const string before = format ( "%s [%u] %s [%s]",
+                                               gameModeStr ( *CC_GAME_MODE_ADDR ), *CC_GAME_MODE_ADDR,
+                                               netMan.getState(), netMan.getIndexedFrame() );
+
+                // Indicate we're re-running to the current frame
+                fastFwdStopFrame = netMan.getIndexedFrame();
+
+                // Reset the game state (this resets game state AND netMan state)
+                if ( procMan.loadState ( target, netMan ) )
+                {
+                    // Start fast-forwarding now
+                    *CC_SKIP_FRAMES_ADDR = 1;
+
+                    LOG_TO ( syncLog, "%s Rollback: target=[%s]; actual=[%s]",
+                             before, target, netMan.getIndexedFrame() );
+
+                    LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
+                    return;
+                }
+
+                LOG_TO ( syncLog, "%s Rollback to target=[%s] failed!", before, target );
+            }
         }
 #endif
 
@@ -681,6 +684,9 @@ struct DllMain
 
         DllOverlayUi::debugText = format ( "%+d [%s]", delta, netMan.getIndexedFrame() );
         DllOverlayUi::debugTextAlign = 1;
+
+        if ( !KeyboardState::isDown ( VK_SPACE ) && replayInputs && netMan.getIndex() <= repMan.getLastIndex() )
+            DllFrameRate::desiredFps = numeric_limits<double>::max();
 #endif
 
         // Cleared last played sound effects
@@ -690,7 +696,7 @@ struct DllMain
         MsgPtr msgRngState = procMan.getRngState ( 0 );
         ASSERT ( msgRngState.get() != 0 );
 
-        // Log input and RNG state every frame
+        // Log state every frame
         LOG_SYNC ( "Inputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
         LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
 
@@ -1260,7 +1266,9 @@ struct DllMain
                 if ( options[Options::Replay] )
                 {
                     replayInputs = true;
-                    repMan.load ( options.arg ( Options::Replay ) );
+                    const string replayFile = options.arg ( Options::AppDir ) + options.arg ( Options::Replay );
+                    const bool good = repMan.load ( replayFile );
+                    ASSERT ( good == true );
                 }
                 else
                 {

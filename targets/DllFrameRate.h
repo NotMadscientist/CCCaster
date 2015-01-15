@@ -6,7 +6,7 @@
 namespace DllFrameRate
 {
 
-extern uint8_t desiredFps;
+extern double desiredFps;
 
 extern double actualFps;
 
