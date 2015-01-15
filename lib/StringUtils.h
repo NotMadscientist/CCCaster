@@ -18,9 +18,9 @@ template<bool> struct bool2type {};
 // Split a format string into first parameter and rest of string
 void splitFormat ( const std::string& fmt, std::string& first, std::string& rest );
 
-// Format bytes as a base 64 string
-std::string toBase64 ( const std::string& bytes );
-std::string toBase64 ( const void *bytes, size_t len );
+// Format bytes as a hex string
+std::string formatAsHex ( const std::string& bytes );
+std::string formatAsHex ( const void *bytes, size_t len );
 
 // String trim
 std::string trimmed ( std::string str, const std::string& ws = " \t\r\n" );

@@ -95,8 +95,8 @@ string Protocol::encode ( const MsgPtr& msg )
 #ifdef LOG_PROTOCOL
         LOG ( "%s", msg->getMsgType() );
         if ( ss.str().size() <= 256 )
-            LOG ( "data=[ %s ]", toBase64 ( ss.str() ) );
-        LOG ( "md5=[ %s ]", toBase64 ( msg->md5, sizeof ( msg->md5 ) ) );
+            LOG ( "data=[ %s ]", formatAsHex ( ss.str() ) );
+        LOG ( "md5=[ %s ]", formatAsHex ( msg->md5, sizeof ( msg->md5 ) ) );
 #endif
     }
 #endif
@@ -136,7 +136,7 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
 
 #ifdef LOG_PROTOCOL
     if ( data.size() <= 256 )
-        LOG ( "decodeStageTwo: data=[ %s ]", toBase64 ( data ) );
+        LOG ( "decodeStageTwo: data=[ %s ]", formatAsHex ( data ) );
 #endif
 
     istringstream ss ( data, stringstream::binary );
@@ -210,11 +210,11 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
     {
 #ifdef LOG_PROTOCOL
         LOG ( "MD5 checksum failed for %s", type );
-        LOG ( "data=[ %s ]", toBase64 ( &data[0], dataSize - sizeof ( msg->md5 ) ) );
-        LOG ( "md5     =[ %s ]", toBase64 ( msg->md5, sizeof ( msg->md5 ) ) );
+        LOG ( "data=[ %s ]", formatAsHex ( &data[0], dataSize - sizeof ( msg->md5 ) ) );
+        LOG ( "md5     =[ %s ]", formatAsHex ( msg->md5, sizeof ( msg->md5 ) ) );
         char md5[sizeof ( msg->md5 )];
         getMD5 ( &data[0], dataSize - sizeof ( msg->md5 ), md5 );
-        LOG ( "expected=[ %s ]", toBase64 ( md5, sizeof ( msg->md5 ) ) );
+        LOG ( "expected=[ %s ]", formatAsHex ( md5, sizeof ( msg->md5 ) ) );
 #endif
         return NullMsg;
     }

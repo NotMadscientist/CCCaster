@@ -282,10 +282,10 @@ struct RngState : public SerializableSequence
     std::string dump() const
     {
         return format ( "index=%u; { ", index )
-               + toBase64 ( &rngState0, sizeof ( rngState0 ) ) + " "
-               + toBase64 ( &rngState1, sizeof ( rngState1 ) ) + " "
-               + toBase64 ( &rngState2, sizeof ( rngState2 ) ) + " "
-               + toBase64 ( &rngState3[0], rngState3.size() ) + " }";
+               + formatAsHex ( &rngState0, sizeof ( rngState0 ) ) + " "
+               + formatAsHex ( &rngState1, sizeof ( rngState1 ) ) + " "
+               + formatAsHex ( &rngState2, sizeof ( rngState2 ) ) + " "
+               + formatAsHex ( &rngState3[0], rngState3.size() ) + " }";
     }
 
     PROTOCOL_MESSAGE_BOILERPLATE ( RngState, index, rngState0, rngState1, rngState2, rngState3 );

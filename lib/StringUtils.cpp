@@ -38,7 +38,7 @@ void splitFormat ( const string& fmt, string& first, string& rest )
     rest = ( i < fmt.size() ? fmt.substr ( i ) : "" );
 }
 
-string toBase64 ( const string& bytes )
+string formatAsHex ( const string& bytes )
 {
     if ( bytes.empty() )
         return "";
@@ -50,7 +50,7 @@ string toBase64 ( const string& bytes )
     return str.substr ( 0, str.size() - 1 );
 }
 
-string toBase64 ( const void *bytes, size_t len )
+string formatAsHex ( const void *bytes, size_t len )
 {
     if ( len == 0 )
         return "";

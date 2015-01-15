@@ -67,7 +67,7 @@ void processInstruction ( uint8_t buffer[64], const _CodeInfo& ci, const _DInst&
 
     LOG ( "%08X: %s:\t%s%s%s",
           ( uint32_t ) context.Eip,
-          toBase64 ( &buffer[decodedInst.offset], decodedInst.size ),
+          formatAsHex ( &buffer[decodedInst.offset], decodedInst.size ),
           lowerCase ( ( char * ) decodedInst.mnemonic.p ),
           ( decodedInst.operands.length != 0 ? " " : "" ),
           lowerCase ( ( char * ) decodedInst.operands.p ) );

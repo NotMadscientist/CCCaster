@@ -331,7 +331,7 @@ void SmartSocket::readEvent ( Socket *socket, const char *buffer, size_t len, co
     LOG ( "Read [ %u bytes ] from '%s'; %u bytes remaining in buffer", len, address, vpsSocket->readPos );
 
     if ( len > 0 && len <= 256 )
-        LOG ( "Base64 : %s", toBase64 ( buffer, len ) );
+        LOG ( "Hex: %s", formatAsHex ( buffer, len ) );
 
     uint32_t id;
     TunInfo tun;

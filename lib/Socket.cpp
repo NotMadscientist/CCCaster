@@ -439,7 +439,7 @@ void Socket::readEvent()
     }
 
     if ( bufferLen <= 256 )
-        LOG ( "Base64 : %s", toBase64 ( bufferStart, bufferLen ) );
+        LOG ( "Hex: %s", formatAsHex ( bufferStart, bufferLen ) );
 
     // Check if the first byte is a valid message type
     if ( readPos >= sizeof ( MsgType ) && ! ::Protocol::checkMsgType ( * ( MsgType * ) &readBuffer[0] ) )
