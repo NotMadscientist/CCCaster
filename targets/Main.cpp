@@ -238,7 +238,8 @@ int main ( int argc, char *argv[] )
         { Options::Dummy,     0, "D",  "dummy", Arg::None,        "  --dummy, -D          Dummy with fake inputs" },
         { Options::PidLog,    0, "P", "pidlog", Arg::None,        "  --pidlog, -P         Tag log files with the PID" },
         { Options::FakeUi,    0, "F",   "fake", Arg::None,        "  --fake, -F           Fake UI mode" },
-        { Options::Replay,    0, "R", "replay", Arg::Required,    "  --replay, -R file    Replay the given file\n" },
+        { Options::Replay,    0, "R", "replay", Arg::Required,    "  --replay, -R file    Replay the given file" },
+        { Options::Real,      0, "L",   "real", Arg::None,        "  --real, -L           TODO explain\n" },
 
         {
             Options::StrictVersion, 0, "S", "strict", Arg::None,

@@ -33,7 +33,7 @@ private:
 
 public:
 
-    bool load ( const std::string& replayFile );
+    bool load ( const std::string& replayFile, bool real );
 
     uint32_t getGameMode ( IndexedFrame indexedFrame );
 

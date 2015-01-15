@@ -10,7 +10,7 @@
 using namespace std;
 
 
-bool ReplayManager::load ( const string& replayFile )
+bool ReplayManager::load ( const string& replayFile, bool real )
 {
     ifstream fin ( replayFile.c_str() );
     bool good = fin.good();
@@ -49,7 +49,7 @@ bool ReplayManager::load ( const string& replayFile )
 
             ASSERT ( states[index] == "NetplayState::" + netplayState );
 
-            if ( tag == "Inputs" )
+            if ( tag == "Inputs" || ( real && tag == "Reinputs" ) )
             {
                 if ( index >= inputs.size() )
                     inputs.resize ( index + 1 );
@@ -93,6 +93,9 @@ bool ReplayManager::load ( const string& replayFile )
             }
             else if ( tag == "Rollback" )
             {
+                if ( real )
+                    continue;
+
                 if ( index >= rollbacks.size() )
                     rollbacks.resize ( index + 1 );
 
@@ -108,6 +111,9 @@ bool ReplayManager::load ( const string& replayFile )
             }
             else if ( tag == "Reinputs" )
             {
+                if ( real )
+                    continue;
+
                 if ( rollbacks.size() > reinputs.size() )
                     reinputs.resize ( rollbacks.size() );
 

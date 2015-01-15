@@ -1267,7 +1267,7 @@ struct DllMain
                 {
                     replayInputs = true;
                     const string replayFile = options.arg ( Options::AppDir ) + options.arg ( Options::Replay );
-                    const bool good = repMan.load ( replayFile );
+                    const bool good = repMan.load ( replayFile, options[Options::Real] );
                     ASSERT ( good == true );
                 }
                 else
