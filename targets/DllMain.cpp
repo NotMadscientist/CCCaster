@@ -687,6 +687,9 @@ struct DllMain
 
         if ( !KeyboardState::isDown ( VK_SPACE ) && replayInputs && netMan.getIndex() <= repMan.getLastIndex() )
             DllFrameRate::desiredFps = numeric_limits<double>::max();
+
+        if ( netMan.getIndex() == repMan.getLastIndex() && netMan.getFrame() == repMan.getLastFrame() )
+            replayInputs = false;
 #endif
 
         // Cleared last played sound effects

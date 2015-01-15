@@ -48,4 +48,6 @@ public:
     MsgPtr getRngState ( IndexedFrame indexedFrame );
 
     uint32_t getLastIndex() const;
+
+    uint32_t getLastFrame() const;
 };

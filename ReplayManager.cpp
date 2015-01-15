@@ -209,3 +209,14 @@ uint32_t ReplayManager::getLastIndex() const
 
     return inputs.size() - 1;
 }
+
+uint32_t ReplayManager::getLastFrame() const
+{
+    if ( inputs.empty() )
+        return 0;
+
+    if ( inputs.back().empty() )
+        return 0;
+
+    return inputs.back().size() - 1;
+}
