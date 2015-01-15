@@ -329,7 +329,7 @@ MsgPtr NetplayManager::getRetryMenuIndex ( uint32_t index ) const
 
     ASSERT ( index >= startIndex );
 
-    if ( index + 1 > startIndex + retryMenuIndicies.size() )
+    if ( index >= startIndex + retryMenuIndicies.size() )
         return 0;
 
     if ( retryMenuIndicies[index - startIndex] < 0 )
@@ -347,7 +347,7 @@ void NetplayManager::setRetryMenuIndex ( uint32_t index, int8_t menuIndex )
 
     ASSERT ( index >= startIndex );
 
-    if ( index + 1 > startIndex + retryMenuIndicies.size() )
+    if ( index >= startIndex + retryMenuIndicies.size() )
         retryMenuIndicies.resize ( index + 1 - startIndex, -1 );
 
     retryMenuIndicies[index - startIndex] = menuIndex;
@@ -784,7 +784,7 @@ MsgPtr NetplayManager::getRngState ( uint32_t index ) const
 
     ASSERT ( index >= startIndex );
 
-    if ( index + 1 > startIndex + rngStates.size() )
+    if ( index >= startIndex + rngStates.size() )
         return 0;
 
     return rngStates[index - startIndex];
@@ -799,7 +799,7 @@ void NetplayManager::setRngState ( const RngState& rngState )
 
     ASSERT ( rngState.index >= startIndex );
 
-    if ( rngState.index + 1 > startIndex + rngStates.size() )
+    if ( rngState.index >= startIndex + rngStates.size() )
         rngStates.resize ( rngState.index + 1 - startIndex );
 
     rngStates[rngState.index - startIndex].reset ( new RngState ( rngState ) );
