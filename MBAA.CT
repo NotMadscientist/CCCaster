@@ -71,29 +71,36 @@
       <Description>"rand0"</Description>
       <ShowAsHex>1</ShowAsHex>
       <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
+      <VariableType>Array of byte</VariableType>
+      <ByteLength>4</ByteLength>
       <Address>00563778</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>6</ID>
       <Description>"rand1"</Description>
+      <ShowAsHex>1</ShowAsHex>
       <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
+      <VariableType>Array of byte</VariableType>
+      <ByteLength>4</ByteLength>
       <Address>0056377C</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>5</ID>
       <Description>"rand2"</Description>
+      <ShowAsHex>1</ShowAsHex>
       <ShowAsSigned>0</ShowAsSigned>
       <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
+      <VariableType>Array of byte</VariableType>
+      <ByteLength>4</ByteLength>
       <Address>00564068</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>7</ID>
       <Description>"rand3"</Description>
+      <ShowAsHex>1</ShowAsHex>
       <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
+      <VariableType>Array of byte</VariableType>
+      <ByteLength>224</ByteLength>
       <Address>0056406C</Address>
     </CheatEntry>
     <CheatEntry>

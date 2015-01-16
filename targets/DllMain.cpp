@@ -63,13 +63,13 @@ using namespace std;
              gameModeStr ( *CC_GAME_MODE_ADDR ), *CC_GAME_MODE_ADDR,                                                \
              netMan.getState(), netMan.getIndexedFrame(), ## __VA_ARGS__ )
 
-// TODO add ; after M=%u and log colour just in case
 #define LOG_SYNC_CHARACTER(N)                                                                                       \
-    LOG_SYNC ( "P%u: C=%u; M=%u seq=%u; st=%u; hp=%u; rh=%u; gb=%.1f; gq=%.1f; mt=%u; ht=%u; x=%d; y=%d",           \
-               N, *CC_P ## N ## _CHARACTER_ADDR, *CC_P ## N ## _MOON_SELECTOR_ADDR, *CC_P ## N ## _SEQUENCE_ADDR,   \
-               *CC_P ## N ## _SEQ_STATE_ADDR, *CC_P ## N ## _HEALTH_ADDR, *CC_P ## N ## _RED_HEALTH_ADDR,           \
-               *CC_P ## N ## _GUARD_BAR_ADDR, *CC_P ## N ## _GUARD_QUALITY_ADDR,  *CC_P ## N ## _METER_ADDR,        \
-               *CC_P ## N ## _HEAT_ADDR, *CC_P ## N ## _X_POSITION_ADDR, *CC_P ## N ## _Y_POSITION_ADDR )
+    LOG_SYNC ( "P%u: C=%u; M=%u; c=%u; seq=%u; st=%u; hp=%u; rh=%u; gb=%.1f; gq=%.1f; mt=%u; ht=%u; x=%d; y=%d",    \
+               N, *CC_P ## N ## _CHARACTER_ADDR, *CC_P ## N ## _MOON_SELECTOR_ADDR,                                 \
+               *CC_P ## N ## _COLOR_SELECTOR_ADDR, *CC_P ## N ## _SEQUENCE_ADDR, *CC_P ## N ## _SEQ_STATE_ADDR,     \
+               *CC_P ## N ## _HEALTH_ADDR, *CC_P ## N ## _RED_HEALTH_ADDR, *CC_P ## N ## _GUARD_BAR_ADDR,           \
+               *CC_P ## N ## _GUARD_QUALITY_ADDR,  *CC_P ## N ## _METER_ADDR, *CC_P ## N ## _HEAT_ADDR,             \
+               *CC_P ## N ## _X_POSITION_ADDR, *CC_P ## N ## _Y_POSITION_ADDR )
 
 
 // Main application state
@@ -690,7 +690,7 @@ struct DllMain
         DllOverlayUi::debugTextAlign = 1;
 
         if ( !KeyboardState::isDown ( VK_SPACE ) && replayInputs && netMan.getIndex() <= repMan.getLastIndex() )
-            DllFrameRate::desiredFps = numeric_limits<double>::max();
+            *CC_SKIP_FRAMES_ADDR = 1;
 
         if ( netMan.getIndex() == repMan.getLastIndex() && netMan.getFrame() == repMan.getLastFrame() )
             replayInputs = false;
@@ -703,18 +703,18 @@ struct DllMain
         MsgPtr msgRngState = procMan.getRngState ( 0 );
         ASSERT ( msgRngState.get() != 0 );
 
-        // TODO swap these two log statements
         // Log state every frame
-        LOG_SYNC ( "Inputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
         LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
+        LOG_SYNC ( "Inputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
 
         // Log extra state during chara select
         if ( netMan.getState() == NetplayState::CharaSelect )
         {
-            // TODO add ; after second C=%u and log colour just in case
-            LOG_SYNC ( "P1: sel=%u; C=%u; M=%u; P2: sel=%u; C=%u M=%u",
-                       *CC_P1_SELECTOR_MODE_ADDR, *CC_P1_CHARACTER_ADDR, *CC_P1_MOON_SELECTOR_ADDR,
-                       *CC_P2_SELECTOR_MODE_ADDR, *CC_P2_CHARACTER_ADDR, *CC_P2_MOON_SELECTOR_ADDR );
+            LOG_SYNC ( "P1: sel=%u; C=%u; M=%u; c=%u; P2: sel=%u; C=%u; M=%u; c=%u",
+                       *CC_P1_SELECTOR_MODE_ADDR, *CC_P1_CHARACTER_ADDR,
+                       *CC_P1_MOON_SELECTOR_ADDR, *CC_P1_COLOR_SELECTOR_ADDR,
+                       *CC_P2_SELECTOR_MODE_ADDR, *CC_P2_CHARACTER_ADDR,
+                       *CC_P2_MOON_SELECTOR_ADDR, *CC_P2_COLOR_SELECTOR_ADDR );
             return;
         }
 
@@ -723,8 +723,9 @@ struct DllMain
         {
             LOG_SYNC_CHARACTER ( 1 );
             LOG_SYNC_CHARACTER ( 2 );
-            LOG_SYNC ( "roundOverTimer=%d; CC_INTRO_STATE=%u; CC_ROUND_TIMER=%u; CC_REAL_TIMER=%u",
-                       roundOverTimer, *CC_INTRO_STATE_ADDR, *CC_ROUND_TIMER_ADDR, *CC_REAL_TIMER_ADDR );
+            LOG_SYNC ( "roundOverTimer=%d; CC_INTRO_STATE=%u; CC_ROUND_TIMER=%u; CC_REAL_TIMER=%u; CC_HIT_SPARKS=%u; ",
+                       roundOverTimer, *CC_INTRO_STATE_ADDR, *CC_ROUND_TIMER_ADDR, *CC_REAL_TIMER_ADDR,
+                       *CC_HIT_SPARKS_ADDR );
             return;
         }
 #endif
@@ -740,6 +741,11 @@ struct DllMain
 
         // Disable FPS limit only while fast-forwarding
         *CC_SKIP_FRAMES_ADDR = ( fastFwdStopFrame.value ? 1 : 0 );
+
+#ifndef RELEASE
+        if ( replayInputs )
+            *CC_SKIP_FRAMES_ADDR = 1;
+#endif
 
         LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
     }
@@ -779,11 +785,13 @@ struct DllMain
         if ( !DllOverlayUi::isShowingMessage() )
             DllOverlayUi::disable();
 
+#ifdef RELEASE
         // Leaving Initial or AutoCharaSelect
         if ( netMan.getState() == NetplayState::Initial || netMan.getState() == NetplayState::AutoCharaSelect )
         {
             SetForegroundWindow ( ( HWND ) DllHacks::windowHandle );
         }
+#endif
 
         // Leaving Skippable
         if ( netMan.getState() == NetplayState::Skippable )
@@ -1298,6 +1306,13 @@ struct DllMain
                     const bool good = repMan.load ( replayFile, real );
 
                     ASSERT ( good == true );
+
+                    // netMan.initial.indexedFrame = {{ 0, 12 }};
+                    // netMan.initial.netplayState = 0xFF;
+                    // netMan.initial.chara[0] = 30;
+                    // netMan.initial.chara[1] = 20;
+                    // netMan.initial.moon[0] = 1;
+                    // netMan.initial.moon[1] = 0;
 
                     replayInputs = true;
                 }

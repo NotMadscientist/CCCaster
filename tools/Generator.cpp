@@ -59,7 +59,6 @@ using namespace std;
 #define CC_P1_SPELL_CIRCLE_ADDR     ( ( float * )    0x5641A4 )
 #define CC_P2_SPELL_CIRCLE_ADDR     ( ( float * )    0x564200 )
 
-#define CC_HIT_SPARKS_ADDR          ( ( uint32_t * ) 0x67BD78 )
 #define CC_METER_ANIMATION_ADDR     ( ( uint32_t * ) 0x7717D8 )
 
 #define CC_EFFECTS_ARRAY_ADDR       ( ( char * )     0x67BDE8 )
@@ -198,7 +197,7 @@ static const vector<MemDump> miscAddrs =
     CC_P2_GAME_POINT_FLAG_ADDR,
 
     // Graphical state
-    CC_HIT_SPARKS_ADDR,
+    // CC_HIT_SPARKS_ADDR, // TODO this needs more work, can desync or underflow
 
     CC_METER_ANIMATION_ADDR,
 

@@ -72,21 +72,48 @@ bool ReplayManager::load ( const string& replayFile, bool real )
 
                 ASSERT ( rngStates[index].get() == 0 );
 
-                char data [ sizeof ( uint32_t ) * 3 + CC_RNGSTATE3_SIZE ];
+                RngState *rngState = 0;
 
-                for ( char& c : data )
+                if ( ss.str().size() == 707 ) // Old RngState hex dump size
                 {
-                    uint32_t v;
-                    ss >> hex >> v;
-                    c = v;
+                    rngState = new RngState ( 0 );
+
+                    char data [ sizeof ( uint32_t ) * 3 + 4 + CC_RNGSTATE3_SIZE ];
+
+                    for ( char& c : data )
+                    {
+                        uint32_t v;
+                        ss >> hex >> v;
+                        c = v;
+                    }
+
+                    memcpy ( &rngState->rngState0, &data[0], sizeof ( uint32_t ) );
+                    memcpy ( &rngState->rngState1, &data[4], sizeof ( uint32_t ) );
+                    memcpy ( &rngState->rngState2, &data[8], sizeof ( uint32_t ) );
+                    copy ( &data[16], &data[16 + CC_RNGSTATE3_SIZE], rngState->rngState3.begin() );
                 }
+                else if ( ss.str().size() == 695 ) // New RngState hex dump size
+                {
+                    rngState = new RngState ( 0 );
 
-                RngState *rngState = new RngState ( 0 );
+                    char data [ sizeof ( uint32_t ) * 3 + CC_RNGSTATE3_SIZE ];
 
-                memcpy ( &rngState->rngState0, &data[0], sizeof ( uint32_t ) );
-                memcpy ( &rngState->rngState1, &data[4], sizeof ( uint32_t ) );
-                memcpy ( &rngState->rngState2, &data[8], sizeof ( uint32_t ) );
-                copy ( &data[12], &data[12 + CC_RNGSTATE3_SIZE], rngState->rngState3.begin() );
+                    for ( char& c : data )
+                    {
+                        uint32_t v;
+                        ss >> hex >> v;
+                        c = v;
+                    }
+
+                    memcpy ( &rngState->rngState0, &data[0], sizeof ( uint32_t ) );
+                    memcpy ( &rngState->rngState1, &data[4], sizeof ( uint32_t ) );
+                    memcpy ( &rngState->rngState2, &data[8], sizeof ( uint32_t ) );
+                    copy ( &data[12], &data[12 + CC_RNGSTATE3_SIZE], rngState->rngState3.begin() );
+                }
+                else
+                {
+                    THROW_EXCEPTION ( "Unknown RngState size: %u", "Invalid replay file!", ss.str().size() );
+                }
 
                 rngStates[index].reset ( rngState );
             }

@@ -42,6 +42,7 @@
 #define CC_P2_WINS_ADDR             ( ( uint32_t * ) 0x559580 ) // P2 number of wins
 #define CC_ROUND_COUNT_ADDR         ( ( uint32_t * ) 0x5550E0 ) // Round count
 #define CC_INTRO_STATE_ADDR         ( ( uint8_t * )  0x55D20B ) // 2 (character intros), 1 (pre-game), 0 (in-game)
+#define CC_HIT_SPARKS_ADDR          ( ( uint32_t * ) 0x67BD78 ) // Number of hit sparks?
 
 #define CC_STAGE_SELECTOR_ADDR      ( ( uint32_t * ) 0x74FD98 ) // Currently selected stage, can be assigned to directly
 #define CC_FPS_COUNTER_ADDR         ( ( uint32_t * ) 0x774A70 ) // Value of the displayed FPS counter
@@ -112,10 +113,8 @@
 #define CC_RNGSTATE0_ADDR           ( ( uint32_t * ) 0x563778 )
 #define CC_RNGSTATE1_ADDR           ( ( uint32_t * ) 0x56377C )
 #define CC_RNGSTATE2_ADDR           ( ( uint32_t * ) 0x564068 )
-#define CC_RNGSTATE3_ADDR           ( ( char * )     0x56406C )
-#define CC_RNGSTATE3_SIZE           ( 224 )
-
-#define CC_CHARA_SELECT_LOAD_FRAMES ( 120 )
+#define CC_RNGSTATE3_ADDR           ( ( char * )     0x564070 )
+#define CC_RNGSTATE3_SIZE           ( 220 )
 
 // Character select selection mode
 #define CC_SELECT_CHARA             ( 0 )
