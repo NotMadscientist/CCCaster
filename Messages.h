@@ -319,10 +319,10 @@ struct SyncHash : public SerializableSequence
         if ( realTimer != other.realTimer )
             return false;
 
-        if ( memcmp ( &chara[0] + 8, &other.chara[0] + 8, sizeof ( CharaHash ) - 8 ) )
+        if ( memcmp ( ( ( char * ) &chara[0] ) + 8, ( ( char * ) &other.chara[0] ) + 8, sizeof ( CharaHash ) - 8 ) )
             return false;
 
-        if ( memcmp ( &chara[1] + 8, &other.chara[1] + 8, sizeof ( CharaHash ) - 8 ) )
+        if ( memcmp ( ( ( char * ) &chara[1] ) + 8, ( ( char * ) &other.chara[1] ) + 8, sizeof ( CharaHash ) - 8 ) )
             return false;
 
         if ( chara[0].seq != other.chara[0].seq )
