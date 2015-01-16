@@ -2,7 +2,6 @@
 #include "Exceptions.h"
 #include "Logger.h"
 #include "Messages.h"
-#include "ProcessManager.h"
 
 #include <iostream>
 #include <fstream>
@@ -179,17 +178,34 @@ const string& ReplayManager::getStateStr ( IndexedFrame indexedFrame )
 
 const ReplayManager::Inputs& ReplayManager::getInputs ( IndexedFrame indexedFrame )
 {
+    static const Inputs confirm = { MaxIndexedFrame, CC_BUTTON_CONFIRM < 4, CC_BUTTON_CONFIRM << 4 };
+    static const Inputs down = { MaxIndexedFrame, 2, 2 };
+    static const Inputs empty = { MaxIndexedFrame, 0, 0 };
+
     if ( indexedFrame.parts.index >= inputs.size()
             || indexedFrame.parts.frame >= inputs[indexedFrame.parts.index].size() )
     {
-        static const uint16_t confirm = COMBINE_INPUT ( 0, CC_BUTTON_CONFIRM );
-        static const Inputs a = { MaxIndexedFrame, 0, 0 };
-        static const Inputs b = { MaxIndexedFrame, confirm, confirm };
+        return empty;
+    }
 
-        if ( indexedFrame.parts.index < modes.size() && modes[indexedFrame.parts.index] == CC_GAME_MODE_LOADING )
-            return ( indexedFrame.parts.frame % 2 ? a : b );
+    if ( modes[indexedFrame.parts.index] == CC_GAME_MODE_LOADING )
+        return ( indexedFrame.parts.frame % 2 ? empty : confirm );
 
-        return a;
+    if ( modes[indexedFrame.parts.index] == CC_GAME_MODE_RETRY )
+    {
+        if ( modes[indexedFrame.parts.index + 1] == CC_GAME_MODE_LOADING )
+            return ( indexedFrame.parts.frame % 2 ? empty : confirm );
+
+        if ( indexedFrame.parts.frame == 30 )
+            return confirm;
+
+        if ( indexedFrame.parts.frame == 120 )
+            return down;
+
+        if ( indexedFrame.parts.frame == 125 )
+            return confirm;
+
+        return empty;
     }
 
     return inputs[indexedFrame.parts.index][indexedFrame.parts.frame];
