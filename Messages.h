@@ -319,10 +319,23 @@ struct SyncHash : public SerializableSequence
         if ( realTimer != other.realTimer )
             return false;
 
-        if ( memcmp ( &chara[0], &other.chara[0], sizeof ( CharaHash ) ) )
+        if ( memcmp ( &chara[0] + 8, &other.chara[0] + 8, sizeof ( CharaHash ) - 8 ) )
             return false;
 
-        if ( memcmp ( &chara[1], &other.chara[1], sizeof ( CharaHash ) ) )
+        if ( memcmp ( &chara[1] + 8, &other.chara[1] + 8, sizeof ( CharaHash ) - 8 ) )
+            return false;
+
+        if ( chara[0].seq != other.chara[0].seq )
+            return false;
+
+        if ( chara[1].seq != other.chara[1].seq )
+            return false;
+
+        // Special case, since we don't care if seq 0, the neutral sequence, is out of sync
+        if ( chara[0].seq != 0 && chara[0].seqState != other.chara[0].seqState )
+            return false;
+
+        if ( chara[1].seq != 0 && chara[1].seqState != other.chara[1].seqState )
             return false;
 
         return true;
