@@ -14,7 +14,6 @@ using namespace std;
 // Linked rollback memory data (binary format)
 extern const unsigned char binary_res_rollback_bin_start;
 extern const unsigned char binary_res_rollback_bin_end;
-extern const unsigned char binary_res_rollback_bin_size;
 
 // Parsed rollback memory data
 static MemDumpList allAddrs;
@@ -54,7 +53,10 @@ void ProcessManager::GameState::load()
 void ProcessManager::allocateStates()
 {
     if ( allAddrs.empty() )
-        allAddrs.load ( ( char * ) &binary_res_rollback_bin_start, ( size_t ) &binary_res_rollback_bin_size );
+    {
+        const size_t size = ( ( char * ) &binary_res_rollback_bin_end ) - ( char * ) &binary_res_rollback_bin_start;
+        allAddrs.load ( ( char * ) &binary_res_rollback_bin_start, size );
+    }
 
     if ( allAddrs.empty() )
         THROW_EXCEPTION ( "Failed to load rollback data!", ERROR_BAD_ROLLBACK_DATA );
