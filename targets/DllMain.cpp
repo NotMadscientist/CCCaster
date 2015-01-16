@@ -285,8 +285,11 @@ struct DllMain
                 // Replay inputs and rollback
                 if ( replayInputs )
                 {
-                    ASSERT ( repMan.getGameMode ( netMan.getIndexedFrame() ) == *CC_GAME_MODE_ADDR );
-                    ASSERT ( repMan.getStateStr ( netMan.getIndexedFrame() ) == netMan.getState().str() );
+                    if ( repMan.getGameMode ( netMan.getIndexedFrame() ) )
+                        ASSERT ( repMan.getGameMode ( netMan.getIndexedFrame() ) == *CC_GAME_MODE_ADDR );
+
+                    if ( !repMan.getStateStr ( netMan.getIndexedFrame() ).empty() )
+                        ASSERT ( repMan.getStateStr ( netMan.getIndexedFrame() ) == netMan.getState().str() );
 
                     // Inputs
                     const auto& inputs = repMan.getInputs ( netMan.getIndexedFrame() );
@@ -337,9 +340,8 @@ struct DllMain
                     {
                         MsgPtr msgRngState = repMan.getRngState ( netMan.getIndexedFrame() );
 
-                        ASSERT ( msgRngState.get() != 0 );
-
-                        procMan.setRngState ( msgRngState->getAs<RngState>() );
+                        if ( msgRngState )
+                            procMan.setRngState ( msgRngState->getAs<RngState>() );
                     }
 
                     break;

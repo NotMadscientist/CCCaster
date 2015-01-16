@@ -160,14 +160,19 @@ bool ReplayManager::load ( const string& replayFile, bool real )
 
 uint32_t ReplayManager::getGameMode ( IndexedFrame indexedFrame )
 {
-    ASSERT ( indexedFrame.parts.index < modes.size() );
+    if ( indexedFrame.parts.index >= modes.size() )
+        return 0;
 
     return modes[indexedFrame.parts.index];
 }
 
 const string& ReplayManager::getStateStr ( IndexedFrame indexedFrame )
 {
-    ASSERT ( indexedFrame.parts.index < states.size() );
+    if ( indexedFrame.parts.index >= states.size() )
+    {
+        static const string empty;
+        return empty;
+    }
 
     return states[indexedFrame.parts.index];
 }
@@ -211,7 +216,8 @@ const vector<ReplayManager::Inputs>& ReplayManager::getReinputs ( IndexedFrame i
 
 MsgPtr ReplayManager::getRngState ( IndexedFrame indexedFrame )
 {
-    ASSERT ( indexedFrame.parts.index < rngStates.size() );
+    if ( indexedFrame.parts.index >= rngStates.size() )
+        return 0;
 
     return rngStates[indexedFrame.parts.index];
 }
