@@ -1278,7 +1278,9 @@ struct DllMain
 #ifndef RELEASE
                 if ( options[Options::Replay] )
                 {
-                    const vector<string> args = split ( options.arg ( Options::Replay ) );
+                    LOG ( "Replay: '%s'", options.arg ( Options::Replay ) );
+
+                    const vector<string> args = split ( options.arg ( Options::Replay ), "," );
 
                     ASSERT ( args.empty() == false );
 

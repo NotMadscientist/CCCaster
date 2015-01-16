@@ -3587,6 +3587,19 @@
         <Byte>01</Byte>
       </After>
     </CodeEntry>
+    <CodeEntry>
+      <Description>Write to P1 moon selector</Description>
+      <Address>0048A614</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>8A614</ModuleNameOffset>
+      <Before/>
+      <Actual>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+      </Actual>
+      <After/>
+    </CodeEntry>
   </CheatCodes>
   <UserdefinedSymbols/>
   <DisassemblerComments>
