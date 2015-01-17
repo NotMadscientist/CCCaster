@@ -1290,6 +1290,7 @@ struct DllMain
                 {
                     LOG ( "Replay: '%s'", options.arg ( Options::Replay ) );
 
+                    // TODO parse initial game state
                     const vector<string> args = split ( options.arg ( Options::Replay ), "," );
 
                     ASSERT ( args.empty() == false );
@@ -1306,13 +1307,6 @@ struct DllMain
                     const bool good = repMan.load ( replayFile, real );
 
                     ASSERT ( good == true );
-
-                    // netMan.initial.indexedFrame = {{ 0, 12 }};
-                    // netMan.initial.netplayState = 0xFF;
-                    // netMan.initial.chara[0] = 30;
-                    // netMan.initial.chara[1] = 20;
-                    // netMan.initial.moon[0] = 1;
-                    // netMan.initial.moon[1] = 0;
 
                     replayInputs = true;
                 }
