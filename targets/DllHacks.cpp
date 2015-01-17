@@ -220,6 +220,8 @@ SyncHash::SyncHash ( IndexedFrame indexedFrame )
 
     roundTimer = *CC_ROUND_TIMER_ADDR;
     realTimer = *CC_REAL_TIMER_ADDR;
+    cameraX = *CC_CAMERA_X_ADDR;
+    cameraY = *CC_CAMERA_Y_ADDR;
 
 #define SAVE_CHARA(N)                                                                           \
     chara[N-1].seq          = *CC_P ## N ## _SEQUENCE_ADDR;                                     \

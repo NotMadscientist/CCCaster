@@ -354,20 +354,40 @@
       <Address>0054EB78</Address>
     </CheatEntry>
     <CheatEntry>
-      <ID>156</ID>
+      <ID>435</ID>
       <Description>"camera X"</Description>
       <ShowAsSigned>1</ShowAsSigned>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
-      <Address>00564B14</Address>
+      <Address>0055DEC4</Address>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>156</ID>
+          <Description>""</Description>
+          <ShowAsSigned>1</ShowAsSigned>
+          <Color>80000008</Color>
+          <VariableType>4 Bytes</VariableType>
+          <Address>00564B14</Address>
+        </CheatEntry>
+      </CheatEntries>
     </CheatEntry>
     <CheatEntry>
-      <ID>157</ID>
+      <ID>436</ID>
       <Description>"camera Y"</Description>
       <ShowAsSigned>1</ShowAsSigned>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
-      <Address>00564B18</Address>
+      <Address>0055DEC8</Address>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>157</ID>
+          <Description>""</Description>
+          <ShowAsSigned>1</ShowAsSigned>
+          <Color>80000008</Color>
+          <VariableType>4 Bytes</VariableType>
+          <Address>00564B18</Address>
+        </CheatEntry>
+      </CheatEntries>
     </CheatEntry>
     <CheatEntry>
       <ID>12</ID>
@@ -921,160 +941,6 @@
       <Color>80000008</Color>
       <VariableType>Byte</VariableType>
       <Address>005544F1</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>293</ID>
-      <Description>""</Description>
-      <ShowAsHex>1</ShowAsHex>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>0x55532C</Address>
-      <CheatEntries>
-        <CheatEntry>
-          <ID>289</ID>
-          <Description>""</Description>
-          <ShowAsHex>1</ShowAsHex>
-          <Color>80000008</Color>
-          <VariableType>4 Bytes</VariableType>
-          <Address>0x55532C</Address>
-          <Offsets>
-            <Offset>24</Offset>
-          </Offsets>
-        </CheatEntry>
-        <CheatEntry>
-          <ID>291</ID>
-          <Description>""</Description>
-          <ShowAsHex>1</ShowAsHex>
-          <Color>80000008</Color>
-          <VariableType>4 Bytes</VariableType>
-          <Address>0x55532C</Address>
-          <Offsets>
-            <Offset>30</Offset>
-          </Offsets>
-        </CheatEntry>
-      </CheatEntries>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>309</ID>
-      <Description>""</Description>
-      <ShowAsHex>1</ShowAsHex>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>0x5553CC</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>313</ID>
-      <Description>""</Description>
-      <ShowAsHex>1</ShowAsHex>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>0x5553EC</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>312</ID>
-      <Description>""</Description>
-      <ShowAsHex>1</ShowAsHex>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>0x5553F0</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>311</ID>
-      <Description>""</Description>
-      <ShowAsHex>1</ShowAsHex>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>0x5553FC</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>310</ID>
-      <Description>""</Description>
-      <ShowAsHex>1</ShowAsHex>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>0x555400</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>314</ID>
-      <Description>""</Description>
-      <ShowAsHex>1</ShowAsHex>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>0x55544C</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>295</ID>
-      <Description>""</Description>
-      <ShowAsHex>1</ShowAsHex>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>0x555450</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>296</ID>
-      <Description>""</Description>
-      <ShowAsHex>1</ShowAsHex>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>0x555454</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>315</ID>
-      <Description>""</Description>
-      <ShowAsHex>1</ShowAsHex>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>0x555458</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>300</ID>
-      <Description>""</Description>
-      <ShowAsHex>1</ShowAsHex>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>0x555460</Address>
-      <CheatEntries>
-        <CheatEntry>
-          <ID>301</ID>
-          <Description>""</Description>
-          <ShowAsHex>1</ShowAsHex>
-          <Color>80000008</Color>
-          <VariableType>4 Bytes</VariableType>
-          <Address>0x555460</Address>
-          <Offsets>
-            <Offset>0</Offset>
-          </Offsets>
-          <CheatEntries>
-            <CheatEntry>
-              <ID>302</ID>
-              <Description>""</Description>
-              <ShowAsHex>1</ShowAsHex>
-              <Color>80000008</Color>
-              <VariableType>4 Bytes</VariableType>
-              <Address>0x555460</Address>
-              <Offsets>
-                <Offset>4</Offset>
-                <Offset>0</Offset>
-              </Offsets>
-              <CheatEntries>
-                <CheatEntry>
-                  <ID>303</ID>
-                  <Description>""</Description>
-                  <ShowAsHex>1</ShowAsHex>
-                  <Color>80000008</Color>
-                  <VariableType>4 Bytes</VariableType>
-                  <Address>0x555460</Address>
-                  <Offsets>
-                    <Offset>C</Offset>
-                    <Offset>4</Offset>
-                    <Offset>0</Offset>
-                  </Offsets>
-                </CheatEntry>
-              </CheatEntries>
-            </CheatEntry>
-          </CheatEntries>
-        </CheatEntry>
-      </CheatEntries>
     </CheatEntry>
   </CheatEntries>
   <CheatCodes>
@@ -3606,6 +3472,167 @@
         <Byte>00</Byte>
       </Actual>
       <After/>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Change of mov edx,[MBAA.exe+15DEC4]</Description>
+      <Address>0044C375</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>4C375</ModuleNameOffset>
+      <Before>
+        <Byte>C1</Byte>
+        <Byte>83</Byte>
+        <Byte>C4</Byte>
+        <Byte>18</Byte>
+        <Byte>C3</Byte>
+      </Before>
+      <Actual>
+        <Byte>8B</Byte>
+        <Byte>15</Byte>
+        <Byte>C4</Byte>
+        <Byte>DE</Byte>
+        <Byte>55</Byte>
+        <Byte>00</Byte>
+      </Actual>
+      <After>
+        <Byte>8D</Byte>
+        <Byte>8C</Byte>
+        <Byte>11</Byte>
+        <Byte>00</Byte>
+        <Byte>F8</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Camera update function</Description>
+      <Address>0044BA40</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>4BA40</ModuleNameOffset>
+      <Before>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+      </Before>
+      <Actual>
+        <Byte>83</Byte>
+        <Byte>EC</Byte>
+        <Byte>0C</Byte>
+      </Actual>
+      <After>
+        <Byte>8B</Byte>
+        <Byte>0D</Byte>
+        <Byte>C8</Byte>
+        <Byte>DE</Byte>
+        <Byte>55</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Update camera X</Description>
+      <Address>0044BC28</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>4BC28</ModuleNameOffset>
+      <Before>
+        <Byte>BB</Byte>
+        <Byte>00</Byte>
+        <Byte>10</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+      </Before>
+      <Actual>
+        <Byte>E8</Byte>
+        <Byte>13</Byte>
+        <Byte>FC</Byte>
+        <Byte>FF</Byte>
+        <Byte>FF</Byte>
+      </Actual>
+      <After>
+        <Byte>8B</Byte>
+        <Byte>3D</Byte>
+        <Byte>28</Byte>
+        <Byte>51</Byte>
+        <Byte>55</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Update camera Y</Description>
+      <Address>0044BC38</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>4BC38</ModuleNameOffset>
+      <Before>
+        <Byte>68</Byte>
+        <Byte>C8</Byte>
+        <Byte>DE</Byte>
+        <Byte>55</Byte>
+        <Byte>00</Byte>
+      </Before>
+      <Actual>
+        <Byte>E8</Byte>
+        <Byte>03</Byte>
+        <Byte>FC</Byte>
+        <Byte>FF</Byte>
+        <Byte>FF</Byte>
+      </Actual>
+      <After>
+        <Byte>83</Byte>
+        <Byte>C4</Byte>
+        <Byte>08</Byte>
+        <Byte>A1</Byte>
+        <Byte>C4</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Update camera scale (a)</Description>
+      <Address>0044BBBF</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>4BBBF</ModuleNameOffset>
+      <Before>
+        <Byte>51</Byte>
+        <Byte>8B</Byte>
+        <Byte>C5</Byte>
+        <Byte>8B</Byte>
+        <Byte>CB</Byte>
+      </Before>
+      <Actual>
+        <Byte>E8</Byte>
+        <Byte>EC</Byte>
+        <Byte>F8</Byte>
+        <Byte>FF</Byte>
+        <Byte>FF</Byte>
+      </Actual>
+      <After>
+        <Byte>83</Byte>
+        <Byte>C4</Byte>
+        <Byte>08</Byte>
+        <Byte>BE</Byte>
+        <Byte>01</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Update camera scale (b)</Description>
+      <Address>0044BC0C</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>4BC0C</ModuleNameOffset>
+      <Before>
+        <Byte>52</Byte>
+        <Byte>8B</Byte>
+        <Byte>C5</Byte>
+        <Byte>8B</Byte>
+        <Byte>CB</Byte>
+      </Before>
+      <Actual>
+        <Byte>E8</Byte>
+        <Byte>9F</Byte>
+        <Byte>F8</Byte>
+        <Byte>FF</Byte>
+        <Byte>FF</Byte>
+      </Actual>
+      <After>
+        <Byte>EB</Byte>
+        <Byte>2A</Byte>
+        <Byte>8B</Byte>
+        <Byte>3D</Byte>
+        <Byte>24</Byte>
+      </After>
     </CodeEntry>
   </CheatCodes>
   <UserdefinedSymbols/>

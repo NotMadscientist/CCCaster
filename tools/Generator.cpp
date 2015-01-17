@@ -144,7 +144,7 @@ static const vector<MemDump> playerAddrs =
 
     { 0x555464, 0x55546C },
 
-    // { ( void * ) 0x55546C, 4 }, // graphics pointer? this is accessed all the time even when paused
+    { ( void * ) 0x55546C, 4 }, // graphics pointer? this is accessed all the time even when paused
 
     { 0x555470, 0x55550C },
     ( uint32_t * ) 0x55550C, // ???
@@ -197,8 +197,6 @@ static const vector<MemDump> miscAddrs =
     CC_P2_GAME_POINT_FLAG_ADDR,
 
     // Graphical state
-    // CC_HIT_SPARKS_ADDR, // TODO this needs more work, can desync or underflow
-
     CC_METER_ANIMATION_ADDR,
 
     CC_P1_SPELL_CIRCLE_ADDR,
@@ -208,8 +206,34 @@ static const vector<MemDump> miscAddrs =
     CC_CAMERA_SCALE_2_ADDR,
     CC_CAMERA_SCALE_3_ADDR,
 
-    CC_CAMERA_X_ADDR,
-    CC_CAMERA_Y_ADDR,
+    // Camera position state
+    ( uint32_t * ) 0x555124,
+    ( uint32_t * ) 0x555128,
+    { 0x5585E8, 0x5585F4 },
+    { 0x55DEC4, 0x55DED0 },
+    { 0x55DEDC, 0x55DEE8 },
+    { 0x564B14, 0x564B20 },
+
+    // ( uint16_t * ) 0x564B10,
+    // ( uint32_t * ) 0x563750,
+    // ( uint32_t * ) 0x557DB0,
+    // ( uint32_t * ) 0x557DB4,
+
+    // ( uint8_t * ) 0x557D2B,
+    // ( uint16_t * ) 0x557DAC,
+    // ( uint16_t * ) 0x559546,
+    // ( uint16_t * ) 0x564B00,
+    // ( uint32_t * ) 0x76E6F8,
+    // ( uint32_t * ) 0x7B1D2C,
+
+    // Camera scaling state
+    ( uint32_t * ) 0x55D204,
+    ( uint32_t * ) 0x56357C,
+    ( uint32_t * ) 0x55DEE8,
+    ( uint32_t * ) 0x564B0C,
+    ( uint32_t * ) 0x564AF8,
+    ( uint32_t * ) 0x564B24,
+    ( uint32_t * ) 0x76E6F4,
 };
 
 static const MemDump effectAddrs ( CC_EFFECTS_ARRAY_ADDR, CC_EFFECT_ELEMENT_SIZE, {

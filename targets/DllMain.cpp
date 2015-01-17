@@ -155,11 +155,11 @@ struct DllMain
     bool randomRollback = false;
     uint32_t rollUpTo = 10;
     bool replayInputs = false;
-    uint32_t replayStartIndex = 0;
 
     // ReplayManager instance
     ReplayManager repMan;
-#endif
+    IndexedFrame replayStop = MaxIndexedFrame;
+#endif // RELEASE
 
     void frameStepNormal()
     {
@@ -263,7 +263,7 @@ struct DllMain
                         changeConfig.invalidate();
                         dataSocket->send ( changeConfig );
                     }
-#endif
+#endif // RELEASE
                 }
                 else if ( clientMode.isLocal() )                // Local input
                 {
@@ -381,7 +381,7 @@ struct DllMain
                         localInputs [ clientMode.isLocal() ? 1 : 0 ] = COMBINE_INPUT ( direction, buttons );
                     }
                 }
-#endif
+#endif // RELEASE
 
                 // Assign local player input
                 if ( !clientMode.isSpectate() )
@@ -390,7 +390,7 @@ struct DllMain
                     if ( netMan.isInRollback() )
                         netMan.assignInput ( localPlayer, localInputs[0], netMan.getFrame() + netMan.getDelay() );
                     else
-#endif
+#endif // RELEASE
                         netMan.setInput ( localPlayer, localInputs[0] );
                 }
 
@@ -555,7 +555,7 @@ struct DllMain
                 LOG_TO ( syncLog, "%s Rollback to target=[%s] failed!", before, target );
             }
         }
-#endif
+#endif // RELEASE
 
         // Only rollback when necessary
         if ( netMan.isInRollback() && netMan.getLastChangedFrame().value < netMan.getIndexedFrame().value )
@@ -693,8 +693,11 @@ struct DllMain
             *CC_SKIP_FRAMES_ADDR = 1;
 
         if ( netMan.getIndex() == repMan.getLastIndex() && netMan.getFrame() == repMan.getLastFrame() )
+        {
             replayInputs = false;
-#endif
+            SetForegroundWindow ( ( HWND ) DllHacks::windowHandle );
+        }
+#endif // RELEASE
 
         // Cleared last played sound effects
         memset ( AsmHacks::sfxFilterArray, 0, CC_SFX_ARRAY_LEN );
@@ -706,6 +709,11 @@ struct DllMain
         // Log state every frame
         LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
         LOG_SYNC ( "Inputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
+
+#ifndef RELEASE
+        if ( netMan.getIndexedFrame().value == replayStop.value )
+            MessageBox ( 0, 0, 0, 0 );
+#endif // RELEASE
 
         // Log extra state during chara select
         if ( netMan.getState() == NetplayState::CharaSelect )
@@ -723,12 +731,12 @@ struct DllMain
         {
             LOG_SYNC_CHARACTER ( 1 );
             LOG_SYNC_CHARACTER ( 2 );
-            LOG_SYNC ( "roundOverTimer=%d; CC_INTRO_STATE=%u; CC_ROUND_TIMER=%u; CC_REAL_TIMER=%u; CC_HIT_SPARKS=%u; ",
+            LOG_SYNC ( "roundOverTimer=%d; introState=%u; roundTimer=%u; realTimer=%u; hitsparks=%u; camera={ %d, %d }",
                        roundOverTimer, *CC_INTRO_STATE_ADDR, *CC_ROUND_TIMER_ADDR, *CC_REAL_TIMER_ADDR,
-                       *CC_HIT_SPARKS_ADDR );
+                       *CC_HIT_SPARKS_ADDR, *CC_CAMERA_X_ADDR, *CC_CAMERA_Y_ADDR );
             return;
         }
-#endif
+#endif // DISABLE_LOGGING
     }
 
     void frameStepRerun()
@@ -745,7 +753,7 @@ struct DllMain
 #ifndef RELEASE
         if ( replayInputs )
             *CC_SKIP_FRAMES_ADDR = 1;
-#endif
+#endif // RELEASE
 
         LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
     }
@@ -791,7 +799,7 @@ struct DllMain
         {
             SetForegroundWindow ( ( HWND ) DllHacks::windowHandle );
         }
-#endif
+#endif // RELEASE
 
         // Leaving Skippable
         if ( netMan.getState() == NetplayState::Skippable )
@@ -867,7 +875,7 @@ struct DllMain
                 && netMan.config.mode.isSpectate()
 #else
                 && ( netMan.config.mode.isSpectate() || replayInputs )
-#endif
+#endif // RELEASE
                 && netMan.initial.netplayState > NetplayState::CharaSelect )
         {
             // Spectate mode needs to auto select characters if starting after CharaSelect
@@ -1146,7 +1154,7 @@ struct DllMain
             case MsgType::SyncHash:
                 remoteSync.push_back ( msg );
                 return;
-#endif
+#endif // RELEASE
 
             default:
                 break;
@@ -1290,7 +1298,6 @@ struct DllMain
                 {
                     LOG ( "Replay: '%s'", options.arg ( Options::Replay ) );
 
-                    // TODO parse initial game state
                     const vector<string> args = split ( options.arg ( Options::Replay ), "," );
 
                     ASSERT ( args.empty() == false );
@@ -1301,8 +1308,29 @@ struct DllMain
                     auto it = find ( args.begin(), args.end(), "start" );
                     if ( it != args.end() )
                         ++it;
+                    if ( it != args.end() && ( args.end() - it ) >= 5 ) // TODO only need one arg
+                    {
+                        netMan.initial.indexedFrame.parts.frame = 0;
+                        netMan.initial.netplayState = 0xFF;
+                        netMan.initial.stage = 1;
+
+                        netMan.initial.indexedFrame.parts.index = lexical_cast<int> ( *it++ );
+
+                        // TODO fetch these args from the replay file
+                        netMan.initial.chara[0]                 = lexical_cast<int> ( *it++ );
+                        netMan.initial.moon[0]                  = lexical_cast<int> ( *it++ );
+                        netMan.initial.chara[1]                 = lexical_cast<int> ( *it++ );
+                        netMan.initial.moon[1]                  = lexical_cast<int> ( *it++ );
+                    }
+
+                    it = find ( args.begin(), args.end(), "stop" );
                     if ( it != args.end() )
-                        replayStartIndex = lexical_cast<int> ( *it );
+                        ++it;
+                    if ( it != args.end() && ( args.end() - it ) >= 2 )
+                    {
+                        replayStop.parts.index = lexical_cast<uint32_t> ( *it++ );
+                        replayStop.parts.frame = lexical_cast<uint32_t> ( *it++ );
+                    }
 
                     const bool good = repMan.load ( replayFile, real );
 
@@ -1314,7 +1342,7 @@ struct DllMain
                 {
                     randomInputs = options[Options::SyncTest];
                 }
-#endif
+#endif // RELEASE
                 break;
 
             case MsgType::ControllerMappings:
@@ -1610,7 +1638,7 @@ struct DllMain
         // ChangeMonitor::get().addRef ( this, Variable ( Variable::GameStateCounter ), *CC_MENU_STATE_COUNTER_ADDR );
         // ChangeMonitor::get().addPtrToRef ( this, Variable ( Variable::AutoReplaySave ),
         //                                    const_cast<const uint32_t *&> ( AsmHacks::autoReplaySaveStatePtr ), 0u );
-#endif
+#endif // RELEASE
     }
 
     // Destructor
@@ -1732,7 +1760,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
             {
                 exit ( -1 );
             }
-#endif
+#endif // NDEBUG
             break;
         }
 
@@ -1806,7 +1834,7 @@ extern "C" void callback()
         LOG ( "Stopping due to unknown exception!" );
         stopDllMain ( "Unknown error!" );
     }
-#endif
+#endif // NDEBUG
 
     if ( appState == AppState::Stopping )
     {

@@ -293,6 +293,8 @@ struct SyncHash : public SerializableSequence
 
     uint32_t roundTimer = 0, realTimer = 0;
 
+    int cameraX = 0, cameraY = 0;
+
     struct CharaHash
     {
         uint32_t seq, seqState, health, redHealth, meter, heat;
@@ -317,6 +319,12 @@ struct SyncHash : public SerializableSequence
             return false;
 
         if ( realTimer != other.realTimer )
+            return false;
+
+        if ( cameraX != other.cameraX )
+            return false;
+
+        if ( cameraY != other.cameraY )
             return false;
 
         if ( memcmp ( ( ( char * ) &chara[0] ) + 8, ( ( char * ) &other.chara[0] ) + 8, sizeof ( CharaHash ) - 8 ) )
@@ -345,8 +353,9 @@ struct SyncHash : public SerializableSequence
 
     std::string dump() const
     {
-        std::string str = format ( "[%s] %s; roundTimer=%u; realTimer=%u",
-                                   indexedFrame, formatAsHex ( hash, sizeof ( hash ) ), roundTimer, realTimer );
+        std::string str = format ( "[%s] %s; roundTimer=%u; realTimer=%u; camera={ %d, %d }",
+                                   indexedFrame, formatAsHex ( hash, sizeof ( hash ) ), roundTimer, realTimer,
+                                   cameraX, cameraY );
 
         for ( uint8_t i = 0; i < 2; ++i )
         {
@@ -363,7 +372,7 @@ struct SyncHash : public SerializableSequence
 
     void save ( cereal::BinaryOutputArchive& ar ) const override
     {
-        ar ( indexedFrame.value, hash, roundTimer, realTimer );
+        ar ( indexedFrame.value, hash, roundTimer, realTimer, cameraX, cameraY );
         char buffer [ sizeof ( CharaHash ) ];
         memcpy ( buffer, &chara[0], sizeof ( CharaHash ) );
         ar ( buffer );
@@ -373,7 +382,7 @@ struct SyncHash : public SerializableSequence
 
     void load ( cereal::BinaryInputArchive& ar ) override
     {
-        ar ( indexedFrame.value, hash, roundTimer, realTimer );
+        ar ( indexedFrame.value, hash, roundTimer, realTimer, cameraX, cameraY );
         char buffer [ sizeof ( CharaHash ) ];
         ar ( buffer );
         memcpy ( &chara[0], buffer, sizeof ( CharaHash ) );
