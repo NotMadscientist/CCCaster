@@ -200,6 +200,8 @@ struct InitialGameState : public SerializableSequence
     std::array<uint8_t, 2> chara = {{ UNKNOWN_POSITION, UNKNOWN_POSITION }};
     std::array<uint8_t, 2> moon = {{ UNKNOWN_POSITION, UNKNOWN_POSITION }}, color = {{ 0, 0 }};
 
+    InitialGameState ( IndexedFrame indexedFrame ) : indexedFrame ( indexedFrame ) {}
+
     InitialGameState ( IndexedFrame indexedFrame, uint8_t netplayState, bool isTraining );
 
     std::string formatCharaName ( uint8_t player, CharaNameFunc charaNameFunc ) const

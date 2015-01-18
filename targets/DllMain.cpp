@@ -1298,34 +1298,15 @@ struct DllMain
                 {
                     LOG ( "Replay: '%s'", options.arg ( Options::Replay ) );
 
+                    // Parse arguments
                     const vector<string> args = split ( options.arg ( Options::Replay ), "," );
-
                     ASSERT ( args.empty() == false );
 
                     const string replayFile = options.arg ( Options::AppDir ) + args[0];
                     const bool real = find ( args.begin(), args.end(), "real" ) != args.end();
 
-                    auto it = find ( args.begin(), args.end(), "start" );
-                    if ( it != args.end() )
-                        ++it;
-                    if ( it != args.end() && ( args.end() - it ) >= 7 ) // TODO only need one arg
-                    {
-                        netMan.initial.indexedFrame.parts.frame = 0;
-                        netMan.initial.netplayState = 0xFF;
-                        netMan.initial.stage = 1;
-
-                        netMan.initial.indexedFrame.parts.index = lexical_cast<int> ( *it++ );
-
-                        // TODO fetch these args from the replay file
-                        netMan.initial.chara[0]                 = lexical_cast<int> ( *it++ );
-                        netMan.initial.moon[0]                  = lexical_cast<int> ( *it++ );
-                        netMan.initial.color[0]                 = lexical_cast<int> ( *it++ );
-                        netMan.initial.chara[1]                 = lexical_cast<int> ( *it++ );
-                        netMan.initial.moon[1]                  = lexical_cast<int> ( *it++ );
-                        netMan.initial.color[1]                 = lexical_cast<int> ( *it++ );
-                    }
-
-                    it = find ( args.begin(), args.end(), "stop" );
+                    // Parse stop index and frame
+                    auto it = find ( args.begin(), args.end(), "stop" );
                     if ( it != args.end() )
                         ++it;
                     if ( it != args.end() && ( args.end() - it ) >= 2 )
@@ -1334,9 +1315,24 @@ struct DllMain
                         replayStop.parts.frame = lexical_cast<uint32_t> ( *it++ );
                     }
 
+                    // Parse replay file
                     const bool good = repMan.load ( replayFile, real );
-
                     ASSERT ( good == true );
+
+                    // Parse start index
+                    it = find ( args.begin(), args.end(), "start" );
+                    if ( it != args.end() )
+                        ++it;
+                    if ( it != args.end() )
+                    {
+                        MsgPtr msgInitialState = repMan.getInitialStateBefore ( lexical_cast<int> ( *it ) );
+
+                        ASSERT ( msgInitialState.get() != 0 );
+
+                        netMan.initial = msgInitialState->getAs<InitialGameState>();
+                        netMan.initial.netplayState = 0xFF;
+                        netMan.initial.stage = 1;
+                    }
 
                     replayInputs = true;
                 }

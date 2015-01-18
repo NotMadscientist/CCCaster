@@ -46,6 +46,17 @@ bool ReplayManager::load ( const string& replayFile, bool real )
             if ( states[index].empty() )
                 states[index] = "NetplayState::" + netplayState;
 
+            if ( gameMode == CC_GAME_MODE_LOADING )
+            {
+                if ( initialStates.empty() )
+                    initialStates.push_back ( MsgPtr ( new InitialGameState ( { 0, index } ) ) );
+
+                ASSERT ( initialStates.back().get() != 0 );
+
+                if ( initialStates.back()->getAs<InitialGameState>().indexedFrame.parts.index != index )
+                    initialStates.push_back ( MsgPtr ( new InitialGameState ( { 0, index } ) ) );
+            }
+
             ASSERT ( states[index] == "NetplayState::" + netplayState );
 
             if ( tag == "Inputs" || ( real && tag == "Reinputs" ) )
@@ -162,14 +173,28 @@ bool ReplayManager::load ( const string& replayFile, bool real )
                 if ( gameMode != CC_GAME_MODE_IN_GAME )
                     continue;
 
-                // TODO parse initial game state
+                ASSERT ( initialStates.back().get() != 0 );
+
+                uint32_t chara, moon, color;
+                ss >> chara >> moon >> color;
+
+                initialStates.back()->getAs<InitialGameState>().chara[0] = chara;
+                initialStates.back()->getAs<InitialGameState>().moon[0] = moon;
+                initialStates.back()->getAs<InitialGameState>().color[0] = color;
             }
             else if ( tag == "P2" )
             {
                 if ( gameMode != CC_GAME_MODE_IN_GAME )
                     continue;
 
-                // TODO parse initial game state
+                ASSERT ( initialStates.back().get() != 0 );
+
+                uint32_t chara, moon, color;
+                ss >> chara >> moon >> color;
+
+                initialStates.back()->getAs<InitialGameState>().chara[1] = chara;
+                initialStates.back()->getAs<InitialGameState>().moon[1] = moon;
+                initialStates.back()->getAs<InitialGameState>().color[1] = color;
             }
             else
             {
@@ -282,4 +307,17 @@ uint32_t ReplayManager::getLastFrame() const
         return 0;
 
     return inputs.back().size() - 1;
+}
+
+MsgPtr ReplayManager::getInitialStateBefore ( uint32_t index ) const
+{
+    for ( int i = initialStates.size() - 1; i >= 0; --i )
+    {
+        ASSERT ( initialStates[i].get() != 0 );
+
+        if ( initialStates[i]->getAs<InitialGameState>().indexedFrame.parts.index < index )
+            return initialStates[i];
+    }
+
+    return 0;
 }

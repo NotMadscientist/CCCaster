@@ -52,4 +52,6 @@ public:
     uint32_t getLastIndex() const;
 
     uint32_t getLastFrame() const;
+
+    MsgPtr getInitialStateBefore ( uint32_t index ) const;
 };
