@@ -92,6 +92,13 @@ void MemDumpList::update()
     // Merge continuous address ranges
     for ( ++jt; jt != sortedList.end(); ++jt )
     {
+        if ( jt->addr >= addrs.back().addr && jt->addr < addrs.back().addr + addrs.back().size )
+        {
+            LOG ( "Overlap: { 0x%06X, 0x%06X } and { 0x%06X, 0x%06X }",
+                  addrs.back().addr, addrs.back().addr + addrs.back().size,
+                  jt->addr, jt->addr + jt->size );
+        }
+
         // Add to the previous address's size if the next one is continuous
         if ( addrs.back().addr + addrs.back().size == jt->addr )
         {

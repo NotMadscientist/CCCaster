@@ -10,48 +10,6 @@ using namespace std;
 #define LOG_FILE "generator.log"
 
 
-
-
-
-
-
-// P1 and P2 status messages
-// - indicates rebeat, crits, max, circuit break, etc...
-// #define CC_MSG1_ARRAY_ADDR          ((char *)0x563580)
-// #define CC_MSG2_ARRAY_ADDR          ((char *)0x5635F4)
-// #define CC_MSG_ARRAY_LEN            (96)
-#define CC_MSGS_ADDR_START          ((char *)0x563580)
-#define CC_MSGS_ADDR_END            ((char *)0x563668)
-
-// Graphical effects array
-// - CC_FX_ARRAY_END-12 is 8 bytes of zeros
-// - CC_FX_ARRAY_END-4 is an int that counts down when an effect is active
-#define CC_FX_ARRAY_START           ((char *)0x61E170)
-#define CC_FX_ARRAY_END             ((char *)0x67BD7C)
-
-// Projectile effects array
-// - CC_FX2_ARRAY_START-4 is a timer (don't need to rewind?)
-// - CC_FX2_ARRAY_START is a flag that indicates if an effect is active
-#define CC_FX2_ARRAY_START          ((char *)0x67BDE8)
-#define CC_FX2_ARRAY_END            ((char *)0x746048)
-
-#define CC_OUTRO_FX_ARRAY_START     ((char *)0x74D99C)
-#define CC_OUTRO_FX_ARRAY_END       ((char *)0x74DA00)
-
-#define CC_INTRO_FX_ARRAY_START     ((char *)0x74E4C8)
-#define CC_INTRO_FX_ARRAY_END       ((char *)0x74E86C)
-
-#define CC_INTRO_FX2_ARRAY_START    ((char *)0x76E6F4)
-#define CC_INTRO_FX2_ARRAY_END      ((char *)0x76E7CC)
-
-
-
-
-
-
-
-
-
 #define CC_P1_EXTRA_STRUCT_ADDR     ( ( char * )     0x557DB8 )
 #define CC_P2_EXTRA_STRUCT_ADDR     ( ( char * )     0x557FC4 )
 #define CC_EXTRA_STRUCT_SIZE        ( 0x20C )
@@ -70,6 +28,10 @@ using namespace std;
 
 #define CC_SUPER_STATE_ARRAY_ADDR   ( ( char * )     0x558608 )
 #define CC_SUPER_STATE_ARRAY_SIZE   ( 5 * 0x30C )
+
+#define CC_P1_STATUS_MSG_ARRAY_ADDR ( ( char * )     0x563580 )
+#define CC_P2_STATUS_MSG_ARRAY_ADDR ( ( char * )     0x5635F4 )
+#define CC_STATUS_MSG_ARRAY_SIZE    ( 0x60 )
 
 #define CC_CAMERA_SCALE_1_ADDR      ( ( float * )    0x54EB70 ) // zoom
 #define CC_CAMERA_SCALE_2_ADDR      ( ( float * )    0x54EB74 ) // zoom
@@ -196,15 +158,19 @@ static const vector<MemDump> miscAddrs =
     CC_P1_GAME_POINT_FLAG_ADDR,
     CC_P2_GAME_POINT_FLAG_ADDR,
 
-    // Graphical state
+    // HUD misc graphics
     CC_METER_ANIMATION_ADDR,
-
     CC_P1_SPELL_CIRCLE_ADDR,
     CC_P2_SPELL_CIRCLE_ADDR,
 
-    CC_CAMERA_SCALE_1_ADDR,
-    CC_CAMERA_SCALE_2_ADDR,
-    CC_CAMERA_SCALE_3_ADDR,
+    // TODO enable after all other desyncs have been fixed
+    // // HUD status message graphics
+    // { CC_P1_STATUS_MSG_ARRAY_ADDR, CC_STATUS_MSG_ARRAY_SIZE },
+    // { CC_P2_STATUS_MSG_ARRAY_ADDR, CC_STATUS_MSG_ARRAY_SIZE },
+
+    // // Intro / outro graphics
+    // { 0x74E4C8, 0x74E86C },
+    // { 0x76E6F8, 0x76FC10 },
 
     // Camera position state
     ( uint32_t * ) 0x555124,
@@ -214,6 +180,7 @@ static const vector<MemDump> miscAddrs =
     { 0x55DEDC, 0x55DEE8 },
     { 0x564B14, 0x564B20 },
 
+    // More camera position state
     // ( uint16_t * ) 0x564B10,
     // ( uint32_t * ) 0x563750,
     // ( uint32_t * ) 0x557DB0,
@@ -234,6 +201,10 @@ static const vector<MemDump> miscAddrs =
     ( uint32_t * ) 0x564AF8,
     ( uint32_t * ) 0x564B24,
     ( uint32_t * ) 0x76E6F4,
+
+    CC_CAMERA_SCALE_1_ADDR,
+    CC_CAMERA_SCALE_2_ADDR,
+    CC_CAMERA_SCALE_3_ADDR,
 };
 
 static const MemDump effectAddrs ( CC_EFFECTS_ARRAY_ADDR, CC_EFFECT_ELEMENT_SIZE, {
