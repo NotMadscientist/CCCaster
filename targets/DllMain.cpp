@@ -1308,7 +1308,7 @@ struct DllMain
                     auto it = find ( args.begin(), args.end(), "start" );
                     if ( it != args.end() )
                         ++it;
-                    if ( it != args.end() && ( args.end() - it ) >= 5 ) // TODO only need one arg
+                    if ( it != args.end() && ( args.end() - it ) >= 7 ) // TODO only need one arg
                     {
                         netMan.initial.indexedFrame.parts.frame = 0;
                         netMan.initial.netplayState = 0xFF;
@@ -1319,8 +1319,10 @@ struct DllMain
                         // TODO fetch these args from the replay file
                         netMan.initial.chara[0]                 = lexical_cast<int> ( *it++ );
                         netMan.initial.moon[0]                  = lexical_cast<int> ( *it++ );
+                        netMan.initial.color[0]                 = lexical_cast<int> ( *it++ );
                         netMan.initial.chara[1]                 = lexical_cast<int> ( *it++ );
                         netMan.initial.moon[1]                  = lexical_cast<int> ( *it++ );
+                        netMan.initial.color[1]                 = lexical_cast<int> ( *it++ );
                     }
 
                     it = find ( args.begin(), args.end(), "stop" );
