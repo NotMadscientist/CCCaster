@@ -154,10 +154,11 @@ struct DllMain
     bool randomDelay = false;
     bool randomRollback = false;
     uint32_t rollUpTo = 10;
-    bool replayInputs = false;
 
     // ReplayManager instance
     ReplayManager repMan;
+    bool replayInputs = false;
+    uint32_t replaySpeed = 2;
     IndexedFrame replayStop = MaxIndexedFrame;
 #endif // RELEASE
 
@@ -689,7 +690,9 @@ struct DllMain
         DllOverlayUi::debugText = format ( "%+d [%s]", delta, netMan.getIndexedFrame() );
         DllOverlayUi::debugTextAlign = 1;
 
-        if ( !KeyboardState::isDown ( VK_SPACE ) && replayInputs && netMan.getIndex() <= repMan.getLastIndex() )
+        if ( replayInputs && replaySpeed == 1 )
+            DllFrameRate::desiredFps = numeric_limits<double>::max();
+        else if ( replayInputs && replaySpeed == 2 )
             *CC_SKIP_FRAMES_ADDR = 1;
 
         if ( netMan.getIndex() == repMan.getLastIndex() && netMan.getFrame() == repMan.getLastFrame() )
@@ -751,7 +754,7 @@ struct DllMain
         *CC_SKIP_FRAMES_ADDR = ( fastFwdStopFrame.value ? 1 : 0 );
 
 #ifndef RELEASE
-        if ( replayInputs )
+        if ( replayInputs && replaySpeed == 2 )
             *CC_SKIP_FRAMES_ADDR = 1;
 #endif // RELEASE
 
@@ -1305,8 +1308,15 @@ struct DllMain
                     const string replayFile = options.arg ( Options::AppDir ) + args[0];
                     const bool real = find ( args.begin(), args.end(), "real" ) != args.end();
 
+                    // Parse replay speed
+                    auto it = find ( args.begin(), args.end(), "speed" );
+                    if ( it != args.end() )
+                        ++it;
+                    if ( it != args.end() )
+                        replaySpeed = lexical_cast<uint32_t> ( *it );
+
                     // Parse stop index and frame
-                    auto it = find ( args.begin(), args.end(), "stop" );
+                    it = find ( args.begin(), args.end(), "stop" );
                     if ( it != args.end() )
                         ++it;
                     if ( it != args.end() && ( args.end() - it ) >= 2 )
