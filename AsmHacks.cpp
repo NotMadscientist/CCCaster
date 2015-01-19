@@ -31,6 +31,8 @@ uint32_t currentMenuIndex = 0;
 
 uint32_t menuConfirmState = 0;
 
+uint32_t roundStartCounter = 0;
+
 uint32_t *autoReplaySaveStatePtr = 0;
 
 uint8_t enableEscapeToExit = true;

@@ -46,6 +46,9 @@ extern uint32_t currentMenuIndex;
 // A menu confirm will only go through if menuConfirmState is greater than 1.
 extern uint32_t menuConfirmState;
 
+// Round start counter, this gets incremented whenever players can start moving
+extern uint32_t roundStartCounter;
+
 // Auto replay save state, is set to 1 (loading), then 100 (saving), finally 255 (saved).
 extern uint32_t *autoReplaySaveStatePtr;
 
@@ -206,6 +209,27 @@ static const AsmList hijackMenu =
                                                                     // labelB:
         0x89, 0x01,                                                 // mov [ecx],eax
         0xEB, 0xAE                                                  // jmp 0x428F7A
+    } },
+};
+
+// Increment a counter at the beginning of the round when players can move
+static const AsmList detectRoundStart =
+{
+    { ( void * ) 0x440CC5, {
+        0xEB, 0x4F                                                  // jmp 0x440D16
+                                                                    // after:
+    } },
+    { ( void * ) 0x440D16, {
+        0xB9, INLINE_DWORD ( &roundStartCounter ),                  // mov ecx,[&roundStartCounter]
+        0xE9, 0xE2, 0x02, 0x00, 0x00                                // jmp 0x441002
+    } },
+    { ( void * ) 0x441002, {
+        0x8B, 0x31,                                                 // mov esi,[ecx]
+        0x46,                                                       // inc esi
+        0x89, 0x31,                                                 // mov [ecx],esi
+        0x5E,                                                       // pop esi
+        0x59,                                                       // pop ecx
+        0xE9, 0x07, 0xFD, 0xFF, 0xFF                                // jmp 0x440CC5+2 (after)
     } },
 };
 

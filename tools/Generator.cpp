@@ -181,17 +181,17 @@ static const vector<MemDump> miscAddrs =
     { 0x564B14, 0x564B20 },
 
     // More camera position state
-    // ( uint16_t * ) 0x564B10,
-    // ( uint32_t * ) 0x563750,
-    // ( uint32_t * ) 0x557DB0,
-    // ( uint32_t * ) 0x557DB4,
+    ( uint16_t * ) 0x564B10,
+    ( uint32_t * ) 0x563750,
+    ( uint32_t * ) 0x557DB0,
+    ( uint32_t * ) 0x557DB4,
 
-    // ( uint8_t * ) 0x557D2B,
-    // ( uint16_t * ) 0x557DAC,
-    // ( uint16_t * ) 0x559546,
-    // ( uint16_t * ) 0x564B00,
-    // ( uint32_t * ) 0x76E6F8,
-    // ( uint32_t * ) 0x7B1D2C,
+    ( uint8_t * ) 0x557D2B,
+    ( uint16_t * ) 0x557DAC,
+    ( uint16_t * ) 0x559546,
+    ( uint16_t * ) 0x564B00,
+    ( uint32_t * ) 0x76E6F8,
+    ( uint32_t * ) 0x7B1D2C,
 
     // Camera scaling state
     ( uint32_t * ) 0x55D204,

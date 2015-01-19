@@ -84,13 +84,12 @@ static Mutex deinitMutex;
 static void deinitialize();
 
 // Enum of variables to monitor
-ENUM ( Variable, WorldTime, GameMode, SkippableFlag, IntroState,
+ENUM ( Variable, WorldTime, GameMode, RoundStart, SkippableFlag,
        MenuConfirmState, AutoReplaySave, GameStateCounter, CurrentMenuIndex );
 
 
 struct DllMain
         : public Main
-        , public RefChangeMonitor<Variable, uint8_t>::Owner
         , public RefChangeMonitor<Variable, uint32_t>::Owner
         , public PtrToRefChangeMonitor<Variable, uint32_t>::Owner
         , public SpectatorManager
@@ -948,25 +947,6 @@ struct DllMain
     }
 
     // ChangeMonitor callback
-    void hasChanged ( Variable var, uint8_t previous, uint8_t current ) override
-    {
-        switch ( var.value )
-        {
-            case Variable::IntroState:
-                if ( ! ( previous == 2 && current == 1 && netMan.getState() == NetplayState::Skippable ) )
-                    break;
-
-                // In-game happens when intro state is 1, ie when players can start moving
-                LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
-                netplayStateChanged ( NetplayState::InGame );
-                break;
-
-            default:
-                LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
-                break;
-        }
-    }
-
     void hasChanged ( Variable var, uint32_t previous, uint32_t current ) override
     {
         switch ( var.value )
@@ -978,6 +958,12 @@ struct DllMain
             case Variable::GameMode:
                 LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
                 gameModeChanged ( previous, current );
+                break;
+
+            case Variable::RoundStart:
+                // In-game happens after round start, when players can start moving
+                LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
+                netplayStateChanged ( NetplayState::InGame );
                 break;
 
             case Variable::SkippableFlag:
@@ -1637,8 +1623,8 @@ struct DllMain
         netplayStateChanged ( NetplayState::PreInitial );
 
         ChangeMonitor::get().addRef ( this, Variable ( Variable::GameMode ), *CC_GAME_MODE_ADDR );
+        ChangeMonitor::get().addRef ( this, Variable ( Variable::RoundStart ), AsmHacks::roundStartCounter );
         ChangeMonitor::get().addRef ( this, Variable ( Variable::SkippableFlag ), *CC_SKIPPABLE_FLAG_ADDR );
-        ChangeMonitor::get().addRef ( this, Variable ( Variable::IntroState ), *CC_INTRO_STATE_ADDR );
 
 #ifndef RELEASE
         ChangeMonitor::get().addRef ( this, Variable ( Variable::MenuConfirmState ), AsmHacks::menuConfirmState );

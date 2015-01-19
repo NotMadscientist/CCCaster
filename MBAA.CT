@@ -672,17 +672,10 @@
     </CheatEntry>
     <CheatEntry>
       <ID>154</ID>
-      <Description>"super flash flag"</Description>
+      <Description>"super flash pause flag"</Description>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
       <Address>005595B4</Address>
-    </CheatEntry>
-    <CheatEntry>
-      <ID>155</ID>
-      <Description>"super flash timer (global)"</Description>
-      <Color>80000008</Color>
-      <VariableType>4 Bytes</VariableType>
-      <Address>00562A48</Address>
       <CheatEntries>
         <CheatEntry>
           <ID>434</ID>
@@ -692,6 +685,13 @@
           <Address>0055DF00</Address>
         </CheatEntry>
       </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>155</ID>
+      <Description>"super flash timer"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>00562A48</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>191</ID>
