@@ -230,7 +230,7 @@ const string& ReplayManager::getStateStr ( IndexedFrame indexedFrame )
 
 const ReplayManager::Inputs& ReplayManager::getInputs ( IndexedFrame indexedFrame )
 {
-    static const Inputs confirm = { MaxIndexedFrame, CC_BUTTON_CONFIRM < 4, CC_BUTTON_CONFIRM << 4 };
+    static const Inputs confirm = { MaxIndexedFrame, CC_BUTTON_CONFIRM << 4, CC_BUTTON_CONFIRM << 4 };
     static const Inputs down = { MaxIndexedFrame, 2, 2 };
     static const Inputs empty = { MaxIndexedFrame, 0, 0 };
 
