@@ -947,7 +947,7 @@
       <Description>"Round over message timer"</Description>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
-      <Address>MBAA.exe+34E4E4</Address>
+      <Address>0074E4E4</Address>
     </CheatEntry>
   </CheatEntries>
   <CheatCodes>
