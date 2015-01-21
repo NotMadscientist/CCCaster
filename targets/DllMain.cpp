@@ -368,6 +368,10 @@ struct DllMain
 
                         uint16_t buttons = ( rand() % 0x1000 );
 
+                        // Reduce the chances of hitting the D button
+                        if ( rand() % 100 < 90 )
+                            buttons &= ~ CC_BUTTON_D;
+
                         // Prevent hitting some non-essential buttons
                         buttons &= ~ ( CC_BUTTON_FN1 | CC_BUTTON_FN2 | CC_BUTTON_START );
 

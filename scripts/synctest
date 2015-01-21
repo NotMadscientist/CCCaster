@@ -26,7 +26,7 @@ do
 
     scripts/debug $@
 
-    tail -n5 cccaster/sync.log | grep --quiet Desync
+    cat cccaster/sync.log | tail -n5 | grep --quiet Desync
 
     if (( $? == 0 )); then
 
