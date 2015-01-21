@@ -19,7 +19,7 @@ ENUM ( NetplayState, PreInitial, Initial, AutoCharaSelect, CharaSelect, Loading,
 
 /* Netplay state transitions
 
-    PreInitial -> Initial -> { AutoCharaSelect (spectate only), CharaSelect }
+    Unknown -> PreInitial -> Initial -> { AutoCharaSelect (spectate only), CharaSelect }
 
     { AutoCharaSelect (spectate only), CharaSelect } -> Loading
 
@@ -210,6 +210,9 @@ public:
 
     // Set remote transition index
     void setRemoteIndex ( uint32_t remoteIndex );
+
+    // Check if the next state transition is valid
+    bool isValidNext ( NetplayState state );
 
     friend class ProcessManager;
 };

@@ -6,6 +6,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <unordered_map>
+#include <unordered_set>
 
 using namespace std;
 
@@ -476,7 +478,11 @@ uint32_t NetplayManager::getBufferedPreserveStartIndex() const
 
 void NetplayManager::setState ( NetplayState state )
 {
-    ASSERT ( this->state != state );
+    if ( !isValidNext ( state ) )
+    {
+        LOG ( "Invalid transition: %s -> %s", this->state, state );
+        return;
+    }
 
     LOG ( "indexedFrame=[%s]; previous=%s; current=%s", indexedFrame, this->state, state );
 
@@ -910,4 +916,27 @@ void NetplayManager::setRemoteIndex ( uint32_t remoteIndex )
     LOG ( "remoteIndex=%u", remoteIndex );
 
     inputs[remotePlayer - 1].resize ( remoteIndex - startIndex, 0, 0 );
+}
+
+bool NetplayManager::isValidNext ( NetplayState next )
+{
+    static unordered_map<uint8_t, unordered_set<uint8_t>> validTransitions =
+    {
+        { NetplayState::Unknown, { NetplayState::PreInitial } },
+        { NetplayState::PreInitial, { NetplayState::Initial } },
+        { NetplayState::Initial, { NetplayState::AutoCharaSelect, NetplayState::CharaSelect } },
+        { NetplayState::AutoCharaSelect, { NetplayState::Loading } },
+        { NetplayState::CharaSelect, { NetplayState::Loading } },
+        { NetplayState::Loading, { NetplayState::Skippable, NetplayState::InGame } },
+        { NetplayState::Skippable, { NetplayState::InGame, NetplayState::RetryMenu } },
+        { NetplayState::InGame, { NetplayState::Skippable, NetplayState::CharaSelect } },
+        { NetplayState::RetryMenu, { NetplayState::Loading, NetplayState::CharaSelect } },
+    };
+
+    const auto it = validTransitions.find ( state.value );
+
+    if ( it == validTransitions.end() )
+        return false;
+
+    return ( it->second.find ( next.value ) != it->second.end() );
 }

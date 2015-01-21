@@ -793,7 +793,16 @@ struct DllMain
 
     void netplayStateChanged ( NetplayState state )
     {
-        ASSERT ( netMan.getState() != state );
+        // Catch invalid transitions
+        if ( !netMan.isValidNext ( state ) )
+        {
+            LOG_TO ( syncLog, "Desync!" );
+            LOG_TO ( syncLog, "Invalid transition: %s -> %s", netMan.getState(), state );
+            syncLog.deinitialize();
+
+            delayedStop ( ERROR_INTERNAL );
+            return;
+        }
 
         // Clear the last overlay message
         if ( !DllOverlayUi::isShowingMessage() )
@@ -803,6 +812,7 @@ struct DllMain
         // Leaving Initial or AutoCharaSelect
         if ( netMan.getState() == NetplayState::Initial || netMan.getState() == NetplayState::AutoCharaSelect )
         {
+            // Try to focus the game window
             SetForegroundWindow ( ( HWND ) DllHacks::windowHandle );
         }
 #endif // RELEASE
@@ -810,6 +820,7 @@ struct DllMain
         // Leaving Skippable
         if ( netMan.getState() == NetplayState::Skippable )
         {
+            // Reset state variables
             roundOverTimer = -1;
             lazyDisconnect = false;
         }
@@ -831,6 +842,7 @@ struct DllMain
         // Entering CharaSelect OR entering InGame
         if ( !clientMode.isOffline() && ( state == NetplayState::CharaSelect || state == NetplayState::InGame ) )
         {
+            // Indicate we should sync the RngState now
             shouldSyncRngState = true;
         }
 
@@ -855,8 +867,10 @@ struct DllMain
             }
         }
 
+        // Update local state
         netMan.setState ( state );
 
+        // Update remote index
         if ( dataSocket && dataSocket->isConnected() )
             dataSocket->send ( new TransitionIndex ( netMan.getIndex() ) );
     }
