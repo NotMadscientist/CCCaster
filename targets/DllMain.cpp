@@ -84,7 +84,7 @@ static Mutex deinitMutex;
 static void deinitialize();
 
 // Enum of variables to monitor
-ENUM ( Variable, WorldTime, GameMode, RoundStart, SkippableFlag,
+ENUM ( Variable, WorldTime, GameMode, RoundStart,
        MenuConfirmState, AutoReplaySave, GameStateCounter, CurrentMenuIndex );
 
 
@@ -179,9 +179,6 @@ struct DllMain
                     procMan.saveState ( netMan );
 
                     // Delayed round over check
-                    if ( roundOverTimer == 0 )
-                        checkRoundOver();
-
                     if ( roundOverTimer > 0 )
                         --roundOverTimer;
                 }
@@ -729,7 +726,7 @@ struct DllMain
         }
 
         // Log extra state while in-game
-        if ( netMan.getState() == NetplayState::InGame )
+        if ( netMan.isInGame() )
         {
             LOG_SYNC_CHARACTER ( 1 );
             LOG_SYNC_CHARACTER ( 2 );
@@ -758,6 +755,9 @@ struct DllMain
 #endif // RELEASE
 
         LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
+        LOG_SYNC ( "roundOverTimer=%d; introState=%u; roundTimer=%u; realTimer=%u; hitsparks=%u; camera={ %d, %d }",
+                   roundOverTimer, *CC_INTRO_STATE_ADDR, *CC_ROUND_TIMER_ADDR, *CC_REAL_TIMER_ADDR,
+                   *CC_HIT_SPARKS_ADDR, *CC_CAMERA_X_ADDR, *CC_CAMERA_Y_ADDR );
     }
 
     void frameStep()
@@ -768,6 +768,10 @@ struct DllMain
 
         // Check for changes to important variables for state transitions
         ChangeMonitor::get().check();
+
+        // Check for round over state during in-game
+        if ( netMan.isInGame() )
+            checkRoundOver();
 
         // Need to manually set the intro state to 0 during rollback
         if ( netMan.isInGame() && netMan.getFrame() > 224 && *CC_INTRO_STATE_ADDR )
@@ -925,25 +929,35 @@ struct DllMain
         stopTimer->start ( DELAYED_STOP );
     }
 
-    void startRoundOverCountDown()
-    {
-        ASSERT ( netMan.config.rollback > 0 );
-        roundOverTimer = netMan.config.rollback + ROLLBACK_ROUND_OVER_DELAY;
-    }
-
     void checkRoundOver()
     {
-        if ( ! ( netMan.getState() == NetplayState::InGame && *CC_SKIPPABLE_FLAG_ADDR ) )
+        const bool isOver = ( ( *CC_ROUND_TIMER_ADDR ) == 0 )
+                            || ( ( *CC_P1_HEALTH_ADDR ) == 0 )
+                            || ( ( *CC_P2_HEALTH_ADDR ) == 0 );
+
+        if ( netMan.config.rollback )
         {
-            ASSERT ( netMan.config.rollback > 0 );
-            roundOverTimer = -1;
-            return;
+            if ( isOver )
+            {
+                if ( roundOverTimer == 0 )
+                {
+                    roundOverTimer = -1;
+                    netplayStateChanged ( NetplayState::Skippable );
+                }
+                else if ( roundOverTimer < 0 )
+                {
+                    roundOverTimer = netMan.config.rollback + ROLLBACK_ROUND_OVER_DELAY;
+                }
+            }
+            else
+            {
+                roundOverTimer = -1;
+            }
         }
-
-        roundOverTimer = -1;
-
-        // Update NetplayState
-        netplayStateChanged ( NetplayState::Skippable );
+        else if ( isOver )
+        {
+            netplayStateChanged ( NetplayState::Skippable );
+        }
     }
 
     // ChangeMonitor callback
@@ -964,20 +978,6 @@ struct DllMain
                 // In-game happens after round start, when players can start moving
                 LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
                 netplayStateChanged ( NetplayState::InGame );
-                break;
-
-            case Variable::SkippableFlag:
-                if ( clientMode.isTraining()
-                        || ! ( previous == 0 && current == 1 && netMan.isInGame() ) )
-                    break;
-
-                // When the SkippableFlag is set while InGame (not training mode), we are in a Skippable state
-                LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
-
-                if ( netMan.config.rollback ) // Delay the check during rollback
-                    startRoundOverCountDown();
-                else
-                    checkRoundOver();
                 break;
 
             default:
@@ -1624,7 +1624,6 @@ struct DllMain
 
         ChangeMonitor::get().addRef ( this, Variable ( Variable::GameMode ), *CC_GAME_MODE_ADDR );
         ChangeMonitor::get().addRef ( this, Variable ( Variable::RoundStart ), AsmHacks::roundStartCounter );
-        ChangeMonitor::get().addRef ( this, Variable ( Variable::SkippableFlag ), *CC_SKIPPABLE_FLAG_ADDR );
 
 #ifndef RELEASE
         ChangeMonitor::get().addRef ( this, Variable ( Variable::MenuConfirmState ), AsmHacks::menuConfirmState );
