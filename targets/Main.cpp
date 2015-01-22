@@ -155,7 +155,7 @@ static IpAddrPort tryParseIpAddrPort ( const string& str )
         address.clear();
         lastError = "Unknown error!";
     }
-#endif
+#endif // NDEBUG
 
     return address;
 }
@@ -374,7 +374,7 @@ int main ( int argc, char *argv[] )
         system ( "@pause > nul" );
         return result;
     }
-#endif
+#endif // NOT RELEASE
 
     // Initialize config
     ui.initialize();
@@ -501,7 +501,7 @@ int main ( int argc, char *argv[] )
         {
             PRINT ( "Unknown error!" );
         }
-#endif
+#endif // NDEBUG
     }
 
     LOG ( "lastError='%s'", lastError );

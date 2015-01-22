@@ -36,6 +36,6 @@ extern std::string debugText;
 
 extern int debugTextAlign;
 
-#endif
+#endif // NOT RELEASE
 
 }

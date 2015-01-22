@@ -380,4 +380,4 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         TimerManager::get().deinitialize();                                                                         \
     }
 
-#endif
+#endif // NOT RELEASE
