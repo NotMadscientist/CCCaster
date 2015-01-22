@@ -62,7 +62,7 @@ static const vector<MemDump> playerAddrs =
     { ( void * ) 0x55532C, 4 },
     // { ( void * ) 0x55532C, 4, {
     //     MemDumpPtr ( 0, 0x24, 1 ), // segfaulted on this once
-    //     MemDumpPtr ( 0, 0x30, 2 )
+    //     MemDumpPtr ( 0, 0x30, 2 ),
     // } },
 
     { 0x555330, 0x55534C }, // ???
@@ -87,7 +87,51 @@ static const vector<MemDump> playerAddrs =
     { 0x555430, 0x55544C },
 
     { ( void * ) 0x55544C, 4 }, // graphics pointer? this is accessed all the time even when paused
+
     { ( void * ) 0x555450, 4 }, // graphics pointer? this is accessed all the time even when paused
+    // { ( void * ) 0x555450, 4, {
+    //     MemDumpPtr ( 0, 0x00, 2 ),
+    //     MemDumpPtr ( 0, 0x0C, 2 ),
+    //     MemDumpPtr ( 0, 0x0E, 1 ),
+    //     MemDumpPtr ( 0, 0x0F, 1 ),
+    //     MemDumpPtr ( 0, 0x10, 2 ),
+    //     MemDumpPtr ( 0, 0x12, 2 ),
+    //     MemDumpPtr ( 0, 0x16, 2 ),
+    //     MemDumpPtr ( 0, 0x1B, 1 ),
+    //     MemDumpPtr ( 0, 0x1C, 1 ),
+    //     MemDumpPtr ( 0, 0x2E, 2 ),
+    //     MemDumpPtr ( 0, 0x38, 4, {
+    //         MemDumpPtr ( 0, 0x00, 4, {
+    //             MemDumpPtr ( 0, 0x00, 1 ),
+    //             MemDumpPtr ( 0, 0x02, 2 ),
+    //             MemDumpPtr ( 0, 0x04, 2 ),
+    //             MemDumpPtr ( 0, 0x06, 1 ),
+    //             MemDumpPtr ( 0, 0x08, 1 ),
+    //         } ),
+    //         MemDumpPtr ( 0, 0x08, 4, {
+    //             MemDumpPtr ( 0, 0x00, 1 ),
+    //             MemDumpPtr ( 0, 0x02, 1 ),
+    //             MemDumpPtr ( 0, 0x06, 2 ),
+    //             MemDumpPtr ( 0, 0x0C, 4 ),
+    //         } ),
+    //         MemDumpPtr ( 0, 0x0C, 1 ),
+    //         MemDumpPtr ( 0, 0x11, 1 ),
+    //         MemDumpPtr ( 0, 0x14, 1 ),
+    //     } ),
+    //     MemDumpPtr ( 0, 0x40, 1 ),
+    //     MemDumpPtr ( 0, 0x41, 1 ),
+    //     MemDumpPtr ( 0, 0x42, 1 ),
+    //     MemDumpPtr ( 0, 0x44, 4 ), // more to this?
+    //     MemDumpPtr ( 0, 0x4C, 4, {
+    //         MemDumpPtr ( 0, 0, 4, {
+    //             MemDumpPtr ( 0, 0x00, 2 ),
+    //             MemDumpPtr ( 0, 0x02, 2 ),
+    //             MemDumpPtr ( 0, 0x04, 2 ),
+    //             MemDumpPtr ( 0, 0x06, 2 ),
+    //         } ),
+    //     } ),
+    // } },
+
     { ( void * ) 0x555454, 4 }, // graphics pointer? this is accessed all the time even when paused
 
     { ( void * ) 0x555458, 4 }, // pointer to player struct?
