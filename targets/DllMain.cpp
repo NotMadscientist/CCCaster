@@ -502,65 +502,6 @@ struct DllMain
             }
         }
 
-#ifndef RELEASE
-        if ( !replayInputs )
-        {
-            // Test one time rollback
-            if ( KeyboardState::isPressed ( VK_F9 ) && netMan.isInGame() )
-            {
-                IndexedFrame target = netMan.getIndexedFrame();
-
-                if ( target.parts.frame <= 30 )
-                    target.parts.frame = 0;
-                else
-                    target.parts.frame -= 30;
-
-                procMan.loadState ( target, netMan );
-            }
-
-            // Test random rollback
-            if ( KeyboardState::isPressed ( VK_F10 ) )
-            {
-                randomRollback = !randomRollback;
-                DllOverlayUi::showMessage ( randomRollback ? "Enabled random rollback" : "Disabled random rollback" );
-            }
-
-            if ( randomRollback && netMan.isInGame() && ( netMan.getFrame() % 150 < 50 ) )
-            {
-                const uint32_t distance = 1 + ( rand() % rollUpTo );
-
-                IndexedFrame target = netMan.getIndexedFrame();
-
-                if ( target.parts.frame <= distance )
-                    target.parts.frame = 0;
-                else
-                    target.parts.frame -= distance;
-
-                const string before = format ( "%s [%u] %s [%s]",
-                                               gameModeStr ( *CC_GAME_MODE_ADDR ), *CC_GAME_MODE_ADDR,
-                                               netMan.getState(), netMan.getIndexedFrame() );
-
-                // Indicate we're re-running to the current frame
-                fastFwdStopFrame = netMan.getIndexedFrame();
-
-                // Reset the game state (this resets game state AND netMan state)
-                if ( procMan.loadState ( target, netMan ) )
-                {
-                    // Start fast-forwarding now
-                    *CC_SKIP_FRAMES_ADDR = 1;
-
-                    LOG_TO ( syncLog, "%s Rollback: target=[%s]; actual=[%s]",
-                             before, target, netMan.getIndexedFrame() );
-
-                    LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
-                    return;
-                }
-
-                LOG_TO ( syncLog, "%s Rollback to target=[%s] failed!", before, target );
-            }
-        }
-#endif // NOT RELEASE
-
         // Only rollback when necessary
         if ( netMan.isInRollback() && netMan.getLastChangedFrame().value < netMan.getIndexedFrame().value )
         {
@@ -627,7 +568,73 @@ struct DllMain
             // TODO set rollback
         }
 
+        // Adjust FPS based on remote frame delta
+        if ( netMan.getRemoteFrameDelta() < 0 )
+            DllFrameRate::desiredFps = 61;
+        else
+            DllFrameRate::desiredFps = 60;
+
+        // Cleared last played sound effects
+        memset ( AsmHacks::sfxFilterArray, 0, CC_SFX_ARRAY_LEN );
+
 #ifndef RELEASE
+        if ( !replayInputs )
+        {
+            // Test one time rollback
+            if ( KeyboardState::isPressed ( VK_F9 ) && netMan.isInGame() )
+            {
+                IndexedFrame target = netMan.getIndexedFrame();
+
+                if ( target.parts.frame <= 30 )
+                    target.parts.frame = 0;
+                else
+                    target.parts.frame -= 30;
+
+                procMan.loadState ( target, netMan );
+            }
+
+            // Test random rollback
+            if ( KeyboardState::isPressed ( VK_F10 ) )
+            {
+                randomRollback = !randomRollback;
+                DllOverlayUi::showMessage ( randomRollback ? "Enabled random rollback" : "Disabled random rollback" );
+            }
+
+            if ( randomRollback && netMan.isInGame() && ( netMan.getFrame() % 150 < 50 ) )
+            {
+                const uint32_t distance = 1 + ( rand() % rollUpTo );
+
+                IndexedFrame target = netMan.getIndexedFrame();
+
+                if ( target.parts.frame <= distance )
+                    target.parts.frame = 0;
+                else
+                    target.parts.frame -= distance;
+
+                const string before = format ( "%s [%u] %s [%s]",
+                                               gameModeStr ( *CC_GAME_MODE_ADDR ), *CC_GAME_MODE_ADDR,
+                                               netMan.getState(), netMan.getIndexedFrame() );
+
+                // Indicate we're re-running to the current frame
+                fastFwdStopFrame = netMan.getIndexedFrame();
+
+                // Reset the game state (this resets game state AND netMan state)
+                if ( procMan.loadState ( target, netMan ) )
+                {
+                    // Start fast-forwarding now
+                    *CC_SKIP_FRAMES_ADDR = 1;
+
+                    LOG_TO ( syncLog, "%s Rollback: target=[%s]; actual=[%s]",
+                             before, target, netMan.getIndexedFrame() );
+
+                    LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
+                    return;
+                }
+
+                LOG_TO ( syncLog, "%s Rollback to target=[%s] failed!", before, target );
+            }
+        }
+
         if ( dataSocket && dataSocket->isConnected()
                 && ( ( netMan.getFrame() % ( 5 * 60 ) == 0 ) || ( netMan.getFrame() % 150 == 149 ) )
                 && netMan.getState().value >= NetplayState::CharaSelect && netMan.getState() != NetplayState::Loading
@@ -688,16 +695,11 @@ struct DllMain
             replayInputs = false;
             SetForegroundWindow ( ( HWND ) DllHacks::windowHandle );
         }
+
+        if ( netMan.getIndexedFrame().value == replayStop.value )
+            MessageBox ( 0, 0, 0, 0 );
+
 #endif // NOT RELEASE
-
-        // Adjust FPS based on remote frame delta
-        if ( netMan.getRemoteFrameDelta() < 0 )
-            DllFrameRate::desiredFps = 61;
-        else
-            DllFrameRate::desiredFps = 60;
-
-        // Cleared last played sound effects
-        memset ( AsmHacks::sfxFilterArray, 0, CC_SFX_ARRAY_LEN );
 
 #ifndef DISABLE_LOGGING
         MsgPtr msgRngState = procMan.getRngState ( 0 );
@@ -706,11 +708,6 @@ struct DllMain
         // Log state every frame
         LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
         LOG_SYNC ( "Inputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
-
-#ifndef RELEASE
-        if ( netMan.getIndexedFrame().value == replayStop.value )
-            MessageBox ( 0, 0, 0, 0 );
-#endif // NOT RELEASE
 
         // Log extra state during chara select
         if ( netMan.getState() == NetplayState::CharaSelect )
