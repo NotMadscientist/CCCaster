@@ -174,7 +174,7 @@ struct MainApp
         {
             lastError = "Unknown error!";
         }
-#endif
+#endif // NDEBUG
 
         stop();
     }

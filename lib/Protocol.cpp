@@ -99,7 +99,7 @@ string Protocol::encode ( const MsgPtr& msg )
         LOG ( "md5=[ %s ]", formatAsHex ( msg->md5, sizeof ( msg->md5 ) ) );
 #endif
     }
-#endif
+#endif // NOT DISABLE_UPDATE_MD5
 
     // Encode MD5 at the end of message data
     archive ( msg->md5 );
@@ -218,7 +218,7 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
 #endif
         return NullMsg;
     }
-#endif
+#endif // NOT DISABLE_UPDATE_MD5
 
     return msg;
 }

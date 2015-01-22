@@ -71,4 +71,4 @@ TEST ( Timer, RepeatRandom )
     TimerManager::get().deinitialize();
 }
 
-#endif // RELEASE
+#endif // NOT RELEASE

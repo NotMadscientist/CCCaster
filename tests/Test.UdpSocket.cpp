@@ -271,4 +271,4 @@ TEST ( UdpSocket, BindThenConnect )
     TimerManager::get().deinitialize();
 }
 
-#endif // RELEASE
+#endif // NOT RELEASE

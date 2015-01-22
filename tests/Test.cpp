@@ -11,4 +11,4 @@ int RunAllTests ( int& argc, char *argv[] )
     return RUN_ALL_TESTS();
 }
 
-#endif // RELEASE
+#endif // NOT RELEASE

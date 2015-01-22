@@ -18,4 +18,4 @@ TEST_SEND_WITHOUT_SERVER    ( TcpSocket, 0, 0, 0, 1000 )
 
 TEST_SEND_PARTIAL           ( TcpSocket )
 
-#endif // RELEASE
+#endif // NOT RELEASE

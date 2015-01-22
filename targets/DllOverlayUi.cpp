@@ -293,7 +293,7 @@ string debugText;
 
 int debugTextAlign = 0;
 
-#endif
+#endif // NOT RELEASE
 
 } // namespace DllOverlayUi
 
@@ -343,7 +343,7 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
 #ifdef RELEASE
     if ( overlayState == Overlay::Disabled )
         return;
-#endif
+#endif // RELEASE
 
     D3DVIEWPORT9 viewport;
     device->GetViewport ( &viewport );
@@ -367,7 +367,7 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
 
     if ( overlayState == Overlay::Disabled )
         return;
-#endif
+#endif // NOT RELEASE
 
     // Calculate message width if showing one
     float messageWidth = 0.0f;

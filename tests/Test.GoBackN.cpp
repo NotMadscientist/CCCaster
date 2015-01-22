@@ -408,4 +408,4 @@ TEST ( GoBackN, Timeout )
     TimerManager::get().deinitialize();
 }
 
-#endif // RELEASE
+#endif // NOT RELEASE

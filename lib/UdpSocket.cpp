@@ -263,7 +263,7 @@ bool UdpSocket::sendRaw ( const MsgPtr& msg, const IpAddrPort& address )
             msg->md5empty = true;
         }
     }
-#endif
+#endif // NOT RELEASE
 
     string buffer = ::Protocol::encode ( msg );
 
