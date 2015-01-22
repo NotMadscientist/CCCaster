@@ -359,7 +359,7 @@ struct DllMain
                 {
                     bool shouldRandomize = ( netMan.getFrame() % 2 );
                     if ( netMan.isInRollback() )
-                        shouldRandomize = ( netMan.getFrame() % 150 < 50 );
+                        shouldRandomize &= ( netMan.getFrame() % 150 < 80 );
 
                     if ( shouldRandomize )
                     {
@@ -372,7 +372,7 @@ struct DllMain
                         uint16_t buttons = ( rand() % 0x1000 );
 
                         // Reduce the chances of hitting the D button
-                        if ( rand() % 100 < 95 )
+                        if ( rand() % 100 < 98 )
                             buttons &= ~ CC_BUTTON_D;
 
                         // Prevent hitting some non-essential buttons
