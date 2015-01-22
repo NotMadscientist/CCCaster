@@ -690,7 +690,7 @@ struct DllMain
             return;
         }
 
-        if ( netMan.getIndex() >= repMan.getLastIndex() && netMan.getFrame() >= repMan.getLastFrame() )
+        if ( replayInputs && netMan.getIndex() >= repMan.getLastIndex() && netMan.getFrame() >= repMan.getLastFrame() )
         {
             replayInputs = false;
             SetForegroundWindow ( ( HWND ) DllHacks::windowHandle );
