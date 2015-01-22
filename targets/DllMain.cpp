@@ -159,7 +159,7 @@ struct DllMain
     bool replayInputs = false;
     uint32_t replaySpeed = 2;
     IndexedFrame replayStop = MaxIndexedFrame;
-#endif // RELEASE
+#endif // NOT RELEASE
 
     void frameStepNormal()
     {
@@ -260,7 +260,7 @@ struct DllMain
                         changeConfig.invalidate();
                         dataSocket->send ( changeConfig );
                     }
-#endif // RELEASE
+#endif // NOT RELEASE
                 }
                 else if ( clientMode.isLocal() )                // Local input
                 {
@@ -279,6 +279,9 @@ struct DllMain
                 }
 
 #ifndef RELEASE
+                DllOverlayUi::debugText = format ( "%+d [%s]", netMan.getRemoteFrameDelta(), netMan.getIndexedFrame() );
+                DllOverlayUi::debugTextAlign = 1;
+
                 // Replay inputs and rollback
                 if ( replayInputs )
                 {
@@ -369,7 +372,7 @@ struct DllMain
                         uint16_t buttons = ( rand() % 0x1000 );
 
                         // Reduce the chances of hitting the D button
-                        if ( rand() % 100 < 90 )
+                        if ( rand() % 100 < 95 )
                             buttons &= ~ CC_BUTTON_D;
 
                         // Prevent hitting some non-essential buttons
@@ -382,7 +385,7 @@ struct DllMain
                         localInputs [ clientMode.isLocal() ? 1 : 0 ] = COMBINE_INPUT ( direction, buttons );
                     }
                 }
-#endif // RELEASE
+#endif // NOT RELEASE
 
                 // Assign local player input
                 if ( !clientMode.isSpectate() )
@@ -391,7 +394,7 @@ struct DllMain
                     if ( netMan.isInRollback() )
                         netMan.assignInput ( localPlayer, localInputs[0], netMan.getFrame() + netMan.getDelay() );
                     else
-#endif // RELEASE
+#endif // NOT RELEASE
                         netMan.setInput ( localPlayer, localInputs[0] );
                 }
 
@@ -556,7 +559,7 @@ struct DllMain
                 LOG_TO ( syncLog, "%s Rollback to target=[%s] failed!", before, target );
             }
         }
-#endif // RELEASE
+#endif // NOT RELEASE
 
         // Only rollback when necessary
         if ( netMan.isInRollback() && netMan.getLastChangedFrame().value < netMan.getIndexedFrame().value )
@@ -624,13 +627,6 @@ struct DllMain
             // TODO set rollback
         }
 
-        const int delta = netMan.getRemoteFrameDelta();
-
-        if ( delta < 0 )
-            DllFrameRate::desiredFps = 61;
-        else
-            DllFrameRate::desiredFps = 60;
-
 #ifndef RELEASE
         if ( dataSocket && dataSocket->isConnected()
                 && ( ( netMan.getFrame() % ( 5 * 60 ) == 0 ) || ( netMan.getFrame() % 150 == 149 ) )
@@ -687,20 +683,18 @@ struct DllMain
             return;
         }
 
-        DllOverlayUi::debugText = format ( "%+d [%s]", delta, netMan.getIndexedFrame() );
-        DllOverlayUi::debugTextAlign = 1;
-
-        if ( replayInputs && replaySpeed == 1 )
-            DllFrameRate::desiredFps = numeric_limits<double>::max();
-        else if ( replayInputs && replaySpeed == 2 )
-            *CC_SKIP_FRAMES_ADDR = 1;
-
         if ( netMan.getIndex() == repMan.getLastIndex() && netMan.getFrame() == repMan.getLastFrame() )
         {
             replayInputs = false;
             SetForegroundWindow ( ( HWND ) DllHacks::windowHandle );
         }
-#endif // RELEASE
+#endif // NOT RELEASE
+
+        // Adjust FPS based on remote frame delta
+        if ( netMan.getRemoteFrameDelta() < 0 )
+            DllFrameRate::desiredFps = 61;
+        else
+            DllFrameRate::desiredFps = 60;
 
         // Cleared last played sound effects
         memset ( AsmHacks::sfxFilterArray, 0, CC_SFX_ARRAY_LEN );
@@ -716,7 +710,7 @@ struct DllMain
 #ifndef RELEASE
         if ( netMan.getIndexedFrame().value == replayStop.value )
             MessageBox ( 0, 0, 0, 0 );
-#endif // RELEASE
+#endif // NOT RELEASE
 
         // Log extra state during chara select
         if ( netMan.getState() == NetplayState::CharaSelect )
@@ -739,7 +733,7 @@ struct DllMain
                        *CC_HIT_SPARKS_ADDR, *CC_CAMERA_X_ADDR, *CC_CAMERA_Y_ADDR );
             return;
         }
-#endif // DISABLE_LOGGING
+#endif // NOT DISABLE_LOGGING
     }
 
     void frameStepRerun()
@@ -752,11 +746,6 @@ struct DllMain
 
         // Disable FPS limit only while fast-forwarding
         *CC_SKIP_FRAMES_ADDR = ( fastFwdStopFrame.value ? 1 : 0 );
-
-#ifndef RELEASE
-        if ( replayInputs && replaySpeed == 2 )
-            *CC_SKIP_FRAMES_ADDR = 1;
-#endif // RELEASE
 
         LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
         LOG_SYNC ( "roundOverTimer=%d; introState=%u; roundTimer=%u; realTimer=%u; hitsparks=%u; camera={ %d, %d }",
@@ -793,6 +782,13 @@ struct DllMain
         // Write game inputs
         procMan.writeGameInput ( localPlayer, netMan.getInput ( localPlayer ) );
         procMan.writeGameInput ( remotePlayer, netMan.getInput ( remotePlayer ) );
+
+#ifndef RELEASE
+        if ( replayInputs && ( replaySpeed == 1 || KeyboardState::isDown ( VK_SPACE ) ) )
+            DllFrameRate::desiredFps = numeric_limits<double>::max();
+        else if ( replayInputs && replaySpeed == 2 )
+            *CC_SKIP_FRAMES_ADDR = 1;
+#endif
     }
 
     void netplayStateChanged ( NetplayState state )
@@ -1161,7 +1157,7 @@ struct DllMain
             case MsgType::SyncHash:
                 remoteSync.push_back ( msg );
                 return;
-#endif // RELEASE
+#endif // NOT RELEASE
 
             default:
                 break;
@@ -1354,7 +1350,7 @@ struct DllMain
                 {
                     randomInputs = options[Options::SyncTest];
                 }
-#endif // RELEASE
+#endif // NOT RELEASE
                 break;
 
             case MsgType::ControllerMappings:
@@ -1649,7 +1645,7 @@ struct DllMain
         // ChangeMonitor::get().addRef ( this, Variable ( Variable::GameStateCounter ), *CC_MENU_STATE_COUNTER_ADDR );
         // ChangeMonitor::get().addPtrToRef ( this, Variable ( Variable::AutoReplaySave ),
         //                                    const_cast<const uint32_t *&> ( AsmHacks::autoReplaySaveStatePtr ), 0u );
-#endif // RELEASE
+#endif // NOT RELEASE
     }
 
     // Destructor

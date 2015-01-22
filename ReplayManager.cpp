@@ -234,12 +234,6 @@ const ReplayManager::Inputs& ReplayManager::getInputs ( IndexedFrame indexedFram
     static const Inputs down = { MaxIndexedFrame, 2, 2 };
     static const Inputs empty = { MaxIndexedFrame, 0, 0 };
 
-    if ( indexedFrame.parts.index >= inputs.size()
-            || indexedFrame.parts.frame >= inputs[indexedFrame.parts.index].size() )
-    {
-        return empty;
-    }
-
     if ( modes[indexedFrame.parts.index] == CC_GAME_MODE_LOADING )
         return ( indexedFrame.parts.frame % 2 ? empty : confirm );
 
@@ -257,6 +251,12 @@ const ReplayManager::Inputs& ReplayManager::getInputs ( IndexedFrame indexedFram
         if ( indexedFrame.parts.frame == 125 )
             return confirm;
 
+        return empty;
+    }
+
+    if ( indexedFrame.parts.index >= inputs.size()
+            || indexedFrame.parts.frame >= inputs[indexedFrame.parts.index].size() )
+    {
         return empty;
     }
 

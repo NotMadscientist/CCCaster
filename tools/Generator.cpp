@@ -191,6 +191,7 @@ static const vector<MemDump> miscAddrs =
     ( uint16_t * ) 0x559546,
     ( uint16_t * ) 0x564B00,
     ( uint32_t * ) 0x76E6F8,
+    ( uint32_t * ) 0x76E6FC,
     ( uint32_t * ) 0x7B1D2C,
 
     // Camera scaling state
