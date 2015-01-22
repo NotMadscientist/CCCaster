@@ -201,12 +201,12 @@ SyncHash::SyncHash ( IndexedFrame indexedFrame )
 {
     this->indexedFrame = indexedFrame;
 
-    char data [ sizeof ( uint32_t ) * 3 + CC_RNGSTATE3_SIZE ];
+    char data [ sizeof ( uint32_t ) * 3 + CC_RNG_STATE3_SIZE ];
 
-    memcpy ( &data[0], CC_RNGSTATE0_ADDR, sizeof ( uint32_t ) );
-    memcpy ( &data[4], CC_RNGSTATE1_ADDR, sizeof ( uint32_t ) );
-    memcpy ( &data[8], CC_RNGSTATE2_ADDR, sizeof ( uint32_t ) );
-    memcpy ( &data[12], CC_RNGSTATE3_ADDR, CC_RNGSTATE3_SIZE );
+    memcpy ( &data[0], CC_RNG_STATE0_ADDR, sizeof ( uint32_t ) );
+    memcpy ( &data[4], CC_RNG_STATE1_ADDR, sizeof ( uint32_t ) );
+    memcpy ( &data[8], CC_RNG_STATE2_ADDR, sizeof ( uint32_t ) );
+    memcpy ( &data[12], CC_RNG_STATE3_ADDR, CC_RNG_STATE3_SIZE );
 
     getMD5 ( data, sizeof ( data ), hash );
 

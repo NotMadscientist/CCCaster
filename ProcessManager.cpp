@@ -60,10 +60,10 @@ MsgPtr ProcessManager::getRngState ( uint32_t index ) const
 {
     RngState *rngState = new RngState ( index );
 
-    rngState->rngState0 = *CC_RNGSTATE0_ADDR;
-    rngState->rngState1 = *CC_RNGSTATE1_ADDR;
-    rngState->rngState2 = *CC_RNGSTATE2_ADDR;
-    copy ( CC_RNGSTATE3_ADDR, CC_RNGSTATE3_ADDR + CC_RNGSTATE3_SIZE, rngState->rngState3.begin() );
+    rngState->rngState0 = *CC_RNG_STATE0_ADDR;
+    rngState->rngState1 = *CC_RNG_STATE1_ADDR;
+    rngState->rngState2 = *CC_RNG_STATE2_ADDR;
+    copy ( CC_RNG_STATE3_ADDR, CC_RNG_STATE3_ADDR + CC_RNG_STATE3_SIZE, rngState->rngState3.begin() );
 
     return MsgPtr ( rngState );
 }
@@ -72,11 +72,11 @@ void ProcessManager::setRngState ( const RngState& rngState )
 {
     LOG ( "rngState=%s", rngState.dump() );
 
-    *CC_RNGSTATE0_ADDR = rngState.rngState0;
-    *CC_RNGSTATE1_ADDR = rngState.rngState1;
-    *CC_RNGSTATE2_ADDR = rngState.rngState2;
+    *CC_RNG_STATE0_ADDR = rngState.rngState0;
+    *CC_RNG_STATE1_ADDR = rngState.rngState1;
+    *CC_RNG_STATE2_ADDR = rngState.rngState2;
 
-    copy ( rngState.rngState3.begin(), rngState.rngState3.end(), CC_RNGSTATE3_ADDR );
+    copy ( rngState.rngState3.begin(), rngState.rngState3.end(), CC_RNG_STATE3_ADDR );
 }
 
 void ProcessManager::acceptEvent ( Socket *serverSocket )

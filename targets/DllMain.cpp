@@ -709,6 +709,25 @@ struct DllMain
         LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
         LOG_SYNC ( "Inputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
 
+        // if ( netMan.getIndex() == 4 && netMan.getFrame() == 506 )
+        // {
+        //     const string& dump = msgRngState->getAs<RngState>().dump();
+
+        //     if ( dump.find ( "82 f2 0e 13 8b 03 00 00 2f 00 00 00" ) != 0 )
+        //     {
+        //         LOG_TO ( syncLog, "Desync!" );
+        //         syncLog.deinitialize();
+
+        //         delayedStop ( ERROR_INTERNAL );
+        //         return;
+        //     }
+        //     else
+        //     {
+        //         delayedStop ( ERROR_INTERNAL );
+        //         return;
+        //     }
+        // }
+
         // Log extra state during chara select
         if ( netMan.getState() == NetplayState::CharaSelect )
         {

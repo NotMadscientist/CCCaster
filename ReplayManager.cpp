@@ -89,7 +89,7 @@ bool ReplayManager::load ( const string& replayFile, bool real )
                 {
                     rngState = new RngState ( 0 );
 
-                    char data [ sizeof ( uint32_t ) * 3 + 4 + CC_RNGSTATE3_SIZE ];
+                    char data [ sizeof ( uint32_t ) * 3 + 4 + CC_RNG_STATE3_SIZE ];
 
                     for ( char& c : data )
                     {
@@ -101,13 +101,13 @@ bool ReplayManager::load ( const string& replayFile, bool real )
                     memcpy ( &rngState->rngState0, &data[0], sizeof ( uint32_t ) );
                     memcpy ( &rngState->rngState1, &data[4], sizeof ( uint32_t ) );
                     memcpy ( &rngState->rngState2, &data[8], sizeof ( uint32_t ) );
-                    copy ( &data[16], &data[16 + CC_RNGSTATE3_SIZE], rngState->rngState3.begin() );
+                    copy ( &data[16], &data[16 + CC_RNG_STATE3_SIZE], rngState->rngState3.begin() );
                 }
                 else if ( ss.str().size() == 695 ) // New RngState hex dump size
                 {
                     rngState = new RngState ( 0 );
 
-                    char data [ sizeof ( uint32_t ) * 3 + CC_RNGSTATE3_SIZE ];
+                    char data [ sizeof ( uint32_t ) * 3 + CC_RNG_STATE3_SIZE ];
 
                     for ( char& c : data )
                     {
@@ -119,7 +119,7 @@ bool ReplayManager::load ( const string& replayFile, bool real )
                     memcpy ( &rngState->rngState0, &data[0], sizeof ( uint32_t ) );
                     memcpy ( &rngState->rngState1, &data[4], sizeof ( uint32_t ) );
                     memcpy ( &rngState->rngState2, &data[8], sizeof ( uint32_t ) );
-                    copy ( &data[12], &data[12 + CC_RNGSTATE3_SIZE], rngState->rngState3.begin() );
+                    copy ( &data[12], &data[12 + CC_RNG_STATE3_SIZE], rngState->rngState3.begin() );
                 }
                 else
                 {

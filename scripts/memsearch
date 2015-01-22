@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+MIN=$1
+
+MAX=$2
+
+RUN="${@:3}"
+
+while :
+do
+
+    if [ $(( $MAX - $MIN )) -le 16 ]; then
+        printf '{ 0x%06x, 0x%06x },' $MIN $MAX > memsearch.h
+        break
+    fi
+
+
+    MID=$(( ( $MIN + $MAX ) / 2 ))
+
+
+    printf '{ 0x%06x, 0x%06x },' $MIN $MID > memsearch.h
+
+    touch tools/Generator.cpp
+
+    make -j4 INSTALL=0 && $RUN
+
+    cat cccaster/sync.log | tail -n2 | grep --quiet Desync
+
+    if (( $? == 0 )); then
+        echo Desync!
+        MIN=$(( $MID - 4 ))
+    fi
+
+
+    printf '{ 0x%06x, 0x%06x },' $MID $MAX > memsearch.h
+
+    touch tools/Generator.cpp
+
+    make -j4 INSTALL=0 && $RUN
+
+    cat cccaster/sync.log | tail -n2 | grep --quiet Desync
+
+    if (( $? == 0 )); then
+        echo Desync!
+        MAX=$(( $MID + 4 ))
+    fi
+
+done

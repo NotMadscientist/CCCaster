@@ -110,11 +110,11 @@
 #define CC_P2_RANDOM_COLOR_ADDR     ( ( uint8_t * ) ( ( * ( uint32_t * ) 0x74D808 ) + 1 * 0x1DC + 0x2C + 0x0C ) )
 
 // Complete RngState
-#define CC_RNGSTATE0_ADDR           ( ( uint32_t * ) 0x563778 )
-#define CC_RNGSTATE1_ADDR           ( ( uint32_t * ) 0x56377C )
-#define CC_RNGSTATE2_ADDR           ( ( uint32_t * ) 0x564068 )
-#define CC_RNGSTATE3_ADDR           ( ( char * )     0x564070 )
-#define CC_RNGSTATE3_SIZE           ( 220 )
+#define CC_RNG_STATE0_ADDR          ( ( uint32_t * ) 0x563778 )
+#define CC_RNG_STATE1_ADDR          ( ( uint32_t * ) 0x56377C )
+#define CC_RNG_STATE2_ADDR          ( ( uint32_t * ) 0x564068 )
+#define CC_RNG_STATE3_ADDR          ( ( char * )     0x564070 )
+#define CC_RNG_STATE3_SIZE          ( 220 )
 
 // Character select selection mode
 #define CC_SELECT_CHARA             ( 0 )

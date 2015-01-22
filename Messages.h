@@ -269,7 +269,7 @@ struct RngState : public SerializableSequence
     uint32_t index = 0;
 
     uint32_t rngState0 = 0, rngState1 = 0, rngState2 = 0;
-    std::array<char, CC_RNGSTATE3_SIZE> rngState3;
+    std::array<char, CC_RNG_STATE3_SIZE> rngState3;
 
     RngState ( uint32_t index ) : index ( index ) {}
 
