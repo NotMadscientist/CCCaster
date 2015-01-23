@@ -22,8 +22,20 @@ Other notes:
 
 Running under Wine:
 
-    Must create a 32bit Wine prefix, see: http://askubuntu.com/a/257505
+    First you need to create a 32 bit wine prefix:
 
-    No in-game button config unless someone can figure out how to hook DirectX9 under Wine.
+        rm -rf ~/.wine
 
-    Can't save replays because MBAA.exe crashes when saving replays under Wine.
+        WINEARCH=win32 WINEPREFIX=~/.wine winecfg
+
+    Also you need install native D3DX9 dlls using winetricks:
+
+        wget http://kegel.com/wine/winetricks
+
+        sh winetricks d3dx9
+
+    Caveats:
+
+        No in-game button config unless someone can figure out how to hook DirectX9 under Wine.
+
+        Can't save replays because MBAA.exe crashes when saving replays under Wine.
