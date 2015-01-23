@@ -209,14 +209,13 @@ static const vector<MemDump> miscAddrs =
     CC_P1_SPELL_CIRCLE_ADDR,
     CC_P2_SPELL_CIRCLE_ADDR,
 
-    // TODO enable after all other desyncs have been fixed
-    // // HUD status message graphics
-    // { CC_P1_STATUS_MSG_ARRAY_ADDR, CC_STATUS_MSG_ARRAY_SIZE },
-    // { CC_P2_STATUS_MSG_ARRAY_ADDR, CC_STATUS_MSG_ARRAY_SIZE },
+    // HUD status message graphics
+    { CC_P1_STATUS_MSG_ARRAY_ADDR, CC_STATUS_MSG_ARRAY_SIZE },
+    { CC_P2_STATUS_MSG_ARRAY_ADDR, CC_STATUS_MSG_ARRAY_SIZE },
 
-    // // Intro / outro graphics
-    // { 0x74E4C8, 0x74E86C },
-    // { 0x76E6F8, 0x76FC10 },
+    // Intro / outro graphics
+    { 0x74E4C8, 0x74E86C },
+    { 0x76E6F8, 0x76FC10 },
 
     // Camera position state
     ( uint32_t * ) 0x555124,
