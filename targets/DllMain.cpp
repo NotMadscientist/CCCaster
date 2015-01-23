@@ -357,9 +357,9 @@ struct DllMain
 
                 if ( randomInputs )
                 {
-                    bool shouldRandomize = ( netMan.getFrame() % 2 );
+                    bool shouldRandomize = ( rand() % 2 );
                     if ( netMan.isInRollback() )
-                        shouldRandomize &= ( netMan.getFrame() % 150 < 80 );
+                        shouldRandomize &= ( netMan.getFrame() % 150 < 120 );
 
                     if ( shouldRandomize )
                     {
