@@ -136,7 +136,7 @@
 #define CC_P1_GUARD_QUALITY_ADDR    ( ( float * )    0x555208 )
 #define CC_P1_METER_ADDR            ( ( uint32_t * ) 0x555210 )
 #define CC_P1_HEAT_ADDR             ( ( uint32_t * ) 0x555214 )
-#define CC_P1_DEATH_FLAG_ADDR       ( ( uint8_t * )  0x5552A7 )
+#define CC_P1_NO_INPUT_FLAG_ADDR    ( ( uint8_t * )  0x5552A7 ) // Indicates when input is disabled, ie KO or time over
 
 #define CC_P1_X_POSITION_ADDR       ( ( int32_t * )  0x555238 )
 #define CC_P1_Y_POSITION_ADDR       ( ( int32_t * )  0x55523C )
@@ -157,7 +157,7 @@
 #define CC_P2_GUARD_QUALITY_ADDR    ( ( float * )    ( ( ( char * ) CC_P1_GUARD_QUALITY_ADDR ) + CC_PLR_STRUCT_SIZE ) )
 #define CC_P2_METER_ADDR            ( ( uint32_t * ) ( ( ( char * ) CC_P1_METER_ADDR         ) + CC_PLR_STRUCT_SIZE ) )
 #define CC_P2_HEAT_ADDR             ( ( uint32_t * ) ( ( ( char * ) CC_P1_HEAT_ADDR          ) + CC_PLR_STRUCT_SIZE ) )
-#define CC_P2_DEATH_FLAG_ADDR       ( ( uint8_t * )  ( ( ( char * ) CC_P1_DEATH_FLAG_ADDR    ) + CC_PLR_STRUCT_SIZE ) )
+#define CC_P2_NO_INPUT_FLAG_ADDR    ( ( uint8_t * )  ( ( ( char * ) CC_P1_NO_INPUT_FLAG_ADDR ) + CC_PLR_STRUCT_SIZE ) )
 #define CC_P2_X_POSITION_ADDR       ( ( int32_t * )  ( ( ( char * ) CC_P1_X_POSITION_ADDR    ) + CC_PLR_STRUCT_SIZE ) )
 #define CC_P2_Y_POSITION_ADDR       ( ( int32_t * )  ( ( ( char * ) CC_P1_Y_POSITION_ADDR    ) + CC_PLR_STRUCT_SIZE ) )
 #define CC_P2_FACING_FLAG_ADDR      ( ( uint8_t * )  ( ( ( char * ) CC_P1_FACING_FLAG_ADDR   ) + CC_PLR_STRUCT_SIZE ) )
