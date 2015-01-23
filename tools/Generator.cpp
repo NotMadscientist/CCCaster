@@ -39,7 +39,6 @@ using namespace std;
 
 #define CC_INPUT_STATE_ADDR         ( ( uint8_t * )  0x562A6F ) // TODO figure out what the values mean
 #define CC_DEATH_TIMER_INIT_ADDR    ( ( uint16_t * ) 0x562A6C ) // Initializes the KO slowdown timer
-#define CC_DEATH_TIMER_ADDR         ( ( uint16_t * ) 0x55D208 ) // KO slowdown timer
 
 
 static const vector<MemDump> playerAddrs =
