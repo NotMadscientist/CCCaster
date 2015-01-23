@@ -961,7 +961,7 @@ struct DllMain
 
     void checkRoundOver()
     {
-        const bool isOver = ( ( *CC_ROUND_TIMER_ADDR == 0 ) || ( *CC_DEATH_TIMER_ADDR > 0 ) );
+        const bool isOver = ( ( *CC_ROUND_TIMER_ADDR == 0 ) || *CC_P1_DEATH_FLAG_ADDR || *CC_P2_DEATH_FLAG_ADDR );
 
         if ( netMan.config.rollback )
         {

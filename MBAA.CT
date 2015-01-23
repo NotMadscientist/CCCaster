@@ -245,6 +245,13 @@
       <Address>00555444</Address>
     </CheatEntry>
     <CheatEntry>
+      <ID>444</ID>
+      <Description>"P1 death flag"</Description>
+      <Color>80000008</Color>
+      <VariableType>Byte</VariableType>
+      <Address>0x5552A7</Address>
+    </CheatEntry>
+    <CheatEntry>
       <ID>222</ID>
       <Description>"P2 seq (see framedisplay)"</Description>
       <Color>80000008</Color>
@@ -285,6 +292,13 @@
       <Color>80000008</Color>
       <VariableType>Float</VariableType>
       <Address>0555D04</Address>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>443</ID>
+      <Description>"P2 death flag"</Description>
+      <Color>80000008</Color>
+      <VariableType>Byte</VariableType>
+      <Address>00555DA3</Address>
     </CheatEntry>
     <CheatEntry>
       <ID>125</ID>
@@ -434,7 +448,7 @@
     </CheatEntry>
     <CheatEntry>
       <ID>170</ID>
-      <Description>"death timer"</Description>
+      <Description>"slowdown timer"</Description>
       <Color>80000008</Color>
       <VariableType>2 Bytes</VariableType>
       <Address>0055D208</Address>
@@ -3639,6 +3653,30 @@
         <Byte>8B</Byte>
         <Byte>3D</Byte>
         <Byte>24</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>KO detected</Description>
+      <Address>004715D0</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>715D0</ModuleNameOffset>
+      <Before>
+        <Byte>8D</Byte>
+        <Byte>A7</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+      </Before>
+      <Actual>
+        <Byte>6A</Byte>
+        <Byte>38</Byte>
+      </Actual>
+      <After>
+        <Byte>50</Byte>
+        <Byte>8D</Byte>
+        <Byte>4C</Byte>
+        <Byte>24</Byte>
+        <Byte>7C</Byte>
       </After>
     </CodeEntry>
   </CheatCodes>
