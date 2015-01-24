@@ -34,6 +34,9 @@ using namespace std;
 // The extra number of frames to delay checking round over state during rollback
 #define ROLLBACK_ROUND_OVER_DELAY   ( 5 )
 
+// The minimum number of frames that must run normally, before we're allowed to do another rollback
+#define MIN_ROLLBACK_SPACING        ( 2 )
+
 // The number of milliseconds to wait for the initial connect
 #define INITIAL_CONNECT_TIMEOUT     ( 30000 )
 
@@ -143,6 +146,9 @@ struct DllMain
 
     // Timer to delay checking round over state during rollback
     int roundOverTimer = -1;
+
+    // We should only rollback if this timer is full
+    int rollbackTimer = MIN_ROLLBACK_SPACING;
 
 #ifndef RELEASE
     // Local and remote SyncHashes
@@ -457,7 +463,8 @@ struct DllMain
         }
 
         // Clear the last changed frame before we get new inputs
-        netMan.clearLastChangedFrame();
+        if ( rollbackTimer == MIN_ROLLBACK_SPACING )
+            netMan.clearLastChangedFrame();
 
         for ( ;; )
         {
@@ -502,8 +509,18 @@ struct DllMain
             }
         }
 
+        if ( rollbackTimer < MIN_ROLLBACK_SPACING )
+        {
+            --rollbackTimer;
+
+            if ( rollbackTimer < 0 )
+                rollbackTimer = MIN_ROLLBACK_SPACING;
+        }
+
         // Only rollback when necessary
-        if ( netMan.isInRollback() && netMan.getLastChangedFrame().value < netMan.getIndexedFrame().value )
+        if ( netMan.isInRollback()
+                && rollbackTimer == MIN_ROLLBACK_SPACING
+                && netMan.getLastChangedFrame().value < netMan.getIndexedFrame().value )
         {
             const string before = format ( "%s [%u] %s [%s]",
                                            gameModeStr ( *CC_GAME_MODE_ADDR ), *CC_GAME_MODE_ADDR,
@@ -522,6 +539,9 @@ struct DllMain
                          before, netMan.getLastChangedFrame(), netMan.getIndexedFrame() );
 
                 LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
+
+                netMan.clearLastChangedFrame();
+                --rollbackTimer;
                 return;
             }
 
