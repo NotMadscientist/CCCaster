@@ -61,7 +61,8 @@ void ProcessManager::allocateStates()
     if ( allAddrs.empty() )
         THROW_EXCEPTION ( "Failed to load rollback data!", ERROR_BAD_ROLLBACK_DATA );
 
-    memoryPool.reset ( new char[NUM_ROLLBACK_STATES * allAddrs.totalSize], deleteArray<char> );
+    if ( !memoryPool )
+        memoryPool.reset ( new char[NUM_ROLLBACK_STATES * allAddrs.totalSize], deleteArray<char> );
 
     for ( size_t i = 0; i < NUM_ROLLBACK_STATES; ++i )
         freeStack.push ( i * allAddrs.totalSize );
@@ -129,6 +130,7 @@ bool ProcessManager::loadState ( IndexedFrame indexedFrame, NetplayManager& netM
                 for ( size_t i = 0; i < CC_SFX_ARRAY_LEN; ++i )
                     AsmHacks::sfxFilterArray[i] |= jt->sfxFilterArray[i];
             }
+
             statesList.erase ( it.base(), statesList.end() );
             return true;
         }

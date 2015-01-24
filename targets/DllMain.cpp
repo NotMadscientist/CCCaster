@@ -881,13 +881,6 @@ struct DllMain
                 procMan.allocateStates();
         }
 
-        // Leaving InGame
-        if ( netMan.getState() == NetplayState::InGame )
-        {
-            if ( netMan.config.rollback )
-                procMan.deallocateStates();
-        }
-
         // Entering CharaSelect OR entering InGame
         if ( !clientMode.isOffline() && ( state == NetplayState::CharaSelect || state == NetplayState::InGame ) )
         {
@@ -1709,6 +1702,8 @@ struct DllMain
     // Destructor
     ~DllMain()
     {
+        procMan.deallocateStates();
+
         KeyboardManager::get().unhook();
 
         syncLog.deinitialize();
