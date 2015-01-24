@@ -192,7 +192,8 @@ static const vector<MemDump> miscAddrs =
     CC_RNG_STATE2_ADDR,
     { CC_RNG_STATE3_ADDR, CC_RNG_STATE3_SIZE },
 
-    // Unknown state
+    // Unknown states
+    ( uint32_t * ) 0x563864,
     ( uint32_t * ) 0x56414C,
 
     // Graphical effects
