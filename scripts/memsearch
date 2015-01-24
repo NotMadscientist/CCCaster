@@ -6,6 +6,10 @@ MAX=$2
 
 RUN="${@:3}"
 
+
+cp /dev/null memsearch.log
+
+
 while :
 do
 
@@ -20,6 +24,7 @@ do
 
     printf '{ 0x%06x, 0x%06x },' $MIN $MID > memsearch.h
 
+
     touch tools/Generator.cpp
 
     make -j4 INSTALL=0 && $RUN
@@ -27,22 +32,21 @@ do
     cat cccaster/sync.log | tail -n2 | grep --quiet Desync
 
     if (( $? == 0 )); then
-        echo Desync!
+
+        # Desync
+
+        printf '{ 0x%06x, 0x%06x },\n' $MID $MAX >> memsearch.log
+
         MIN=$(( $MID - 4 ))
-    fi
 
+    else
 
-    printf '{ 0x%06x, 0x%06x },' $MID $MAX > memsearch.h
+        # Good
 
-    touch tools/Generator.cpp
+        printf '{ 0x%06x, 0x%06x },\n' $MIN $MID >> memsearch.log
 
-    make -j4 INSTALL=0 && $RUN
-
-    cat cccaster/sync.log | tail -n2 | grep --quiet Desync
-
-    if (( $? == 0 )); then
-        echo Desync!
         MAX=$(( $MID + 4 ))
+
     fi
 
 done
