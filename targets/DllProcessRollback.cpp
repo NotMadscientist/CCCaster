@@ -11,11 +11,11 @@ using namespace std;
 
 #define NUM_ROLLBACK_STATES ( 256 )
 
-// Linked rollback memory data (binary format)
+// Linked rollback memory data (binary message format)
 extern const unsigned char binary_res_rollback_bin_start;
 extern const unsigned char binary_res_rollback_bin_end;
 
-// Parsed rollback memory data
+// Deserialized rollback memory data
 static MemDumpList allAddrs;
 
 template<typename T>

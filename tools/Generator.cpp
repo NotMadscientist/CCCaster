@@ -41,6 +41,11 @@ using namespace std;
 #define CC_SLOW_TIMER_INIT_ADDR     ( ( uint16_t * ) 0x562A6C ) // Initializes the slowdown timer
 #define CC_SLOW_TIMER_ADDR          ( ( uint16_t * ) 0x55D208 ) // Slowdown timer
 
+#define CC_GRAPHICS_ARRAY_ADDR      ( ( char * )     0x61E170 )
+#define CC_GRAPHICS_ARRAY_SIZE      ( 4000 * 0x60 )
+
+#define CC_GRAPHICS_COUNTER         ( ( uint32_t * ) 0x67BD78 )
+
 
 static const vector<MemDump> playerAddrs =
 {
@@ -187,8 +192,12 @@ static const vector<MemDump> miscAddrs =
     CC_RNG_STATE2_ADDR,
     { CC_RNG_STATE3_ADDR, CC_RNG_STATE3_SIZE },
 
-    // Extra RngState data? TODO debugme
+    // Unknown state
     ( uint32_t * ) 0x56414C,
+
+    // Graphical effects
+    { CC_GRAPHICS_ARRAY_ADDR, CC_GRAPHICS_ARRAY_SIZE },
+    CC_GRAPHICS_COUNTER,
 
     CC_SUPER_FLASH_PAUSE_ADDR,
     CC_SUPER_FLASH_TIMER_ADDR,
@@ -255,7 +264,7 @@ static const vector<MemDump> miscAddrs =
     CC_CAMERA_SCALE_3_ADDR,
 };
 
-static const MemDump effectAddrs ( CC_EFFECTS_ARRAY_ADDR, CC_EFFECT_ELEMENT_SIZE, {
+static const MemDump firstEffect ( CC_EFFECTS_ARRAY_ADDR, CC_EFFECT_ELEMENT_SIZE, {
     MemDumpPtr ( 0x320, 0x38, 4, {
         MemDumpPtr ( 0, 0, 4, {
             MemDumpPtr ( 0, 0, 4 )
@@ -284,7 +293,7 @@ int main ( int argc, char *argv[] )
     allAddrs.append ( playerAddrs, 3 * CC_PLR_STRUCT_SIZE );    // Puppet 2
 
     for ( size_t i = 0; i < CC_EFFECTS_ARRAY_COUNT; ++i )
-        allAddrs.append ( effectAddrs, CC_EFFECT_ELEMENT_SIZE * i );
+        allAddrs.append ( firstEffect, CC_EFFECT_ELEMENT_SIZE * i );
 
     allAddrs.update();
 
