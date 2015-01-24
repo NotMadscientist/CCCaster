@@ -822,9 +822,13 @@ struct DllMain
             return;
         }
 
-        // Clear the last overlay message
-        if ( !DllOverlayUi::isShowingMessage() )
+        // Close the overlay if not mapping
+        if ( !DllOverlayUi::isShowingMessage()
+                && ( !playerControllers[0] || !playerControllers[0]->isMapping() )
+                && ( !playerControllers[1] || !playerControllers[1]->isMapping() ) )
+        {
             DllOverlayUi::disable();
+        }
 
 #ifdef RELEASE
         // Leaving Initial or AutoCharaSelect
