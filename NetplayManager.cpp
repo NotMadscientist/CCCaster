@@ -78,12 +78,6 @@ uint16_t NetplayManager::getCharaSelectInput ( uint8_t player )
 {
     uint16_t input = getRawInput ( player );
 
-    // Prevent hitting Confirm until 150f after beginning of state, this is to workaround the moon selector desync
-    if ( getFrame() < 150 )
-    {
-        input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
-    }
-
     // Prevent exiting character select
     if ( ( * ( player == 1 ? CC_P1_SELECTOR_MODE_ADDR : CC_P2_SELECTOR_MODE_ADDR ) ) == CC_SELECT_CHARA )
     {

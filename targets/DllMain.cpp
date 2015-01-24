@@ -87,7 +87,7 @@ static Mutex deinitMutex;
 static void deinitialize();
 
 // Enum of variables to monitor
-ENUM ( Variable, WorldTime, GameMode, RoundStart,
+ENUM ( Variable, WorldTime, GameMode, RoundStart, P1Character, P2Character,
        MenuConfirmState, AutoReplaySave, GameStateCounter, CurrentMenuIndex );
 
 
@@ -104,8 +104,8 @@ struct DllMain
     // If remote has loaded up to character select
     bool remoteCharaSelectLoaded = false;
 
-    // ChangeMonitor for CC_WORLD_TIMER_ADDR
-    RefChangeMonitor<Variable, uint32_t> worldTimerMoniter;
+    // ChangeMonitor for CC_WORLD_TIMER_ADDR, CC_P1_CHARACTER_ADDR, CC_P2_CHARACTER_ADDR
+    RefChangeMonitor<Variable, uint32_t> worldTimerMoniter, p1characterMonitor, p2characterMonitor;
 
     // Timer for resending inputs while waiting
     TimerPtr resendTimer;
@@ -800,6 +800,13 @@ struct DllMain
         // Check for changes to important variables for state transitions
         ChangeMonitor::get().check();
 
+        // Check if P1 or P2 character has changed, this is to workaround the moon selector desync
+        if ( netMan.getState() == NetplayState::CharaSelect )
+        {
+            p1characterMonitor.check();
+            p2characterMonitor.check();
+        }
+
         // Check for round over state during in-game
         if ( netMan.isInGame() )
             checkRoundOver();
@@ -1017,6 +1024,8 @@ struct DllMain
     // ChangeMonitor callback
     void hasChanged ( Variable var, uint32_t previous, uint32_t current ) override
     {
+        LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
+
         switch ( var.value )
         {
             case Variable::WorldTime:
@@ -1024,18 +1033,25 @@ struct DllMain
                 break;
 
             case Variable::GameMode:
-                LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
                 gameModeChanged ( previous, current );
                 break;
 
             case Variable::RoundStart:
                 // In-game happens after round start, when players can start moving
-                LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
                 netplayStateChanged ( NetplayState::InGame );
                 break;
 
+            case Variable::P1Character:
+                // Manually set the moon to zero, this is to workaround the moon selector desync
+                *CC_P1_MOON_SELECTOR_ADDR = 0;
+                break;
+
+            case Variable::P2Character:
+                // Manually set the moon to zero, this is to workaround the moon selector desync
+                *CC_P2_MOON_SELECTOR_ADDR = 0;
+                break;
+
             default:
-                LOG ( "[%s] %s: previous=%u; current=%u", netMan.getIndexedFrame(), var, previous, current );
                 break;
         }
     }
@@ -1669,6 +1685,8 @@ struct DllMain
     DllMain()
         : SpectatorManager ( &netMan, &procMan )
         , worldTimerMoniter ( this, Variable::WorldTime, *CC_WORLD_TIMER_ADDR )
+        , p1characterMonitor ( this, Variable::P1Character, *CC_P1_CHARACTER_ADDR )
+        , p2characterMonitor ( this, Variable::P2Character, *CC_P2_CHARACTER_ADDR )
     {
         // Timer and controller initialization is not done here because of threading issues
 
