@@ -641,7 +641,9 @@ struct DllMain
                 && netMan.getState() != NetplayState::Skippable && netMan.getState() != NetplayState::RetryMenu )
         {
             // Check for desyncs by periodically sending hashes
-            if ( !netMan.isInRollback() || ( netMan.getFrame() == 0 ) || ( netMan.getFrame() % 150 == 149 ) )
+            if ( !netMan.isInRollback()
+                    || ( netMan.getFrame() == 0 )
+                    || ( options[Options::SyncTest] && netMan.getFrame() % 150 == 149 ) )
             {
                 MsgPtr msgSyncHash ( new SyncHash ( netMan.getIndexedFrame() ) );
                 dataSocket->send ( msgSyncHash );
