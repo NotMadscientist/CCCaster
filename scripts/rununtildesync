@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+RUN="$@"
+
+while :
+do
+
+    $RUN
+
+    cat cccaster/sync.log | tail -n2 | grep --quiet Desync
+
+    if (( $? == 0 )); then
+        break
+    fi
+
+done

@@ -732,6 +732,7 @@ struct DllMain
 
             if ( dump.find ( replayCheckRngHexStr ) != 0 )
             {
+                LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
                 LOG_TO ( syncLog, "Desync!" );
                 syncLog.deinitialize();
 
@@ -744,6 +745,26 @@ struct DllMain
                 return;
             }
         }
+
+        // if ( netMan.getIndex() == 1802 && netMan.getFrame() == 460 )
+        // {
+        //     if ( *CC_P1_HEALTH_ADDR != 11400 || *CC_P1_METER_ADDR != 0
+        //             || *CC_P2_HEALTH_ADDR != 10121 || *CC_P2_METER_ADDR != 10638 )
+        //     {
+        //         LOG_SYNC_CHARACTER ( 1 );
+        //         LOG_SYNC_CHARACTER ( 2 );
+        //         LOG_TO ( syncLog, "Desync!" );
+        //         syncLog.deinitialize();
+
+        //         MessageBox ( 0, 0, 0, 0 );
+        //         return;
+        //     }
+        //     else
+        //     {
+        //         delayedStop ( ERROR_INTERNAL );
+        //         return;
+        //     }
+        // }
 #endif // NOT RELEASE
 
 #ifndef DISABLE_LOGGING
