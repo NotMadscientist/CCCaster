@@ -226,14 +226,13 @@ static const vector<MemDump> miscAddrs =
 
     // Intro HUD graphics part 1
     ( float * ) 0x74E7B0,
-    ( uint32_t * ) 0x76E6F4,
+    // ( uint32_t * ) 0x76E6F4,
     ( float * ) 0x76E784,
 
     // Intro HUD graphics part 2
     ( float * ) 0x74E5B0,
     ( float * ) 0x74E78C,
     ( float * ) 0x74E79C,
-    ( float * ) 0x74E7B0,
     ( float * ) 0x74E860,
 
     // Intro / outro HUD message
@@ -243,7 +242,7 @@ static const vector<MemDump> miscAddrs =
     ( float * ) 0x74E804,
     ( uint32_t * ) 0x74E838,
     ( float * ) 0x74E83C,
-    ( uint32_t * ) 0x76E79C,
+    // ( uint32_t * ) 0x76E79C,
 
     // Camera position state
     ( uint32_t * ) 0x555124,
