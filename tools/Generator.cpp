@@ -224,10 +224,26 @@ static const vector<MemDump> miscAddrs =
     { CC_P1_STATUS_MSG_ARRAY_ADDR, CC_STATUS_MSG_ARRAY_SIZE },
     { CC_P2_STATUS_MSG_ARRAY_ADDR, CC_STATUS_MSG_ARRAY_SIZE },
 
-    // TODO step through these
-    // // Intro / outro graphics
-    // { 0x74E4C8, 0x74E86C },
-    // { 0x76E6F8, 0x76FC10 },
+    // Intro HUD graphics part 1
+    ( float * ) 0x74E7B0,
+    ( uint32_t * ) 0x76E6F4,
+    ( float * ) 0x76E784,
+
+    // Intro HUD graphics part 2
+    ( float * ) 0x74E5B0,
+    ( float * ) 0x74E78C,
+    ( float * ) 0x74E79C,
+    ( float * ) 0x74E7B0,
+    ( float * ) 0x74E860,
+
+    // Intro / outro HUD message
+    ( uint32_t * ) 0x74D9D0,
+    ( uint32_t * ) 0x74E4E4,
+    ( float * ) 0x74E4E8,
+    ( float * ) 0x74E804,
+    ( uint32_t * ) 0x74E838,
+    ( float * ) 0x74E83C,
+    ( uint32_t * ) 0x76E79C,
 
     // Camera position state
     ( uint32_t * ) 0x555124,
