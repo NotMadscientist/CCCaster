@@ -241,6 +241,9 @@ clean-release: clean-common
 
 clean: clean-debug clean-logging clean-release
 
+clean-all: clean-debug clean-logging clean-release
+	rm -rf .include_* .depend_* build_*
+
 
 check:
 	cppcheck --enable=all $(NON_GEN_SRCS) $(NON_GEN_HEADERS)
