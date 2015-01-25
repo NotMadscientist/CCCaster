@@ -165,6 +165,8 @@ struct DllMain
     bool replayInputs = false;
     uint32_t replaySpeed = 2;
     IndexedFrame replayStop = MaxIndexedFrame;
+    IndexedFrame replayCheck = MaxIndexedFrame;
+    string replayCheckRngHexStr;
 #endif // NOT RELEASE
 
     void frameStepNormal()
@@ -721,6 +723,27 @@ struct DllMain
         if ( netMan.getIndexedFrame().value == replayStop.value )
             MessageBox ( 0, 0, 0, 0 );
 
+        if ( netMan.getIndexedFrame().value == replayCheck.value )
+        {
+            MsgPtr msgRngState = procMan.getRngState ( 0 );
+            ASSERT ( msgRngState.get() != 0 );
+
+            const string& dump = msgRngState->getAs<RngState>().dump();
+
+            if ( dump.find ( replayCheckRngHexStr ) != 0 )
+            {
+                LOG_TO ( syncLog, "Desync!" );
+                syncLog.deinitialize();
+
+                delayedStop ( ERROR_INTERNAL );
+                return;
+            }
+            else
+            {
+                delayedStop ( ERROR_INTERNAL );
+                return;
+            }
+        }
 #endif // NOT RELEASE
 
 #ifndef DISABLE_LOGGING
@@ -730,25 +753,6 @@ struct DllMain
         // Log state every frame
         LOG_SYNC ( "RngState: %s", msgRngState->getAs<RngState>().dump() );
         LOG_SYNC ( "Inputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
-
-        // if ( netMan.getIndex() == 4 && netMan.getFrame() == 506 )
-        // {
-        //     const string& dump = msgRngState->getAs<RngState>().dump();
-
-        //     if ( dump.find ( "82 f2 0e 13 8b 03 00 00 2f 00 00 00" ) != 0 )
-        //     {
-        //         LOG_TO ( syncLog, "Desync!" );
-        //         syncLog.deinitialize();
-
-        //         delayedStop ( ERROR_INTERNAL );
-        //         return;
-        //     }
-        //     else
-        //     {
-        //         delayedStop ( ERROR_INTERNAL );
-        //         return;
-        //     }
-        // }
 
         // Log extra state during chara select
         if ( netMan.getState() == NetplayState::CharaSelect )
@@ -1363,6 +1367,17 @@ struct DllMain
                     {
                         replayStop.parts.index = lexical_cast<uint32_t> ( *it++ );
                         replayStop.parts.frame = lexical_cast<uint32_t> ( *it++ );
+                    }
+
+                    // Parse check RngState args
+                    it = find ( args.begin(), args.end(), "check" );
+                    if ( it != args.end() )
+                        ++it;
+                    if ( it != args.end() && ( args.end() - it ) >= 3 )
+                    {
+                        replayCheck.parts.index = lexical_cast<uint32_t> ( *it++ );
+                        replayCheck.parts.frame = lexical_cast<uint32_t> ( *it++ );
+                        replayCheckRngHexStr = ( *it++ );
                     }
 
                     // Parse replay file
