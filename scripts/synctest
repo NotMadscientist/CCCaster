@@ -26,9 +26,11 @@ do
 
     scripts/debug $@
 
-    cat cccaster/sync.log | tail -n5 | grep --quiet Desync
+    # TODO enable desync only sync test?
 
-    if (( $? == 0 )); then
+    # cat cccaster/sync.log | tail -n5 | grep --quiet Desync
+
+    # if (( $? == 0 )); then
 
         echo "$FOLDER/desync_`printf %03d $COUNT`"
 
@@ -36,7 +38,7 @@ do
 
         COUNT=$((COUNT+1))
 
-    fi
+    # fi
 
     sleep $INTERVAL
 

@@ -224,25 +224,40 @@ static const vector<MemDump> miscAddrs =
     { CC_P1_STATUS_MSG_ARRAY_ADDR, CC_STATUS_MSG_ARRAY_SIZE },
     { CC_P2_STATUS_MSG_ARRAY_ADDR, CC_STATUS_MSG_ARRAY_SIZE },
 
-    // Intro HUD graphics part 1
-    ( float * ) 0x74E7B0,
-    // ( uint32_t * ) 0x76E6F4,
-    ( float * ) 0x76E784,
 
-    // Intro HUD graphics part 2
-    ( float * ) 0x74E5B0,
-    ( float * ) 0x74E78C,
-    ( float * ) 0x74E79C,
-    ( float * ) 0x74E860,
+    // // Intro HUD graphics part 1
+    // ( float * ) 0x74E7B0,
+    // ( float * ) 0x76E784,
 
-    // Intro / outro HUD message
-    ( uint32_t * ) 0x74D9D0,
-    ( uint32_t * ) 0x74E4E4,
-    ( float * ) 0x74E4E8,
-    ( float * ) 0x74E804,
-    ( uint32_t * ) 0x74E838,
-    ( float * ) 0x74E83C,
-    // ( uint32_t * ) 0x76E79C,
+    // // Intro HUD graphics part 2
+    // ( float * ) 0x74E5B0,
+    // ( float * ) 0x74E78C,
+    // ( float * ) 0x74E79C,
+    // ( float * ) 0x74E860,
+
+    // // Intro / outro HUD message part 1
+    // ( uint32_t * ) 0x74D9D0,
+    // ( uint32_t * ) 0x74E4E4,
+    // ( float * ) 0x74E4E8,
+    // ( float * ) 0x74E804,
+    // ( uint32_t * ) 0x74E838,
+    // ( float * ) 0x74E83C,
+    // // ( uint32_t * ) 0x76E79C,
+
+
+
+
+    // Intro music/voice + transition state
+    { 0x74d400, 0x74f000 },
+
+    // Intro graphics state
+    { 0x76e000, 0x76f000 },
+
+
+
+
+
+
 
     // Camera position state
     ( uint32_t * ) 0x555124,
