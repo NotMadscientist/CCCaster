@@ -570,9 +570,8 @@ uint16_t NetplayManager::getInput ( uint8_t player )
             return getCharaSelectInput ( player );
 
         case NetplayState::Loading:
-            // If spectating or the remote inputs index is ahead, then we should mash to skip.
-            if ( config.mode.isSpectate()
-                    || ( ( startIndex + inputs[remotePlayer - 1].getEndIndex() ) > getIndex() + 1 ) )
+            // If the remote index is ahead, then we should mash to skip.
+            if ( ( startIndex + inputs[remotePlayer - 1].getEndIndex() ) > getIndex() + 1 )
             {
                 AsmHacks::menuConfirmState = 2;
                 RETURN_MASH_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
