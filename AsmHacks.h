@@ -300,4 +300,7 @@ static const AsmList filterRepeatedSfx =
 // Disables the code that sets the intro state to 0. This is so we can manually set it during rollback.
 static const Asm hijackIntroState = { ( void * ) 0x45C1F2, INLINE_NOP_SEVEN_TIMES };
 
+// Prevent training mode music from reseting
+static const Asm disableTrainingMusicReset = { ( void * ) 0x472C6D, { 0xEB, 0x05 } }; // jmp 00472C74
+
 } // namespace AsmHacks
