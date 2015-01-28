@@ -224,40 +224,33 @@ static const vector<MemDump> miscAddrs =
     { CC_P1_STATUS_MSG_ARRAY_ADDR, CC_STATUS_MSG_ARRAY_SIZE },
     { CC_P2_STATUS_MSG_ARRAY_ADDR, CC_STATUS_MSG_ARRAY_SIZE },
 
+    // Intro / outro graphics
+    ( uint32_t * ) 0x74D9D0,
+    ( uint32_t * ) 0x74E4E4,
+    ( float * ) 0x74E4E8,
+    // ( uint32_t * ) 0x76E79C,
 
-    // // Intro HUD graphics part 1
-    // ( float * ) 0x74E7B0,
-    // ( float * ) 0x76E784,
+    // Intro graphics/music/voice
+    ( uint32_t * ) 0x74D598,
+    ( uint32_t * ) 0x74E5B0,
+    ( uint32_t * ) 0x74E768,
+    { 0x74E770, 0x74E784 },
+    { 0x74E78C, 0x74E798 },
+    { 0x74E79C, 0x74E7A8 },
+    { 0x74E7AC, 0x74E7C0 },
+    { 0x74E7C8, 0x74E7D8 },
+    { 0x74E7DC, 0x74E7E0 },
+    { 0x74E7E4, 0x74E7F4 },
+    { 0x74E7F8, 0x74E808 },
+    { 0x74E80C, 0x74E810 },
+    { 0x74E814, 0x74E828 },
+    { 0x74E82C, 0x74E834 },
+    { 0x74E838, 0x74E84C },
+    { 0x74E850, 0x74E858 },
+    { 0x74E85C, 0x74E86C },
 
-    // // Intro HUD graphics part 2
-    // ( float * ) 0x74E5B0,
-    // ( float * ) 0x74E78C,
-    // ( float * ) 0x74E79C,
-    // ( float * ) 0x74E860,
-
-    // // Intro / outro HUD message part 1
-    // ( uint32_t * ) 0x74D9D0,
-    // ( uint32_t * ) 0x74E4E4,
-    // ( float * ) 0x74E4E8,
-    // ( float * ) 0x74E804,
-    // ( uint32_t * ) 0x74E838,
-    // ( float * ) 0x74E83C,
-    // // ( uint32_t * ) 0x76E79C,
-
-
-
-
-    // Intro music/voice + transition state
-    { 0x74d400, 0x74f000 },
-
-    // Intro graphics state
-    { 0x76e000, 0x76f000 },
-
-
-
-
-
-
+    // Intro graphics state part 2
+    { 0x76E780, 0x76E78C },
 
     // Camera position state
     ( uint32_t * ) 0x555124,
