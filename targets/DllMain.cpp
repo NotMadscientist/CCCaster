@@ -716,7 +716,7 @@ struct DllMain
             else
             {
                 redirectedSockets.insert ( newSocket.get() );
-                newSocket->send ( redirectAddr );
+                newSocket->send ( new IpAddrPort ( redirectAddr ) );
             }
 
             pushPendingSocket ( this, newSocket );

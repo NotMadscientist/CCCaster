@@ -40,7 +40,9 @@ void GoBackN::timerExpired ( Timer *timer )
         if ( sendListPos == sendList.end() )
             sendListPos = sendList.begin();
 
+#ifndef DISABLE_LOGGING
         logSendList();
+#endif
 
         const MsgPtr& msg = *sendListPos;
 
