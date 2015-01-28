@@ -39,6 +39,7 @@ void initializePreLoad()
 
     WRITE_ASM_HACK ( detectAutoReplaySave );
     WRITE_ASM_HACK ( hijackEscapeKey );
+    WRITE_ASM_HACK ( disableTrainingMusicReset );
 }
 
 // Note: this is called on the SAME thread as the main application thread

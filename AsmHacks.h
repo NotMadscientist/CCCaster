@@ -261,4 +261,7 @@ static const Asm hijackEscapeKey =
         0xC3,                                                       // ret
     } };
 
+// Prevent training mode music from reseting
+static const Asm disableTrainingMusicReset = { ( void * ) 0x472C6D, { 0xEB, 0x05 } }; // jmp 00472C74
+
 } // namespace AsmHacks
