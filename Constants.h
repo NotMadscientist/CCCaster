@@ -8,7 +8,12 @@
 
 // Number of frames of inputs to send per message
 #define NUM_INPUTS                  ( 30 )
+
+// Max allow rollback frames
 #define MAX_ROLLBACK                ( 15 )
+
+// Number of rollback states to allocate
+#define NUM_ROLLBACK_STATES         ( 256 )
 
 
 // Game constants and addresses are prefixed CC

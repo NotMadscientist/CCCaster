@@ -9,8 +9,6 @@
 using namespace std;
 
 
-#define NUM_ROLLBACK_STATES ( 256 )
-
 // Linked rollback memory data (binary message format)
 extern const unsigned char binary_res_rollback_bin_start;
 extern const unsigned char binary_res_rollback_bin_end;
@@ -31,8 +29,6 @@ void ProcessManager::GameState::save()
     for ( const MemDump& mem : allAddrs.addrs )
         mem.saveDump ( dump );
 
-    memcpy ( sfxFilterArray, AsmHacks::sfxFilterArray, CC_SFX_ARRAY_LEN );
-
     ASSERT ( dump == rawBytes + allAddrs.totalSize );
 }
 
@@ -44,8 +40,6 @@ void ProcessManager::GameState::load()
 
     for ( const MemDump& mem : allAddrs.addrs )
         mem.loadDump ( dump );
-
-    memcpy ( AsmHacks::sfxFilterArray, sfxFilterArray, CC_SFX_ARRAY_LEN );
 
     ASSERT ( dump == rawBytes + allAddrs.totalSize );
 }
@@ -125,10 +119,6 @@ bool ProcessManager::loadState ( IndexedFrame indexedFrame, NetplayManager& netM
             for ( auto jt = it.base(); jt != statesList.end(); ++jt )
             {
                 freeStack.push ( jt->rawBytes - memoryPool.get() );
-
-                // Merge all the erased sfxFilterArrays
-                for ( size_t i = 0; i < CC_SFX_ARRAY_LEN; ++i )
-                    AsmHacks::sfxFilterArray[i] |= jt->sfxFilterArray[i];
             }
 
             statesList.erase ( it.base(), statesList.end() );

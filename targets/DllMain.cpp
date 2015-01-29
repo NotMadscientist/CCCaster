@@ -150,6 +150,9 @@ struct DllMain
     // We should only rollback if this timer is full
     int rollbackTimer = MIN_ROLLBACK_SPACING;
 
+    // History of sound effect playbacks
+    array<array<uint8_t, CC_SFX_ARRAY_LEN>, NUM_ROLLBACK_STATES> sfxHistory;
+
 #ifndef RELEASE
     // Local and remote SyncHashes
     list<MsgPtr> localSync, remoteSync;
@@ -185,6 +188,10 @@ struct DllMain
                 {
                     // Only save rollback states in-game
                     procMan.saveState ( netMan );
+
+                    // Save a running history of the sound effects played
+                    uint8_t *currentSfxArray = &sfxHistory[netMan.getFrame() % NUM_ROLLBACK_STATES][0];
+                    memcpy ( currentSfxArray, AsmHacks::sfxFilterArray, CC_SFX_ARRAY_LEN );
 
                     // Delayed round over check
                     if ( roundOverTimer > 0 )
@@ -544,6 +551,9 @@ struct DllMain
 
                 netMan.clearLastChangedFrame();
                 --rollbackTimer;
+
+                // Disable all sound effects during re-run
+                memset ( AsmHacks::sfxFilterArray, 2, CC_SFX_ARRAY_LEN );
                 return;
             }
 
@@ -596,8 +606,9 @@ struct DllMain
         else
             DllFrameRate::desiredFps = 60;
 
-        // Cleared last played sound effects
+        // Cleared last played and muted sound effects
         memset ( AsmHacks::sfxFilterArray, 0, CC_SFX_ARRAY_LEN );
+        memset ( AsmHacks::sfxMuteArray, 0, CC_SFX_ARRAY_LEN );
 
 #ifndef RELEASE
         if ( !replayInputs )
@@ -618,12 +629,12 @@ struct DllMain
             // Test random rollback
             if ( KeyboardState::isPressed ( VK_F10 ) )
             {
-                randomRollback = !randomRollback;
-                DllOverlayUi::showMessage ( randomRollback ? "Enabled random rollback" : "Disabled random rollback" );
-            }
+            //     randomRollback = !randomRollback;
+            //     DllOverlayUi::showMessage ( randomRollback ? "Enabled random rollback" : "Disabled random rollback" );
+            // }
 
-            if ( randomRollback && netMan.isInGame() && ( netMan.getFrame() % 150 < 50 ) )
-            {
+            // if ( randomRollback && netMan.isInGame() && ( netMan.getFrame() % 150 < 50 ) )
+            // {
                 const uint32_t distance = 1 + ( rand() % rollUpTo );
 
                 IndexedFrame target = netMan.getIndexedFrame();
@@ -650,6 +661,9 @@ struct DllMain
                              before, target, netMan.getIndexedFrame() );
 
                     LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
+
+                    // Display all sound effects during re-run
+                    memset ( AsmHacks::sfxFilterArray, 2, CC_SFX_ARRAY_LEN );
                     return;
                 }
 
@@ -801,11 +815,32 @@ struct DllMain
 
     void frameStepRerun()
     {
-        // We don't save any states while re-running because the inputs are faked
+        // Here we don't save any states while re-running because the inputs are faked
 
-        // Stop fast-forwarding once we're reached the frame we want
+        uint8_t *oldSfxArray = &sfxHistory[netMan.getFrame() % NUM_ROLLBACK_STATES][0];
+
+        for ( size_t i = 0; i < CC_SFX_ARRAY_LEN; ++i )
+        {
+            // Cancel sound effects that don't play during rollback
+            if ( !oldSfxArray[i] && AsmHacks::sfxFilterArray[i] != 1 )
+            {
+                * ( CC_SFX_ARRAY_ADDR + i ) = 1;
+                AsmHacks::sfxMuteArray[i] = 1;
+            }
+        }
+
         if ( netMan.getIndexedFrame().value >= fastFwdStopFrame.value )
+        {
+            // Stop fast-forwarding once we're reached the frame we want
             fastFwdStopFrame.value = 0;
+
+            // Re-enable all sound effects after re-run is complete
+            memset ( AsmHacks::sfxFilterArray, 0, CC_SFX_ARRAY_LEN );
+        }
+        else
+        {
+            memset ( AsmHacks::sfxFilterArray, 2, CC_SFX_ARRAY_LEN );
+        }
 
         // Disable FPS limit only while fast-forwarding
         *CC_SKIP_FRAMES_ADDR = ( fastFwdStopFrame.value ? 1 : 0 );

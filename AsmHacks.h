@@ -59,6 +59,7 @@ extern uint8_t enableEscapeToExit;
 extern uint8_t sfxFilterArray[CC_SFX_ARRAY_LEN];
 
 // Indicates the next playback of the sound effect should be muted.
+// Can mute and play a sound effect at the same time to effectively cancel an existing playback.
 extern uint8_t sfxMuteArray[CC_SFX_ARRAY_LEN];
 
 
