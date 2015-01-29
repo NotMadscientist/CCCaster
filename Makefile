@@ -1,5 +1,5 @@
 VERSION = 2.1
-SUFFIX = h
+SUFFIX = i
 NAME = cccaster
 TAG =
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
@@ -227,7 +227,7 @@ clean-res:
 	rm -f res/rollback.* res/icon.res
 
 clean-common: clean-proto clean-res
-	rm -f .depend_$(BRANCH) .include_$(BRANCH) *.zip tools/*.exe \
+	rm -f .depend_$(BRANCH) .include_$(BRANCH) *.exe *.zip tools/*.exe \
 $(filter-out $(FOLDER)/config.ini $(wildcard $(FOLDER)/*.mappings) $(wildcard $(FOLDER)/*.log),$(wildcard $(FOLDER)/*))
 
 clean-debug: clean-common
