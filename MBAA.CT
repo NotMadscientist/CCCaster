@@ -716,24 +716,24 @@
       <CheatEntries>
         <CheatEntry>
           <ID>308</ID>
-          <Description>"5[E] initial charge SFX flag"</Description>
+          <Description>"5[E] initial charge SFX flag (offset 0x34)"</Description>
           <Color>80000008</Color>
           <VariableType>Byte</VariableType>
           <Address>0076E03C</Address>
         </CheatEntry>
         <CheatEntry>
-          <ID>192</ID>
-          <Description>"F-Akiha 5[E] voice (len 0xE950 bytes)"</Description>
-          <Color>80000008</Color>
-          <VariableType>Byte</VariableType>
-          <Address>0076E28B</Address>
-        </CheatEntry>
-        <CheatEntry>
           <ID>195</ID>
-          <Description>"F-Akiha 5A voice clip flag (one version)"</Description>
+          <Description>"F-Akiha 5A voice clip flag type 1 (offset 0x267)"</Description>
           <Color>80000008</Color>
           <VariableType>Byte</VariableType>
           <Address>0076E26F</Address>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>192</ID>
+          <Description>"F-Akiha 5[E] voice (offset 0x283, len 0xE950)"</Description>
+          <Color>80000008</Color>
+          <VariableType>Byte</VariableType>
+          <Address>0076E28B</Address>
         </CheatEntry>
       </CheatEntries>
     </CheatEntry>

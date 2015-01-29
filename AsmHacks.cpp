@@ -39,6 +39,8 @@ uint8_t enableEscapeToExit = true;
 
 uint8_t sfxFilterArray[CC_SFX_ARRAY_LEN] = { 0 };
 
+uint8_t sfxMuteArray[CC_SFX_ARRAY_LEN] = { 0 };
+
 
 int Asm::write() const
 {

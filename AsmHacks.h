@@ -58,6 +58,9 @@ extern uint8_t enableEscapeToExit;
 // Array of sound effects that were played last frame, set any SFX to 1 to prevent playback.
 extern uint8_t sfxFilterArray[CC_SFX_ARRAY_LEN];
 
+// Indicates the next playback of the sound effect should be muted.
+extern uint8_t sfxMuteArray[CC_SFX_ARRAY_LEN];
+
 
 // Struct for storing assembly code
 struct Asm
@@ -76,7 +79,6 @@ typedef std::vector<Asm> AsmList;
 // Note the message loop can get run multiple times per frame step, so be sure to check the world timer.
 static const AsmList hookMainLoop =
 {
-    // Hook callback function
     { MM_HOOK_CALL1_ADDR, {
         0xE8, INLINE_DWORD ( ( ( char * ) &callback ) - MM_HOOK_CALL1_ADDR - 5 ),   // call callback
         0xE9, INLINE_DWORD ( MM_HOOK_CALL2_ADDR - MM_HOOK_CALL1_ADDR - 10 )         // jmp MM_HOOK_CALL2_ADDR
@@ -85,14 +87,13 @@ static const AsmList hookMainLoop =
         0x6A, 0x01,                                                                 // push 01
         0x6A, 0x00,                                                                 // push 00
         0x6A, 0x00,                                                                 // push 00
-        0xE9, INLINE_DWORD ( CC_LOOP_START_ADDR - MM_HOOK_CALL2_ADDR - 5 )          // jmp CC_LOOP_START_ADDR+6 (after)
+        0xE9, INLINE_DWORD ( CC_LOOP_START_ADDR - MM_HOOK_CALL2_ADDR - 5 )          // jmp CC_LOOP_START_ADDR+6 (AFTER)
     } },
-
     // Write the jump location last, due to dependencies on the callback hook code
     { CC_LOOP_START_ADDR, {
         0xE9, INLINE_DWORD ( MM_HOOK_CALL1_ADDR - CC_LOOP_START_ADDR - 5 ),         // jmp MM_HOOK_CALL1_ADDR
         0x90                                                                        // nop
-                                                                                    // after:
+                                                                                    // AFTER:
     } },
 };
 
@@ -163,15 +164,16 @@ static const AsmList hijackMenu =
     { ( void * ) 0x4294D1, {
         0x8B, 0x7E, 0x40,                                           // mov edi,[esi+40]
         0x89, 0x3D, INLINE_DWORD ( &currentMenuIndex ),             // mov [&currentMenuIndex],edi
-        0xE9, 0xF1, 0x04, 0x00, 0x00                                // jmp 0x4299CB+5 (after)
+        0xE9, 0xF1, 0x04, 0x00, 0x00                                // jmp 0x4299D0 (AFTER)
     } },
     { ( void * ) 0x429817, {
         0x85, 0xC9,                                                 // test ecx,ecx
         0xE9, 0xB3, 0xFC, 0xFF, 0xFF                                // jmp 0x4294D1
     } },
+    // Write this last due to dependencies
     { ( void * ) 0x4299CB, {
         0xE9, 0x47, 0xFE, 0xFF, 0xFF                                // jmp 0x429817
-                                                                    // after:
+                                                                    // AFTER:
     } },
 
     // Code that allows us to selectively override menu confirms.
@@ -187,38 +189,35 @@ static const AsmList hijackMenu =
         0x83, 0x39, 0x01,                                           // cmp dword ptr [ecx],01
         0x8B, 0x13,                                                 // mov edx,[ebx]
         0x89, 0x11,                                                 // mov [ecx],edx
-        0x7F, 0x5B,                                                 // jg labelB
-        0xEB, 0x55                                                  // jmp labelA
+        0x7F, 0x5B,                                                 // jg 0x428FC8 (LABEL_B)
+        0xEB, 0x55                                                  // jmp 0x428FC4 (LABEL_A)
     } },
     { ( void * ) 0x428F7A, {
         0x5A, 0x59, 0x5B,                                           // pop edx,ecx,ebx
         0x90,                                                       // nop
-        0xEB, 0x0D                                                  // jmp RETURN
+        0xEB, 0x0D                                                  // jmp 0x428F8D (RETURN)
     } },
+    { ( void * ) 0x428FC4, {
+                                                                    // LABEL_A:
+        0x89, 0x03,                                                 // mov [ebx],eax
+        0xEB, 0xB2,                                                 // jmp 0x428F7A
+                                                                    // LABEL_B:
+        0x89, 0x01,                                                 // mov [ecx],eax
+        0xEB, 0xAE                                                  // jmp 0x428F7A
+    } },
+    // Write this last due to dependencies
     { ( void * ) 0x428F82, {
         0x81, 0x3C, 0x24, 0xF5, 0x99, 0x42, 0x00,                   // cmp [esp],0x4299F5 (return addr of menu call)
-        0x75, 0x02,                                                 // jne RETURN
+        0x75, 0x02,                                                 // jne 0x428F8D (RETURN)
         0xEB, 0xC5,                                                 // jmp 0x428F52
                                                                     // RETURN:
         0xC2, 0x04, 0x00                                            // ret 0004
-    } },
-    { ( void * ) 0x428FC4, {
-                                                                    // labelA:
-        0x89, 0x03,                                                 // mov [ebx],eax
-        0xEB, 0xB2,                                                 // jmp 0x428F7A
-                                                                    // labelB:
-        0x89, 0x01,                                                 // mov [ecx],eax
-        0xEB, 0xAE                                                  // jmp 0x428F7A
     } },
 };
 
 // Increment a counter at the beginning of the round when players can move
 static const AsmList detectRoundStart =
 {
-    { ( void * ) 0x440CC5, {
-        0xEB, 0x4F                                                  // jmp 0x440D16
-                                                                    // after:
-    } },
     { ( void * ) 0x440D16, {
         0xB9, INLINE_DWORD ( &roundStartCounter ),                  // mov ecx,[&roundStartCounter]
         0xE9, 0xE2, 0x02, 0x00, 0x00                                // jmp 0x441002
@@ -229,7 +228,11 @@ static const AsmList detectRoundStart =
         0x89, 0x31,                                                 // mov [ecx],esi
         0x5E,                                                       // pop esi
         0x59,                                                       // pop ecx
-        0xE9, 0x07, 0xFD, 0xFF, 0xFF                                // jmp 0x440CC5+2 (after)
+        0xC3                                                        // ret
+    } },
+    // Write this last due to dependencies
+    { ( void * ) 0x440CC5, {
+        0xEB, 0x4F                                                  // jmp 0x440D16
     } },
 };
 
@@ -253,9 +256,9 @@ static const Asm hijackEscapeKey =
     { ( void * ) 0x4A0070, {
         0x80, 0x3D, INLINE_DWORD ( &enableEscapeToExit ), 0x00,     // cmp byte ptr [&enableEscapeToExit],00
         0xA0, INLINE_DWORD ( 0x5544F1 ),                            // mov ax,[005544F1]
-        0x75, 0x03,                                                 // jne skip
+        0x75, 0x03,                                                 // jne 0x4A0081 (AFTER)
         0x66, 0x31, 0xC0,                                           // xor ax,ax
-                                                                    // skip:
+                                                                    // AFTER:
         0x24, 0x80,                                                 // and al,80
         // Rest of the code is unchanged, just shifted down
         0x33, 0xC9,                                                 // xor ecx,ecx
@@ -276,24 +279,66 @@ static const AsmList filterRepeatedSfx =
     { ( void * ) 0x4DDF32, {
         0xC6, 0x04, 0x30, 0x01,                                     // mov byte ptr [eax+esi],01
         0x58,                                                       // pop eax
-        0x0F, 0x8f, 0xE6, 0x02, 0x00, 0x00,                         // jg 0x4DE223 (skipSFX)
+        0x0F, 0x8f, 0xE6, 0x02, 0x00, 0x00,                         // jg 0x4DE223 (SKIP_SFX)
         0xEB, 0x65                                                  // jmp 0x4DDFA4
     } },
     { ( void * ) 0x4DDFA4, {
         0x8B, 0x3C, 0xB5, INLINE_DWORD ( 0x76C6F8 ),                // mov edi,[esi*4+0076C6F8]
-        0xE9, 0x67, 0x02, 0x00, 0x00                                // jmp 0x4DE217 (playSFX)
+        0xE9, 0x67, 0x02, 0x00, 0x00                                // jmp 0x4DE217 (PLAY_SFX)
     } },
+    // Write this last due to dependencies
     { ( void * ) 0x4DE210, {
         0x50,                                                       // push eax
         0xE9, 0x9D, 0xFC, 0xFF, 0xFF,                               // jmp 0x4DDEB3
         0x90                                                        // nop
-                                                                    // playSFX:
+                                                                    // PLAY_SFX:
                                                                     // test edi,edi
                                                                     // je 0x4DE220
                                                                     // call 0x4F3A0
                                                                     // add ebp,01
                                                                     // add esi,01
-                                                                    // skipSFX:
+                                                                    // SKIP_SFX:
+    } },
+};
+
+// Mutes the next playback of a specific sound effect
+static const AsmList muteSpecificSfx =
+{
+    { ( void * ) 0x40EEA1, {
+        0x8B, 0x14, 0x24,                                           // mov edx,[esp]
+        0x81, 0xFA, INLINE_DWORD ( CC_SFX_ARRAY_LEN ),              // cmp edx,CC_SFX_ARRAY_LEN
+        0xE9, 0x22, 0x03, 0x00, 0x00                                // jmp 0x40F1D1
+    } },
+    { ( void * ) 0x40F1D1, {
+        0x0F, 0x8D, 0xC1, 0x01, 0x00, 0x00,                         // jnl 0x40F398 (AFTER)
+        0xE9, 0xB6, 0x01, 0x00, 0x00                                // jmp 0x40F392
+    } },
+    { ( void * ) 0x40F392, {
+        0x0F, 0x85, 0xCA, 0x00, 0x00, 0x00,                         // jne 0x40F462
+                                                                    // AFTER:
+        0x8B, 0x50, 0x3C,                                           // mov edx,[eax+3C]
+        0x51,                                                       // push ecx
+        0x56,                                                       // push esi
+        0xEB, 0x3B                                                  // jmp 0x40F3D5
+    } },
+    { ( void * ) 0x40F462, {
+        0x8D, 0x92, INLINE_DWORD ( sfxMuteArray ),                  // lea edx,[edx+sfxMuteArray]
+        0xE9, 0x78, 0x06, 0x00, 0x00                                // jmp 0x40FAE5
+    } },
+    { ( void * ) 0x40FAE5, {
+        0x80, 0x3A, 0x00,                                           // cmp byte ptr [edx],00
+        0xC6, 0x02, 0x00,                                           // mov byte ptr [edx],00
+        0xEB, 0x14                                                  // jmp 0x40FB01
+    } },
+    { ( void * ) 0x40FB01, {
+        0x74, 0x05,                                                 // je 0x40FB03 (DONE_MUTE)
+        0xB9, INLINE_DWORD ( DX_MUTED_VOLUME ),                     // mov ecx,DX_MUTED_VOLUME
+                                                                    // DONE_MUTE:
+        0xE9, 0x8B, 0xF8, 0xFF, 0xFF                                // jmp 0x40F398 (AFTER)
+    } },
+    // Write this last due to dependencies
+    { ( void * ) 0x40F3D5, {
+        0xE9, 0xC7, 0xFA, 0xFF, 0xFF                                // jmp 0x40EEA1
     } },
 };
 
