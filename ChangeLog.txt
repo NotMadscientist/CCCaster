@@ -1,6 +1,7 @@
 v2.1i:
-- Fix crash caused by multiple spectators
-- Prevent music from restarting in training mode
+- Fix crash caused by multiple spectators.
+- Fix hang when quitting at the spectate menu.
+- Prevent music from restarting in training mode.
 
 v2.1h:
 - Can set max allowed delay when hosting.

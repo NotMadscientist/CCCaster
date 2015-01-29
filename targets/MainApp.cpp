@@ -1276,8 +1276,6 @@ void runFake ( const IpAddrPort& address, const Serializable& config )
 
 void stopMain()
 {
-    LOCK ( uiMutex );
-    uiCondVar.signal();
     EventManager::get().release();
     KeyboardManager::get().unhook();
     SocketManager::get().deinitialize();
