@@ -276,8 +276,12 @@ IndexedFrame ReplayManager::getRollbackTarget ( IndexedFrame indexedFrame )
 
 const vector<ReplayManager::Inputs>& ReplayManager::getReinputs ( IndexedFrame indexedFrame )
 {
-    ASSERT ( indexedFrame.parts.index < reinputs.size() );
-    ASSERT ( indexedFrame.parts.frame < reinputs[indexedFrame.parts.index].size() );
+    if ( indexedFrame.parts.index >= reinputs.size()
+            || indexedFrame.parts.frame >= reinputs[indexedFrame.parts.index].size() )
+    {
+        static const vector<ReplayManager::Inputs> empty;
+        return empty;
+    }
 
     return reinputs[indexedFrame.parts.index][indexedFrame.parts.frame];
 }

@@ -595,18 +595,6 @@ struct DllMain
             // TODO set rollback
         }
 
-        // Adjust FPS based on remote frame delta
-        if ( netMan.getRemoteFrameDelta() < -4 )
-            DllFrameRate::desiredFps = 62;
-        else if ( netMan.getRemoteFrameDelta() < 0 )
-            DllFrameRate::desiredFps = 61;
-        else
-            DllFrameRate::desiredFps = 60;
-
-        // Cleared last played and muted sound effects
-        memset ( AsmHacks::sfxFilterArray, 0, CC_SFX_ARRAY_LEN );
-        memset ( AsmHacks::sfxMuteArray, 0, CC_SFX_ARRAY_LEN );
-
 #ifndef RELEASE
         if ( !replayInputs )
         {
@@ -620,7 +608,32 @@ struct DllMain
                 else
                     target.parts.frame -= 30;
 
-                rollMan.loadState ( target, netMan );
+                if ( KeyboardState::isDown ( VK_CONTROL ) )
+                {
+                    const string before = format ( "%s [%u] %s [%s]",
+                                                   gameModeStr ( *CC_GAME_MODE_ADDR ), *CC_GAME_MODE_ADDR,
+                                                   netMan.getState(), netMan.getIndexedFrame() );
+
+                    // Indicate we're re-running to the current frame
+                    fastFwdStopFrame = netMan.getIndexedFrame();
+
+                    // Reset the game state (this resets game state AND netMan state)
+                    if ( rollMan.loadState ( target, netMan ) )
+                    {
+                        // Start fast-forwarding now
+                        *CC_SKIP_FRAMES_ADDR = 1;
+
+                        LOG_TO ( syncLog, "%s Rollback: target=[%s]; actual=[%s]",
+                                 before, netMan.getLastChangedFrame(), netMan.getIndexedFrame() );
+
+                        LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
+                        return;
+                    }
+                }
+                else
+                {
+                    rollMan.loadState ( target, netMan );
+                }
             }
 
             // Test random rollback
@@ -774,6 +787,18 @@ struct DllMain
         //     }
         // }
 #endif // NOT RELEASE
+
+        // Adjust FPS based on remote frame delta
+        if ( netMan.getRemoteFrameDelta() < -4 )
+            DllFrameRate::desiredFps = 62;
+        else if ( netMan.getRemoteFrameDelta() < 0 )
+            DllFrameRate::desiredFps = 61;
+        else
+            DllFrameRate::desiredFps = 60;
+
+        // Cleared last played and muted sound effects
+        memset ( AsmHacks::sfxFilterArray, 0, CC_SFX_ARRAY_LEN );
+        memset ( AsmHacks::sfxMuteArray, 0, CC_SFX_ARRAY_LEN );
 
 #ifndef DISABLE_LOGGING
         MsgPtr msgRngState = procMan.getRngState ( 0 );
