@@ -1,4 +1,4 @@
-#include "ProcessManager.h"
+#include "DllRollbackManager.h"
 #include "MemDump.h"
 #include "AsmHacks.h"
 #include "ErrorStringsExt.h"
@@ -20,7 +20,7 @@ template<typename T>
 static inline void deleteArray ( T *ptr ) { delete[] ptr; }
 
 
-void ProcessManager::GameState::save()
+void DllRollbackManager::GameState::save()
 {
     ASSERT ( rawBytes != 0 );
 
@@ -32,7 +32,7 @@ void ProcessManager::GameState::save()
     ASSERT ( dump == rawBytes + allAddrs.totalSize );
 }
 
-void ProcessManager::GameState::load()
+void DllRollbackManager::GameState::load()
 {
     ASSERT ( rawBytes != 0 );
 
@@ -44,7 +44,7 @@ void ProcessManager::GameState::load()
     ASSERT ( dump == rawBytes + allAddrs.totalSize );
 }
 
-void ProcessManager::allocateStates()
+void DllRollbackManager::allocateStates()
 {
     if ( allAddrs.empty() )
     {
@@ -62,9 +62,12 @@ void ProcessManager::allocateStates()
         freeStack.push ( i * allAddrs.totalSize );
 
     statesList.clear();
+
+    for ( auto& sfxArray : sfxHistory )
+        memset ( &sfxArray[0], 0, CC_SFX_ARRAY_LEN );
 }
 
-void ProcessManager::deallocateStates()
+void DllRollbackManager::deallocateStates()
 {
     memoryPool.reset();
 
@@ -74,7 +77,7 @@ void ProcessManager::deallocateStates()
     statesList.clear();
 }
 
-void ProcessManager::saveState ( const NetplayManager& netMan )
+void DllRollbackManager::saveState ( const NetplayManager& netMan )
 {
     if ( freeStack.empty() )
     {
@@ -95,9 +98,12 @@ void ProcessManager::saveState ( const NetplayManager& netMan )
     freeStack.pop();
     state.save();
     statesList.push_back ( state );
+
+    uint8_t *currentSfxArray = &sfxHistory [ netMan.getFrame() % NUM_ROLLBACK_STATES ][0];
+    memcpy ( currentSfxArray, AsmHacks::sfxFilterArray, CC_SFX_ARRAY_LEN );
 }
 
-bool ProcessManager::loadState ( IndexedFrame indexedFrame, NetplayManager& netMan )
+bool DllRollbackManager::loadState ( IndexedFrame indexedFrame, NetplayManager& netMan )
 {
     LOG ( "Trying to load state: indexedFrame=%s; statesList={ %s ... %s }",
           indexedFrame, statesList.front().indexedFrame, statesList.back().indexedFrame );
@@ -115,7 +121,7 @@ bool ProcessManager::loadState ( IndexedFrame indexedFrame, NetplayManager& netM
             it->load();
 
             // Erase all other states after the current one.
-            // Note it.base() returns 1 after the position of it, but moving forward.
+            // Note: it.base() returns 1 after the position of it, but moving forward.
             for ( auto jt = it.base(); jt != statesList.end(); ++jt )
             {
                 freeStack.push ( jt->rawBytes - memoryPool.get() );
@@ -128,4 +134,8 @@ bool ProcessManager::loadState ( IndexedFrame indexedFrame, NetplayManager& netM
 
     LOG ( "Failed to load state: indexedFrame=%s", indexedFrame );
     return false;
+}
+
+void DllRollbackManager::rerunSfx ( bool isLastRerunFrame )
+{
 }

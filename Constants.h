@@ -36,7 +36,7 @@
 #define CC_AUTO_REPLAY_SAVE_ADDR    ( ( uint32_t * ) 0x553FE8 ) // Auto replay saving: 0 to disable, 1 to enable
 #define CC_WORLD_TIMER_ADDR         ( ( uint32_t * ) 0x55D1D4 ) // Frame step timer, always counting up
 #define CC_PAUSE_FLAG_ADDR          ( ( uint8_t * )  0x55D203 ) // 1 when paused
-#define CC_SKIP_FRAMES_ADDR         ( ( uint32_t * ) 0x55D25C ) // Set to N to disable FPS limit for N frames
+#define CC_SKIP_FRAMES_ADDR         ( ( uint32_t * ) 0x55D25C ) // Set to N to skip rendering for N frames
 #define CC_ROUND_TIMER_ADDR         ( ( uint32_t * ) 0x562A3C ) // Counts down from 4752, may stop
 #define CC_REAL_TIMER_ADDR          ( ( uint32_t * ) 0x562A40 ) // Counts up from 0 after round start
 #define CC_TRAINING_PAUSE_ADDR      ( ( uint32_t * ) 0x562A64 ) // 1 when paused

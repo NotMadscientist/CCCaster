@@ -15,6 +15,7 @@
 #include "DllControllerManager.h"
 #include "DllFrameRate.h"
 #include "ReplayManager.h"
+#include "DllRollbackManager.h"
 
 #include <windows.h>
 
@@ -101,6 +102,9 @@ struct DllMain
     // NetplayManager instance
     NetplayManager netMan;
 
+    // DllRollbackManager instance
+    DllRollbackManager rollMan;
+
     // If remote has loaded up to character select
     bool remoteCharaSelectLoaded = false;
 
@@ -150,9 +154,6 @@ struct DllMain
     // We should only rollback if this timer is full
     int rollbackTimer = MIN_ROLLBACK_SPACING;
 
-    // History of sound effect playbacks
-    array<array<uint8_t, CC_SFX_ARRAY_LEN>, NUM_ROLLBACK_STATES> sfxHistory;
-
 #ifndef RELEASE
     // Local and remote SyncHashes
     list<MsgPtr> localSync, remoteSync;
@@ -179,7 +180,7 @@ struct DllMain
             case NetplayState::PreInitial:
             case NetplayState::Initial:
             case NetplayState::AutoCharaSelect:
-                // Disable FPS limit while going to character select
+                // Skip rendering while loading character select
                 *CC_SKIP_FRAMES_ADDR = 1;
                 break;
 
@@ -187,11 +188,7 @@ struct DllMain
                 if ( netMan.config.rollback )
                 {
                     // Only save rollback states in-game
-                    procMan.saveState ( netMan );
-
-                    // Save a running history of the sound effects played
-                    uint8_t *currentSfxArray = &sfxHistory[netMan.getFrame() % NUM_ROLLBACK_STATES][0];
-                    memcpy ( currentSfxArray, AsmHacks::sfxFilterArray, CC_SFX_ARRAY_LEN );
+                    rollMan.saveState ( netMan );
 
                     // Delayed round over check
                     if ( roundOverTimer > 0 )
@@ -203,13 +200,14 @@ struct DllMain
             case NetplayState::Skippable:
             case NetplayState::RetryMenu:
             {
-                // Fast forward if spectator
+                // Fast-forward if spectator
                 if ( clientMode.isSpectate() && netMan.getState() != NetplayState::Loading )
                 {
                     static bool doneSkipping = true;
 
                     const IndexedFrame remoteIndexedFrame = netMan.getRemoteIndexedFrame();
 
+                    // Fast-forward implemented by skipping the rendering every other frame
                     if ( doneSkipping && remoteIndexedFrame.value > netMan.getIndexedFrame().value + NUM_INPUTS )
                     {
                         *CC_SKIP_FRAMES_ADDR = 1;
@@ -332,7 +330,7 @@ struct DllMain
                         fastFwdStopFrame = netMan.getIndexedFrame();
 
                         // Reset the game state (this resets game state AND netMan state)
-                        if ( procMan.loadState ( target, netMan ) )
+                        if ( rollMan.loadState ( target, netMan ) )
                         {
                             // Start fast-forwarding now
                             *CC_SKIP_FRAMES_ADDR = 1;
@@ -539,7 +537,7 @@ struct DllMain
             fastFwdStopFrame = netMan.getIndexedFrame();
 
             // Reset the game state (this resets game state AND netMan state)
-            if ( procMan.loadState ( netMan.getLastChangedFrame(), netMan ) )
+            if ( rollMan.loadState ( netMan.getLastChangedFrame(), netMan ) )
             {
                 // Start fast-forwarding now
                 *CC_SKIP_FRAMES_ADDR = 1;
@@ -551,9 +549,6 @@ struct DllMain
 
                 netMan.clearLastChangedFrame();
                 --rollbackTimer;
-
-                // Disable all sound effects during re-run
-                memset ( AsmHacks::sfxFilterArray, 2, CC_SFX_ARRAY_LEN );
                 return;
             }
 
@@ -623,18 +618,18 @@ struct DllMain
                 else
                     target.parts.frame -= 30;
 
-                procMan.loadState ( target, netMan );
+                rollMan.loadState ( target, netMan );
             }
 
             // Test random rollback
             if ( KeyboardState::isPressed ( VK_F10 ) )
             {
-            //     randomRollback = !randomRollback;
-            //     DllOverlayUi::showMessage ( randomRollback ? "Enabled random rollback" : "Disabled random rollback" );
-            // }
+                randomRollback = !randomRollback;
+                DllOverlayUi::showMessage ( randomRollback ? "Enabled random rollback" : "Disabled random rollback" );
+            }
 
-            // if ( randomRollback && netMan.isInGame() && ( netMan.getFrame() % 150 < 50 ) )
-            // {
+            if ( randomRollback && netMan.isInGame() && ( netMan.getFrame() % 150 < 50 ) )
+            {
                 const uint32_t distance = 1 + ( rand() % rollUpTo );
 
                 IndexedFrame target = netMan.getIndexedFrame();
@@ -652,7 +647,7 @@ struct DllMain
                 fastFwdStopFrame = netMan.getIndexedFrame();
 
                 // Reset the game state (this resets game state AND netMan state)
-                if ( procMan.loadState ( target, netMan ) )
+                if ( rollMan.loadState ( target, netMan ) )
                 {
                     // Start fast-forwarding now
                     *CC_SKIP_FRAMES_ADDR = 1;
@@ -661,9 +656,6 @@ struct DllMain
                              before, target, netMan.getIndexedFrame() );
 
                     LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
-
-                    // Display all sound effects during re-run
-                    memset ( AsmHacks::sfxFilterArray, 2, CC_SFX_ARRAY_LEN );
                     return;
                 }
 
@@ -817,33 +809,23 @@ struct DllMain
     {
         // Here we don't save any states while re-running because the inputs are faked
 
-        uint8_t *oldSfxArray = &sfxHistory[netMan.getFrame() % NUM_ROLLBACK_STATES][0];
+        const bool isLastRerunFrame = ( netMan.getIndexedFrame().value >= fastFwdStopFrame.value );
 
-        for ( size_t i = 0; i < CC_SFX_ARRAY_LEN; ++i )
-        {
-            // Cancel sound effects that don't play during rollback
-            if ( !oldSfxArray[i] && AsmHacks::sfxFilterArray[i] != 1 )
-            {
-                * ( CC_SFX_ARRAY_ADDR + i ) = 1;
-                AsmHacks::sfxMuteArray[i] = 1;
-            }
-        }
+        rollMan.rerunSfx ( isLastRerunFrame );
 
-        if ( netMan.getIndexedFrame().value >= fastFwdStopFrame.value )
+        if ( isLastRerunFrame )
         {
             // Stop fast-forwarding once we're reached the frame we want
             fastFwdStopFrame.value = 0;
 
-            // Re-enable all sound effects after re-run is complete
-            memset ( AsmHacks::sfxFilterArray, 0, CC_SFX_ARRAY_LEN );
+            // Re-enable regular rendering once done
+            *CC_SKIP_FRAMES_ADDR = 0;
         }
         else
         {
-            memset ( AsmHacks::sfxFilterArray, 2, CC_SFX_ARRAY_LEN );
+            // Skip rendering while fast-forwarding
+            *CC_SKIP_FRAMES_ADDR = 1;
         }
-
-        // Disable FPS limit only while fast-forwarding
-        *CC_SKIP_FRAMES_ADDR = ( fastFwdStopFrame.value ? 1 : 0 );
 
         LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
         LOG_SYNC ( "roundOverTimer=%d; introState=%u; roundTimer=%u; realTimer=%u; hitsparks=%u; camera={ %d, %d }",
@@ -931,14 +913,14 @@ struct DllMain
         if ( state == NetplayState::InGame )
         {
             if ( netMan.config.rollback )
-                procMan.allocateStates();
+                rollMan.allocateStates();
         }
 
         // Leaving InGame
         if ( netMan.getState() == NetplayState::InGame )
         {
             if ( netMan.config.rollback )
-                procMan.deallocateStates();
+                rollMan.deallocateStates();
         }
 
         // Entering CharaSelect OR entering InGame
@@ -1762,7 +1744,7 @@ struct DllMain
     // Destructor
     ~DllMain()
     {
-        procMan.deallocateStates();
+        rollMan.deallocateStates();
 
         KeyboardManager::get().unhook();
 

@@ -9,6 +9,7 @@
 #include "Algorithms.h"
 #include "CharacterSelect.h"
 #include "SpectatorManager.h"
+#include "NetplayManager.h"
 
 #include <windows.h>
 #include <ws2tcpip.h>

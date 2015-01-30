@@ -214,5 +214,5 @@ public:
     // Check if the next state transition is valid
     bool isValidNext ( NetplayState state );
 
-    friend class ProcessManager;
+    friend class DllRollbackManager;
 };
