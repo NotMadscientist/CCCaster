@@ -46,6 +46,7 @@
 #define CC_P1_WINS_ADDR             ( ( uint32_t * ) 0x559550 ) // P1 number of wins
 #define CC_P2_WINS_ADDR             ( ( uint32_t * ) 0x559580 ) // P2 number of wins
 #define CC_ROUND_COUNT_ADDR         ( ( uint32_t * ) 0x5550E0 ) // Round count
+#define CC_STAGE_ANIMATION_OFF_ADDR ( ( uint32_t * ) 0x554124 ) // 1 if stage animations are off
 #define CC_INTRO_STATE_ADDR         ( ( uint8_t * )  0x55D20B ) // 2 (character intros), 1 (pre-game), 0 (in-game)
 #define CC_HIT_SPARKS_ADDR          ( ( uint32_t * ) 0x67BD78 ) // Number of hit sparks?
 

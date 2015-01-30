@@ -1635,8 +1635,11 @@ struct DllMain
                     // Manually control intro state
                     WRITE_ASM_HACK ( AsmHacks::hijackIntroState );
 
-                    // Disable auto replay save
+                    // Disable auto replay save (TODO)
                     *CC_AUTO_REPLAY_SAVE_ADDR = 0;
+
+                    // Disable stage animations (TODO)
+                    *CC_STAGE_ANIMATION_OFF_ADDR = 1;
                 }
 
                 LOG ( "SessionId '%s'", netMan.config.sessionId );
