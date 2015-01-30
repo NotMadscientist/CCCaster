@@ -269,16 +269,30 @@ static const Asm hijackEscapeKey =
         0xC3,                                                       // ret
     } };
 
-// Keep track of already played sound effects and prevent playing duplicates
+// This increments a counter for each sound effect played,
+// but only actually plays the sound if its muted or at zero plays.
 static const AsmList filterRepeatedSfx =
 {
+    { ( void * ) 0x4DD836, {
+        0xB8, INLINE_DWORD ( sfxMuteArray ),                        // mov eax,sfxMuteArray
+        0xEB, 0x79,                                                 // jmp 0x4DD8B6
+    } },
+    { ( void * ) 0x4DD8B6, {
+        0x80, 0x3C, 0x30, 0x00,                                     // cmp byte ptr [eax+esi],00
+        0xE9, 0xB4, 0x02, 0x00, 0x00                                // jmp 0x4DDB73
+    } },
+    { ( void * ) 0x4DDB73, {
+        0x0F, 0x84, 0x3A, 0x03, 0x00, 0x00,                         // je 0x4DDEB3
+        0x58,                                                       // pop eax
+        0xE9, 0x25, 0x04, 0x00, 0x00                                // jmp 0x4DDFA4
+    } },
     { ( void * ) 0x4DDEB3, {
         0xB8, INLINE_DWORD ( sfxFilterArray ),                      // mov eax,sfxFilterArray
-        0x80, 0x3C, 0x30, 0x00,                                     // cmp byte ptr [eax+esi],00
+        0x80, 0x04, 0x30, 0x01,                                     // add byte ptr [eax+esi],01
         0xEB, 0x74                                                  // jmp 0x4DDF32
     } },
     { ( void * ) 0x4DDF32, {
-        0xC6, 0x04, 0x30, 0x01,                                     // mov byte ptr [eax+esi],01
+        0x80, 0x3C, 0x30, 0x01,                                     // cmp byte ptr [eax+esi],01
         0x58,                                                       // pop eax
         0x0F, 0x8f, 0xE6, 0x02, 0x00, 0x00,                         // jg 0x4DE223 (SKIP_SFX)
         0xEB, 0x65                                                  // jmp 0x4DDFA4
@@ -290,7 +304,7 @@ static const AsmList filterRepeatedSfx =
     // Write this last due to dependencies
     { ( void * ) 0x4DE210, {
         0x50,                                                       // push eax
-        0xE9, 0x9D, 0xFC, 0xFF, 0xFF,                               // jmp 0x4DDEB3
+        0xE9, 0x20, 0xF6, 0xFF, 0xFF,                               // jmp 0x4DD836
         0x90                                                        // nop
                                                                     // PLAY_SFX:
                                                                     // test edi,edi

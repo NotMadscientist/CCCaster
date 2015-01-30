@@ -716,24 +716,38 @@
       <CheatEntries>
         <CheatEntry>
           <ID>308</ID>
-          <Description>"5[E] initial charge SFX flag (offset 0x34)"</Description>
+          <Description>"generic hit type 2 (offset 0x02)"</Description>
+          <Color>80000008</Color>
+          <VariableType>Byte</VariableType>
+          <Address>0076E00A</Address>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>446</ID>
+          <Description>"5[E] initial charge (offset 0x34)"</Description>
           <Color>80000008</Color>
           <VariableType>Byte</VariableType>
           <Address>0076E03C</Address>
         </CheatEntry>
         <CheatEntry>
           <ID>195</ID>
-          <Description>"F-Akiha 5A voice clip flag type 1 (offset 0x267)"</Description>
+          <Description>"F.Akiha 5A voice clip flag type 1 (offset 0x267)"</Description>
           <Color>80000008</Color>
           <VariableType>Byte</VariableType>
           <Address>0076E26F</Address>
         </CheatEntry>
         <CheatEntry>
           <ID>192</ID>
-          <Description>"F-Akiha 5[E] voice (offset 0x283, len 0xE950)"</Description>
+          <Description>"F.Akiha 5[E] voice clip (offset 0x283, len 0xE950)"</Description>
           <Color>80000008</Color>
           <VariableType>Byte</VariableType>
           <Address>0076E28B</Address>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>445</ID>
+          <Description>"V.Sion death screen (offset 0x2ED)"</Description>
+          <Color>80000008</Color>
+          <VariableType>Byte</VariableType>
+          <Address>0076E2F5</Address>
         </CheatEntry>
       </CheatEntries>
     </CheatEntry>

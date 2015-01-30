@@ -596,7 +596,9 @@ struct DllMain
         }
 
         // Adjust FPS based on remote frame delta
-        if ( netMan.getRemoteFrameDelta() < 0 )
+        if ( netMan.getRemoteFrameDelta() < -4 )
+            DllFrameRate::desiredFps = 62;
+        else if ( netMan.getRemoteFrameDelta() < 0 )
             DllFrameRate::desiredFps = 61;
         else
             DllFrameRate::desiredFps = 60;
@@ -809,20 +811,22 @@ struct DllMain
     {
         // Here we don't save any states while re-running because the inputs are faked
 
-        const bool isLastRerunFrame = ( netMan.getIndexedFrame().value >= fastFwdStopFrame.value );
-
-        rollMan.rerunSfx ( isLastRerunFrame );
-
-        if ( isLastRerunFrame )
+        if ( netMan.getIndexedFrame().value >= fastFwdStopFrame.value )
         {
             // Stop fast-forwarding once we're reached the frame we want
             fastFwdStopFrame.value = 0;
 
             // Re-enable regular rendering once done
             *CC_SKIP_FRAMES_ADDR = 0;
+
+            // Finalize rollback sound effects
+            rollMan.finishedRerun();
         }
         else
         {
+            // Save state during rollback re-run
+            rollMan.saveRerun ( netMan.getFrame() );
+
             // Skip rendering while fast-forwarding
             *CC_SKIP_FRAMES_ADDR = 1;
         }
