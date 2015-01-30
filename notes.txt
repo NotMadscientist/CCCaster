@@ -1,3 +1,80 @@
+
+=== MBAA SFX stuff ===
+
+#define CC_SFX_ARRAY_ADDR         ((char *)0x76E008) // array of bytes, set a byte to 1 to start SFX
+#define CC_SFX_ARRAY_LEN          (1500)
+
+- play any SFX by setting a flag
+- playback rate is approximately 365 bytes per frame (for setting starting position)
+
+- set starting position by pushing the starting bytes instead of "push 00"
+    - see IDirectSoundBuffer8::SetCurrentPosition in MBAA.CT
+
+- cancel an existing playback by playing the same SFX muted
+
+- TODO figure out SFX playback length in frames, check the struct that gets passed to the set volume function
+
+=== Crit damage disassemble ===
+
+F-Akiha 5A norm damage = 0x12C
+F-Akiha 5A crit damage = 0x159
+
+collision detection code?
+
+0046F5F7 - 89 16     - mov [esi],edx
+00419637 - 8B 50 08  - mov edx,[eax+08]
+00419657 - 89 50 08  - mov [eax+08],edx
+004196A5 - D1 60 08  - shl [eax+08],1
+004196B0 - 01 50 08  - add [eax+08],edx
+004196C3 - 8B 58 08  - mov ebx,[eax+08]
+0046E432 - 8B 4E 08  - mov ecx,[esi+08]
+
+code that assigns damage value to 0x18FD50
+
+0047079B - 89 4E 10  - mov [esi+10],ecx
+
+block that detects crits
+
+00470781
+
+crit happens here
+
+00470777
+
+rand func here
+
+00421A80
+
+seems to be called on every frame and during character select
+(but not every frame in training mode)
+
+rand func decompiled
+
+ecx = *CC_RAND2_ADDR
+ecx += 1
+if (ecx >= 0x38)
+    ecx = 1
+*CC_RAND2_ADDR = ecx;
+edx = ecx + 0x15;
+if (ecx > 0x22)
+    edx = ecx - 0x22;
+eax = *(int *)(CC_RAND3_ADDR + ecx * 4);
+eax -= *(int *)(CC_RAND3_ADDR + edx * 4);
+if (eax < 0)
+    eax += 0x7FFFFFFF;
+*(int *)CC_RAND1_ADDR += 1;
+*(int *)(CC_RAND3_ADDR + ecx * 4) = eax;
+*(int *)CC_RAND0_ADDR = eax;
+
+rand func state is stored in 4 locations
+
+0x563778 as ints
+0x56377C as ints
+0x564068 as ints
+0x564070 points to a block of data 220 bytes long
+
+=== MBAA player stuff ===
+
 0x555134 Player 1 struct start
 0x555140 start of relevant stuff
 
