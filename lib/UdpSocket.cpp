@@ -223,7 +223,8 @@ bool UdpSocket::send ( SerializableSequence *message, const IpAddrPort& address 
 
 bool UdpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
 {
-    if ( isConnectionLess() || !msg.get()
+    if ( isConnectionLess() || msg.get() == 0
+            // Send the UdpControl::Disconnect message immediately instead of using GoBackN
             || ( msg->getMsgType() == MsgType::UdpControl
                  && msg->getAs<UdpControl>().value == UdpControl::Disconnect ) )
     {
@@ -441,6 +442,15 @@ void UdpSocket::readEvent ( const MsgPtr& msg, const IpAddrPort& address )
     }
     else if ( isClient() )
     {
+        // Handle the UdpControl::Disconnect message immediately instead of using GoBackN
+        if ( msg.get() != 0
+                && msg->getMsgType() == MsgType::UdpControl
+                && msg->getAs<UdpControl>().value == UdpControl::Disconnect )
+        {
+            recvGoBackN ( &gbn, msg );
+            return;
+        }
+
         // Client UDP sockets recv into the GoBackN instance
         gbn.recvRaw ( msg );
     }
