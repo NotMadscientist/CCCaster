@@ -131,21 +131,21 @@ bool DllRollbackManager::loadState ( IndexedFrame indexedFrame, NetplayManager& 
 
             statesList.erase ( it.base(), statesList.end() );
 
-            // Initialize the SFX filter by flagging all played SFX flags in the range [R,S),
+            // Initialize the SFX filter by flagging all played SFX flags in the range (R,S),
             // where R is the actual reset frame, and S is the original starting frame.
-            // Note: we can skip frame S, because the current SFX filter array is initialized by frame S.
-            for ( uint32_t i = netMan.getFrame(); i < origFrame; ++i )
+            // Note: we can skip frame S, because the current SFX filter array is already initialized by frame S.
+            for ( uint32_t i = netMan.getFrame() + 1; i < origFrame; ++i )
             {
                 for ( uint32_t j = 0; j < CC_SFX_ARRAY_LEN; ++j )
                     AsmHacks::sfxFilterArray[j] |= sfxHistory [ i % NUM_ROLLBACK_STATES ][j];
             }
 
-            // We set the SFX filter flag to 2. Since actually played (but filtered) SFX are incremented,
-            // other sound effects in the filter will stay as 2.
+            // We set the SFX filter flag to 0x80. Since played (but filtered) SFX are incremented,
+            // unplayed sound effects in the filter will stay as 0 or 0x80.
             for ( uint32_t j = 0; j < CC_SFX_ARRAY_LEN; ++j )
             {
                 if ( AsmHacks::sfxFilterArray[j] )
-                    AsmHacks::sfxFilterArray[j] = 2;
+                    AsmHacks::sfxFilterArray[j] = 0x80;
             }
 
             return true;
@@ -156,32 +156,34 @@ bool DllRollbackManager::loadState ( IndexedFrame indexedFrame, NetplayManager& 
     return false;
 }
 
-void DllRollbackManager::saveRerun ( uint32_t frame )
+void DllRollbackManager::saveRerunSounds ( uint32_t frame )
 {
-    // uint8_t *currentSfxArray = &sfxHistory [ frame % NUM_ROLLBACK_STATES ][0];
+    uint8_t *currentSfxArray = &sfxHistory [ frame % NUM_ROLLBACK_STATES ][0];
 
-    // for ( uint32_t j = 0; j < CC_SFX_ARRAY_LEN; ++j )
-    // {
-    //     if ( AsmHacks::sfxFilterArray[j] == 2 )
-    //         currentSfxArray[j] = 1;
-    //     else
-    //         currentSfxArray[j] = 0;
-    // }
+    // Rewrite the sound effects history during re-run
+    for ( uint32_t j = 0; j < CC_SFX_ARRAY_LEN; ++j )
+    {
+        if ( AsmHacks::sfxFilterArray[j] & ~0x80 )
+            currentSfxArray[j] = 1;
+        else
+            currentSfxArray[j] = 0;
+    }
 }
 
-void DllRollbackManager::finishedRerun()
+void DllRollbackManager::finishedRerunSounds()
 {
-    // // Cancel unplayed sound effects after rollback
-    // for ( uint32_t j = 0; j < CC_SFX_ARRAY_LEN; ++j )
-    // {
-    //     // Filter flag 2 means the SFX didn't play so the filter didn't get triggered
-    //     if ( AsmHacks::sfxFilterArray[j] == 2 )
-    //     {
-    //         // Play the SFX muted to cancel it
-    //         CC_SFX_ARRAY_ADDR[j] = 1;
-    //         AsmHacks::sfxMuteArray[j] = 1;
+    // Cancel unplayed sound effects after rollback
+    for ( uint32_t j = 0; j < CC_SFX_ARRAY_LEN; ++j )
+    {
+        // Filter flag 0x80 means the SFX didn't play after rollback since the filter didn't get incremented
+        if ( AsmHacks::sfxFilterArray[j] == 0x80 )
+        {
+            // Play the SFX muted to cancel it
+            CC_SFX_ARRAY_ADDR[j] = 1;
+            AsmHacks::sfxMuteArray[j] = 1;
+        }
+    }
 
-    //         LOG ( "Muting SFX 0x%03X", j );
-    //     }
-    // }
+    // Cleared last played sound effects
+    memset ( AsmHacks::sfxFilterArray, 0, CC_SFX_ARRAY_LEN );
 }

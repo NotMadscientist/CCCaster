@@ -294,7 +294,7 @@ static const AsmList filterRepeatedSfx =
     { ( void * ) 0x4DDF32, {
         0x80, 0x3C, 0x30, 0x01,                                     // cmp byte ptr [eax+esi],01
         0x58,                                                       // pop eax
-        0x0F, 0x8f, 0xE6, 0x02, 0x00, 0x00,                         // jg 0x4DE223 (SKIP_SFX)
+        0x0F, 0x87, 0xE6, 0x02, 0x00, 0x00,                         // ja 0x4DE223 (SKIP_SFX)
         0xEB, 0x65                                                  // jmp 0x4DDFA4
     } },
     { ( void * ) 0x4DDFA4, {

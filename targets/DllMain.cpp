@@ -595,6 +595,9 @@ struct DllMain
             // TODO set rollback
         }
 
+        // LOG_SYNC ( "SFX 0x%X: CC_SFX_ARRAY=%u; sfxFilterArray=%u; sfxMuteArray=%u", SFX_NUM,
+        //            CC_SFX_ARRAY_ADDR[SFX_NUM], AsmHacks::sfxFilterArray[SFX_NUM], AsmHacks::sfxMuteArray[SFX_NUM] );
+
 #ifndef RELEASE
         if ( !replayInputs )
         {
@@ -834,7 +837,10 @@ struct DllMain
 
     void frameStepRerun()
     {
-        // Here we don't save any states while re-running because the inputs are faked
+        // Here we don't save any game states while re-running because the inputs are faked
+
+        // Save sound state during rollback re-run
+        rollMan.saveRerunSounds ( netMan.getFrame() );
 
         if ( netMan.getIndexedFrame().value >= fastFwdStopFrame.value )
         {
@@ -845,13 +851,10 @@ struct DllMain
             *CC_SKIP_FRAMES_ADDR = 0;
 
             // Finalize rollback sound effects
-            rollMan.finishedRerun();
+            rollMan.finishedRerunSounds();
         }
         else
         {
-            // Save state during rollback re-run
-            rollMan.saveRerun ( netMan.getFrame() );
-
             // Skip rendering while fast-forwarding
             *CC_SKIP_FRAMES_ADDR = 1;
         }
@@ -860,6 +863,9 @@ struct DllMain
         LOG_SYNC ( "roundOverTimer=%d; introState=%u; roundTimer=%u; realTimer=%u; hitsparks=%u; camera={ %d, %d }",
                    roundOverTimer, *CC_INTRO_STATE_ADDR, *CC_ROUND_TIMER_ADDR, *CC_REAL_TIMER_ADDR,
                    *CC_HIT_SPARKS_ADDR, *CC_CAMERA_X_ADDR, *CC_CAMERA_Y_ADDR );
+
+        // LOG_SYNC ( "ReSFX 0x%X: CC_SFX_ARRAY=%u; sfxFilterArray=%u; sfxMuteArray=%u", SFX_NUM,
+        //            CC_SFX_ARRAY_ADDR[SFX_NUM], AsmHacks::sfxFilterArray[SFX_NUM], AsmHacks::sfxMuteArray[SFX_NUM] );
     }
 
     void frameStep()

@@ -49,9 +49,9 @@ public:
     void saveState ( const NetplayManager& netMan );
     bool loadState ( IndexedFrame indexedFrame, NetplayManager& netMan );
 
-    // Save state during rollback re-run
-    void saveRerun ( uint32_t frame );
+    // Save sounds during rollback re-run
+    void saveRerunSounds ( uint32_t frame );
 
-    // Handle the last frame of rollback rerun
-    void finishedRerun();
+    // Finalize rollback sound effects
+    void finishedRerunSounds();
 };
