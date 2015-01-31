@@ -9,8 +9,8 @@ using namespace std;
 #define USER_AGENT "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)"
 
 
-HttpGet::HttpGet ( Owner *owner, const string& url, uint64_t timeout )
-    : owner ( owner ), url ( url ), timeout ( timeout )
+HttpGet::HttpGet ( Owner *owner, const string& url, uint64_t timeout, Mode mode )
+    : owner ( owner ), url ( url ), timeout ( timeout ), mode ( mode )
 {
     if ( url.substr ( 0, 8 ) == "https://" )
         THROW_EXCEPTION ( "url='%s'", "Unsupported https protocol!", url );
@@ -21,7 +21,7 @@ HttpGet::HttpGet ( Owner *owner, const string& url, uint64_t timeout )
     size_t i = host.find_last_of ( '/' );
 
     if ( i < string::npos - 1 )
-        path = host.substr ( i + 1 );
+        path = host.substr ( i );
 
     if ( path.empty() )
         path = "/";
@@ -35,6 +35,11 @@ HttpGet::HttpGet ( Owner *owner, const string& url, uint64_t timeout )
 
 void HttpGet::start()
 {
+    code = -1;
+    headerBuffer.clear();
+    dataBuffer.clear();
+    remainingBytes = 0;
+
     LOG ( "Connecting to: '%s:80'", host );
 
     try
@@ -44,7 +49,11 @@ void HttpGet::start()
     catch ( ... )
     {
         socket.reset();
-        disconnectEvent ( 0 );
+
+        LOG ( "Failed to create socket!" );
+
+        if ( owner )
+            owner->failedHttp ( this );
     }
 }
 
@@ -60,15 +69,23 @@ void HttpGet::connectEvent ( Socket *socket )
     timer->start ( timeout );
 
     if ( !socket->send ( &request[0], request.size() ) )
-        disconnectEvent ( socket );
+    {
+        LOG ( "Failed to send request!" );
+
+        if ( owner )
+            owner->failedHttp ( this );
+    }
 }
 
 void HttpGet::disconnectEvent ( Socket *socket )
 {
     ASSERT ( this->socket.get() == socket );
 
-    if ( tryParse() )
+    if ( remainingBytes == 0 )
         return;
+
+    this->socket.reset();
+    this->timer.reset();
 
     if ( owner )
         owner->failedHttp ( this );
@@ -78,73 +95,118 @@ void HttpGet::timerExpired ( Timer *timer )
 {
     ASSERT ( this->timer.get() == timer );
 
-    if ( tryParse() )
+    if ( remainingBytes == 0 )
         return;
+
+    this->socket.reset();
+    this->timer.reset();
 
     if ( owner )
         owner->failedHttp ( this );
 }
 
-void HttpGet::readEvent ( Socket *socket, const char *data, size_t len, const IpAddrPort& address )
+void HttpGet::readEvent ( Socket *socket, const char *bytes, size_t len, const IpAddrPort& address )
 {
     ASSERT ( this->socket.get() == socket );
 
-    buffer += string ( data, len );
+    const string data ( bytes, len );
 
-    timer->start ( timeout );
-
-    tryParse();
+    if ( remainingBytes == 0 )
+        parseResponse ( data );
+    else
+        parseData ( data );
 }
 
-bool HttpGet::tryParse()
+void HttpGet::parseResponse ( const string& data )
 {
-    LOG ( "Trying to parse response:\n%s", buffer );
+    // Append to the read buffer
+    headerBuffer += data;
 
-    stringstream ss ( buffer );
+    // Start a timeout for the next read event
+    timer->start ( timeout );
+
+    LOG ( "Trying to parse response:\n%s", headerBuffer );
+
+    stringstream ss ( headerBuffer );
     string header;
     uint32_t contentLength = 0;
 
-    // Get header and status code
+    // Get the HTTP version header and status code
     ss >> header >> code;
 
-    // Skip all the headers
     while ( getline ( ss, header ) )
     {
+        // Stop if we reached the end of the headers
+        if ( header == "\r" )
+        {
+            remainingBytes = contentLength;
+
+            // Get the remaining response bytes from the header buffer
+            const size_t responseBytes = ss.rdbuf()->in_avail();
+
+            if ( responseBytes == 0 )
+            {
+                finalize();
+                return;
+            }
+
+            string data ( responseBytes, '\0' );
+            ss.rdbuf()->sgetn ( &data[0], responseBytes );
+
+            parseData ( data );
+            return;
+        }
+
         LOG ( "Header: '%s'", trimmed ( header ) );
 
+        // Skip all the headers except Content-Length
         if ( header.find ( "Content-Length:" ) == 0 )
         {
             stringstream ss ( header );
             ss >> header >> contentLength;
 
             LOG ( "contentLength=%u", contentLength );
-
             continue;
         }
+    }
+}
 
-        if ( header == "\r" )
-            break;
+void HttpGet::parseData ( const string& data )
+{
+    remainingBytes -= data.size();
+
+    if ( mode == Buffered )
+    {
+        dataBuffer += data;
+    }
+    else if ( mode == Incremental )
+    {
+        if ( remainingBytes == 0 )
+        {
+            socket.reset();
+            timer.reset();
+        }
+
+        if ( owner )
+            owner->receivedHttp ( this, code, data, remainingBytes );
+        return;
+    }
+    else
+    {
+        ASSERT_IMPOSSIBLE;
     }
 
-    // Sanity check
-    if ( !ss.good() )
-        return false;
+    if ( remainingBytes == 0 )
+        finalize();
+}
 
-    // Get remaining bytes
-    size_t remaining = ss.rdbuf()->in_avail();
-
-    if ( remaining < contentLength )
-        return false;
-
-    ASSERT ( buffer.size() >= remaining );
-
-    this->data.resize ( remaining );
-    ss.rdbuf()->sgetn ( &this->data[0], remaining );
+void HttpGet::finalize()
+{
+    ASSERT ( remainingBytes == 0 );
 
     socket.reset();
     timer.reset();
 
     if ( owner )
-        owner->receivedHttp ( this, code, this->data );
-    return true;
+        owner->receivedHttp ( this, code, dataBuffer, 0 );
 }

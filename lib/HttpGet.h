@@ -15,7 +15,7 @@ public:
 
     struct Owner
     {
-        virtual void receivedHttp ( HttpGet *httpGet, int code, const std::string& data ) = 0;
+        virtual void receivedHttp ( HttpGet *httpGet, int code, const std::string& data, uint32_t remainingBytes ) = 0;
 
         virtual void failedHttp ( HttpGet *httpGet ) = 0;
     };
@@ -28,11 +28,15 @@ private:
     void connectEvent ( Socket *socket ) override;
     void disconnectEvent ( Socket *socket ) override;
     void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override {}
-    void readEvent ( Socket *socket, const char *data, size_t len, const IpAddrPort& address ) override;
+    void readEvent ( Socket *socket, const char *bytes, size_t len, const IpAddrPort& address ) override;
 
     void timerExpired ( Timer *timer ) override;
 
-    bool tryParse();
+    void parseResponse ( const std::string& data );
+
+    void parseData ( const std::string& data );
+
+    void finalize();
 
     SocketPtr socket;
 
@@ -40,9 +44,11 @@ private:
 
     std::string host, path;
 
-    int code = -1;
+    int code;
 
-    std::string buffer, data;
+    std::string headerBuffer, dataBuffer;
+
+    uint32_t remainingBytes;
 
 public:
 
@@ -50,11 +56,13 @@ public:
 
     const uint64_t timeout;
 
-    HttpGet ( Owner *owner, const std::string& url, uint64_t timeout = DEFAULT_GET_TIMEOUT );
+    const enum Mode { Buffered, Incremental } mode;
+
+    HttpGet ( Owner *owner, const std::string& url, uint64_t timeout = DEFAULT_GET_TIMEOUT, Mode mode = Buffered );
 
     void start();
 
     int getCode() const { return code; }
 
-    const std::string& getData() const { return data; }
+    const std::string& getResponse() const { return dataBuffer; }
 };

@@ -19,7 +19,7 @@ static const vector<string> externalIpServices =
 
 ExternalIpAddress::ExternalIpAddress ( Owner *owner ) : owner ( owner ) {}
 
-void ExternalIpAddress::receivedHttp ( HttpGet *httpGet, int code, const string& data )
+void ExternalIpAddress::receivedHttp ( HttpGet *httpGet, int code, const string& data, uint32_t remainingBytes )
 {
     ASSERT ( this->httpGet.get() == httpGet );
 
