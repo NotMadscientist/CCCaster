@@ -1126,7 +1126,10 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
         ConsoleUi::Element *menu = ui->popUntilUserInput();
 
         if ( menu->resultInt < 0 )
+        {
+            ui->pop();
             break;
+        }
 
         if ( menu->resultInt > MAX_ROLLBACK )
         {

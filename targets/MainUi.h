@@ -97,13 +97,12 @@ public:
 
     std::string sessionError;
 
+
     void initialize();
 
     void main ( RunFuncPtr run );
 
-    void setMaxDelay ( uint8_t maxDelay );
-
-    void setMaxRollback ( uint8_t maxRollback );
+    void update ( bool isStartup = false );
 
     void display ( const std::string& message, bool replace = true );
 
@@ -117,11 +116,15 @@ public:
 
     bool confirm ( const std::string& question );
 
+
+    void setMaxDelay ( uint8_t maxDelay );
+
+    void setMaxRollback ( uint8_t maxRollback );
+
     const KeyValueStore& getConfig() const { return config; }
 
     const NetplayConfig& getNetplayConfig() const { return netplayConfig; }
 
-    void update ( bool isStartup = false );
 
     static void *getConsoleWindow();
 
