@@ -791,13 +791,16 @@ struct DllMain
         // }
 #endif // NOT RELEASE
 
-        // Adjust FPS based on remote frame delta
-        if ( netMan.getRemoteFrameDelta() < -4 )
-            DllFrameRate::desiredFps = 62;
-        else if ( netMan.getRemoteFrameDelta() < 0 )
-            DllFrameRate::desiredFps = 61;
-        else
-            DllFrameRate::desiredFps = 60;
+        // During rollback, adjust FPS based on remote frame delta
+        if ( netMan.isInRollback() )
+        {
+            if ( netMan.getRemoteFrameDelta() < -4 )
+                DllFrameRate::desiredFps = 62;
+            else if ( netMan.getRemoteFrameDelta() < 0 )
+                DllFrameRate::desiredFps = 61;
+            else
+                DllFrameRate::desiredFps = 60;
+        }
 
         // Cleared last played and muted sound effects
         memset ( AsmHacks::sfxFilterArray, 0, CC_SFX_ARRAY_LEN );
