@@ -154,6 +154,9 @@ struct DllMain
     // We should only rollback if this timer is full
     int rollbackTimer = MIN_ROLLBACK_SPACING;
 
+    // If we should fast-forward when spectating
+    bool spectateFastFwd = true;
+
 #ifndef RELEASE
     // Local and remote SyncHashes
     list<MsgPtr> localSync, remoteSync;
@@ -201,7 +204,7 @@ struct DllMain
             case NetplayState::RetryMenu:
             {
                 // Fast-forward if spectator
-                if ( clientMode.isSpectate() && netMan.getState() != NetplayState::Loading )
+                if ( spectateFastFwd && clientMode.isSpectate() && netMan.getState() != NetplayState::Loading )
                 {
                     static bool doneSkipping = true;
 
@@ -302,8 +305,8 @@ struct DllMain
                 }
                 else if ( clientMode.isSpectate() )             // Spectator input
                 {
-                    if ( KeyboardState::isDown ( VK_SPACE ) )
-                        *CC_SKIP_FRAMES_ADDR = 0;
+                    if ( KeyboardState::isPressed ( VK_SPACE ) )
+                        spectateFastFwd = !spectateFastFwd;
                 }
                 else
                 {

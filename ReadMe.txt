@@ -1,3 +1,15 @@
+Hotkeys:
+
+    F4 opens the overlay menu for setting and changing controllers.
+
+    Ctrl + Number changes the delay.
+
+    Alt + Number changes the rollback.
+
+    Spacebar toggles fast-forward when spectating.
+
+
+
 How to host without port forward:
 
     Host on any port normally (you can use port 0 to pick any available port).
@@ -14,14 +26,6 @@ Other notes:
     Run Add_Handler_Protocol.bat once as admin to launch directly from http://seemeinmelty.meteor.com/
 
     If you use an analog controller, make sure to adjust the deadzone, else you might get weird inputs.
-
-    You can change your controls by pressing F4 anytime the game is open with caster.
-
-    You can change the netplay delay in-game by pressing Ctrl + Number on the keyboard.
-
-    You can change the netplay rollback in-game by pressing Alt + Number on the keyboard.
-
-    You can press and hold down the space-bar to prevent fast-forward when spectating.
 
 
 Running under Wine:

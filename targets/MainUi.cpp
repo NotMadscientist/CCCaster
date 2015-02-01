@@ -1251,7 +1251,7 @@ void MainUi::spectate ( const SpectateConfig& spectateConfig )
                 + " vs " + spectateConfig.formatPlayer ( 2, charaNameFunc );
     }
 
-    text += "\n\n(Press and hold space-bar to prevent fast-forward)";
+    text += "\n\n(Tap the spacebar to toggle fast-forward)";
 
     ui->pushInFront ( new ConsoleUi::TextBox ( text ), { 1, 0 }, true ); // Expand width and clear
 }

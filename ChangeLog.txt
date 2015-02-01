@@ -3,8 +3,10 @@ v3.0.000:
   Should be mostly stable right now, with a few extremely rare desyncs.
   Set rollback as needed (max 15 frames) to compensate for laggy / spikey networks.
   Can adjust rollback in-game with Alt + Number.
+  Training mode rollback is untested.
 - Automatic updates, checks on application startup by default.
 - Moved max delay and max rollback to settings.
+- Changed the spacebar to toggle fast-forward when spectating.
 
 v2.1i:
 - Fix crash caused by multiple spectators.
