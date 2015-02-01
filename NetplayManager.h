@@ -138,7 +138,7 @@ public:
     int getRemoteFrameDelta() const
     {
         if ( getIndex() == getRemoteIndex() )
-            return ( int ) getFrame() - int ( getRemoteFrame() + config.delay );
+            return ( int ) getFrame() - int ( getRemoteFrame() + config.delay - config.rollbackDelay );
 
         return 0;
     }
