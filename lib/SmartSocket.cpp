@@ -131,7 +131,8 @@ struct TunInfo
 };
 
 SmartSocket::SmartSocket ( Socket::Owner *owner, uint16_t port, Socket::Protocol protocol )
-    : Socket ( owner, IpAddrPort ( "", port ), Protocol::Smart ), isDirectTCP ( protocol == Protocol::TCP )
+    : Socket ( owner, IpAddrPort ( "", port ), Protocol::Smart, false )
+    , isDirectTCP ( protocol == Protocol::TCP )
 {
     ASSERT ( protocol != Protocol::Smart );
 
@@ -163,7 +164,8 @@ SmartSocket::SmartSocket ( Socket::Owner *owner, uint16_t port, Socket::Protocol
 }
 
 SmartSocket::SmartSocket ( Socket::Owner *owner, const IpAddrPort& address, Socket::Protocol protocol, bool forceTun )
-    : Socket ( owner, address, Protocol::Smart ), isDirectTCP ( protocol == Protocol::TCP )
+    : Socket ( owner, address, Protocol::Smart, false )
+    , isDirectTCP ( protocol == Protocol::TCP )
 {
     ASSERT ( protocol != Protocol::Smart );
 

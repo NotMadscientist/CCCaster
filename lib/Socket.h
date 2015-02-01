@@ -12,8 +12,8 @@
 
 
 #define LOG_SOCKET(SOCKET, FORMAT, ...)                                                                         \
-    LOG ( "%s socket=%08x; fd=%08x; state=%s; address='%s'; " FORMAT,                                           \
-          SOCKET->protocol, SOCKET, SOCKET->fd, SOCKET->state, SOCKET->address, ## __VA_ARGS__ )
+    LOG ( "%s socket=%08x; fd=%08x; state=%s; address='%s'; isRaw=%u; " FORMAT,                                 \
+          SOCKET->protocol, SOCKET, SOCKET->fd, SOCKET->state, SOCKET->address, SOCKET->isRaw, ## __VA_ARGS__ )
 
 
 // Forward declarations
@@ -133,7 +133,7 @@ public:
     static SocketPtr shared ( Socket::Owner *owner, const SocketShareData& data );
 
     // Basic constructors
-    Socket ( Owner *owner, const IpAddrPort& address, Protocol protocol, bool isRaw = false );
+    Socket ( Owner *owner, const IpAddrPort& address, Protocol protocol, bool isRaw );
 
     // Virtual destructor
     virtual ~Socket();

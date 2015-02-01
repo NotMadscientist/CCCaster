@@ -36,8 +36,8 @@ TcpSocket::TcpSocket ( Socket::Owner *owner, const IpAddrPort& address, bool isR
     connectTimer->start ( connectTimeout );
 }
 
-TcpSocket::TcpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address )
-    : Socket ( owner, address, Protocol::TCP )
+TcpSocket::TcpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address, bool isRaw )
+    : Socket ( owner, address, Protocol::TCP, isRaw )
 {
     this->state = State::Connected;
     this->fd = fd;
@@ -113,7 +113,7 @@ SocketPtr TcpSocket::accept ( Socket::Owner *owner )
         return 0;
     }
 
-    return SocketPtr ( new TcpSocket ( owner, newFd, IpAddrPort ( ( sockaddr * ) &sas ) ) );
+    return SocketPtr ( new TcpSocket ( owner, newFd, IpAddrPort ( ( sockaddr * ) &sas ), isRaw ) );
 }
 
 bool TcpSocket::send ( SerializableMessage *message, const IpAddrPort& address )

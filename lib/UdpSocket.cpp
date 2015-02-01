@@ -108,7 +108,7 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const SocketShareData& data )
 }
 
 UdpSocket::UdpSocket ( ChildSocketEnum, UdpSocket *parentSocket, const IpAddrPort& address )
-    : Socket ( 0, address, Protocol::UDP )
+    : Socket ( 0, address, Protocol::UDP, parentSocket->isRaw )
     , type ( Type::Child )
     , gbn ( this, parentSocket->getSendInterval(), parentSocket->connectTimeout )
     , parentSocket ( parentSocket )
@@ -117,7 +117,7 @@ UdpSocket::UdpSocket ( ChildSocketEnum, UdpSocket *parentSocket, const IpAddrPor
 }
 
 UdpSocket::UdpSocket ( ChildSocketEnum, UdpSocket *parentSocket, const IpAddrPort& address, const GoBackN& state )
-    : Socket ( 0, address, Protocol::UDP )
+    : Socket ( 0, address, Protocol::UDP, parentSocket->isRaw )
     , type ( Type::Child )
     , gbn ( this, state )
     , parentSocket ( parentSocket )
@@ -175,12 +175,12 @@ void UdpSocket::disconnect()
 
 SocketPtr UdpSocket::listen ( Socket::Owner *owner, uint16_t port )
 {
-    return SocketPtr ( new UdpSocket ( owner, port, Type::Server ) );
+    return SocketPtr ( new UdpSocket ( owner, port, Type::Server, false ) );
 }
 
 SocketPtr UdpSocket::connect ( Socket::Owner *owner, const IpAddrPort& address, uint64_t connectTimeout )
 {
-    return SocketPtr ( new UdpSocket ( owner, address, Type::Client, connectTimeout ) );
+    return SocketPtr ( new UdpSocket ( owner, address, Type::Client, false, connectTimeout ) );
 }
 
 SocketPtr UdpSocket::bind ( Socket::Owner *owner, uint16_t port, bool isRaw )
@@ -190,7 +190,7 @@ SocketPtr UdpSocket::bind ( Socket::Owner *owner, uint16_t port, bool isRaw )
 
 SocketPtr UdpSocket::bind ( Socket::Owner *owner, const IpAddrPort& address, bool isRaw )
 {
-    return SocketPtr ( new UdpSocket ( owner, address, Type::ConnectionLess, isRaw ) );
+    return SocketPtr ( new UdpSocket ( owner, address, Type::ConnectionLess, isRaw, DEFAULT_CONNECT_TIMEOUT ) );
 }
 
 SocketPtr UdpSocket::shared ( Socket::Owner *owner, const SocketShareData& data )

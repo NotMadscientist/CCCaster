@@ -13,14 +13,13 @@ class TcpSocket : public Socket, public Timer::Owner
     void timerExpired ( Timer *timer ) override;
 
     // Construct a server socket
-    TcpSocket ( Socket::Owner *owner, uint16_t port, bool isRaw = false );
+    TcpSocket ( Socket::Owner *owner, uint16_t port, bool isRaw );
 
     // Construct a client socket
-    TcpSocket ( Socket::Owner *owner, const IpAddrPort& address,
-                bool isRaw = false, uint64_t connectTimeout = DEFAULT_CONNECT_TIMEOUT );
+    TcpSocket ( Socket::Owner *owner, const IpAddrPort& address, bool isRaw, uint64_t connectTimeout );
 
     // Construct an accepted client socket
-    TcpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address );
+    TcpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address, bool isRaw );
 
     // Construct a socket from SocketShareData
     TcpSocket ( Socket::Owner *owner, const SocketShareData& data );

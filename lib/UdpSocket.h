@@ -58,11 +58,11 @@ private:
     bool sendRaw ( const MsgPtr& msg, const IpAddrPort& address );
 
     // Construct a server socket
-    UdpSocket ( Socket::Owner *owner, uint16_t port, const Type& type, bool isRaw = false );
+    UdpSocket ( Socket::Owner *owner, uint16_t port, const Type& type, bool isRaw );
 
     // Construct a client socket
     UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, const Type& type,
-                bool isRaw = false, uint64_t connectTimeout = DEFAULT_CONNECT_TIMEOUT );
+                bool isRaw, uint64_t connectTimeout );
 
     // Construct a socket from SocketShareData
     UdpSocket ( Socket::Owner *owner, const SocketShareData& data );
