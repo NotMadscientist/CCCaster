@@ -79,11 +79,13 @@ class MainUi
 
     std::string formatPlayer ( const SpectateConfig& spectateConfig, uint8_t player ) const;
 
-    void receivedHttp ( HttpGet *httpGet, int code, const std::string& data, uint32_t remainingBytes ) override;
-    void failedHttp ( HttpGet *httpGet ) override;
+    void httpResponse ( HttpGet *httpGet, int code, const std::string& data, uint32_t remainingBytes ) override;
+    void httpFailed ( HttpGet *httpGet ) override;
+    void httpProgress ( HttpGet *httpGet, uint32_t receivedBytes, uint32_t totalBytes ) override {}
 
     void downloadComplete ( HttpDownload *httpDl ) override;
     void downloadFailed ( HttpDownload *httpDl ) override;
+    void downloadProgress ( HttpDownload *httpDl, uint32_t downloadedBytes, uint32_t totalBytes ) override;
 
     void updateTo ( const std::string& version );
 

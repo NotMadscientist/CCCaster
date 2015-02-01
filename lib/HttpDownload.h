@@ -16,6 +16,8 @@ public:
         virtual void downloadComplete ( HttpDownload *httpDl ) = 0;
 
         virtual void downloadFailed ( HttpDownload *httpDl ) = 0;
+
+        virtual void downloadProgress ( HttpDownload *httpDl, uint32_t downloadedBytes, uint32_t totalBytes ) = 0;
     };
 
     Owner *owner = 0;
@@ -26,9 +28,11 @@ private:
 
     std::shared_ptr<HttpGet> httpGet;
 
-    void receivedHttp ( HttpGet *httpGet, int code, const std::string& data, uint32_t remainingBytes ) override;
+    void httpResponse ( HttpGet *httpGet, int code, const std::string& data, uint32_t remainingBytes ) override;
 
-    void failedHttp ( HttpGet *httpGet ) override;
+    void httpFailed ( HttpGet *httpGet ) override;
+
+    void httpProgress ( HttpGet *httpGet, uint32_t receivedBytes, uint32_t totalBytes ) override;
 
 public:
 

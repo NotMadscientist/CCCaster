@@ -1234,7 +1234,7 @@ void *MainUi::getConsoleWindow()
     return ConsoleUi::getConsoleWindow();
 }
 
-void MainUi::receivedHttp ( HttpGet *httpGet, int code, const std::string& data, uint32_t remainingBytes )
+void MainUi::httpResponse ( HttpGet *httpGet, int code, const std::string& data, uint32_t remainingBytes )
 {
     ASSERT ( this->httpGet.get() == httpGet );
 
@@ -1242,7 +1242,7 @@ void MainUi::receivedHttp ( HttpGet *httpGet, int code, const std::string& data,
 
     if ( code != 200 || version.major().empty() || version.minor().empty() )
     {
-        failedHttp ( httpGet );
+        httpFailed ( httpGet );
         return;
     }
 
@@ -1253,7 +1253,7 @@ void MainUi::receivedHttp ( HttpGet *httpGet, int code, const std::string& data,
     EventManager::get().stop();
 }
 
-void MainUi::failedHttp ( HttpGet *httpGet )
+void MainUi::httpFailed ( HttpGet *httpGet )
 {
     ASSERT ( this->httpGet.get() == httpGet );
 
@@ -1296,6 +1296,13 @@ void MainUi::downloadFailed ( HttpDownload *httpDl )
     }
 
     updateTo ( latestVersion.code );
+}
+
+void MainUi::downloadProgress ( HttpDownload *httpDl, uint32_t downloadedBytes, uint32_t totalBytes )
+{
+    const ConsoleUi::ProgressBar *bar = ui->top<ConsoleUi::ProgressBar>();
+    bar->update ( ( bar->length * downloadedBytes ) / totalBytes );
+    LOG ( "%u / %u", downloadedBytes, totalBytes );
 }
 
 void MainUi::updateTo ( const string& version )
@@ -1359,7 +1366,8 @@ void MainUi::update ( bool isStartup )
         return;
     }
 
-    ui->clearAll();
+    ui->pop();
+    ui->pushRight ( new ConsoleUi::ProgressBar ( "Downloading...", 20 ) );
 
     downloadCompleted = false;
     serverIndex = 0;

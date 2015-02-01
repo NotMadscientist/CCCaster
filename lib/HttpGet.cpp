@@ -53,7 +53,7 @@ void HttpGet::start()
         LOG ( "Failed to create socket!" );
 
         if ( owner )
-            owner->failedHttp ( this );
+            owner->httpFailed ( this );
     }
 }
 
@@ -73,7 +73,7 @@ void HttpGet::connectEvent ( Socket *socket )
         LOG ( "Failed to send request!" );
 
         if ( owner )
-            owner->failedHttp ( this );
+            owner->httpFailed ( this );
     }
 }
 
@@ -88,7 +88,7 @@ void HttpGet::disconnectEvent ( Socket *socket )
     this->timer.reset();
 
     if ( owner )
-        owner->failedHttp ( this );
+        owner->httpFailed ( this );
 }
 
 void HttpGet::timerExpired ( Timer *timer )
@@ -102,7 +102,7 @@ void HttpGet::timerExpired ( Timer *timer )
     this->timer.reset();
 
     if ( owner )
-        owner->failedHttp ( this );
+        owner->httpFailed ( this );
 }
 
 void HttpGet::readEvent ( Socket *socket, const char *bytes, size_t len, const IpAddrPort& address )
@@ -129,7 +129,6 @@ void HttpGet::parseResponse ( const string& data )
 
     stringstream ss ( headerBuffer );
     string header;
-    uint32_t contentLength = 0;
 
     // Get the HTTP version header and status code
     ss >> header >> code;
@@ -175,6 +174,9 @@ void HttpGet::parseData ( const string& data )
 {
     remainingBytes -= data.size();
 
+    if ( owner && contentLength )
+        owner->httpProgress ( this, contentLength - remainingBytes, contentLength );
+
     if ( mode == Buffered )
     {
         dataBuffer += data;
@@ -188,7 +190,7 @@ void HttpGet::parseData ( const string& data )
         }
 
         if ( owner )
-            owner->receivedHttp ( this, code, data, remainingBytes );
+            owner->httpResponse ( this, code, data, remainingBytes );
         return;
     }
     else
@@ -208,5 +210,5 @@ void HttpGet::finalize()
     timer.reset();
 
     if ( owner )
-        owner->receivedHttp ( this, code, dataBuffer, 0 );
+        owner->httpResponse ( this, code, dataBuffer, 0 );
 }

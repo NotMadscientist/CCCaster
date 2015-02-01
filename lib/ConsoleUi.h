@@ -2,6 +2,7 @@
 
 #include "StringUtils.h"
 #include "Logger.h"
+#include "Algorithms.h"
 
 // Most of the implementation that depend on JLib is in this header so only the targets that need JLib can to link it
 #include <JLib/ConsoleCore.h>
@@ -9,7 +10,6 @@
 #include <memory>
 #include <vector>
 #include <climits>
-#include <algorithm>
 #include <sstream>
 
 
@@ -64,7 +64,7 @@ public:
     protected:
 
         // Basic constructor
-        Element ( bool requiresUser = true ) : requiresUser ( requiresUser ) {}
+        Element ( bool requiresUser ) : requiresUser ( requiresUser ) {}
 
         // Position that the element should be displayed
         COORD pos;
@@ -116,7 +116,6 @@ public:
     // Auto-wrapped text box
     class TextBox : public Element
     {
-        std::string text;
         std::vector<std::string> lines;
 
     protected:
@@ -190,13 +189,14 @@ public:
 
     public:
 
+        const std::string text;
+
         TextBox ( const std::string& text ) : Element ( false ), text ( trimmed ( text, "\n" ) ) {}
     };
 
     // Scrollable menu
     class Menu : public Element
     {
-        std::string title;
         std::vector<std::string> items;
         std::string lastItem;
 
@@ -275,6 +275,8 @@ public:
 
     public:
 
+        const std::string title;
+
         void setPosition ( int position )
         {
             if ( position < 0 )
@@ -311,8 +313,8 @@ public:
         }
 
         Menu ( const std::string& title, const std::vector<std::string>& items, const std::string& lastItem = "" )
-            : title ( title ), items ( items ), lastItem ( lastItem )
-            , menu ( pos, items.size() + ( lastItem.empty() ? 0 : 1 ), title, THEME ) {}
+            : Element ( true ), items ( items ), lastItem ( lastItem )
+            , menu ( pos, items.size() + ( lastItem.empty() ? 0 : 1 ), title, THEME ), title ( title ) {}
 
         Menu ( const std::vector<std::string>& items, const std::string& lastItem = "" )
             : Menu ( "", items, lastItem ) {}
@@ -325,9 +327,6 @@ public:
     // Integer or string prompt
     class Prompt : public Element
     {
-        std::string title;
-        bool isIntegerPrompt = false;
-
     protected:
 
         void initialize() override
@@ -383,6 +382,10 @@ public:
 
     public:
 
+        const std::string title;
+
+        const bool isIntegerPrompt = false;
+
         bool allowNegative = true;
 
         size_t maxDigits = 9;
@@ -404,10 +407,58 @@ public:
         }
 
         Prompt ( PromptTypeString, const std::string& title = "" )
-            : title ( title ), isIntegerPrompt ( false ) {}
+            : Element ( true ), title ( title ), isIntegerPrompt ( false ) {}
 
         Prompt ( PromptTypeInteger, const std::string& title = "" )
-            : title ( title ), isIntegerPrompt ( true ) {}
+            : Element ( true ), title ( title ), isIntegerPrompt ( true ) {}
+    };
+
+    // Progress bar
+    class ProgressBar : public Element
+    {
+    protected:
+
+        void initialize() override
+        {
+            ASSERT ( ( size_t ) size.X >= std::max ( title.size(), length ) + paddedBorders.size() );
+            ASSERT ( ( size_t ) size.Y > bordersHeight + ( title.empty() ? 0 : 2 ) );
+
+            // Progress bars are NEVER expanded
+            size.X = std::max ( title.size(), length ) + paddedBorders.size();
+            size.Y = 1 + bordersHeight + ( title.empty() ? 0 : 2 );
+        }
+
+        void show() override
+        {
+            LOG ( "title='%s'; length=%u; pos=%s; size=%s", title, length, pos, size );
+
+            CharacterBox::Draw ( pos, pos + size, '*' );
+            ConsoleCore *cc = ConsoleCore::GetInstance();
+
+            if ( !title.empty() )
+            {
+                cc->Prints ( " " + title + " ", false, 0, pos.X + 1, pos.Y + 1 );
+                cc->Prints ( std::string ( size.X - borders.size(), '*' ), false, 0, pos.X + 1, pos.Y + 2 );
+            }
+        }
+
+    public:
+
+        const std::string title;
+
+        const size_t length;
+
+        void update ( size_t progress ) const
+        {
+            const std::string str ( clamped ( progress, 0u, length ), '.' );
+            ConsoleCore::GetInstance()->Prints ( str, false, 0, pos.X + 2, pos.Y + size.Y - 2 );
+        }
+
+        ProgressBar ( const std::string& title, size_t length )
+            : Element ( false ), title ( title ), length ( length ) {}
+
+        ProgressBar ( size_t length )
+            : Element ( false ), title ( "" ), length ( length ) {}
     };
 
     // Basic constructor
@@ -503,6 +554,7 @@ public:
         stack.clear();
     }
 
+    // If the top element has a border with the element below
     bool hasBorder() const
     {
         for ( size_t i = 2; i < stack.size(); ++i )

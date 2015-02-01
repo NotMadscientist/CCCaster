@@ -19,7 +19,7 @@ static const vector<string> externalIpServices =
 
 ExternalIpAddress::ExternalIpAddress ( Owner *owner ) : owner ( owner ) {}
 
-void ExternalIpAddress::receivedHttp ( HttpGet *httpGet, int code, const string& data, uint32_t remainingBytes )
+void ExternalIpAddress::httpResponse ( HttpGet *httpGet, int code, const string& data, uint32_t remainingBytes )
 {
     ASSERT ( this->httpGet.get() == httpGet );
 
@@ -27,7 +27,7 @@ void ExternalIpAddress::receivedHttp ( HttpGet *httpGet, int code, const string&
 
     if ( code != 200 || data.size() < 7 ) // Min IPv4 length, eg "1.1.1.1" TODO actually validate this
     {
-        failedHttp ( httpGet );
+        httpFailed ( httpGet );
         return;
     }
 
@@ -38,7 +38,7 @@ void ExternalIpAddress::receivedHttp ( HttpGet *httpGet, int code, const string&
         owner->foundExternalIpAddress ( this, address );
 }
 
-void ExternalIpAddress::failedHttp ( HttpGet *httpGet )
+void ExternalIpAddress::httpFailed ( HttpGet *httpGet )
 {
     ASSERT ( this->httpGet.get() == httpGet );
 

@@ -7,7 +7,7 @@ using namespace std;
 HttpDownload::HttpDownload ( Owner *owner, const string& url, const string& file )
     : owner ( owner ), url ( url ), file ( file ) {}
 
-void HttpDownload::receivedHttp ( HttpGet *httpGet, int code, const string& data, uint32_t remainingBytes )
+void HttpDownload::httpResponse ( HttpGet *httpGet, int code, const string& data, uint32_t remainingBytes )
 {
     ASSERT ( this->httpGet.get() == httpGet );
 
@@ -15,7 +15,7 @@ void HttpDownload::receivedHttp ( HttpGet *httpGet, int code, const string& data
 
     if ( code != 200 )
     {
-        failedHttp ( httpGet );
+        httpFailed ( httpGet );
         return;
     }
 
@@ -30,7 +30,7 @@ void HttpDownload::receivedHttp ( HttpGet *httpGet, int code, const string& data
         owner->downloadComplete ( this );
 }
 
-void HttpDownload::failedHttp ( HttpGet *httpGet )
+void HttpDownload::httpFailed ( HttpGet *httpGet )
 {
     ASSERT ( this->httpGet.get() == httpGet );
 
@@ -42,11 +42,17 @@ void HttpDownload::failedHttp ( HttpGet *httpGet )
         owner->downloadFailed ( this );
 }
 
+void HttpDownload::httpProgress ( HttpGet *httpGet, uint32_t receivedBytes, uint32_t totalBytes )
+{
+    if ( owner )
+        owner->downloadProgress ( this, receivedBytes, totalBytes );
+}
+
 void HttpDownload::start()
 {
     outputFile.open ( file.c_str(), ios::binary );
 
-    httpGet.reset ( new HttpGet ( this, url ) );
+    httpGet.reset ( new HttpGet ( this, url, DEFAULT_GET_TIMEOUT, HttpGet::Incremental ) );
     httpGet->start();
 }
 

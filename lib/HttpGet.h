@@ -15,9 +15,11 @@ public:
 
     struct Owner
     {
-        virtual void receivedHttp ( HttpGet *httpGet, int code, const std::string& data, uint32_t remainingBytes ) = 0;
+        virtual void httpResponse ( HttpGet *httpGet, int code, const std::string& data, uint32_t remainingBytes ) = 0;
 
-        virtual void failedHttp ( HttpGet *httpGet ) = 0;
+        virtual void httpFailed ( HttpGet *httpGet ) = 0;
+
+        virtual void httpProgress ( HttpGet *httpGet, uint32_t receivedBytes, uint32_t totalBytes ) = 0;
     };
 
     Owner *owner = 0;
@@ -48,7 +50,7 @@ private:
 
     std::string headerBuffer, dataBuffer;
 
-    uint32_t remainingBytes;
+    uint32_t contentLength, remainingBytes;
 
 public:
 
@@ -65,4 +67,6 @@ public:
     int getCode() const { return code; }
 
     const std::string& getResponse() const { return dataBuffer; }
+
+    uint32_t getContentLength() const { return contentLength; }
 };
