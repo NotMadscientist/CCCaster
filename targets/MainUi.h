@@ -5,6 +5,8 @@
 #include "Controller.h"
 #include "ControllerManager.h"
 #include "KeyValueStore.h"
+#include "HttpDownload.h"
+#include "HttpGet.h"
 
 #include <string>
 #include <memory>
@@ -22,7 +24,11 @@ inline int computeDelay ( const Statistics& latency )
 }
 
 
-class MainUi : public Controller::Owner, public ControllerManager::Owner
+class MainUi
+    : public Controller::Owner
+    , public ControllerManager::Owner
+    , public HttpDownload::Owner
+    , public HttpGet::Owner
 {
     std::shared_ptr<ConsoleUi> ui;
 
@@ -35,6 +41,16 @@ class MainUi : public Controller::Owner, public ControllerManager::Owner
     Controller *currentController = 0;
 
     uint32_t mappedKey = 0;
+
+    std::shared_ptr<HttpGet> httpGet;
+
+    std::shared_ptr<HttpDownload> httpDl;
+
+    uint32_t serverIndex = 0;
+
+    Version latestVersion;
+
+    bool downloadCompleted = false;
 
     void netplay ( RunFuncPtr run );
     void spectate ( RunFuncPtr run );
@@ -62,6 +78,14 @@ class MainUi : public Controller::Owner, public ControllerManager::Owner
     void alertUser();
 
     std::string formatPlayer ( const SpectateConfig& spectateConfig, uint8_t player ) const;
+
+    void receivedHttp ( HttpGet *httpGet, int code, const std::string& data, uint32_t remainingBytes ) override;
+    void failedHttp ( HttpGet *httpGet ) override;
+
+    void downloadComplete ( HttpDownload *httpDl ) override;
+    void downloadFailed ( HttpDownload *httpDl ) override;
+
+    void updateTo ( const std::string& version );
 
 public:
 
@@ -94,6 +118,8 @@ public:
     const KeyValueStore& getConfig() const { return config; }
 
     const NetplayConfig& getNetplayConfig() const { return netplayConfig; }
+
+    void update();
 
     static void *getConsoleWindow();
 };

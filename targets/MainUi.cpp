@@ -20,6 +20,12 @@ using namespace std;
 // Main configuration file
 #define CONFIG_FILE FOLDER "config.ini"
 
+// Path of the latest version file
+#define LATEST_VERSION_PATH "LatestVersion"
+
+// Main update archive file location
+#define UPDATE_ARCHIVE FOLDER "update.zip"
+
 // Run macro that deinitializes controllers, runs, then reinitializes controllers
 #define RUN(ADDRESS, CONFIG)                                                                    \
     do {                                                                                        \
@@ -34,6 +40,12 @@ extern string appDir;
 static const string uiTitle = "CCCaster " + LocalVersion.code;
 
 static ConsoleUi::Menu *mainMenu = 0;
+
+static const vector<string> updateServers =
+{
+    "http://192.210.227.23/",
+    "http://104.206.199.123/",
+};
 
 
 void MainUi::netplay ( RunFuncPtr run )
@@ -1198,4 +1210,132 @@ bool MainUi::confirm()
 void *MainUi::getConsoleWindow()
 {
     return ConsoleUi::getConsoleWindow();
+}
+
+void MainUi::receivedHttp ( HttpGet *httpGet, int code, const std::string& data, uint32_t remainingBytes )
+{
+    ASSERT ( this->httpGet.get() == httpGet );
+
+    Version version ( trimmed ( data ) );
+
+    if ( code != 200 || version.major().empty() || version.minor().empty() )
+    {
+        failedHttp ( httpGet );
+        return;
+    }
+
+    this->httpGet.reset();
+
+    latestVersion = version;
+
+    LOG ( "latestVersion=%s", version );
+
+    updateTo ( version.code );
+}
+
+void MainUi::failedHttp ( HttpGet *httpGet )
+{
+    ASSERT ( this->httpGet.get() == httpGet );
+
+    this->httpGet.reset();
+
+    ++serverIndex;
+
+    if ( serverIndex >= updateServers.size() )
+    {
+        EventManager::get().stop();
+        return;
+    }
+
+    updateTo ( "" );
+}
+
+void MainUi::downloadComplete ( HttpDownload *httpDl )
+{
+    ASSERT ( this->httpDl.get() == httpDl );
+
+    this->httpDl.reset();
+
+    downloadCompleted = true;
+
+    EventManager::get().stop();
+}
+
+void MainUi::downloadFailed ( HttpDownload *httpDl )
+{
+    ASSERT ( this->httpDl.get() == httpDl );
+
+    this->httpDl.reset();
+
+    ++serverIndex;
+
+    if ( serverIndex >= updateServers.size() )
+    {
+        EventManager::get().stop();
+        return;
+    }
+
+    updateTo ( latestVersion.code );
+}
+
+void MainUi::updateTo ( const string& version )
+{
+    if ( version.empty() )
+    {
+        serverIndex = 0;
+        downloadCompleted = false;
+        httpGet.reset ( new HttpGet ( this, updateServers[serverIndex] + LATEST_VERSION_PATH ) );
+        httpGet->start();
+    }
+    else
+    {
+        const string file = format ( "cccaster.v%s.zip", version );
+        serverIndex = 0;
+        downloadCompleted = false;
+        httpDl.reset ( new HttpDownload ( this, updateServers[serverIndex] + file, appDir + UPDATE_ARCHIVE ) );
+        httpDl->start();
+    }
+}
+
+void MainUi::update()
+{
+    AutoManager _;
+
+    updateTo ( "" );
+
+    EventManager::get().start();
+
+    if ( !downloadCompleted )
+    {
+        return;
+    }
+
+    ASSERT ( latestVersion.major().empty() == false );
+    ASSERT ( latestVersion.minor().empty() == false );
+
+    const string binary = format ( "cccaster.v%s.%s.exe", latestVersion.major(), latestVersion.minor() );
+
+    // TODO actually test this
+    if ( ProcessManager::isWine() )
+    {
+        const string command = format ( "\"%scccaster\\unzip.exe\" -o %s%s -d %s",
+                                        appDir, appDir, UPDATE_ARCHIVE, appDir );
+
+        LOG ( "Update command: %s", command );
+
+        system ( ( "\"" + command + "\"" ).c_str() );
+
+        system ( ( "\"" + appDir + binary + "\" &" ).c_str() );
+
+        exit ( 0 );
+        return;
+    }
+
+    const string command = format ( "\"%scccaster\\updater.exe\" %s %s %s", appDir, binary, UPDATE_ARCHIVE, appDir );
+
+    LOG ( "Update command: %s", command );
+
+    system ( ( "\"start \"Updating...\" " + command + "\"" ).c_str() );
+
+    exit ( 0 );
 }
