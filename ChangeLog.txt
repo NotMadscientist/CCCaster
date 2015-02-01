@@ -1,3 +1,7 @@
+v3.0.001:
+- Fixed Add_Handler_Protocol.bat
+- Adjusted the FPS to be not as fast.
+
 v3.0.000:
 - Rollback netcode:
   Should be mostly stable right now, with a few extremely rare desyncs.

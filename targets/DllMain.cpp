@@ -825,8 +825,10 @@ struct DllMain
         // During rollback, adjust FPS based on remote frame delta
         if ( netMan.isInRollback() )
         {
-            if ( netMan.getRemoteFrameDelta() < -1 )
-                DllFrameRate::desiredFps = 60 - netMan.getRemoteFrameDelta();
+            if ( netMan.getRemoteFrameDelta() < -5 )
+                DllFrameRate::desiredFps = 62;
+            else if ( netMan.getRemoteFrameDelta() < -1 )
+                DllFrameRate::desiredFps = 61;
             else
                 DllFrameRate::desiredFps = 60;
         }
