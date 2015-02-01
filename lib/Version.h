@@ -22,6 +22,8 @@ struct Version : public SerializableSequence
     Version ( const std::string& code, const std::string& revision, const std::string& buildTime )
         : code ( code ), revision ( revision ), buildTime ( buildTime ) {}
 
+    std::string majorMinor() const { return major() + "." + minor(); }
+
     std::string major() const { return get ( Major ); }
 
     std::string minor() const { return get ( Minor ); }

@@ -42,7 +42,7 @@ using namespace std;
 
 extern string appDir;
 
-static const string uiTitle = "CCCaster " + LocalVersion.code;
+static const string uiTitle = "CCCaster " + LocalVersion.majorMinor();
 
 static ConsoleUi::Menu *mainMenu = 0;
 
@@ -770,9 +770,9 @@ void MainUi::settings()
                 break;
 
             case 6:
-                ui->pushInFront ( new ConsoleUi::TextBox ( format ( "%s%s\n\nRevision %s\n\nBuilt on %s\n\n"
+                ui->pushInFront ( new ConsoleUi::TextBox ( format ( "CCCaster %s%s\n\nRevision %s\n\nBuilt on %s\n\n"
                                   "Created by Madscientist\n\nPress any key to go back",
-                                  uiTitle,
+                                  LocalVersion.code,
 #if defined(DEBUG)
                                   " (debug)",
 #elif defined(LOGGING)

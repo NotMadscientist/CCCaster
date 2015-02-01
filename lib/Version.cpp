@@ -5,7 +5,7 @@
 using namespace std;
 
 
-// List of version that made compatibility breaking changes
+// List of versions that made compatibility breaking changes
 static vector<Version> breakingVersions =
 {
     "2.1e", // Changed protocol by adding UdpControl::Disconnect
