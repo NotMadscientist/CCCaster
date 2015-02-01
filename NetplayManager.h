@@ -156,7 +156,7 @@ public:
     NetplayState getState() const { return state; }
     void setState ( NetplayState state );
     bool isInGame() const { return state == NetplayState::InGame; }
-    bool isInRollback() const { return isInGame() && config.rollback; }
+    bool isInRollback() const { return isInGame() && config.rollback && config.mode.isNetplay(); }
 
     // Get / set the input for the current frame given the player
     uint16_t getInput ( uint8_t player );

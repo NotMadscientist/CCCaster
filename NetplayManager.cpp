@@ -682,6 +682,15 @@ MsgPtr NetplayManager::getBothInputs ( IndexedFrame& pos ) const
     uint32_t commonEndFrame = min ( inputs[0].getEndFrame ( orig.parts.index - startIndex ),
                                     inputs[1].getEndFrame ( orig.parts.index - startIndex ) );
 
+    // Add a buffer to the end frame during rollback
+    if ( isInRollback() )
+    {
+        if ( commonEndFrame >= 2 * NUM_INPUTS )
+            commonEndFrame -= 2 * NUM_INPUTS;
+        else
+            commonEndFrame = 1;
+    }
+
     if ( orig.parts.index == getIndex() )
     {
         if ( orig.parts.frame + 1 <= commonEndFrame )

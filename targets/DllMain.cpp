@@ -211,7 +211,7 @@ struct DllMain
                     const IndexedFrame remoteIndexedFrame = netMan.getRemoteIndexedFrame();
 
                     // Fast-forward implemented by skipping the rendering every other frame
-                    if ( doneSkipping && remoteIndexedFrame.value > netMan.getIndexedFrame().value + NUM_INPUTS )
+                    if ( doneSkipping && remoteIndexedFrame.value > netMan.getIndexedFrame().value + 2 * NUM_INPUTS )
                     {
                         *CC_SKIP_FRAMES_ADDR = 1;
                         doneSkipping = false;
