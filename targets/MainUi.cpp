@@ -7,6 +7,7 @@
 #include "CharacterSelect.h"
 
 #include <mmsystem.h>
+#include <wininet.h>
 
 using namespace std;
 
@@ -25,6 +26,9 @@ using namespace std;
 
 // Main update archive file location
 #define UPDATE_ARCHIVE FOLDER "update.zip"
+
+// Timeout for update version check
+#define VERSION_CHECK_TIMEOUT ( 1000 )
 
 // Run macro that deinitializes controllers, runs, then reinitializes controllers
 #define RUN(ADDRESS, CONFIG)                                                                    \
@@ -596,10 +600,10 @@ void MainUi::settings()
     {
         "Alert on connect",
         "Display name",
-        "Show full character name",
+        "Show full character names",
         "Game CPU priority",
         "Versus mode win count",
-        "Use alternate FPS control",
+        "Check for updates on startup",
         "About",
     };
 
@@ -746,16 +750,16 @@ void MainUi::settings()
                 break;
 
             case 5:
-                ui->pushInFront ( new ConsoleUi::Menu ( "Use alt. FPS control? Try this if you often get FPS drops",
+                ui->pushInFront ( new ConsoleUi::Menu ( "Check for updates on startup?",
                 { "Yes", "No" }, "Cancel" ),
                 { 0, 0 }, true ); // Don't expand but DO clear
 
-                ui->top<ConsoleUi::Menu>()->setPosition ( ( config.getInteger ( "alternateFpsControl" ) + 1 ) % 2 );
+                ui->top<ConsoleUi::Menu>()->setPosition ( ( config.getInteger ( "autoCheckUpdates" ) + 1 ) % 2 );
                 ui->popUntilUserInput();
 
                 if ( ui->top()->resultInt >= 0 && ui->top()->resultInt <= 1 )
                 {
-                    config.setInteger ( "alternateFpsControl", ( ui->top()->resultInt + 1 ) % 2 );
+                    config.setInteger ( "autoCheckUpdates", ( ui->top()->resultInt + 1 ) % 2 );
                     saveConfig();
                 }
 
@@ -799,6 +803,7 @@ void MainUi::initialize()
     config.setInteger ( "versusWinCount", 2 );
     config.setInteger ( "maxAllowedDelay", 4 );
     config.setInteger ( "alternateFpsControl", 0 );
+    config.setInteger ( "autoCheckUpdates", 1 );
 
     // Cached UI state (defaults)
     config.setInteger ( "lastUsedPort", -1 );
@@ -889,11 +894,24 @@ void MainUi::loadMappings ( Controller& controller )
 
 void MainUi::main ( RunFuncPtr run )
 {
-    static const vector<string> options = { "Netplay", "Spectate", "Broadcast", "Offline", "Controls", "Settings" };
+    static const vector<string> options =
+    {
+        "Netplay",
+        "Spectate",
+        "Broadcast",
+        "Offline",
+        "Controls",
+        "Settings",
+        "Update",
+    };
 
     ASSERT ( ui.get() != 0 );
 
     ui->clearAll();
+
+    if ( config.getInteger ( "autoCheckUpdates" ) )
+        update ( true );
+
     ui->pushRight ( new ConsoleUi::Menu ( uiTitle, options, "Quit" ) );
 
     mainMenu = ui->top<ConsoleUi::Menu>();
@@ -964,6 +982,10 @@ void MainUi::main ( RunFuncPtr run )
 
             case 5:
                 settings();
+                break;
+
+            case 6:
+                update();
                 break;
 
             default:
@@ -1192,13 +1214,13 @@ void MainUi::spectate ( const SpectateConfig& spectateConfig )
     ui->pushInFront ( new ConsoleUi::TextBox ( text ), { 1, 0 }, true ); // Expand width and clear
 }
 
-bool MainUi::confirm()
+bool MainUi::confirm ( const string& question )
 {
     bool ret = false;
 
     ASSERT ( ui.get() != 0 );
 
-    ui->pushBelow ( new ConsoleUi::Menu ( "Continue?", { "Yes" }, "No" ) );
+    ui->pushBelow ( new ConsoleUi::Menu ( question, { "Yes" }, "No" ) );
 
     ret = ( ui->popUntilUserInput()->resultInt == 0 );
 
@@ -1228,9 +1250,7 @@ void MainUi::receivedHttp ( HttpGet *httpGet, int code, const std::string& data,
 
     latestVersion = version;
 
-    LOG ( "latestVersion=%s", version );
-
-    updateTo ( version.code );
+    EventManager::get().stop();
 }
 
 void MainUi::failedHttp ( HttpGet *httpGet )
@@ -1282,31 +1302,74 @@ void MainUi::updateTo ( const string& version )
 {
     if ( version.empty() )
     {
-        serverIndex = 0;
-        downloadCompleted = false;
-        httpGet.reset ( new HttpGet ( this, updateServers[serverIndex] + LATEST_VERSION_PATH ) );
+        httpGet.reset ( new HttpGet ( this, updateServers[serverIndex] + LATEST_VERSION_PATH, VERSION_CHECK_TIMEOUT ) );
         httpGet->start();
     }
     else
     {
         const string file = format ( "cccaster.v%s.zip", version );
-        serverIndex = 0;
-        downloadCompleted = false;
         httpDl.reset ( new HttpDownload ( this, updateServers[serverIndex] + file, appDir + UPDATE_ARCHIVE ) );
         httpDl->start();
     }
 }
 
-void MainUi::update()
+static bool isOnline()
 {
+    DWORD state;
+    InternetGetConnectedState ( &state, 0 );
+    return ( state & ( INTERNET_CONNECTION_LAN | INTERNET_CONNECTION_MODEM | INTERNET_CONNECTION_PROXY ) );
+}
+
+void MainUi::update ( bool isStartup )
+{
+    if ( !isOnline() )
+    {
+        sessionMessage = "No Internet connection!";
+        return;
+    }
+
     AutoManager _;
 
+    latestVersion.clear();
+    serverIndex = 0;
     updateTo ( "" );
+
+    EventManager::get().start();
+
+    LOG ( "latestVersion=%s", latestVersion );
+
+    if ( latestVersion.code.empty() )
+    {
+        sessionMessage = "Cannot fetch latest version!";
+        return;
+    }
+
+    if ( LocalVersion.similar ( latestVersion, 2 ) )
+    {
+        if ( !isStartup )
+            sessionMessage = "Already up to date!";
+        return;
+    }
+
+    ui->pushRight ( new ConsoleUi::TextBox ( format ( "Latest version is %s", latestVersion ) ) );
+
+    if ( !confirm ( "Update?" ) )
+    {
+        ui->pop();
+        return;
+    }
+
+    ui->clearAll();
+
+    downloadCompleted = false;
+    serverIndex = 0;
+    updateTo ( latestVersion.code );
 
     EventManager::get().start();
 
     if ( !downloadCompleted )
     {
+        sessionMessage = "Cannot download latest version!";
         return;
     }
 

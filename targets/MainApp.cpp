@@ -531,7 +531,7 @@ struct MainApp
             case ClientMode::Client:
             case ClientMode::SpectateNetplay:
             case ClientMode::SpectateBroadcast:
-                userConfirmed = ui.confirm();
+                userConfirmed = ui.confirm ( "Continue?" );
                 break;
 
             default:

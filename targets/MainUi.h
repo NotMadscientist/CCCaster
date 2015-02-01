@@ -113,13 +113,13 @@ public:
 
     void spectate ( const SpectateConfig& spectateConfig );
 
-    bool confirm();
+    bool confirm ( const std::string& question );
 
     const KeyValueStore& getConfig() const { return config; }
 
     const NetplayConfig& getNetplayConfig() const { return netplayConfig; }
 
-    void update();
+    void update ( bool isStartup = false );
 
     static void *getConsoleWindow();
 };
