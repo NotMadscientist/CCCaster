@@ -16,7 +16,8 @@ class TcpSocket : public Socket, public Timer::Owner
     TcpSocket ( Socket::Owner *owner, uint16_t port, bool isRaw = false );
 
     // Construct a client socket
-    TcpSocket ( Socket::Owner *owner, const IpAddrPort& address, bool isRaw = false );
+    TcpSocket ( Socket::Owner *owner, const IpAddrPort& address,
+                bool isRaw = false, uint64_t connectTimeout = DEFAULT_CONNECT_TIMEOUT );
 
     // Construct an accepted client socket
     TcpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address );
@@ -38,7 +39,8 @@ public:
     static SocketPtr listen ( Socket::Owner *owner, uint16_t port, bool isRaw = false );
 
     // Connect to the given address and port
-    static SocketPtr connect ( Socket::Owner *owner, const IpAddrPort& address, bool isRaw = false );
+    static SocketPtr connect ( Socket::Owner *owner, const IpAddrPort& address,
+                               bool isRaw = false, uint64_t connectTimeout = DEFAULT_CONNECT_TIMEOUT );
 
     // Create a socket from SocketShareData
     static SocketPtr shared ( Socket::Owner *owner, const SocketShareData& data );

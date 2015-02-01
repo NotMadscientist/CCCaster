@@ -113,8 +113,10 @@ static void deinitialize()
         return;
     deinitialized = true;
 
-    stopMain();
-    exit ( 0 );
+    EventManager::get().release();
+    KeyboardManager::get().unhook();
+    SocketManager::get().deinitialize();
+    TimerManager::get().deinitialize();
 }
 
 static void signalHandler ( int signum )

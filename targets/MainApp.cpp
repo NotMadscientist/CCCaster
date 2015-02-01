@@ -551,7 +551,7 @@ struct MainApp
             case ClientMode::Client:
             case ClientMode::SpectateNetplay:
             case ClientMode::SpectateBroadcast:
-                userConfirmed = ui.confirm();
+                userConfirmed = ui.confirm ( "Continue?" );
                 break;
 
             default:
@@ -1289,12 +1289,4 @@ void runMain ( const IpAddrPort& address, const Serializable& config )
 
 void runFake ( const IpAddrPort& address, const Serializable& config )
 {
-}
-
-void stopMain()
-{
-    EventManager::get().release();
-    KeyboardManager::get().unhook();
-    SocketManager::get().deinitialize();
-    TimerManager::get().deinitialize();
 }

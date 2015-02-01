@@ -28,7 +28,8 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, const Type& type, bo
     SocketManager::get().add ( this );
 }
 
-UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, const Type& type, bool isRaw )
+UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, const Type& type,
+                       bool isRaw, uint64_t connectTimeout )
     : Socket ( owner, address, Protocol::UDP, isRaw )
     , type ( type )
     , gbn ( this, DEFAULT_SEND_INTERVAL, isConnectionLess() ? 0 : connectTimeout )
@@ -37,6 +38,8 @@ UdpSocket::UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, const Ty
 
     Socket::init();
     SocketManager::get().add ( this );
+
+    this->connectTimeout = connectTimeout;
 
     if ( isConnecting() )
         send ( new UdpControl ( UdpControl::ConnectRequest ) );
@@ -175,9 +178,9 @@ SocketPtr UdpSocket::listen ( Socket::Owner *owner, uint16_t port )
     return SocketPtr ( new UdpSocket ( owner, port, Type::Server ) );
 }
 
-SocketPtr UdpSocket::connect ( Socket::Owner *owner, const IpAddrPort& address )
+SocketPtr UdpSocket::connect ( Socket::Owner *owner, const IpAddrPort& address, uint64_t connectTimeout )
 {
-    return SocketPtr ( new UdpSocket ( owner, address, Type::Client ) );
+    return SocketPtr ( new UdpSocket ( owner, address, Type::Client, connectTimeout ) );
 }
 
 SocketPtr UdpSocket::bind ( Socket::Owner *owner, uint16_t port, bool isRaw )

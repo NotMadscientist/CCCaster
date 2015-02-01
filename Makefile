@@ -14,6 +14,7 @@ BINARY = $(NAME).v$(VERSION)$(DOT_TAG).exe
 FOLDER = $(NAME)
 DLL = hook$(DOT_TAG).dll
 LAUNCHER = launcher.exe
+UPDATER = updater.exe
 DEBUGGER = debugger.exe
 GENERATOR = generator.exe
 MBAA_EXE = MBAA.exe
@@ -74,7 +75,7 @@ INCLUDES += -I$(CURDIR)/3rdparty/gtest/include -I$(CURDIR)/3rdparty/minhook/incl
 CC_FLAGS = -m32 $(INCLUDES) $(DEFINES)
 
 # Linker flags
-LD_FLAGS = -m32 -static -lws2_32 -lpsapi -lwinpthread -lwinmm -lole32 -ldinput
+LD_FLAGS = -m32 -static -lws2_32 -lpsapi -lwinpthread -lwinmm -lole32 -ldinput -lwininet
 
 # Build options
 # DEFINES += -DDISABLE_LOGGING
@@ -120,7 +121,7 @@ debugger: tools/$(DEBUGGER)
 generator: tools/$(GENERATOR)
 
 
-$(ARCHIVE): $(BINARY) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER)
+$(ARCHIVE): $(BINARY) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER) $(FOLDER)/$(UPDATER) $(FOLDER)/unzip.exe
 	@echo
 	rm -f $(wildcard $(NAME)*.zip)
 	$(ZIP) $(ARCHIVE) ReadMe.txt ChangeLog.txt $^
@@ -143,11 +144,21 @@ $(FOLDER)/$(DLL): $(addprefix $(BUILD_PREFIX)/,$(DLL_OBJECTS)) res/rollback.o | 
 	@echo
 
 $(FOLDER)/$(LAUNCHER): tools/Launcher.cpp | $(FOLDER)
-	$(CXX) -o $@ tools/Launcher.cpp -m32 -s -Os -O2 -Wall -static -mwindows
+	$(CXX) -o $@ $^ -m32 -s -Os -O2 -Wall -static -mwindows
 	@echo
 	$(PREFIX)strip $@
 	$(CHMOD_X)
 	@echo
+
+$(FOLDER)/$(UPDATER): tools/Updater.cpp lib/StringUtils.cpp | $(FOLDER)
+	$(CXX) -o $@ $^ -m32 -s -Os -O2 -std=c++11 -I$(CURDIR)/lib -Wall -static
+	@echo
+	$(PREFIX)strip $@
+	$(CHMOD_X)
+	@echo
+
+$(FOLDER)/unzip.exe: 3rdparty/unzip.exe | $(FOLDER)
+	cp -f $^ $(FOLDER)/
 
 $(FOLDER):
 	mkdir -p $@

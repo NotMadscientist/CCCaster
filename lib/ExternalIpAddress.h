@@ -26,9 +26,11 @@ private:
 
     size_t nextQueryIndex = 0;
 
-    void receivedHttp ( HttpGet *httpGet, int code, const std::string& data ) override;
+    void httpResponse ( HttpGet *httpGet, int code, const std::string& data, uint32_t remainingBytes ) override;
 
-    void failedHttp ( HttpGet *httpGet ) override;
+    void httpFailed ( HttpGet *httpGet ) override;
+
+    void httpProgress ( HttpGet *httpGet, uint32_t receivedBytes, uint32_t totalBytes ) override {}
 
 public:
 

@@ -1,0 +1,23 @@
+#!/bin/sh
+
+servers='192.210.227.23 104.206.199.123'
+
+latest=`ls cccaster*.zip | sed -r 's/cccaster.v([0-9a-zA-Z.]+).zip/\1/'`
+
+echo Latest version $latest
+
+for server in $servers; do
+
+    echo
+
+    echo $server
+
+    command="echo $latest > /var/www/html/LatestVersion"
+
+    echo $command
+
+    ssh root@$server $command
+
+    scp cccaster*.zip root@$server:/var/www/html
+
+done

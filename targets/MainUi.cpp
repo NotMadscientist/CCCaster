@@ -8,6 +8,7 @@
 #include "NetplayManager.h"
 
 #include <mmsystem.h>
+#include <wininet.h>
 
 using namespace std;
 
@@ -20,6 +21,15 @@ using namespace std;
 
 // Main configuration file
 #define CONFIG_FILE FOLDER "config.ini"
+
+// Path of the latest version file
+#define LATEST_VERSION_PATH "LatestVersion"
+
+// Main update archive file location
+#define UPDATE_ARCHIVE FOLDER "update.zip"
+
+// Timeout for update version check
+#define VERSION_CHECK_TIMEOUT ( 1000 )
 
 // Run macro that deinitializes controllers, runs, then reinitializes controllers
 #define RUN(ADDRESS, CONFIG)                                                                    \
@@ -35,6 +45,12 @@ extern string appDir;
 static const string uiTitle = "CCCaster " + LocalVersion.code;
 
 static ConsoleUi::Menu *mainMenu = 0;
+
+static const vector<string> updateServers =
+{
+    "http://192.210.227.23/",
+    "http://104.206.199.123/",
+};
 
 
 void MainUi::netplay ( RunFuncPtr run )
@@ -587,9 +603,10 @@ void MainUi::settings()
     {
         "Alert on connect",
         "Display name",
-        "Show full character name",
+        "Show full character names",
         "Game CPU priority",
         "Versus mode win count",
+        "Check for updates on startup",
         "About",
     };
 
@@ -736,6 +753,23 @@ void MainUi::settings()
                 break;
 
             case 5:
+                ui->pushInFront ( new ConsoleUi::Menu ( "Check for updates on startup?",
+                { "Yes", "No" }, "Cancel" ),
+                { 0, 0 }, true ); // Don't expand but DO clear
+
+                ui->top<ConsoleUi::Menu>()->setPosition ( ( config.getInteger ( "autoCheckUpdates" ) + 1 ) % 2 );
+                ui->popUntilUserInput();
+
+                if ( ui->top()->resultInt >= 0 && ui->top()->resultInt <= 1 )
+                {
+                    config.setInteger ( "autoCheckUpdates", ( ui->top()->resultInt + 1 ) % 2 );
+                    saveConfig();
+                }
+
+                ui->pop();
+                break;
+
+            case 6:
                 ui->pushInFront ( new ConsoleUi::TextBox ( format ( "%s%s\n\nRevision %s\n\nBuilt on %s\n\n"
                                   "Created by Madscientist\n\nPress any key to go back",
                                   uiTitle,
@@ -771,6 +805,7 @@ void MainUi::initialize()
     config.setInteger ( "highCpuPriority", 1 );
     config.setInteger ( "versusWinCount", 2 );
     config.setInteger ( "maxAllowedDelay", 4 );
+    config.setInteger ( "autoCheckUpdates", 1 );
 
     // Cached UI state (defaults)
     config.setInteger ( "lastUsedPort", -1 );
@@ -861,11 +896,24 @@ void MainUi::loadMappings ( Controller& controller )
 
 void MainUi::main ( RunFuncPtr run )
 {
-    static const vector<string> options = { "Netplay", "Spectate", "Broadcast", "Offline", "Controls", "Settings" };
+    static const vector<string> options =
+    {
+        "Netplay",
+        "Spectate",
+        "Broadcast",
+        "Offline",
+        "Controls",
+        "Settings",
+        "Update",
+    };
 
     ASSERT ( ui.get() != 0 );
 
     ui->clearAll();
+
+    if ( config.getInteger ( "autoCheckUpdates" ) )
+        update ( true );
+
     ui->pushRight ( new ConsoleUi::Menu ( uiTitle, options, "Quit" ) );
 
     mainMenu = ui->top<ConsoleUi::Menu>();
@@ -936,6 +984,10 @@ void MainUi::main ( RunFuncPtr run )
 
             case 5:
                 settings();
+                break;
+
+            case 6:
+                update();
                 break;
 
             default:
@@ -1197,13 +1249,13 @@ void MainUi::spectate ( const SpectateConfig& spectateConfig )
     ui->pushInFront ( new ConsoleUi::TextBox ( text ), { 1, 0 }, true ); // Expand width and clear
 }
 
-bool MainUi::confirm()
+bool MainUi::confirm ( const string& question )
 {
     bool ret = false;
 
     ASSERT ( ui.get() != 0 );
 
-    ui->pushBelow ( new ConsoleUi::Menu ( "Continue?", { "Yes" }, "No" ) );
+    ui->pushBelow ( new ConsoleUi::Menu ( question, { "Yes" }, "No" ) );
 
     ret = ( ui->popUntilUserInput()->resultInt == 0 );
 
@@ -1215,4 +1267,185 @@ bool MainUi::confirm()
 void *MainUi::getConsoleWindow()
 {
     return ConsoleUi::getConsoleWindow();
+}
+
+void MainUi::httpResponse ( HttpGet *httpGet, int code, const std::string& data, uint32_t remainingBytes )
+{
+    ASSERT ( this->httpGet.get() == httpGet );
+
+    Version version ( trimmed ( data ) );
+
+    if ( code != 200 || version.major().empty() || version.minor().empty() )
+    {
+        httpFailed ( httpGet );
+        return;
+    }
+
+    this->httpGet.reset();
+
+    latestVersion = version;
+
+    EventManager::get().stop();
+}
+
+void MainUi::httpFailed ( HttpGet *httpGet )
+{
+    ASSERT ( this->httpGet.get() == httpGet );
+
+    this->httpGet.reset();
+
+    ++serverIndex;
+
+    if ( serverIndex >= updateServers.size() )
+    {
+        EventManager::get().stop();
+        return;
+    }
+
+    updateTo ( "" );
+}
+
+void MainUi::downloadComplete ( HttpDownload *httpDl )
+{
+    ASSERT ( this->httpDl.get() == httpDl );
+
+    this->httpDl.reset();
+
+    downloadCompleted = true;
+
+    EventManager::get().stop();
+}
+
+void MainUi::downloadFailed ( HttpDownload *httpDl )
+{
+    ASSERT ( this->httpDl.get() == httpDl );
+
+    this->httpDl.reset();
+
+    ++serverIndex;
+
+    if ( serverIndex >= updateServers.size() )
+    {
+        EventManager::get().stop();
+        return;
+    }
+
+    const ConsoleUi::ProgressBar *bar = ui->top<ConsoleUi::ProgressBar>();
+    bar->update ( 0 );
+
+    updateTo ( latestVersion.code );
+}
+
+void MainUi::downloadProgress ( HttpDownload *httpDl, uint32_t downloadedBytes, uint32_t totalBytes )
+{
+    const ConsoleUi::ProgressBar *bar = ui->top<ConsoleUi::ProgressBar>();
+    bar->update ( ( bar->length * downloadedBytes ) / totalBytes );
+    LOG ( "%u / %u", downloadedBytes, totalBytes );
+}
+
+void MainUi::updateTo ( const string& version )
+{
+    if ( version.empty() )
+    {
+        httpGet.reset ( new HttpGet ( this, updateServers[serverIndex] + LATEST_VERSION_PATH, VERSION_CHECK_TIMEOUT ) );
+        httpGet->start();
+    }
+    else
+    {
+        const string file = format ( "cccaster.v%s.zip", version );
+        httpDl.reset ( new HttpDownload ( this, updateServers[serverIndex] + file, appDir + UPDATE_ARCHIVE ) );
+        httpDl->start();
+    }
+}
+
+static bool isOnline()
+{
+    DWORD state;
+    InternetGetConnectedState ( &state, 0 );
+    return ( state & ( INTERNET_CONNECTION_LAN | INTERNET_CONNECTION_MODEM | INTERNET_CONNECTION_PROXY ) );
+}
+
+void MainUi::update ( bool isStartup )
+{
+    if ( !isOnline() )
+    {
+        sessionMessage = "No Internet connection!";
+        return;
+    }
+
+    AutoManager _;
+
+    latestVersion.clear();
+    serverIndex = 0;
+    updateTo ( "" );
+
+    EventManager::get().start();
+
+    LOG ( "latestVersion=%s", latestVersion );
+
+    if ( latestVersion.code.empty() )
+    {
+        sessionMessage = "Cannot fetch latest version!";
+        return;
+    }
+
+    if ( LocalVersion.similar ( latestVersion, 2 ) )
+    {
+        if ( !isStartup )
+            sessionMessage = "Already up to date!";
+        return;
+    }
+
+    ui->pushRight ( new ConsoleUi::TextBox ( format ( "Latest version is %s", latestVersion ) ) );
+
+    if ( !confirm ( "Update?" ) )
+    {
+        ui->pop();
+        return;
+    }
+
+    ui->pop();
+    ui->pushRight ( new ConsoleUi::ProgressBar ( "Downloading...", 20 ) );
+
+    downloadCompleted = false;
+    serverIndex = 0;
+    updateTo ( latestVersion.code );
+
+    EventManager::get().start();
+
+    if ( !downloadCompleted )
+    {
+        ui->pop();
+        sessionMessage = "Cannot download latest version!";
+        return;
+    }
+
+    ASSERT ( latestVersion.major().empty() == false );
+    ASSERT ( latestVersion.minor().empty() == false );
+
+    const string binary = format ( "cccaster.v%s.%s.exe", latestVersion.major(), latestVersion.minor() );
+
+    // TODO actually test this
+    if ( ProcessManager::isWine() )
+    {
+        const string command = format ( "\"%scccaster\\unzip.exe\" -o %s%s -d %s",
+                                        appDir, appDir, UPDATE_ARCHIVE, appDir );
+
+        LOG ( "Update command: %s", command );
+
+        system ( ( "\"" + command + "\"" ).c_str() );
+
+        system ( ( "\"" + appDir + binary + "\" &" ).c_str() );
+
+        exit ( 0 );
+        return;
+    }
+
+    const string command = format ( "\"%scccaster\\updater.exe\" %s %s %s", appDir, binary, UPDATE_ARCHIVE, appDir );
+
+    LOG ( "Update command: %s", command );
+
+    system ( ( "\"start \"Updating...\" " + command + "\"" ).c_str() );
+
+    exit ( 0 );
 }

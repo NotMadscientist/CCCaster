@@ -22,13 +22,15 @@ TcpSocket::TcpSocket ( Socket::Owner *owner, uint16_t port, bool isRaw )
     SocketManager::get().add ( this );
 }
 
-TcpSocket::TcpSocket ( Socket::Owner *owner, const IpAddrPort& address, bool isRaw )
+TcpSocket::TcpSocket ( Socket::Owner *owner, const IpAddrPort& address, bool isRaw, uint64_t connectTimeout )
     : Socket ( owner, address, Protocol::TCP, isRaw )
 {
     this->state = State::Connecting;
 
     Socket::init();
     SocketManager::get().add ( this );
+
+    this->connectTimeout = connectTimeout;
 
     connectTimer.reset ( new Timer ( this ) );
     connectTimer->start ( connectTimeout );
@@ -89,9 +91,9 @@ SocketPtr TcpSocket::listen ( Socket::Owner *owner, uint16_t port, bool isRaw )
     return SocketPtr ( new TcpSocket ( owner, port, isRaw ) );
 }
 
-SocketPtr TcpSocket::connect ( Socket::Owner *owner, const IpAddrPort& address, bool isRaw )
+SocketPtr TcpSocket::connect ( Socket::Owner *owner, const IpAddrPort& address, bool isRaw, uint64_t connectTimeout )
 {
-    return SocketPtr ( new TcpSocket ( owner, address, isRaw ) );
+    return SocketPtr ( new TcpSocket ( owner, address, isRaw, connectTimeout ) );
 }
 
 SocketPtr TcpSocket::accept ( Socket::Owner *owner )
