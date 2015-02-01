@@ -1054,7 +1054,8 @@ string MainUi::formatStats ( const PingStats& pingStats )
                "\n%-" INDENT_STATS "sStdDev: %.2f ms"
                "\n%-" INDENT_STATS "sPacket Loss: %d%%"
 #endif
-               , format ( "Delay: %d", computeDelay ( pingStats.latency.getMean() ) ), pingStats.latency.getMean()
+               , format ( "Delay: %d", computeDelay ( pingStats.latency.getMean() ) )
+               , pingStats.latency.getMean()
 #ifndef NDEBUG
                , "", pingStats.latency.getWorst()
                , "", pingStats.latency.getStdErr()
@@ -1101,7 +1102,10 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
     ASSERT ( ui.get() != 0 );
 
     const int delay = computeDelay ( pingStats.latency.getMean() );
-    const int delay2sd = computeDelay ( 2 * pingStats.latency.getStdDev() );
+    const int worst = computeDelay ( pingStats.latency.getWorst() );
+    const int variance = computeDelay ( pingStats.latency.getVariance() );
+
+    int rollback = clamped ( delay + worst + variance, 0, config.getInteger ( "maxAllowedRollback" ) );
 
     netplayConfig.delay = delay + 1;
 
@@ -1115,7 +1119,7 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
 
     ui->top<ConsoleUi::Prompt>()->allowNegative = false;
     ui->top<ConsoleUi::Prompt>()->maxDigits = 2;
-    ui->top<ConsoleUi::Prompt>()->setInitial ( clamped ( delay + delay2sd, 0, MAX_ROLLBACK ) );
+    ui->top<ConsoleUi::Prompt>()->setInitial ( rollback );
 
     for ( ;; )
     {
@@ -1132,7 +1136,7 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
 
         ui->clearRight();
 
-        const int rollback = netplayConfig.rollback = menu->resultInt;
+        rollback = netplayConfig.rollback = menu->resultInt;
 
         ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter delay:" ) );
 
