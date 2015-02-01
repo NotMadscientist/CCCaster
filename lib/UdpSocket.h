@@ -61,7 +61,8 @@ private:
     UdpSocket ( Socket::Owner *owner, uint16_t port, const Type& type, bool isRaw = false );
 
     // Construct a client socket
-    UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, const Type& type, bool isRaw = false );
+    UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, const Type& type,
+                bool isRaw = false, uint64_t connectTimeout = DEFAULT_CONNECT_TIMEOUT );
 
     // Construct a socket from SocketShareData
     UdpSocket ( Socket::Owner *owner, const SocketShareData& data );
@@ -83,7 +84,8 @@ public:
     static SocketPtr listen ( Socket::Owner *owner, uint16_t port );
 
     // Connect to the given address and port
-    static SocketPtr connect ( Socket::Owner *owner, const IpAddrPort& address );
+    static SocketPtr connect ( Socket::Owner *owner, const IpAddrPort& address,
+                               uint64_t connectTimeout = DEFAULT_CONNECT_TIMEOUT );
 
     // Create connection-less sockets
     static SocketPtr bind ( Socket::Owner *owner, uint16_t port, bool isRaw = false );

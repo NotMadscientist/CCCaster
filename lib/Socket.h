@@ -72,12 +72,6 @@ public:
     // Socket protocol
     const Protocol protocol;
 
-    // Raw socket type flag
-    bool isRaw = false;
-
-    // Initial connect timeout
-    uint64_t connectTimeout = DEFAULT_CONNECT_TIMEOUT;
-
     // Socket read buffer
     std::string readBuffer;
 
@@ -96,6 +90,12 @@ public:
     void consumeBuffer ( size_t bytes );
 
 protected:
+
+    // Raw socket type flag
+    bool isRaw = false;
+
+    // Initial connect timeout
+    uint64_t connectTimeout = DEFAULT_CONNECT_TIMEOUT;
 
     // Connection state
     State state = State::Disconnected;

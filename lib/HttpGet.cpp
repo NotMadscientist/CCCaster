@@ -44,7 +44,7 @@ void HttpGet::start()
 
     try
     {
-        socket = TcpSocket::connect ( this, host + ":80", true ); // Raw socket
+        socket = TcpSocket::connect ( this, host + ":80", true, timeout ); // Raw socket
     }
     catch ( ... )
     {
@@ -81,7 +81,7 @@ void HttpGet::disconnectEvent ( Socket *socket )
 {
     ASSERT ( this->socket.get() == socket );
 
-    if ( remainingBytes == 0 )
+    if ( code >= 0 && remainingBytes == 0 )
         return;
 
     this->socket.reset();
@@ -95,7 +95,7 @@ void HttpGet::timerExpired ( Timer *timer )
 {
     ASSERT ( this->timer.get() == timer );
 
-    if ( remainingBytes == 0 )
+    if ( code >= 0 && remainingBytes == 0 )
         return;
 
     this->socket.reset();

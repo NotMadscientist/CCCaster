@@ -13,6 +13,12 @@ void HttpDownload::receivedHttp ( HttpGet *httpGet, int code, const string& data
 
     LOG ( "Received HTTP response (%d): [ %u bytes ]", code, data.size() );
 
+    if ( code != 200 )
+    {
+        failedHttp ( httpGet );
+        return;
+    }
+
     outputFile.write ( &data[0], data.size() );
 
     if ( remainingBytes > 0 )
@@ -29,6 +35,8 @@ void HttpDownload::failedHttp ( HttpGet *httpGet )
     ASSERT ( this->httpGet.get() == httpGet );
 
     LOG ( "Download failed for: %s", httpGet->url );
+
+    stop();
 
     if ( owner )
         owner->downloadFailed ( this );
