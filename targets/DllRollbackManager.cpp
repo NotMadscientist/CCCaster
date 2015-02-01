@@ -83,8 +83,18 @@ void DllRollbackManager::saveState ( const NetplayManager& netMan )
     {
         ASSERT ( statesList.empty() == false );
 
-        freeStack.push ( statesList.front().rawBytes - memoryPool.get() );
-        statesList.pop_front();
+        if ( statesList.front().indexedFrame.parts.frame <= netMan.getRemoteFrame() )
+        {
+            auto it = statesList.begin();
+            ++it;
+            freeStack.push ( it->rawBytes - memoryPool.get() );
+            statesList.erase ( it );
+        }
+        else
+        {
+            freeStack.push ( statesList.front().rawBytes - memoryPool.get() );
+            statesList.pop_front();
+        }
     }
 
     GameState state =
@@ -112,7 +122,11 @@ bool DllRollbackManager::loadState ( IndexedFrame indexedFrame, NetplayManager& 
 
     for ( auto it = statesList.rbegin(); it != statesList.rend(); ++it )
     {
+#ifdef RELEASE
+        if ( ( it->indexedFrame.value <= indexedFrame.value ) || ( & ( *it ) == &statesList.front() ) )
+#else
         if ( it->indexedFrame.value <= indexedFrame.value )
+#endif
         {
             LOG ( "Loaded state: indexedFrame=%s", it->indexedFrame );
 

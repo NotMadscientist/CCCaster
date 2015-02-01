@@ -4,6 +4,7 @@ v3.0.000:
   Set rollback as needed (max 15 frames) to compensate for laggy / spikey networks.
   Can adjust rollback in-game with Alt + Number.
   Training mode rollback is untested.
+  Note: rollback prevents replays from saving correctly right now, will fix in a later version.
 - Automatic updates, checks on application startup by default.
 - Moved max delay and max rollback to settings.
 - Changed the spacebar to toggle fast-forward when spectating.
