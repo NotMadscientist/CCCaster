@@ -47,7 +47,9 @@ ENUM ( Overlay, Disabled, Disabling, Enabled, Enabling );
 
 static Overlay overlayState = Overlay::Disabled;
 
-static int overlayHeight = 0, oldHeight = 0, newHeight = 0, messageTimeout = 0;
+static int overlayHeight = 0, oldHeight = 0, newHeight = 0;
+
+static int initialTimeout = 0, messageTimeout = 0;
 
 static array<string, 3> overlayText;
 
@@ -166,7 +168,10 @@ void showMessage ( const string& text, int timeout )
     if ( ProcessManager::isWine() )
         return;
 
-    messageTimeout = ( timeout / 17 );
+    // Get timeout in frames
+    initialTimeout = messageTimeout = ( timeout / 17 );
+
+    // Show the message in the middle
     overlayText = { "", "", text };
     drawSelector = { false, false };
 
@@ -194,8 +199,10 @@ void updateMessage()
         return;
     }
 
-    // Don't timeout message when backgrounded
-    if ( DllHacks::windowHandle == GetForegroundWindow() )
+    // Reset message timeout when backgrounded
+    if ( DllHacks::windowHandle != GetForegroundWindow() )
+        messageTimeout = initialTimeout;
+    else
         --messageTimeout;
 }
 
