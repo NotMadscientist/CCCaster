@@ -101,9 +101,9 @@ public:
 
     void main ( RunFuncPtr run );
 
-    bool promptMaxDelay();
-
     void setMaxDelay ( uint8_t maxDelay );
+
+    void setMaxRollback ( uint8_t maxRollback );
 
     void display ( const std::string& message, bool replace = true );
 
@@ -124,4 +124,6 @@ public:
     void update ( bool isStartup = false );
 
     static void *getConsoleWindow();
+
+    static std::string formatStats ( const PingStats& pingStats );
 };

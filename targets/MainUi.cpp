@@ -86,41 +86,7 @@ void MainUi::netplay ( RunFuncPtr run )
             config.setInteger ( "lastUsedPort", address.port );
             saveConfig();
 
-            ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter max allowed delay:" ) );
-
-            ui->top<ConsoleUi::Prompt>()->allowNegative = false;
-            ui->top<ConsoleUi::Prompt>()->maxDigits = 3;
-            ui->top<ConsoleUi::Prompt>()->setInitial ( clamped ( config.getInteger ( "maxAllowedDelay" ), 0, 254 ) );
-
-            bool good = false;
-
-            for ( ;; )
-            {
-                ConsoleUi::Element *menu = ui->popUntilUserInput();
-
-                if ( menu->resultInt < 0 )
-                    break;
-
-                ui->clearTop();
-
-                if ( menu->resultInt >= 0xFF )
-                {
-                    ui->pushBelow ( new ConsoleUi::TextBox ( ERROR_INVALID_DELAY ) );
-                    continue;
-                }
-
-                setMaxDelay ( menu->resultInt );
-
-                if ( gameMode ( false ) ) // Show in front
-                {
-                    good = true;
-                    break;
-                }
-            }
-
-            ui->pop();
-
-            if ( !good )
+            if ( !gameMode ( true ) ) // Show below
                 continue;
 
             initialConfig.mode.value = ClientMode::Host;
@@ -607,6 +573,8 @@ void MainUi::settings()
         "Game CPU priority",
         "Versus mode win count",
         "Check for updates on startup",
+        "Max allowed delay",
+        "Max allowed rollback",
         "About",
     };
 
@@ -770,6 +738,71 @@ void MainUi::settings()
                 break;
 
             case 6:
+                ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter max allowed delay:" ),
+                { 0, 0 }, true ); // Don't expand but DO clear
+
+                ui->top<ConsoleUi::Prompt>()->allowNegative = false;
+                ui->top<ConsoleUi::Prompt>()->maxDigits = 3;
+                ui->top<ConsoleUi::Prompt>()->setInitial ( config.getInteger ( "maxAllowedDelay" ) );
+
+                for ( ;; )
+                {
+                    ui->popUntilUserInput();
+
+                    if ( ui->top()->resultInt < 0 )
+                        break;
+
+                    if ( ui->top()->resultInt == 0 )
+                    {
+                        ui->pushBelow ( new ConsoleUi::TextBox ( "Max delay can't be zero!" ) );
+                        continue;
+                    }
+
+                    if ( ui->top()->resultInt >= 0xFF )
+                    {
+                        ui->pushBelow ( new ConsoleUi::TextBox ( ERROR_INVALID_DELAY ) );
+                        continue;
+                    }
+
+                    config.setInteger ( "maxAllowedDelay", ui->top()->resultInt );
+                    saveConfig();
+                    break;
+                }
+
+                ui->pop();
+                break;
+
+            case 7:
+                ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter max allowed rollback:" ),
+                { 0, 0 }, true ); // Don't expand but DO clear
+
+                ui->top<ConsoleUi::Prompt>()->allowNegative = false;
+                ui->top<ConsoleUi::Prompt>()->maxDigits = 2;
+                ui->top<ConsoleUi::Prompt>()->setInitial ( config.getInteger ( "maxAllowedRollback" ) );
+
+                for ( ;; )
+                {
+                    ui->popUntilUserInput();
+
+                    if ( ui->top()->resultInt < 0 )
+                        break;
+
+                    if ( ui->top()->resultInt > MAX_ROLLBACK )
+                    {
+                        ui->pushBelow ( new ConsoleUi::TextBox (
+                                            format ( ERROR_INVALID_ROLLBACK, 1 + MAX_ROLLBACK ) ) );
+                        continue;
+                    }
+
+                    config.setInteger ( "maxAllowedRollback", ui->top()->resultInt );
+                    saveConfig();
+                    break;
+                }
+
+                ui->pop();
+                break;
+
+            case 8:
                 ui->pushInFront ( new ConsoleUi::TextBox ( format ( "CCCaster %s%s\n\nRevision %s\n\nBuilt on %s\n\n"
                                   "Created by Madscientist\n\nPress any key to go back",
                                   LocalVersion.code,
@@ -805,6 +838,7 @@ void MainUi::initialize()
     config.setInteger ( "highCpuPriority", 1 );
     config.setInteger ( "versusWinCount", 2 );
     config.setInteger ( "maxAllowedDelay", 4 );
+    config.setInteger ( "maxAllowedRollback", 4 );
     config.setInteger ( "autoCheckUpdates", 1 );
 
     // Cached UI state (defaults)
@@ -998,49 +1032,19 @@ void MainUi::main ( RunFuncPtr run )
     ControllerManager::get().deinitialize();
 }
 
-bool MainUi::promptMaxDelay()
-{
-    ui->clearAll();
-    ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter max allowed delay:" ) );
-
-    ui->top<ConsoleUi::Prompt>()->allowNegative = false;
-    ui->top<ConsoleUi::Prompt>()->maxDigits = 3;
-    ui->top<ConsoleUi::Prompt>()->setInitial ( clamped ( config.getInteger ( "maxAllowedDelay" ), 0, 254 ) );
-
-    bool good = false;
-
-    for ( ;; )
-    {
-        ConsoleUi::Element *menu = ui->popUntilUserInput();
-
-        if ( menu->resultInt < 0 )
-            break;
-
-        ui->clearTop();
-
-        if ( menu->resultInt >= 0xFF )
-        {
-            ui->pushBelow ( new ConsoleUi::TextBox ( ERROR_INVALID_DELAY ) );
-            continue;
-        }
-
-        setMaxDelay ( menu->resultInt );
-        good = true;
-        break;
-    }
-
-    ui->pop();
-
-    return good;
-}
-
 void MainUi::setMaxDelay ( uint8_t maxDelay )
 {
     config.setInteger ( "maxAllowedDelay", maxDelay );
     saveConfig();
 }
 
-static string formatStats ( const PingStats& pingStats )
+void MainUi::setMaxRollback ( uint8_t maxRollback )
+{
+    config.setInteger ( "maxAllowedRollback", maxRollback );
+    saveConfig();
+}
+
+string MainUi::formatStats ( const PingStats& pingStats )
 {
     return format (
                "%-" INDENT_STATS "sPing: %.2f ms"
@@ -1110,12 +1114,11 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
     ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter rollback:" ) );
 
     ui->top<ConsoleUi::Prompt>()->allowNegative = false;
-    ui->top<ConsoleUi::Prompt>()->maxDigits = 3;
+    ui->top<ConsoleUi::Prompt>()->maxDigits = 2;
     ui->top<ConsoleUi::Prompt>()->setInitial ( clamped ( delay + delay2sd, 0, MAX_ROLLBACK ) );
 
     for ( ;; )
     {
-
         ConsoleUi::Element *menu = ui->popUntilUserInput();
 
         if ( menu->resultInt < 0 )

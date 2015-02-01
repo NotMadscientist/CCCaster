@@ -63,10 +63,12 @@ struct AutoManager
                   const std::unordered_set<uint32_t>& ignore = {} ) // VK codes to specifically IGNORE
         : AutoManager()
     {
+#ifdef RELEASE
         KeyboardManager::get().keyboardWindow = window;
         KeyboardManager::get().matchedKeys = keys;
         KeyboardManager::get().ignoredKeys = ignore;
         KeyboardManager::get().hook ( main );
+#endif
     }
 
     ~AutoManager()

@@ -205,15 +205,20 @@ int main ( int argc, char *argv[] )
         },
 
         { Options::Help,      0, "h",      "help", Arg::None,     "  --help, -h         Print help and exit.\n" },
-        { Options::GameDir,   0, "d",       "dir", Arg::Required, "  --dir, -d folder   Specify game folder.\n" },
+        { Options::GameDir,   0, "f",    "folder", Arg::Required, "  --folder, -f F     Specify game folder F.\n" },
 
         { Options::Training,  0, "t",  "training", Arg::None,     "  --training, -t     Force training mode." },
         { Options::Broadcast, 0, "b", "broadcast", Arg::None,     "  --broadcast, -b    Force broadcast mode." },
         { Options::Spectate,  0, "s",  "spectate", Arg::None,     "  --spectate, -s     Force spectator mode.\n" },
 
         {
-            Options::MaxDelay, 0, "m", "max", Arg::Numeric,
-            "  --max, -m D        Set max allowed delay to D.\n"
+            Options::MaxDelay, 0, "d", "max-delay", Arg::Numeric,
+            "  --max-delay, -d N  Set max allowed delay to N.\n"
+        },
+
+        {
+            Options::MaxDelay, 0, "r", "max-roll", Arg::Numeric,
+            "  --max-roll, -r N   Set max allowed rollback to N.\n"
         },
 
         {
@@ -399,11 +404,20 @@ int main ( int argc, char *argv[] )
 
     if ( opt[Options::MaxDelay] )
     {
-        uint32_t maxDelay = 0;
+        uint32_t num = 0;
         stringstream ss ( opt[Options::MaxDelay].arg );
 
-        if ( ( ss >> maxDelay ) && ( maxDelay < 0xFF ) )
-            ui.setMaxDelay ( maxDelay );
+        if ( ( ss >> num ) && ( num < 0xFF ) )
+            ui.setMaxDelay ( num );
+    }
+
+    if ( opt[Options::MaxRollback] )
+    {
+        uint32_t num = 0;
+        stringstream ss ( opt[Options::MaxRollback].arg );
+
+        if ( ( ss >> num ) && ( num < MAX_ROLLBACK ) )
+            ui.setMaxRollback ( num );
     }
 
     RunFuncPtr run = ( opt[Options::FakeUi] ? runFake : runMain );
@@ -422,7 +436,9 @@ int main ( int argc, char *argv[] )
         netplayConfig.mode.value = ClientMode::Offline;
         netplayConfig.mode.flags = ui.initialConfig.mode.flags;
         netplayConfig.delay = 0;
-        netplayConfig.rollback = 9; // TODO hard coded rollback testing
+#ifndef RELEASE
+        netplayConfig.rollback = 9; // Rollback testing
+#endif
         netplayConfig.winCount = ui.getConfig().getInteger ( "versusWinCount" );
         netplayConfig.hostPlayer = 1; // TODO make this configurable
 
@@ -465,12 +481,7 @@ int main ( int argc, char *argv[] )
             ui.initialConfig.mode.value = ( address.addr.empty() ? ClientMode::Host : ClientMode::Client );
 
         if ( lastError.empty() )
-        {
-#ifdef RELEASE
-            if ( ui.initialConfig.mode.value == ClientMode::Client || opt[Options::MaxDelay] || ui.promptMaxDelay() )
-#endif
-                run ( address, ui.initialConfig );
-        }
+            run ( address, ui.initialConfig );
     }
     else if ( parser.nonOptionsCount() == 2 )
     {

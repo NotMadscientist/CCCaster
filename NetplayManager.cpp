@@ -110,11 +110,6 @@ uint16_t NetplayManager::getSkippableInput ( uint8_t player )
 
 uint16_t NetplayManager::getInGameInput ( uint8_t player )
 {
-    // TODO disable this and check if it is still an issue
-    // Workaround for round start desync, since inputs have effects during a small period after round start.
-    if ( getFrame() < 10 )
-        return 0;
-
     uint16_t input = getRawInput ( player );
 
     // Disable pausing in netplay versus mode
