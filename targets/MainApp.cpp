@@ -1273,11 +1273,3 @@ void runMain ( const IpAddrPort& address, const Serializable& config )
 void runFake ( const IpAddrPort& address, const Serializable& config )
 {
 }
-
-void stopMain()
-{
-    EventManager::get().release();
-    KeyboardManager::get().unhook();
-    SocketManager::get().deinitialize();
-    TimerManager::get().deinitialize();
-}

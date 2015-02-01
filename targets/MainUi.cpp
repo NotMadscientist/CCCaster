@@ -1295,6 +1295,9 @@ void MainUi::downloadFailed ( HttpDownload *httpDl )
         return;
     }
 
+    const ConsoleUi::ProgressBar *bar = ui->top<ConsoleUi::ProgressBar>();
+    bar->update ( 0 );
+
     updateTo ( latestVersion.code );
 }
 
@@ -1377,6 +1380,7 @@ void MainUi::update ( bool isStartup )
 
     if ( !downloadCompleted )
     {
+        ui->pop();
         sessionMessage = "Cannot download latest version!";
         return;
     }

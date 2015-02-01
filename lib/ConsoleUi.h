@@ -450,8 +450,11 @@ public:
 
         void update ( size_t progress ) const
         {
-            const std::string str ( clamped ( progress, 0u, length ), '.' );
-            ConsoleCore::GetInstance()->Prints ( str, false, 0, pos.X + 2, pos.Y + size.Y - 2 );
+            std::string bar ( clamped ( progress, 0u, length ), '.' );
+            if ( progress < length )
+                bar += std::string ( clamped ( length - progress, 0u, length ), ' ' );
+
+            ConsoleCore::GetInstance()->Prints ( bar, false, 0, pos.X + 2, pos.Y + size.Y - 2 );
         }
 
         ProgressBar ( const std::string& title, size_t length )
