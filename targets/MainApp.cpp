@@ -1072,7 +1072,8 @@ struct MainApp
                 return;
 
             case MsgType::ChangeConfig:
-                ui.display ( format ( "Delay was changed to %u", msg->getAs<ChangeConfig>().delay ) );
+                ui.display ( format ( "Delay was changed to %u\n\nRollback was changed to %u",
+                                      msg->getAs<ChangeConfig>().delay, msg->getAs<ChangeConfig>().rollback ) );
                 return;
 
             default:

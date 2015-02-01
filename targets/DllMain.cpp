@@ -185,7 +185,7 @@ struct DllMain
                 break;
 
             case NetplayState::InGame:
-                if ( netMan.config.rollback )
+                if ( netMan.getRollback() )
                 {
                     // Only save rollback states in-game
                     rollMan.saveState ( netMan );
@@ -248,6 +248,7 @@ struct DllMain
                                 shouldChangeDelayRollback = true;
                                 changeConfig.indexedFrame = netMan.getIndexedFrame();
                                 changeConfig.delay = delay;
+                                changeConfig.rollback = netMan.getRollback();
                                 changeConfig.invalidate();
                                 dataSocket->send ( changeConfig );
                                 break;
@@ -255,7 +256,26 @@ struct DllMain
                         }
                     }
 
-                    // TODO Alt+Number to change rollback
+                    if ( KeyboardState::isDown ( VK_MENU ) && netMan.getRollback() )        // Only if already rollback
+                    {
+                        for ( uint8_t rollback = 1; rollback < 10; ++rollback )             // Don't allow 0 rollback
+                        {
+                            if ( rollback == netMan.getRollback() )
+                                continue;
+
+                            if ( KeyboardState::isPressed ( '0' + rollback )                // Alt + Number
+                                    || KeyboardState::isPressed ( VK_NUMPAD0 + rollback ) ) // Alt + Numpad Number
+                            {
+                                shouldChangeDelayRollback = true;
+                                changeConfig.indexedFrame = netMan.getIndexedFrame();
+                                changeConfig.delay = netMan.getDelay();
+                                changeConfig.rollback = rollback;
+                                changeConfig.invalidate();
+                                dataSocket->send ( changeConfig );
+                                break;
+                            }
+                        }
+                    }
 
 #ifndef RELEASE
                     // Test random delay setting
@@ -584,7 +604,7 @@ struct DllMain
         {
             shouldChangeDelayRollback = false;
 
-            if ( changeConfig.delay != 0xFF && changeConfig.delay != netMan.getDelay() )
+            if ( changeConfig.delay < 0xFF && changeConfig.delay != netMan.getDelay() )
             {
                 LOG ( "Delayed was changed %u -> %u", netMan.getDelay(), changeConfig.delay );
                 DllOverlayUi::showMessage ( format ( "Delay was changed to %u", changeConfig.delay ) );
@@ -592,7 +612,13 @@ struct DllMain
                 procMan.ipcSend ( changeConfig );
             }
 
-            // TODO set rollback
+            if ( changeConfig.rollback <= MAX_ROLLBACK && changeConfig.rollback != netMan.getRollback() )
+            {
+                LOG ( "Rollback was changed %u -> %u", netMan.getRollback(), changeConfig.rollback );
+                DllOverlayUi::showMessage ( format ( "Rollback was changed to %u", changeConfig.rollback ) );
+                netMan.setRollback ( changeConfig.rollback );
+                procMan.ipcSend ( changeConfig );
+            }
         }
 
         // LOG_SYNC ( "SFX 0x%X: CC_SFX_ARRAY=%u; sfxFilterArray=%u; sfxMuteArray=%u", SFX_NUM,
@@ -950,14 +976,14 @@ struct DllMain
         // Entering InGame
         if ( state == NetplayState::InGame )
         {
-            if ( netMan.config.rollback )
+            if ( netMan.getRollback() )
                 rollMan.allocateStates();
         }
 
         // Leaving InGame
         if ( netMan.getState() == NetplayState::InGame )
         {
-            if ( netMan.config.rollback )
+            if ( netMan.getRollback() )
                 rollMan.deallocateStates();
         }
 
@@ -1069,7 +1095,7 @@ struct DllMain
     {
         const bool isOver = ( ( *CC_P1_NO_INPUT_FLAG_ADDR ) && ( *CC_P2_NO_INPUT_FLAG_ADDR ) );
 
-        if ( netMan.config.rollback )
+        if ( netMan.getRollback() )
         {
             if ( isOver )
             {
@@ -1080,7 +1106,7 @@ struct DllMain
                 }
                 else if ( roundOverTimer < 0 )
                 {
-                    roundOverTimer = netMan.config.rollback + ROLLBACK_ROUND_OVER_DELAY;
+                    roundOverTimer = netMan.getRollback() + ROLLBACK_ROUND_OVER_DELAY;
                 }
             }
             else
@@ -1668,7 +1694,7 @@ struct DllMain
                 // *CC_DAMAGE_LEVEL_ADDR = 4;
 
                 // Rollback specific game hacks
-                if ( netMan.config.rollback )
+                if ( netMan.getRollback() )
                 {
                     // Manually control intro state
                     WRITE_ASM_HACK ( AsmHacks::hijackIntroState );
