@@ -130,7 +130,6 @@ void SpectatorManager::frameStepSpectators()
     // Number of frames between each broadcast
     const uint32_t interval = ( multiplier * NUM_INPUTS / 2 ) / spectatorList.size();
 
-    // TODO don't use CC_WORLD_TIMER_ADDR
     if ( ( *CC_WORLD_TIMER_ADDR ) % interval )
         return;
 
