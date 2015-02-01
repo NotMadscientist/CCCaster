@@ -686,7 +686,7 @@ struct MainApp
                 if ( both.getIndex() > last.parts.index )
                 {
                     for ( uint32_t i = 0; i < both.getStartFrame(); ++i )
-                        LOG_TO ( syncLog, "Dummy [%u:%u] Inputs: %04x %04x", both.getIndex(), i, 0, 0 );
+                        LOG_TO ( syncLog, "Dummy [%u:%u] Inputs: 0x%04x 0x%04x", both.getIndex(), i, 0, 0 );
                 }
 
                 for ( uint32_t i = 0; i < both.size(); ++i )
@@ -696,7 +696,7 @@ struct MainApp
                     if ( current.value <= last.value )
                         continue;
 
-                    LOG_TO ( syncLog, "Dummy [%s] Inputs: %04x %04x", current, both.inputs[0][i], both.inputs[1][i] );
+                    LOG_TO ( syncLog, "Dummy [%s] Inputs: 0x%04x 0x%04x", current, both.inputs[0][i], both.inputs[1][i] );
                 }
 
                 last = both.indexedFrame;
