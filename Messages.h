@@ -410,6 +410,8 @@ struct MenuIndex : public SerializableSequence
 
 struct ChangeConfig : public SerializableSequence
 {
+    ENUM_BOILERPLATE ( ChangeConfig, Delay, Rollback )
+
     IndexedFrame indexedFrame = {{ 0, 0 }};
 
     uint8_t delay = 0xFF, rollback = 0;
@@ -424,9 +426,7 @@ struct ChangeConfig : public SerializableSequence
             return delay - rollback;
     }
 
-    std::string str() const override { return format ( "ChangeConfig[%s,%u,%u]", indexedFrame, delay, rollback ); }
-
-    PROTOCOL_MESSAGE_BOILERPLATE ( ChangeConfig, indexedFrame.value, delay, rollback )
+    PROTOCOL_MESSAGE_BOILERPLATE ( ChangeConfig, value, indexedFrame.value, delay, rollback )
 };
 
 

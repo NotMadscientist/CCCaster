@@ -249,6 +249,7 @@ struct DllMain
                                     || KeyboardState::isPressed ( VK_NUMPAD0 + delay ) )    // Ctrl + Numpad Number
                             {
                                 shouldChangeDelayRollback = true;
+                                changeConfig.value = ChangeConfig::Delay;
                                 changeConfig.indexedFrame = netMan.getIndexedFrame();
                                 changeConfig.delay = delay;
                                 changeConfig.rollback = netMan.getRollback();
@@ -270,6 +271,7 @@ struct DllMain
                                     || KeyboardState::isPressed ( VK_NUMPAD0 + rollback ) ) // Alt + Numpad Number
                             {
                                 shouldChangeDelayRollback = true;
+                                changeConfig.value = ChangeConfig::Rollback;
                                 changeConfig.indexedFrame = netMan.getIndexedFrame();
                                 changeConfig.delay = netMan.getDelay();
                                 changeConfig.rollback = rollback;

@@ -117,6 +117,10 @@ struct MainApp
 
     IndexedFrame dummyFrame = {{ 0, 0 }};
 
+    bool delayChanged = false;
+
+    bool rollbackChanged = false;
+
     /* Connect protocol
 
         1 - Connect / accept ctrlSocket
@@ -511,7 +515,7 @@ struct MainApp
             if ( clientMode.isHost() )
             {
                 // TODO parse these from SyncTest arg
-                netplayConfig.delay = 0;
+                netplayConfig.delay = 1 + computeDelay ( pingStats.latency.getMean() );
                 netplayConfig.rollback = 9;
                 netplayConfig.rollbackDelay = 0;
                 netplayConfig.hostPlayer = 1;
@@ -1072,8 +1076,19 @@ struct MainApp
                 return;
 
             case MsgType::ChangeConfig:
-                ui.display ( format ( "Delay was changed to %u\n\nRollback was changed to %u",
-                                      msg->getAs<ChangeConfig>().delay, msg->getAs<ChangeConfig>().rollback ) );
+                if ( msg->getAs<ChangeConfig>().value == ChangeConfig::Delay )
+                    delayChanged = true;
+
+                if ( msg->getAs<ChangeConfig>().value == ChangeConfig::Rollback )
+                    rollbackChanged = true;
+
+                if ( delayChanged && rollbackChanged )
+                    ui.display ( format ( "Delay was changed to %u\nRollback was changed to %u",
+                                          msg->getAs<ChangeConfig>().delay, msg->getAs<ChangeConfig>().rollback ) );
+                else if ( delayChanged )
+                    ui.display ( format ( "Delay was changed to %u", msg->getAs<ChangeConfig>().delay ) );
+                else if ( rollbackChanged )
+                    ui.display ( format ( "Rollback was changed to %u", msg->getAs<ChangeConfig>().rollback ) );
                 return;
 
             default:
