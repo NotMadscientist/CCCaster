@@ -12,12 +12,20 @@ for server in $servers; do
 
     echo $server
 
+    scp cccaster*.zip root@$server:/var/www/html
+
+done
+
+for server in $servers; do
+
+    echo
+
+    echo $server
+
     command="echo $latest > /var/www/html/LatestVersion"
 
     echo $command
 
     ssh root@$server $command
-
-    scp cccaster*.zip root@$server:/var/www/html
 
 done
