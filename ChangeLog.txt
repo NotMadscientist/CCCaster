@@ -1,3 +1,11 @@
+v3.0.000:
+- Rollback netcode:
+  Should be mostly stable right now, with a few extremely rare desyncs.
+  Set rollback as needed (max 15 frames) to compensate for laggy / spikey networks.
+  Can adjust rollback in-game with Alt + Number.
+- Automatic updates, checks on application startup by default.
+- Moved max delay and max rollback to settings.
+
 v2.1i:
 - Fix crash caused by multiple spectators.
 - Fix hang when quitting at the spectate menu.
