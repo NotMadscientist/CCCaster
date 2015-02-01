@@ -825,10 +825,8 @@ struct DllMain
         // During rollback, adjust FPS based on remote frame delta
         if ( netMan.isInRollback() )
         {
-            if ( netMan.getRemoteFrameDelta() < -4 )
-                DllFrameRate::desiredFps = 62;
-            else if ( netMan.getRemoteFrameDelta() < 0 )
-                DllFrameRate::desiredFps = 61;
+            if ( netMan.getRemoteFrameDelta() < -1 )
+                DllFrameRate::desiredFps = 60 - netMan.getRemoteFrameDelta();
             else
                 DllFrameRate::desiredFps = 60;
         }
@@ -916,7 +914,7 @@ struct DllMain
             checkRoundOver();
 
         // Need to manually set the intro state to 0 during rollback
-        if ( netMan.isInGame() && netMan.getFrame() > 224 && *CC_INTRO_STATE_ADDR )
+        if ( netMan.isInGame() && netMan.getFrame() > CC_PRE_GAME_INTRO_FRAMES && *CC_INTRO_STATE_ADDR )
             *CC_INTRO_STATE_ADDR = 0;
 
         // Perform the frame step

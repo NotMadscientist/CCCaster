@@ -177,6 +177,8 @@
 #define CC_SFX_ARRAY_LEN            ( 1500 )
 #define DX_MUTED_VOLUME             ( 0xFFFFD8F0u )
 
+// Number of frames in the initial movement only phase
+#define CC_PRE_GAME_INTRO_FRAMES    ( 224 )
 
 // Asm hacks are prefixed MM (for modified memory), they should be written to safe locations
 #define MM_HOOK_CALL1_ADDR          ( ( char * )     0x40D032 )
