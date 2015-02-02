@@ -123,12 +123,14 @@ static void signalHandler ( int signum )
 {
     LOG ( "Interrupt signal %d received", signum );
     deinitialize();
+    exit ( 0 );
 }
 
 static BOOL WINAPI consoleCtrl ( DWORD ctrl )
 {
     LOG ( "Console ctrl %d received", ctrl );
     deinitialize();
+    exit ( 0 );
     return TRUE;
 }
 
