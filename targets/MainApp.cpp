@@ -405,17 +405,14 @@ struct MainApp
             mergePingStats();
 
             const int delay = computeDelay ( this->pingStats.latency.getMean() );
-            const int maxDelay = ui.getConfig().getInteger ( "maxAllowedDelay" );
-            const int maxRollback = ui.getConfig().getInteger ( "maxAllowedRollback" );
+            const int maxDelay = ui.getConfig().getInteger ( "maxRealDelay" );
 
-            if ( delay > maxDelay + maxRollback )
+            if ( delay > maxDelay )
             {
                 if ( ctrlSocket && ctrlSocket->isConnected() )
                 {
                     string error = MainUi::formatStats ( this->pingStats )
-                                   + format ( "\n\nDelay greater than limit:"
-                                              "\n\nMax delay %u + Max rollback %u = %u",
-                                              maxDelay, maxRollback, maxDelay + maxRollback );
+                                   + format ( "\n\nDelay greater than limit: %u", maxDelay );
 
                     ctrlSocket->send ( new ErrorMessage ( error ) );
 

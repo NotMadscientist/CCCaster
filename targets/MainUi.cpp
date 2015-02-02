@@ -573,8 +573,8 @@ void MainUi::settings()
         "Game CPU priority",
         "Versus mode win count",
         "Check for updates on startup",
-        "Max allowed delay",
-        "Max allowed rollback",
+        "Max allowed real delay",
+        "Default rollback",
         "About",
     };
 
@@ -738,12 +738,12 @@ void MainUi::settings()
                 break;
 
             case 6:
-                ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter max allowed delay:" ),
+                ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter max allowed real delay:" ),
                 { 0, 0 }, true ); // Don't expand but DO clear
 
                 ui->top<ConsoleUi::Prompt>()->allowNegative = false;
                 ui->top<ConsoleUi::Prompt>()->maxDigits = 3;
-                ui->top<ConsoleUi::Prompt>()->setInitial ( config.getInteger ( "maxAllowedDelay" ) );
+                ui->top<ConsoleUi::Prompt>()->setInitial ( config.getInteger ( "maxRealDelay" ) );
 
                 for ( ;; )
                 {
@@ -754,7 +754,7 @@ void MainUi::settings()
 
                     if ( ui->top()->resultInt == 0 )
                     {
-                        ui->pushBelow ( new ConsoleUi::TextBox ( "Max delay can't be zero!" ) );
+                        ui->pushBelow ( new ConsoleUi::TextBox ( "Max real delay can't be zero!" ) );
                         continue;
                     }
 
@@ -764,7 +764,7 @@ void MainUi::settings()
                         continue;
                     }
 
-                    config.setInteger ( "maxAllowedDelay", ui->top()->resultInt );
+                    config.setInteger ( "maxRealDelay", ui->top()->resultInt );
                     saveConfig();
                     break;
                 }
@@ -773,12 +773,12 @@ void MainUi::settings()
                 break;
 
             case 7:
-                ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter max allowed rollback:" ),
+                ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter default rollback:" ),
                 { 0, 0 }, true ); // Don't expand but DO clear
 
                 ui->top<ConsoleUi::Prompt>()->allowNegative = false;
                 ui->top<ConsoleUi::Prompt>()->maxDigits = 2;
-                ui->top<ConsoleUi::Prompt>()->setInitial ( config.getInteger ( "maxAllowedRollback" ) );
+                ui->top<ConsoleUi::Prompt>()->setInitial ( config.getInteger ( "defaultRollback" ) );
 
                 for ( ;; )
                 {
@@ -794,7 +794,7 @@ void MainUi::settings()
                         continue;
                     }
 
-                    config.setInteger ( "maxAllowedRollback", ui->top()->resultInt );
+                    config.setInteger ( "defaultRollback", ui->top()->resultInt );
                     saveConfig();
                     break;
                 }
@@ -826,6 +826,18 @@ void MainUi::settings()
     ui->pop();
 }
 
+void MainUi::setMaxRealDelay ( uint8_t delay )
+{
+    config.setInteger ( "maxRealDelay", delay );
+    saveConfig();
+}
+
+void MainUi::setDefaultRollback ( uint8_t rollback )
+{
+    config.setInteger ( "defaultRollback", rollback );
+    saveConfig();
+}
+
 void MainUi::initialize()
 {
     ui.reset ( new ConsoleUi ( uiTitle, ProcessManager::isWine() ) );
@@ -837,8 +849,8 @@ void MainUi::initialize()
     config.setInteger ( "fullCharacterName", 0 );
     config.setInteger ( "highCpuPriority", 1 );
     config.setInteger ( "versusWinCount", 2 );
-    config.setInteger ( "maxAllowedDelay", 4 );
-    config.setInteger ( "maxAllowedRollback", 4 );
+    config.setInteger ( "maxRealDelay", 254 );
+    config.setInteger ( "defaultRollback", 4 );
     config.setInteger ( "autoCheckUpdates", 1 );
 
     // Cached UI state (defaults)
@@ -1032,18 +1044,6 @@ void MainUi::main ( RunFuncPtr run )
     ControllerManager::get().deinitialize();
 }
 
-void MainUi::setMaxDelay ( uint8_t maxDelay )
-{
-    config.setInteger ( "maxAllowedDelay", maxDelay );
-    saveConfig();
-}
-
-void MainUi::setMaxRollback ( uint8_t maxRollback )
-{
-    config.setInteger ( "maxAllowedRollback", maxRollback );
-    saveConfig();
-}
-
 string MainUi::formatStats ( const PingStats& pingStats )
 {
     return format (
@@ -1105,7 +1105,7 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
     const int worst = computeDelay ( pingStats.latency.getWorst() );
     const int variance = computeDelay ( pingStats.latency.getVariance() );
 
-    int rollback = clamped ( delay + worst + variance, 0, config.getInteger ( "maxAllowedRollback" ) );
+    int rollback = clamped ( delay + worst + variance, 0, config.getInteger ( "defaultRollback" ) );
 
     netplayConfig.delay = worst + 1;
 

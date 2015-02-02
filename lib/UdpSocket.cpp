@@ -20,7 +20,7 @@ using namespace std;
 UdpSocket::UdpSocket ( Socket::Owner *owner, uint16_t port, const Type& type, bool isRaw )
     : Socket ( owner, IpAddrPort ( "", port ), Protocol::UDP, isRaw )
     , type ( type )
-    , gbn ( this, DEFAULT_SEND_INTERVAL, isConnectionLess() ? 0 : DEFAULT_KEEP_ALIVE )
+    , gbn ( this, DEFAULT_SEND_INTERVAL, isConnectionLess() ? 0 : DEFAULT_KEEP_ALIVE_TIMEOUT )
 {
     this->state = State::Listening;
 
@@ -564,7 +564,7 @@ void UdpSocket::listen()
     isRaw = false;
     type = Type::Server;
     gbn.setSendInterval ( DEFAULT_SEND_INTERVAL );
-    gbn.setKeepAlive ( DEFAULT_KEEP_ALIVE );
+    gbn.setKeepAlive ( DEFAULT_KEEP_ALIVE_TIMEOUT );
     gbn.reset();
 }
 
@@ -584,7 +584,7 @@ void UdpSocket::connect()
     type = Type::Client;
     state = State::Connecting;
     gbn.setSendInterval ( DEFAULT_SEND_INTERVAL );
-    gbn.setKeepAlive ( DEFAULT_KEEP_ALIVE );
+    gbn.setKeepAlive ( DEFAULT_KEEP_ALIVE_TIMEOUT );
     gbn.reset();
 
     send ( new UdpControl ( UdpControl::ConnectRequest ) );

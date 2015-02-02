@@ -4,7 +4,7 @@
 #include "GoBackN.h"
 
 
-#define DEFAULT_KEEP_ALIVE ( 10000 )
+#define DEFAULT_KEEP_ALIVE_TIMEOUT ( 20000 )
 
 
 struct UdpControl : public SerializableSequence
@@ -34,7 +34,7 @@ private:
     GoBackN gbn;
 
     // Timeout for keep alive packets
-    uint64_t keepAlive = DEFAULT_KEEP_ALIVE;
+    uint64_t keepAlive = DEFAULT_KEEP_ALIVE_TIMEOUT;
 
     // Parent socket
     UdpSocket *parentSocket = 0;

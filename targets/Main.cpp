@@ -213,12 +213,12 @@ int main ( int argc, char *argv[] )
 
         {
             Options::MaxDelay, 0, "d", "max-delay", Arg::Numeric,
-            "  --max-delay, -d N  Set max allowed delay to N.\n"
+            "  --max-delay, -d N  Set max allowed real delay to N.\n"
         },
 
         {
-            Options::MaxDelay, 0, "r", "max-roll", Arg::Numeric,
-            "  --max-roll, -r N   Set max allowed rollback to N.\n"
+            Options::MaxDelay, 0, "r", "rollback", Arg::Numeric,
+            "  --rollback, -r N   Set the default rollback to N.\n"
         },
 
         {
@@ -408,16 +408,16 @@ int main ( int argc, char *argv[] )
         stringstream ss ( opt[Options::MaxDelay].arg );
 
         if ( ( ss >> num ) && ( num < 0xFF ) )
-            ui.setMaxDelay ( num );
+            ui.setMaxRealDelay ( num );
     }
 
-    if ( opt[Options::MaxRollback] )
+    if ( opt[Options::DefaultRollback] )
     {
         uint32_t num = 0;
-        stringstream ss ( opt[Options::MaxRollback].arg );
+        stringstream ss ( opt[Options::DefaultRollback].arg );
 
         if ( ( ss >> num ) && ( num < MAX_ROLLBACK ) )
-            ui.setMaxRollback ( num );
+            ui.setDefaultRollback ( num );
     }
 
     RunFuncPtr run = ( opt[Options::FakeUi] ? runFake : runMain );

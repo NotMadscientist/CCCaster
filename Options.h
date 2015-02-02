@@ -11,11 +11,31 @@
 // Set of command line options
 ENUM ( Options,
        // Regular options
-       Help, GameDir, Tunnel, Training, Broadcast, Spectate, Offline, NoUi, Tourney, MaxDelay, MaxRollback, Fullscreen,
+       Help,
+       GameDir,
+       Tunnel,
+       Training,
+       Broadcast,
+       Spectate,
+       Offline,
+       NoUi,
+       Tourney,
+       MaxDelay,
+       DefaultRollback,
+       Fullscreen,
        // Debug options
-       Tests, Stdout, FakeUi, Dummy, StrictVersion, PidLog, SyncTest, Replay,
+       Tests,
+       Stdout,
+       FakeUi,
+       Dummy,
+       StrictVersion,
+       PidLog,
+       SyncTest,
+       Replay,
        // Special options
-       NoFork, AppDir, SessionId );
+       NoFork,
+       AppDir,
+       SessionId );
 
 
 // Forward declaration

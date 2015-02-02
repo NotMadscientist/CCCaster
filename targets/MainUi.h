@@ -117,9 +117,9 @@ public:
     bool confirm ( const std::string& question );
 
 
-    void setMaxDelay ( uint8_t maxDelay );
+    void setMaxRealDelay ( uint8_t delay );
 
-    void setMaxRollback ( uint8_t maxRollback );
+    void setDefaultRollback ( uint8_t rollback );
 
     const KeyValueStore& getConfig() const { return config; }
 
