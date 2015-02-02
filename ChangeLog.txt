@@ -1,3 +1,7 @@
+v3.0.005:
+- Changed max delay setting to be max real delay.
+- Renamed max rollback to be default rollback.
+
 v3.0.004:
 - Fix another possible input drop issue.
 - Don't adjust FPS when rollback is 4 or less, should be smoother this way.
