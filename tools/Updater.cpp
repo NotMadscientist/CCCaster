@@ -32,7 +32,7 @@ int main ( int argc, char *argv[] )
         return -1;
     }
 
-    Sleep ( 2000 );
+    Sleep ( 5000 );
 
     SetCurrentDirectory ( appDir.c_str() );
 
