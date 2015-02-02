@@ -536,6 +536,10 @@ struct DllMain
                     waitInputsTimer = 0;
                 }
             }
+
+            // Update controls while waiting
+            KeyboardState::update();
+            ControllerManager::get().check();
         }
 
         if ( rollbackTimer < MIN_ROLLBACK_SPACING )

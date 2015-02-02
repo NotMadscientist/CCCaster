@@ -343,6 +343,11 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
     }
 
     DllOverlayUi::updateText ( text );
+
+    // Enable Escape to exit if neither controller is being mapped
+    AsmHacks::enableEscapeToExit =
+        ( !playerControllers[0] || overlayPositions[0] == 0 )
+        && ( !playerControllers[1] || overlayPositions[1] == 0 );
 }
 
 void DllControllerManager::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown )
