@@ -25,8 +25,8 @@ using namespace std;
 // Path of the latest version file
 #define LATEST_VERSION_PATH "LatestVersion"
 
-// Main update archive file location
-#define UPDATE_ARCHIVE FOLDER "update.zip"
+// Main update archive file name
+#define UPDATE_ARCHIVE "update.zip"
 
 // Timeout for update version check
 #define VERSION_CHECK_TIMEOUT ( 1000 )
@@ -1308,9 +1308,9 @@ void MainUi::httpFailed ( HttpGet *httpGet )
 
     this->httpGet.reset();
 
-    ++serverIndex;
+    ++serverIdx;
 
-    if ( serverIndex >= updateServers.size() )
+    if ( serverIdx >= updateServers.size() )
     {
         EventManager::get().stop();
         return;
@@ -1336,9 +1336,9 @@ void MainUi::downloadFailed ( HttpDownload *httpDl )
 
     this->httpDl.reset();
 
-    ++serverIndex;
+    ++serverIdx;
 
-    if ( serverIndex >= updateServers.size() )
+    if ( serverIdx >= updateServers.size() )
     {
         EventManager::get().stop();
         return;
@@ -1361,13 +1361,18 @@ void MainUi::updateTo ( const string& version )
 {
     if ( version.empty() )
     {
-        httpGet.reset ( new HttpGet ( this, updateServers[serverIndex] + LATEST_VERSION_PATH, VERSION_CHECK_TIMEOUT ) );
+        httpGet.reset ( new HttpGet ( this, updateServers[serverIdx] + LATEST_VERSION_PATH, VERSION_CHECK_TIMEOUT ) );
         httpGet->start();
     }
     else
     {
         const string file = format ( "cccaster.v%s.zip", version );
-        httpDl.reset ( new HttpDownload ( this, updateServers[serverIndex] + file, appDir + UPDATE_ARCHIVE ) );
+
+        if ( ProcessManager::isWine() )
+            httpDl.reset ( new HttpDownload ( this, updateServers[serverIdx] + file, appDir + UPDATE_ARCHIVE ) );
+        else
+            httpDl.reset ( new HttpDownload ( this, updateServers[serverIdx] + file, appDir + FOLDER UPDATE_ARCHIVE ) );
+
         httpDl->start();
     }
 }
@@ -1390,7 +1395,7 @@ void MainUi::update ( bool isStartup )
     AutoManager _;
 
     latestVersion.clear();
-    serverIndex = 0;
+    serverIdx = 0;
     updateTo ( "" );
 
     EventManager::get().start();
@@ -1422,7 +1427,7 @@ void MainUi::update ( bool isStartup )
     ui->pushRight ( new ConsoleUi::ProgressBar ( "Downloading...", 20 ) );
 
     downloadCompleted = false;
-    serverIndex = 0;
+    serverIdx = 0;
     updateTo ( latestVersion.code );
 
     EventManager::get().start();
@@ -1434,27 +1439,21 @@ void MainUi::update ( bool isStartup )
         return;
     }
 
-    ASSERT ( latestVersion.major().empty() == false );
-    ASSERT ( latestVersion.minor().empty() == false );
-
-    const string binary = format ( "cccaster.v%s.%s.exe", latestVersion.major(), latestVersion.minor() );
-
-    // TODO actually test this
+    // TODO see if there's a better way to do this
     if ( ProcessManager::isWine() )
     {
-        const string command = format ( "\"%scccaster\\unzip.exe\" -o %s%s -d %s",
-                                        appDir, appDir, UPDATE_ARCHIVE, appDir );
-
-        LOG ( "Update command: %s", command );
-
-        system ( ( "\"" + command + "\"" ).c_str() );
-
-        system ( ( "\"" + appDir + binary + "\" &" ).c_str() );
-
+        ui->pushBelow ( new ConsoleUi::TextBox (
+                            "Please extract update.zip to update.\n"
+                            "Press any key to exit." ) );
+        system ( "@pause > nul" );
         exit ( 0 );
         return;
     }
 
+    ASSERT ( latestVersion.major().empty() == false );
+    ASSERT ( latestVersion.minor().empty() == false );
+
+    const string binary = format ( "cccaster.v%s.%s.exe", latestVersion.major(), latestVersion.minor() );
     const string command = format ( "\"%scccaster\\updater.exe\" %s %s %s", appDir, binary, UPDATE_ARCHIVE, appDir );
 
     LOG ( "Update command: %s", command );

@@ -46,7 +46,7 @@ class MainUi
 
     std::shared_ptr<HttpDownload> httpDl;
 
-    uint32_t serverIndex = 0;
+    uint32_t serverIdx = 0;
 
     Version latestVersion;
 
