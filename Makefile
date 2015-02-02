@@ -1,5 +1,5 @@
 VERSION = 3.0
-SUFFIX = .001
+SUFFIX = .002
 NAME = cccaster
 TAG =
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
@@ -93,7 +93,7 @@ ifeq ($(OS),Windows_NT)
 else
 	LOGGING_FLAGS = -s -Os -O2 -DLOGGING
 endif
-RELEASE_FLAGS = -s -Os -O2 -fno-rtti -DNDEBUG -DRELEASE -DDISABLE_LOGGING -DDISABLE_ASSERTS
+RELEASE_FLAGS = -s -Os -Ofast -fno-rtti -DNDEBUG -DRELEASE -DDISABLE_LOGGING -DDISABLE_ASSERTS
 
 # Build type
 BUILD_TYPE = build_debug

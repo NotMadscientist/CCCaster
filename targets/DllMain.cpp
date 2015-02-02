@@ -226,9 +226,6 @@ struct DllMain
 
                 checkOverlay ( netMan.getState() == NetplayState::CharaSelect || clientMode.isNetplay() );
 
-                KeyboardState::update();
-                ControllerManager::get().check();
-
                 if ( DllOverlayUi::isEnabled() )                // Overlay UI input
                 {
                     localInputs[0] = localInputs[1] = 0;
@@ -918,6 +915,10 @@ struct DllMain
         // Need to manually set the intro state to 0 during rollback
         if ( netMan.isInGame() && netMan.getFrame() > CC_PRE_GAME_INTRO_FRAMES && *CC_INTRO_STATE_ADDR )
             *CC_INTRO_STATE_ADDR = 0;
+
+        // Update controllers
+        KeyboardState::update();
+        ControllerManager::get().check();
 
         // Perform the frame step
         if ( fastFwdStopFrame.value )

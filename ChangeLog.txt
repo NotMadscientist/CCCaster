@@ -1,3 +1,6 @@
+v3.0.002:
+- Less inputs drops (hopefully).
+
 v3.0.001:
 - Fixed Add_Handler_Protocol.bat
 - Adjusted the FPS to be not as fast.
