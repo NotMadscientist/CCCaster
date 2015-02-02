@@ -1,3 +1,6 @@
+v3.0.006:
+- Clarify text for network delay / input delay.
+
 v3.0.005:
 - Changed max delay setting to be max real delay.
 - Renamed max rollback to be default rollback.
