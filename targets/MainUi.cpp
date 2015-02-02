@@ -1160,7 +1160,11 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
                 continue;
             }
 
-            netplayConfig.rollbackDelay = menu->resultInt;
+            if ( rollback )
+                netplayConfig.rollbackDelay = menu->resultInt;
+            else
+                netplayConfig.delay = menu->resultInt;
+
             netplayConfig.winCount = config.getInteger ( "versusWinCount" );
 #ifdef RELEASE
             netplayConfig.hostPlayer = 1 + ( rand() % 2 );
