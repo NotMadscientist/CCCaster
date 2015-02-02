@@ -515,8 +515,8 @@ struct MainApp
             if ( clientMode.isHost() )
             {
                 // TODO parse these from SyncTest arg
-                netplayConfig.delay = 1 + computeDelay ( pingStats.latency.getMean() );
-                netplayConfig.rollback = 9;
+                netplayConfig.delay = computeDelay ( pingStats.latency.getWorst() ) + 1;
+                netplayConfig.rollback = 4;
                 netplayConfig.rollbackDelay = 0;
                 netplayConfig.hostPlayer = 1;
                 netplayConfig.sessionId = generateRandomId();

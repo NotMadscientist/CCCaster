@@ -437,7 +437,7 @@ int main ( int argc, char *argv[] )
         netplayConfig.mode.flags = ui.initialConfig.mode.flags;
         netplayConfig.delay = 0;
 #ifndef RELEASE
-        netplayConfig.rollback = 9; // Rollback testing
+        netplayConfig.rollback = MAX_ROLLBACK; // Rollback testing
 #endif
         netplayConfig.winCount = ui.getConfig().getInteger ( "versusWinCount" );
         netplayConfig.hostPlayer = 1; // TODO make this configurable
