@@ -69,6 +69,10 @@ public:
     static std::string gameDir;
 
 
+    // Get / set windowed mode
+    static bool getIsWindowed();
+    static void setIsWindowed ( bool enabled );
+
     // Get the user name from the game config
     static std::string fetchGameUserName();
 

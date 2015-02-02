@@ -31,7 +31,7 @@ void enable()
 
     isEnabled = true;
 
-    LOG ( "Enabling alternate FPS control!" );
+    LOG ( "Enabling FPS control!" );
 }
 
 }

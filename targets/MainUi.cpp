@@ -1107,7 +1107,7 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
 
     int rollback = clamped ( delay + worst + variance, 0, config.getInteger ( "maxAllowedRollback" ) );
 
-    netplayConfig.delay = delay + 1;
+    netplayConfig.delay = worst + 1;
 
     ui->pushInFront ( new ConsoleUi::TextBox (
                           initialConfig.remoteName + " connected"

@@ -19,6 +19,9 @@
 #define NUM_ROLLBACK_STATES         ( 256 )
 #endif
 
+// Min rollback to adjust FPS
+#define MIN_ROLLBACK_ADJUST_FPS     ( 4 )
+
 
 // Game constants and addresses are prefixed CC
 #define CC_VERSION                  "1.4.0"
@@ -27,6 +30,8 @@
 #define CC_STARTUP_BUTTON           "OK"
 #define CC_NETWORK_CONFIG_FILE      "System\\NetConnect.dat"
 #define CC_NETWORK_USERNAME_KEY     "UserName"
+#define CC_APP_CONFIG_FILE          "System\\_App.ini"
+#define CC_APP_WINDOW_MODE_KEY      "Windowed"
 
 // Location of the keyboard config in the binary
 #define CC_KEYBOARD_CONFIG_OFFSET   ( 0x14D2C0 )

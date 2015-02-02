@@ -787,6 +787,9 @@ bool NetplayManager::isRemoteInputReady() const
 
     ASSERT ( inputs[remotePlayer - 1].getEndFrame() >= 1 );
 
+    if ( isInRollback() && config.rollback > MIN_ROLLBACK_ADJUST_FPS )
+        return true;
+
     const uint8_t maxFramesAhead = ( isInRollback() ? config.rollback : 0 );
 
     if ( ( inputs[remotePlayer - 1].getEndFrame() - 1 + maxFramesAhead ) < getFrame() )

@@ -1,3 +1,9 @@
+v3.0.004:
+- Fix another possible input drop issue.
+- Don't adjust FPS when rollback is 4 or less, should be smoother this way.
+- Prevent immediately starting in fullscreen mode due to issues.
+- Increased delay during character select.
+
 v3.0.003:
 - Fixed choosing delay when rollback is 0.
 

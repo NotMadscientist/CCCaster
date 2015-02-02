@@ -1164,6 +1164,12 @@ struct MainApp
         if ( !appDir.empty() )
             options.set ( Options::AppDir, 1, appDir );
 
+        if ( !ProcessManager::getIsWindowed() )
+        {
+            ProcessManager::setIsWindowed ( true );
+            options.set ( Options::Fullscreen, 1 );
+        }
+
         if ( options[Options::Tourney] )
         {
             clientMode.value = ClientMode::Offline;

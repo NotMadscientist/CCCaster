@@ -23,6 +23,8 @@ using namespace std;
 
 #define PIPE_CONNECT_TIMEOUT    ( 10000 )
 
+#define CC_KEY_CONFIG           "System\\_App.ini"
+
 
 string ProcessManager::gameDir;
 
@@ -242,6 +244,59 @@ ProcessManager::ProcessManager ( Owner *owner ) : owner ( owner ) {}
 ProcessManager::~ProcessManager()
 {
     disconnectPipe();
+}
+
+bool ProcessManager::getIsWindowed()
+{
+    const string file = gameDir + CC_APP_CONFIG_FILE;
+
+    LOG ( "Reading: %s", file );
+
+    string line, total;
+    ifstream fin ( file );
+
+    while ( getline ( fin, line ) )
+    {
+        vector<string> parts = split ( line, "=" );
+
+        if ( parts.size() != 2 || parts[0] != CC_APP_WINDOW_MODE_KEY )
+            continue;
+
+        return lexical_cast<int> ( parts[1] );
+    }
+
+    return false;
+}
+
+void ProcessManager::setIsWindowed ( bool enabled )
+{
+    const string file = gameDir + CC_APP_CONFIG_FILE;
+
+    LOG ( "Reading: %s", file );
+
+    string line, total;
+    ifstream fin ( file );
+
+    while ( getline ( fin, line ) )
+    {
+        vector<string> parts = split ( line, "=" );
+
+        if ( parts.size() != 2 || parts[0] != CC_APP_WINDOW_MODE_KEY )
+        {
+            total += line + "\n";
+            continue;
+        }
+
+        total += format ( "%s= %u\n", CC_APP_WINDOW_MODE_KEY, enabled );
+    }
+
+    fin.close();
+
+    LOG ( "Writing: %s", file );
+
+    ofstream fout ( file );
+    fout.write ( &total[0], total.size() );
+    fout.close();
 }
 
 string ProcessManager::fetchGameUserName()

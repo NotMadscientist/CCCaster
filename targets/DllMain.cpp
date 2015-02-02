@@ -824,7 +824,7 @@ struct DllMain
 #endif // NOT RELEASE
 
         // During rollback, adjust FPS based on remote frame delta
-        if ( netMan.isInRollback() )
+        if ( netMan.isInRollback() && netMan.getRollback() > MIN_ROLLBACK_ADJUST_FPS )
         {
             if ( netMan.getRemoteFrameDelta() < -5 )
                 DllFrameRate::desiredFps = 62;
@@ -1451,6 +1451,36 @@ struct DllMain
                 syncLog.sessionId = options.arg ( Options::SessionId );
                 syncLog.initialize ( options.arg ( Options::AppDir ) + SYNC_LOG_FILE, 0 );
                 syncLog.logVersion();
+
+                // Manually hit Alt+Enter to enable fullscreen
+                if ( options[Options::Fullscreen] && DllHacks::windowHandle == GetForegroundWindow() )
+                {
+                    INPUT inputs[4];
+
+                    for ( INPUT& input : inputs )
+                    {
+                        input.type = INPUT_KEYBOARD;
+                        input.ki.time = 0;
+                        input.ki.dwExtraInfo = 0;
+                        input.ki.dwFlags = KEYEVENTF_SCANCODE;
+                    }
+
+                    inputs[0].ki.wScan = MapVirtualKey ( VK_MENU, MAPVK_VK_TO_VSC );
+                    inputs[0].ki.wVk = VK_MENU;
+
+                    inputs[1].ki.wScan = MapVirtualKey ( VK_RETURN, MAPVK_VK_TO_VSC );
+                    inputs[1].ki.wVk = VK_RETURN;
+
+                    inputs[2].ki.wScan = MapVirtualKey ( VK_RETURN, MAPVK_VK_TO_VSC );
+                    inputs[2].ki.wVk = VK_RETURN;
+                    inputs[2].ki.dwFlags |= KEYEVENTF_KEYUP;
+
+                    inputs[3].ki.wScan = MapVirtualKey ( VK_MENU, MAPVK_VK_TO_VSC );
+                    inputs[3].ki.wVk = VK_MENU;
+                    inputs[3].ki.dwFlags |= KEYEVENTF_KEYUP;
+
+                    SendInput ( 4, inputs, sizeof ( INPUT ) );
+                }
 
 #ifndef RELEASE
                 if ( options[Options::Replay] )
