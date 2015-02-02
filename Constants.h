@@ -14,7 +14,7 @@
 
 // Number of rollback states to allocate
 #ifdef RELEASE
-#define NUM_ROLLBACK_STATES         ( 30 )
+#define NUM_ROLLBACK_STATES         ( 60 )
 #else
 #define NUM_ROLLBACK_STATES         ( 256 )
 #endif
