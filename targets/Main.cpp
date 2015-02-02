@@ -213,7 +213,7 @@ int main ( int argc, char *argv[] )
 
         {
             Options::MaxDelay, 0, "d", "max-delay", Arg::Numeric,
-            "  --max-delay, -d N  Set max allowed real delay to N.\n"
+            "  --max-delay, -d N  Set max allowed network delay to N.\n"
         },
 
         {

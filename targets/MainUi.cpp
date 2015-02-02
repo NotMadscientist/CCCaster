@@ -14,7 +14,7 @@ using namespace std;
 
 
 // Indent position of the pinging stats (must be a string)
-#define INDENT_STATS "12"
+#define INDENT_STATS "20"
 
 // System sound prefix
 #define SYSTEM_ALERT_PREFEX "System"
@@ -218,7 +218,7 @@ void MainUi::broadcast ( RunFuncPtr run )
 
 void MainUi::offline ( RunFuncPtr run )
 {
-    ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter delay:" ) );
+    ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter input delay:" ) );
 
     ui->top<ConsoleUi::Prompt>()->allowNegative = false;
     ui->top<ConsoleUi::Prompt>()->maxDigits = 3;
@@ -243,6 +243,8 @@ void MainUi::offline ( RunFuncPtr run )
         }
 
         delay = menu->resultInt;
+
+        ui->clearTop();
 
         if ( offlineGameMode() )
         {
@@ -573,7 +575,7 @@ void MainUi::settings()
         "Game CPU priority",
         "Versus mode win count",
         "Check for updates on startup",
-        "Max allowed real delay",
+        "Max allowed network delay",
         "Default rollback",
         "About",
     };
@@ -738,7 +740,8 @@ void MainUi::settings()
                 break;
 
             case 6:
-                ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter max allowed real delay:" ),
+                ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger,
+                                  "Enter max allowed network delay:" ),
                 { 0, 0 }, true ); // Don't expand but DO clear
 
                 ui->top<ConsoleUi::Prompt>()->allowNegative = false;
@@ -754,7 +757,7 @@ void MainUi::settings()
 
                     if ( ui->top()->resultInt == 0 )
                     {
-                        ui->pushBelow ( new ConsoleUi::TextBox ( "Max real delay can't be zero!" ) );
+                        ui->pushBelow ( new ConsoleUi::TextBox ( "Max network delay can't be zero!" ) );
                         continue;
                     }
 
@@ -1047,14 +1050,14 @@ void MainUi::main ( RunFuncPtr run )
 string MainUi::formatStats ( const PingStats& pingStats )
 {
     return format (
-               "%-" INDENT_STATS "sPing: %.2f ms"
+               "%-" INDENT_STATS "s Ping: %.2f ms"
 #ifndef NDEBUG
-               "\n%-" INDENT_STATS "sWorst: %.2f ms"
-               "\n%-" INDENT_STATS "sStdErr: %.2f ms"
-               "\n%-" INDENT_STATS "sStdDev: %.2f ms"
-               "\n%-" INDENT_STATS "sPacket Loss: %d%%"
+               "\n%-" INDENT_STATS "s Worst: %.2f ms"
+               "\n%-" INDENT_STATS "s StdErr: %.2f ms"
+               "\n%-" INDENT_STATS "s StdDev: %.2f ms"
+               "\n%-" INDENT_STATS "s Packet Loss: %d%%"
 #endif
-               , format ( "Delay: %d", computeDelay ( pingStats.latency.getMean() ) )
+               , format ( "Network delay: %d", computeDelay ( pingStats.latency.getMean() ) )
                , pingStats.latency.getMean()
 #ifndef NDEBUG
                , "", pingStats.latency.getWorst()
@@ -1115,7 +1118,7 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
 
     // TODO maybe implement this as a slider or something
 
-    ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter rollback:" ) );
+    ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter max frames of rollback:" ) );
 
     ui->top<ConsoleUi::Prompt>()->allowNegative = false;
     ui->top<ConsoleUi::Prompt>()->maxDigits = 2;
@@ -1137,11 +1140,11 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
             continue;
         }
 
-        ui->clearRight();
+        ui->clearTop();
 
         rollback = netplayConfig.rollback = menu->resultInt;
 
-        ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter delay:" ) );
+        ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter input delay:" ) );
 
         ui->top<ConsoleUi::Prompt>()->allowNegative = false;
         ui->top<ConsoleUi::Prompt>()->maxDigits = 3;
@@ -1210,7 +1213,7 @@ void MainUi::connected ( const InitialConfig& initialConfig, const PingStats& pi
                           + "\n\n" + modeString
                           + "\n\n" + formatStats ( pingStats ) ), { 1, 0 }, true ); // Expand width and clear
 
-    ui->pushBelow ( new ConsoleUi::TextBox ( "Waiting for host to choose delay..." ), { 1, 0 } ); // Expand width
+    ui->pushBelow ( new ConsoleUi::TextBox ( "Waiting for host to set rollback/delay..." ), { 1, 0 } ); // Expand width
 }
 
 void MainUi::connected ( const NetplayConfig& netplayConfig )

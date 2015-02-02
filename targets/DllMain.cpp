@@ -612,8 +612,8 @@ struct DllMain
 
             if ( changeConfig.delay < 0xFF && changeConfig.delay != netMan.getDelay() )
             {
-                LOG ( "Delayed was changed %u -> %u", netMan.getDelay(), changeConfig.delay );
-                DllOverlayUi::showMessage ( format ( "Delay was changed to %u", changeConfig.delay ) );
+                LOG ( "Input delay was changed %u -> %u", netMan.getDelay(), changeConfig.delay );
+                DllOverlayUi::showMessage ( format ( "Input delay was changed to %u", changeConfig.delay ) );
                 netMan.setDelay ( changeConfig.delay );
                 procMan.ipcSend ( changeConfig );
             }

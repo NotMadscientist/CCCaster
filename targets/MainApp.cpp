@@ -412,7 +412,7 @@ struct MainApp
                 if ( ctrlSocket && ctrlSocket->isConnected() )
                 {
                     string error = MainUi::formatStats ( this->pingStats )
-                                   + format ( "\n\nDelay greater than limit: %u", maxDelay );
+                                   + format ( "\n\nNetwork delay greater than limit: %u", maxDelay );
 
                     ctrlSocket->send ( new ErrorMessage ( error ) );
 
@@ -693,7 +693,8 @@ struct MainApp
                     if ( current.value <= last.value )
                         continue;
 
-                    LOG_TO ( syncLog, "Dummy [%s] Inputs: 0x%04x 0x%04x", current, both.inputs[0][i], both.inputs[1][i] );
+                    LOG_TO ( syncLog, "Dummy [%s] Inputs: 0x%04x 0x%04x",
+                             current, both.inputs[0][i], both.inputs[1][i] );
                 }
 
                 last = both.indexedFrame;
@@ -1080,10 +1081,10 @@ struct MainApp
                     rollbackChanged = true;
 
                 if ( delayChanged && rollbackChanged )
-                    ui.display ( format ( "Delay was changed to %u\nRollback was changed to %u",
+                    ui.display ( format ( "Input delay was changed to %u\nRollback was changed to %u",
                                           msg->getAs<ChangeConfig>().delay, msg->getAs<ChangeConfig>().rollback ) );
                 else if ( delayChanged )
-                    ui.display ( format ( "Delay was changed to %u", msg->getAs<ChangeConfig>().delay ) );
+                    ui.display ( format ( "Input delay was changed to %u", msg->getAs<ChangeConfig>().delay ) );
                 else if ( rollbackChanged )
                     ui.display ( format ( "Rollback was changed to %u", msg->getAs<ChangeConfig>().rollback ) );
                 return;
