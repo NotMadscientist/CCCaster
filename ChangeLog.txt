@@ -1,3 +1,6 @@
+v3.0.003:
+- Fixed choosing delay when rollback is 0.
+
 v3.0.002:
 - Less inputs drops (hopefully).
 
