@@ -1,3 +1,6 @@
+v3.0.007:
+- Allow changing input delay in offline modes.
+
 v3.0.006:
 - Clarify text for network delay / input delay.
 - Fix crash when exiting caster.

@@ -226,11 +226,11 @@ struct DllMain
 
                 checkOverlay ( netMan.getState() == NetplayState::CharaSelect || clientMode.isNetplay() );
 
-                if ( DllOverlayUi::isEnabled() )                // Overlay UI input
+                if ( DllOverlayUi::isEnabled() )                                            // Overlay UI controls
                 {
                     localInputs[0] = localInputs[1] = 0;
                 }
-                else if ( clientMode.isNetplay() )              // Netplay input
+                else if ( clientMode.isNetplay() || clientMode.isLocal() )                  // Netplay + local controls
                 {
                     if ( playerControllers[localPlayer - 1] )
                         localInputs[0] = getInput ( playerControllers[localPlayer - 1] );
@@ -246,12 +246,15 @@ struct DllMain
                                     || KeyboardState::isPressed ( VK_NUMPAD0 + delay ) )    // Ctrl + Numpad Number
                             {
                                 shouldChangeDelayRollback = true;
+
                                 changeConfig.value = ChangeConfig::Delay;
                                 changeConfig.indexedFrame = netMan.getIndexedFrame();
                                 changeConfig.delay = delay;
                                 changeConfig.rollback = netMan.getRollback();
                                 changeConfig.invalidate();
-                                dataSocket->send ( changeConfig );
+
+                                if ( clientMode.isNetplay() )
+                                    dataSocket->send ( changeConfig );
                                 break;
                             }
                         }
@@ -268,12 +271,15 @@ struct DllMain
                                     || KeyboardState::isPressed ( VK_NUMPAD0 + rollback ) ) // Alt + Numpad Number
                             {
                                 shouldChangeDelayRollback = true;
+
                                 changeConfig.value = ChangeConfig::Rollback;
                                 changeConfig.indexedFrame = netMan.getIndexedFrame();
                                 changeConfig.delay = netMan.getDelay();
                                 changeConfig.rollback = rollback;
                                 changeConfig.invalidate();
-                                dataSocket->send ( changeConfig );
+
+                                if ( clientMode.isNetplay() )
+                                    dataSocket->send ( changeConfig );
                                 break;
                             }
                         }
@@ -297,12 +303,7 @@ struct DllMain
                     }
 #endif // NOT RELEASE
                 }
-                else if ( clientMode.isLocal() )                // Local input
-                {
-                    if ( playerControllers[localPlayer - 1] )
-                        localInputs[0] = getInput ( playerControllers[localPlayer - 1] );
-                }
-                else if ( clientMode.isSpectate() )             // Spectator input
+                else if ( clientMode.isSpectate() )                                         // Spectator controls
                 {
                     if ( KeyboardState::isPressed ( VK_SPACE ) )
                         spectateFastFwd = !spectateFastFwd;

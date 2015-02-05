@@ -218,50 +218,13 @@ void MainUi::broadcast ( RunFuncPtr run )
 
 void MainUi::offline ( RunFuncPtr run )
 {
-    ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter input delay:" ) );
-
-    ui->top<ConsoleUi::Prompt>()->allowNegative = false;
-    ui->top<ConsoleUi::Prompt>()->maxDigits = 3;
-    ui->top<ConsoleUi::Prompt>()->setInitial ( 0 );
-
-    uint8_t delay = 0;
-    bool good = false;
-
-    for ( ;; )
-    {
-        ConsoleUi::Element *menu = ui->popUntilUserInput();
-
-        if ( menu->resultInt < 0 )
-            break;
-
-        ui->clearBelow ( false );
-
-        if ( menu->resultInt >= 0xFF )
-        {
-            ui->pushBelow ( new ConsoleUi::TextBox ( ERROR_INVALID_DELAY ) );
-            continue;
-        }
-
-        delay = menu->resultInt;
-
-        ui->clearTop();
-
-        if ( offlineGameMode() )
-        {
-            good = true;
-            break;
-        }
-    }
-
-    ui->pop();
-
-    if ( !good )
+    if ( !offlineGameMode() )
         return;
 
     netplayConfig.clear();
     netplayConfig.mode.value = ClientMode::Offline;
     netplayConfig.mode.flags = initialConfig.mode.flags;
-    netplayConfig.delay = delay;
+    netplayConfig.delay = 0;
     netplayConfig.hostPlayer = 1; // TODO make this configurable
 
     RUN ( "", netplayConfig );
@@ -304,7 +267,7 @@ bool MainUi::gameMode ( bool below )
 
 bool MainUi::offlineGameMode()
 {
-    ui->pushInFront ( new ConsoleUi::Menu ( "Mode", { "Training", "Versus", "Versus CPU" }, "Cancel" ) );
+    ui->pushRight ( new ConsoleUi::Menu ( "Mode", { "Training", "Versus", "Versus CPU" }, "Cancel" ) );
     ui->top<ConsoleUi::Menu>()->setPosition ( config.getInteger ( "lastOfflineMenuPosition" ) - 1 );
 
     int mode = ui->popUntilUserInput ( true )->resultInt; // Clear other messages since we're starting the game now
