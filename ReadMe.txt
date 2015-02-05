@@ -1,6 +1,6 @@
 Hotkeys:
 
-    F4 opens the overlay menu for setting and changing controllers.
+    F4 opens/closes the overlay menu for setting and changing controllers.
 
     Ctrl + Number changes the delay.
 
@@ -8,6 +8,11 @@ Hotkeys:
 
     Spacebar toggles fast-forward when spectating.
 
+    Left/Right + FN2 resets to the respective corners in training mode.
+
+    Holding FN2 after a reset swaps the P1 and P2 positions.
+
+    Down + FN2 resets but swaps P1 and P2 positions.
 
 
 How to host without port forward:
