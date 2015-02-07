@@ -3,6 +3,7 @@
 #include <cstdlib>
 
 #include <windows.h>
+#include <psapi.h>
 
 using namespace std;
 
@@ -36,14 +37,23 @@ int main ( int argc, char *argv[] )
         return -1;
     }
 
-    HANDLE process = OpenProcess ( PROCESS_TERMINATE, 0, processId );
+    HANDLE process = OpenProcess ( PROCESS_QUERY_INFORMATION | PROCESS_TERMINATE, 0, processId );
+
     if ( process )
     {
-        TerminateProcess ( process, 9 );
-        CloseHandle ( process );
+        char buffer[4096];
+
+        if ( !GetProcessImageFileName ( process, buffer, sizeof ( buffer ) ) )
+            buffer[0] = '\0';
+
+        if ( string ( buffer ).find ( "cccaster" ) != string::npos )
+        {
+            TerminateProcess ( process, 9 );
+            CloseHandle ( process );
+        }
     }
 
-    PRINT ( "Updating..." );
+    PRINT ( "Updating...\n" );
 
     SetCurrentDirectory ( appDir.c_str() );
 
