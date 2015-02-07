@@ -1,4 +1,6 @@
 v3.0.007:
+- Fix updating problems.
+- Fix minor bug with mapping keyboard directions via F4 in-game.
 - Allow changing input delay in offline modes.
 
 v3.0.006:

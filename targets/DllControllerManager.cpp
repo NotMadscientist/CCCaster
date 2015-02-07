@@ -115,8 +115,12 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
             // Move controller right
             if ( controller == playerControllers[0] )
             {
-                playerControllers[0]->cancelMapping();
-                playerControllers[0] = 0;
+                if ( ! ( controller->isKeyboard() && controller->isMapping()
+                         && overlayPositions[0] >= 1 && overlayPositions[0] <= 4 ) )
+                {
+                    playerControllers[0]->cancelMapping();
+                    playerControllers[0] = 0;
+                }
             }
             else if ( isSinglePlayer && localPlayer == 1 )
             {
@@ -128,7 +132,6 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
                 playerControllers[1] = controller;
                 overlayPositions[1] = 0;
             }
-
         }
         else if ( ( controller->isJoystick() && isDirectionPressed ( controller, 4 ) )
                   || ( controller->isKeyboard() && KeyboardState::isPressed ( VK_LEFT ) ) )
@@ -136,8 +139,12 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
             // Move controller left
             if ( controller == playerControllers[1] )
             {
-                playerControllers[1]->cancelMapping();
-                playerControllers[1] = 0;
+                if ( ! ( controller->isKeyboard() && controller->isMapping()
+                         && overlayPositions[1] >= 1 && overlayPositions[1] <= 4 ) )
+                {
+                    playerControllers[1]->cancelMapping();
+                    playerControllers[1] = 0;
+                }
             }
             else if ( isSinglePlayer && localPlayer == 2 )
             {
