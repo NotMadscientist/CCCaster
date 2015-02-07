@@ -1337,7 +1337,7 @@ void MainUi::updateTo ( const string& version )
         if ( ProcessManager::isWine() )
             httpDl.reset ( new HttpDownload ( this, updateServers[serverIdx] + file, appDir + UPDATE_ARCHIVE ) );
         else
-            httpDl.reset ( new HttpDownload ( this, updateServers[serverIdx] + file, appDir + FOLDER UPDATE_ARCHIVE ) );
+            httpDl.reset ( new HttpDownload ( this, updateServers[serverIdx] + file, tmpDir + UPDATE_ARCHIVE ) );
 
         httpDl->start();
     }
@@ -1348,6 +1348,23 @@ static bool isOnline()
     DWORD state;
     InternetGetConnectedState ( &state, 0 );
     return ( state & ( INTERNET_CONNECTION_LAN | INTERNET_CONNECTION_MODEM | INTERNET_CONNECTION_PROXY ) );
+}
+
+static string getTmpDir()
+{
+    string tmpDir;
+
+    char buffer[4096];
+
+    if ( GetTempPath ( sizeof ( buffer ), buffer ) )
+        tmpDir = buffer;
+    else
+        return "";
+
+    if ( tmpDir.back() != '\\' )
+        tmpDir += '\\';
+
+    return tmpDir;
 }
 
 void MainUi::update ( bool isStartup )
@@ -1392,6 +1409,12 @@ void MainUi::update ( bool isStartup )
     ui->pop();
     ui->pushRight ( new ConsoleUi::ProgressBar ( "Downloading...", 20 ) );
 
+    tmpDir = getTmpDir();
+    if ( tmpDir.empty() )
+        tmpDir = appDir;
+
+    LOG ( "tmpDir=%s", tmpDir );
+
     downloadCompleted = false;
     serverIdx = 0;
     updateTo ( latestVersion.code );
@@ -1416,11 +1439,18 @@ void MainUi::update ( bool isStartup )
         return;
     }
 
+    const string srcUpdater = appDir + FOLDER + UPDATER;
+    string tmpUpdater = tmpDir + UPDATER;
+
+    if ( srcUpdater != tmpUpdater && !CopyFile ( srcUpdater.c_str(), tmpUpdater.c_str(), FALSE ) )
+        tmpUpdater = srcUpdater;
+
     ASSERT ( latestVersion.major().empty() == false );
     ASSERT ( latestVersion.minor().empty() == false );
 
-    const string binary = format ( "cccaster.v%s.%s.exe", latestVersion.major(), latestVersion.minor() );
-    const string command = format ( "\"%scccaster\\updater.exe\" %s %s %s", appDir, binary, UPDATE_ARCHIVE, appDir );
+    const string newBinary = format ( "cccaster.v%s.%s.exe", latestVersion.major(), latestVersion.minor() );
+    const string command = format ( "\"" + tmpUpdater + "\" %d %s %s %s",
+                                    GetCurrentProcessId(), newBinary, tmpDir + UPDATE_ARCHIVE, appDir );
 
     LOG ( "Update command: %s", command );
 

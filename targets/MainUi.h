@@ -52,6 +52,8 @@ class MainUi
 
     bool downloadCompleted = false;
 
+    std::string tmpDir;
+
     void netplay ( RunFuncPtr run );
     void spectate ( RunFuncPtr run );
     void broadcast ( RunFuncPtr run );
