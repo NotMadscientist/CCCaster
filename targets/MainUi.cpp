@@ -1370,7 +1370,7 @@ void MainUi::update ( bool isStartup )
 
     if ( latestVersion.code.empty() )
     {
-        sessionMessage = "Cannot fetch latest version!";
+        // sessionMessage = "Cannot fetch latest version info!";
         return;
     }
 
