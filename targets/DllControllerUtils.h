@@ -98,6 +98,6 @@ struct DllControllerUtils
         if ( !controller )
             return false;
 
-        return ( controller->getAnyButton() && !controller->getPrevAnyButton() );
+        return ( getInput ( controller ) & MASK_BUTTONS ) && ! ( getPrevInput ( controller ) & MASK_BUTTONS );
     }
 };

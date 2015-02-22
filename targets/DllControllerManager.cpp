@@ -12,8 +12,30 @@ using namespace std;
 #define VK_TOGGLE_OVERLAY ( VK_F4 )
 
 
-void DllControllerManager::checkOverlay ( bool allowStartButton )
+void DllControllerManager::initControllers ( const ControllerMappings& mappings )
 {
+    Lock lock ( ControllerManager::get().mutex );
+
+    ControllerManager::get().owner = this;
+    ControllerManager::get().getKeyboard()->setMappings ( ProcessManager::fetchKeyboardConfig() );
+    ControllerManager::get().setMappings ( mappings );
+    ControllerManager::get().check();
+
+    allControllers = ControllerManager::get().getControllers();
+}
+
+bool DllControllerManager::isNotMapping() const
+{
+    Lock lock ( ControllerManager::get().mutex );
+
+    return  ( !playerControllers[0] || !playerControllers[0]->isMapping() )
+            && ( !playerControllers[1] || !playerControllers[1]->isMapping() );
+}
+
+void DllControllerManager::updateControls ( uint16_t *localInputs )
+{
+    Lock lock ( ControllerManager::get().mutex );
+
     bool toggleOverlay = false;
 
     if ( KeyboardState::isPressed ( VK_TOGGLE_OVERLAY ) && !ProcessManager::isWine() )
@@ -21,19 +43,12 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
 
     for ( Controller *controller : allControllers )
     {
-        if ( allowStartButton && controller->isJoystick() && isButtonPressed ( controller, CC_BUTTON_START ) )
-        {
-            toggleOverlay = true;
-        }
-
         // Don't sticky controllers if the overlay is enabled
         if ( DllOverlayUi::isEnabled() )
             continue;
 
-        uint16_t input = getInput ( controller );
-
-        // Sticky controllers to the first available player when anything is pressed EXCEPT start
-        if ( input && ! ( input & COMBINE_INPUT ( 0, CC_BUTTON_START ) ) )
+        // Sticky controllers to the first available player when anything is pressed
+        if ( getInput ( controller ) )
         {
             if ( isSinglePlayer )
             {
@@ -58,53 +73,63 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
         }
     }
 
-    // Show message takes priority
+    // Show message takes priority over the overlay UI
     if ( DllOverlayUi::isShowingMessage() )
     {
         DllOverlayUi::updateMessage();
-        return;
     }
-
-    // Only toggle overlay if both players are "done"; ie at the first option; or have no controller
-    if ( toggleOverlay
-            && ( !playerControllers[0] || overlayPositions[0] == 0 )
-            && ( !playerControllers[1] || overlayPositions[1] == 0 ) )
+    else
     {
-        if ( DllOverlayUi::isEnabled() )
+        // Only toggle overlay if both players are "done"; ie at the first option; or have no controller
+        if ( toggleOverlay
+                && ( !playerControllers[0] || overlayPositions[0] == 0 )
+                && ( !playerControllers[1] || overlayPositions[1] == 0 ) )
         {
-            // Cancel all mapping if we're disabling the overlay
-            if ( playerControllers[0] )
-                playerControllers[0]->cancelMapping();
-            if ( playerControllers[1] )
-                playerControllers[1]->cancelMapping();
+            if ( DllOverlayUi::isEnabled() )
+            {
+                // Cancel all mapping if we're disabling the overlay
+                if ( playerControllers[0] )
+                    playerControllers[0]->cancelMapping();
+                if ( playerControllers[1] )
+                    playerControllers[1]->cancelMapping();
 
-            // Disable keyboard events, since we use GetKeyState for regular controller inputs
-            KeyboardManager::get().unhook();
+                // Disable keyboard events, since we use GetKeyState for regular controller inputs
+                KeyboardManager::get().unhook();
 
-            // Re-enable Escape to exit
-            AsmHacks::enableEscapeToExit = true;
+                // Re-enable Escape to exit
+                AsmHacks::enableEscapeToExit = true;
+            }
+            else
+            {
+                // Refresh the list of joysticks if we're enabling the overlay
+                ControllerManager::get().refreshJoysticks();
+
+                // Enable keyboard events, this effectively eats all keyboard inputs for the window
+                KeyboardManager::get().keyboardWindow = DllHacks::windowHandle;
+                KeyboardManager::get().matchedKeys.clear();
+                KeyboardManager::get().ignoredKeys.clear();
+                KeyboardManager::get().hook ( this, true );
+
+                // Disable Escape to exit
+                AsmHacks::enableEscapeToExit = false;
+            }
+
+            DllOverlayUi::toggle();
+            toggleOverlay = false;
         }
-        else
-        {
-            // Refresh the list of joysticks if we're enabling the overlay
-            ControllerManager::get().refreshJoysticks();
-
-            // Enable keyboard events, this effectively eats all keyboard inputs for the window
-            KeyboardManager::get().keyboardWindow = DllHacks::windowHandle;
-            KeyboardManager::get().matchedKeys.clear();
-            KeyboardManager::get().ignoredKeys.clear();
-            KeyboardManager::get().hook ( this, true );
-
-            // Disable Escape to exit
-            AsmHacks::enableEscapeToExit = false;
-        }
-
-        DllOverlayUi::toggle();
-        toggleOverlay = false;
     }
 
+    // Only update player controls when the overlay is NOT enabled
     if ( !DllOverlayUi::isEnabled() )
+    {
+        if ( playerControllers[localPlayer - 1] )
+            localInputs[0] = getInput ( playerControllers[localPlayer - 1] );
+
+        if ( playerControllers[remotePlayer - 1] )
+            localInputs[1] = getInput ( playerControllers[remotePlayer - 1] );
+
         return;
+    }
 
     // Check all controllers
     for ( Controller *controller : allControllers )
@@ -355,10 +380,14 @@ void DllControllerManager::checkOverlay ( bool allowStartButton )
     AsmHacks::enableEscapeToExit =
         ( !playerControllers[0] || overlayPositions[0] == 0 )
         && ( !playerControllers[1] || overlayPositions[1] == 0 );
+
+    ControllerManager::get().savePrevStates();
 }
 
 void DllControllerManager::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown )
 {
+    Lock lock ( ControllerManager::get().mutex );
+
     for ( uint8_t i = 0; i < 2; ++i )
     {
         if ( playerControllers[i] && playerControllers[i]->isKeyboard()
@@ -387,11 +416,15 @@ void DllControllerManager::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, b
 
 void DllControllerManager::attachedJoystick ( Controller *controller )
 {
+    // This is a callback from within ControllerManager, so we don't need to lock the main mutex
+
     allControllers.push_back ( controller );
 }
 
 void DllControllerManager::detachedJoystick ( Controller *controller )
 {
+    // This is a callback from within ControllerManager, so we don't need to lock the main mutex
+
     if ( playerControllers[0] == controller )
         playerControllers[0] = 0;
 
@@ -407,6 +440,8 @@ void DllControllerManager::detachedJoystick ( Controller *controller )
 
 void DllControllerManager::doneMapping ( Controller *controller, uint32_t key )
 {
+    // This is a callback from within ControllerManager, so we don't need to lock the main mutex
+
     LOG ( "%s: controller=%08x; key=%08x", controller->getName(), controller, key );
 
     if ( key )

@@ -3,6 +3,7 @@
 #include "Controller.h"
 #include "JoystickDetector.h"
 #include "Guid.h"
+#include "Thread.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -45,6 +46,18 @@ private:
     // Flag to indicate if initialized
     bool initialized = false;
 
+    // Main mutex
+    mutable Mutex mutex;
+
+    // Thread that polls the controllers at a high frequency
+    class PollingThread : public Thread
+    {
+    public:
+        void run() override;
+    };
+
+    PollingThread pollingThread;
+
     // Attach / detach a joystick
     void attachJoystick ( const Guid& guid, const std::string& name );
     void detachJoystick ( const Guid& guid );
@@ -59,8 +72,11 @@ public:
     // Window handle to match for keyboard and joystick events
     void *windowHandle = 0;
 
-    // Check for controller events
-    void check();
+    // Check for controller events, returns false if deinitialized
+    bool check();
+
+    // Save previous states for each controller
+    void savePrevStates();
 
     // Refresh the list of joysticks, will attach / detach joysticks accordingly
     void refreshJoysticks();
@@ -105,6 +121,9 @@ public:
     void deinitialize();
     bool isInitialized() const { return initialized; }
 
+    // Start the high frequency polling thread
+    void startHighFreqPolling();
+
     // Save / load mappings to / from a folder, returns the number of mappings saved / loaded
     size_t saveMappings ( const std::string& folder, const std::string& ext ) const;
     size_t loadMappings ( const std::string& folder, const std::string& ext );
@@ -117,4 +136,6 @@ public:
 
     // Get the singleton instance
     static ControllerManager& get();
+
+    friend class DllControllerManager;
 };

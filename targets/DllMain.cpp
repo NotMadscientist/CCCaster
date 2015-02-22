@@ -222,9 +222,9 @@ struct DllMain
                     }
                 }
 
-                ASSERT ( localPlayer == 1 || localPlayer == 2 );
-
-                checkOverlay ( netMan.getState() == NetplayState::CharaSelect || clientMode.isNetplay() );
+                // Update controller state once per frame
+                KeyboardState::update();
+                updateControls ( &localInputs[0] );
 
                 if ( DllOverlayUi::isEnabled() )                                            // Overlay UI controls
                 {
@@ -232,9 +232,6 @@ struct DllMain
                 }
                 else if ( clientMode.isNetplay() || clientMode.isLocal() )                  // Netplay + local controls
                 {
-                    if ( playerControllers[localPlayer - 1] )
-                        localInputs[0] = getInput ( playerControllers[localPlayer - 1] );
-
                     if ( KeyboardState::isDown ( VK_CONTROL ) )
                     {
                         for ( uint8_t delay = 0; delay < 10; ++delay )
@@ -465,9 +462,6 @@ struct DllMain
                 }
                 else if ( clientMode.isLocal() )
                 {
-                    if ( playerControllers[remotePlayer - 1] && !DllOverlayUi::isEnabled() )
-                        localInputs[1] = getInput ( playerControllers[remotePlayer - 1] );
-
                     netMan.setInput ( remotePlayer, localInputs[1] );
                 }
 
@@ -537,10 +531,6 @@ struct DllMain
                     waitInputsTimer = 0;
                 }
             }
-
-            // Update controls while waiting
-            KeyboardState::update();
-            ControllerManager::get().check();
         }
 
         if ( rollbackTimer < MIN_ROLLBACK_SPACING )
@@ -921,10 +911,6 @@ struct DllMain
         if ( netMan.isInGame() && netMan.getFrame() > CC_PRE_GAME_INTRO_FRAMES && *CC_INTRO_STATE_ADDR )
             *CC_INTRO_STATE_ADDR = 0;
 
-        // Update controllers
-        KeyboardState::update();
-        ControllerManager::get().check();
-
         // Perform the frame step
         if ( fastFwdStopFrame.value )
             frameStepRerun();
@@ -960,9 +946,7 @@ struct DllMain
         }
 
         // Close the overlay if not mapping
-        if ( !DllOverlayUi::isShowingMessage()
-                && ( !playerControllers[0] || !playerControllers[0]->isMapping() )
-                && ( !playerControllers[1] || !playerControllers[1]->isMapping() ) )
+        if ( !DllOverlayUi::isShowingMessage() && isNotMapping() )
         {
             DllOverlayUi::disable();
         }
@@ -1553,11 +1537,7 @@ struct DllMain
 
             case MsgType::ControllerMappings:
                 KeyboardState::clear();
-                ControllerManager::get().owner = this;
-                ControllerManager::get().getKeyboard()->setMappings ( ProcessManager::fetchKeyboardConfig() );
-                ControllerManager::get().setMappings ( msg->getAs<ControllerMappings>() );
-                ControllerManager::get().check();
-                allControllers = ControllerManager::get().getControllers();
+                initControllers ( msg->getAs<ControllerMappings>() );
                 break;
 
             case MsgType::ClientMode:
@@ -2016,8 +1996,9 @@ extern "C" void callback()
 
             // Joystick and timer must be initialized in the main thread
             TimerManager::get().initialize();
-            ControllerManager::get().initialize ( 0 );
             ControllerManager::get().windowHandle = DllHacks::windowHandle;
+            ControllerManager::get().initialize ( 0 );
+            ControllerManager::get().startHighFreqPolling();
 
             // Start polling now
             EventManager::get().startPolling();

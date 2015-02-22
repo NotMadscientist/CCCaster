@@ -63,15 +63,35 @@ static inline uint8_t mapHatValue ( uint32_t value )
 }
 
 
-void ControllerManager::check()
+void ControllerManager::savePrevStates()
 {
+    LOCK ( mutex );
+
     if ( !initialized )
         return;
 
     if ( windowHandle == ( void * ) GetForegroundWindow() )
     {
-        // Update keyboard controller state
         keyboard.prevState = keyboard.state;
+    }
+
+    for ( auto& kv : joysticks )
+    {
+        Controller *controller = kv.second.get();
+        controller->prevState = controller->state;
+    }
+}
+
+bool ControllerManager::check()
+{
+    LOCK ( mutex );
+
+    if ( !initialized )
+        return false;
+
+    if ( windowHandle == ( void * ) GetForegroundWindow() )
+    {
+        // Update keyboard controller state
         keyboard.state = 0;
 
         for ( uint8_t i = 0; i < 32; ++i )
@@ -94,9 +114,9 @@ void ControllerManager::check()
         IDirectInputDevice8 *const device = ( IDirectInputDevice8 * ) info.device;
         const uint32_t deadzone = controller->joystickMappings.deadzone;
 
-        // Save previous states
+        // Save previous joystick states to generate regular controller events.
+        // Note: this is independent of the prevState property, which is used to detect edge events per frame.
         controller->joystick.prevState = controller->joystick.state;
-        controller->prevState = controller->state;
 
         // Poll device state
         result = IDirectInputDevice8_Poll ( device );
@@ -197,6 +217,8 @@ void ControllerManager::check()
 
         ++it;
     }
+
+    return true;
 }
 
 static BOOL CALLBACK enumJoystickAxes ( const DIDEVICEOBJECTINSTANCE *ddoi, void *userPtr )
@@ -404,6 +426,8 @@ static BOOL CALLBACK enumJoysticks ( const DIDEVICEINSTANCE *ddi, void *userPtr 
 
 void ControllerManager::refreshJoysticks()
 {
+    LOCK ( mutex );
+
     if ( !initialized )
         return;
 
@@ -439,6 +463,8 @@ void ControllerManager::refreshJoysticks()
 
 void ControllerManager::initialize ( Owner *owner )
 {
+    LOCK ( mutex );
+
     if ( initialized )
         return;
 
@@ -468,12 +494,18 @@ void ControllerManager::initialize ( Owner *owner )
 
 void ControllerManager::deinitialize()
 {
-    if ( !initialized )
-        return;
+    {
+        LOCK ( mutex );
 
-    initialized = false;
+        if ( !initialized )
+            return;
 
-    this->owner = 0;
+        initialized = false;
+
+        this->owner = 0;
+    }
+
+    pollingThread.join();
 
     ControllerManager::get().clear();
 
@@ -494,6 +526,8 @@ void ControllerManager::deinitialize()
 
 void ControllerManager::mappingsChanged ( Controller *controller )
 {
+    LOCK ( mutex );
+
     LOG_CONTROLLER ( controller, "mappingsChanged" );
 
     mappings.mappings[controller->getName()] = controller->getMappings();
@@ -502,6 +536,8 @@ void ControllerManager::mappingsChanged ( Controller *controller )
 
 void ControllerManager::clear()
 {
+    LOCK ( mutex );
+
     LOG ( "Clearing controllers" );
 
     if ( owner )
@@ -521,6 +557,8 @@ static bool compareControllerName ( const Controller *a, const Controller *b )
 
 vector<Controller *> ControllerManager::getJoysticks()
 {
+    LOCK ( mutex );
+
     vector<Controller *> controllers;
     controllers.reserve ( joysticks.size() );
 
@@ -533,6 +571,8 @@ vector<Controller *> ControllerManager::getJoysticks()
 
 vector<const Controller *> ControllerManager::getJoysticks() const
 {
+    LOCK ( mutex );
+
     vector<const Controller *> controllers;
     controllers.reserve ( joysticks.size() );
 
@@ -545,6 +585,8 @@ vector<const Controller *> ControllerManager::getJoysticks() const
 
 vector<Controller *> ControllerManager::getControllers()
 {
+    LOCK ( mutex );
+
     vector<Controller *> controllers;
     controllers.reserve ( joysticks.size() + 1 );
 
@@ -559,6 +601,8 @@ vector<Controller *> ControllerManager::getControllers()
 
 vector<const Controller *> ControllerManager::getControllers() const
 {
+    LOCK ( mutex );
+
     vector<const Controller *> controllers;
     controllers.reserve ( joysticks.size() + 1 );
 
@@ -608,6 +652,8 @@ void ControllerMappings::load ( cereal::BinaryInputArchive& ar )
 
 size_t ControllerManager::saveMappings ( const string& folder, const string& ext ) const
 {
+    LOCK ( mutex );
+
     size_t count = 0;
 
     for ( auto& kv : mappings.mappings )
@@ -627,6 +673,8 @@ size_t ControllerManager::saveMappings ( const string& folder, const string& ext
 
 size_t ControllerManager::loadMappings ( const string& folder, const string& ext )
 {
+    LOCK ( mutex );
+
     WIN32_FIND_DATA fd;
     HANDLE handle = 0;
 
@@ -747,4 +795,17 @@ MsgPtr ControllerManager::loadMappings ( const string& file )
 
     fin.close();
     return msg;
+}
+
+void ControllerManager::PollingThread::run()
+{
+    while ( ControllerManager::get().check() )
+    {
+        Sleep ( 1 );
+    }
+}
+
+void ControllerManager::startHighFreqPolling()
+{
+    pollingThread.start();
 }

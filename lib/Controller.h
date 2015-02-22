@@ -2,6 +2,7 @@
 
 #include "KeyboardManager.h"
 #include "Algorithms.h"
+#include "Thread.h"
 
 #include <unordered_set>
 #include <unordered_map>
@@ -210,6 +211,9 @@ private:
 
     MappingInternalState mapping;
 
+    // Main mutex
+    Mutex mutex;
+
     // Keyboard event callback
     void keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown );
 
@@ -284,10 +288,6 @@ public:
         joystickMappings.deadzone = ( uint32_t ) clamped<float> ( deadzone * 32767, MIN_DEADZONE, MAX_DEADZONE );
         joystickMappings.invalidate();
     }
-
-    // Get the joystick any-button state
-    bool getPrevAnyButton() const { return joystick.prevState.buttons; }
-    bool getAnyButton() const { return joystick.state.buttons; }
 
     // Get the controller state
     uint32_t getPrevState() const { return prevState; }
