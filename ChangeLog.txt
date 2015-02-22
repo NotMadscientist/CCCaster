@@ -1,3 +1,6 @@
+v3.0.008:
+- Possible fix for input drops.
+
 v3.0.007:
 - Fix updating problems.
 - Fix minor bug with mapping keyboard directions via F4 in-game.
