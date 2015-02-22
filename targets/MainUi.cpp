@@ -36,6 +36,7 @@ using namespace std;
     do {                                                                                        \
         ControllerManager::get().deinitialize();                                                \
         run ( ADDRESS, CONFIG );                                                                \
+        ControllerManager::get().loadMappings ( appDir + FOLDER, MAPPINGS_EXT );                \
         ControllerManager::get().initialize ( this );                                           \
     } while ( 0 )
 
@@ -501,7 +502,9 @@ void MainUi::controls()
                         EventManager::get().startPolling();
 
                         while ( EventManager::get().poll ( 1 ) )
+                        {
                             ControllerManager::get().check();
+                        }
                     }
                 }
             }
