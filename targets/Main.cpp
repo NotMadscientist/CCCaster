@@ -114,9 +114,6 @@ static void deinitialize()
     deinitialized = true;
 
     EventManager::get().release();
-    KeyboardManager::get().unhook();
-    SocketManager::get().deinitialize();
-    TimerManager::get().deinitialize();
 }
 
 static void signalHandler ( int signum )
