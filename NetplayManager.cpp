@@ -679,47 +679,50 @@ MsgPtr NetplayManager::getBothInputs ( IndexedFrame& pos ) const
 
     ASSERT ( orig.parts.index >= startIndex );
 
+    // This is most recent frame, in the spectator's transition index, that the spectator is allowed to "see"
     uint32_t commonEndFrame = min ( inputs[0].getEndFrame ( orig.parts.index - startIndex ),
                                     inputs[1].getEndFrame ( orig.parts.index - startIndex ) );
 
-    // Add a buffer to the end frame during rollback
-    if ( isInRollback() )
+    if ( orig.parts.index == getIndex() )                   // During the same transition index
     {
-        if ( commonEndFrame >= 2 * NUM_INPUTS )
-            commonEndFrame -= 2 * NUM_INPUTS;
-        else
-            commonEndFrame = 1;
-    }
+        if ( isInRollback() )
+        {
+            // Add a buffer to the end frame during rollback
+            if ( commonEndFrame > 2 * NUM_INPUTS )
+                commonEndFrame -= 2 * NUM_INPUTS;
+            else
+                commonEndFrame = 0;
+        }
 
-    if ( orig.parts.index == getIndex() )
-    {
         if ( orig.parts.frame + 1 <= commonEndFrame )
         {
-            // Increment by NUM_INPUTS
+            // Increment by NUM_INPUTS when behind
             pos.parts.frame += NUM_INPUTS;
         }
         else
         {
+            // Otherwise return empty, so the spectator has to wait
             return 0;
         }
     }
-    else
+    else                                                    // During an older transition index
     {
         if ( orig.parts.frame + 1 <= commonEndFrame )
         {
-            // Increment by NUM_INPUTS
+            // Increment by NUM_INPUTS when behind
             pos.parts.frame += NUM_INPUTS;
         }
         else
         {
-            // Increment to next transition index
+            // Since we're at the end of this transition index, increment to the next one
             pos.parts.frame = NUM_INPUTS - 1;
             ++pos.parts.index;
 
+            // Return empty if this transition index has no inputs
             if ( commonEndFrame == 0 )
                 return 0;
 
-            // Get the rest of this transition index
+            // Otherwise get the rest of this transition index
             orig.parts.frame = commonEndFrame - 1;
         }
     }
