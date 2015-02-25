@@ -19,9 +19,6 @@
 #define NUM_ROLLBACK_STATES         ( 256 )
 #endif
 
-// Min rollback to adjust FPS
-#define MIN_ROLLBACK_ADJUST_FPS     ( 4 )
-
 
 // Game constants and addresses are prefixed CC
 #define CC_VERSION                  "1.4.0"
