@@ -1,3 +1,6 @@
+v3.0.010:
+- Fixed issue with black screen on connect.
+
 v3.0.009:
 - Fixed spectator crash.
 

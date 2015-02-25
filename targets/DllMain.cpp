@@ -39,7 +39,7 @@ using namespace std;
 #define MIN_ROLLBACK_SPACING        ( 2 )
 
 // The number of milliseconds to wait for the initial connect
-#define INITIAL_CONNECT_TIMEOUT     ( 30000 )
+#define INITIAL_CONNECT_TIMEOUT     ( 60000 )
 
 // The number of milliseconds to wait to perform a delayed stop so that ErrorMessages are received before sockets die
 #define DELAYED_STOP                ( 100 )
@@ -48,7 +48,7 @@ using namespace std;
 #define RESEND_INPUTS_INTERVAL      ( 100 )
 
 // The maximum number of milliseconds to wait for inputs before timeout
-#define MAX_WAIT_INPUTS_INTERVAL    ( 10000 )
+#define MAX_WAIT_INPUTS_INTERVAL    ( 60000 )
 
 // The maximum number of spectators allowed for ClientMode::Spectate
 #define MAX_SPECTATORS              ( 15 )
@@ -957,6 +957,9 @@ struct DllMain
         {
             // Try to focus the game window
             SetForegroundWindow ( ( HWND ) DllHacks::windowHandle );
+
+            // Enable controllers now
+            ControllerManager::get().startHighFreqPolling();
         }
 #endif // RELEASE
 
@@ -1998,7 +2001,6 @@ extern "C" void callback()
             TimerManager::get().initialize();
             ControllerManager::get().windowHandle = DllHacks::windowHandle;
             ControllerManager::get().initialize ( 0 );
-            ControllerManager::get().startHighFreqPolling();
 
             // Start polling now
             EventManager::get().startPolling();
