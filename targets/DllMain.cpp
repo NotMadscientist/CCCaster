@@ -48,7 +48,7 @@ using namespace std;
 #define RESEND_INPUTS_INTERVAL      ( 100 )
 
 // The maximum number of milliseconds to wait for inputs before timeout
-#define MAX_WAIT_INPUTS_INTERVAL    ( 60000 )
+#define MAX_WAIT_INPUTS_INTERVAL    ( 10000 )
 
 // The maximum number of spectators allowed for ClientMode::Spectate
 #define MAX_SPECTATORS              ( 15 )
