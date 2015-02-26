@@ -6,6 +6,7 @@
 #include "ErrorStringsExt.h"
 #include "CharacterSelect.h"
 #include "NetplayManager.h"
+#include "StringUtils.h"
 
 #include <mmsystem.h>
 #include <wininet.h>
@@ -56,16 +57,16 @@ static const vector<string> updateServers =
 
 void MainUi::netplay ( RunFuncPtr run )
 {
-    ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptString,
-                                            "Enter/paste <ip>:<port> to join or <port> to host:" ),
-    { 1, 0 } ); // Expand width
+    ConsoleUi::Prompt *menu = new ConsoleUi::Prompt ( ConsoleUi::PromptString,
+            "Enter/paste <ip>:<port> to join or <port> to host:" );
 
-    ui->top<ConsoleUi::Prompt>()
-    ->setInitial ( ( address.addr.empty() && !address.empty() ) ? address.str().substr ( 1 ) : address.str() );
+    ui->pushRight ( menu, { 1, 0 } ); // Expand width
 
     for ( ;; )
     {
-        ConsoleUi::Element *menu = ui->popUntilUserInput();
+        menu->setInitial ( ( address.addr.empty() && !address.empty() ) ? address.str().substr ( 1 ) : address.str() );
+
+        ui->popUntilUserInput();
 
         if ( menu->resultStr.empty() )
             break;
@@ -74,7 +75,7 @@ void MainUi::netplay ( RunFuncPtr run )
 
         try
         {
-            address = menu->resultStr;
+            address = trimmed ( menu->resultStr );
         }
         catch ( const Exception& exc )
         {
@@ -115,14 +116,16 @@ void MainUi::netplay ( RunFuncPtr run )
 
 void MainUi::spectate ( RunFuncPtr run )
 {
-    ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptString,
-                                            "Enter/paste <ip>:<port> to spectate:" ), { 1, 0 } ); // Expand width
+    ConsoleUi::Prompt *menu = new ConsoleUi::Prompt ( ConsoleUi::PromptString,
+            "Enter/paste <ip>:<port> to spectate:" );
 
-    ui->top<ConsoleUi::Prompt>()->setInitial ( !address.addr.empty() ? address.str() : "" );
+    ui->pushRight ( menu, { 1, 0 } ); // Expand width
 
     for ( ;; )
     {
-        ConsoleUi::Element *menu = ui->popUntilUserInput();
+        menu->setInitial ( !address.addr.empty() ? address.str() : "" );
+
+        ui->popUntilUserInput();
 
         if ( menu->resultStr.empty() )
             break;
@@ -131,7 +134,7 @@ void MainUi::spectate ( RunFuncPtr run )
 
         try
         {
-            address = menu->resultStr;
+            address = trimmed ( menu->resultStr );
         }
         catch ( const Exception& exc )
         {

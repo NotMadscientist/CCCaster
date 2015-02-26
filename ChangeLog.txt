@@ -1,3 +1,6 @@
+v3.0.011:
+- Automatically trim whitespace when entering IP address.
+
 v3.0.010:
 - Fixed issue with black screen on connect.
 
