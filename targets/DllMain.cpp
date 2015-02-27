@@ -249,9 +249,6 @@ struct DllMain
                                 changeConfig.delay = delay;
                                 changeConfig.rollback = netMan.getRollback();
                                 changeConfig.invalidate();
-
-                                if ( clientMode.isNetplay() )
-                                    dataSocket->send ( changeConfig );
                                 break;
                             }
                         }
@@ -274,9 +271,6 @@ struct DllMain
                                 changeConfig.delay = netMan.getDelay();
                                 changeConfig.rollback = rollback;
                                 changeConfig.invalidate();
-
-                                if ( clientMode.isNetplay() )
-                                    dataSocket->send ( changeConfig );
                                 break;
                             }
                         }
@@ -1318,17 +1312,18 @@ struct DllMain
                         netMan.setRemoteRetryMenuIndex ( msg->getAs<MenuIndex>().menuIndex );
                         return;
 
-                    case MsgType::ChangeConfig:
-                        // Only use the ChangeConfig if it is for a later frame than the current ChangeConfig.
-                        // If for the same frame, then the host's ChangeConfig always takes priority.
-                        if ( ( msg->getAs<ChangeConfig>().indexedFrame.value > changeConfig.indexedFrame.value )
-                                || ( msg->getAs<ChangeConfig>().indexedFrame.value == changeConfig.indexedFrame.value
-                                     && clientMode.isClient() ) )
-                        {
-                            shouldChangeDelayRollback = true;
-                            changeConfig = msg->getAs<ChangeConfig>();
-                        }
-                        return;
+                    // We now ignore remote ChangeConfigs, since delay/rollback is player independent
+                    // case MsgType::ChangeConfig:
+                    //     // Only use the ChangeConfig if it is for a later frame than the current ChangeConfig.
+                    //     // If for the same frame, then the host's ChangeConfig always takes priority.
+                    //     if ( ( msg->getAs<ChangeConfig>().indexedFrame.value > changeConfig.indexedFrame.value )
+                    //             || ( msg->getAs<ChangeConfig>().indexedFrame.value == changeConfig.indexedFrame.value
+                    //                  && clientMode.isClient() ) )
+                    //     {
+                    //         shouldChangeDelayRollback = true;
+                    //         changeConfig = msg->getAs<ChangeConfig>();
+                    //     }
+                    //     return;
 
                     case MsgType::TransitionIndex:
                         netMan.setRemoteIndex ( msg->getAs<TransitionIndex>().index );
