@@ -48,7 +48,7 @@ void ExternalIpAddress::httpFailed ( HttpGet *httpGet )
 
     if ( nextQueryIndex == externalIpServices.size() )
     {
-        address = "unknown";
+        address = Unknown;
 
         if ( owner )
             owner->unknownExternalIpAddress ( this );
