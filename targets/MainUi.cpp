@@ -812,7 +812,7 @@ void MainUi::setDefaultRollback ( uint8_t rollback )
 
 void MainUi::initialize()
 {
-    ui.reset ( new ConsoleUi ( uiTitle, ProcessManager::isWine() ) );
+    ui.reset ( new ConsoleUi ( uiTitle + LocalVersion.suffix(), ProcessManager::isWine() ) );
 
     // Configurable settings (defaults)
     config.setInteger ( "alertOnConnect", 3 );
