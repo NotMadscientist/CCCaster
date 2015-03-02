@@ -91,6 +91,8 @@ class MainUi
 
     void updateTo ( const std::string& version );
 
+    bool configure ( const PingStats& pingStats );
+
 public:
 
     InitialConfig initialConfig;
@@ -108,11 +110,7 @@ public:
 
     void display ( const std::string& message, bool replace = true );
 
-    bool accepted ( const InitialConfig& initialConfig, const PingStats& pingStats );
-
-    void connected ( const InitialConfig& initialConfig, const PingStats& pingStats );
-
-    void connected ( const NetplayConfig& netplayConfig );
+    bool connected ( const InitialConfig& initialConfig, const PingStats& pingStats );
 
     void spectate ( const SpectateConfig& spectateConfig );
 

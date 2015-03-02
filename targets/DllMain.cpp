@@ -1312,7 +1312,7 @@ struct DllMain
                         netMan.setRemoteRetryMenuIndex ( msg->getAs<MenuIndex>().menuIndex );
                         return;
 
-                    // We now ignore remote ChangeConfigs, since delay/rollback is player independent
+                    // We now ignore remote ChangeConfigs, since delay/rollback is now set independently
                     // case MsgType::ChangeConfig:
                     //     // Only use the ChangeConfig if it is for a later frame than the current ChangeConfig.
                     //     // If for the same frame, then the host's ChangeConfig always takes priority.

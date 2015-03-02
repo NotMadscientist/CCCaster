@@ -1065,7 +1065,7 @@ void MainUi::alertUser()
     }
 }
 
-bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pingStats )
+bool MainUi::configure ( const PingStats& pingStats )
 {
     alertUser();
 
@@ -1080,10 +1080,6 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
     int rollback = clamped ( delay + worst + variance, 0, config.getInteger ( "defaultRollback" ) );
 
     netplayConfig.delay = worst + 1;
-
-    ui->pushInFront ( new ConsoleUi::TextBox (
-                          initialConfig.remoteName + " connected"
-                          "\n\n" + formatStats ( pingStats ) ), { 1, 0 }, true ); // Expand width and clear
 
     // TODO maybe implement this as a slider or something
 
@@ -1160,39 +1156,35 @@ bool MainUi::accepted ( const InitialConfig& initialConfig, const PingStats& pin
                         ( netplayConfig.rollback ? netplayConfig.rollbackDelay : netplayConfig.delay ),
                         ( netplayConfig.rollback ? format ( ", %u rollback", netplayConfig.rollback ) : "" ) ) ),
         { 1, 0 } ); // Expand width
-
-        ui->pushBelow ( new ConsoleUi::TextBox ( "Waiting for client..." ), { 1, 0 } ); // Expand width
     }
 
     return ret;
 }
 
-void MainUi::connected ( const InitialConfig& initialConfig, const PingStats& pingStats )
+bool MainUi::connected ( const InitialConfig& initialConfig, const PingStats& pingStats )
 {
-    alertUser();
-
     ASSERT ( ui.get() != 0 );
+
+    const string connectString = ( initialConfig.mode.isHost()
+                                   ? initialConfig.remoteName + " connected"
+                                   : "Connected to " + initialConfig.remoteName );
 
     const string modeString = ( initialConfig.mode.isTraining()
                                 ? "Training mode"
                                 : format ( "Versus mode, each game is %u rounds", initialConfig.winCount ) );
 
     ui->pushInFront ( new ConsoleUi::TextBox (
-                          "Connected to " + initialConfig.remoteName
+                          connectString
                           + "\n\n" + modeString
                           + "\n\n" + formatStats ( pingStats ) ), { 1, 0 }, true ); // Expand width and clear
 
-    ui->pushBelow ( new ConsoleUi::TextBox ( "Waiting for host to set rollback/delay..." ), { 1, 0 } ); // Expand width
-}
+    if ( configure ( pingStats ) )
+    {
+        display ( string ( "Waiting for " ) + ( initialConfig.mode.isHost() ? "client" : "host" ) + "...", false );
+        return true;
+    }
 
-void MainUi::connected ( const NetplayConfig& netplayConfig )
-{
-    ASSERT ( ui.get() != 0 );
-
-    ui->pushInFront ( new ConsoleUi::TextBox ( format ( "Host chose %u delay%s",
-                      ( netplayConfig.rollback ? netplayConfig.rollbackDelay : netplayConfig.delay ),
-                      ( netplayConfig.rollback ? format ( ", %u rollback", netplayConfig.rollback ) : "" ) ) ),
-    { 1, 0 }, true ); // Expand width and clear
+    return false;
 }
 
 void MainUi::spectate ( const SpectateConfig& spectateConfig )

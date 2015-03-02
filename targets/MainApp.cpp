@@ -403,27 +403,7 @@ struct MainApp
         if ( clientMode.isHost() )
         {
             mergePingStats();
-
-            const int delay = computeDelay ( this->pingStats.latency.getMean() );
-            const int maxDelay = ui.getConfig().getInteger ( "maxRealDelay" );
-
-            if ( delay > maxDelay )
-            {
-                if ( ctrlSocket && ctrlSocket->isConnected() )
-                {
-                    string error = MainUi::formatStats ( this->pingStats )
-                                   + format ( "\n\nNetwork delay greater than limit: %u", maxDelay );
-
-                    ctrlSocket->send ( new ErrorMessage ( error ) );
-
-                    pushPendingSocket ( this, ctrlSocket );
-                }
-
-                resetHost();
-                return;
-            }
-
-            getUserConfirmation();
+            checkDelayAndContinue();
         }
         else
         {
@@ -484,16 +464,46 @@ struct MainApp
         }
 
         this->netplayConfig.mode.flags = netplayConfig.mode.flags;
-        this->netplayConfig.delay = netplayConfig.delay;
-        this->netplayConfig.rollback = netplayConfig.rollback;
-        this->netplayConfig.rollbackDelay = netplayConfig.rollbackDelay;
+
+        // These are now set independently
+        // this->netplayConfig.delay = netplayConfig.delay;
+        // this->netplayConfig.rollback = netplayConfig.rollback;
+        // this->netplayConfig.rollbackDelay = netplayConfig.rollbackDelay;
+
         this->netplayConfig.winCount = netplayConfig.winCount;
         this->netplayConfig.hostPlayer = netplayConfig.hostPlayer;
         this->netplayConfig.sessionId = netplayConfig.sessionId;
 
         isFinalConfigReady = true;
+        startGameIfReady();
+    }
 
-        ui.connected ( netplayConfig );
+    void checkDelayAndContinue()
+    {
+        const int delay = computeDelay ( this->pingStats.latency.getMean() );
+        const int maxDelay = ui.getConfig().getInteger ( "maxRealDelay" );
+
+        if ( delay > maxDelay )
+        {
+            const string error = MainUi::formatStats ( this->pingStats )
+                                 + format ( "\n\nNetwork delay greater than limit: %u", maxDelay );
+
+            if ( clientMode.isHost() )
+            {
+                if ( ctrlSocket && ctrlSocket->isConnected() )
+                {
+                    ctrlSocket->send ( new ErrorMessage ( error ) );
+                    pushPendingSocket ( this, ctrlSocket );
+                }
+                resetHost();
+            }
+            else
+            {
+                lastError = error;
+                stop();
+            }
+            return;
+        }
 
         getUserConfirmation();
     }
@@ -551,10 +561,10 @@ struct MainApp
         switch ( clientMode.value )
         {
             case ClientMode::Host:
-                userConfirmed = ui.accepted ( initialConfig, pingStats );
+            case ClientMode::Client:
+                userConfirmed = ui.connected ( initialConfig, pingStats );
                 break;
 
-            case ClientMode::Client:
             case ClientMode::SpectateNetplay:
             case ClientMode::SpectateBroadcast:
                 userConfirmed = ui.confirm ( "Continue?" );
@@ -605,13 +615,21 @@ struct MainApp
                 netplayConfig.invalidate();
 
                 ctrlSocket->send ( netplayConfig );
+                startGameIfReady();
                 break;
 
             case ClientMode::Client:
-                ASSERT ( isFinalConfigReady == true );
+                // Waiting again
+                KeyboardManager::get().keyboardWindow = MainUi::getConsoleWindow();
+                KeyboardManager::get().matchedKeys = { VK_ESCAPE };
+                KeyboardManager::get().ignoredKeys.clear();
+                KeyboardManager::get().hook ( this );
 
-                ctrlSocket->send ( new ConfirmConfig() );
-                startGame();
+                netplayConfig.delay = ui.getNetplayConfig().delay;
+                netplayConfig.rollback = ui.getNetplayConfig().rollback;
+                netplayConfig.rollbackDelay = ui.getNetplayConfig().rollbackDelay;
+
+                startGameIfReady();
                 break;
 
             default:
@@ -629,7 +647,7 @@ struct MainApp
         }
 
         isFinalConfigReady = true;
-        startGame();
+        startGameIfReady();
     }
 
     void gotDummyMsg ( const MsgPtr& msg )
@@ -712,6 +730,17 @@ struct MainApp
         LOG ( "Unexpected '%s'", msg );
     }
 
+    void startGameIfReady()
+    {
+        if ( !userConfirmed || !isFinalConfigReady )
+            return;
+
+        if ( clientMode.isClient() )
+            ctrlSocket->send ( new ConfirmConfig() );
+
+        startGame();
+    }
+
     void startGame()
     {
         KeyboardManager::get().unhook();
@@ -778,8 +807,7 @@ struct MainApp
         }
 
         ui.display ( format ( "Starting %s mode...", clientMode.isTraining() ? "training" : "versus" ),
-                     ! ( clientMode.isClient() || clientMode.isSpectate() ) );
-        // Replace last message if not client or spectator
+                     clientMode.isNetplay() ); // Only replace last message if netplaying
 
         // Start game (and disconnect sockets) after a small delay since the final configs are still in flight
         startTimer.reset ( new Timer ( this ) );
@@ -809,7 +837,7 @@ struct MainApp
         if ( clientMode.isClient() )
         {
             mergePingStats();
-            ui.connected ( initialConfig, pingStats );
+            checkDelayAndContinue();
         }
     }
 

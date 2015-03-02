@@ -1,4 +1,5 @@
 v3.0.011:
+- Can choose rollback and delay independent from host.
 - Automatically trim whitespace when entering IP address.
 
 v3.0.010:
