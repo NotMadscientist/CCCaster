@@ -1148,7 +1148,7 @@ struct DllMain
             if ( SHOULD_REDIRECT_SPECTATORS )
                 redirectAddr = getRandomRedirectAddress();
 
-            if ( redirectAddr.empty() )
+            if ( redirectAddr.port == 0 )
             {
                 newSocket->send ( new VersionConfig ( clientMode ) );
             }

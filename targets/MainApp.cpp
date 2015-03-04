@@ -966,7 +966,7 @@ struct MainApp
 
         stopTimer.reset();
 
-        if ( msg->getMsgType() == MsgType::IpAddrPort && socket == ctrlSocket.get() && clientMode.isSpectate() )
+        if ( msg->getMsgType() == MsgType::IpAddrPort && socket == ctrlSocket.get() )
         {
             this->address = msg->getAs<IpAddrPort>();
             ctrlSocket = SmartSocket::connectTCP ( this, this->address, options[Options::Tunnel] );

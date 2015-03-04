@@ -205,6 +205,22 @@ const IpAddrPort& SpectatorManager::getRandomSpectatorAddress() const
         return NullAddress;
     }
 
-    LOG ( "'%s'", spectatorMapPos->second.serverAddr );
-    return spectatorMapPos->second.serverAddr;
+    auto it = spectatorMapPos;
+
+#ifndef RELEASE
+    if ( it->second.serverAddr.port == 0 )
+    {
+        do
+        {
+            ++it;
+
+            if ( it == spectatorMap.end() )
+                it = spectatorMap.begin();
+        }
+        while ( it->second.serverAddr.port == 0 && it != spectatorMapPos );
+    }
+#endif
+
+    LOG ( "'%s'", it->second.serverAddr );
+    return it->second.serverAddr;
 }
