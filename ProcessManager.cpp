@@ -17,11 +17,11 @@
 using namespace std;
 
 
-#define GAME_START_INTERVAL     ( 1000 )
+#define GAME_START_INTERVAL     ( 2000 )
 
 #define GAME_START_ATTEMPTS     ( 30 )
 
-#define PIPE_CONNECT_TIMEOUT    ( 10000 )
+#define PIPE_CONNECT_TIMEOUT    ( 60000 )
 
 #define CC_KEY_CONFIG           "System\\_App.ini"
 
