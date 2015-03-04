@@ -290,7 +290,6 @@ struct DllMain
                         changeConfig.indexedFrame = netMan.getIndexedFrame();
                         changeConfig.delay = rand() % 10;
                         changeConfig.invalidate();
-                        dataSocket->send ( changeConfig );
                     }
 #endif // NOT RELEASE
                 }

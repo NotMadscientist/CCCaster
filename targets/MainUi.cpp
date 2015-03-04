@@ -1041,7 +1041,7 @@ void MainUi::display ( const string& message, bool replace )
 {
     if ( replace && ( ui->empty() || !ui->top()->requiresUser || ui->top() != mainMenu ) )
         ui->pushInFront ( new ConsoleUi::TextBox ( message ), { 1, 0 }, true ); // Expand width and clear
-    else if ( ui->top()->expandWidth() )
+    else if ( ui->top() == 0 || ui->top()->expandWidth() )
         ui->pushBelow ( new ConsoleUi::TextBox ( message ), { 1, 0 } ); // Expand width
     else
         ui->pushRight ( new ConsoleUi::TextBox ( message ), { 1, 0 } ); // Expand width

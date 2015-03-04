@@ -115,6 +115,12 @@ void DllRollbackManager::saveState ( const NetplayManager& netMan )
 
 bool DllRollbackManager::loadState ( IndexedFrame indexedFrame, NetplayManager& netMan )
 {
+    if ( statesList.empty() )
+    {
+        LOG ( "Failed to load state: indexedFrame=%s", indexedFrame );
+        return false;
+    }
+
     LOG ( "Trying to load state: indexedFrame=%s; statesList={ %s ... %s }",
           indexedFrame, statesList.front().indexedFrame, statesList.back().indexedFrame );
 
