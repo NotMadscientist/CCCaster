@@ -36,7 +36,7 @@ using namespace std;
 #define ROLLBACK_ROUND_OVER_DELAY   ( 5 )
 
 // The minimum number of frames that must run normally, before we're allowed to do another rollback
-#define MIN_ROLLBACK_SPACING        ( 2 )
+#define MIN_ROLLBACK_SPACING        ( 4 )
 
 // The number of milliseconds to wait for the initial connect
 #define INITIAL_CONNECT_TIMEOUT     ( 60000 )
@@ -662,7 +662,10 @@ struct DllMain
                 DllOverlayUi::showMessage ( randomRollback ? "Enabled random rollback" : "Disabled random rollback" );
             }
 
-            if ( randomRollback && netMan.isInGame() && ( netMan.getFrame() % 150 < 50 ) )
+            if ( randomRollback
+                    && rollbackTimer == MIN_ROLLBACK_SPACING
+                    && netMan.isInGame()
+                    && ( netMan.getFrame() % 150 < 100 ) )
             {
                 const uint32_t distance = 1 + ( rand() % rollUpTo );
 
@@ -690,6 +693,8 @@ struct DllMain
                              before, target, netMan.getIndexedFrame() );
 
                     LOG_SYNC ( "Reinputs: 0x%04x 0x%04x", netMan.getRawInput ( 1 ), netMan.getRawInput ( 2 ) );
+
+                    --rollbackTimer;
                     return;
                 }
 
