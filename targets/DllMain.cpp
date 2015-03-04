@@ -934,17 +934,17 @@ struct DllMain
             DllOverlayUi::disable();
         }
 
-#ifdef RELEASE
         // Leaving Initial or AutoCharaSelect
         if ( netMan.getState() == NetplayState::Initial || netMan.getState() == NetplayState::AutoCharaSelect )
         {
+#ifdef RELEASE
             // Try to focus the game window
             SetForegroundWindow ( ( HWND ) DllHacks::windowHandle );
+#endif // RELEASE
 
             // Enable controllers now
             ControllerManager::get().startHighFreqPolling();
         }
-#endif // RELEASE
 
         // Leaving Skippable
         if ( netMan.getState() == NetplayState::Skippable )
