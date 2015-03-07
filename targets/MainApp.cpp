@@ -466,9 +466,13 @@ struct MainApp
         this->netplayConfig.mode.flags = netplayConfig.mode.flags;
 
         // These are now set independently
-        // this->netplayConfig.delay = netplayConfig.delay;
-        // this->netplayConfig.rollback = netplayConfig.rollback;
-        // this->netplayConfig.rollbackDelay = netplayConfig.rollbackDelay;
+        if ( options[Options::SyncTest] )
+        {
+            // TODO parse these from SyncTest args
+            this->netplayConfig.delay = netplayConfig.delay;
+            this->netplayConfig.rollback = netplayConfig.rollback;
+            this->netplayConfig.rollbackDelay = netplayConfig.rollbackDelay;
+        }
 
         this->netplayConfig.winCount = netplayConfig.winCount;
         this->netplayConfig.hostPlayer = netplayConfig.hostPlayer;
@@ -521,7 +525,7 @@ struct MainApp
 
             if ( clientMode.isHost() )
             {
-                // TODO parse these from SyncTest arg
+                // TODO parse these from SyncTest args
                 netplayConfig.delay = computeDelay ( pingStats.latency.getWorst() ) + 1;
                 netplayConfig.rollback = 4;
                 netplayConfig.rollbackDelay = 0;
