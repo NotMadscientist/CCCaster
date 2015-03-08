@@ -35,9 +35,6 @@ using namespace std;
 // The extra number of frames to delay checking round over state during rollback
 #define ROLLBACK_ROUND_OVER_DELAY   ( 5 )
 
-// The minimum number of frames that must run normally, before we're allowed to do another rollback
-#define MIN_ROLLBACK_SPACING        ( 4 )
-
 // The number of milliseconds to wait for the initial connect
 #define INITIAL_CONNECT_TIMEOUT     ( 60000 )
 
@@ -152,10 +149,13 @@ struct DllMain
     int roundOverTimer = -1;
 
     // We should only rollback if this timer is full
-    int rollbackTimer = MIN_ROLLBACK_SPACING;
+    int rollbackTimer = 0;
 
     // If we should fast-forward when spectating
     bool spectateFastFwd = true;
+
+    // The minimum number of frames that must run normally, before we're allowed to do another rollback
+    uint8_t minRollbackSpacing = 2;
 
 #ifndef RELEASE
     // Local and remote SyncHashes
@@ -480,7 +480,7 @@ struct DllMain
         }
 
         // Clear the last changed frame before we get new inputs
-        if ( rollbackTimer == MIN_ROLLBACK_SPACING )
+        if ( rollbackTimer == minRollbackSpacing )
             netMan.clearLastChangedFrame();
 
         for ( ;; )
@@ -526,17 +526,17 @@ struct DllMain
             }
         }
 
-        if ( rollbackTimer < MIN_ROLLBACK_SPACING )
+        if ( rollbackTimer < minRollbackSpacing )
         {
             --rollbackTimer;
 
             if ( rollbackTimer < 0 )
-                rollbackTimer = MIN_ROLLBACK_SPACING;
+                rollbackTimer = minRollbackSpacing;
         }
 
         // Only rollback when necessary
         if ( netMan.isInRollback()
-                && rollbackTimer == MIN_ROLLBACK_SPACING
+                && rollbackTimer == minRollbackSpacing
                 && netMan.getLastChangedFrame().value < netMan.getIndexedFrame().value )
         {
             const string before = format ( "%s [%u] %s [%s]",
@@ -607,6 +607,7 @@ struct DllMain
                 LOG ( "Rollback was changed %u -> %u", netMan.getRollback(), changeConfig.rollback );
                 DllOverlayUi::showMessage ( format ( "Rollback was changed to %u", changeConfig.rollback ) );
                 netMan.setRollback ( changeConfig.rollback );
+                minRollbackSpacing = clamped<uint8_t> ( netMan.getRollback(), 2, 4 );
                 procMan.ipcSend ( changeConfig );
             }
         }
@@ -663,7 +664,7 @@ struct DllMain
             }
 
             if ( randomRollback
-                    && rollbackTimer == MIN_ROLLBACK_SPACING
+                    && rollbackTimer == minRollbackSpacing
                     && netMan.isInGame()
                     && ( netMan.getFrame() % 150 < 100 ) )
             {
@@ -1697,6 +1698,9 @@ struct DllMain
 
                     netplayStateChanged ( NetplayState::Initial );
                 }
+
+                minRollbackSpacing = clamped<uint8_t> ( netMan.config.rollback, 2, 4 );
+                rollbackTimer = minRollbackSpacing;
 
                 *CC_DAMAGE_LEVEL_ADDR = 2;
                 *CC_TIMER_SPEED_ADDR = 2;
