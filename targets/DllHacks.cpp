@@ -54,6 +54,19 @@ MH_WINAPI_HOOK ( LRESULT, CALLBACK, WindowProc, HWND hwnd, UINT message, WPARAM 
 {
     switch ( message )
     {
+        case WM_SYSCOMMAND:
+            // Eat these two events to prevent screensaver and sleep
+            switch ( wParam )
+            {
+                case SC_SCREENSAVE:
+                case SC_MONITORPOWER:
+                    return 0;
+
+                default:
+                    break;
+            }
+            break;
+
         case WM_KEYDOWN:
             // Ignore repeated keys
             if ( ( lParam >> 30 ) & 1 )
