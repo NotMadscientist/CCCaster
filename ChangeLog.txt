@@ -1,3 +1,9 @@
+v3.0.012:
+- Prevent computer from sleeping or showing screensaver while the game is running.
+  (Doesn't work if you use the screensaver option: "On resume, display login screen")
+- Fixed the issue where the game doesn't work if it takes too long to startup.
+- Fixed mapping buttons not working on the PS4 pad.
+
 v3.0.011:
 - Can choose rollback and delay independent from host.
 - Automatically trim whitespace when entering IP address.

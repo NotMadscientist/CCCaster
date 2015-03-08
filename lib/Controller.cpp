@@ -350,7 +350,7 @@ Controller::Controller ( KeyboardEnum ) : name ( "Keyboard" )
     LOG_CONTROLLER ( this, "New keyboard" );
 }
 
-Controller::Controller ( const string& name, const JoystickInfo& info ) : name ( name ), joystick ( info )
+Controller::Controller ( const JoystickInfo& info ) : name ( info.name ), joystick ( info )
 {
     joystickMappings.name = nextName ( name );
     namesWithIndex.insert ( joystickMappings.name );

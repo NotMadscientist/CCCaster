@@ -3,6 +3,7 @@
 #include "KeyboardManager.h"
 #include "Algorithms.h"
 #include "Thread.h"
+#include "Guid.h"
 
 #include <unordered_set>
 #include <unordered_map>
@@ -141,6 +142,12 @@ struct JoystickInfo
     // Implementation specific device pointer, 0 for keyboard
     void *device = 0;
 
+    // Joystick friendly name
+    std::string name;
+
+    // Joystick product guid
+    Guid guid;
+
     // Joystick capabilities
     uint8_t numAxes = 0, numHats = 0, numButtons = 0;
 
@@ -224,7 +231,7 @@ private:
 
     // Construct a keyboard / joystick controller
     Controller ( KeyboardEnum );
-    Controller ( const std::string& name, const JoystickInfo& info );
+    Controller ( const JoystickInfo& info );
 
     // Clear this controller's mapping(s) without callback to ControllerManager
     void doClearMapping ( uint32_t keys = 0xFFFFFFFF );

@@ -26,6 +26,9 @@ static HRESULT comInitRet = E_FAIL;
 
 static IDirectInput8 *dinput = 0;
 
+static const Guid PS4_CONTROLLER_GUID (
+{ 0x4c, 0x05, 0xc4, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x50, 0x49, 0x44, 0x56, 0x49, 0x44 } );
+
 
 static inline uint8_t mapAxisValue ( LONG value, uint32_t deadzone )
 {
@@ -252,8 +255,14 @@ static BOOL CALLBACK enumJoystickAxes ( const DIDEVICEOBJECTINSTANCE *ddoi, void
     CHECK_ADD_AXIS ( 0, GUID_XAxis, "X-Axis" );
     CHECK_ADD_AXIS ( 1, GUID_YAxis, "Y-Axis" );
     CHECK_ADD_AXIS ( 2, GUID_ZAxis, "Z-Axis" );
-    CHECK_ADD_AXIS ( 3, GUID_RxAxis, "X-Axis (2)" );
-    CHECK_ADD_AXIS ( 4, GUID_RyAxis, "Y-Axis (2)" );
+
+    // Workaround for the PS4 pad, because it maps some buttons to the X/Y rotation axes as well
+    if ( PS4_CONTROLLER_GUID != info.guid )
+    {
+        CHECK_ADD_AXIS ( 3, GUID_RxAxis, "X-Axis (2)" );
+        CHECK_ADD_AXIS ( 4, GUID_RyAxis, "Y-Axis (2)" );
+    }
+
     CHECK_ADD_AXIS ( 5, GUID_RzAxis, "Z-Axis (2)" );
     CHECK_ADD_AXIS ( 6, GUID_Slider, "Slider" );
     CHECK_ADD_AXIS ( 7, GUID_Slider, "Slider (2)" );
@@ -291,7 +300,7 @@ static BOOL CALLBACK enumJoystickAxes ( const DIDEVICEOBJECTINSTANCE *ddoi, void
     return DIENUM_CONTINUE;
 }
 
-void ControllerManager::attachJoystick ( const Guid& guid, const string& name )
+void ControllerManager::attachJoystick ( const Guid& guid, JoystickInfo& info )
 {
     if ( !initialized )
         return;
@@ -345,7 +354,6 @@ void ControllerManager::attachJoystick ( const Guid& guid, const string& name )
         return;
     }
 
-    JoystickInfo info;
     info.device = device;
     info.numHats = min<uint64_t> ( MAX_NUM_HATS, ddc.dwPOVs );
     info.numButtons = min<uint64_t> ( MAX_NUM_BUTTONS, ddc.dwButtons );
@@ -359,7 +367,7 @@ void ControllerManager::attachJoystick ( const Guid& guid, const string& name )
     }
 
     // Create and add the controller
-    Controller *controller = new Controller ( name, info );
+    Controller *controller = new Controller ( info );
 
     ASSERT ( controller != 0 );
 
@@ -413,13 +421,17 @@ void ControllerManager::detachJoystick ( const Guid& guid )
 
 static BOOL CALLBACK enumJoysticks ( const DIDEVICEINSTANCE *ddi, void *userPtr )
 {
-    unordered_map<Guid, string>& activeJoysticks = * ( unordered_map<Guid, string> * ) userPtr;
+    unordered_map<Guid, JoystickInfo>& activeJoysticks = * ( unordered_map<Guid, JoystickInfo> * ) userPtr;
 
-    const Guid guid = ddi->guidInstance;
+    const Guid guidInstance = ddi->guidInstance;
 
-    LOG ( "%s: guid='%s'", ddi->tszProductName, guid );
+    JoystickInfo info;
+    info.name = ddi->tszProductName;
+    info.guid = ddi->guidProduct;
 
-    activeJoysticks[guid] = ddi->tszProductName;
+    LOG ( "%s: guidInstance='%s'; guidProduct='%s'", info.name, guidInstance, info.guid );
+
+    activeJoysticks[guidInstance] = info;
 
     return DIENUM_CONTINUE;
 }
@@ -431,7 +443,7 @@ void ControllerManager::refreshJoysticks()
     if ( !initialized )
         return;
 
-    unordered_map<Guid, string> activeJoysticks;
+    unordered_map<Guid, JoystickInfo> activeJoysticks;
 
     HRESULT result = IDirectInput8_EnumDevices ( dinput, DI8DEVCLASS_GAMECTRL,
                      enumJoysticks, ( void * ) &activeJoysticks, DIEDFL_ATTACHEDONLY );
@@ -439,7 +451,7 @@ void ControllerManager::refreshJoysticks()
     if ( FAILED ( result ) )
         THROW_EXCEPTION ( "IDirectInput8_EnumDevices failed: 0x%08x", ERROR_CONTROLLER_CHECK, result );
 
-    for ( const auto& kv : activeJoysticks )
+    for ( auto& kv : activeJoysticks )
     {
         if ( joysticks.find ( kv.first ) != joysticks.end() )
             continue;

@@ -17,6 +17,8 @@ struct Guid
 
     Guid() {}
 
+    Guid ( std::initializer_list<uint8_t> guid );
+
     Guid ( const GUID& guid );
 
     void getGUID ( GUID& guid ) const;

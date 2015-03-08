@@ -59,7 +59,7 @@ private:
     PollingThread pollingThread;
 
     // Attach / detach a joystick
-    void attachJoystick ( const Guid& guid, const std::string& name );
+    void attachJoystick ( const Guid& guid, JoystickInfo& info );
     void detachJoystick ( const Guid& guid );
 
     // Private constructor, etc. for singleton class

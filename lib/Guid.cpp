@@ -1,9 +1,19 @@
 #include "Guid.h"
+#include "Logger.h"
+
+#include <algorithm>
 
 #include <rpc.h>
 
 using namespace std;
 
+
+Guid::Guid ( std::initializer_list<uint8_t> guid )
+{
+    ASSERT ( guid.size() == sizeof ( this->guid ) );
+
+    copy ( guid.begin(), guid.end(), &this->guid[0] );
+}
 
 Guid::Guid ( const GUID& guid )
 {
