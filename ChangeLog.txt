@@ -1,3 +1,6 @@
+v3.0.013:
+- Fixed keyboard controls on Linux.
+
 v3.0.012:
 - Prevent computer from sleeping or showing screensaver while the game is running.
   (Doesn't work if you use the screensaver option: "On resume, display login screen")

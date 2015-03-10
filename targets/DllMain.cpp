@@ -891,6 +891,10 @@ struct DllMain
         // Check for changes to important variables for state transitions
         ChangeMonitor::get().check();
 
+        // Check for controller changes normally on Wine
+        if ( ProcessManager::isWine() )
+            ControllerManager::get().check();
+
         // Check for round over state during in-game
         if ( netMan.isInGame() )
             checkRoundOver();
@@ -948,7 +952,8 @@ struct DllMain
 #endif // RELEASE
 
             // Enable controllers now
-            ControllerManager::get().startHighFreqPolling();
+            if ( !ProcessManager::isWine() )
+                ControllerManager::get().startHighFreqPolling();
         }
 
         // Leaving Skippable
