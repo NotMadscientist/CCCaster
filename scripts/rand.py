@@ -22,7 +22,7 @@ def rand ( randStr, applyCount=1 ):
         edx = ecx - 0x22
 
     eax = rand3 [ ecx - 1 ]
-    eax -= rand3 [ edx - 1]
+    eax -= rand3 [ edx - 1 ]
 
     if eax < 0:
         eax += 0x7FFFFFFF
