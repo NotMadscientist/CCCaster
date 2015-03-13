@@ -32,6 +32,8 @@ Other notes:
 
     If you use an analog controller, make sure to adjust the deadzone, else you might get weird inputs.
 
+    The GRP folder fixes the graphics for the hidden stages, credits to Erkz.
+
 
 Running under Wine:
 

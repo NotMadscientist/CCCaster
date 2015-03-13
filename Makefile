@@ -128,6 +128,9 @@ $(ARCHIVE): $(FOLDER)/unzip.exe $(FOLDER)/ReadMe.txt $(FOLDER)/ChangeLog.txt
 	rm -f $(wildcard $(NAME)*.zip)
 	$(ZIP) $(ARCHIVE) $^
 	$(ZIP) $(ARCHIVE) -j scripts/Add_Handler_Protocol.bat
+	cp -r res/GRP GRP
+	$(ZIP) $(ARCHIVE) -r GRP
+	rm -rf GRP
 	$(GRANT)
 
 $(BINARY): $(addprefix $(BUILD_PREFIX)/,$(MAIN_OBJECTS)) res/icon.res
@@ -244,6 +247,7 @@ clean-proto:
 
 clean-res:
 	rm -f res/rollback.* res/icon.res
+	rm -rf GRP
 
 clean-common: clean-proto clean-res
 	rm -f .depend_$(BRANCH) .include_$(BRANCH) *.exe *.zip tools/*.exe \
