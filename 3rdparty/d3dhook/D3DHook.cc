@@ -173,7 +173,7 @@ EXTERN_C HRESULT __declspec ( dllexport ) __stdcall DX9_Present (
 
     g_pDevice = pDevice;
 
-    // rememeber IDirect3DDevice9::Release pointer so that we can clean-up properly.
+    // remember IDirect3DDevice9::Release pointer so that we can clean-up properly.
     if ( m_Hook_AddRef == 0 || m_Hook_Release == 0 )
     {
         DX9_HooksInit ( pDevice );
