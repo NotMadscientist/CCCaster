@@ -1,3 +1,14 @@
+Install and using:
+
+    Make sure to copy EVERYTHING into the MBAACC folder, including the cccaster folder.
+
+    The GRP folder is the fix for the missing stage names / previous, credits to Erkz.
+
+    Run Add_Handler_Protocol.bat once as admin to launch directly from http://seemeinmelty.meteor.com/
+
+    If you use an analog controller, make sure to adjust the deadzone, else you might get weird inputs.
+
+
 Hotkeys:
 
     F4 opens/closes the overlay menu for setting and changing controllers.
@@ -24,15 +35,6 @@ How to host without port forward:
     Relaying is automatically performed, however it is not guaranteed to work for all networks.
 
     Some routers may be too restrictive, in which case you must open a port to netplay.
-
-
-Other notes:
-
-    Run Add_Handler_Protocol.bat once as admin to launch directly from http://seemeinmelty.meteor.com/
-
-    If you use an analog controller, make sure to adjust the deadzone, else you might get weird inputs.
-
-    The GRP folder fixes the graphics for the hidden stages, credits to Erkz.
 
 
 Running under Wine:
