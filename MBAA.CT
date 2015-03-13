@@ -942,6 +942,28 @@
       <VariableType>4 Bytes</VariableType>
       <Address>0074E4E4</Address>
     </CheatEntry>
+    <CheatEntry>
+      <ID>455</ID>
+      <Description>"P1 color table address"</Description>
+      <ShowAsHex>1</ShowAsHex>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>074D808</Address>
+      <Offsets>
+        <Offset>1AC</Offset>
+      </Offsets>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>454</ID>
+      <Description>"P1 color table"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>074D808</Address>
+      <Offsets>
+        <Offset>0</Offset>
+        <Offset>1AC</Offset>
+      </Offsets>
+    </CheatEntry>
   </CheatEntries>
   <CheatCodes>
     <CodeEntry>
