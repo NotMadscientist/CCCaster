@@ -256,9 +256,9 @@ void renderPaletteSelector ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewp
         const float angle = atan2 ( -deltaWheel.y, deltaWheel.x );
         const float radius = sqrt ( ( float ) clamped ( deltaSquared, 0.0f, pow ( wheelRadius, 2.0f ) ) );
 
-        uint8_t h = ( 255 * ( angle + M_PI ) ) / ( 2 * M_PI );
-        uint8_t s = ( useLight ? ( 255 * radius ) / wheelRadius : 255 );
-        uint8_t v = ( useLight ? 255 : ( 255 * radius ) / wheelRadius );
+        const uint8_t h = ( 255 * ( angle + M_PI ) ) / ( 2 * M_PI );
+        const uint8_t s = ( useLight ? ( 255 * radius ) / wheelRadius : 255 );
+        const uint8_t v = ( useLight ? 255 : ( 255 * radius ) / wheelRadius );
 
         color = hsv2rgb ( h, s, v );
 
