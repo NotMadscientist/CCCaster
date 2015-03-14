@@ -1,6 +1,7 @@
 #pragma once
 
 #include "KeyboardManager.h"
+#include "MouseManager.h"
 #include "ControllerManager.h"
 #include "Controller.h"
 #include "DllControllerUtils.h"
@@ -11,6 +12,7 @@
 
 class DllControllerManager
     : public KeyboardManager::Owner
+    , public MouseManager::Owner
     , public ControllerManager::Owner
     , public Controller::Owner
     , protected DllControllerUtils
@@ -42,6 +44,9 @@ public:
 
     // KeyboardManager callback
     void keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown ) override;
+
+    // MouseManager callback
+    void mouseEvent ( int x, int y, bool isDown, bool pressed, bool released ) override;
 
     // ControllerManager callbacks
     void attachedJoystick ( Controller *controller ) override;

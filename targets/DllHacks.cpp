@@ -5,11 +5,13 @@
 #include "ProcessManager.h"
 #include "Algorithms.h"
 #include "KeyboardManager.h"
+#include "MouseManager.h"
 #include "ControllerManager.h"
 #include "DllFrameRate.h"
 
 #define INITGUID
 #include <windows.h>
+#include <windowsx.h>
 #include <dbt.h>
 #include <MinHook.h>
 
@@ -50,9 +52,9 @@ void initializePreLoad()
 }
 
 // Note: this is called on the SAME thread as the main application thread
-MH_WINAPI_HOOK ( LRESULT, CALLBACK, WindowProc, HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam )
+MH_WINAPI_HOOK ( LRESULT, CALLBACK, WindowProc, HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam )
 {
-    switch ( message )
+    switch ( msg )
     {
         case WM_SYSCOMMAND:
             // Eat these two events to prevent screensaver and sleep
@@ -75,7 +77,7 @@ MH_WINAPI_HOOK ( LRESULT, CALLBACK, WindowProc, HWND hwnd, UINT message, WPARAM 
         case WM_KEYUP:
         {
             // Only inject keyboard events when hooked
-            if ( !KeyboardManager::get().isHooked() )
+            if ( !KeyboardManager::get().isHooked() || !KeyboardManager::get().owner )
                 break;
 
             const uint32_t vkCode = wParam;
@@ -87,8 +89,7 @@ MH_WINAPI_HOOK ( LRESULT, CALLBACK, WindowProc, HWND hwnd, UINT message, WPARAM 
 
             // Note: this doesn't actually eat the keyboard event, which is actually acceptable
             // for the in-game overlay UI, since we need to mix usage with GetKeyState.
-            if ( KeyboardManager::get().owner )
-                KeyboardManager::get().owner->keyboardEvent ( vkCode, scanCode, isExtended, isDown );
+            KeyboardManager::get().owner->keyboardEvent ( vkCode, scanCode, isExtended, isDown );
             break;
         }
 
@@ -97,19 +98,41 @@ MH_WINAPI_HOOK ( LRESULT, CALLBACK, WindowProc, HWND hwnd, UINT message, WPARAM 
             {
                 case DBT_DEVICEARRIVAL:
                 case DBT_DEVICEREMOVECOMPLETE:
-                    if ( ( ( DEV_BROADCAST_HDR * ) lParam )->dbch_devicetype != DBT_DEVTYP_DEVICEINTERFACE )
-                        break;
-
-                    ControllerManager::get().refreshJoysticks();
+                    if ( ( ( DEV_BROADCAST_HDR * ) lParam )->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE )
+                    {
+                        ControllerManager::get().refreshJoysticks();
+                    }
                     break;
             }
             return 0;
+
+        case WM_LBUTTONDOWN:
+        case WM_LBUTTONUP:
+        case WM_MOUSEMOVE:
+        {
+            // Only inject mouse events when hooked
+            if ( !MouseManager::get().owner )
+                break;
+
+            static bool isDown = false;
+
+            if ( msg == WM_LBUTTONDOWN )
+                isDown = true;
+            else if ( msg ==  WM_LBUTTONUP )
+                isDown = false;
+
+            int x = GET_X_LPARAM ( lParam );
+            int y = GET_Y_LPARAM ( lParam );
+
+            MouseManager::get().owner->mouseEvent ( x, y, isDown, ( msg == WM_LBUTTONDOWN ), ( msg == WM_LBUTTONUP ) );
+            break;
+        }
 
         default:
             break;
     }
 
-    return oWindowProc ( hwnd, message, wParam, lParam );
+    return oWindowProc ( hwnd, msg, wParam, lParam );
 }
 
 

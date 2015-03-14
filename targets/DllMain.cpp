@@ -233,6 +233,11 @@ struct DllMain
                         && !ProcessManager::isWine() )
                 {
                     DllOverlayUi::togglePalettes();
+
+                    if ( DllOverlayUi::isShowingPalettes() )
+                        MouseManager::get().owner = this;
+                    else
+                        MouseManager::get().owner = 0;
                 }
 
                 if ( DllOverlayUi::isEnabled() )                                            // Overlay UI controls
