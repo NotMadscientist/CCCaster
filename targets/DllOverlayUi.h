@@ -50,6 +50,6 @@ void togglePalettes();
 
 bool isShowingPalettes();
 
-void updateColorSelector ( int x, int y );
+void paletteMouseEvent ( int x, int y, bool isDown, bool pressed, bool released );
 
 }

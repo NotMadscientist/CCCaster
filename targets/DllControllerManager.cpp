@@ -416,10 +416,7 @@ void DllControllerManager::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, b
 
 void DllControllerManager::mouseEvent ( int x, int y, bool isDown, bool pressed, bool released )
 {
-    if ( !isDown )
-        return;
-
-    DllOverlayUi::updateColorSelector ( x, y );
+    DllOverlayUi::paletteMouseEvent ( x, y, isDown, pressed, released );
 }
 
 void DllControllerManager::attachedJoystick ( Controller *controller )

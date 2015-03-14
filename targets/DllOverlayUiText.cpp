@@ -303,7 +303,7 @@ void initOverlayText ( IDirect3DDevice9 *device )
                                  &background,                    // pointer to IDirect3DVertexBuffer9
                                  0 );                           // unused
 
-    void *ptr = 0;
+    void *ptr;
 
     background->Lock ( 0, 0, ( void ** ) &ptr, 0 );
     memcpy ( ptr, verts, 4 * sizeof ( verts[0] ) );
