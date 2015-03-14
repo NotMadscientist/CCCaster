@@ -41,4 +41,9 @@ extern int debugTextAlign;
 
 #endif // NOT RELEASE
 
+
+void showPaletteSelector();
+
+void hidePaletteSelector();
+
 }
