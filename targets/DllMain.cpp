@@ -232,12 +232,18 @@ struct DllMain
                         && KeyboardState::isPressed ( VK_F3 )
                         && !ProcessManager::isWine() )
                 {
-                    DllOverlayUi::togglePalettes();
-
-                    if ( DllOverlayUi::isShowingPalettes() )
+                    if ( !DllOverlayUi::isShowingPalettes() )
+                    {
+                        DllOverlayUi::showPalettes();
+                        DllOverlayUi::enable();
                         MouseManager::get().owner = this;
+                    }
                     else
+                    {
+                        DllOverlayUi::disable();
+                        DllOverlayUi::hidePalettes();
                         MouseManager::get().owner = 0;
+                    }
                 }
 
                 if ( DllOverlayUi::isEnabled() )                                            // Overlay UI controls

@@ -85,21 +85,7 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
                 && ( !playerControllers[0] || overlayPositions[0] == 0 )
                 && ( !playerControllers[1] || overlayPositions[1] == 0 ) )
         {
-            if ( DllOverlayUi::isEnabled() )
-            {
-                // Cancel all mapping if we're disabling the overlay
-                if ( playerControllers[0] )
-                    playerControllers[0]->cancelMapping();
-                if ( playerControllers[1] )
-                    playerControllers[1]->cancelMapping();
-
-                // Disable keyboard events, since we use GetKeyState for regular controller inputs
-                KeyboardManager::get().unhook();
-
-                // Re-enable Escape to exit
-                AsmHacks::enableEscapeToExit = true;
-            }
-            else
+            if ( ! DllOverlayUi::isEnabled() || DllOverlayUi::isShowingPalettes() )
             {
                 // Refresh the list of joysticks if we're enabling the overlay
                 ControllerManager::get().refreshJoysticks();
@@ -112,15 +98,39 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
 
                 // Disable Escape to exit
                 AsmHacks::enableEscapeToExit = false;
+
+                // Hide palettes and enable overlay
+                DllOverlayUi::hidePalettes();
+                DllOverlayUi::enable();
+            }
+            else
+            {
+                // Cancel all mapping if we're disabling the overlay
+                if ( playerControllers[0] )
+                    playerControllers[0]->cancelMapping();
+                if ( playerControllers[1] )
+                    playerControllers[1]->cancelMapping();
+
+                // Disable keyboard events, since we use GetKeyState for regular controller inputs
+                KeyboardManager::get().unhook();
+
+                // Re-enable Escape to exit
+                AsmHacks::enableEscapeToExit = true;
+
+                // Disable overlay
+                DllOverlayUi::disable();
             }
 
-            DllOverlayUi::toggle();
             toggleOverlay = false;
         }
     }
 
+    // Don't do anything here when the palette selector is showing
+    if ( DllOverlayUi::isShowingPalettes() )
+        return;
+
     // Only update player controls when the overlay is NOT enabled
-    if ( !DllOverlayUi::isEnabled() )
+    if ( ! DllOverlayUi::isEnabled() )
     {
         if ( playerControllers[localPlayer - 1] )
             localInputs[0] = getInput ( playerControllers[localPlayer - 1] );

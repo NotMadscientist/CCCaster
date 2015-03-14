@@ -46,9 +46,6 @@ void showPalettes()
     if ( ProcessManager::isWine() )
         return;
 
-    if ( isEnabled() )
-        return;
-
     showing = true;
 }
 
@@ -98,6 +95,16 @@ void paletteMouseEvent ( int x, int y, bool isDown, bool pressed, bool released 
 
         lastClickTime = now;
     }
+}
+
+RgbColor getCurrentColor()
+{
+    return { uint8_t ( color & 0xFF ), uint8_t ( ( color & 0xFF00 ) >> 8 ), uint8_t ( ( color & 0xFF0000 ) >> 16 ) };
+}
+
+void setCurrentColor ( uint32_t newColor )
+{
+    color = ( newColor & 0x00FFFFFF ) | ( color & 0xFF000000 );
 }
 
 } // namespace DllOverlayUi
@@ -214,11 +221,10 @@ static inline D3DCOLOR hsv2rgb ( uint8_t h, uint8_t s, uint8_t v )
 
 void renderPaletteSelector ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewport )
 {
-    if ( isEnabled() )
-        showing = false;
-
     if ( !showing )
         return;
+
+    updateText ( { "", "", "" } );
 
     const int centerX = viewport.Width / 2;
     const int centerY = viewport.Height / 2;

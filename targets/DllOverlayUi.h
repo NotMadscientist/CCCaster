@@ -7,6 +7,9 @@
 #define DEFAULT_MESSAGE_TIMEOUT ( 3000 )
 
 
+struct RgbColor { uint8_t r, g, b; };
+
+
 namespace DllOverlayUi
 {
 
@@ -51,5 +54,9 @@ void togglePalettes();
 bool isShowingPalettes();
 
 void paletteMouseEvent ( int x, int y, bool isDown, bool pressed, bool released );
+
+RgbColor getCurrentColor();
+
+void setCurrentColor ( uint32_t color );
 
 }
