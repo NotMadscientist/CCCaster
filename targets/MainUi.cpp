@@ -33,16 +33,14 @@ using namespace std;
 #define VERSION_CHECK_TIMEOUT ( 1000 )
 
 // Run macro that deinitializes controllers, runs, then reinitializes controllers
-#define RUN(ADDRESS, CONFIG)                                                                    \
-    do {                                                                                        \
-        ControllerManager::get().deinitialize();                                                \
-        run ( ADDRESS, CONFIG );                                                                \
-        ControllerManager::get().loadMappings ( appDir + FOLDER, MAPPINGS_EXT );                \
-        ControllerManager::get().initialize ( this );                                           \
+#define RUN(ADDRESS, CONFIG)                                                                            \
+    do {                                                                                                \
+        ControllerManager::get().deinitialize();                                                        \
+        run ( ADDRESS, CONFIG );                                                                        \
+        ControllerManager::get().loadMappings ( ProcessManager::appDir + FOLDER, MAPPINGS_EXT );        \
+        ControllerManager::get().initialize ( this );                                                   \
     } while ( 0 )
 
-
-extern string appDir;
 
 static const string uiTitle = "CCCaster " + LocalVersion.majorMinor();
 
@@ -850,13 +848,13 @@ void MainUi::initialize()
         controller->resetToDefaults();
 
     // Load then save all controller mappings
-    ControllerManager::get().loadMappings ( appDir + FOLDER, MAPPINGS_EXT );
-    ControllerManager::get().saveMappings ( appDir + FOLDER, MAPPINGS_EXT );
+    ControllerManager::get().loadMappings ( ProcessManager::appDir + FOLDER, MAPPINGS_EXT );
+    ControllerManager::get().saveMappings ( ProcessManager::appDir + FOLDER, MAPPINGS_EXT );
 }
 
 void MainUi::saveConfig()
 {
-    const string file = appDir + CONFIG_FILE;
+    const string file = ProcessManager::appDir + CONFIG_FILE;
 
     LOG ( "Saving: %s", file );
 
@@ -873,7 +871,7 @@ void MainUi::saveConfig()
 
 void MainUi::loadConfig()
 {
-    const string file = appDir + CONFIG_FILE;
+    const string file = ProcessManager::appDir + CONFIG_FILE;
 
     LOG ( "Loading: %s", file );
 
@@ -885,7 +883,7 @@ void MainUi::loadConfig()
 
 void MainUi::saveMappings ( const Controller& controller )
 {
-    const string file = appDir + FOLDER + controller.getName() + MAPPINGS_EXT;
+    const string file = ProcessManager::appDir + FOLDER + controller.getName() + MAPPINGS_EXT;
 
     LOG ( "Saving: %s", file );
 
@@ -902,7 +900,7 @@ void MainUi::saveMappings ( const Controller& controller )
 
 void MainUi::loadMappings ( Controller& controller )
 {
-    const string file = appDir + FOLDER + controller.getName() + MAPPINGS_EXT;
+    const string file = ProcessManager::appDir + FOLDER + controller.getName() + MAPPINGS_EXT;
 
     LOG ( "Loading: %s", file );
 
@@ -1331,12 +1329,9 @@ void MainUi::updateTo ( const string& version )
     else
     {
         const string file = format ( "cccaster.v%s.zip", version );
+        const string path = ( ProcessManager::isWine() ? ProcessManager::appDir : tmpDir ) + UPDATE_ARCHIVE;
 
-        if ( ProcessManager::isWine() )
-            httpDl.reset ( new HttpDownload ( this, updateServers[serverIdx] + file, appDir + UPDATE_ARCHIVE ) );
-        else
-            httpDl.reset ( new HttpDownload ( this, updateServers[serverIdx] + file, tmpDir + UPDATE_ARCHIVE ) );
-
+        httpDl.reset ( new HttpDownload ( this, updateServers[serverIdx] + file, path ) );
         httpDl->start();
     }
 }
@@ -1409,7 +1404,7 @@ void MainUi::update ( bool isStartup )
 
     tmpDir = getTmpDir();
     if ( tmpDir.empty() )
-        tmpDir = appDir;
+        tmpDir = ProcessManager::appDir;
 
     LOG ( "tmpDir=%s", tmpDir );
 
@@ -1437,7 +1432,7 @@ void MainUi::update ( bool isStartup )
         return;
     }
 
-    const string srcUpdater = appDir + FOLDER + UPDATER;
+    const string srcUpdater = ProcessManager::appDir + FOLDER + UPDATER;
     string tmpUpdater = tmpDir + UPDATER;
 
     if ( srcUpdater != tmpUpdater && !CopyFile ( srcUpdater.c_str(), tmpUpdater.c_str(), FALSE ) )
@@ -1448,7 +1443,7 @@ void MainUi::update ( bool isStartup )
 
     const string newBinary = format ( "cccaster.v%s.%s.exe", latestVersion.major(), latestVersion.minor() );
     const string command = format ( "\"" + tmpUpdater + "\" %d %s %s %s",
-                                    GetCurrentProcessId(), newBinary, tmpDir + UPDATE_ARCHIVE, appDir );
+                                    GetCurrentProcessId(), newBinary, tmpDir + UPDATE_ARCHIVE, ProcessManager::appDir );
 
     LOG ( "Update command: %s", command );
 

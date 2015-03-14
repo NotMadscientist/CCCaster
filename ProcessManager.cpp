@@ -28,6 +28,9 @@ using namespace std;
 
 string ProcessManager::gameDir;
 
+string ProcessManager::appDir;
+
+
 void ProcessManager::acceptEvent ( Socket *serverSocket )
 {
     ASSERT ( serverSocket == ipcSocket.get() );
@@ -113,7 +116,7 @@ void ProcessManager::timerExpired ( Timer *timer )
         return;
 }
 
-void ProcessManager::openGame ( const string& appDir, bool highPriority )
+void ProcessManager::openGame ( bool highPriority )
 {
     LOG ( "Opening pipe" );
 

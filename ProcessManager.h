@@ -68,6 +68,9 @@ public:
     // Game directory, empty means current working directory
     static std::string gameDir;
 
+    // Application directory, empty means current working directory
+    static std::string appDir;
+
 
     // Get / set windowed mode
     static bool getIsWindowed();
@@ -91,7 +94,7 @@ public:
     ~ProcessManager();
 
     // Open / close the game from the EXE side
-    void openGame ( const std::string& appDir, bool highPriority = false );
+    void openGame ( bool highPriority = false );
     void closeGame();
 
     // Connect / disconnect the IPC pipe and socket from the DLL side

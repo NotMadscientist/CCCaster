@@ -10,6 +10,9 @@
 namespace DllOverlayUi
 {
 
+void init();
+
+
 void enable();
 
 void disable();

@@ -302,6 +302,14 @@ int debugTextAlign = 0;
 
 #endif // NOT RELEASE
 
+
+static bool shouldInitDirectX = false;
+
+void init()
+{
+    shouldInitDirectX = true;
+}
+
 } // namespace DllOverlayUi
 
 
@@ -310,6 +318,9 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
 {
     if ( !initalizedDirectX )
     {
+        if ( !shouldInitDirectX )
+            return;
+
         initalizedDirectX = true;
 
         D3DXCreateFont ( device,                                // device pointer

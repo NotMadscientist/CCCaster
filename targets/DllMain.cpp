@@ -954,6 +954,9 @@ struct DllMain
             // Enable controllers now
             if ( !ProcessManager::isWine() )
                 ControllerManager::get().startHighFreqPolling();
+
+            // Initialize the overlay now
+            DllOverlayUi::init();
         }
 
         // Leaving Skippable
@@ -1424,14 +1427,20 @@ struct DllMain
             case MsgType::OptionsMessage:
                 options = msg->getAs<OptionsMessage>();
 
+                ProcessManager::appDir = options.arg ( Options::AppDir );
+
+                // This will log in the previous appDir folder it not the same
+                LOG ( "appDir='%s'", ProcessManager::appDir );
+
                 Logger::get().sessionId = options.arg ( Options::SessionId );
-                Logger::get().initialize ( options.arg ( Options::AppDir ) + LOG_FILE );
+                Logger::get().initialize ( ProcessManager::appDir + LOG_FILE );
                 Logger::get().logVersion();
 
-                LOG ( "SessionId '%s'", Logger::get().sessionId );
+                LOG ( "gameDir='%s'", ProcessManager::gameDir );
+                LOG ( "appDir='%s'", ProcessManager::appDir );
 
                 syncLog.sessionId = options.arg ( Options::SessionId );
-                syncLog.initialize ( options.arg ( Options::AppDir ) + SYNC_LOG_FILE, 0 );
+                syncLog.initialize ( ProcessManager::appDir + SYNC_LOG_FILE, 0 );
                 syncLog.logVersion();
 
                 // Manually hit Alt+Enter to enable fullscreen
@@ -1473,7 +1482,7 @@ struct DllMain
                     const vector<string> args = split ( options.arg ( Options::Replay ), "," );
                     ASSERT ( args.empty() == false );
 
-                    const string replayFile = options.arg ( Options::AppDir ) + args[0];
+                    const string replayFile = ProcessManager::appDir + args[0];
                     const bool real = find ( args.begin(), args.end(), "real" ) != args.end();
 
                     // Parse replay speed
@@ -1852,7 +1861,7 @@ private:
         if ( !controller )
             return;
 
-        const string file = options.arg ( Options::AppDir ) + FOLDER + controller->getName() + MAPPINGS_EXT;
+        const string file = ProcessManager::appDir + FOLDER + controller->getName() + MAPPINGS_EXT;
 
         LOG ( "Saving: %s", file );
 
@@ -1921,11 +1930,14 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
 
             ProcessManager::gameDir = gameDir;
 
+
             srand ( time ( 0 ) );
 
             Logger::get().initialize ( gameDir + LOG_FILE );
             Logger::get().logVersion();
+
             LOG ( "DLL_PROCESS_ATTACH" );
+            LOG ( "gameDir='%s'", gameDir );
 
             // We want the DLL to be able to rebind any previously bound ports
             Socket::forceReusePort ( true );

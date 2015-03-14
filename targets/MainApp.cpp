@@ -27,8 +27,6 @@ extern MainUi ui;
 
 extern string lastError;
 
-extern string appDir;
-
 static Mutex uiMutex;
 
 static CondVar uiCondVar;
@@ -803,9 +801,9 @@ struct MainApp
             syncLog.sessionId = ( clientMode.isSpectate() ? spectateConfig.sessionId : netplayConfig.sessionId );
 
             if ( options[Options::PidLog] )
-                syncLog.initialize ( appDir + SYNC_LOG_FILE, PID_IN_FILENAME );
+                syncLog.initialize ( ProcessManager::appDir + SYNC_LOG_FILE, PID_IN_FILENAME );
             else
-                syncLog.initialize ( appDir + SYNC_LOG_FILE, 0 );
+                syncLog.initialize ( ProcessManager::appDir + SYNC_LOG_FILE, 0 );
             syncLog.logVersion();
             return;
         }
@@ -1150,7 +1148,7 @@ struct MainApp
             }
 
             // Open the game and wait for callback to ipcConnectEvent
-            procMan.openGame ( appDir, ui.getConfig().getInteger ( "highCpuPriority" ) );
+            procMan.openGame ( ui.getConfig().getInteger ( "highCpuPriority" ) );
         }
         else
         {
@@ -1191,8 +1189,8 @@ struct MainApp
         options = opt;
         originalAddress = address = addr;
 
-        if ( !appDir.empty() )
-            options.set ( Options::AppDir, 1, appDir );
+        if ( !ProcessManager::appDir.empty() )
+            options.set ( Options::AppDir, 1, ProcessManager::appDir );
 
         if ( !ProcessManager::getIsWindowed() )
         {

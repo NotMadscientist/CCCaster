@@ -20,8 +20,6 @@ MainUi ui;
 
 string lastError;
 
-string appDir;
-
 
 void runMain ( const IpAddrPort& address, const Serializable& config );
 void runFake ( const IpAddrPort& address, const Serializable& config );
@@ -34,20 +32,20 @@ static bool initDirsAndSanityCheck ( bool checkGameExe = true )
 
     char buffer[4096];
 
-    appDir.clear();
+    ProcessManager::appDir.clear();
 
     if ( GetModuleFileName ( GetModuleHandle ( 0 ), buffer, sizeof ( buffer ) ) )
     {
-        appDir = buffer;
-        appDir = appDir.substr ( 0, appDir.find_last_of ( "/\\" ) );
+        ProcessManager::appDir = buffer;
+        ProcessManager::appDir = ProcessManager::appDir.substr ( 0, ProcessManager::appDir.find_last_of ( "/\\" ) );
 
-        replace ( appDir.begin(), appDir.end(), '/', '\\' );
+        replace ( ProcessManager::appDir.begin(), ProcessManager::appDir.end(), '/', '\\' );
 
-        if ( !appDir.empty() && appDir.back() != '\\' )
-            appDir += '\\';
+        if ( !ProcessManager::appDir.empty() && ProcessManager::appDir.back() != '\\' )
+            ProcessManager::appDir += '\\';
     }
 
-    DWORD val = GetFileAttributes ( ( appDir + FOLDER ).c_str() );
+    DWORD val = GetFileAttributes ( ( ProcessManager::appDir + FOLDER ).c_str() );
 
     if ( val == INVALID_FILE_ATTRIBUTES || ! ( val & FILE_ATTRIBUTE_DIRECTORY ) )
     {
@@ -58,7 +56,7 @@ static bool initDirsAndSanityCheck ( bool checkGameExe = true )
         success = false;
     }
 
-    val = GetFileAttributes ( ( appDir + HOOK_DLL ).c_str() );
+    val = GetFileAttributes ( ( ProcessManager::appDir + HOOK_DLL ).c_str() );
 
     if ( val == INVALID_FILE_ATTRIBUTES )
     {
@@ -66,7 +64,7 @@ static bool initDirsAndSanityCheck ( bool checkGameExe = true )
         success = false;
     }
 
-    val = GetFileAttributes ( ( appDir + LAUNCHER ).c_str() );
+    val = GetFileAttributes ( ( ProcessManager::appDir + LAUNCHER ).c_str() );
 
     if ( val == INVALID_FILE_ATTRIBUTES )
     {
@@ -85,7 +83,7 @@ static bool initDirsAndSanityCheck ( bool checkGameExe = true )
     }
     else
     {
-        ProcessManager::gameDir = appDir;
+        ProcessManager::gameDir = ProcessManager::appDir;
     }
 
     if ( checkGameExe )
@@ -366,12 +364,12 @@ int main ( int argc, char *argv[] )
     if ( opt[Options::Stdout] )
         Logger::get().initialize();
     else if ( opt[Options::PidLog] )
-        Logger::get().initialize ( appDir + LOG_FILE, LOG_DEFAULT_OPTIONS | PID_IN_FILENAME );
+        Logger::get().initialize ( ProcessManager::appDir + LOG_FILE, LOG_DEFAULT_OPTIONS | PID_IN_FILENAME );
     else
-        Logger::get().initialize ( appDir + LOG_FILE );
+        Logger::get().initialize ( ProcessManager::appDir + LOG_FILE );
     Logger::get().logVersion();
 
-    LOG ( "Running from: %s", appDir );
+    LOG ( "Running from: %s", ProcessManager::appDir );
 
     // Log parsed command line opt
     for ( size_t i = 0; i < opt.size(); ++i )
