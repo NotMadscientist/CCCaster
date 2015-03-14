@@ -944,7 +944,7 @@
     </CheatEntry>
     <CheatEntry>
       <ID>455</ID>
-      <Description>"P1 color table address"</Description>
+      <Description>"P1 color table address (during chara select)"</Description>
       <ShowAsHex>1</ShowAsHex>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
@@ -955,7 +955,7 @@
     </CheatEntry>
     <CheatEntry>
       <ID>454</ID>
-      <Description>"P1 color table"</Description>
+      <Description>"P1 color table (during chara select)"</Description>
       <Color>80000008</Color>
       <VariableType>4 Bytes</VariableType>
       <Address>074D808</Address>
@@ -3678,6 +3678,32 @@
         <Byte>4C</Byte>
         <Byte>24</Byte>
         <Byte>7C</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Address of color table during the loading state</Description>
+      <Address>00448BD4</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>48BD4</ModuleNameOffset>
+      <Before>
+        <Byte>74</Byte>
+        <Byte>14</Byte>
+        <Byte>C1</Byte>
+        <Byte>E6</Byte>
+        <Byte>0A</Byte>
+      </Before>
+      <Actual>
+        <Byte>8D</Byte>
+        <Byte>74</Byte>
+        <Byte>1E</Byte>
+        <Byte>04</Byte>
+      </Actual>
+      <After>
+        <Byte>B9</Byte>
+        <Byte>00</Byte>
+        <Byte>01</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
       </After>
     </CodeEntry>
   </CheatCodes>

@@ -1,5 +1,9 @@
 
-=== MBAA SFX stuff ===
+========================================================
+==================== MBAA SFX stuff ====================
+========================================================
+
+
 
 #define CC_SFX_ARRAY_ADDR         ((char *)0x76E008) // array of bytes, set a byte to 1 to start SFX
 #define CC_SFX_ARRAY_LEN          (1500)
@@ -14,7 +18,13 @@
 
 - TODO figure out SFX playback length in frames, check the struct that gets passed to the set volume function
 
-=== Crit damage disassemble ===
+
+
+=================================================================
+==================== Crit damage disassemble ====================
+=================================================================
+
+
 
 F-Akiha 5A norm damage = 0x12C
 F-Akiha 5A crit damage = 0x159
@@ -73,7 +83,13 @@ rand func state is stored in 4 locations
 0x564068 as ints
 0x564070 points to a block of data 220 bytes long
 
-=== MBAA player stuff ===
+
+
+===========================================================
+==================== MBAA player stuff ====================
+===========================================================
+
+
 
 0x555134 Player 1 struct start
 0x555140 start of relevant stuff
@@ -192,14 +208,22 @@ rand func state is stored in 4 locations
 
 0x557FC4 Player 2 combo struct start
 
-
-
-
-
-
-
 Any untagged DWORD address ranges just contain POD without pointers.
 
-Need to identify which heap address ranges contain static data.
 
-Need to identify character specifics and puppet characters.
+
+======================================================
+==================== Palette info ====================
+======================================================
+
+
+
+36 palettes per character
+
+Each palette has 256 colours (4 byte RGBA, the alpha is ignored)
+
+All the palettes are loaded during character select and can be modified in memory
+ - Need to change colour/sprite to update the cached sprite during character select
+
+The selected palette is reloaded during the loading state
+ - Need to intercept the memory data before the sprites are fully loaded
