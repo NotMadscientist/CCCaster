@@ -1,4 +1,5 @@
 #include "DllOverlayUi.h"
+#include "DllOverlayPrimitives.h"
 #include "DllHacks.h"
 #include "ProcessManager.h"
 #include "Enum.h"
@@ -208,19 +209,6 @@ void updateMessage()
         --messageTimeout;
 }
 
-static inline int DrawText ( const string& text, RECT& rect, int flags, const D3DCOLOR& color )
-{
-    if ( !font )
-        return 0;
-
-    return font->DrawText ( 0,                                  // text as a ID3DXSprite object
-                            &text[0],                           // text buffer
-                            text.size(),                        // number of characters, -1 if null-terminated
-                            &rect,                              // text bounding RECT
-                            flags | DT_NOCLIP,                  // text formatting
-                            color );                            // text colour
-}
-
 void updateSelector ( uint8_t index, int position, const string& line )
 {
     if ( index > 1 )
@@ -236,7 +224,7 @@ void updateSelector ( uint8_t index, int position, const string& line )
     rect.top = rect.left = 0;
     rect.right = 1;
     rect.bottom = OVERLAY_FONT_HEIGHT;
-    DrawText ( line, rect, DT_CALCRECT, D3DCOLOR_XRGB ( 0, 0, 0 ) );
+    DrawText ( font, line, rect, DT_CALCRECT, D3DCOLOR_XRGB ( 0, 0, 0 ) );
 
     rect.top    += OVERLAY_TEXT_BORDER + position * OVERLAY_FONT_HEIGHT - OVERLAY_SELECTOR_Y_BORDER + 1;
     rect.bottom += OVERLAY_TEXT_BORDER + position * OVERLAY_FONT_HEIGHT + OVERLAY_SELECTOR_Y_BORDER;
@@ -284,19 +272,6 @@ struct Vertex
 };
 
 
-static inline void DrawRectangle ( IDirect3DDevice9 *device, int x1, int y1, int x2, int y2, const D3DCOLOR& color )
-{
-    const D3DRECT rect = { x1, y1, x2, y2 };
-    device->Clear ( 1, &rect, D3DCLEAR_TARGET, color, 0, 0 );
-}
-
-static inline void DrawBox ( IDirect3DDevice9 *device, int x1, int y1, int x2, int y2, int w, const D3DCOLOR& color )
-{
-    DrawRectangle ( device, x1, y1, x1 + w, y2, color );
-    DrawRectangle ( device, x1, y1, x2, y1 + w, color );
-    DrawRectangle ( device, x2 - w, y1, x2, y2, color );
-    DrawRectangle ( device, x1, y2 - w, x2, y2, color );
-}
 
 void initOverlayText ( IDirect3DDevice9 *device )
 {
@@ -355,7 +330,7 @@ void renderOverlayText ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewport 
         rect.right = viewport.Width;
         rect.bottom = viewport.Height;
 
-        DrawText ( debugText, rect, DT_WORDBREAK |
+        DrawText ( font, debugText, rect, DT_WORDBREAK |
                    ( debugTextAlign == 0 ? DT_CENTER : ( debugTextAlign < 0 ? DT_LEFT : DT_RIGHT ) ),
                    OVERLAY_DEBUG_COLOR );
     }
@@ -375,7 +350,7 @@ void renderOverlayText ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewport 
         rect.right = 1;
         rect.bottom = OVERLAY_FONT_HEIGHT;
 
-        DrawText ( text[2], rect, DT_CALCRECT, D3DCOLOR_XRGB ( 0, 0, 0 ) );
+        DrawText ( font, text[2], rect, DT_CALCRECT, D3DCOLOR_XRGB ( 0, 0, 0 ) );
 
         messageWidth = rect.right + 2 * OVERLAY_TEXT_BORDER;
     }
@@ -418,12 +393,12 @@ void renderOverlayText ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewport 
         }
 
         if ( !text[2].empty() )
-            DrawText ( text[2], rect, DT_WORDBREAK | DT_CENTER, OVERLAY_TEXT_COLOR );
+            DrawText ( font, text[2], rect, DT_WORDBREAK | DT_CENTER, OVERLAY_TEXT_COLOR );
 
         if ( !text[1].empty() )
-            DrawText ( text[1], rect, DT_WORDBREAK | DT_RIGHT, OVERLAY_TEXT_COLOR );
+            DrawText ( font, text[1], rect, DT_WORDBREAK | DT_RIGHT, OVERLAY_TEXT_COLOR );
 
         if ( !text[0].empty() )
-            DrawText ( text[0], rect, DT_WORDBREAK | DT_LEFT, OVERLAY_TEXT_COLOR );
+            DrawText ( font, text[0], rect, DT_WORDBREAK | DT_LEFT, OVERLAY_TEXT_COLOR );
     }
 }

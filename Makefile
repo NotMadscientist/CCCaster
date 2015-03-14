@@ -123,7 +123,8 @@ generator: tools/$(GENERATOR)
 
 
 $(ARCHIVE): $(BINARY) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER) $(FOLDER)/$(UPDATER)
-$(ARCHIVE): $(FOLDER)/unzip.exe $(FOLDER)/ReadMe.txt $(FOLDER)/ChangeLog.txt $(FOLDER)/wheel.png
+$(ARCHIVE): $(FOLDER)/unzip.exe $(FOLDER)/ReadMe.txt $(FOLDER)/ChangeLog.txt
+$(ARCHIVE): $(FOLDER)/wheel_light.png $(FOLDER)/wheel_dark.png
 	@echo
 	rm -f $(wildcard $(NAME)*.zip)
 	$(ZIP) $(ARCHIVE) $^
@@ -171,7 +172,10 @@ $(FOLDER)/ReadMe.txt: ReadMe.txt | $(FOLDER)
 $(FOLDER)/ChangeLog.txt: ChangeLog.txt | $(FOLDER)
 	cp -f $^ $(FOLDER)/
 
-$(FOLDER)/wheel.png: res/wheel.png | $(FOLDER)
+$(FOLDER)/wheel_light.png: res/wheel_light.png | $(FOLDER)
+	cp -f $^ $(FOLDER)/
+
+$(FOLDER)/wheel_dark.png: res/wheel_dark.png | $(FOLDER)
 	cp -f $^ $(FOLDER)/
 
 $(FOLDER):

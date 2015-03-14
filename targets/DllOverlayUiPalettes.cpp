@@ -1,5 +1,9 @@
 #include "DllOverlayUi.h"
+#include "DllOverlayPrimitives.h"
 #include "ProcessManager.h"
+
+#define M_PI 3.14159265358979323846
+#include <cmath>
 
 #include <d3dx9.h>
 
@@ -11,7 +15,11 @@ static bool showing = false;
 
 static IDirect3DVertexBuffer9 *background = 0;
 
-static IDirect3DTexture9 *texture = 0;
+static IDirect3DTexture9 *light = 0, *dark = 0;
+
+static int selectorX = 0, selectorY = 0;
+
+static D3DCOLOR color = D3DCOLOR_XRGB ( 255, 255, 255 );
 
 
 namespace DllOverlayUi
@@ -55,6 +63,12 @@ bool isShowingPalettes()
     return showing;
 }
 
+void updateColorSelector ( int x, int y )
+{
+    selectorX = x;
+    selectorY = y;
+}
+
 } // namespace DllOverlayUi
 
 
@@ -91,7 +105,14 @@ void initPaletteSelector ( IDirect3DDevice9 *device )
     background->Unlock();
 
     HRESULT result =
-        D3DXCreateTextureFromFile ( device, ( ProcessManager::appDir + FOLDER "wheel.png" ).c_str(), &texture );
+        D3DXCreateTextureFromFile ( device, ( ProcessManager::appDir + FOLDER "wheel_light.png" ).c_str(), &light );
+
+    if ( FAILED ( result ) )
+    {
+        LOG ( "D3DXCreateTextureFromFile failed: 0x%08x", result );
+    }
+
+    result = D3DXCreateTextureFromFile ( device, ( ProcessManager::appDir + FOLDER "wheel_dark.png" ).c_str(), &dark );
 
     if ( FAILED ( result ) )
     {
@@ -104,8 +125,47 @@ void invalidatePaletteSelector()
     background->Release();
     background = 0;
 
-    texture->Release();
-    texture = 0;
+    light->Release();
+    light = 0;
+
+    dark->Release();
+    dark = 0;
+}
+
+static inline D3DCOLOR hsv2rgb ( uint8_t h, uint8_t s, uint8_t v )
+{
+    uint8_t region, remainder, p, q, t;
+
+    if ( s == 0 )
+        return D3DCOLOR_XRGB ( v, v, v );
+
+    region = h / 43;
+    remainder = ( h - ( region * 43 ) ) * 6;
+
+    p = ( v * ( 255 - s ) ) >> 8;
+    q = ( v * ( 255 - ( ( s * remainder ) >> 8 ) ) ) >> 8;
+    t = ( v * ( 255 - ( ( s * ( 255 - remainder ) ) >> 8 ) ) ) >> 8;
+
+    switch ( region )
+    {
+        case 0:
+            return D3DCOLOR_XRGB ( v, t, p );
+
+        case 1:
+            return D3DCOLOR_XRGB ( q, v, p );
+
+        case 2:
+            return D3DCOLOR_XRGB ( p, v, t );
+
+        case 3:
+            return D3DCOLOR_XRGB ( p, q, v );
+
+        case 4:
+            return D3DCOLOR_XRGB ( t, p, v );
+
+        default:
+            return D3DCOLOR_XRGB ( v, p, q );
+    }
 }
 
 void renderPaletteSelector ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewport )
@@ -127,9 +187,74 @@ void renderPaletteSelector ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewp
     D3DXMATRIX scale;
     D3DXMatrixScaling ( &scale, scaleX, scaleY, 1.0f );
 
-    device->SetTexture ( 0, texture );
+    device->SetTexture ( 0, light );
     device->SetTransform ( D3DTS_VIEW, &scale );
     device->SetStreamSource ( 0, background, 0, sizeof ( TextureVertex ) );
     device->SetFVF ( TextureVertex::Format );
     device->DrawPrimitive ( D3DPT_TRIANGLEFAN, 0, 2 );
+
+    const int centerX = viewport.Width / 2;
+    const int centerY = viewport.Height / 2;
+
+    const int deltaX = selectorX - centerX;
+    const int deltaY = selectorY - centerY;
+
+    const int delta2 = clamped ( deltaX * deltaX + deltaY * deltaY, 0, 64 * 64 );
+
+    if ( delta2 <= 64 * 64 )
+    {
+        double angle = atan2 ( deltaY, -deltaX );
+        double delta = sqrt ( ( double ) delta2 );
+
+        uint8_t h = ( 255 * ( angle + M_PI ) ) / ( 2 * M_PI );
+        uint8_t s = ( 255 * delta ) / 64;
+        uint8_t v = 255;
+
+        color = hsv2rgb ( h, s, v );
+    }
+
+    DrawRectangle ( device, centerX - 30, viewport.Height - 60, centerX + 30, viewport.Height, color );
+
+    // D3DXMATRIX translate, scale, final;
+    // D3DXMatrixScaling ( &scale, scaleX, scaleY, 1.0f );
+    // D3DXMatrixTranslation ( &translate, -0.5f, 0.0f, 0.0f );
+
+    // device->SetTexture ( 0, light );
+    // device->SetTransform ( D3DTS_VIEW, & ( final = scale * translate ) );
+    // device->SetStreamSource ( 0, background, 0, sizeof ( TextureVertex ) );
+    // device->SetFVF ( TextureVertex::Format );
+    // device->DrawPrimitive ( D3DPT_TRIANGLEFAN, 0, 2 );
+
+    // D3DXMatrixTranslation ( &translate, 0.5f, 0.0f, 0.0f );
+
+    // device->SetTexture ( 0, dark );
+    // device->SetTransform ( D3DTS_VIEW, & ( final = scale * translate ) );
+    // device->DrawPrimitive ( D3DPT_TRIANGLEFAN, 0, 2 );
+
+    // const int centerX = viewport.Width / 2;
+    // const int centerY = viewport.Height / 2;
+
+    // if ( selectorX < centerX )
+    // {
+    //     const int deltaX = selectorX - centerX;
+    //     const int deltaY = selectorY - centerY;
+
+    //     const int delta2 = clamped ( deltaX * deltaX + deltaY * deltaY, 0, 64 * 64 );
+
+    //     if ( delta2 <= 64 * 64 )
+    //     {
+    //         double angle = atan2 ( deltaY, -deltaX );
+    //         double delta = sqrt ( ( double ) delta2 );
+
+    //         uint8_t h = ( 255 * ( angle + M_PI ) ) / ( 2 * M_PI );
+    //         uint8_t s = ( 255 * delta ) / 64;
+    //         uint8_t v = 255;
+    //         // uint8_t s = 255;
+    //         // uint8_t v = ( 255 * delta ) / 64;
+
+    //         color = hsv2rgb ( h, s, v );
+    //     }
+    // }
+
+    // DrawRectangle ( device, centerX - 30, viewport.Height - 60, centerX + 30, viewport.Height, color );
 }

@@ -19,11 +19,11 @@ void disable();
 
 void toggle();
 
+bool isEnabled();
+
 void updateText ( const std::array<std::string, 3>& text );
 
 void updateSelector ( uint8_t index, int position = 0, const std::string& line = "" );
-
-bool isEnabled();
 
 
 void showMessage ( const std::string& text, int timeout = DEFAULT_MESSAGE_TIMEOUT );
@@ -49,5 +49,7 @@ void hidePalettes();
 void togglePalettes();
 
 bool isShowingPalettes();
+
+void updateColorSelector ( int x, int y );
 
 }
