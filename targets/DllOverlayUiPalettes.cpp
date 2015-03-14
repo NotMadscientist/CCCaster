@@ -17,17 +17,42 @@ static IDirect3DTexture9 *texture = 0;
 namespace DllOverlayUi
 {
 
-void showPaletteSelector()
+void showPalettes()
 {
+    if ( ProcessManager::isWine() )
+        return;
+
     if ( isEnabled() )
         return;
 
     showing = true;
 }
 
-void hidePaletteSelector()
+void hidePalettes()
 {
+    if ( ProcessManager::isWine() )
+        return;
+
     showing = false;
+}
+
+void togglePalettes()
+{
+    if ( ProcessManager::isWine() )
+        return;
+
+    if ( isShowingPalettes() )
+        hidePalettes();
+    else
+        showPalettes();
+}
+
+bool isShowingPalettes()
+{
+    if ( ProcessManager::isWine() )
+        return false;
+
+    return showing;
 }
 
 } // namespace DllOverlayUi
@@ -85,7 +110,10 @@ void invalidatePaletteSelector()
 
 void renderPaletteSelector ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewport )
 {
-    if ( !showing || isEnabled() )
+    if ( isEnabled() )
+        showing = false;
+
+    if ( !showing )
         return;
 
     device->SetRenderState ( D3DRS_LIGHTING, FALSE );

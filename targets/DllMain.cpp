@@ -226,6 +226,15 @@ struct DllMain
                 KeyboardState::update();
                 updateControls ( &localInputs[0] );
 
+                // Only allow palette selector during offline character select
+                if ( netMan.getState() == NetplayState::CharaSelect
+                        && clientMode.isOffline()
+                        && KeyboardState::isPressed ( VK_F3 )
+                        && !ProcessManager::isWine() )
+                {
+                    DllOverlayUi::togglePalettes();
+                }
+
                 if ( DllOverlayUi::isEnabled() )                                            // Overlay UI controls
                 {
                     localInputs[0] = localInputs[1] = 0;

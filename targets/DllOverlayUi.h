@@ -42,8 +42,12 @@ extern int debugTextAlign;
 #endif // NOT RELEASE
 
 
-void showPaletteSelector();
+void showPalettes();
 
-void hidePaletteSelector();
+void hidePalettes();
+
+void togglePalettes();
+
+bool isShowingPalettes();
 
 }
