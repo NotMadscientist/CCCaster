@@ -433,11 +433,13 @@ int main ( int argc, char *argv[] )
         netplayConfig.mode.value = ClientMode::Offline;
         netplayConfig.mode.flags = ui.initialConfig.mode.flags;
         netplayConfig.delay = 0;
-#ifndef RELEASE
-        netplayConfig.rollback = MAX_ROLLBACK; // Rollback testing
-#endif
         netplayConfig.winCount = ui.getConfig().getInteger ( "versusWinCount" );
-        netplayConfig.hostPlayer = 1; // TODO make this configurable
+
+        // TODO make this configurable
+        netplayConfig.hostPlayer = 1;
+
+        // // Rollback testing
+        // netplayConfig.rollback = MAX_ROLLBACK;
 
         if ( opt[Options::Offline].arg && !opt[Options::Tourney] )
         {
