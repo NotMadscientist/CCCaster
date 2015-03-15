@@ -1,4 +1,5 @@
 #include "KeyValueStore.h"
+#include "StringUtils.h"
 #include "Logger.h"
 
 #include <sstream>
@@ -48,8 +49,12 @@ bool KeyValueStore::save ( const string& file ) const
     if ( good )
     {
         fout << endl;
+
         for ( auto it = settings.begin(); it != settings.end(); ++it )
+        {
             fout << ( it == settings.begin() ? "" : "\n" ) << it->first << '=' << it->second << endl;
+        }
+
         good = fout.good();
     }
 
@@ -65,16 +70,19 @@ bool KeyValueStore::load ( const string& file )
     if ( good )
     {
         string line;
+
         while ( getline ( fin, line ) )
         {
-            size_t div = line.find ( '=' );
-            if ( div == string::npos )
+            vector<string> parts = split ( line, "=" );
+
+            if ( parts.size() != 2 )
                 continue;
 
-            const auto it = types.find ( line.substr ( 0, div ) );
+            const auto it = types.find ( parts[0] );
+
             if ( it != types.end() )
             {
-                stringstream ss ( line.substr ( div + 1 ) );
+                stringstream ss ( parts[1] );
                 ss >> ws;
 
                 switch ( it->second )
