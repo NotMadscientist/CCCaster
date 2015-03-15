@@ -413,7 +413,7 @@ void SmartSocket::timerExpired ( Timer *timer )
     {
         ASSERT ( isServer() == true );
 
-        auto it = pendingClients.find ( pendingTimers[timer] );
+        const auto it = pendingClients.find ( pendingTimers[timer] );
 
         if ( it != pendingClients.end() )
         {

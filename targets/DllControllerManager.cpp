@@ -454,7 +454,7 @@ void DllControllerManager::detachedJoystick ( Controller *controller )
     if ( playerControllers[1] == controller )
         playerControllers[1] = 0;
 
-    auto it = find ( allControllers.begin(), allControllers.end(), controller );
+    const auto it = find ( allControllers.begin(), allControllers.end(), controller );
 
     ASSERT ( it != allControllers.end() );
 

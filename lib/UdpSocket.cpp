@@ -472,7 +472,7 @@ void UdpSocket::readEventAddressed ( const MsgPtr& msg, const IpAddrPort& addres
 {
     UdpSocket *socket;
 
-    auto it = childSockets.find ( address );
+    const auto it = childSockets.find ( address );
     if ( it != childSockets.end() )
     {
         // Get the existing child socket

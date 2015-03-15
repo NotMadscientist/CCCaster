@@ -355,7 +355,7 @@ Controller::Controller ( const JoystickInfo& info ) : name ( info.name ), joysti
     joystickMappings.name = nextName ( name );
     namesWithIndex.insert ( joystickMappings.name );
 
-    auto it = origNameCount.find ( name );
+    const auto it = origNameCount.find ( name );
     if ( it == origNameCount.end() )
         origNameCount[name] = 1;
     else

@@ -30,7 +30,7 @@ SocketPtr SpectatorManager::popPendingSocket ( Socket *socketPtr )
 {
     LOG ( "socket=%08x", socketPtr );
 
-    auto it = pendingSockets.find ( socketPtr );
+    const auto it = pendingSockets.find ( socketPtr );
 
     if ( it == pendingSockets.end() )
         return 0;
@@ -53,7 +53,7 @@ void SpectatorManager::timerExpired ( Timer *timerPtr )
 {
     LOG ( "timer=%08x", timerPtr );
 
-    auto it = pendingTimerToSocket.find ( timerPtr );
+    const auto it = pendingTimerToSocket.find ( timerPtr );
 
     if ( it == pendingTimerToSocket.end() )
         return;

@@ -382,7 +382,7 @@ void ControllerManager::attachJoystick ( const Guid& guid, JoystickInfo& info )
     }
     else
     {
-        auto it = mappings.mappings.find ( controller->getOrigName() );
+        it = mappings.mappings.find ( controller->getOrigName() );
         if ( it != mappings.mappings.end() && it->second->getMsgType() == MsgType::JoystickMappings )
             controller->setMappings ( it->second->getAs<JoystickMappings>() );
     }
@@ -399,7 +399,7 @@ void ControllerManager::detachJoystick ( const Guid& guid )
         return;
 
     // Find and remove the controller
-    auto it = joysticks.find ( guid );
+    const auto it = joysticks.find ( guid );
 
     ASSERT ( it != joysticks.end() );
 

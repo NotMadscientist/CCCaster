@@ -71,7 +71,7 @@ bool KeyValueStore::load ( const string& file )
             if ( div == string::npos )
                 continue;
 
-            auto it = types.find ( line.substr ( 0, div ) );
+            const auto it = types.find ( line.substr ( 0, div ) );
             if ( it != types.end() )
             {
                 stringstream ss ( line.substr ( div + 1 ) );

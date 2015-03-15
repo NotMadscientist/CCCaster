@@ -46,7 +46,7 @@ struct OptionsMessage : public SerializableSequence
 {
     size_t operator[] ( const Options& opt ) const
     {
-        auto it = options.find ( ( size_t ) opt.value );
+        const auto it = options.find ( ( size_t ) opt.value );
 
         if ( it == options.end() )
             return 0;
@@ -66,7 +66,7 @@ struct OptionsMessage : public SerializableSequence
     {
         static const std::string EmptyString = "";
 
-        auto it = options.find ( ( size_t ) opt.value );
+        const auto it = options.find ( ( size_t ) opt.value );
 
         if ( it == options.end() )
             return EmptyString;
