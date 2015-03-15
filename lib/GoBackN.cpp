@@ -37,8 +37,8 @@ void GoBackN::timerExpired ( Timer *timer )
     }
     else
     {
-        if ( sendListPos == sendList.end() )
-            sendListPos = sendList.begin();
+        if ( sendListPos == sendList.cend() )
+            sendListPos = sendList.cbegin();
 
 #ifndef DISABLE_LOGGING
         logSendList();
@@ -173,7 +173,7 @@ void GoBackN::recvRaw ( const MsgPtr& msg )
         // Remove messages from sendList with sequence <= the ACKed sequence
         while ( !sendList.empty() && sendList.front()->getAs<SerializableSequence>().getSequence() <= sequence )
             sendList.pop_front();
-        sendListPos = sendList.end();
+        sendListPos = sendList.cend();
 
         logSendList();
         return;
@@ -249,14 +249,14 @@ void GoBackN::reset()
 
     sendSequence = recvSequence = 0;
     sendList.clear();
-    sendListPos = sendList.end();
+    sendListPos = sendList.cend();
     sendTimer.reset();
     recvBuffer.clear();
 }
 
 GoBackN::GoBackN ( Owner *owner, uint64_t interval, uint64_t timeout )
     : owner ( owner )
-    , sendListPos ( sendList.end() )
+    , sendListPos ( sendList.cend() )
     , interval ( interval )
     , keepAlive ( timeout )
 {
@@ -265,7 +265,7 @@ GoBackN::GoBackN ( Owner *owner, uint64_t interval, uint64_t timeout )
     refreshKeepAlive();
 }
 
-GoBackN::GoBackN ( Owner *owner, const GoBackN& state ) : owner ( owner ), sendListPos ( sendList.end() )
+GoBackN::GoBackN ( Owner *owner, const GoBackN& state ) : owner ( owner ), sendListPos ( sendList.cend() )
 {
     *this = state;
 }

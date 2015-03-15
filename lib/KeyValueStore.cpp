@@ -50,9 +50,9 @@ bool KeyValueStore::save ( const string& file ) const
     {
         fout << endl;
 
-        for ( auto it = settings.begin(); it != settings.end(); ++it )
+        for ( auto it = settings.cbegin(); it != settings.cend(); ++it )
         {
-            fout << ( it == settings.begin() ? "" : "\n" ) << it->first << '=' << it->second << endl;
+            fout << ( it == settings.cbegin() ? "" : "\n" ) << it->first << '=' << it->second << endl;
         }
 
         good = fout.good();

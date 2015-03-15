@@ -74,7 +74,7 @@ private:
     std::list<MsgPtr> sendList;
 
     // Current position in the sendList
-    std::list<MsgPtr>::iterator sendListPos;
+    std::list<MsgPtr>::const_iterator sendListPos;
 
     // Timer for repeatedly sending messages
     TimerPtr sendTimer;

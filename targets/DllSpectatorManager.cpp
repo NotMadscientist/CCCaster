@@ -51,8 +51,8 @@ void SpectatorManager::pushSpectator ( Socket *socketPtr, const IpAddrPort& serv
 
     spectatorMap[socketPtr] = spectator;
 
-    if ( spectatorMap.size() == 1 || spectatorMapPos == spectatorMap.end() )
-        spectatorMapPos = spectatorMap.begin();
+    if ( spectatorMap.size() == 1 || spectatorMapPos == spectatorMap.cend() )
+        spectatorMapPos = spectatorMap.cbegin();
 
     netManPtr->preserveStartIndex = min ( netManPtr->preserveStartIndex, spectator.pos.parts.index );
 
@@ -108,21 +108,21 @@ void SpectatorManager::frameStepSpectators()
     if ( spectatorMap.empty() )
     {
         spectatorListPos = spectatorList.end();
-        spectatorMapPos = spectatorMap.end();
+        spectatorMapPos = spectatorMap.cend();
 
         // Reset the preserve index
         netManPtr->preserveStartIndex = currentMinIndex = UINT_MAX;
         return;
     }
 
-    if ( spectatorMapPos == spectatorMap.end() )
-        spectatorMapPos = spectatorMap.begin();
+    if ( spectatorMapPos == spectatorMap.cend() )
+        spectatorMapPos = spectatorMap.cbegin();
 
     if ( spectatorMap.size() > 1 )
         ++spectatorMapPos;
 
-    if ( spectatorMapPos == spectatorMap.end() )
-        spectatorMapPos = spectatorMap.begin();
+    if ( spectatorMapPos == spectatorMap.cend() )
+        spectatorMapPos = spectatorMap.cbegin();
 
     // Number of times to broadcast per frame
     const uint32_t multiplier = 1 + ( spectatorList.size() * 2 ) / ( NUM_INPUTS + 1 );
@@ -199,7 +199,7 @@ void SpectatorManager::frameStepSpectators()
 
 const IpAddrPort& SpectatorManager::getRandomSpectatorAddress() const
 {
-    if ( spectatorMap.empty() || spectatorMapPos == spectatorMap.end() )
+    if ( spectatorMap.empty() || spectatorMapPos == spectatorMap.cend() )
     {
         LOG ( "'%s'", NullAddress );
         return NullAddress;

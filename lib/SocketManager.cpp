@@ -26,7 +26,7 @@ void SocketManager::check ( uint64_t timeout )
             activeSockets.insert ( socket );
         }
 
-        for ( auto it = activeSockets.begin(); it != activeSockets.end(); )
+        for ( auto it = activeSockets.cbegin(); it != activeSockets.cend(); )
         {
             if ( allocatedSockets.find ( *it ) != allocatedSockets.end() )
             {
