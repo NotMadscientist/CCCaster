@@ -175,7 +175,7 @@ void showMessage ( const string& newText, int timeout )
     initialTimeout = messageTimeout = ( timeout / 17 );
 
     // Show the message in the middle
-    text = { "", "", newText };
+    text = { "", newText, "" };
     shouldDrawSelector = { false, false };
 
     enable();
@@ -350,7 +350,7 @@ void renderOverlayText ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewport 
         rect.right = 1;
         rect.bottom = OVERLAY_FONT_HEIGHT;
 
-        DrawText ( font, text[2], rect, DT_CALCRECT, D3DCOLOR_XRGB ( 0, 0, 0 ) );
+        DrawText ( font, text[1], rect, DT_CALCRECT, D3DCOLOR_XRGB ( 0, 0, 0 ) );
 
         messageWidth = rect.right + 2 * OVERLAY_TEXT_BORDER;
     }
@@ -392,13 +392,13 @@ void renderOverlayText ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewport 
                 DrawRectangle ( device, INLINE_RECT ( selector[1] ), OVERLAY_SELECTOR_R_COLOR );
         }
 
-        if ( !text[2].empty() )
-            DrawText ( font, text[2], rect, DT_WORDBREAK | DT_CENTER, OVERLAY_TEXT_COLOR );
-
-        if ( !text[1].empty() )
-            DrawText ( font, text[1], rect, DT_WORDBREAK | DT_RIGHT, OVERLAY_TEXT_COLOR );
-
         if ( !text[0].empty() )
             DrawText ( font, text[0], rect, DT_WORDBREAK | DT_LEFT, OVERLAY_TEXT_COLOR );
+
+        if ( !text[1].empty() )
+            DrawText ( font, text[1], rect, DT_WORDBREAK | DT_CENTER, OVERLAY_TEXT_COLOR );
+
+        if ( !text[2].empty() )
+            DrawText ( font, text[2], rect, DT_WORDBREAK | DT_RIGHT, OVERLAY_TEXT_COLOR );
     }
 }

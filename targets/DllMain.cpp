@@ -244,6 +244,8 @@ struct DllMain
                         DllOverlayUi::hidePalettes();
                         MouseManager::get().owner = 0;
                     }
+
+                    AsmHacks::enableEscapeToExit = true;
                 }
 
                 if ( DllOverlayUi::isEnabled() )                                            // Overlay UI controls

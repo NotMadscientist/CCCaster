@@ -110,6 +110,8 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
                     playerControllers[0]->cancelMapping();
                 if ( playerControllers[1] )
                     playerControllers[1]->cancelMapping();
+                overlayPositions[0] = 0;
+                overlayPositions[1] = 0;
 
                 // Disable keyboard events, since we use GetKeyState for regular controller inputs
                 KeyboardManager::get().unhook();
@@ -197,20 +199,22 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
     array<string, 3> text;
 
     // Display all controllers
-    text[2] = "Controllers\n";
+    text[1] = "Controllers\n";
     for ( const Controller *controller : allControllers )
         if ( controller != playerControllers[0] && controller != playerControllers[1] )
-            text[2] += "\n" + controller->getName();
+            text[1] += "\n" + controller->getName();
 
     const size_t controllersHeight = 3 + allControllers.size();
 
     // Update player controllers
     for ( uint8_t i = 0; i < 2; ++i )
     {
+        string& playerText = text [ i ? 2 : 0 ];
+
         // Hide / disable other player's overlay in netplay
         if ( isSinglePlayer && localPlayer != i + 1 )
         {
-            text[i].clear();
+            playerText.clear();
             DllOverlayUi::updateSelector ( i );
             continue;
         }
@@ -218,7 +222,7 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
         // Show placeholder when player has no controller assigned
         if ( !playerControllers[i] )
         {
-            text[i] = ( i == 0 ? "Press Left on P1 controller" : "Press Right on P2 controller" );
+            playerText = ( i == 0 ? "Press Left on P1 controller" : "Press Right on P2 controller" );
             DllOverlayUi::updateSelector ( i );
             continue;
         }
@@ -233,9 +237,9 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
             headerHeight = max ( 3u, controllersHeight );
 
             // Instructions for mapping keyboard controls
-            text[i] = "Press Enter to set a direction key\n";
-            text[i] += format ( "Press %s to delete a key\n", ( i == 0 ? "Left" : "Right" ) );
-            text[i] += string ( headerHeight - 3, '\n' );
+            playerText = "Press Enter to set a direction key\n";
+            playerText += format ( "Press %s to delete a key\n", ( i == 0 ? "Left" : "Right" ) );
+            playerText += string ( headerHeight - 3, '\n' );
 
             // Add directions to keyboard mapping options
             for ( size_t j = 0; j < 4; ++j )
@@ -249,8 +253,8 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
             headerHeight = max ( 2u, controllersHeight );
 
             // Instructions for mapping joystick buttons
-            text[i] = format ( "Press %s to delete a key\n", ( i == 0 ? "Left" : "Right" ) );
-            text[i] += string ( headerHeight - 2, '\n' );
+            playerText = format ( "Press %s to delete a key\n", ( i == 0 ? "Left" : "Right" ) );
+            playerText += string ( headerHeight - 2, '\n' );
         }
 
         // Add buttons to mapping options
@@ -273,6 +277,8 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
             if ( ( !playerControllers[0] || !overlayPositions[0] )
                     && ( !playerControllers[1] || !overlayPositions[1] ) )
             {
+                overlayPositions[0] = 0;
+                overlayPositions[1] = 0;
                 DllOverlayUi::disable();
                 KeyboardManager::get().unhook();
                 AsmHacks::enableEscapeToExit = true;
@@ -282,7 +288,7 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
 
         // Update overlay text with all the options
         for ( const string& option : options )
-            text[i] += "\n" + option;
+            playerText += "\n" + option;
 
         // Filter keyboard overlay controls when mapping directions
         if ( playerControllers[i]->isKeyboard() && playerControllers[i]->isMapping()
@@ -316,14 +322,14 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
                 deleteMapping = true;
         }
         else if ( ( playerControllers[i]->isJoystick() && isDirectionPressed ( playerControllers[i], 2 ) )
-                  || ( playerControllers[i]->isKeyboard() && KeyboardState::isPressed ( VK_DOWN ) ) )
+                  || ( playerControllers[i]->isKeyboard() && KeyboardState::isPressedOrHeld ( VK_DOWN ) ) )
         {
             // Move selector down
             overlayPositions[i] = ( overlayPositions[i] + 1 ) % options.size();
             changedPosition = true;
         }
         else if ( ( playerControllers[i]->isJoystick() && isDirectionPressed ( playerControllers[i], 8 ) )
-                  || ( playerControllers[i]->isKeyboard() && KeyboardState::isPressed ( VK_UP ) ) )
+                  || ( playerControllers[i]->isKeyboard() && KeyboardState::isPressedOrHeld ( VK_UP ) ) )
         {
             // Move selector up
             overlayPositions[i] = ( overlayPositions[i] + options.size() - 1 ) % options.size();
@@ -373,9 +379,9 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
 
         if ( overlayPositions[i] == 0 )
         {
-            text[i] = string ( "Press Up or Down to set keys" )
-                      + string ( controllersHeight, '\n' )
-                      + playerControllers[i]->getName();
+            playerText = string ( "Press Up or Down to set keys" )
+                         + string ( controllersHeight, '\n' )
+                         + playerControllers[i]->getName();
             DllOverlayUi::updateSelector ( i, controllersHeight, playerControllers[i]->getName() );
         }
         else
@@ -426,6 +432,8 @@ void DllControllerManager::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, b
 
 void DllControllerManager::mouseEvent ( int x, int y, bool isDown, bool pressed, bool released )
 {
+    // This doesn't modify any of the controllers, so we don't need to lock the main mutex
+
     DllOverlayUi::paletteMouseEvent ( x, y, isDown, pressed, released );
 }
 
