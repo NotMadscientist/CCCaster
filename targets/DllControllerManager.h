@@ -26,7 +26,7 @@ class DllControllerManager
 
     std::array<bool, 2> finishedMapping = {{ false, false }};
 
-    DllPaletteManager palMan;
+    std::unordered_map<uint32_t, DllPaletteManager> palMans;
 
     uint32_t colorNumber = 0;
 

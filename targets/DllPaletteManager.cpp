@@ -9,15 +9,11 @@ using namespace std;
 
 static inline uint32_t getP1Color ( uint32_t paletteNumber, uint32_t colorNumber )
 {
+    if ( ! DllPaletteManager::isReady() )
+        return 0;
+
     const uint32_t *ptr0 = ( uint32_t * ) 0x74D808;
-
-    if ( ! *ptr0 )
-        return 0;
-
     const uint32_t *ptr1 = ( uint32_t * ) ( *ptr0 + 0x1AC );
-
-    if ( ! *ptr1 )
-        return 0;
 
     uint32_t color = ( 0xFFFFFF & * ( uint32_t * ) ( *ptr1 + 4 + 1024 * paletteNumber + 4 * colorNumber ) );
 
@@ -27,15 +23,11 @@ static inline uint32_t getP1Color ( uint32_t paletteNumber, uint32_t colorNumber
 
 static inline void setP1Color ( uint32_t paletteNumber, uint32_t colorNumber, uint32_t color )
 {
+    if ( ! DllPaletteManager::isReady() )
+        return;
+
     const uint32_t *ptr0 = ( uint32_t * ) 0x74D808;
-
-    if ( ! *ptr0 )
-        return;
-
     const uint32_t *ptr1 = ( uint32_t * ) ( *ptr0 + 0x1AC );
-
-    if ( ! *ptr1 )
-        return;
 
     // The internal color format is BGR; R and B are swapped
     color = ( ( color & 0xFF ) << 16 ) | ( color & 0xFF00 ) | ( ( color & 0xFF0000 ) >> 16 );
@@ -43,7 +35,7 @@ static inline void setP1Color ( uint32_t paletteNumber, uint32_t colorNumber, ui
     ( * ( uint32_t * ) ( *ptr1 + 4 + 1024 * paletteNumber + 4 * colorNumber ) ) = ( 0xFFFFFF & color );
 }
 
-bool DllPaletteManager::isReady() const
+bool DllPaletteManager::isReady()
 {
     const uint32_t *ptr0 = ( uint32_t * ) 0x74D808;
 

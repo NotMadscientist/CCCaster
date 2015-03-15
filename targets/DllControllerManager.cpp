@@ -3,6 +3,7 @@
 #include "DllHacks.h"
 #include "AsmHacks.h"
 #include "KeyboardState.h"
+#include "CharacterSelect.h"
 
 #include <windows.h>
 
@@ -155,11 +156,42 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
             return;
         }
 
-        if ( !palMan.isReady() )
+        if ( !DllPaletteManager::isReady() )
         {
             DllOverlayUi::updateText ( { "", "Loading...", "" } );
             return;
         }
+
+        if ( KeyboardState::isPressedOrHeld ( VK_NEXT ) )
+        {
+            uint32_t selector = *CC_P1_CHARA_SELECTOR_ADDR;
+            uint32_t chara = UNKNOWN_POSITION;
+
+            while ( chara == UNKNOWN_POSITION )
+            {
+                selector = ( selector + 1 ) % 43;
+                chara = selectorToChara ( selector );
+            }
+
+            *CC_P1_CHARA_SELECTOR_ADDR = selector;
+            * CC_P1_CHARACTER_ADDR = chara;
+        }
+        else if ( KeyboardState::isPressedOrHeld ( VK_PRIOR ) )
+        {
+            uint32_t selector = *CC_P1_CHARA_SELECTOR_ADDR;
+            uint32_t chara = UNKNOWN_POSITION;
+
+            while ( chara == UNKNOWN_POSITION )
+            {
+                selector = ( selector + 43 - 1 ) % 43;
+                chara = selectorToChara ( selector );
+            }
+
+            *CC_P1_CHARA_SELECTOR_ADDR = selector;
+            * CC_P1_CHARACTER_ADDR = chara;
+        }
+
+        DllPaletteManager& palMan = palMans [ *CC_P1_CHARACTER_ADDR ];
 
         if ( KeyboardState::isHeld ( VK_DELETE, 1000, 1 ) )
         {

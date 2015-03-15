@@ -11,7 +11,7 @@ class DllPaletteManager
 
 public:
 
-    bool isReady() const;
+    static bool isReady();
 
     uint32_t get ( uint32_t paletteNumber, uint32_t colorNumber ) const;
     void set ( uint32_t paletteNumber, uint32_t colorNumber, uint32_t color );
