@@ -3706,6 +3706,61 @@
         <Byte>00</Byte>
       </After>
     </CodeEntry>
+    <CodeEntry>
+      <Description>CharaSelect palette load function</Description>
+      <Address>00485E00</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>85E00</ModuleNameOffset>
+      <Before>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+        <Byte>CC</Byte>
+      </Before>
+      <Actual>
+        <Byte>81</Byte>
+        <Byte>EC</Byte>
+        <Byte>0C</Byte>
+        <Byte>01</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+      </Actual>
+      <After>
+        <Byte>A1</Byte>
+        <Byte>58</Byte>
+        <Byte>B4</Byte>
+        <Byte>54</Byte>
+        <Byte>00</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>CharaSelect palette load function 2</Description>
+      <Address>004036FF</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>36FF</ModuleNameOffset>
+      <Before>
+        <Byte>29</Byte>
+        <Byte>52</Byte>
+        <Byte>51</Byte>
+        <Byte>8B</Byte>
+        <Byte>C7</Byte>
+      </Before>
+      <Actual>
+        <Byte>E8</Byte>
+        <Byte>AC</Byte>
+        <Byte>F7</Byte>
+        <Byte>FF</Byte>
+        <Byte>FF</Byte>
+      </Actual>
+      <After>
+        <Byte>83</Byte>
+        <Byte>C4</Byte>
+        <Byte>14</Byte>
+        <Byte>5F</Byte>
+        <Byte>5D</Byte>
+      </After>
+    </CodeEntry>
   </CheatCodes>
   <UserdefinedSymbols/>
   <DisassemblerComments>
