@@ -236,6 +236,8 @@ struct DllMain
                     {
                         DllOverlayUi::showPalettes();
                         DllOverlayUi::enable();
+                        DllOverlayUi::updateSelector ( 0, 0, "" );
+                        DllOverlayUi::updateSelector ( 1, 0, "" );
                         MouseManager::get().owner = this;
                     }
                     else
