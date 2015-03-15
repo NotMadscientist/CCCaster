@@ -85,7 +85,7 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
                 && ( !playerControllers[0] || overlayPositions[0] == 0 )
                 && ( !playerControllers[1] || overlayPositions[1] == 0 ) )
         {
-            if ( ! DllOverlayUi::isEnabled() || DllOverlayUi::isShowingPalettes() )
+            if ( ! DllOverlayUi::isEnabled() || DllOverlayUi::isShowingPaletteEditor() )
             {
                 // Refresh the list of joysticks if we're enabling the overlay
                 ControllerManager::get().refreshJoysticks();
@@ -99,8 +99,8 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
                 // Disable Escape to exit
                 AsmHacks::enableEscapeToExit = false;
 
-                // Hide palettes and enable overlay
-                DllOverlayUi::hidePalettes();
+                // Hide palette editor and enable overlay
+                DllOverlayUi::hidePaletteEditor();
                 DllOverlayUi::enable();
             }
             else
@@ -127,8 +127,8 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
         }
     }
 
-    // Handle the palette selector
-    if ( DllOverlayUi::isShowingPalettes() )
+    // Handle the palette editor
+    if ( DllOverlayUi::isShowingPaletteEditor() )
     {
         static const uint32_t FlushFrames = 300;
 

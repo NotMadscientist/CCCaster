@@ -43,7 +43,7 @@ static D3DXVECTOR2 selectorPos = { 0, 0 };
 namespace DllOverlayUi
 {
 
-void showPalettes()
+void showPaletteEditor()
 {
     if ( ProcessManager::isWine() )
         return;
@@ -53,7 +53,7 @@ void showPalettes()
     showing = true;
 }
 
-void hidePalettes()
+void hidePaletteEditor()
 {
     if ( ProcessManager::isWine() )
         return;
@@ -63,18 +63,18 @@ void hidePalettes()
     showing = false;
 }
 
-void togglePalettes()
+void togglePaletteEditor()
 {
     if ( ProcessManager::isWine() )
         return;
 
-    if ( isShowingPalettes() )
-        hidePalettes();
+    if ( isShowingPaletteEditor() )
+        hidePaletteEditor();
     else
-        showPalettes();
+        showPaletteEditor();
 }
 
-bool isShowingPalettes()
+bool isShowingPaletteEditor()
 {
     if ( ProcessManager::isWine() )
         return false;

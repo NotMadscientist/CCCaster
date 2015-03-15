@@ -226,15 +226,15 @@ struct DllMain
                 KeyboardState::update();
                 updateControls ( &localInputs[0] );
 
-                // Only allow palette selector during offline character select
+                // Only allow palette editor during offline character select
                 if ( netMan.getState() == NetplayState::CharaSelect
                         && clientMode.isOffline()
                         && KeyboardState::isPressed ( VK_F3 )
                         && !ProcessManager::isWine() )
                 {
-                    if ( !DllOverlayUi::isShowingPalettes() )
+                    if ( !DllOverlayUi::isShowingPaletteEditor() )
                     {
-                        DllOverlayUi::showPalettes();
+                        DllOverlayUi::showPaletteEditor();
                         DllOverlayUi::enable();
                         DllOverlayUi::updateSelector ( 0, 0, "" );
                         DllOverlayUi::updateSelector ( 1, 0, "" );
@@ -243,7 +243,7 @@ struct DllMain
                     else
                     {
                         DllOverlayUi::disable();
-                        DllOverlayUi::hidePalettes();
+                        DllOverlayUi::hidePaletteEditor();
                         MouseManager::get().owner = 0;
                     }
 

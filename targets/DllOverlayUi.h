@@ -42,13 +42,13 @@ extern int debugTextAlign;
 #endif // NOT RELEASE
 
 
-void showPalettes();
+void showPaletteEditor();
 
-void hidePalettes();
+void hidePaletteEditor();
 
-void togglePalettes();
+void togglePaletteEditor();
 
-bool isShowingPalettes();
+bool isShowingPaletteEditor();
 
 void paletteMouseEvent ( int x, int y, bool isDown, bool pressed, bool released );
 
