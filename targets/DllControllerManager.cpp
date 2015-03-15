@@ -158,7 +158,7 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
 
         if ( KeyboardState::isHeld ( VK_DELETE, 1000, 1 ) )
         {
-            DllOverlayUi::updateText ( { "", format ( "> Color %02d reset to defaults <", paletteNumber + 1 ), "" } );
+            DllOverlayUi::updateText ( { "", format ( ">> Color %02d reset to defaults <<", paletteNumber + 1 ), "" } );
             DllOverlayUi::clearCurrentColor();
             palMan.clear ( paletteNumber );
             for ( size_t i = 0; i < 256; ++i )
@@ -206,7 +206,7 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
         {
             DllOverlayUi::clearCurrentColor();
         }
-        else if ( KeyboardState::isPressed ( VK_DELETE ) )
+        else if ( KeyboardState::isReleased ( VK_DELETE ) )
         {
             DllOverlayUi::clearCurrentColor();
             palMan.clear ( paletteNumber, colorNumber );
