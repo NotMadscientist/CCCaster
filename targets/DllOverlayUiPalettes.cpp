@@ -21,6 +21,8 @@ static const D3DXVECTOR2 sliderSize = { 25, 200 };
 
 static bool showing = false;
 
+static bool hasColor = false;
+
 static IDirect3DVertexBuffer9 *background = 0;
 
 static IDirect3DTexture9 *lightWheel = 0;
@@ -46,6 +48,8 @@ void showPalettes()
     if ( ProcessManager::isWine() )
         return;
 
+    clearCurrentColor();
+
     showing = true;
 }
 
@@ -53,6 +57,8 @@ void hidePalettes()
 {
     if ( ProcessManager::isWine() )
         return;
+
+    clearCurrentColor();
 
     showing = false;
 }
@@ -97,14 +103,26 @@ void paletteMouseEvent ( int x, int y, bool isDown, bool pressed, bool released 
     }
 }
 
-RgbColor getCurrentColor()
+uint32_t getCurrentColor()
 {
-    return { uint8_t ( color & 0xFF ), uint8_t ( ( color & 0xFF00 ) >> 8 ), uint8_t ( ( color & 0xFF0000 ) >> 16 ) };
+    return ( color & 0x00FFFFFF );
 }
 
 void setCurrentColor ( uint32_t newColor )
 {
-    color = ( newColor & 0x00FFFFFF ) | ( color & 0xFF000000 );
+    color = ( newColor & 0x00FFFFFF );
+}
+
+void clearCurrentColor()
+{
+    selectorPos.x = 0;
+    selectorPos.y = 0;
+    hasColor = false;
+}
+
+bool hasCurrentColor()
+{
+    return hasColor;
 }
 
 } // namespace DllOverlayUi
@@ -224,6 +242,8 @@ void renderPaletteSelector ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewp
     if ( !showing )
         return;
 
+    hasColor = false;
+
     updateText ( { "", "", "" } );
 
     const int centerX = viewport.Width / 2;
@@ -264,6 +284,8 @@ void renderPaletteSelector ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewp
 
         DrawCircle<9> ( device, wheelCenter.x + radius * cos ( angle ), wheelCenter.y - radius * sin ( angle ),
                         3, ( useLight ? COLOR_BLACK : COLOR_WHITE ) );
+
+        hasColor = true;
     }
 
     // Handle double click to toggle colour wheel mode
@@ -299,6 +321,8 @@ void renderPaletteSelector ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewp
         color = D3DCOLOR_XRGB ( int ( 255 * scale ), int ( 255 * scale ), int ( 255 * scale ) );
 
         DrawCircle<9> ( device, selectorPos.x, sliderCenter.y - ( scale - 0.5f ) * sliderSize.y, 3, COLOR_RED );
+
+        hasColor = true;
     }
 
     DrawRectangle ( device, centerX - 30, viewport.Height - 60, centerX + 30, viewport.Height, color );

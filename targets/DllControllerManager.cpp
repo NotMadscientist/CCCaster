@@ -127,9 +127,102 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
         }
     }
 
-    // Don't do anything here when the palette selector is showing
+    // Handle the palette selector
     if ( DllOverlayUi::isShowingPalettes() )
+    {
+        static uint32_t flushing = 0;
+        static uint32_t origPalette = 0;
+
+        uint32_t& paletteNumber = *CC_P1_COLOR_SELECTOR_ADDR;
+
+        // TODO figure out if there's a better way to do this
+        if ( flushing )
+        {
+            *CC_SKIP_FRAMES_ADDR = 1;
+
+            if ( flushing % 100 == 0 )
+                paletteNumber = ( paletteNumber + 1 ) % 36;
+
+            --flushing;
+
+            if ( flushing == 0 )
+                paletteNumber = origPalette;
+            return;
+        }
+
+        if ( !palMan.isReady() )
+        {
+            DllOverlayUi::updateText ( { "", "Loading...", "" } );
+            return;
+        }
+
+        if ( KeyboardState::isHeld ( VK_DELETE, 1000, 1 ) )
+        {
+            DllOverlayUi::updateText ( { "", format ( "> Color %02d reset to defaults <", paletteNumber + 1 ), "" } );
+            DllOverlayUi::clearCurrentColor();
+            palMan.clear ( paletteNumber );
+            for ( size_t i = 0; i < 256; ++i )
+                palMan.set ( paletteNumber, i, palMan.get ( paletteNumber, i ) );
+            flushing = 300;
+            return;
+        }
+
+        const uint32_t color = ( DllOverlayUi::hasCurrentColor()
+                                 ? DllOverlayUi::getCurrentColor()
+                                 : palMan.get ( paletteNumber, colorNumber ) );
+
+        const string text = format ( "Color %02d - %03d : %06X", paletteNumber + 1, colorNumber + 1, color );
+
+        DllOverlayUi::updateText ( { "", text, "" } );
+        DllOverlayUi::setCurrentColor ( color );
+
+        bool changedColor = false;
+
+        if ( KeyboardState::isPressedOrHeld ( VK_RIGHT ) )
+        {
+            changedColor = true;
+            colorNumber = ( colorNumber + 1 ) % 256;
+        }
+        else if ( KeyboardState::isPressedOrHeld ( VK_LEFT ) )
+        {
+            changedColor = true;
+            colorNumber = ( colorNumber + 256 - 1 ) % 256;
+        }
+
+        if ( KeyboardState::isPressedOrHeld ( VK_DOWN ) )
+        {
+            changedColor = true;
+            paletteNumber = ( paletteNumber + 1 ) % 36;
+            colorNumber = 0;
+        }
+        else if ( KeyboardState::isPressedOrHeld ( VK_UP ) )
+        {
+            changedColor = true;
+            paletteNumber = ( paletteNumber + 36 - 1 ) % 36;
+            colorNumber = 0;
+        }
+
+        if ( changedColor )
+        {
+            DllOverlayUi::clearCurrentColor();
+        }
+        else if ( KeyboardState::isPressed ( VK_DELETE ) )
+        {
+            DllOverlayUi::clearCurrentColor();
+            palMan.clear ( paletteNumber, colorNumber );
+            palMan.set ( paletteNumber, colorNumber, palMan.get ( paletteNumber, colorNumber ) );
+            flushing = 300;
+        }
+        else if ( KeyboardState::isPressed ( VK_RETURN ) )
+        {
+            palMan.set ( paletteNumber, colorNumber, color );
+            flushing = 300;
+        }
+
+        if ( flushing )
+            origPalette = paletteNumber;
         return;
+    }
 
     // Only update player controls when the overlay is NOT enabled
     if ( ! DllOverlayUi::isEnabled() )

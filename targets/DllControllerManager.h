@@ -5,6 +5,7 @@
 #include "ControllerManager.h"
 #include "Controller.h"
 #include "DllControllerUtils.h"
+#include "DllPaletteManager.h"
 
 #include <vector>
 #include <array>
@@ -24,6 +25,10 @@ class DllControllerManager
     std::array<size_t, 2> overlayPositions = {{ 0, 0 }};
 
     std::array<bool, 2> finishedMapping = {{ false, false }};
+
+    DllPaletteManager palMan;
+
+    uint32_t colorNumber = 0;
 
 public:
 
