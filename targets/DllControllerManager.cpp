@@ -130,6 +130,8 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
     // Handle the palette selector
     if ( DllOverlayUi::isShowingPalettes() )
     {
+        static const uint32_t FlushFrames = 300;
+
         static uint32_t flushing = 0;
         static uint32_t origPalette = 0;
 
@@ -139,6 +141,9 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
         if ( flushing )
         {
             *CC_SKIP_FRAMES_ADDR = 1;
+
+            if ( flushing == FlushFrames )
+                origPalette = paletteNumber;
 
             if ( flushing % 100 == 0 )
                 paletteNumber = ( paletteNumber + 1 ) % 36;
@@ -158,12 +163,12 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
 
         if ( KeyboardState::isHeld ( VK_DELETE, 1000, 1 ) )
         {
-            DllOverlayUi::updateText ( { "", format ( ">> Color %02d reset to defaults <<", paletteNumber + 1 ), "" } );
             DllOverlayUi::clearCurrentColor();
             palMan.clear ( paletteNumber );
             for ( size_t i = 0; i < 256; ++i )
                 palMan.set ( paletteNumber, i, palMan.get ( paletteNumber, i ) );
-            flushing = 300;
+            flushing = FlushFrames;
+            DllOverlayUi::updateText ( { "", format ( ">> Color %02d reset to defaults <<", paletteNumber + 1 ), "" } );
             return;
         }
 
@@ -211,16 +216,15 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
             DllOverlayUi::clearCurrentColor();
             palMan.clear ( paletteNumber, colorNumber );
             palMan.set ( paletteNumber, colorNumber, palMan.get ( paletteNumber, colorNumber ) );
-            flushing = 300;
+            flushing = FlushFrames;
+            DllOverlayUi::updateText ( { "", "Reloading...", "" } );
         }
         else if ( KeyboardState::isPressed ( VK_RETURN ) )
         {
             palMan.set ( paletteNumber, colorNumber, color );
-            flushing = 300;
+            flushing = FlushFrames;
+            DllOverlayUi::updateText ( { "", "Reloading...", "" } );
         }
-
-        if ( flushing )
-            origPalette = paletteNumber;
         return;
     }
 
