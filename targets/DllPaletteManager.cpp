@@ -19,7 +19,10 @@ static inline uint32_t getP1Color ( uint32_t paletteNumber, uint32_t colorNumber
     if ( ! *ptr1 )
         return 0;
 
-    return ( 0xFFFFFF & * ( uint32_t * ) ( *ptr1 + 4 + 1024 * paletteNumber + 4 * colorNumber ) );
+    uint32_t color = ( 0xFFFFFF & * ( uint32_t * ) ( *ptr1 + 4 + 1024 * paletteNumber + 4 * colorNumber ) );
+
+    // The internal color format is BGR; R and B are swapped
+    return ( ( color & 0xFF ) << 16 ) | ( color & 0xFF00 ) | ( ( color & 0xFF0000 ) >> 16 );
 }
 
 static inline void setP1Color ( uint32_t paletteNumber, uint32_t colorNumber, uint32_t color )
@@ -33,6 +36,9 @@ static inline void setP1Color ( uint32_t paletteNumber, uint32_t colorNumber, ui
 
     if ( ! *ptr1 )
         return;
+
+    // The internal color format is BGR; R and B are swapped
+    color = ( ( color & 0xFF ) << 16 ) | ( color & 0xFF00 ) | ( ( color & 0xFF0000 ) >> 16 );
 
     ( * ( uint32_t * ) ( *ptr1 + 4 + 1024 * paletteNumber + 4 * colorNumber ) ) = ( 0xFFFFFF & color );
 }
