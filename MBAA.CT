@@ -3707,7 +3707,61 @@
       </After>
     </CodeEntry>
     <CodeEntry>
-      <Description>CharaSelect palette load function</Description>
+      <Description>CharaSelect palette load function 0</Description>
+      <Address>0048A6AA</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>8A6AA</ModuleNameOffset>
+      <Before>
+        <Byte>0B</Byte>
+        <Byte>8B</Byte>
+        <Byte>44</Byte>
+        <Byte>24</Byte>
+        <Byte>10</Byte>
+      </Before>
+      <Actual>
+        <Byte>E8</Byte>
+        <Byte>41</Byte>
+        <Byte>F3</Byte>
+        <Byte>FF</Byte>
+        <Byte>FF</Byte>
+      </Actual>
+      <After>
+        <Byte>33</Byte>
+        <Byte>C0</Byte>
+        <Byte>D9</Byte>
+        <Byte>E8</Byte>
+        <Byte>89</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>CharaSelect palette load function 1</Description>
+      <Address>00489A9E</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>89A9E</ModuleNameOffset>
+      <Before>
+        <Byte>6A</Byte>
+        <Byte>01</Byte>
+        <Byte>6A</Byte>
+        <Byte>00</Byte>
+        <Byte>52</Byte>
+      </Before>
+      <Actual>
+        <Byte>E8</Byte>
+        <Byte>3D</Byte>
+        <Byte>86</Byte>
+        <Byte>F7</Byte>
+        <Byte>FF</Byte>
+      </Actual>
+      <After>
+        <Byte>83</Byte>
+        <Byte>C4</Byte>
+        <Byte>0C</Byte>
+        <Byte>83</Byte>
+        <Byte>C3</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>CharaSelect palette load function 2</Description>
       <Address>00485E00</Address>
       <ModuleName>MBAA.exe</ModuleName>
       <ModuleNameOffset>85E00</ModuleNameOffset>
@@ -3735,7 +3789,7 @@
       </After>
     </CodeEntry>
     <CodeEntry>
-      <Description>CharaSelect palette load function 2</Description>
+      <Description>CharaSelect palette load function 3</Description>
       <Address>004036FF</Address>
       <ModuleName>MBAA.exe</ModuleName>
       <ModuleNameOffset>36FF</ModuleNameOffset>
