@@ -162,6 +162,8 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
             return;
         }
 
+        bool changedCharacter = false;
+
         if ( KeyboardState::isPressedOrHeld ( VK_NEXT ) )
         {
             uint32_t selector = *CC_P1_CHARA_SELECTOR_ADDR;
@@ -175,6 +177,7 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
 
             *CC_P1_CHARA_SELECTOR_ADDR = selector;
             * CC_P1_CHARACTER_ADDR = chara;
+            changedCharacter = true;
         }
         else if ( KeyboardState::isPressedOrHeld ( VK_PRIOR ) )
         {
@@ -189,6 +192,14 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
 
             *CC_P1_CHARA_SELECTOR_ADDR = selector;
             * CC_P1_CHARACTER_ADDR = chara;
+            changedCharacter = true;
+        }
+
+        if ( changedCharacter )
+        {
+            paletteNumber = 0;
+            colorNumber = 0;
+            DllOverlayUi::clearCurrentColor();
         }
 
         DllPaletteManager& palMan = palMans [ *CC_P1_CHARACTER_ADDR ];
@@ -217,26 +228,26 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
 
         if ( KeyboardState::isPressedOrHeld ( VK_RIGHT ) )
         {
-            changedColor = true;
             colorNumber = ( colorNumber + 1 ) % 256;
+            changedColor = true;
         }
         else if ( KeyboardState::isPressedOrHeld ( VK_LEFT ) )
         {
-            changedColor = true;
             colorNumber = ( colorNumber + 256 - 1 ) % 256;
+            changedColor = true;
         }
 
         if ( KeyboardState::isPressedOrHeld ( VK_DOWN ) )
         {
-            changedColor = true;
             paletteNumber = ( paletteNumber + 1 ) % 36;
             colorNumber = 0;
+            changedColor = true;
         }
         else if ( KeyboardState::isPressedOrHeld ( VK_UP ) )
         {
-            changedColor = true;
             paletteNumber = ( paletteNumber + 36 - 1 ) % 36;
             colorNumber = 0;
+            changedColor = true;
         }
 
         if ( changedColor )
