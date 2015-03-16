@@ -45,8 +45,8 @@ namespace DllOverlayUi
 
 void showPaletteEditor()
 {
-    if ( ProcessManager::isWine() )
-        return;
+    // if ( ProcessManager::isWine() )
+    //     return;
 
     clearCurrentColor();
 
@@ -55,8 +55,8 @@ void showPaletteEditor()
 
 void hidePaletteEditor()
 {
-    if ( ProcessManager::isWine() )
-        return;
+    // if ( ProcessManager::isWine() )
+    //     return;
 
     clearCurrentColor();
 
@@ -65,8 +65,8 @@ void hidePaletteEditor()
 
 void togglePaletteEditor()
 {
-    if ( ProcessManager::isWine() )
-        return;
+    // if ( ProcessManager::isWine() )
+    //     return;
 
     if ( isShowingPaletteEditor() )
         hidePaletteEditor();
@@ -76,8 +76,8 @@ void togglePaletteEditor()
 
 bool isShowingPaletteEditor()
 {
-    if ( ProcessManager::isWine() )
-        return false;
+    // if ( ProcessManager::isWine() )
+    //     return false;
 
     return showing;
 }

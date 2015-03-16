@@ -227,3 +227,7 @@ All the palettes are loaded during character select and can be modified in memor
 
 The selected palette is reloaded during the loading state
  - Need to intercept the memory data before the sprites are fully loaded
+
+TODO need to hide the character name and color selector when showing the editor
+
+TODO need to intercept the memory data before character select sprites are fully loaded

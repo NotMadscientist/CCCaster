@@ -224,31 +224,9 @@ struct DllMain
 
                 // Update controller state once per frame
                 KeyboardState::update();
-                updateControls ( &localInputs[0] );
-
-                // Only allow palette editor during offline character select
-                if ( netMan.getState() == NetplayState::CharaSelect
-                        && clientMode.isOffline()
-                        && KeyboardState::isPressed ( VK_F3 )
-                        && !ProcessManager::isWine() )
-                {
-                    if ( !DllOverlayUi::isShowingPaletteEditor() )
-                    {
-                        DllOverlayUi::showPaletteEditor();
-                        DllOverlayUi::enable();
-                        DllOverlayUi::updateSelector ( 0, 0, "" );
-                        DllOverlayUi::updateSelector ( 1, 0, "" );
-                        MouseManager::get().owner = this;
-                    }
-                    else
-                    {
-                        DllOverlayUi::disable();
-                        DllOverlayUi::hidePaletteEditor();
-                        MouseManager::get().owner = 0;
-                    }
-
-                    AsmHacks::enableEscapeToExit = true;
-                }
+                updateControls ( &localInputs[0],
+                                 // Only allow palette editor during offline character select
+                                 clientMode.isOffline() && netMan.getState() == NetplayState::CharaSelect );
 
                 if ( DllOverlayUi::isEnabled() )                                            // Overlay UI controls
                 {

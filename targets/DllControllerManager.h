@@ -26,9 +26,9 @@ class DllControllerManager
 
     std::array<bool, 2> finishedMapping = {{ false, false }};
 
-    std::unordered_map<uint32_t, DllPaletteManager> palMans;
+protected:
 
-    uint32_t colorNumber = 0;
+    std::unordered_map<uint32_t, DllPaletteManager> palMans;
 
 public:
 
@@ -45,7 +45,7 @@ public:
     bool isNotMapping() const;
 
     // Update local controls and overlay UI inputs
-    void updateControls ( uint16_t *localInputs );
+    void updateControls ( uint16_t *localInputs, bool allowPaletteEditor );
 
     // KeyboardManager callback
     void keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown ) override;
