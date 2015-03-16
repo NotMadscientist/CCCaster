@@ -17,10 +17,10 @@
 
 #define MAX_SCREEN_SIZE ( ( COORD ) { short ( MAXSCREENX ), short ( MAXSCREENY ) } )
 
-// unselected colour
-// selected colour
-// outline colour
-// background colour
+// unselected color
+// selected color
+// outline color
+// background color
 #define THEME                                               \
     ConsoleFormat::SYSTEM,                                  \
     ConsoleFormat::BLACK | ConsoleFormat::ONBRIGHTWHITE,    \

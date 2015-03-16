@@ -220,10 +220,10 @@ Any untagged DWORD address ranges just contain POD without pointers.
 
 36 palettes per character
 
-Each palette has 256 colours (4 byte RGBA, the alpha is ignored)
+Each palette has 256 colors (4 byte RGBA, the alpha is ignored)
 
 All the palettes are loaded during character select and can be modified in memory
- - Need to change colour/sprite to update the cached sprite during character select
+ - Need to change color/sprite to update the cached sprite during character select
 
 The selected palette is reloaded during the loading state
  - Need to intercept the memory data before the sprites are fully loaded

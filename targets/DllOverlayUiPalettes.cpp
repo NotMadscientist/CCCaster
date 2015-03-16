@@ -254,7 +254,7 @@ void renderPaletteSelector ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewp
     device->SetRenderState ( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA );
     device->SetRenderState ( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA );
 
-    // Render and handle the colour wheel
+    // Render and handle the color wheel
     const D3DXVECTOR2 scaleWheel = { 2 * wheelRadius / viewport.Width, 2 * wheelRadius / viewport.Height };
 
     D3DXMATRIX translate, scale;
@@ -288,7 +288,7 @@ void renderPaletteSelector ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewp
         hasColor = true;
     }
 
-    // Handle double click to toggle colour wheel mode
+    // Handle double click to toggle color wheel mode
     if ( doubleClick )
     {
         doubleClick = false;

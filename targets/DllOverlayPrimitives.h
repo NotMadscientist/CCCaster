@@ -60,5 +60,5 @@ static inline int DrawText ( ID3DXFont *font, const std::string& text, RECT& rec
                             text.size(),                        // number of characters, -1 if null-terminated
                             &rect,                              // text bounding RECT
                             flags | DT_NOCLIP,                  // text formatting
-                            color );                            // text colour
+                            color );                            // text color
 }
