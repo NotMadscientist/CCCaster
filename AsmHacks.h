@@ -62,6 +62,8 @@ extern uint8_t sfxFilterArray[CC_SFX_ARRAY_LEN];
 // Can mute and play a sound effect at the same time to effectively cancel an existing playback.
 extern uint8_t sfxMuteArray[CC_SFX_ARRAY_LEN];
 
+extern uint32_t disableSlideInAnimation;
+
 
 // Struct for storing assembly code
 struct Asm
@@ -362,5 +364,33 @@ static const Asm hijackIntroState = { ( void * ) 0x45C1F2, INLINE_NOP_SEVEN_TIME
 
 // Prevent training mode music from reseting
 static const Asm disableTrainingMusicReset = { ( void * ) 0x472C6D, { 0xEB, 0x05 } }; // jmp 00472C74
+
+// Optionally disable the character select slide-in animation, which includes the character name
+static const AsmList disableSlideInAnimationHack =
+{
+    { ( void * ) 0x48A713, {
+        0x83, 0x3D, INLINE_DWORD ( &disableSlideInAnimation ), 0x00,    // cmp dword ptr [&disableSlideInAnimation],00
+        0xE9, 0x26, 0x05, 0x00, 0x00,                                   // jmp 0x48AC45
+                                                                        // AFTER:
+    } },
+    { ( void * ) 0x48AC45, {
+        0x0F, 0x85, 0xF6, 0x05, 0x00, 0x00,                             // jne 0x48B241
+        0xD9, 0x55, 0x20,                                               // fst dword ptr [ebp+20]
+        0xEB, 0x68,                                                     // jmp 0x48ACB8
+    } },
+    { ( void * ) 0x48ACB8, {
+        0xD9, 0xE8,                                                     // fld1
+        0xE9, 0xCE, 0xF8, 0xFF, 0xFF,                                   // jmp 0x48A58D (AFTER)
+    } },
+    { ( void * ) 0x48B241, {
+        0xC7, 0x45, 0x20, INLINE_DWORD ( 0 ),                           // mov [ebp+20],0
+        0xD9, 0xE8,                                                     // fld1
+        0xE9, 0x3E, 0xF3, 0xFF, 0xFF,                                   // jmp 0x48A58D (AFTER)
+    } },
+    // Write this last due to dependencies
+    { ( void * ) 0x48A588, {
+        0xE9, 0x86, 0x01, 0x00, 0x00                                    // jmp 0x48A713
+    } },
+};
 
 } // namespace AsmHacks

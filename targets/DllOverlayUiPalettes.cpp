@@ -2,6 +2,7 @@
 #include "DllOverlayPrimitives.h"
 #include "ProcessManager.h"
 #include "TimerManager.h"
+#include "AsmHacks.h"
 
 #include <d3dx9.h>
 
@@ -48,6 +49,17 @@ void showPaletteEditor()
     if ( ProcessManager::isWine() )
         return;
 
+    if ( *CC_P1_SELECTOR_MODE_ADDR != 2 )
+        return;
+
+    DllOverlayUi::enable();
+    DllOverlayUi::updateSelector ( 0, 0, "" );
+    DllOverlayUi::updateSelector ( 1, 0, "" );
+
+    *CC_P1_SELECTOR_MODE_ADDR = 1;
+
+    AsmHacks::disableSlideInAnimation = 1;
+
     clearCurrentColor();
 
     showing = true;
@@ -57,6 +69,12 @@ void hidePaletteEditor()
 {
     if ( ProcessManager::isWine() )
         return;
+
+    DllOverlayUi::disable();
+
+    *CC_P1_SELECTOR_MODE_ADDR = 2;
+
+    AsmHacks::disableSlideInAnimation = 0;
 
     clearCurrentColor();
 

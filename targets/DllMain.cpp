@@ -224,9 +224,11 @@ struct DllMain
 
                 // Update controller state once per frame
                 KeyboardState::update();
-                updateControls ( &localInputs[0],
-                                 // Only allow palette editor during offline character select
-                                 clientMode.isOffline() && netMan.getState() == NetplayState::CharaSelect );
+                updateControls ( &localInputs[0] );
+
+                // Only allow palette editor during offline character select
+                if ( clientMode.isOffline() && netMan.getState() == NetplayState::CharaSelect )
+                    updatePaletteEditor();
 
                 if ( DllOverlayUi::isEnabled() )                                            // Overlay UI controls
                 {

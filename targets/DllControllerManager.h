@@ -45,7 +45,10 @@ public:
     bool isNotMapping() const;
 
     // Update local controls and overlay UI inputs
-    void updateControls ( uint16_t *localInputs, bool allowPaletteEditor );
+    void updateControls ( uint16_t *localInputs );
+
+    // Update palette editor controls and state
+    void updatePaletteEditor();
 
     // KeyboardManager callback
     void keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown ) override;

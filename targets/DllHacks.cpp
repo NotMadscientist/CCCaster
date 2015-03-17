@@ -46,6 +46,9 @@ void initializePreLoad()
     for ( const Asm& hack : muteSpecificSfx )
         WRITE_ASM_HACK ( hack );
 
+    for ( const Asm& hack : disableSlideInAnimationHack )
+        WRITE_ASM_HACK ( hack );
+
     WRITE_ASM_HACK ( detectAutoReplaySave );
     WRITE_ASM_HACK ( hijackEscapeKey );
     WRITE_ASM_HACK ( disableTrainingMusicReset );

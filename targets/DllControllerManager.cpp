@@ -33,7 +33,7 @@ bool DllControllerManager::isNotMapping() const
             && ( !playerControllers[1] || !playerControllers[1]->isMapping() );
 }
 
-void DllControllerManager::updateControls ( uint16_t *localInputs, bool allowPaletteEditor )
+void DllControllerManager::updateControls ( uint16_t *localInputs )
 {
     Lock lock ( ControllerManager::get().mutex );
 
@@ -128,201 +128,9 @@ void DllControllerManager::updateControls ( uint16_t *localInputs, bool allowPal
         }
     }
 
-    bool enabledPaletteEditor = false;
-
-    if ( allowPaletteEditor
-            && ! ProcessManager::isWine()
-            && KeyboardState::isPressed ( VK_F3 ) )
-    {
-        if ( !DllOverlayUi::isShowingPaletteEditor() )
-        {
-            DllOverlayUi::showPaletteEditor();
-            DllOverlayUi::enable();
-            DllOverlayUi::updateSelector ( 0, 0, "" );
-            DllOverlayUi::updateSelector ( 1, 0, "" );
-            MouseManager::get().owner = this;
-            enabledPaletteEditor = true;
-        }
-        else
-        {
-            DllOverlayUi::disable();
-            DllOverlayUi::hidePaletteEditor();
-            MouseManager::get().owner = 0;
-        }
-
-        AsmHacks::enableEscapeToExit = true;
-    }
-
-    // Handle the palette editor
+    // Don't do anything else while the palette editor is showing
     if ( DllOverlayUi::isShowingPaletteEditor() )
-    {
-        static const uint32_t FlushFrames = 300;
-        static uint32_t flushing = 0;
-
-        DllPaletteManager& palMan = palMans [ *CC_P1_CHARACTER_ADDR ];
-
-        // TODO figure out if there's a better way to do this
-        if ( flushing )
-        {
-            *CC_SKIP_FRAMES_ADDR = 1;
-
-            if ( flushing % 100 == 0 )
-                *CC_P1_COLOR_SELECTOR_ADDR = ( *CC_P1_COLOR_SELECTOR_ADDR + 1 ) % 36;
-
-            --flushing;
-
-            if ( flushing == 0 )
-                palMan.sync();
-            return;
-        }
-
-        if ( ! DllPaletteManager::isReady() )
-        {
-            DllOverlayUi::updateText ( { "", "Loading...", "" } );
-            return;
-        }
-
-        bool flush = false;
-
-        if ( enabledPaletteEditor )
-        {
-            palMan.install();
-            flush = true;
-        }
-        else if ( KeyboardState::isPressedOrHeld ( VK_RIGHT ) )
-        {
-            palMan.setColorNumber ( palMan.getColorNumber() + 1 );
-        }
-        else if ( KeyboardState::isPressedOrHeld ( VK_LEFT ) )
-        {
-            palMan.setColorNumber ( palMan.getColorNumber() + 256 - 1 );
-        }
-
-        if ( flush )
-        {
-            *CC_SKIP_FRAMES_ADDR = 1;
-            flushing = FlushFrames;
-            DllOverlayUi::updateText ( { "", "Preparing colors...", "" } );
-            return;
-        }
-
-        palMan.frameStep();
-
-        // bool changedCharacter = firstTime;
-
-        // if ( firstTime )
-        //     firstTime = false;
-
-        // if ( KeyboardState::isPressedOrHeld ( VK_NEXT ) )
-        // {
-        //     uint32_t selector = *CC_P1_CHARA_SELECTOR_ADDR;
-        //     uint32_t chara = UNKNOWN_POSITION;
-
-        //     while ( chara == UNKNOWN_POSITION )
-        //     {
-        //         selector = ( selector + 1 ) % 43;
-        //         chara = selectorToChara ( selector );
-        //     }
-
-        //     *CC_P1_CHARA_SELECTOR_ADDR = selector;
-        //     *CC_P1_CHARACTER_ADDR = chara;
-        //     changedCharacter = true;
-        // }
-        // else if ( KeyboardState::isPressedOrHeld ( VK_PRIOR ) )
-        // {
-        //     uint32_t selector = *CC_P1_CHARA_SELECTOR_ADDR;
-        //     uint32_t chara = UNKNOWN_POSITION;
-
-        //     while ( chara == UNKNOWN_POSITION )
-        //     {
-        //         selector = ( selector + 43 - 1 ) % 43;
-        //         chara = selectorToChara ( selector );
-        //     }
-
-        //     *CC_P1_CHARA_SELECTOR_ADDR = selector;
-        //     *CC_P1_CHARACTER_ADDR = chara;
-        //     changedCharacter = true;
-        // }
-
-        // DllPaletteManager& palMan = palMans [ *CC_P1_CHARACTER_ADDR ];
-
-        // if ( changedCharacter )
-        // {
-        //     paletteNumber = 0;
-        //     colorNumber = 0;
-        //     DllOverlayUi::clearCurrentColor();
-        //     palMan.install();
-        //     flushing = FlushFrames;
-        // }
-
-        // if ( KeyboardState::isHeld ( VK_DELETE, 1000, 1 ) )
-        // {
-        //     DllOverlayUi::clearCurrentColor();
-        //     palMan.clear ( paletteNumber );
-        //     for ( size_t i = 0; i < 256; ++i )
-        //         palMan.set ( paletteNumber, i, palMan.get ( paletteNumber, i ) );
-        //     flushing = FlushFrames;
-        //     DllOverlayUi::updateText ( { "", format ( ">> Color %02d reset to defaults <<", paletteNumber + 1 ), "" } );
-        //     return;
-        // }
-
-        // const uint32_t color = ( DllOverlayUi::hasCurrentColor()
-        //                          ? DllOverlayUi::getCurrentColor()
-        //                          : palMan.get ( paletteNumber, colorNumber ) );
-
-        // const string text = format ( "Color %02d - %03d : %06X", paletteNumber + 1, colorNumber + 1, color );
-
-        // DllOverlayUi::updateText ( { "", text, "" } );
-        // DllOverlayUi::setCurrentColor ( color );
-
-        // bool changedColor = false;
-
-        // if ( KeyboardState::isPressedOrHeld ( VK_RIGHT ) )
-        // {
-        //     colorNumber = ( colorNumber + 1 ) % 256;
-        //     changedColor = true;
-        // }
-        // else if ( KeyboardState::isPressedOrHeld ( VK_LEFT ) )
-        // {
-        //     colorNumber = ( colorNumber + 256 - 1 ) % 256;
-        //     changedColor = true;
-        // }
-
-        // if ( KeyboardState::isPressedOrHeld ( VK_DOWN ) )
-        // {
-        //     paletteNumber = ( paletteNumber + 1 ) % 36;
-        //     colorNumber = 0;
-        //     changedColor = true;
-        // }
-        // else if ( KeyboardState::isPressedOrHeld ( VK_UP ) )
-        // {
-        //     paletteNumber = ( paletteNumber + 36 - 1 ) % 36;
-        //     colorNumber = 0;
-        //     changedColor = true;
-        // }
-
-        // if ( changedColor )
-        // {
-        //     palMan.update ( colorNumber );
-        //     DllOverlayUi::clearCurrentColor();
-        //     LOG ( "Color %02d - %03d : %06X", paletteNumber + 1, colorNumber + 1, color );
-        // }
-        // else if ( KeyboardState::isReleased ( VK_DELETE ) )
-        // {
-        //     DllOverlayUi::clearCurrentColor();
-        //     palMan.clear ( paletteNumber, colorNumber );
-        //     palMan.set ( paletteNumber, colorNumber, palMan.get ( paletteNumber, colorNumber ) );
-        //     flushing = FlushFrames;
-        //     DllOverlayUi::updateText ( { "", "Reloading...", "" } );
-        // }
-        // else if ( KeyboardState::isPressed ( VK_RETURN ) )
-        // {
-        //     palMan.set ( paletteNumber, colorNumber, color );
-        //     flushing = FlushFrames;
-        //     DllOverlayUi::updateText ( { "", "Reloading...", "" } );
-        // }
         return;
-    }
 
     // Only update player controls when the overlay is NOT enabled
     if ( ! DllOverlayUi::isEnabled() )
@@ -620,6 +428,198 @@ void DllControllerManager::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, b
             playerControllers[i]->keyboardEvent ( vkCode, scanCode, isExtended, isDown );
             return;
         }
+    }
+}
+
+void DllControllerManager::updatePaletteEditor()
+{
+    if ( ProcessManager::isWine() )
+        return;
+
+    if ( ! DllPaletteManager::isReady() )
+        return;
+
+    static const uint32_t FlushFrames = 300;
+    static uint32_t flushing = 0;
+    bool flush = false;
+
+    DllPaletteManager& palMan = palMans [ *CC_P1_CHARACTER_ADDR ];
+
+    // TODO figure out if there's a better way to do this
+    if ( flushing )
+    {
+        *CC_SKIP_FRAMES_ADDR = 1;
+
+        if ( flushing % 100 == 0 )
+            *CC_P1_COLOR_SELECTOR_ADDR = ( *CC_P1_COLOR_SELECTOR_ADDR + 1 ) % 36;
+
+        --flushing;
+
+        if ( flushing == 0 )
+            palMan.doneFlushing();
+        return;
+    }
+
+    if ( KeyboardState::isPressed ( VK_F3 ) )
+    {
+        if ( !DllOverlayUi::isShowingPaletteEditor() )
+        {
+            if ( *CC_P1_SELECTOR_MODE_ADDR != 2 )
+                return;
+
+            DllOverlayUi::showPaletteEditor();
+            MouseManager::get().owner = this;
+            palMan.install();
+        }
+        else
+        {
+            DllOverlayUi::hidePaletteEditor();
+            MouseManager::get().owner = 0;
+            palMan.uninstall();
+        }
+
+        AsmHacks::enableEscapeToExit = true;
+        flush = true;
+    }
+    else if ( KeyboardState::isPressed ( VK_F2 ) )
+    {
+        flush = true;
+    }
+
+    // Handle the palette editor
+    if ( DllOverlayUi::isShowingPaletteEditor() )
+    {
+        if ( KeyboardState::isPressedOrHeld ( VK_RIGHT ) )
+        {
+            palMan.setColorNumber ( palMan.getColorNumber() + 1 );
+        }
+        else if ( KeyboardState::isPressedOrHeld ( VK_LEFT ) )
+        {
+            palMan.setColorNumber ( palMan.getColorNumber() + 256 - 1 );
+        }
+
+        palMan.frameStep();
+
+        // bool changedCharacter = firstTime;
+
+        // if ( firstTime )
+        //     firstTime = false;
+
+        // if ( KeyboardState::isPressedOrHeld ( VK_NEXT ) )
+        // {
+        //     uint32_t selector = *CC_P1_CHARA_SELECTOR_ADDR;
+        //     uint32_t chara = UNKNOWN_POSITION;
+
+        //     while ( chara == UNKNOWN_POSITION )
+        //     {
+        //         selector = ( selector + 1 ) % 43;
+        //         chara = selectorToChara ( selector );
+        //     }
+
+        //     *CC_P1_CHARA_SELECTOR_ADDR = selector;
+        //     *CC_P1_CHARACTER_ADDR = chara;
+        //     changedCharacter = true;
+        // }
+        // else if ( KeyboardState::isPressedOrHeld ( VK_PRIOR ) )
+        // {
+        //     uint32_t selector = *CC_P1_CHARA_SELECTOR_ADDR;
+        //     uint32_t chara = UNKNOWN_POSITION;
+
+        //     while ( chara == UNKNOWN_POSITION )
+        //     {
+        //         selector = ( selector + 43 - 1 ) % 43;
+        //         chara = selectorToChara ( selector );
+        //     }
+
+        //     *CC_P1_CHARA_SELECTOR_ADDR = selector;
+        //     *CC_P1_CHARACTER_ADDR = chara;
+        //     changedCharacter = true;
+        // }
+
+        // DllPaletteManager& palMan = palMans [ *CC_P1_CHARACTER_ADDR ];
+
+        // if ( changedCharacter )
+        // {
+        //     paletteNumber = 0;
+        //     colorNumber = 0;
+        //     DllOverlayUi::clearCurrentColor();
+        //     palMan.install();
+        //     flushing = FlushFrames;
+        // }
+
+        // if ( KeyboardState::isHeld ( VK_DELETE, 1000, 1 ) )
+        // {
+        //     DllOverlayUi::clearCurrentColor();
+        //     palMan.clear ( paletteNumber );
+        //     for ( size_t i = 0; i < 256; ++i )
+        //         palMan.set ( paletteNumber, i, palMan.get ( paletteNumber, i ) );
+        //     flushing = FlushFrames;
+        //     DllOverlayUi::updateText ( { "", format ( ">> Color %02d reset to defaults <<", paletteNumber + 1 ), "" } );
+        //     return;
+        // }
+
+        // const uint32_t color = ( DllOverlayUi::hasCurrentColor()
+        //                          ? DllOverlayUi::getCurrentColor()
+        //                          : palMan.get ( paletteNumber, colorNumber ) );
+
+        // const string text = format ( "Color %02d - %03d : %06X", paletteNumber + 1, colorNumber + 1, color );
+
+        // DllOverlayUi::updateText ( { "", text, "" } );
+        // DllOverlayUi::setCurrentColor ( color );
+
+        // bool changedColor = false;
+
+        // if ( KeyboardState::isPressedOrHeld ( VK_RIGHT ) )
+        // {
+        //     colorNumber = ( colorNumber + 1 ) % 256;
+        //     changedColor = true;
+        // }
+        // else if ( KeyboardState::isPressedOrHeld ( VK_LEFT ) )
+        // {
+        //     colorNumber = ( colorNumber + 256 - 1 ) % 256;
+        //     changedColor = true;
+        // }
+
+        // if ( KeyboardState::isPressedOrHeld ( VK_DOWN ) )
+        // {
+        //     paletteNumber = ( paletteNumber + 1 ) % 36;
+        //     colorNumber = 0;
+        //     changedColor = true;
+        // }
+        // else if ( KeyboardState::isPressedOrHeld ( VK_UP ) )
+        // {
+        //     paletteNumber = ( paletteNumber + 36 - 1 ) % 36;
+        //     colorNumber = 0;
+        //     changedColor = true;
+        // }
+
+        // if ( changedColor )
+        // {
+        //     palMan.update ( colorNumber );
+        //     DllOverlayUi::clearCurrentColor();
+        //     LOG ( "Color %02d - %03d : %06X", paletteNumber + 1, colorNumber + 1, color );
+        // }
+        // else if ( KeyboardState::isReleased ( VK_DELETE ) )
+        // {
+        //     DllOverlayUi::clearCurrentColor();
+        //     palMan.clear ( paletteNumber, colorNumber );
+        //     palMan.set ( paletteNumber, colorNumber, palMan.get ( paletteNumber, colorNumber ) );
+        //     flushing = FlushFrames;
+        //     DllOverlayUi::updateText ( { "", "Reloading...", "" } );
+        // }
+        // else if ( KeyboardState::isPressed ( VK_RETURN ) )
+        // {
+        //     palMan.set ( paletteNumber, colorNumber, color );
+        //     flushing = FlushFrames;
+        //     DllOverlayUi::updateText ( { "", "Reloading...", "" } );
+        // }
+    }
+
+    if ( flush )
+    {
+        *CC_SKIP_FRAMES_ADDR = 1;
+        flushing = FlushFrames;
+        DllOverlayUi::updateText ( { "", "Preparing colors...", "" } );
     }
 }
 

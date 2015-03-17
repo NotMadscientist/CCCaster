@@ -41,6 +41,8 @@ uint8_t sfxFilterArray[CC_SFX_ARRAY_LEN] = { 0 };
 
 uint8_t sfxMuteArray[CC_SFX_ARRAY_LEN] = { 0 };
 
+uint32_t disableSlideInAnimation = 0;
+
 
 int Asm::write() const
 {

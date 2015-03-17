@@ -8,7 +8,7 @@
 
 class DllPaletteManager
 {
-    // std::map<uint32_t, std::map<uint32_t, uint32_t>> palettes, backup;
+    std::map<uint32_t, std::map<uint32_t, uint32_t>> palettes;
 
     std::array<std::array<uint32_t, 256>, 36> backup;
 
@@ -16,12 +16,19 @@ class DllPaletteManager
 
     uint32_t timer = 0;
 
+    bool installed = false;
+
+
+    uint32_t getHightlightColor ( uint32_t paletteNumber, uint32_t colorNumber ) const;
+
 public:
 
     static bool isReady();
 
     void install();
-    void sync();
+    void uninstall();
+
+    void doneFlushing() const;
 
     void frameStep();
 

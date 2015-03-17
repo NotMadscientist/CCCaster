@@ -9,7 +9,7 @@
 using namespace std;
 
 
-#define HIGHLIGHT_COLOR ( 0x00FF00 )
+#define SWAP_R_AND_B(COLOR) ( ( COLOR & 0xFF ) << 16 ) | ( COLOR & 0xFF00 ) | ( ( COLOR & 0xFF0000 ) >> 16 )
 
 
 static inline char *getP1ColorTablePtr()
@@ -31,10 +31,10 @@ static inline uint32_t getP1Color ( uint32_t paletteNumber, uint32_t colorNumber
 
     const char *ptr = getP1ColorTablePtr();
 
-    uint32_t color = ( 0xFFFFFF & * ( uint32_t * ) ( ptr + 4 + 1024 * paletteNumber + 4 * colorNumber ) );
+    const uint32_t color = ( 0xFFFFFF & * ( uint32_t * ) ( ptr + 4 + 1024 * paletteNumber + 4 * colorNumber ) );
 
     // The internal color format is BGR; R and B are swapped
-    return ( ( color & 0xFF ) << 16 ) | ( color & 0xFF00 ) | ( ( color & 0xFF0000 ) >> 16 );
+    return SWAP_R_AND_B ( color );
 }
 
 static inline void setP1Color ( uint32_t paletteNumber, uint32_t colorNumber, uint32_t color )
@@ -45,9 +45,29 @@ static inline void setP1Color ( uint32_t paletteNumber, uint32_t colorNumber, ui
     const char *ptr = getP1ColorTablePtr();
 
     // The internal color format is BGR; R and B are swapped
-    color = ( ( color & 0xFF ) << 16 ) | ( color & 0xFF00 ) | ( ( color & 0xFF0000 ) >> 16 );
+    color = SWAP_R_AND_B ( color );
 
     ( * ( uint32_t * ) ( ptr + 4 + 1024 * paletteNumber + 4 * colorNumber ) ) = ( 0xFFFFFF & color );
+}
+
+uint32_t DllPaletteManager::getHightlightColor ( uint32_t paletteNumber, uint32_t colorNumber ) const
+{
+    const uint32_t original = get ( paletteNumber, colorNumber );
+
+    const uint32_t r = ( original & 0xFF );
+    const uint32_t g = ( original & 0xFF00 ) >> 8;
+    const uint32_t b = ( original & 0xFF0000 ) >> 16;
+
+    const uint32_t absDivColor2 = 3 * 220 * 220;
+
+    if ( r * r + g * g + b * b > absDivColor2 )
+    {
+        return 0x000000; // Black
+    }
+    else
+    {
+        return 0xFFFFFF; // White
+    }
 }
 
 bool DllPaletteManager::isReady()
@@ -57,9 +77,14 @@ bool DllPaletteManager::isReady()
 
 void DllPaletteManager::install()
 {
+    if ( installed )
+        return;
+
+    installed = true;
+
     const char *ptr = getP1ColorTablePtr();
 
-    // Backup all the original palettes / colors
+    // Backup all the original palettes
     for ( uint32_t i = 0; i < 36; ++i )
     {
         memcpy ( &backup[i][0], ( uint32_t * ) ( ptr + 4 + 1024 * i ), 1024 );
@@ -70,11 +95,35 @@ void DllPaletteManager::install()
     timer = 0;
     *CC_P1_COLOR_SELECTOR_ADDR = 0;
 
+    // This also calls setColorNumber ( 0 )
     setPaletteNumber ( paletteNumber );
 }
 
-void DllPaletteManager::sync()
+void DllPaletteManager::uninstall()
 {
+    if ( ! installed )
+        return;
+
+    installed = false;
+
+    // Restore all the original palettes (with modifications)
+    for ( uint32_t i = 0; i < 36; ++i )
+    {
+        for ( uint32_t j = 0; j < 256; ++j )
+        {
+            setP1Color ( i, j, get ( i, j ) );
+        }
+    }
+}
+
+void DllPaletteManager::doneFlushing() const
+{
+    if ( ! installed )
+    {
+        *CC_P1_COLOR_SELECTOR_ADDR = paletteNumber;
+        return;
+    }
+
     *CC_P1_COLOR_SELECTOR_ADDR = ( colorNumber % 36 );
 }
 
@@ -84,6 +133,9 @@ static const uint32_t ReservedPalettes = 2;
 
 void DllPaletteManager::frameStep()
 {
+    if ( ! installed )
+        return;
+
     ++timer;
 
     if ( timer % 24 )
@@ -127,23 +179,26 @@ void DllPaletteManager::setColorNumber ( uint32_t colorNumber )
 {
     colorNumber = colorNumber % 256;
 
-    const uint32_t actualPalette = colorNumber % ( 36 - ReservedPalettes );
-
     // Highlight all the colors in the range ( colorNumber - 18, colorNumber + 17 )
     // by replacing colors in specific palettes.
 
+    // This is the actual palette number we write to
+    const uint32_t actualPalette = colorNumber % ( 36 - ReservedPalettes );
+
     for ( uint32_t i = 0; i < 18; ++i )
     {
-        setP1Color ( ( actualPalette + i ) % ( 36 - ReservedPalettes ),
-                     ( colorNumber + i ) % 256,
-                     HIGHLIGHT_COLOR );
+        const uint32_t colNum = ( colorNumber + i ) % 256;
+
+        setP1Color ( ( actualPalette + i ) % ( 36 - ReservedPalettes ), colNum,
+                     getHightlightColor ( paletteNumber, colNum ) );
     }
 
     for ( uint32_t i = 1; i < 19 - ReservedPalettes; ++i )
     {
-        setP1Color ( ( actualPalette + uint32_t ( 36 - ReservedPalettes - i ) ) % ( 36 - ReservedPalettes ),
-                     ( colorNumber + uint32_t ( 256 - i ) ) % 256,
-                     HIGHLIGHT_COLOR );
+        const uint32_t colNum = ( colorNumber + uint32_t ( 256 - i ) ) % 256;
+
+        setP1Color ( ( actualPalette + uint32_t ( 36 - ReservedPalettes - i ) ) % ( 36 - ReservedPalettes ), colNum,
+                     getHightlightColor ( paletteNumber, colNum ) );
     }
 
     this->colorNumber = colorNumber;
@@ -156,29 +211,18 @@ void DllPaletteManager::setColorNumber ( uint32_t colorNumber )
 
 uint32_t DllPaletteManager::get ( uint32_t paletteNumber, uint32_t colorNumber ) const
 {
-    // auto it = palettes.find ( paletteNumber );
+    auto it = palettes.find ( paletteNumber );
 
-    // if ( it != palettes.end() )
-    // {
-    //     const auto jt = it->second.find ( colorNumber );
+    if ( it != palettes.end() )
+    {
+        const auto jt = it->second.find ( colorNumber );
 
-    //     if ( jt != it->second.end() )
-    //         return jt->second;
-    // }
+        if ( jt != it->second.end() )
+            return jt->second;
+    }
 
-    // it = backup.find ( paletteNumber );
-
-    // if ( it != backup.end() )
-    // {
-    //     const auto jt = it->second.find ( colorNumber );
-
-    //     if ( jt != it->second.end() )
-    //         return jt->second;
-    // }
-
-    // return getP1Color ( paletteNumber, colorNumber );
-
-    return 0;
+    // The backup colors have R and B swapped since they were copied directly from memory
+    return SWAP_R_AND_B ( backup[paletteNumber][colorNumber] );
 }
 
 void DllPaletteManager::set ( uint32_t paletteNumber, uint32_t colorNumber, uint32_t color )
@@ -204,23 +248,23 @@ void DllPaletteManager::set ( uint32_t paletteNumber, uint32_t colorNumber, uint
 
 void DllPaletteManager::clear ( uint32_t paletteNumber, uint32_t colorNumber )
 {
-    // const auto it = palettes.find ( paletteNumber );
+    const auto it = palettes.find ( paletteNumber );
 
-    // if ( it != palettes.end() )
-    //     it->second.erase ( colorNumber );
+    if ( it != palettes.end() )
+        it->second.erase ( colorNumber );
 }
 
 void DllPaletteManager::clear ( uint32_t paletteNumber )
 {
-    // const auto it = palettes.find ( paletteNumber );
+    const auto it = palettes.find ( paletteNumber );
 
-    // if ( it != palettes.end() )
-    //     it->second.clear();
+    if ( it != palettes.end() )
+        it->second.clear();
 }
 
 void DllPaletteManager::clear()
 {
-    // palettes.clear();
+    palettes.clear();
 }
 
 bool DllPaletteManager::save ( const string& file ) const
