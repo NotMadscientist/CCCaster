@@ -131,7 +131,7 @@ void DllControllerManager::updateControls ( uint16_t *localInputs, bool allowPal
     bool enabledPaletteEditor = false;
 
     if ( allowPaletteEditor
-            // && ! ProcessManager::isWine()
+            && ! ProcessManager::isWine()
             && KeyboardState::isPressed ( VK_F3 ) )
     {
         if ( !DllOverlayUi::isShowingPaletteEditor() )
@@ -176,7 +176,7 @@ void DllControllerManager::updateControls ( uint16_t *localInputs, bool allowPal
             return;
         }
 
-        if ( !DllPaletteManager::isReady() )
+        if ( ! DllPaletteManager::isReady() )
         {
             DllOverlayUi::updateText ( { "", "Loading...", "" } );
             return;
