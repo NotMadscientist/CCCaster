@@ -223,11 +223,14 @@ Any untagged DWORD address ranges just contain POD without pointers.
 Each palette has 256 colors (4 byte RGBA, the alpha is ignored)
 
 All the palettes are loaded during character select and can be modified in memory
- - Need to change color/sprite to update the cached sprite during character select
+ - Need to intercept the memory data before the sprites are fully loaded
+ - Need to change color/sprite multiple frames to update the cached sprite during character select
 
 The selected palette is reloaded during the loading state
  - Need to intercept the memory data before the sprites are fully loaded
 
-TODO need to hide the character name and color selector when showing the editor
+Can hide the character name during character select by disabling
+    0x48A588 - D9 55 20 - fst dword ptr [ebp+20]
+then assigning 0.0 to [ebp+20]
 
-TODO need to intercept the memory data before character select sprites are fully loaded
+Can hide the color selector by assigning 1 to CC_P1_SELECTOR_MODE_ADDR (0x74D8EC)

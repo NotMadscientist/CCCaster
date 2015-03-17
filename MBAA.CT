@@ -3681,7 +3681,32 @@
       </After>
     </CodeEntry>
     <CodeEntry>
-      <Description>Address of color table during the loading state</Description>
+      <Description>eax points to P1 palette table (during character select), palettes can be overwritten here</Description>
+      <Address>00485E90</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>85E90</ModuleNameOffset>
+      <Before>
+        <Byte>01</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+        <Byte>5E</Byte>
+        <Byte>5B</Byte>
+      </Before>
+      <Actual>
+        <Byte>89</Byte>
+        <Byte>47</Byte>
+        <Byte>04</Byte>
+      </Actual>
+      <After>
+        <Byte>33</Byte>
+        <Byte>CC</Byte>
+        <Byte>B8</Byte>
+        <Byte>01</Byte>
+        <Byte>00</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>esi WILL point to P1's selected color table (during loading state), colors can be overwritten here</Description>
       <Address>00448BD4</Address>
       <ModuleName>MBAA.exe</ModuleName>
       <ModuleNameOffset>48BD4</ModuleNameOffset>
@@ -3813,6 +3838,31 @@
         <Byte>14</Byte>
         <Byte>5F</Byte>
         <Byte>5D</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Assigns the position of the character slide in animation (including name position)</Description>
+      <Address>0048A588</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>8A588</ModuleNameOffset>
+      <Before>
+        <Byte>18</Byte>
+        <Byte>D9</Byte>
+        <Byte>44</Byte>
+        <Byte>24</Byte>
+        <Byte>18</Byte>
+      </Before>
+      <Actual>
+        <Byte>D9</Byte>
+        <Byte>55</Byte>
+        <Byte>20</Byte>
+      </Actual>
+      <After>
+        <Byte>D9</Byte>
+        <Byte>E8</Byte>
+        <Byte>DA</Byte>
+        <Byte>E9</Byte>
+        <Byte>DF</Byte>
       </After>
     </CodeEntry>
   </CheatCodes>
