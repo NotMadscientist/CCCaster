@@ -152,9 +152,6 @@ void initializePostLoad()
     LOG ( "threadId=%08x", GetCurrentThreadId() );
 
     // Apparently this needs to be applied AFTER the game loads
-    DllFrameRate::enable();
-
-    // Apparently this needs to be applied AFTER the game loads
     for ( const Asm& hack : enableDisabledStages )
         WRITE_ASM_HACK ( hack );
 
@@ -192,6 +189,9 @@ void initializePostLoad()
         *CC_AUTO_REPLAY_SAVE_ADDR = 0;
         return;
     }
+
+    // Apparently this needs to be applied AFTER the game loads
+    DllFrameRate::enable();
 
     // Hook the game's DirectX calls
     string err;

@@ -226,9 +226,9 @@ struct DllMain
                 KeyboardState::update();
                 updateControls ( &localInputs[0] );
 
-                // Only allow palette editor during offline character select
-                if ( clientMode.isOffline() && netMan.getState() == NetplayState::CharaSelect )
-                    updatePaletteEditor();
+                // // Only allow palette editor during offline character select
+                // if ( clientMode.isOffline() && netMan.getState() == NetplayState::CharaSelect )
+                //     updatePaletteEditor();
 
                 if ( DllOverlayUi::isEnabled() )                                            // Overlay UI controls
                 {
