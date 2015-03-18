@@ -1,3 +1,6 @@
+v3.0.014:
+- Fixed alt-enter crash.
+
 v3.0.013:
 - Fixed keyboard controls on Linux.
 - Fixed bug where you can attack before round start in offline versus.

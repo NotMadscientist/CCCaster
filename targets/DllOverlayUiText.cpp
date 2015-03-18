@@ -312,11 +312,17 @@ void initOverlayText ( IDirect3DDevice9 *device )
 
 void invalidateOverlayText()
 {
-    font->OnLostDevice();
-    font = 0;
+    if ( font )
+    {
+        font->OnLostDevice();
+        font = 0;
+    }
 
-    background->Release();
-    background = 0;
+    if ( background )
+    {
+        background->Release();
+        background = 0;
+    }
 }
 
 void renderOverlayText ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewport )

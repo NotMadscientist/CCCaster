@@ -206,17 +206,29 @@ void initPaletteSelector ( IDirect3DDevice9 *device )
 
 void invalidatePaletteSelector()
 {
-    background->Release();
-    background = 0;
+    if ( background )
+    {
+        background->Release();
+        background = 0;
+    }
 
-    lightWheel->Release();
-    lightWheel = 0;
+    if ( lightWheel )
+    {
+        lightWheel->Release();
+        lightWheel = 0;
+    }
 
-    darkWheel->Release();
-    darkWheel = 0;
+    if ( darkWheel )
+    {
+        darkWheel->Release();
+        darkWheel = 0;
+    }
 
-    graySlider->Release();
-    graySlider = 0;
+    if ( graySlider )
+    {
+        graySlider->Release();
+        graySlider = 0;
+    }
 }
 
 static inline D3DCOLOR hsv2rgb ( uint8_t h, uint8_t s, uint8_t v )
