@@ -2,7 +2,7 @@ Install and using:
 
     Make sure to copy EVERYTHING into the MBAACC folder, including the cccaster folder.
 
-    The GRP folder is the fix for the missing stage names / previous, credits to Erkz.
+    The GRP folder is the fix for the missing stage select graphics, credits to Erkz.
 
     Run Add_Handler_Protocol.bat once as admin to launch directly from http://seemeinmelty.meteor.com/
 

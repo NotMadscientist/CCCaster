@@ -1,6 +1,7 @@
 v3.0.013:
 - Fixed keyboard controls on Linux.
 - Fixed bug where you can attack before round start in offline versus.
+- Included Erkz stage select graphics fix.
 
 v3.0.012:
 - Prevent computer from sleeping or showing screensaver while the game is running.
