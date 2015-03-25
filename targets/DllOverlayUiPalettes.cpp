@@ -49,6 +49,9 @@ void showPaletteEditor()
     if ( ProcessManager::isWine() )
         return;
 
+    if ( showing )
+        return;
+
     if ( *CC_P1_SELECTOR_MODE_ADDR != 2 )
         return;
 
@@ -68,6 +71,9 @@ void showPaletteEditor()
 void hidePaletteEditor()
 {
     if ( ProcessManager::isWine() )
+        return;
+
+    if ( !showing )
         return;
 
     DllOverlayUi::disable();
