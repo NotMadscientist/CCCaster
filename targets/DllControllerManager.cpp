@@ -81,11 +81,10 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
     }
     else
     {
-        // Only toggle overlay if both players are "done"; ie at the first option; or have no controller
-        if ( toggleOverlay
-                && ( !playerControllers[0] || overlayPositions[0] == 0 )
-                && ( !playerControllers[1] || overlayPositions[1] == 0 ) )
+        if ( toggleOverlay )
         {
+            toggleOverlay = false;
+
             if ( ! DllOverlayUi::isEnabled() || DllOverlayUi::isShowingPaletteEditor() )
             {
                 // Refresh the list of joysticks if we're enabling the overlay
@@ -123,8 +122,6 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
                 // Disable overlay
                 DllOverlayUi::disable();
             }
-
-            toggleOverlay = false;
         }
     }
 
@@ -642,10 +639,16 @@ void DllControllerManager::detachedJoystick ( Controller *controller )
     // This is a callback from within ControllerManager, so we don't need to lock the main mutex
 
     if ( playerControllers[0] == controller )
+    {
         playerControllers[0] = 0;
+        overlayPositions[0] = 0;
+    }
 
     if ( playerControllers[1] == controller )
+    {
         playerControllers[1] = 0;
+        overlayPositions[1] = 0;
+    }
 
     const auto it = find ( allControllers.begin(), allControllers.end(), controller );
 
