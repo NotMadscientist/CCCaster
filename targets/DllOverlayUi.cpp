@@ -30,13 +30,6 @@ void invalidateOverlayText();
 void renderOverlayText ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewport );
 
 
-void initPaletteSelector ( IDirect3DDevice9 *device );
-
-void invalidatePaletteSelector();
-
-void renderPaletteSelector ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewport );
-
-
 void InitializeDirectX ( IDirect3DDevice9 *device )
 {
     if ( !shouldInitDirectX )
@@ -45,8 +38,6 @@ void InitializeDirectX ( IDirect3DDevice9 *device )
     initalizedDirectX = true;
 
     initOverlayText ( device );
-
-    initPaletteSelector ( device );
 }
 
 void InvalidateDeviceObjects()
@@ -57,8 +48,6 @@ void InvalidateDeviceObjects()
     initalizedDirectX = false;
 
     invalidateOverlayText();
-
-    invalidatePaletteSelector();
 }
 
 
@@ -76,6 +65,4 @@ void PresentFrameBegin ( IDirect3DDevice9 *device )
         return;
 
     renderOverlayText ( device, viewport );
-
-    renderPaletteSelector ( device, viewport );
 }

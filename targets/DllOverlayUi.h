@@ -45,23 +45,4 @@ extern int debugTextAlign;
 
 #endif // NOT RELEASE
 
-
-void showPaletteEditor();
-
-void hidePaletteEditor();
-
-void togglePaletteEditor();
-
-bool isShowingPaletteEditor();
-
-void paletteMouseEvent ( int x, int y, bool isDown, bool pressed, bool released );
-
-uint32_t getCurrentColor();
-
-void setCurrentColor ( uint32_t color );
-
-void clearCurrentColor();
-
-bool hasCurrentColor();
-
 }

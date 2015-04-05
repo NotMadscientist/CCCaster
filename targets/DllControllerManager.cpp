@@ -85,7 +85,7 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
         {
             toggleOverlay = false;
 
-            if ( ! DllOverlayUi::isEnabled() || DllOverlayUi::isShowingPaletteEditor() )
+            if ( ! DllOverlayUi::isEnabled() )
             {
                 // Refresh the list of joysticks if we're enabling the overlay
                 ControllerManager::get().refreshJoysticks();
@@ -99,8 +99,7 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
                 // Disable Escape to exit
                 AsmHacks::enableEscapeToExit = false;
 
-                // Hide palette editor and enable overlay
-                DllOverlayUi::hidePaletteEditor();
+                // Enable overlay
                 DllOverlayUi::enable();
             }
             else
