@@ -9,6 +9,9 @@
 using namespace std;
 
 
+// Palette number 36 is reserved for the current palette's state (including edits)
+#define RESERVED_PALETTES ( 1 )
+
 #define SWAP_R_AND_B(COLOR) ( ( COLOR & 0xFF ) << 16 ) | ( COLOR & 0xFF00 ) | ( ( COLOR & 0xFF0000 ) >> 16 )
 
 
@@ -52,17 +55,17 @@ static inline void setP1Color ( uint32_t paletteNumber, uint32_t colorNumber, ui
 
 uint32_t DllPaletteManager::getHightlightColor ( uint32_t paletteNumber, uint32_t colorNumber ) const
 {
-    const uint32_t original = get ( paletteNumber, colorNumber );
+    const uint32_t color = get ( paletteNumber, colorNumber );
 
-    const uint32_t r = ( original & 0xFF );
-    const uint32_t g = ( original & 0xFF00 ) >> 8;
-    const uint32_t b = ( original & 0xFF0000 ) >> 16;
+    const uint32_t r = ( color & 0xFF );
+    const uint32_t g = ( color & 0xFF00 ) >> 8;
+    const uint32_t b = ( color & 0xFF0000 ) >> 16;
 
     const uint32_t absDivColor2 = 3 * 220 * 220;
 
     if ( r * r + g * g + b * b > absDivColor2 )
     {
-        return 0x000000; // Black
+        return 0x111111; // Dark grey
     }
     else
     {
@@ -127,10 +130,6 @@ void DllPaletteManager::doneFlushing() const
     *CC_P1_COLOR_SELECTOR_ADDR = ( colorNumber % 36 );
 }
 
-// Palette number 35 is reserved for the original palette
-// Palette number 36 is reserved for the current color being edited
-static const uint32_t ReservedPalettes = 2;
-
 void DllPaletteManager::frameStep()
 {
     if ( ! installed )
@@ -141,10 +140,11 @@ void DllPaletteManager::frameStep()
     if ( timer % 24 )
         return;
 
-    const uint32_t actualPalette = colorNumber % ( 36 - ReservedPalettes );
+    // This is the actual palette number the game reads from
+    const uint32_t actualPalette = colorNumber % ( 36 - RESERVED_PALETTES );
 
     if ( *CC_P1_COLOR_SELECTOR_ADDR == actualPalette )
-        *CC_P1_COLOR_SELECTOR_ADDR = 35;
+        *CC_P1_COLOR_SELECTOR_ADDR = 0;
     else
         *CC_P1_COLOR_SELECTOR_ADDR = actualPalette;
 }
@@ -179,34 +179,28 @@ void DllPaletteManager::setColorNumber ( uint32_t colorNumber )
 {
     colorNumber = colorNumber % 256;
 
-    // Highlight all the colors in the range ( colorNumber - 18, colorNumber + 17 )
+    LOG ( "Color %02d - %03d", paletteNumber + 1, colorNumber + 1, 0 );
+
+    // Highlight all the colors in the range ( colorNumber - 18, colorNumber + 18 )
     // by replacing colors in specific palettes.
 
-    // This is the actual palette number we write to
-    const uint32_t actualPalette = colorNumber % ( 36 - ReservedPalettes );
+    uint32_t i = ( colorNumber + 256 - ( 18 - RESERVED_PALETTES ) ) % 256;
+    uint32_t j = ( ( 18 + colorNumber ) % 256 ) % ( 36 - RESERVED_PALETTES );
 
-    for ( uint32_t i = 0; i < 18; ++i )
+    for ( ; i != ( colorNumber + 18 ) % 256; i = ( i + 1 ) % 256, j = ( j + 1 ) % ( 36 - RESERVED_PALETTES ) )
     {
-        const uint32_t colNum = ( colorNumber + i ) % 256;
+        setP1Color ( j, i, getHightlightColor ( paletteNumber, colorNumber ) );
 
-        setP1Color ( ( actualPalette + i ) % ( 36 - ReservedPalettes ), colNum,
-                     getHightlightColor ( paletteNumber, colNum ) );
+        LOG ( "(%d, %d) -> %d", paletteNumber, i, j );
     }
 
-    for ( uint32_t i = 1; i < 19 - ReservedPalettes; ++i )
-    {
-        const uint32_t colNum = ( colorNumber + uint32_t ( 256 - i ) ) % 256;
-
-        setP1Color ( ( actualPalette + uint32_t ( 36 - ReservedPalettes - i ) ) % ( 36 - ReservedPalettes ), colNum,
-                     getHightlightColor ( paletteNumber, colNum ) );
-    }
+    // This is the actual palette number we select
+    const uint32_t actualPalette = colorNumber % ( 36 - RESERVED_PALETTES );
 
     this->colorNumber = colorNumber;
     *CC_P1_COLOR_SELECTOR_ADDR = actualPalette;
 
     timer = 0;
-
-    LOG ( "Color %02d - %03d", this->paletteNumber + 1, this->colorNumber + 1, 0 );
 }
 
 uint32_t DllPaletteManager::get ( uint32_t paletteNumber, uint32_t colorNumber ) const

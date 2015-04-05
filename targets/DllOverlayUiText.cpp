@@ -101,6 +101,11 @@ static inline int getTextHeight ( const array<string, 3>& newText )
     return height;
 }
 
+void updateText()
+{
+    updateText ( text );
+}
+
 void updateText ( const array<string, 3>& newText )
 {
     if ( ProcessManager::isWine() )
@@ -145,6 +150,7 @@ void updateText ( const array<string, 3>& newText )
 
             state = State::Enabled;
             oldHeight = height;
+            text = newText;
             break;
     }
 
@@ -163,6 +169,14 @@ bool isEnabled()
         return false;
 
     return ( state != State::Disabled ) && ( messageTimeout <= 0 );
+}
+
+bool isToggling()
+{
+    if ( ProcessManager::isWine() )
+        return false;
+
+    return ( state == State::Enabling || state == State::Disabling );
 }
 
 
@@ -345,7 +359,6 @@ void renderOverlayText ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewport 
 
     if ( state == State::Disabled )
         return;
-
 
     // Calculate message width if showing one
     float messageWidth = 0.0f;

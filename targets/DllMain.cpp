@@ -16,6 +16,7 @@
 #include "DllFrameRate.h"
 #include "ReplayManager.h"
 #include "DllRollbackManager.h"
+#include "DllPaletteControls.h"
 
 #include <windows.h>
 
@@ -95,6 +96,7 @@ struct DllMain
         , public PtrToRefChangeMonitor<Variable, uint32_t>::Owner
         , public SpectatorManager
         , public DllControllerManager
+        , public DllPaletteControls
 {
     // NetplayManager instance
     NetplayManager netMan;
@@ -222,13 +224,16 @@ struct DllMain
                     }
                 }
 
-                // Update controller state once per frame
+                // Update keyboard state once per frame
                 KeyboardState::update();
-                updateControls ( &localInputs[0] );
 
-                // // Only allow palette editor during offline character select
-                // if ( clientMode.isOffline() && netMan.getState() == NetplayState::CharaSelect )
-                //     updatePaletteEditor();
+                // Only allow palette editor during offline character select
+                if ( clientMode.isOffline() && netMan.getState() == NetplayState::CharaSelect )
+                    updatePaletteEditor();
+
+                // Only update controller state once per frame if the palette editor is not showing
+                if ( ! isPaletteEditorEnabled() )
+                    updateControls ( &localInputs[0] );
 
                 if ( DllOverlayUi::isEnabled() )                                            // Overlay UI controls
                 {

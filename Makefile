@@ -124,7 +124,7 @@ generator: tools/$(GENERATOR)
 
 $(ARCHIVE): $(BINARY) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER) $(FOLDER)/$(UPDATER)
 $(ARCHIVE): $(FOLDER)/unzip.exe $(FOLDER)/ReadMe.txt $(FOLDER)/ChangeLog.txt
-# $(ARCHIVE): $(FOLDER)/wheel_light.png $(FOLDER)/wheel_dark.png $(FOLDER)/gray_slider.png
+$(ARCHIVE): $(FOLDER)/wheel_light.png $(FOLDER)/wheel_dark.png $(FOLDER)/gray_slider.png
 	@echo
 	rm -f $(wildcard $(NAME)*.zip)
 	$(ZIP) $(ARCHIVE) $^

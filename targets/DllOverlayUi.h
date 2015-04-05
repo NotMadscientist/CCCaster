@@ -21,6 +21,10 @@ void toggle();
 
 bool isEnabled();
 
+bool isToggling();
+
+void updateText();
+
 void updateText ( const std::array<std::string, 3>& text );
 
 void updateSelector ( uint8_t index, int position = 0, const std::string& line = "" );
