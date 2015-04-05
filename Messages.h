@@ -51,6 +51,7 @@ struct ClientMode : public SerializableSequence
     bool isSpectate() const { return ( value == SpectateNetplay || value == SpectateBroadcast ); }
     bool isBroadcast() const { return ( value == Broadcast ); }
     bool isOffline() const { return ( value == Offline ); }
+    bool isOnline() const { return !isOffline(); }
     bool isNetplay() const { return ( value == Host || value == Client ); }
     bool isLocal() const { return ( value == Broadcast || value == Offline ); }
 
