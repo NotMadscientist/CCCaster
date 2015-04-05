@@ -106,7 +106,7 @@ const char *getFullCharaName ( uint8_t chara )
         case 15: return "Nanaya Shiki";
         case 28: return "Kishima Kouma";
         // Second row
-        case  8: return "Arima Miyako";
+        case  8: return "Miyako Arima";
         case  2: return "Ciel";
         case  0: return "Sion Eltnam Atlasia";
         case 30: return "Riesbyfe Strideberg";
