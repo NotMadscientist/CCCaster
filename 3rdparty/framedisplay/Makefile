@@ -8,10 +8,10 @@ OBJS =	framedisplay.o \
 	clone.o \
 	render.o
 
-CXX = g++ -m32
-CFLAGS = -s -O3 -Os -Wall -I"$(CURDIR)" -I"$(CURDIR)/../libpng" -I"$(CURDIR)/../SDL" -I/mingw/i686-w64-mingw32/include/GL
+CXX = i686-w64-mingw32-g++ -m32
+CFLAGS = -s -O3 -Os -Wall -I"$(CURDIR)" -I"$(CURDIR)/../libpng" -I"$(CURDIR)/../libz" -I"$(CURDIR)/../SDL" -I/usr/i686-w64-mingw32/include/GL
 LIBS = -static -lmingw32 -lSDLmain -lSDL -lpng -lz -lopengl32 -lcomctl32 -lole32 -lwinmm -ldxguid
-LDFLAGS = -mwindows -L"$(CURDIR)/../libpng" -L"$(CURDIR)/../SDL"
+LDFLAGS = -mwindows -L"$(CURDIR)/../libpng" -L"$(CURDIR)/../libz" -L"$(CURDIR)/../SDL"
 
 all: test.exe
 
