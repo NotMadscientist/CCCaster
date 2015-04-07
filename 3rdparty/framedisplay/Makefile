@@ -30,6 +30,9 @@ all: test.exe
 clean:
 	rm -f *.o *.exe
 
+.cc.o:
+	$(CXX) $(CFLAGS) -o $@ -c $<
+
 .cpp.o:
 	$(CXX) $(CFLAGS) -o $@ -c $<
 

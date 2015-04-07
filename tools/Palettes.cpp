@@ -82,7 +82,7 @@ int main ( int argc, char *argv[] )
 
     SDL_EnableKeyRepeat ( SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL );
 
-    SDL_WM_SetCaption ( "Test", 0 );
+    SDL_WM_SetCaption ( "Palette Editor", 0 );
 
     setup_opengl();
 

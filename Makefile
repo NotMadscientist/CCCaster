@@ -17,6 +17,7 @@ LAUNCHER = launcher.exe
 UPDATER = updater.exe
 DEBUGGER = debugger.exe
 GENERATOR = generator.exe
+PALETTES = palettes.exe
 MBAA_EXE = MBAA.exe
 
 # Library sources
@@ -53,16 +54,18 @@ STRIP = $(PREFIX)strip
 TOUCH = touch
 ZIP = zip
 
-# OS specific tools
+# OS specific tools / settings
 ifeq ($(OS),Windows_NT)
 	CHMOD_X = icacls $@ /grant Everyone:F
 	GRANT = icacls $@ /grant Everyone:F
 	ASTYLE = 3rdparty/astyle.exe
+	OPENGL_HEADERS = /usr/mingw/i686-w64-mingw32/include/GL
 else
 	CHMOD_X = chmod +x $@
 	GRANT =
 	ASTYLE = 3rdparty/astyle
 	TOUCH = $(PREFIX)strip
+	OPENGL_HEADERS = /usr/i686-w64-mingw32/include/GL
 endif
 
 
@@ -120,9 +123,10 @@ all: $(DEFAULT_TARGET)
 launcher: $(FOLDER)/$(LAUNCHER)
 debugger: tools/$(DEBUGGER)
 generator: tools/$(GENERATOR)
+palettes: $(PALETTES)
 
 
-$(ARCHIVE): $(BINARY) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER) $(FOLDER)/$(UPDATER)
+$(ARCHIVE): $(BINARY) $(PALETTES) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER) $(FOLDER)/$(UPDATER)
 $(ARCHIVE): $(FOLDER)/unzip.exe $(FOLDER)/ReadMe.txt $(FOLDER)/ChangeLog.txt
 	@echo
 	rm -f $(wildcard $(NAME)*.zip)
@@ -209,6 +213,28 @@ tools/$(GENERATOR): tools/Generator.cpp $(GENERATOR_LIB_OBJECTS)
 	@echo
 
 
+FRAMEDISPLAY_SRC = $(wildcard 3rdparty/framedisplay/*.cc)
+FRAMEDISPLAY_OBJECTS = $(FRAMEDISPLAY_SRC:.cc=.o)
+
+FRAMEDISPLAY_INCLUDES = -I$(CURDIR)/3rdparty/framedisplay -I$(CURDIR)/3rdparty/libpng -I$(CURDIR)/3rdparty/libz
+FRAMEDISPLAY_INCLUDES += -I"$(CURDIR)/3rdparty/SDL" -I$(OPENGL_HEADERS)
+
+FRAMEDISPLAY_CC_FLAGS = -s -Os -Ofast -fno-rtti
+
+FRAMEDISPLAY_LD_FLAGS = -L$(CURDIR)/3rdparty/libpng -L$(CURDIR)/3rdparty/libz -L$(CURDIR)/3rdparty/SDL -mwindows
+FRAMEDISPLAY_LD_FLAGS += -static -lmingw32 -lSDLmain -lSDL -lpng -lz -lopengl32 -lcomctl32 -lole32 -lwinmm -ldxguid
+
+3rdparty/framedisplay/%.o: 3rdparty/framedisplay/%.cc
+	$(CXX) $(FRAMEDISPLAY_CC_FLAGS) $(FRAMEDISPLAY_INCLUDES) -o $@ -c $<
+
+$(PALETTES): tools/Palettes.cpp $(FRAMEDISPLAY_OBJECTS)
+	$(CXX) -o $@ $(FRAMEDISPLAY_INCLUDES) -Wall -C $^ $(FRAMEDISPLAY_LD_FLAGS)
+	@echo
+	$(STRIP) $@
+	$(CHMOD_X)
+	@echo
+
+
 define make_version
 @scripts/make_version $(VERSION)$(SUFFIX) > lib/Version.local.h
 endef
@@ -250,7 +276,7 @@ clean-res:
 	rm -rf GRP
 
 clean-common: clean-proto clean-res
-	rm -f .depend_$(BRANCH) .include_$(BRANCH) *.exe *.zip tools/*.exe \
+	rm -f .depend_$(BRANCH) .include_$(BRANCH) *.exe *.zip tools/*.exe 3rdparty/framedisplay/*.o \
 $(filter-out $(FOLDER)/config.ini $(wildcard $(FOLDER)/*.mappings) $(wildcard $(FOLDER)/*.log),$(wildcard $(FOLDER)/*))
 
 clean-debug: clean-common
@@ -306,7 +332,7 @@ ifeq (,$(findstring trim,$(MAKECMDGOALS)))
 ifeq (,$(findstring format,$(MAKECMDGOALS)))
 ifeq (,$(findstring count,$(MAKECMDGOALS)))
 ifeq (,$(findstring install,$(MAKECMDGOALS)))
-ifeq (,$(findstring sdl,$(MAKECMDGOALS)))
+ifeq (,$(findstring palettes,$(MAKECMDGOALS)))
 -include .depend_$(BRANCH)
 endif
 endif
