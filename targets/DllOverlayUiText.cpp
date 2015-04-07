@@ -294,8 +294,8 @@ void initOverlayText ( IDirect3DDevice9 *device )
                      OVERLAY_FONT_WIDTH,                        // width
                      OVERLAY_FONT_WEIGHT,                       // weight
                      1,                                         // # of mipmap levels
-                     false,                                     // italic
-                     DEFAULT_CHARSET,                           // charset
+                     FALSE,                                     // italic
+                     ANSI_CHARSET,                              // charset
                      OUT_DEFAULT_PRECIS,                        // output precision
                      ANTIALIASED_QUALITY,                       // quality
                      DEFAULT_PITCH | FF_DONTCARE,               // pitch and family

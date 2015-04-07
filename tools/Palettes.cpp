@@ -5,30 +5,120 @@
 
 #include <gl.h>
 #include <glext.h>
+#include <glu.h>
 
+#include <windows.h>
+
+#include <cstdarg>
 #include <string>
 
 using namespace std;
 
 
-static MBAACC_FrameDisplay fdisp;
+#define EDITOR_FONT             "Tahoma"
 
-static int window_width = 640;
-static int window_height = 480;
+#define EDITOR_FONT_HEIGHT      ( 30 )
 
-static float window_scale = 1.0;
+#define EDITOR_FONT_WIDTH       ( 0 )
 
-static int position_x = 250;
-static int position_y = 400;
+#define EDITOR_FONT_WEIGHT      ( 600 )
 
-static const RenderProperties props = { 1, 0, 0, 0, 0, 0 };
+#define EDITOR_FONT_COLOR       1.0, 1.0, 1.0
 
 
-static void setup_opengl()
+static MBAACC_FrameDisplay frameDisp;
+
+static const RenderProperties renderProps = { 1, 0, 0, 0, 0, 0 };
+
+static int screenWidth = 640;
+static int screenHeight = 480;
+
+static float spriteX = 0.3;
+static float spriteY = 0.9;
+
+static HWND hwnd = 0;
+static HDC hdc = 0;
+static HGLRC hrc = 0;
+
+static GLuint font = 0;
+
+
+void release_font()
 {
+    if ( !hwnd && !hdc && !hrc && !font )
+        return;
+
+    wglMakeCurrent ( 0, 0 );
+    wglDeleteContext ( hrc );
+    ReleaseDC ( hwnd, hdc );
+    glDeleteLists ( font, 256 );
+
+    hwnd = 0;
+    hdc = 0;
+    hrc = 0;
+    font = 0;
+}
+
+void setup_font()
+{
+    release_font();
+
+    hwnd = GetForegroundWindow();
+    hdc = GetDC ( hwnd );
+    hrc = wglCreateContext ( hdc );
+
+    wglMakeCurrent ( hdc, hrc );
+
+    HFONT winFont, oldFont;
+
+    font = glGenLists ( 256 );                              // storage for 256 characters
+
+    winFont = CreateFont ( EDITOR_FONT_HEIGHT,              // height
+                           EDITOR_FONT_WIDTH,               // width
+                           0,                               // angle of escapement
+                           0,                               // orientation angle
+                           EDITOR_FONT_WEIGHT,              // weight
+                           FALSE,                           // italic
+                           FALSE,                           // underline
+                           FALSE,                           // strikeout
+                           ANSI_CHARSET,                    // character set identifier
+                           OUT_DEFAULT_PRECIS,              // output precision
+                           CLIP_DEFAULT_PRECIS,             // clipping precision
+                           ANTIALIASED_QUALITY,             // output quality
+                           DEFAULT_PITCH | FF_DONTCARE,     // family and pitch
+                           EDITOR_FONT );                   // font name
+
+    oldFont = ( HFONT ) SelectObject ( hdc, winFont );      // selects the font we created
+    wglUseFontBitmaps ( hdc, 0, 256, font );                // builds 256 characters starting at character 0
+    SelectObject ( hdc, oldFont );                          // selects the old font again We Want
+    DeleteObject ( winFont );                               // delete the font we created
+}
+
+void render_font ( const char *format, ... )
+{
+    char buffer[4096];
+    va_list args;
+
+    if ( !format )
+        return;
+
+    va_start ( args, format );
+    const int count = vsnprintf ( buffer, sizeof ( buffer ), format, args );
+    va_end ( args );
+
+    glPushAttrib ( GL_LIST_BIT );
+    glListBase ( font );
+    glCallLists ( count, GL_UNSIGNED_BYTE, buffer );
+    glPopAttrib();
+}
+
+void setup_opengl()
+{
+    setup_font();
+
     glMatrixMode ( GL_PROJECTION );
     glLoadIdentity();
-    glOrtho ( 0, window_width, window_height, 0, -2048, 2048 );
+    glOrtho ( 0, screenWidth, screenHeight, 0, -2048, 2048 );
 
     glMatrixMode ( GL_MODELVIEW );
     glLoadIdentity();
@@ -39,45 +129,60 @@ static void setup_opengl()
     glDisable ( GL_DEPTH_TEST );
 }
 
-static void display_bg()
+void display_bg()
 {
     glBegin ( GL_QUADS );
-    glColor4f ( 0.0, 0.0, 0.0, 1.0 );
+
+    glColor3f ( 0.0, 0.0, 0.0 );
     glVertex2f ( 0.0, 0.0 );
-    glVertex2f ( window_width, 0.0 );
-    glVertex2f ( window_width, window_height );
-    glVertex2f ( 0.0, window_height );
+    glVertex2f ( screenWidth, 0.0 );
+    glVertex2f ( screenWidth, screenHeight );
+    glVertex2f ( 0.0, screenHeight );
+
     glEnd();
 }
 
-static void display_scene()
+void display_scene()
 {
     display_bg();
 
-    glPushMatrix();
-    glTranslatef ( position_x, position_y, 0.0 );
-    glScalef ( window_scale, window_scale, 1.0 );
 
-    fdisp.render ( &props );
+    glPushMatrix();
+
+    glTranslatef ( screenWidth * spriteX, screenHeight * spriteY, 0.0 );
+
+    frameDisp.render ( &renderProps );
+
+    glPopMatrix();
+
+
+    glPushMatrix();
+
+    glTranslatef ( 10.0, EDITOR_FONT_HEIGHT, 0.0 );
+
+    glColor3f ( EDITOR_FONT_COLOR );
+    glRasterPos2f ( 0.0, 0.0 );
+
+    render_font ( "%s", frameDisp.get_character_name ( frameDisp.get_character() ) );
 
     glPopMatrix();
 }
 
 int main ( int argc, char *argv[] )
 {
-    if ( argc >= 2 && !fdisp.init ( ( string ( argv[1] ) + "/0002.p" ).c_str() ) )
-        return 0;
+    if ( argc >= 2 && !frameDisp.init ( ( string ( argv[1] ) + "\\0002.p" ).c_str() ) )
+        return -1;
 
-    if ( !fdisp.init() )
-        return 0;
+    if ( !frameDisp.init() )
+        return -1;
 
     SDL_Init ( SDL_INIT_VIDEO | SDL_INIT_TIMER );
 
     SDL_GL_SetAttribute ( SDL_GL_DEPTH_SIZE, 16 );
     SDL_GL_SetAttribute ( SDL_GL_DOUBLEBUFFER, 1 );
-    SDL_Surface *surface = SDL_SetVideoMode ( 640, 480, 0, SDL_OPENGL | SDL_RESIZABLE );
+    SDL_Surface *screen = SDL_SetVideoMode ( screenWidth, screenHeight, 0, SDL_OPENGL | SDL_RESIZABLE );
 
-    if ( !surface )
+    if ( !screen )
         return -1;
 
     SDL_EnableKeyRepeat ( SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL );
@@ -95,8 +200,8 @@ int main ( int argc, char *argv[] )
     {
         if ( animate )
         {
-            fdisp.command ( COMMAND_SUBFRAME_NEXT, 0 );
-            render = 1;
+            frameDisp.command ( COMMAND_SUBFRAME_NEXT, 0 );
+            render = true;
         }
 
         if ( render )
@@ -104,20 +209,20 @@ int main ( int argc, char *argv[] )
             display_scene();
             SDL_GL_SwapBuffers();
 
-            render = 0;
+            render = false;
         }
 
         SDL_Delay ( 16 );
 
-        SDL_Event sdl_event;
+        SDL_Event event;
         SDL_PumpEvents();
 
-        while ( SDL_PollEvent ( &sdl_event ) )
+        while ( SDL_PollEvent ( &event ) )
         {
-            switch ( sdl_event.type )
+            switch ( event.type )
             {
                 case SDL_KEYDOWN:
-                    switch ( sdl_event.key.keysym.sym )
+                    switch ( event.key.keysym.sym )
                     {
                         case SDLK_ESCAPE:
                             done = 1;
@@ -130,69 +235,35 @@ int main ( int argc, char *argv[] )
                         case SDLK_UP:
                         case SDLK_KP8:
                             // prev seq
-                            fdisp.command ( COMMAND_SEQUENCE_PREV, 0 );
-                            render = 1;
+                            frameDisp.command ( COMMAND_SEQUENCE_PREV, 0 );
+                            render = true;
                             break;
 
                         case SDLK_DOWN:
                         case SDLK_KP2:
                             // next seq
-                            fdisp.command ( COMMAND_SEQUENCE_NEXT, 0 );
-                            render = 1;
-                            break;
-
-                        case SDLK_LEFT:
-                        case SDLK_KP4:
-                            // prev frame
-                            fdisp.command ( COMMAND_FRAME_PREV, 0 );
-                            render = 1;
-                            break;
-
-                        case SDLK_RIGHT:
-                        case SDLK_KP6:
-                            // next frame
-                            fdisp.command ( COMMAND_FRAME_NEXT, 0 );
-                            render = 1;
+                            frameDisp.command ( COMMAND_SEQUENCE_NEXT, 0 );
+                            render = true;
                             break;
 
                         case SDLK_PAGEUP:
                         case SDLK_KP9:
                             // prev char
-                            fdisp.command ( COMMAND_CHARACTER_PREV, 0 );
-                            render = 1;
+                            frameDisp.command ( COMMAND_CHARACTER_PREV, 0 );
+                            render = true;
                             break;
 
                         case SDLK_PAGEDOWN:
                         case SDLK_KP3:
                             // next char
-                            fdisp.command ( COMMAND_CHARACTER_NEXT, 0 );
-                            render = 1;
-                            break;
-
-                        case SDLK_MINUS:
-                        case SDLK_KP_MINUS:
-                            // scale
-                            window_scale = window_scale / 1.1;
-                            render = 1;
-                            break;
-
-                        case SDLK_PLUS:
-                        case SDLK_EQUALS:
-                        case SDLK_KP_PLUS:
-                            window_scale = window_scale * 1.1;
-                            render = 1;
-                            break;
-
-                        case SDLK_BACKSPACE:
-                            window_scale = 1.0;
-                            render = 1;
+                            frameDisp.command ( COMMAND_CHARACTER_NEXT, 0 );
+                            render = true;
                             break;
 
                         case SDLK_TAB:
                             // flush textures
-                            fdisp.command ( COMMAND_PALETTE_NEXT, 0 );
-
-                            render = 1;
+                            frameDisp.command ( COMMAND_PALETTE_NEXT, 0 );
+                            render = true;
                             break;
 
                         default:
@@ -201,20 +272,17 @@ int main ( int argc, char *argv[] )
                     break;
 
                 case SDL_VIDEOEXPOSE:
-                    render = 1;
+                    render = true;
                     break;
 
                 case SDL_VIDEORESIZE:
-                    SDL_SetVideoMode ( sdl_event.resize.w, sdl_event.resize.h, 0,
-                                       SDL_OPENGL | SDL_RESIZABLE );
-                    glViewport ( 0, 0, sdl_event.resize.w, sdl_event.resize.h );
+                    SDL_SetVideoMode ( event.resize.w, event.resize.h, 0, SDL_OPENGL | SDL_RESIZABLE );
+                    glViewport ( 0, 0, event.resize.w, event.resize.h );
 
-                    window_width = sdl_event.resize.w;
-                    window_height = sdl_event.resize.h;
+                    screenWidth = event.resize.w;
+                    screenHeight = event.resize.h;
 
                     setup_opengl();
-
-                    // flush textures
                     break;
 
                 case SDL_QUIT:
@@ -224,7 +292,9 @@ int main ( int argc, char *argv[] )
         }
     }
 
-    fdisp.free();
+    release_font();
+
+    frameDisp.free();
 
     SDL_Quit();
 
