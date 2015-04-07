@@ -49,6 +49,7 @@ static bool initDirsAndSanityCheck ( bool checkGameExe = true )
 
     if ( val == INVALID_FILE_ATTRIBUTES || ! ( val & FILE_ATTRIBUTE_DIRECTORY ) )
     {
+        // Remove trailing "\"
         string folder = FOLDER;
         folder.pop_back();
 
