@@ -97,12 +97,12 @@ static const MBAACC_Character_Info mbaacc_character_info[] = {
 	{33, "C-Ryougi Shiki",		"C-Ryougi",	"RYOUGI",	0	},
 	{33, "F-Ryougi Shiki",		"F-Ryougi",	"RYOUGI",	1	},
 	{33, "H-Ryougi Shiki",		"H-Ryougi",	"RYOUGI",	2	},
-	{34, "C-Mech-Hisui M",		"C-M.Hisui M",	"M_HISUI_M",	0	},
-	{34, "F-Mech-Hisui M",		"F-M.Hisui M",	"M_HISUI_M",	1	},
-	{34, "H-Mech-Hisui M",		"H-M.Hisui M",	"M_HISUI_M",	2	},
-	{35, "C-Kohaku M",		"C-Kohaku M",	"KOHAKU_M",	0	},
-	{35, "F-Kohaku M",		"F-Kohaku M",	"KOHAKU_M",	1	},
-	{35, "H-Kohaku M",		"H-Kohaku M",	"KOHAKU_M",	2	},
+	// {34, "C-Mech-Hisui M",		"C-M.Hisui M",	"M_HISUI_M",	0	}, TODO fix the name
+	// {34, "F-Mech-Hisui M",		"F-M.Hisui M",	"M_HISUI_M",	1	},
+	// {34, "H-Mech-Hisui M",		"H-M.Hisui M",	"M_HISUI_M",	2	},
+	// {35, "C-Kohaku M",		"C-Kohaku M",	"KOHAKU_M",	0	}, TODO fix the name
+	// {35, "F-Kohaku M",		"F-Kohaku M",	"KOHAKU_M",	1	},
+	// {35, "H-Kohaku M",		"H-Kohaku M",	"KOHAKU_M",	2	},
 	{51, "C-Archetype:Earth",		"C-Hime",	"P_ARC",	0	},
 	{51, "F-Archetype:Earth",		"F-Hime",	"P_ARC",	1	},
 	{51, "H-Archetype:Earth",		"H-Hime",	"P_ARC",	2	},

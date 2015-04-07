@@ -11,6 +11,7 @@
 
 #include <cstdarg>
 #include <string>
+#include <algorithm>
 
 using namespace std;
 
@@ -26,15 +27,12 @@ using namespace std;
 #define EDITOR_FONT_COLOR       1.0, 1.0, 1.0
 
 
+#define SWAP_R_AND_B(COLOR) ( ( COLOR & 0xFF ) << 16 ) | ( COLOR & 0xFF00 ) | ( ( COLOR & 0xFF0000 ) >> 16 )
+
+
 static MBAACC_FrameDisplay frameDisp;
 
 static const RenderProperties renderProps = { 1, 0, 0, 0, 0, 0 };
-
-static int screenWidth = 640;
-static int screenHeight = 480;
-
-static float spriteX = 0.3;
-static float spriteY = 0.9;
 
 static HWND hwnd = 0;
 static HDC hdc = 0;
@@ -42,6 +40,21 @@ static HGLRC hrc = 0;
 
 static GLuint font = 0;
 
+static int screenWidth = 640;
+static int screenHeight = 480;
+
+static float spriteX = 0.3;
+static float spriteY = 0.9;
+
+static int color = 0, palette = 0;
+
+
+void swapColorKeepAlpha ( unsigned int& a, unsigned int& b )
+{
+    const unsigned int tmp = a;
+    a = ( tmp & 0xFF000000 ) | ( b & 0xFFFFFF );
+    b = tmp & 0xFFFFFF;
+}
 
 void releaseFont()
 {
@@ -164,7 +177,13 @@ void displayText()
     glColor3f ( EDITOR_FONT_COLOR );
     glRasterPos2f ( 0.0, 0.0 );
 
-    renderText ( "%s", frameDisp.get_character_name ( frameDisp.get_character() ) );
+    const unsigned int currColor = 0xFFFFFF & frameDisp.get_palette_data() [palette][color];
+
+    renderText ( "%s - Palette %d - Color %d - #%06X",
+                 frameDisp.get_character_name ( frameDisp.get_character() ) + 2, // TODO allow moon switching
+                 palette + 1,
+                 color + 1,
+                 currColor );
 
     glPopMatrix();
 }
@@ -187,7 +206,7 @@ int main ( int argc, char *argv[] )
     if ( !screen )
         return -1;
 
-    SDL_EnableKeyRepeat ( SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL );
+    SDL_EnableKeyRepeat ( 300, 50 );
     SDL_WM_SetCaption ( "Palette Editor", 0 );
 
     setupOpenGL();
@@ -202,6 +221,8 @@ int main ( int argc, char *argv[] )
 
     while ( !done )
     {
+        bool changed = false;
+
         if ( animate )
         {
             frameDisp.command ( COMMAND_SUBFRAME_NEXT, 0 );
@@ -235,38 +256,55 @@ int main ( int argc, char *argv[] )
                             animate = !animate;
                             break;
 
-                        case SDLK_UP:
-                        case SDLK_KP8:
-                            // prev seq
-                            frameDisp.command ( COMMAND_SEQUENCE_PREV, 0 );
-                            render = true;
-                            break;
+                        // case SDLK_UP:
+                        //     // prev seq
+                        //     frameDisp.command ( COMMAND_SEQUENCE_PREV, 0 );
+                        //     changed = true;
+                        //     break;
 
-                        case SDLK_DOWN:
-                        case SDLK_KP2:
-                            // next seq
-                            frameDisp.command ( COMMAND_SEQUENCE_NEXT, 0 );
-                            render = true;
-                            break;
+                        // case SDLK_DOWN:
+                        //     // next seq
+                        //     frameDisp.command ( COMMAND_SEQUENCE_NEXT, 0 );
+                        //     changed = true;
+                        //     break;
 
                         case SDLK_PAGEUP:
-                        case SDLK_KP9:
                             // prev char
+                            color = palette = 0;
                             frameDisp.command ( COMMAND_CHARACTER_PREV, 0 );
-                            render = true;
+                            frameDisp.command ( COMMAND_CHARACTER_PREV, 0 );
+                            frameDisp.command ( COMMAND_CHARACTER_PREV, 0 );
+                            frameDisp.command ( COMMAND_PALETTE_SET, &palette );
+                            changed = true;
                             break;
 
                         case SDLK_PAGEDOWN:
-                        case SDLK_KP3:
                             // next char
+                            color = palette = 0;
                             frameDisp.command ( COMMAND_CHARACTER_NEXT, 0 );
-                            render = true;
+                            frameDisp.command ( COMMAND_CHARACTER_NEXT, 0 );
+                            frameDisp.command ( COMMAND_CHARACTER_NEXT, 0 );
+                            frameDisp.command ( COMMAND_PALETTE_SET, &palette );
+                            changed = true;
+                            break;
+
+                        case SDLK_LEFT:
+                            // prev color
+                            color = ( color + 255 ) % 256;
+                            changed = true;
+                            break;
+
+                        case SDLK_RIGHT:
+                            // next color
+                            color = ( color + 1 ) % 256;
+                            changed = true;
                             break;
 
                         case SDLK_TAB:
                             // next palette
+                            palette = ( palette + 1 ) % 36;
                             frameDisp.command ( COMMAND_PALETTE_NEXT, 0 );
-                            render = true;
+                            changed = true;
                             break;
 
                         default:
@@ -275,7 +313,7 @@ int main ( int argc, char *argv[] )
                     break;
 
                 case SDL_VIDEOEXPOSE:
-                    render = true;
+                    changed = true;
                     break;
 
                 case SDL_VIDEORESIZE:
@@ -288,12 +326,18 @@ int main ( int argc, char *argv[] )
                     setupOpenGL();
 
                     frameDisp.flush_texture();
+                    changed = true;
                     break;
 
                 case SDL_QUIT:
                     done = 1;
                     break;
             }
+        }
+
+        if ( changed )
+        {
+            render = true;
         }
     }
 
