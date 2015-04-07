@@ -43,7 +43,7 @@ static HGLRC hrc = 0;
 static GLuint font = 0;
 
 
-void release_font()
+void releaseFont()
 {
     if ( !hwnd && !hdc && !hrc && !font )
         return;
@@ -59,9 +59,9 @@ void release_font()
     font = 0;
 }
 
-void setup_font()
+void setupFont()
 {
-    release_font();
+    releaseFont();
 
     hwnd = GetForegroundWindow();
     hdc = GetDC ( hwnd );
@@ -94,13 +94,13 @@ void setup_font()
     DeleteObject ( winFont );                               // delete the font we created
 }
 
-void render_font ( const char *format, ... )
+int renderText ( const char *format, ... )
 {
     char buffer[4096];
     va_list args;
 
     if ( !format )
-        return;
+        return 0;
 
     va_start ( args, format );
     const int count = vsnprintf ( buffer, sizeof ( buffer ), format, args );
@@ -110,11 +110,13 @@ void render_font ( const char *format, ... )
     glListBase ( font );
     glCallLists ( count, GL_UNSIGNED_BYTE, buffer );
     glPopAttrib();
+
+    return count;
 }
 
-void setup_opengl()
+void setupOpenGL()
 {
-    setup_font();
+    setupFont();
 
     glMatrixMode ( GL_PROJECTION );
     glLoadIdentity();
@@ -129,7 +131,7 @@ void setup_opengl()
     glDisable ( GL_DEPTH_TEST );
 }
 
-void display_bg()
+void displayBg()
 {
     glBegin ( GL_QUADS );
 
@@ -142,11 +144,8 @@ void display_bg()
     glEnd();
 }
 
-void display_scene()
+void displaySprite()
 {
-    display_bg();
-
-
     glPushMatrix();
 
     glTranslatef ( screenWidth * spriteX, screenHeight * spriteY, 0.0 );
@@ -154,8 +153,10 @@ void display_scene()
     frameDisp.render ( &renderProps );
 
     glPopMatrix();
+}
 
-
+void displayText()
+{
     glPushMatrix();
 
     glTranslatef ( 10.0, EDITOR_FONT_HEIGHT, 0.0 );
@@ -163,19 +164,20 @@ void display_scene()
     glColor3f ( EDITOR_FONT_COLOR );
     glRasterPos2f ( 0.0, 0.0 );
 
-    render_font ( "%s", frameDisp.get_character_name ( frameDisp.get_character() ) );
+    renderText ( "%s", frameDisp.get_character_name ( frameDisp.get_character() ) );
 
     glPopMatrix();
 }
 
+void displayScene()
+{
+    displayBg();
+    displaySprite();
+    displayText();
+}
+
 int main ( int argc, char *argv[] )
 {
-    if ( argc >= 2 && !frameDisp.init ( ( string ( argv[1] ) + "\\0002.p" ).c_str() ) )
-        return -1;
-
-    if ( !frameDisp.init() )
-        return -1;
-
     SDL_Init ( SDL_INIT_VIDEO | SDL_INIT_TIMER );
 
     SDL_GL_SetAttribute ( SDL_GL_DEPTH_SIZE, 16 );
@@ -186,15 +188,17 @@ int main ( int argc, char *argv[] )
         return -1;
 
     SDL_EnableKeyRepeat ( SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL );
-
     SDL_WM_SetCaption ( "Palette Editor", 0 );
 
-    setup_opengl();
+    setupOpenGL();
 
-    SDL_GL_SwapBuffers();
+    if ( argc >= 2 && !frameDisp.init ( ( string ( argv[1] ) + "\\0002.p" ).c_str() ) )
+        return -1;
 
-    int animate = 1;
-    bool done = false, render = false;
+    if ( !frameDisp.init() )
+        return -1;
+
+    bool done = false, render = false, animate = true;
 
     while ( !done )
     {
@@ -206,9 +210,8 @@ int main ( int argc, char *argv[] )
 
         if ( render )
         {
-            display_scene();
+            displayScene();
             SDL_GL_SwapBuffers();
-
             render = false;
         }
 
@@ -225,11 +228,11 @@ int main ( int argc, char *argv[] )
                     switch ( event.key.keysym.sym )
                     {
                         case SDLK_ESCAPE:
-                            done = 1;
+                            done = true;
                             break;
 
                         case SDLK_SPACE:
-                            animate = 1 - animate;
+                            animate = !animate;
                             break;
 
                         case SDLK_UP:
@@ -261,7 +264,7 @@ int main ( int argc, char *argv[] )
                             break;
 
                         case SDLK_TAB:
-                            // flush textures
+                            // next palette
                             frameDisp.command ( COMMAND_PALETTE_NEXT, 0 );
                             render = true;
                             break;
@@ -282,7 +285,9 @@ int main ( int argc, char *argv[] )
                     screenWidth = event.resize.w;
                     screenHeight = event.resize.h;
 
-                    setup_opengl();
+                    setupOpenGL();
+
+                    frameDisp.flush_texture();
                     break;
 
                 case SDL_QUIT:
@@ -292,7 +297,7 @@ int main ( int argc, char *argv[] )
         }
     }
 
-    release_font();
+    releaseFont();
 
     frameDisp.free();
 
