@@ -8,10 +8,22 @@ OBJS =	framedisplay.o \
 	clone.o \
 	render.o
 
+
+ifeq ($(OS),Windows_NT)
+	OPENGL_HEADERS = /usr/mingw/i686-w64-mingw32/include/GL
+else
+	OPENGL_HEADERS = /usr/i686-w64-mingw32/include/GL
+endif
+
+
 CXX = i686-w64-mingw32-g++ -m32
-CFLAGS = -s -O3 -Os -Wall -I"$(CURDIR)" -I"$(CURDIR)/../libpng" -I"$(CURDIR)/../libz" -I"$(CURDIR)/../SDL" -I/usr/i686-w64-mingw32/include/GL
+
+CFLAGS = -s -O3 -Os -Wall -I"$(CURDIR)" -I"$(CURDIR)/../libpng" -I"$(CURDIR)/../libz" -I"$(CURDIR)/../SDL" -I$(OPENGL_HEADERS)
+
 LIBS = -static -lmingw32 -lSDLmain -lSDL -lpng -lz -lopengl32 -lcomctl32 -lole32 -lwinmm -ldxguid
+
 LDFLAGS = -mwindows -L"$(CURDIR)/../libpng" -L"$(CURDIR)/../libz" -L"$(CURDIR)/../SDL"
+
 
 all: test.exe
 
