@@ -323,7 +323,7 @@ public:
 
 	virtual void	render_frame_properties(bool detailed, int scr_width, int scr_height);
 
-	virtual void	command(FrameDisplayCommand command, void *param);
+	virtual void	command(FrameDisplayCommand command, const void *param);
 
 	virtual const char *get_current_sprite_filename();
 	virtual bool	save_current_sprite(const char *filename);

@@ -377,7 +377,7 @@ void MBAACC_FrameDisplay::render_frame_properties(bool detailed, int scr_width, 
 	m_character_data.render_frame_properties(detailed, scr_width, scr_height, m_sequence, m_frame);
 }
 
-void MBAACC_FrameDisplay::command(FrameDisplayCommand command, void *param) {
+void MBAACC_FrameDisplay::command(FrameDisplayCommand command, const void *param) {
 	if (!m_initialized) {
 		return;
 	}

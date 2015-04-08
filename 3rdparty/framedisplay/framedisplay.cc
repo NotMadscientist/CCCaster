@@ -69,7 +69,7 @@ void FrameDisplay::render(const RenderProperties *properties) {
 	if (!m_initialized) {
 		return;
 	}
-	
+
 	// stub
 }
 
@@ -81,24 +81,24 @@ void FrameDisplay::flush_texture() {
 	if (!m_initialized) {
 		return;
 	}
-	
+
 	// stub
 }
 
 void FrameDisplay::render_frame_properties(bool detailed, int scr_width, int scr_height) {
 }
 
-void FrameDisplay::command(FrameDisplayCommand command, void *param) {
+void FrameDisplay::command(FrameDisplayCommand command, const void *param) {
 	if (!m_initialized) {
 		return;
 	}
-	
+
 	// stub
 }
 
 bool FrameDisplay::init() {
 	m_initialized = 1;
-	
+
 	return 1;
 }
 
