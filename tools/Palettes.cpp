@@ -54,6 +54,8 @@ static int screenHeight = 480;
 static float spriteX = 0.3;
 static float spriteY = 0.9;
 
+static uint32_t ticker = 0;
+
 static int color = 0, palette = 0;
 
 static unordered_map<string, PaletteManager> palMans;
@@ -204,11 +206,12 @@ void displayText()
     if ( uiMode != ColorHexEntry )
         colorHexStr = format ( "%06X", currColor );
 
-    renderText ( format ( "%s - Palette %d - Color %d - #%s",
+    renderText ( format ( "%s - Palette %d - Color %d - #%s%s",
                           frameDisp.get_character_name ( frameDisp.get_character() ) + 2, // TODO allow moon switching
                           palette + 1,
                           color + 1,
-                          colorHexStr ) );
+                          colorHexStr,
+                          ( ( uiMode != ColorHexEntry ) || ( ( ticker % 40 ) > 20 ) ) ? "" : "_" ) );
 
     glPopMatrix();
 }
@@ -266,6 +269,29 @@ bool handleNavigationKeys ( const SDL_keysym& keysym )
             color = ( color + 1 ) % 256;
             return true;
 
+        case SDLK_v:
+            if ( keysym.mod & KMOD_CTRL )
+            {
+                string clip = trimmed ( getClipboard() );
+
+                if ( !clip.empty() && clip[0] == '#' )
+                {
+                    colorHexStr = clip.substr ( 1, 6 );
+
+                    for ( char& c : colorHexStr )
+                        c = toupper ( c );
+
+                    uiMode = ColorHexEntry;
+                }
+            }
+            break;
+
+        case SDLK_BACKSPACE:
+            colorHexStr = format ( "%06X", 0xFFFFFF & frameDisp.get_palette_data() [palette][color] );
+            colorHexStr.pop_back();
+            uiMode = ColorHexEntry;
+            break;
+
         default:
             break;
     }
@@ -315,7 +341,12 @@ bool handleColorHexEntryKeys ( const SDL_keysym& keysym )
         case SDLK_v:
             if ( ( keysym.mod & KMOD_CTRL ) && colorHexStr.size() < 6 )
             {
-                colorHexStr += trimmed ( getClipboard() ).substr ( 0, 6 - colorHexStr.size() );
+                string clip = trimmed ( getClipboard() );
+
+                if ( !clip.empty() && clip[0] == '#' )
+                    clip = clip.substr ( 1 );
+
+                colorHexStr += clip.substr ( 0, 6 - colorHexStr.size() );
 
                 for ( char& c : colorHexStr )
                     c = toupper ( c );
@@ -407,6 +438,8 @@ int main ( int argc, char *argv[] )
             render = false;
         }
 
+        ++ticker;
+
         SDL_Delay ( EDITOR_FRAME_INTERVAL );
 
         SDL_Event event;
@@ -437,25 +470,9 @@ int main ( int argc, char *argv[] )
 
                     if ( event.key.keysym.unicode == '#' )
                     {
-                        uiMode = ColorHexEntry;
                         colorHexStr.clear();
+                        uiMode = ColorHexEntry;
                         break;
-                    }
-
-                    if ( ( event.key.keysym.mod & KMOD_CTRL ) && ( event.key.keysym.sym == SDLK_v ) )
-                    {
-                        string clip = trimmed ( getClipboard() );
-
-                        if ( !clip.empty() && clip[0] == '#' )
-                        {
-                            colorHexStr = clip.substr ( 1, 6 );
-
-                            for ( char& c : colorHexStr )
-                                c = toupper ( c );
-
-                            uiMode = ColorHexEntry;
-                            break;
-                        }
                     }
 
                     switch ( uiMode )
