@@ -11,6 +11,7 @@
 #include <glu.h>
 
 #include <windows.h>
+#include <direct.h>
 
 #include <cstdarg>
 #include <string>
@@ -24,7 +25,7 @@ using namespace std;
 
 #define EDITOR_FONT             "Tahoma"
 
-#define EDITOR_FONT_HEIGHT      ( 30 )
+#define EDITOR_FONT_HEIGHT      ( 20 )
 
 #define EDITOR_FONT_WIDTH       ( 0 )
 
@@ -33,9 +34,6 @@ using namespace std;
 #define EDITOR_FONT_COLOR       1.0, 1.0, 1.0
 
 #define EDITOR_BAD_HEX_DELAY    ( 1000 )
-
-
-#define SWAP_R_AND_B(COLOR) ( ( COLOR & 0xFF ) << 16 ) | ( COLOR & 0xFF00 ) | ( ( COLOR & 0xFF0000 ) >> 16 )
 
 
 static MBAACC_FrameDisplay frameDisp;
@@ -56,7 +54,7 @@ static float spriteY = 0.9;
 
 static uint32_t ticker = 0;
 
-static int color = 0, palette = 0;
+static int colorNumber = 0, paletteNumber = 0;
 
 static unordered_map<string, PaletteManager> palMans;
 
@@ -64,8 +62,15 @@ static enum { Navigation, CharacterEntry, PaletteEntry, ColorNumEntry, ColorHexE
 
 static string colorHexStr;
 
+static string message;
 
-string getClipboard()
+
+static string getCharaName()
+{
+    return string ( frameDisp.get_character_name ( frameDisp.get_character() ) + 2 );
+}
+
+static string getClipboard()
 {
     const char *buffer = "";
 
@@ -82,14 +87,7 @@ string getClipboard()
     return string ( buffer );
 }
 
-void swapColorKeepAlpha ( uint32_t& a, uint32_t& b )
-{
-    const uint32_t tmp = a;
-    a = ( tmp & 0xFF000000 ) | ( b & 0xFFFFFF );
-    b = tmp & 0xFFFFFF;
-}
-
-void releaseFont()
+static void releaseFont()
 {
     if ( !hwnd && !hdc && !hrc && !font )
         return;
@@ -105,7 +103,7 @@ void releaseFont()
     font = 0;
 }
 
-void setupFont()
+static void setupFont()
 {
     releaseFont();
 
@@ -140,7 +138,7 @@ void setupFont()
     DeleteObject ( winFont );                               // delete the font we created
 }
 
-void renderText ( const string& str )
+static void renderText ( const string& str )
 {
     if ( str.empty() )
         return;
@@ -151,7 +149,7 @@ void renderText ( const string& str )
     glPopAttrib();
 }
 
-void setupOpenGL()
+static void setupOpenGL()
 {
     setupFont();
 
@@ -168,7 +166,7 @@ void setupOpenGL()
     glDisable ( GL_DEPTH_TEST );
 }
 
-void displayBg()
+static void displayBg()
 {
     glBegin ( GL_QUADS );
 
@@ -181,7 +179,7 @@ void displayBg()
     glEnd();
 }
 
-void displaySprite()
+static void displaySprite()
 {
     glPushMatrix();
 
@@ -192,83 +190,127 @@ void displaySprite()
     glPopMatrix();
 }
 
-void displayText()
+static void displayText()
 {
     glPushMatrix();
 
-    glTranslatef ( 10.0, EDITOR_FONT_HEIGHT, 0.0 );
+    glTranslatef ( 10.0, 5.0 + EDITOR_FONT_HEIGHT, 0.0 );
 
     glColor3f ( EDITOR_FONT_COLOR );
-    glRasterPos2f ( 0.0, 0.0 );
 
-    const uint32_t currColor = 0xFFFFFF & frameDisp.get_palette_data() [palette][color];
+    glRasterPos2f ( 0.0, 0.0 );
+    renderText ( format ( "%s - Palette %d - Color %d", getCharaName(), paletteNumber + 1, colorNumber + 1 ) );
+
+    const uint32_t origColor = 0xFFFFFF & palMans[getCharaName()].getOriginal ( paletteNumber, colorNumber );
+
+    glRasterPos2f ( 0.0, 5.0 + EDITOR_FONT_HEIGHT );
+    renderText ( format ( "Original #%06X", origColor ) );
+
+    const uint32_t currColor = 0xFFFFFF & frameDisp.get_palette_data() [paletteNumber][colorNumber];
 
     if ( uiMode != ColorHexEntry )
-        colorHexStr = format ( "%06X", currColor );
+        colorHexStr = format ( "%06X", SWAP_R_AND_B ( currColor ) );
 
-    renderText ( format ( "%s - Palette %d - Color %d - #%s%s",
-                          frameDisp.get_character_name ( frameDisp.get_character() ) + 2, // TODO allow moon switching
-                          palette + 1,
-                          color + 1,
-                          colorHexStr,
-                          ( ( uiMode != ColorHexEntry ) || ( ( ticker % 40 ) > 20 ) ) ? "" : "_" ) );
+    string blinker = ( ( uiMode != ColorHexEntry ) || ( ( ticker % 40 ) > 20 ) ) ? "" : "_";
+
+    glRasterPos2f ( 0.0, 2 * ( 5.0 + EDITOR_FONT_HEIGHT ) );
+    renderText ( format ( "Current #%s%s", colorHexStr, blinker ) );
+
+    glRasterPos2f ( 0.0, 3 * ( 5.0 + EDITOR_FONT_HEIGHT ) );
+    renderText ( message );
 
     glPopMatrix();
 }
 
-void displayScene()
+static void displayScene()
 {
     displayBg();
     displaySprite();
     displayText();
 }
 
-bool handleNavigationKeys ( const SDL_keysym& keysym )
+static void savePalMan()
 {
+    if ( palMans[getCharaName()].empty() )
+        return;
+
+    _mkdir ( PALETTES_FOLDER );
+    palMans[getCharaName()].save ( PALETTES_FOLDER + getCharaName() + "_palettes.txt" );
+}
+
+static void initPalMan()
+{
+    if ( palMans.find ( getCharaName() ) == palMans.end() )
+    {
+        palMans[getCharaName()].cache ( static_cast<const MBAACC_FrameDisplay&> ( frameDisp ).get_palette_data() );
+        palMans[getCharaName()].load ( PALETTES_FOLDER + getCharaName() + "_palettes.txt" );
+        savePalMan();
+    }
+
+    palMans[getCharaName()].apply ( frameDisp.get_palette_data() );
+}
+
+static bool handleNavigationKeys ( const SDL_keysym& keysym )
+{
+    static const int zero = 0;
+
     switch ( keysym.sym )
     {
+        // Previous character
         case SDLK_PAGEUP:
-            // prev char
-            color = palette = 0;
+            colorNumber = paletteNumber = 0;
             frameDisp.command ( COMMAND_CHARACTER_PREV, 0 );
             frameDisp.command ( COMMAND_CHARACTER_PREV, 0 );
             frameDisp.command ( COMMAND_CHARACTER_PREV, 0 );
-            frameDisp.command ( COMMAND_PALETTE_SET, &palette );
+            frameDisp.command ( COMMAND_PALETTE_SET, &paletteNumber );
+            initPalMan();
             return true;
 
+        // Next character
         case SDLK_PAGEDOWN:
-            // next char
-            color = palette = 0;
+            colorNumber = paletteNumber = 0;
             frameDisp.command ( COMMAND_CHARACTER_NEXT, 0 );
             frameDisp.command ( COMMAND_CHARACTER_NEXT, 0 );
             frameDisp.command ( COMMAND_CHARACTER_NEXT, 0 );
-            frameDisp.command ( COMMAND_PALETTE_SET, &palette );
+            frameDisp.command ( COMMAND_PALETTE_SET, &paletteNumber );
+            initPalMan();
             return true;
 
+        // Previous palette
         case SDLK_UP:
-            // prev palette
-            color = 0;
-            palette = ( palette + 35 ) % 36;
-            frameDisp.command ( COMMAND_PALETTE_SET, &palette );
+            colorNumber = 0;
+            paletteNumber = ( paletteNumber + 35 ) % 36;
+            frameDisp.command ( COMMAND_PALETTE_SET, &paletteNumber );
             return true;
 
+        // Next palette
         case SDLK_DOWN:
-            // next palette
-            color = 0;
-            palette = ( palette + 1 ) % 36;
-            frameDisp.command ( COMMAND_PALETTE_SET, &palette );
+            colorNumber = 0;
+            paletteNumber = ( paletteNumber + 1 ) % 36;
+            frameDisp.command ( COMMAND_PALETTE_SET, &paletteNumber );
             return true;
 
+        // Previous color
         case SDLK_LEFT:
-            // prev color
-            color = ( color + 255 ) % 256;
+            colorNumber = ( colorNumber + 255 ) % 256;
             return true;
 
+        // Next color
         case SDLK_RIGHT:
-            // next color
-            color = ( color + 1 ) % 256;
+            colorNumber = ( colorNumber + 1 ) % 256;
             return true;
 
+        // First sequence
+        case SDLK_HOME:
+            frameDisp.command ( COMMAND_SEQUENCE_SET, &zero );
+            return true;
+
+        // Next sequence
+        case SDLK_END:
+            frameDisp.command ( COMMAND_SEQUENCE_NEXT, 0 );
+            return true;
+
+        // Paste a color and enter color hex entry mode
         case SDLK_v:
             if ( keysym.mod & KMOD_CTRL )
             {
@@ -286,11 +328,15 @@ bool handleNavigationKeys ( const SDL_keysym& keysym )
             }
             break;
 
+        // Backspace a letter and enter color hex entry mode
         case SDLK_BACKSPACE:
-            colorHexStr = format ( "%06X", 0xFFFFFF & frameDisp.get_palette_data() [palette][color] );
+        {
+            const uint32_t currColor = 0xFFFFFF & frameDisp.get_palette_data() [paletteNumber][colorNumber];
+            colorHexStr = format ( "%06X", SWAP_R_AND_B ( currColor ) );
             colorHexStr.pop_back();
             uiMode = ColorHexEntry;
             break;
+        }
 
         default:
             break;
@@ -299,25 +345,26 @@ bool handleNavigationKeys ( const SDL_keysym& keysym )
     return false;
 }
 
-bool handleCharacterEntryKeys ( const SDL_keysym& keysym )
+static bool handleCharacterEntryKeys ( const SDL_keysym& keysym )
 {
     return false;
 }
 
-bool handlePaletteEntryKeys ( const SDL_keysym& keysym )
+static bool handlePaletteEntryKeys ( const SDL_keysym& keysym )
 {
     return false;
 }
 
-bool handleColorNumEntryKeys ( const SDL_keysym& keysym )
+static bool handleColorNumEntryKeys ( const SDL_keysym& keysym )
 {
     return false;
 }
 
-bool handleColorHexEntryKeys ( const SDL_keysym& keysym )
+static bool handleColorHexEntryKeys ( const SDL_keysym& keysym )
 {
     switch ( keysym.sym )
     {
+        // Only allow hex letter
         case SDLK_0:
         case SDLK_1:
         case SDLK_2:
@@ -338,6 +385,7 @@ bool handleColorHexEntryKeys ( const SDL_keysym& keysym )
                 colorHexStr.push_back ( toupper ( ( char ) keysym.unicode ) );
             break;
 
+        // Paste a color
         case SDLK_v:
             if ( ( keysym.mod & KMOD_CTRL ) && colorHexStr.size() < 6 )
             {
@@ -353,11 +401,13 @@ bool handleColorHexEntryKeys ( const SDL_keysym& keysym )
             }
             break;
 
+        // Backspace a letter
         case SDLK_BACKSPACE:
             if ( !colorHexStr.empty() )
                 colorHexStr.pop_back();
             break;
 
+        // Parse color and return to navigation
         case SDLK_RETURN:
             if ( colorHexStr.empty() )
             {
@@ -381,8 +431,13 @@ bool handleColorHexEntryKeys ( const SDL_keysym& keysym )
 
             if ( colorHexStr.size() == 6 )
             {
-                uint32_t& currColor = frameDisp.get_palette_data() [palette][color];
-                currColor = ( currColor & 0xFF000000 ) | parseHex<uint32_t> ( colorHexStr );
+                const uint32_t newColor = 0xFFFFFF & parseHex<uint32_t> ( colorHexStr );
+
+                uint32_t& currColor = frameDisp.get_palette_data() [paletteNumber][colorNumber];
+                currColor = ( currColor & 0xFF000000 ) | SWAP_R_AND_B ( newColor );
+
+                palMans[getCharaName()].set ( paletteNumber, colorNumber, newColor );
+                savePalMan();
 
                 uiMode = Navigation;
                 return true;
@@ -419,6 +474,9 @@ int main ( int argc, char *argv[] )
     if ( !frameDisp.init() )
         return -1;
 
+    // Initialize with the first character
+    initPalMan();
+
     bool done = false, render = false, animate = true;
 
     while ( !done )
@@ -450,24 +508,41 @@ int main ( int argc, char *argv[] )
             switch ( event.type )
             {
                 case SDL_KEYDOWN:
+                    // Quit application
                     if ( ( event.key.keysym.mod & KMOD_ALT ) && ( event.key.keysym.sym == SDLK_F4 ) )
                     {
                         done = true;
                         break;
                     }
 
+                    // Return to navigation
                     if ( event.key.keysym.sym == SDLK_ESCAPE )
                     {
                         uiMode = Navigation;
                         break;
                     }
 
+                    // Toggle animation
                     if ( event.key.keysym.sym == SDLK_SPACE )
                     {
                         animate = !animate;
                         break;
                     }
 
+                    // Reset current color
+                    if ( event.key.keysym.sym == SDLK_DELETE )
+                    {
+                        uint32_t& currColor = frameDisp.get_palette_data() [paletteNumber][colorNumber];
+                        palMans[getCharaName()].clear ( paletteNumber, colorNumber );
+                        currColor = SWAP_R_AND_B ( palMans[getCharaName()].get ( paletteNumber, colorNumber ) );
+                        savePalMan();
+
+                        uiMode = Navigation;
+                        changed = true;
+                        break;
+                    }
+
+                    // Enter color hex entry mode
                     if ( event.key.keysym.unicode == '#' )
                     {
                         colorHexStr.clear();

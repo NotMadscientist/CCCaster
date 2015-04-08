@@ -25,15 +25,31 @@ uint32_t PaletteManager::computeHighlightColor ( uint32_t color )
     }
 }
 
-void PaletteManager::init ( uint32_t **originalPalettes )
+void PaletteManager::cache ( const uint32_t **paletteData )
 {
     for ( uint32_t i = 0; i < originals.size(); ++i )
     {
         for ( uint32_t j = 0; j < originals[i].size(); ++j )
         {
-            originals[i][j] = SWAP_R_AND_B ( originalPalettes[i][j] );
+            originals[i][j] = SWAP_R_AND_B ( paletteData[i][j] );
         }
     }
+}
+
+void PaletteManager::apply ( uint32_t **paletteData ) const
+{
+    for ( uint32_t i = 0; i < originals.size(); ++i )
+    {
+        for ( uint32_t j = 0; j < originals[i].size(); ++j )
+        {
+            paletteData[i][j] = ( paletteData[i][j] & 0xFF000000 ) | ( 0xFFFFFF & SWAP_R_AND_B ( get ( i, j ) ) );
+        }
+    }
+}
+
+uint32_t PaletteManager::getOriginal ( uint32_t paletteNumber, uint32_t colorNumber ) const
+{
+    return originals[paletteNumber][colorNumber];
 }
 
 uint32_t PaletteManager::get ( uint32_t paletteNumber, uint32_t colorNumber ) const
@@ -48,7 +64,7 @@ uint32_t PaletteManager::get ( uint32_t paletteNumber, uint32_t colorNumber ) co
             return jt->second;
     }
 
-    return originals[paletteNumber][colorNumber];
+    return getOriginal ( paletteNumber, colorNumber );
 }
 
 void PaletteManager::set ( uint32_t paletteNumber, uint32_t colorNumber, uint32_t color )
@@ -61,20 +77,27 @@ void PaletteManager::clear ( uint32_t paletteNumber, uint32_t colorNumber )
     const auto it = palettes.find ( paletteNumber );
 
     if ( it != palettes.end() )
+    {
         it->second.erase ( colorNumber );
+
+        if ( it->second.empty() )
+            clear ( paletteNumber );
+    }
 }
 
 void PaletteManager::clear ( uint32_t paletteNumber )
 {
-    const auto it = palettes.find ( paletteNumber );
-
-    if ( it != palettes.end() )
-        it->second.clear();
+    palettes.erase ( paletteNumber );
 }
 
 void PaletteManager::clear()
 {
     palettes.clear();
+}
+
+bool PaletteManager::empty() const
+{
+    return palettes.empty();
 }
 
 bool PaletteManager::save ( const string& file ) const
@@ -88,16 +111,16 @@ bool PaletteManager::save ( const string& file ) const
 
         for ( auto it = palettes.cbegin(); it != palettes.cend(); ++it )
         {
-            fout << format ( "\n======== Color %02d start ========\n", it->first ) << endl;
+            fout << format ( "\n======== Color %02d start ========\n", it->first + 1 ) << endl;
 
             for ( const auto& kv : it->second )
             {
-                const string line = format ( "color_%02d_%03d=#%06X", it->first, kv.first, kv.second );
+                const string line = format ( "color_%02d_%03d=#%06X", it->first + 1, kv.first + 1, kv.second );
 
                 fout << line << endl;
             }
 
-            fout << format ( "\n======== Color %02d end ========\n", it->first ) << endl;
+            fout << format ( "\n======== Color %02d end ========\n", it->first + 1 ) << endl;
         }
 
         good = fout.good();
@@ -128,8 +151,8 @@ bool PaletteManager::load ( const string& file )
             if ( prefix.size() != 3 || prefix[0] != "color" || prefix[1].empty() || prefix[2].empty() )
                 continue;
 
-            const uint32_t paletteNumber = lexical_cast<uint32_t> ( prefix[1] );
-            const uint32_t colorNumber = lexical_cast<uint32_t> ( prefix[2] );
+            const uint32_t paletteNumber = lexical_cast<uint32_t> ( prefix[1] ) - 1;
+            const uint32_t colorNumber = lexical_cast<uint32_t> ( prefix[2] ) - 1;
 
             uint32_t color;
 

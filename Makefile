@@ -12,6 +12,7 @@ endif
 ARCHIVE = $(NAME).v$(VERSION)$(SUFFIX)$(DOT_TAG).zip
 BINARY = $(NAME).v$(VERSION)$(DOT_TAG).exe
 FOLDER = $(NAME)
+PALETTES_FOLDER = palettes
 DLL = hook$(DOT_TAG).dll
 LAUNCHER = launcher.exe
 UPDATER = updater.exe
@@ -71,7 +72,7 @@ endif
 
 # Build flags
 DEFINES = -DWIN32_LEAN_AND_MEAN -DWINVER=0x501 -D_WIN32_WINNT=0x501 -D_M_IX86
-DEFINES += -DNAMED_PIPE='"\\\\.\\pipe\\cccaster_pipe"'
+DEFINES += -DNAMED_PIPE='"\\\\.\\pipe\\cccaster_pipe"' -DPALETTES_FOLDER='"$(PALETTES_FOLDER)\\"'
 DEFINES += -DMBAA_EXE='"$(MBAA_EXE)"' -DBINARY='"$(BINARY)"' -DFOLDER='"$(FOLDER)\\"'
 DEFINES += -DHOOK_DLL='"$(FOLDER)\\$(DLL)"' -DLAUNCHER='"$(FOLDER)\\$(LAUNCHER)"' -DUPDATER='"$(UPDATER)"'
 INCLUDES = -I$(CURDIR) -I$(CURDIR)/lib -I$(CURDIR)/tests -I$(CURDIR)/3rdparty -I$(CURDIR)/3rdparty/cereal/include
@@ -220,7 +221,7 @@ FRAMEDISPLAY_OBJECTS = $(FRAMEDISPLAY_SRC:.cc=.o)
 FRAMEDISPLAY_INCLUDES = -I$(CURDIR) -I$(CURDIR)/lib -I$(CURDIR)/3rdparty/framedisplay -I"$(CURDIR)/3rdparty/SDL"
 FRAMEDISPLAY_INCLUDES += -I$(CURDIR)/3rdparty/libpng -I$(CURDIR)/3rdparty/libz -I$(OPENGL_HEADERS)
 
-FRAMEDISPLAY_CC_FLAGS = -s -Os -Ofast -fno-rtti
+FRAMEDISPLAY_CC_FLAGS = -s -Os -Ofast -fno-rtti -DPALETTES_FOLDER='"$(PALETTES_FOLDER)\\"'
 
 FRAMEDISPLAY_LD_FLAGS = -L$(CURDIR)/3rdparty/libpng -L$(CURDIR)/3rdparty/libz -L$(CURDIR)/3rdparty/SDL -mwindows
 FRAMEDISPLAY_LD_FLAGS += -static -lmingw32 -lSDLmain -lSDL -lpng -lz -lopengl32 -lcomctl32 -lole32 -lwinmm -ldxguid
@@ -229,7 +230,7 @@ FRAMEDISPLAY_LD_FLAGS += -static -lmingw32 -lSDLmain -lSDL -lpng -lz -lopengl32 
 	$(CXX) $(FRAMEDISPLAY_CC_FLAGS) $(FRAMEDISPLAY_INCLUDES) -o $@ -c $<
 
 $(PALETTES): tools/Palettes.cpp PaletteManager.cpp lib/StringUtils.cpp $(FRAMEDISPLAY_OBJECTS) res/palettes.res
-	$(CXX) -o $@ $(FRAMEDISPLAY_INCLUDES) -Wall -std=c++11 -C $^ $(FRAMEDISPLAY_LD_FLAGS)
+	$(CXX) $(FRAMEDISPLAY_CC_FLAGS) -o $@ $(FRAMEDISPLAY_INCLUDES) -Wall -std=c++11 -C $^ $(FRAMEDISPLAY_LD_FLAGS)
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
