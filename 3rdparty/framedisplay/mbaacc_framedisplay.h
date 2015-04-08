@@ -309,6 +309,7 @@ protected:
 public:
 	virtual const char *get_character_long_name(int n);
 	virtual const char *get_character_name(int n);
+	virtual const int get_character_index(int n);
 	virtual int	get_sequence_count();
 	virtual bool	has_sequence(int n);
 	virtual const char *get_sequence_name(int n);

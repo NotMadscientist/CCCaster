@@ -131,6 +131,12 @@ const char *MBAACC_FrameDisplay::get_character_name(int n) {
 	return mbaacc_character_info[n].short_name;
 }
 
+const int MBAACC_FrameDisplay::get_character_index(int n) {
+	if (n < 0 || n >= mbaacc_ncharacter_info)
+		return -1;
+	return mbaacc_character_info[n].index;
+}
+
 int MBAACC_FrameDisplay::get_sequence_count() {
 	if (!m_initialized) {
 		return 0;

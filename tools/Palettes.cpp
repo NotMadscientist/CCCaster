@@ -1,5 +1,6 @@
 #include "PaletteManager.h"
 #include "StringUtils.h"
+#include "CharacterSelect.h"
 
 #include "mbaacc_framedisplay.h"
 #include "render.h"
@@ -67,7 +68,7 @@ static string message;
 
 static string getCharaName()
 {
-    return string ( frameDisp.get_character_name ( frameDisp.get_character() ) + 2 );
+    return getShortCharaName ( frameDisp.get_character_index ( frameDisp.get_character() ) );
 }
 
 static string getClipboard()

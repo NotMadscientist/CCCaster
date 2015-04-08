@@ -215,6 +215,8 @@ tools/$(GENERATOR): tools/Generator.cpp $(GENERATOR_LIB_OBJECTS)
 	@echo
 
 
+PALETTES_SRC = tools/Palettes.cpp PaletteManager.cpp CharacterSelect.cpp lib/StringUtils.cpp
+
 FRAMEDISPLAY_SRC = $(wildcard 3rdparty/framedisplay/*.cc)
 FRAMEDISPLAY_OBJECTS = $(FRAMEDISPLAY_SRC:.cc=.o)
 
@@ -229,7 +231,7 @@ FRAMEDISPLAY_LD_FLAGS += -static -lmingw32 -lSDLmain -lSDL -lpng -lz -lopengl32 
 3rdparty/framedisplay/%.o: 3rdparty/framedisplay/%.cc
 	$(CXX) $(FRAMEDISPLAY_CC_FLAGS) $(FRAMEDISPLAY_INCLUDES) -o $@ -c $<
 
-$(PALETTES): tools/Palettes.cpp PaletteManager.cpp lib/StringUtils.cpp $(FRAMEDISPLAY_OBJECTS) res/palettes.res
+$(PALETTES): $(PALETTES_SRC) $(FRAMEDISPLAY_OBJECTS) res/palettes.res
 	$(CXX) $(FRAMEDISPLAY_CC_FLAGS) -o $@ $(FRAMEDISPLAY_INCLUDES) -Wall -std=c++11 -C $^ $(FRAMEDISPLAY_LD_FLAGS)
 	@echo
 	$(STRIP) $@
