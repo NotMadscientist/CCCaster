@@ -88,6 +88,9 @@ static void deinitialize();
 ENUM ( Variable, WorldTime, GameMode, RoundStart,
        MenuConfirmState, AutoReplaySave, GameStateCounter, CurrentMenuIndex );
 
+// Global stopping flag
+bool stopping = false;
+
 
 struct DllMain
         : public Main
@@ -1083,6 +1086,8 @@ struct DllMain
 
         stopTimer.reset ( new Timer ( this ) );
         stopTimer->start ( DELAYED_STOP );
+
+        stopping = true;
     }
 
     void checkRoundOver()
@@ -1415,6 +1420,7 @@ struct DllMain
     {
         appState = AppState::Stopping;
         EventManager::get().stop();
+        stopping = true;
     }
 
     void ipcReadEvent ( const MsgPtr& msg ) override
@@ -1779,6 +1785,7 @@ struct DllMain
         {
             appState = AppState::Stopping;
             EventManager::get().stop();
+            stopping = true;
         }
         else
         {
@@ -1805,6 +1812,7 @@ struct DllMain
 
             appState = AppState::Stopping;
             EventManager::get().stop();
+            stopping = true;
         }
 
         // Don't poll unless we're in the correct state
@@ -1978,7 +1986,7 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
 }
 
 
-static void stopDllMain ( const string& error )
+void stopDllMain ( const string& error )
 {
     if ( main )
     {
@@ -1989,6 +1997,8 @@ static void stopDllMain ( const string& error )
         appState = AppState::Stopping;
         EventManager::get().stop();
     }
+
+    stopping = true;
 }
 
 namespace AsmHacks

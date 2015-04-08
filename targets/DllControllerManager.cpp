@@ -12,6 +12,8 @@ using namespace std;
 
 #define VK_TOGGLE_OVERLAY ( VK_F4 )
 
+extern bool stopping;
+
 
 void DllControllerManager::initControllers ( const ControllerMappings& mappings )
 {
@@ -39,7 +41,7 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
 
     bool toggleOverlay = false;
 
-    if ( KeyboardState::isPressed ( VK_TOGGLE_OVERLAY ) && !ProcessManager::isWine() )
+    if ( !stopping && KeyboardState::isPressed ( VK_TOGGLE_OVERLAY ) && !ProcessManager::isWine() )
         toggleOverlay = true;
 
     for ( Controller *controller : allControllers )

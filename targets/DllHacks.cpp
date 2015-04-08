@@ -22,6 +22,8 @@ using namespace DllHacks;
 
 DEFINE_GUID ( GUID_DEVINTERFACE_HID, 0x4D1E55B2L, 0xF16F, 0x11CF, 0x88, 0xCB, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30 );
 
+void stopDllMain ( const string& error );
+
 
 namespace DllHacks
 {
@@ -76,6 +78,14 @@ MH_WINAPI_HOOK ( LRESULT, CALLBACK, WindowProc, HWND hwnd, UINT msg, WPARAM wPar
             // Ignore repeated keys
             if ( ( lParam >> 30 ) & 1 )
                 break;
+
+        // Intentional fall-through
+
+        case WM_SYSKEYDOWN:
+            // Handle Alt + F4
+            if ( ( HIWORD ( lParam ) & KF_ALTDOWN ) && ( wParam == VK_F4 ) )
+                stopDllMain ( "" );
+            break;
 
         case WM_KEYUP:
         {
