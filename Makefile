@@ -76,6 +76,7 @@ DEFINES += -DMBAA_EXE='"$(MBAA_EXE)"' -DBINARY='"$(BINARY)"' -DFOLDER='"$(FOLDER
 DEFINES += -DHOOK_DLL='"$(FOLDER)\\$(DLL)"' -DLAUNCHER='"$(FOLDER)\\$(LAUNCHER)"' -DUPDATER='"$(UPDATER)"'
 INCLUDES = -I$(CURDIR) -I$(CURDIR)/lib -I$(CURDIR)/tests -I$(CURDIR)/3rdparty -I$(CURDIR)/3rdparty/cereal/include
 INCLUDES += -I$(CURDIR)/3rdparty/gtest/include -I$(CURDIR)/3rdparty/minhook/include -I$(CURDIR)/3rdparty/d3dhook
+INCLUDES += -I$(CURDIR)/3rdparty/framedisplay
 CC_FLAGS = -m32 $(INCLUDES) $(DEFINES)
 
 # Linker flags
@@ -216,8 +217,8 @@ tools/$(GENERATOR): tools/Generator.cpp $(GENERATOR_LIB_OBJECTS)
 FRAMEDISPLAY_SRC = $(wildcard 3rdparty/framedisplay/*.cc)
 FRAMEDISPLAY_OBJECTS = $(FRAMEDISPLAY_SRC:.cc=.o)
 
-FRAMEDISPLAY_INCLUDES = -I$(CURDIR)/3rdparty/framedisplay -I$(CURDIR)/3rdparty/libpng -I$(CURDIR)/3rdparty/libz
-FRAMEDISPLAY_INCLUDES += -I"$(CURDIR)/3rdparty/SDL" -I$(OPENGL_HEADERS)
+FRAMEDISPLAY_INCLUDES = -I$(CURDIR) -I$(CURDIR)/lib -I$(CURDIR)/3rdparty/framedisplay -I"$(CURDIR)/3rdparty/SDL"
+FRAMEDISPLAY_INCLUDES += -I$(CURDIR)/3rdparty/libpng -I$(CURDIR)/3rdparty/libz -I$(OPENGL_HEADERS)
 
 FRAMEDISPLAY_CC_FLAGS = -s -Os -Ofast -fno-rtti
 
@@ -227,11 +228,15 @@ FRAMEDISPLAY_LD_FLAGS += -static -lmingw32 -lSDLmain -lSDL -lpng -lz -lopengl32 
 3rdparty/framedisplay/%.o: 3rdparty/framedisplay/%.cc
 	$(CXX) $(FRAMEDISPLAY_CC_FLAGS) $(FRAMEDISPLAY_INCLUDES) -o $@ -c $<
 
-$(PALETTES): tools/Palettes.cpp $(FRAMEDISPLAY_OBJECTS)
-	$(CXX) -o $@ $(FRAMEDISPLAY_INCLUDES) -Wall -C $^ $(FRAMEDISPLAY_LD_FLAGS)
+$(PALETTES): tools/Palettes.cpp PaletteManager.cpp lib/StringUtils.cpp $(FRAMEDISPLAY_OBJECTS) res/palettes.res
+	$(CXX) -o $@ $(FRAMEDISPLAY_INCLUDES) -Wall -std=c++11 -C $^ $(FRAMEDISPLAY_LD_FLAGS)
 	@echo
 	$(STRIP) $@
 	$(CHMOD_X)
+	@echo
+
+res/palettes.res: res/palettes.rc res/palettes.ico
+	$(WINDRES) -F pe-i386 res/palettes.rc -O coff -o $@
 	@echo
 
 

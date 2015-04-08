@@ -15,6 +15,9 @@ using namespace std;
 extern bool stopping;
 
 
+extern bool stopping;
+
+
 void DllControllerManager::initControllers ( const ControllerMappings& mappings )
 {
     Lock lock ( ControllerManager::get().mutex );

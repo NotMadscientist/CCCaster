@@ -89,6 +89,17 @@ inline std::string format ( const std::string& fmt, const T& val, V ... vals )
 }
 
 
+// Parse a hex string
+template <typename T>
+inline T parseHex ( const std::string& str )
+{
+    T val;
+    std::stringstream ss ( str );
+    ss >> std::hex >> val;
+    return val;
+}
+
+
 // Lexical cast
 template <typename T>
 inline T lexical_cast ( const std::string& str )
