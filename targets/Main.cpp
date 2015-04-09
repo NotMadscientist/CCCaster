@@ -551,6 +551,7 @@ OptionsMessage::OptionsMessage ( const std::vector<option::Option>& opt )
 
 namespace AsmHacks
 {
-// Empty definition for unused DLL callback
+// Empty definitions for unused DLL callbacks
 extern "C" void callback() {}
+extern "C" void colorLoadCallback() {}
 }

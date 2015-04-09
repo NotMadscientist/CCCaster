@@ -47,6 +47,29 @@ void PaletteManager::apply ( uint32_t **paletteData ) const
     }
 }
 
+void PaletteManager::cache ( const uint32_t *paletteData )
+{
+    for ( uint32_t i = 0; i < originals.size(); ++i )
+    {
+        for ( uint32_t j = 0; j < originals[i].size(); ++j )
+        {
+            originals[i][j] = SWAP_R_AND_B ( paletteData [ i * 256 + j ] );
+        }
+    }
+}
+
+void PaletteManager::apply ( uint32_t *paletteData ) const
+{
+    for ( uint32_t i = 0; i < originals.size(); ++i )
+    {
+        for ( uint32_t j = 0; j < originals[i].size(); ++j )
+        {
+            paletteData [ i * 256 + j ] = ( paletteData [ i * 256 + j ] & 0xFF000000 )
+                                          | ( 0xFFFFFF & SWAP_R_AND_B ( get ( i, j ) ) );
+        }
+    }
+}
+
 uint32_t PaletteManager::getOriginal ( uint32_t paletteNumber, uint32_t colorNumber ) const
 {
     return originals[paletteNumber][colorNumber];

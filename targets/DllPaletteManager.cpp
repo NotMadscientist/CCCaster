@@ -1,3 +1,45 @@
+#include "PaletteManager.h"
+#include "AsmHacks.h"
+#include "Logger.h"
+
+using namespace std;
+
+
+// static uint32_t allColors[2][50 * 36 * 256];
+
+// static inline char *getP1ColorTablePtr()
+// {
+//     const uint32_t *ptr0 = ( uint32_t * ) 0x74D808;
+
+//     if ( ! *ptr0 )
+//         return 0;
+
+//     const uint32_t *ptr1 = ( uint32_t * ) ( *ptr0 + 0x1AC );
+
+//     return ( char * ) *ptr1;
+// }
+
+namespace AsmHacks
+{
+
+extern "C" void colorLoadCallback()
+{
+    // WHY DOES THIS STACK OVERRUN (not overflow!)
+
+    uint32_t *currentColorTablePtr = 0;
+
+    asm ( "movl %%eax,%0" : "=r" ( currentColorTablePtr ) );
+
+    LOG ( "P1ColorTablePtr=0x%06X", getP1ColorTablePtr() );
+    LOG ( "currentColorTablePtr=0x%06X", currentColorTablePtr );
+
+    // * ( currentColorTablePtr + 1 + 15 ) = ( 0xFF000000 & * ( currentColorTablePtr + 1 + 15 ) )
+    //                                       | ( 0xFFFFFF & SWAP_R_AND_B ( 0x0000FF ) );
+}
+
+} // namespace AsmHacks
+
+
 // #include "PaletteManager.h"
 // #include "StringUtils.h"
 // #include "Constants.h"

@@ -23,6 +23,9 @@ public:
     void cache ( const uint32_t **paletteData );
     void apply ( uint32_t **paletteData ) const;
 
+    void cache ( const uint32_t *paletteData );
+    void apply ( uint32_t *paletteData ) const;
+
     uint32_t getOriginal ( uint32_t paletteNumber, uint32_t colorNumber ) const;
     uint32_t get ( uint32_t paletteNumber, uint32_t colorNumber ) const;
     void set ( uint32_t paletteNumber, uint32_t colorNumber, uint32_t color );

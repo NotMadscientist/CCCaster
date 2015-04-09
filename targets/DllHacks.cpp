@@ -48,7 +48,7 @@ void initializePreLoad()
     for ( const Asm& hack : muteSpecificSfx )
         WRITE_ASM_HACK ( hack );
 
-    for ( const Asm& hack : disableSlideInAnimationHack )
+    for ( const Asm& hack : hijackCharaSelectColorLoading )
         WRITE_ASM_HACK ( hack );
 
     WRITE_ASM_HACK ( detectAutoReplaySave );
