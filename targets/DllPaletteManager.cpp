@@ -7,24 +7,24 @@ using namespace std;
 
 // static uint32_t allColors[2][50 * 36 * 256];
 
-// static inline char *getP1ColorTablePtr()
-// {
-//     const uint32_t *ptr0 = ( uint32_t * ) 0x74D808;
+static inline char *getP1ColorTablePtr()
+{
+    const uint32_t *ptr0 = ( uint32_t * ) 0x74D808;
 
-//     if ( ! *ptr0 )
-//         return 0;
+    if ( ! *ptr0 )
+        return 0;
 
-//     const uint32_t *ptr1 = ( uint32_t * ) ( *ptr0 + 0x1AC );
+    const uint32_t *ptr1 = ( uint32_t * ) ( *ptr0 + 0x1AC );
 
-//     return ( char * ) *ptr1;
-// }
+    return ( char * ) *ptr1;
+}
 
 namespace AsmHacks
 {
 
 extern "C" void colorLoadCallback()
 {
-    // WHY DOES THIS STACK OVERRUN (not overflow!)
+    // WHY DOES THIS STACK BUFFER OVERRUN (not overflow!)
 
     uint32_t *currentColorTablePtr = 0;
 
