@@ -22,6 +22,10 @@
 using namespace std;
 
 
+#define WINDOW_TITLE            "Palette Editor"
+
+#define DATA_FILE               "0002.p"
+
 #define EDITOR_FRAME_INTERVAL   ( 16 )
 
 #define EDITOR_FONT             "Tahoma"
@@ -91,6 +95,24 @@ static string getClipboard()
     }
 
     return string ( buffer );
+}
+
+static bool setupSDL()
+{
+    SDL_Init ( SDL_INIT_VIDEO | SDL_INIT_TIMER );
+
+    SDL_GL_SetAttribute ( SDL_GL_DEPTH_SIZE, 16 );
+    SDL_GL_SetAttribute ( SDL_GL_DOUBLEBUFFER, 1 );
+    SDL_Surface *screen = SDL_SetVideoMode ( screenWidth, screenHeight, 0, SDL_OPENGL | SDL_RESIZABLE );
+
+    if ( !screen )
+        return false;
+
+    SDL_EnableUNICODE ( 1 );
+    SDL_EnableKeyRepeat ( 300, 50 );
+    SDL_WM_SetCaption ( WINDOW_TITLE, 0 );
+
+    return true;
 }
 
 static void releaseFont()
@@ -459,29 +481,30 @@ static bool handleColorHexEntryKeys ( const SDL_keysym& keysym )
 
 int main ( int argc, char *argv[] )
 {
-    SDL_Init ( SDL_INIT_VIDEO | SDL_INIT_TIMER );
+    bool initialized = false;
 
-    SDL_GL_SetAttribute ( SDL_GL_DEPTH_SIZE, 16 );
-    SDL_GL_SetAttribute ( SDL_GL_DOUBLEBUFFER, 1 );
-    SDL_Surface *screen = SDL_SetVideoMode ( screenWidth, screenHeight, 0, SDL_OPENGL | SDL_RESIZABLE );
+    if ( argc >= 2 )
+        initialized = frameDisp.init ( ( string ( argv[1] ) + "\\" DATA_FILE ).c_str() );
 
-    if ( !screen )
+    if ( !initialized )
+        initialized = frameDisp.init ( DATA_FILE );
+
+    if ( !initialized )
+    {
+        MessageBox ( 0, "Could not load palette data!\n\nIs " DATA_FILE " in the same folder?", "Error", MB_OK );
         return -1;
-
-    SDL_EnableUNICODE ( 1 );
-    SDL_EnableKeyRepeat ( 300, 50 );
-    SDL_WM_SetCaption ( "Palette Editor", 0 );
-
-    setupOpenGL();
-
-    if ( argc >= 2 && !frameDisp.init ( ( string ( argv[1] ) + "\\0002.p" ).c_str() ) )
-        return -1;
-
-    if ( !frameDisp.init() )
-        return -1;
+    }
 
     // Initialize with the first character
     initPalMan();
+
+    if ( !setupSDL() )
+    {
+        MessageBox ( 0, "Could not create window!", "Error", MB_OK );
+        return -1;
+    }
+
+    setupOpenGL();
 
     bool done = false, render = false, animate = true;
 
