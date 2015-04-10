@@ -77,7 +77,6 @@ DEFINES += -DMBAA_EXE='"$(MBAA_EXE)"' -DBINARY='"$(BINARY)"' -DFOLDER='"$(FOLDER
 DEFINES += -DHOOK_DLL='"$(FOLDER)\\$(DLL)"' -DLAUNCHER='"$(FOLDER)\\$(LAUNCHER)"' -DUPDATER='"$(UPDATER)"'
 INCLUDES = -I$(CURDIR) -I$(CURDIR)/lib -I$(CURDIR)/tests -I$(CURDIR)/3rdparty -I$(CURDIR)/3rdparty/cereal/include
 INCLUDES += -I$(CURDIR)/3rdparty/gtest/include -I$(CURDIR)/3rdparty/minhook/include -I$(CURDIR)/3rdparty/d3dhook
-INCLUDES += -I$(CURDIR)/3rdparty/framedisplay
 CC_FLAGS = -m32 $(INCLUDES) $(DEFINES)
 
 # Linker flags
@@ -223,7 +222,7 @@ FRAMEDISPLAY_OBJECTS = $(FRAMEDISPLAY_SRC:.cc=.o)
 FRAMEDISPLAY_INCLUDES = -I$(CURDIR) -I$(CURDIR)/lib -I$(CURDIR)/3rdparty/framedisplay -I"$(CURDIR)/3rdparty/SDL"
 FRAMEDISPLAY_INCLUDES += -I$(CURDIR)/3rdparty/libpng -I$(CURDIR)/3rdparty/libz -I$(OPENGL_HEADERS)
 
-FRAMEDISPLAY_CC_FLAGS = -s -Os -Ofast -fno-rtti -DPALETTES_FOLDER='"$(PALETTES_FOLDER)\\"'
+FRAMEDISPLAY_CC_FLAGS = -s -Os -Ofast -fno-rtti -DPALETTES_FOLDER='"$(PALETTES_FOLDER)\\"' -DDISABLE_SERIALIZATION
 
 FRAMEDISPLAY_LD_FLAGS = -L$(CURDIR)/3rdparty/libpng -L$(CURDIR)/3rdparty/libz -L$(CURDIR)/3rdparty/SDL -mwindows
 FRAMEDISPLAY_LD_FLAGS += -static -lmingw32 -lSDLmain -lSDL -lpng -lz -lopengl32 -lcomctl32 -lole32 -lwinmm -ldxguid

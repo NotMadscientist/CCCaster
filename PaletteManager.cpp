@@ -7,6 +7,9 @@
 using namespace std;
 
 
+#define PALETTES_FILE_SUFFIX "_palettes.txt"
+
+
 uint32_t PaletteManager::computeHighlightColor ( uint32_t color )
 {
     const uint32_t r = ( color & 0xFF );
@@ -42,7 +45,8 @@ void PaletteManager::apply ( uint32_t **allPaletteData ) const
     {
         for ( uint32_t j = 0; j < originals[i].size(); ++j )
         {
-            allPaletteData[i][j] = ( allPaletteData[i][j] & 0xFF000000 ) | ( 0xFFFFFF & SWAP_R_AND_B ( get ( i, j ) ) );
+            allPaletteData[i][j] = ( allPaletteData[i][j] & 0xFF000000 )
+                                   | ( 0xFFFFFF & SWAP_R_AND_B ( get ( i, j ) ) );
         }
     }
 }
@@ -102,6 +106,10 @@ uint32_t PaletteManager::get ( uint32_t paletteNumber, uint32_t colorNumber ) co
 void PaletteManager::set ( uint32_t paletteNumber, uint32_t colorNumber, uint32_t color )
 {
     palettes[paletteNumber][colorNumber] = color;
+
+#ifndef DISABLE_SERIALIZATION
+    invalidate();
+#endif
 }
 
 void PaletteManager::clear ( uint32_t paletteNumber, uint32_t colorNumber )
@@ -115,16 +123,28 @@ void PaletteManager::clear ( uint32_t paletteNumber, uint32_t colorNumber )
         if ( it->second.empty() )
             clear ( paletteNumber );
     }
+
+#ifndef DISABLE_SERIALIZATION
+    invalidate();
+#endif
 }
 
 void PaletteManager::clear ( uint32_t paletteNumber )
 {
     palettes.erase ( paletteNumber );
+
+#ifndef DISABLE_SERIALIZATION
+    invalidate();
+#endif
 }
 
 void PaletteManager::clear()
 {
     palettes.clear();
+
+#ifndef DISABLE_SERIALIZATION
+    invalidate();
+#endif
 }
 
 bool PaletteManager::empty() const
@@ -132,18 +152,18 @@ bool PaletteManager::empty() const
     return palettes.empty();
 }
 
-bool PaletteManager::save ( const string& file ) const
+bool PaletteManager::save ( const string& folder, const string& charaName ) const
 {
-    ofstream fout ( file.c_str() );
+    ofstream fout ( ( folder + charaName + PALETTES_FILE_SUFFIX ).c_str() );
     bool good = fout.good();
 
     if ( good )
     {
-        fout << endl;
+        fout << "\n######## " << charaName << " palettes ########" << endl;
 
         for ( auto it = palettes.cbegin(); it != palettes.cend(); ++it )
         {
-            fout << format ( "\n======== Color %02d start ========\n", it->first + 1 ) << endl;
+            fout << format ( "\n### Color %02d start ###\n", it->first + 1 ) << endl;
 
             for ( const auto& kv : it->second )
             {
@@ -152,7 +172,7 @@ bool PaletteManager::save ( const string& file ) const
                 fout << line << endl;
             }
 
-            fout << format ( "\n======== Color %02d end ========\n", it->first + 1 ) << endl;
+            fout << format ( "\n#### Color %02d end ####\n", it->first + 1 ) << endl;
         }
 
         good = fout.good();
@@ -162,9 +182,9 @@ bool PaletteManager::save ( const string& file ) const
     return good;
 }
 
-bool PaletteManager::load ( const string& file )
+bool PaletteManager::load ( const string& folder, const string& charaName )
 {
-    ifstream fin ( file.c_str() );
+    ifstream fin ( ( folder + charaName + PALETTES_FILE_SUFFIX ).c_str() );
     bool good = fin.good();
 
     if ( good )
@@ -193,6 +213,10 @@ bool PaletteManager::load ( const string& file )
 
             palettes[paletteNumber][colorNumber] = color;
         }
+
+#ifndef DISABLE_SERIALIZATION
+        invalidate();
+#endif
     }
 
     fin.close();

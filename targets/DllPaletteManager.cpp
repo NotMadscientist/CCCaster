@@ -17,14 +17,14 @@ void colorLoadCallback ( uint32_t player, uint32_t chara, uint32_t *allPaletteDa
 {
     ASSERT ( player == 1 || player == 2 );
 
-    const string name = getShortCharaName ( chara );
+    const string charaName = getShortCharaName ( chara );
 
-    LOG ( "player=%d; chara=[%u]%s; allPaletteData=%08X", player, chara, name, allPaletteData );
+    LOG ( "player=%d; chara=[%u]%s; allPaletteData=%08X", player, chara, charaName, allPaletteData );
 
     if ( palMans[player - 1].find ( chara ) == palMans[player - 1].end() )
     {
         palMans[player - 1][chara].cache ( ( const uint32_t * ) allPaletteData );
-        palMans[player - 1][chara].load ( ProcessManager::appDir + PALETTES_FOLDER + name + "_palettes.txt" );
+        palMans[player - 1][chara].load ( ProcessManager::appDir + PALETTES_FOLDER, charaName );
     }
 
     palMans[player - 1][chara].apply ( allPaletteData );
@@ -34,10 +34,10 @@ void colorLoadCallback ( uint32_t player, uint32_t chara, uint32_t palette, uint
 {
     ASSERT ( player == 1 || player == 2 );
 
-    const string name = getShortCharaName ( chara );
+    const string charaName = getShortCharaName ( chara );
 
     LOG ( "player=%d; chara=[%u]%s; palette=%u; singlePaletteData=%08X",
-          player, chara, name, palette, singlePaletteData );
+          player, chara, charaName, palette, singlePaletteData );
 
     // This really shouldn't happen since the callback above should always happen first.
     // But in case we haven't loaded the custom palette data, just abort here.

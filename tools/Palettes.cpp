@@ -263,7 +263,7 @@ static void savePalMan()
         return;
 
     _mkdir ( PALETTES_FOLDER );
-    palMans[getChara()].save ( PALETTES_FOLDER + getCharaName() + "_palettes.txt" );
+    palMans[getChara()].save ( PALETTES_FOLDER, getCharaName() );
 }
 
 static void initPalMan()
@@ -271,7 +271,7 @@ static void initPalMan()
     if ( palMans.find ( getChara() ) == palMans.end() )
     {
         palMans[getChara()].cache ( static_cast<const MBAACC_FrameDisplay&> ( frameDisp ).get_palette_data() );
-        palMans[getChara()].load ( PALETTES_FOLDER + getCharaName() + "_palettes.txt" );
+        palMans[getChara()].load ( PALETTES_FOLDER, getCharaName() );
         savePalMan();
     }
 

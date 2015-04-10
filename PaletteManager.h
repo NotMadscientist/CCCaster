@@ -1,5 +1,10 @@
 #pragma once
 
+#ifndef DISABLE_SERIALIZATION
+#include "Protocol.h"
+#include <cereal/types/map.hpp>
+#endif
+
 #include <cstdint>
 #include <map>
 #include <array>
@@ -10,7 +15,11 @@
     ( ( ( COLOR & 0xFF ) << 16 ) | ( COLOR & 0xFF00 ) | ( ( COLOR & 0xFF0000 ) >> 16 ) | ( COLOR & 0xFF000000 ) )
 
 
+#ifndef DISABLE_SERIALIZATION
+class PaletteManager : public SerializableSequence
+#else
 class PaletteManager
+#endif
 {
     std::map<uint32_t, std::map<uint32_t, uint32_t>> palettes;
 
@@ -37,6 +46,10 @@ public:
 
     bool empty() const;
 
-    bool save ( const std::string& file ) const;
-    bool load ( const std::string& file );
+    bool save ( const std::string& folder, const std::string& charaName ) const;
+    bool load ( const std::string& folder, const std::string& charaName );
+
+#ifndef DISABLE_SERIALIZATION
+    PROTOCOL_MESSAGE_BOILERPLATE ( PaletteManager, palettes )
+#endif
 };
