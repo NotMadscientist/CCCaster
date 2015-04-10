@@ -71,6 +71,21 @@ extern "C" void charaSelectColorCb()
     }
 }
 
+extern "C" void loadingStateColorCb()
+{
+    uint32_t *eax, *esi;
+
+    asm ( "movl %%eax,%0" : "=r" ( eax ) );
+    asm ( "movl %%esi,%0" : "=r" ( esi ) );
+
+    uint32_t *ptr = ( uint32_t * ) ( ( uint32_t ( esi ) << 10 ) + uint32_t ( eax ) + 4 );
+
+    LOG ( "eax=%08X; esi=%08X; ptr=%08X", eax, esi, ptr );
+
+    // TODO make this actually fill in the correct character (taking into account the team characters)
+    colorLoadCallback ( 1, 0, 0, ptr );
+}
+
 int Asm::write() const
 {
     backup.resize ( bytes.size() );

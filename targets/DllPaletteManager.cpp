@@ -6,6 +6,7 @@
 
 using namespace std;
 
+
 static array<unordered_map<uint32_t, PaletteManager>, 2> palMans;
 
 
@@ -28,6 +29,22 @@ void colorLoadCallback ( uint32_t player, uint32_t *allPaletteData )
     }
 
     palMans[player - 1][chara].apply ( allPaletteData );
+}
+
+void colorLoadCallback ( uint32_t player, uint32_t chara, uint32_t palette, uint32_t *singlePaletteData )
+{
+    ASSERT ( player == 1 || player == 2 );
+
+    const string name = getShortCharaName ( chara );
+
+    LOG ( "player=%d; chara=[%u]%s; palette=%u; singlePaletteData=%08X",
+          player, chara, name, palette, singlePaletteData );
+
+    // This really shouldn't happen, but don't do any more just in case
+    if ( palMans[player - 1].find ( chara ) == palMans[player - 1].end() )
+        return;
+
+    palMans[player - 1][chara].apply ( palette, singlePaletteData );
 }
 
 } // namespace AsmHacks

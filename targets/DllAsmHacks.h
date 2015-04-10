@@ -67,6 +67,7 @@ extern uint32_t *currentColorTablePtr;
 
 // Color loading callback functions
 void colorLoadCallback ( uint32_t player, uint32_t *paletteData );
+void colorLoadCallback ( uint32_t player, uint32_t chara, uint32_t palette, uint32_t *singlePaletteData );
 
 
 // Struct for storing assembly code
@@ -376,11 +377,35 @@ extern "C" void charaSelectColorCb();
 // The color values can be effectively overridden here. This is only effective during character select.
 static const Asm hijackCharaSelectColors =
     { ( void * ) 0x489CD1, {
-        0xE8, INLINE_DWORD ( ( ( char * ) &charaSelectColorCb ) - 0x489CD1 - 5 ),   // call charaSelectColorCb
-        0x90, 0x90, 0x90,                                                           // nops
+        0xE8, INLINE_DWORD ( ( ( char * ) &charaSelectColorCb ) - 0x489CD1 - 5 ),       // call charaSelectColorCb
+        0x90, 0x90, 0x90,                                                               // nops
     } };
 
 // The color load callback during loading state
 extern "C" void loadingStateColorCb();
+
+// Inserts a callback just after the color data is loaded into memory, but before it is read into the sprites.
+// The color values can be effectively overridden here. This is only effective during the loading state.
+static const AsmList hijackLoadingStateColors =
+{
+    { ( void * ) 0x448203, {
+        0x50,                                                                           // push eax
+        0xE8, INLINE_DWORD ( ( ( char * ) &loadingStateColorCb ) - 0x448203 - 1 - 5 ),  // call loadingStateColorCb
+        0x58,                                                                           // pop eax
+        0x8B, 0xD8,                                                                     // mov ebx,eax
+        0x85, 0xDB,                                                                     // test ebx,ebx
+        0xEB, 0x35,                                                                     // jmp 0x448245
+    } },
+    { ( void * ) 0x448245, {
+        0x0F, 0x84, 0xA3, 0x09, 0x00, 0x00,                                             // je 0x448BEE
+        0xE9, 0x68, 0x09, 0x00, 0x00,                                                   // jmp 0x448BB8 (AFTER)
+    } },
+    // Write this last due to dependencies
+    { ( void * ) 0x448BB2, {
+        0xE9, 0x4C, 0xF6, 0xFF, 0xFF,                                                   // jmp 0x448203
+        0x90,                                                                           // nop
+                                                                                        // AFTER:
+    } },
+};
 
 } // namespace AsmHacks
