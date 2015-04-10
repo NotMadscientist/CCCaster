@@ -13,11 +13,10 @@ static array<unordered_map<uint32_t, PaletteManager>, 2> palMans;
 namespace AsmHacks
 {
 
-void colorLoadCallback ( uint32_t player, uint32_t *allPaletteData )
+void colorLoadCallback ( uint32_t player, uint32_t chara, uint32_t *allPaletteData )
 {
     ASSERT ( player == 1 || player == 2 );
 
-    const uint32_t chara = * ( player == 1 ? CC_P1_CHARACTER_ADDR : CC_P2_CHARACTER_ADDR );
     const string name = getShortCharaName ( chara );
 
     LOG ( "player=%d; chara=[%u]%s; allPaletteData=%08X", player, chara, name, allPaletteData );
@@ -40,7 +39,8 @@ void colorLoadCallback ( uint32_t player, uint32_t chara, uint32_t palette, uint
     LOG ( "player=%d; chara=[%u]%s; palette=%u; singlePaletteData=%08X",
           player, chara, name, palette, singlePaletteData );
 
-    // This really shouldn't happen, but don't do any more just in case
+    // This really shouldn't happen since the callback above should always happen first.
+    // But in case we haven't loaded the custom palette data, just abort here.
     if ( palMans[player - 1].find ( chara ) == palMans[player - 1].end() )
         return;
 

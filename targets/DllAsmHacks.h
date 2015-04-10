@@ -49,10 +49,10 @@ extern uint32_t menuConfirmState;
 // Round start counter, this gets incremented whenever players can start moving
 extern uint32_t roundStartCounter;
 
-// Auto replay save state, is set to 1 (loading), then 100 (saving), finally 255 (saved).
+// Auto replay save state, is set to 1 (loading), then 100 (saving), finally 255 (saved)
 extern uint32_t *autoReplaySaveStatePtr;
 
-// Flag to enable / disable the Escape key function that exits game (initially true).
+// Flag to enable / disable the Escape key function that exits game (initially true)
 extern uint8_t enableEscapeToExit;
 
 // Array of sound effects that were played last frame, set any SFX to 1 to prevent playback.
@@ -65,8 +65,12 @@ extern uint8_t sfxMuteArray[CC_SFX_ARRAY_LEN];
 // The pointer to the current color table being loaded
 extern uint32_t *currentColorTablePtr;
 
+// The number of colors loaded, used to determine P1/P2/team colors
+extern uint32_t numLoadedColors;
+
+
 // Color loading callback functions
-void colorLoadCallback ( uint32_t player, uint32_t *paletteData );
+void colorLoadCallback ( uint32_t player, uint32_t chara, uint32_t *paletteData );
 void colorLoadCallback ( uint32_t player, uint32_t chara, uint32_t palette, uint32_t *singlePaletteData );
 
 
@@ -388,21 +392,20 @@ extern "C" void loadingStateColorCb();
 // The color values can be effectively overridden here. This is only effective during the loading state.
 static const AsmList hijackLoadingStateColors =
 {
-    { ( void * ) 0x448203, {
+    { ( void * ) 0x448202, {
         0x50,                                                                           // push eax
-        0xE8, INLINE_DWORD ( ( ( char * ) &loadingStateColorCb ) - 0x448203 - 1 - 5 ),  // call loadingStateColorCb
+        0xE8, INLINE_DWORD ( ( ( char * ) &loadingStateColorCb ) - 0x448202 - 1 - 5 ),  // call loadingStateColorCb
         0x58,                                                                           // pop eax
-        0x8B, 0xD8,                                                                     // mov ebx,eax
-        0x85, 0xDB,                                                                     // test ebx,ebx
-        0xEB, 0x35,                                                                     // jmp 0x448245
+        0x85, 0xC0,                                                                     // test eax,eax
+        0xEB, 0x38,                                                                     // jmp 0x448245
     } },
     { ( void * ) 0x448245, {
-        0x0F, 0x84, 0xA3, 0x09, 0x00, 0x00,                                             // je 0x448BEE
-        0xE9, 0x68, 0x09, 0x00, 0x00,                                                   // jmp 0x448BB8 (AFTER)
+        0x89, 0x44, 0x24, 0x20,                                                         // mov [esp+20],eax
+        0xE9, 0x81, 0x09, 0x00, 0x00,                                                   // jmp 0x448BCF (AFTER)
     } },
     // Write this last due to dependencies
-    { ( void * ) 0x448BB2, {
-        0xE9, 0x4C, 0xF6, 0xFF, 0xFF,                                                   // jmp 0x448203
+    { ( void * ) 0x448BC9, {
+        0xE9, 0x34, 0xF6, 0xFF, 0xFF,                                                   // jmp 0x448202
         0x90,                                                                           // nop
                                                                                         // AFTER:
     } },

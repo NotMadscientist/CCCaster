@@ -970,6 +970,13 @@ struct DllMain
             lazyDisconnect = false;
         }
 
+        // Leaving Loading
+        if ( netMan.getState() == NetplayState::Loading )
+        {
+            // Reset color loading state
+            AsmHacks::numLoadedColors = 0;
+        }
+
         // Entering InGame
         if ( state == NetplayState::InGame )
         {
