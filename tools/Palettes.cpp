@@ -57,7 +57,7 @@ static uint32_t ticker = 0;
 
 static int colorNumber = 0, paletteNumber = 0;
 
-static unordered_map<string, PaletteManager> palMans;
+static unordered_map<uint32_t, PaletteManager> palMans;
 
 static enum { Navigation, CharacterEntry, PaletteEntry, ColorNumEntry, ColorHexEntry, } uiMode = Navigation;
 
@@ -66,9 +66,14 @@ static string colorHexStr;
 static string message;
 
 
+static uint32_t getChara()
+{
+    return ( uint32_t ) frameDisp.get_character_index ( frameDisp.get_character() );
+}
+
 static string getCharaName()
 {
-    return getShortCharaName ( frameDisp.get_character_index ( frameDisp.get_character() ) );
+    return getShortCharaName ( getChara() );
 }
 
 static string getClipboard()
@@ -202,7 +207,7 @@ static void displayText()
     glRasterPos2f ( 0.0, 0.0 );
     renderText ( format ( "%s - Palette %d - Color %d", getCharaName(), paletteNumber + 1, colorNumber + 1 ) );
 
-    const uint32_t origColor = 0xFFFFFF & palMans[getCharaName()].getOriginal ( paletteNumber, colorNumber );
+    const uint32_t origColor = 0xFFFFFF & palMans[getChara()].getOriginal ( paletteNumber, colorNumber );
 
     glRasterPos2f ( 0.0, 5.0 + EDITOR_FONT_HEIGHT );
     renderText ( format ( "Original #%06X", origColor ) );
@@ -232,23 +237,23 @@ static void displayScene()
 
 static void savePalMan()
 {
-    if ( palMans[getCharaName()].empty() )
+    if ( palMans.find ( getChara() ) == palMans.end() || palMans[getChara()].empty() )
         return;
 
     _mkdir ( PALETTES_FOLDER );
-    palMans[getCharaName()].save ( PALETTES_FOLDER + getCharaName() + "_palettes.txt" );
+    palMans[getChara()].save ( PALETTES_FOLDER + getCharaName() + "_palettes.txt" );
 }
 
 static void initPalMan()
 {
-    if ( palMans.find ( getCharaName() ) == palMans.end() )
+    if ( palMans.find ( getChara() ) == palMans.end() )
     {
-        palMans[getCharaName()].cache ( static_cast<const MBAACC_FrameDisplay&> ( frameDisp ).get_palette_data() );
-        palMans[getCharaName()].load ( PALETTES_FOLDER + getCharaName() + "_palettes.txt" );
+        palMans[getChara()].cache ( static_cast<const MBAACC_FrameDisplay&> ( frameDisp ).get_palette_data() );
+        palMans[getChara()].load ( PALETTES_FOLDER + getCharaName() + "_palettes.txt" );
         savePalMan();
     }
 
-    palMans[getCharaName()].apply ( frameDisp.get_palette_data() );
+    palMans[getChara()].apply ( frameDisp.get_palette_data() );
 }
 
 static bool handleNavigationKeys ( const SDL_keysym& keysym )
@@ -437,7 +442,7 @@ static bool handleColorHexEntryKeys ( const SDL_keysym& keysym )
                 uint32_t& currColor = frameDisp.get_palette_data() [paletteNumber][colorNumber];
                 currColor = ( currColor & 0xFF000000 ) | SWAP_R_AND_B ( newColor );
 
-                palMans[getCharaName()].set ( paletteNumber, colorNumber, newColor );
+                palMans[getChara()].set ( paletteNumber, colorNumber, newColor );
                 savePalMan();
 
                 uiMode = Navigation;
@@ -534,8 +539,8 @@ int main ( int argc, char *argv[] )
                     if ( event.key.keysym.sym == SDLK_DELETE )
                     {
                         uint32_t& currColor = frameDisp.get_palette_data() [paletteNumber][colorNumber];
-                        palMans[getCharaName()].clear ( paletteNumber, colorNumber );
-                        currColor = SWAP_R_AND_B ( palMans[getCharaName()].get ( paletteNumber, colorNumber ) );
+                        palMans[getChara()].clear ( paletteNumber, colorNumber );
+                        currColor = SWAP_R_AND_B ( palMans[getChara()].get ( paletteNumber, colorNumber ) );
                         savePalMan();
 
                         uiMode = Navigation;

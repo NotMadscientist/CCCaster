@@ -1,6 +1,6 @@
 #pragma once
 
-#include "NetplayManager.h"
+#include "DllNetplayManager.h"
 #include "Constants.h"
 
 #include <memory>

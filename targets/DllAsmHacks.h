@@ -65,8 +65,8 @@ extern uint8_t sfxMuteArray[CC_SFX_ARRAY_LEN];
 // The pointer to the current color table being loaded
 extern uint32_t *currentColorTablePtr;
 
-// The function to call during color loading; eax will contain the color table ptr
-extern "C" void colorLoadCallback();
+// Color loading callback functions
+void colorLoadCallback ( uint32_t player, uint32_t *paletteData );
 
 
 // Struct for storing assembly code
@@ -369,20 +369,18 @@ static const Asm hijackIntroState = { ( void * ) 0x45C1F2, INLINE_NOP_SEVEN_TIME
 // Prevent training mode music from reseting
 static const Asm disableTrainingMusicReset = { ( void * ) 0x472C6D, { 0xEB, 0x05 } }; // jmp 00472C74
 
-// Inserts a function call just after the color data is loaded into memory, but before it is read into the sprites
-static const AsmList hijackCharaSelectColorLoading =
-{
-    { ( void * ) 0x485EA6, {
-        0x31, 0xE1,                                                 // xor ecx,esp
-        0xE8, INLINE_DWORD ( ( ( char * ) &colorLoadCallback ) - 0x485EA6 -2 - 5 ), // call colorLoadCallback
-        0xEB, 0xE6,                                                 // jmp 0x485E95 (AFTER)
+// The color load callback during character select
+extern "C" void charaSelectColorCb();
 
-    } },
-    // Write this last due to dependencies
-    { ( void * ) 0x485E93, {
-        0xEB, 0x11,                                                 // jmp 0x485EA6
-                                                                    // AFTER:
-    } },
-};
+// Inserts a callback just after the color data is loaded into memory, but before it is read into the sprites.
+// The color values can be effectively overridden here. This is only effective during character select.
+static const Asm hijackCharaSelectColors =
+    { ( void * ) 0x489CD1, {
+        0xE8, INLINE_DWORD ( ( ( char * ) &charaSelectColorCb ) - 0x489CD1 - 5 ),   // call charaSelectColorCb
+        0x90, 0x90, 0x90,                                                           // nops
+    } };
+
+// The color load callback during loading state
+extern "C" void loadingStateColorCb();
 
 } // namespace AsmHacks

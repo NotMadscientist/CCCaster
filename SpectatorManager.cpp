@@ -1,18 +1,11 @@
 #include "SpectatorManager.h"
-#include "NetplayManager.h"
 #include "ProcessManager.h"
 #include "Logger.h"
 
 using namespace std;
 
 
-SpectatorManager::SpectatorManager ( NetplayManager *netManPtr, const ProcessManager *procManPtr )
-    : spectatorListPos ( spectatorList.end() )
-    , spectatorMapPos ( spectatorMap.end() )
-    , netManPtr ( netManPtr )
-    , procManPtr ( procManPtr )
-{
-}
+SpectatorManager::SpectatorManager() {}
 
 void SpectatorManager::pushPendingSocket ( Timer::Owner *owner, const SocketPtr& socket )
 {

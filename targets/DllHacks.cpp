@@ -1,5 +1,5 @@
 #include "DllHacks.h"
-#include "AsmHacks.h"
+#include "DllAsmHacks.h"
 #include "D3DHook.h"
 #include "Exceptions.h"
 #include "ProcessManager.h"
@@ -48,12 +48,10 @@ void initializePreLoad()
     for ( const Asm& hack : muteSpecificSfx )
         WRITE_ASM_HACK ( hack );
 
-    for ( const Asm& hack : hijackCharaSelectColorLoading )
-        WRITE_ASM_HACK ( hack );
-
     WRITE_ASM_HACK ( detectAutoReplaySave );
     WRITE_ASM_HACK ( hijackEscapeKey );
     WRITE_ASM_HACK ( disableTrainingMusicReset );
+    WRITE_ASM_HACK ( hijackCharaSelectColors );
 }
 
 // Note: this is called on the SAME thread as the main application thread

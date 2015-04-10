@@ -1,5 +1,5 @@
 #include "SpectatorManager.h"
-#include "NetplayManager.h"
+#include "DllNetplayManager.h"
 #include "ProcessManager.h"
 #include "Logger.h"
 #include "Algorithms.h"
@@ -7,6 +7,14 @@
 
 using namespace std;
 
+
+SpectatorManager::SpectatorManager ( NetplayManager *netManPtr, const ProcessManager *procManPtr )
+    : spectatorListPos ( spectatorList.end() )
+    , spectatorMapPos ( spectatorMap.end() )
+    , netManPtr ( netManPtr )
+    , procManPtr ( procManPtr )
+{
+}
 
 void SpectatorManager::pushSpectator ( Socket *socketPtr, const IpAddrPort& serverAddr )
 {

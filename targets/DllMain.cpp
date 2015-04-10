@@ -2,7 +2,7 @@
 #include "Thread.h"
 #include "DllHacks.h"
 #include "DllOverlayUi.h"
-#include "NetplayManager.h"
+#include "DllNetplayManager.h"
 #include "ChangeMonitor.h"
 #include "SmartSocket.h"
 #include "UdpSocket.h"

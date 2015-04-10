@@ -1,40 +1,33 @@
 #include "PaletteManager.h"
-#include "AsmHacks.h"
+#include "DllAsmHacks.h"
 #include "Logger.h"
+#include "CharacterSelect.h"
+#include "ProcessManager.h"
 
 using namespace std;
 
+static array<unordered_map<uint32_t, PaletteManager>, 2> palMans;
 
-// static uint32_t allColors[2][50 * 36 * 256];
-
-static inline char *getP1ColorTablePtr()
-{
-    const uint32_t *ptr0 = ( uint32_t * ) 0x74D808;
-
-    if ( ! *ptr0 )
-        return 0;
-
-    const uint32_t *ptr1 = ( uint32_t * ) ( *ptr0 + 0x1AC );
-
-    return ( char * ) *ptr1;
-}
 
 namespace AsmHacks
 {
 
-extern "C" void colorLoadCallback()
+void colorLoadCallback ( uint32_t player, uint32_t *allPaletteData )
 {
-    // WHY DOES THIS STACK BUFFER OVERRUN (not overflow!)
+    ASSERT ( player == 1 || player == 2 );
 
-    uint32_t *currentColorTablePtr = 0;
+    const uint32_t chara = * ( player == 1 ? CC_P1_CHARACTER_ADDR : CC_P2_CHARACTER_ADDR );
+    const string name = getShortCharaName ( chara );
 
-    asm ( "movl %%eax,%0" : "=r" ( currentColorTablePtr ) );
+    LOG ( "player=%d; chara=[%u]%s; allPaletteData=%08X", player, chara, name, allPaletteData );
 
-    LOG ( "P1ColorTablePtr=0x%06X", getP1ColorTablePtr() );
-    LOG ( "currentColorTablePtr=0x%06X", currentColorTablePtr );
+    if ( palMans[player - 1].find ( chara ) == palMans[player - 1].end() )
+    {
+        palMans[player - 1][chara].cache ( ( const uint32_t * ) allPaletteData );
+        palMans[player - 1][chara].load ( ProcessManager::appDir + PALETTES_FOLDER + name + "_palettes.txt" );
+    }
 
-    // * ( currentColorTablePtr + 1 + 15 ) = ( 0xFF000000 & * ( currentColorTablePtr + 1 + 15 ) )
-    //                                       | ( 0xFFFFFF & SWAP_R_AND_B ( 0x0000FF ) );
+    palMans[player - 1][chara].apply ( allPaletteData );
 }
 
 } // namespace AsmHacks

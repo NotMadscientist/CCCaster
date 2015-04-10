@@ -964,6 +964,28 @@
         <Offset>1AC</Offset>
       </Offsets>
     </CheatEntry>
+    <CheatEntry>
+      <ID>459</ID>
+      <Description>"P2 color table address (during chara select)"</Description>
+      <ShowAsHex>1</ShowAsHex>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0074D808</Address>
+      <Offsets>
+        <Offset>388</Offset>
+      </Offsets>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>460</ID>
+      <Description>"P2 color table (during chara select)"</Description>
+      <Color>80000008</Color>
+      <VariableType>4 Bytes</VariableType>
+      <Address>0074D808</Address>
+      <Offsets>
+        <Offset>0</Offset>
+        <Offset>388</Offset>
+      </Offsets>
+    </CheatEntry>
   </CheatEntries>
   <CheatCodes>
     <CodeEntry>
@@ -3863,6 +3885,30 @@
         <Byte>DA</Byte>
         <Byte>E9</Byte>
         <Byte>DF</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Just after loading palette table into memory (during character select), can edit here</Description>
+      <Address>00489CD1</Address>
+      <ModuleName>MBAA.exe</ModuleName>
+      <ModuleNameOffset>89CD1</ModuleNameOffset>
+      <Before>
+        <Byte>E8</Byte>
+        <Byte>2F</Byte>
+        <Byte>C1</Byte>
+        <Byte>FF</Byte>
+        <Byte>FF</Byte>
+      </Before>
+      <Actual>
+        <Byte>6A</Byte>
+        <Byte>14</Byte>
+      </Actual>
+      <After>
+        <Byte>FF</Byte>
+        <Byte>15</Byte>
+        <Byte>D0</Byte>
+        <Byte>B1</Byte>
+        <Byte>51</Byte>
       </After>
     </CodeEntry>
   </CheatCodes>

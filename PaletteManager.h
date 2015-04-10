@@ -20,11 +20,12 @@ public:
 
     static uint32_t computeHighlightColor ( uint32_t color );
 
-    void cache ( const uint32_t **paletteData );
-    void apply ( uint32_t **paletteData ) const;
+    void cache ( const uint32_t **allPaletteData );
+    void apply ( uint32_t **allPaletteData ) const;
 
-    void cache ( const uint32_t *paletteData );
-    void apply ( uint32_t *paletteData ) const;
+    void cache ( const uint32_t *allPaletteData );
+    void apply ( uint32_t *allPaletteData ) const;
+    void apply ( uint32_t paletteNumber, uint32_t *singlePaletteData ) const;
 
     uint32_t getOriginal ( uint32_t paletteNumber, uint32_t colorNumber ) const;
     uint32_t get ( uint32_t paletteNumber, uint32_t colorNumber ) const;

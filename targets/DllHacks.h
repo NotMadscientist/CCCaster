@@ -1,6 +1,6 @@
 #pragma once
 
-#include "AsmHacks.h"
+#include "DllAsmHacks.h"
 
 
 namespace DllHacks

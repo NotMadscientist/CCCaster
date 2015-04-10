@@ -1,5 +1,5 @@
-#include "NetplayManager.h"
-#include "AsmHacks.h"
+#include "DllNetplayManager.h"
+#include "DllAsmHacks.h"
 #include "ProcessManager.h"
 #include "Exceptions.h"
 #include "CharacterSelect.h"

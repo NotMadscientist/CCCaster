@@ -1,7 +1,8 @@
-#include "AsmHacks.h"
+#include "DllAsmHacks.h"
 #include "Messages.h"
-#include "NetplayManager.h"
+#include "DllNetplayManager.h"
 #include "CharacterSelect.h"
+#include "Logger.h"
 
 #include <windows.h>
 
@@ -41,6 +42,34 @@ uint8_t sfxFilterArray[CC_SFX_ARRAY_LEN] = { 0 };
 
 uint8_t sfxMuteArray[CC_SFX_ARRAY_LEN] = { 0 };
 
+
+extern "C" void charaSelectColorCb()
+{
+    uint32_t *edi;
+
+    asm ( "movl %%edi,%0" : "=r" ( edi ) );
+
+    Sleep ( 20 ); // This is code that was replaced
+
+    const uint32_t *ptrBase = ( uint32_t * ) 0x74D808;
+
+    if ( ! *ptrBase )
+        return;
+
+    const uint32_t *ptr1 = ( uint32_t * ) ( *ptrBase + 0x1AC ); // P1 color table reference
+    const uint32_t *ptr2 = ( uint32_t * ) ( *ptrBase + 0x388 ); // P2 color table reference
+
+    LOG ( "edi=%08X; ptr1=%08X; *ptr1=%08X; ptr2=%08X; *ptr2=%08X", edi, ptr1, *ptr1, ptr2, *ptr2 );
+
+    if ( edi + 1 == ptr1 && *ptr1 )
+    {
+        colorLoadCallback ( 1, ( ( uint32_t * ) *ptr1 ) + 1 );
+    }
+    else if ( edi + 1 == ptr2 && *ptr2 )
+    {
+        colorLoadCallback ( 2, ( ( uint32_t * ) *ptr2 ) + 1 );
+    }
+}
 
 int Asm::write() const
 {

@@ -61,7 +61,9 @@ public:
     uint64_t pendingSocketTimeout = DEFAULT_PENDING_TIMEOUT;
 
 
-    SpectatorManager ( NetplayManager *netManPtr = 0, const ProcessManager *procManPtr = 0 );
+    SpectatorManager();
+
+    SpectatorManager ( NetplayManager *netManPtr, const ProcessManager *procManPtr );
 
 
     bool isPendingSocket ( Socket *socket ) const { return ( pendingSockets.find ( socket ) != pendingSockets.end() ); }

@@ -5,8 +5,8 @@
 #include "Exceptions.h"
 #include "ErrorStringsExt.h"
 #include "CharacterSelect.h"
-#include "NetplayManager.h"
 #include "StringUtils.h"
+#include "NetplayStates.h"
 
 #include <mmsystem.h>
 #include <wininet.h>

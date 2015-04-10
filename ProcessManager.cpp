@@ -2,7 +2,6 @@
 #include "TcpSocket.h"
 #include "Messages.h"
 #include "Constants.h"
-#include "AsmHacks.h"
 #include "EventManager.h"
 #include "Exceptions.h"
 #include "ErrorStringsExt.h"

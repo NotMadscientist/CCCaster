@@ -324,7 +324,7 @@ format:
     --keep-one-line-blocks      	\
     --align-pointer=name        	\
     --align-reference=type      	\
-$(filter-out tools/Generator.cpp CharacterSelect.cpp lib/KeyboardVKeyNames.h AsmHacks.h,\
+$(filter-out tools/Generator.cpp CharacterSelect.cpp lib/KeyboardVKeyNames.h targets/DllAsmHacks.h,\
 	$(NON_GEN_SRCS) $(NON_GEN_HEADERS))
 
 count:

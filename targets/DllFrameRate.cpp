@@ -2,7 +2,7 @@
 #include "TimerManager.h"
 #include "Constants.h"
 #include "ProcessManager.h"
-#include "AsmHacks.h"
+#include "DllAsmHacks.h"
 
 #include <d3dx9.h>
 

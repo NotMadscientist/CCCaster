@@ -1,6 +1,6 @@
 #include "DllRollbackManager.h"
 #include "MemDump.h"
-#include "AsmHacks.h"
+#include "DllAsmHacks.h"
 #include "ErrorStringsExt.h"
 
 #include <utility>

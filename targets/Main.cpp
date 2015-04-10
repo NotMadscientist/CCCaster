@@ -548,10 +548,3 @@ OptionsMessage::OptionsMessage ( const std::vector<option::Option>& opt )
             options[i] = Opt ( opt[i].count() );
     }
 }
-
-namespace AsmHacks
-{
-// Empty definitions for unused DLL callbacks
-extern "C" void callback() {}
-extern "C" void colorLoadCallback() {}
-}

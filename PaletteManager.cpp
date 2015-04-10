@@ -25,48 +25,57 @@ uint32_t PaletteManager::computeHighlightColor ( uint32_t color )
     }
 }
 
-void PaletteManager::cache ( const uint32_t **paletteData )
+void PaletteManager::cache ( const uint32_t **allPaletteData )
 {
     for ( uint32_t i = 0; i < originals.size(); ++i )
     {
         for ( uint32_t j = 0; j < originals[i].size(); ++j )
         {
-            originals[i][j] = SWAP_R_AND_B ( paletteData[i][j] );
+            originals[i][j] = SWAP_R_AND_B ( allPaletteData[i][j] );
         }
     }
 }
 
-void PaletteManager::apply ( uint32_t **paletteData ) const
+void PaletteManager::apply ( uint32_t **allPaletteData ) const
 {
     for ( uint32_t i = 0; i < originals.size(); ++i )
     {
         for ( uint32_t j = 0; j < originals[i].size(); ++j )
         {
-            paletteData[i][j] = ( paletteData[i][j] & 0xFF000000 ) | ( 0xFFFFFF & SWAP_R_AND_B ( get ( i, j ) ) );
+            allPaletteData[i][j] = ( allPaletteData[i][j] & 0xFF000000 ) | ( 0xFFFFFF & SWAP_R_AND_B ( get ( i, j ) ) );
         }
     }
 }
 
-void PaletteManager::cache ( const uint32_t *paletteData )
+void PaletteManager::cache ( const uint32_t *allPaletteData )
 {
     for ( uint32_t i = 0; i < originals.size(); ++i )
     {
         for ( uint32_t j = 0; j < originals[i].size(); ++j )
         {
-            originals[i][j] = SWAP_R_AND_B ( paletteData [ i * 256 + j ] );
+            originals[i][j] = SWAP_R_AND_B ( allPaletteData [ i * 256 + j ] );
         }
     }
 }
 
-void PaletteManager::apply ( uint32_t *paletteData ) const
+void PaletteManager::apply ( uint32_t *allPaletteData ) const
 {
-    for ( uint32_t i = 0; i < originals.size(); ++i )
+    for ( uint32_t i = 0; i < 36; ++i )
     {
-        for ( uint32_t j = 0; j < originals[i].size(); ++j )
+        for ( uint32_t j = 0; j < 256; ++j )
         {
-            paletteData [ i * 256 + j ] = ( paletteData [ i * 256 + j ] & 0xFF000000 )
-                                          | ( 0xFFFFFF & SWAP_R_AND_B ( get ( i, j ) ) );
+            allPaletteData [ i * 256 + j ] = ( allPaletteData [ i * 256 + j ] & 0xFF000000 )
+                                             | ( 0xFFFFFF & SWAP_R_AND_B ( get ( i, j ) ) );
         }
+    }
+}
+
+void PaletteManager::apply ( uint32_t paletteNumber, uint32_t *singlePaletteData ) const
+{
+    for ( uint32_t j = 0; j < 256; ++j )
+    {
+        singlePaletteData[j] = ( singlePaletteData [j] & 0xFF000000 )
+                               | ( 0xFFFFFF & SWAP_R_AND_B ( get ( paletteNumber, j ) ) );
     }
 }
 

@@ -1,7 +1,7 @@
 #include "DllControllerManager.h"
 #include "DllOverlayUi.h"
 #include "DllHacks.h"
-#include "AsmHacks.h"
+#include "DllAsmHacks.h"
 #include "KeyboardState.h"
 #include "CharacterSelect.h"
 
