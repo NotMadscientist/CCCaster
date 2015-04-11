@@ -254,9 +254,9 @@ static void displayText()
     const uint32_t origColor = 0xFFFFFF & palMans[getChara()].getOriginal ( paletteNumber, colorNumber );
 
     glRasterPos2f ( 0.0, 5.0 + EDITOR_FONT_HEIGHT );
-    renderText ( format ( "Original #%06X", origColor ) );
+    renderText ( format ( "Original #%06X", SWAP_R_AND_B ( origColor ) ) );
 
-    const uint32_t currColor = 0xFFFFFF & frameDisp.get_palette_data() [paletteNumber][colorNumber];
+    const uint32_t currColor = 0xFFFFFF & palMans[getChara()].get ( paletteNumber, colorNumber );
 
     if ( uiMode != ColorHexEntry )
         colorHexStr = format ( "%06X", SWAP_R_AND_B ( currColor ) );
@@ -389,7 +389,7 @@ static bool handleNavigationKeys ( const SDL_keysym& keysym )
         case SDLK_c:
             if ( keysym.mod & KMOD_CTRL )
             {
-                const uint32_t currColor = 0xFFFFFF & frameDisp.get_palette_data() [paletteNumber][colorNumber];
+                const uint32_t currColor = 0xFFFFFF & palMans[getChara()].get ( paletteNumber, colorNumber );
                 const string str = format ( "#%06X", SWAP_R_AND_B ( currColor ) );
                 setClipboard ( str );
                 message = "Current color " + str + " copied to clipboard";
@@ -431,20 +431,21 @@ static bool handleNavigationKeys ( const SDL_keysym& keysym )
                 return true;
             }
 
-            uint32_t& currColor = frameDisp.get_palette_data() [paletteNumber][colorNumber];
-
-            const uint32_t oldColor = 0xFFFFFF & currColor;
-            const string str = format ( "#%06X", SWAP_R_AND_B ( oldColor ) );
+            const uint32_t oldColor = 0xFFFFFF & palMans[getChara()].get ( paletteNumber, colorNumber );
 
             palMans[getChara()].clear ( paletteNumber, colorNumber );
-            currColor = SWAP_R_AND_B ( palMans[getChara()].get ( paletteNumber, colorNumber ) );
             savePalMan();
 
-            if ( oldColor == ( 0xFFFFFF & currColor ) )
+            const uint32_t newColor = 0xFFFFFF & palMans[getChara()].get ( paletteNumber, colorNumber );
+
+            uint32_t& currColor = frameDisp.get_palette_data() [paletteNumber][colorNumber];
+            currColor = ( currColor & 0xFF000000 ) | newColor;
+
+            if ( oldColor == newColor )
                 break;
 
-            message = "Current color " + str + " reset to original "
-                      + format ( "#%06X", 0xFFFFFF & SWAP_R_AND_B ( currColor ) );
+            message = format ( "Current color #%06X reset to original #%06X",
+                               SWAP_R_AND_B ( oldColor ), SWAP_R_AND_B ( newColor ) );
             uiMode = Navigation;
             return true;
         }
@@ -452,7 +453,7 @@ static bool handleNavigationKeys ( const SDL_keysym& keysym )
         // Backspace a letter and enter color hex entry mode
         case SDLK_BACKSPACE:
         {
-            const uint32_t currColor = 0xFFFFFF & frameDisp.get_palette_data() [paletteNumber][colorNumber];
+            const uint32_t currColor = 0xFFFFFF & palMans[getChara()].get ( paletteNumber, colorNumber );
             colorHexStr = format ( "%06X", SWAP_R_AND_B ( currColor ) );
             colorHexStr.pop_back();
             uiMode = ColorHexEntry;
