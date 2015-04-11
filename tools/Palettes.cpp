@@ -36,7 +36,7 @@ using namespace std;
 
 #define EDITOR_FONT             "Tahoma"
 
-#define EDITOR_FONT_HEIGHT      ( 20 )
+#define EDITOR_FONT_HEIGHT      ( 16 )
 
 #define EDITOR_FONT_WIDTH       ( 0 )
 
@@ -60,12 +60,12 @@ static GLuint font = 0;
 static int screenWidth = 640;
 static int screenHeight = 480;
 
-static float spriteX = 0.3;
-static float spriteY = 0.9;
+static float spriteX = 0.2;
+static float spriteY = 0.7;
 
 static uint32_t ticker = 0;
 
-static bool animate = true;
+static bool animate = true, highlight = true;
 
 static int colorNumber = 0, paletteNumber = 0;
 
@@ -73,9 +73,15 @@ static unordered_map<uint32_t, PaletteManager> palMans;
 
 static enum { Navigation, CharacterEntry, PaletteEntry, ColorNumEntry, ColorHexEntry, } uiMode = Navigation;
 
-static string colorHexStr;
+static string colorHexStr, message, status;
 
-static string message;
+static const vector<string> controls =
+{
+    "Up/Down to change palette, Left/Right to change color",
+    "Press # to enter a color code, Ctrl+C/V to copy/paste colors",
+    "Press Delete to reset a color, hold Delete to reset the palette",
+    "PageUp/Down to change character, Home/-/+ to change sprite",
+};
 
 
 static uint32_t getChara()
@@ -269,6 +275,18 @@ static void displayText()
     glRasterPos2f ( 0.0, 3 * ( 5.0 + EDITOR_FONT_HEIGHT ) );
     renderText ( message );
 
+    for ( size_t i = 0; i < controls.size(); ++i )
+    {
+        glRasterPos2f ( 0.0,
+                        screenHeight
+                        - ( 1 + controls.size() - i ) * ( 5.0 + EDITOR_FONT_HEIGHT )
+                        - 2 * EDITOR_FONT_HEIGHT );
+        renderText ( controls[i] );
+    }
+
+    glRasterPos2f ( 0.0, screenHeight - 2 * EDITOR_FONT_HEIGHT );
+    renderText ( status );
+
     glPopMatrix();
 }
 
@@ -301,6 +319,21 @@ static void initPalMan()
 
 static uint32_t deleteDownTicks = 0;
 
+static bool isValidColorCode ( const string& str )
+{
+    for ( char c : str )
+    {
+        c = toupper ( c );
+
+        if ( ! ( ( c >= '0' && c <= '9' ) || ( c >= 'A' && c <= 'F' ) ) )
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 static bool handleNavigationKeys ( const SDL_keysym& keysym )
 {
     // Zero constant for FrameDisplay parameters
@@ -317,16 +350,18 @@ static bool handleNavigationKeys ( const SDL_keysym& keysym )
     switch ( keysym.sym )
     {
         // Toggle animation
-        case SDLK_SPACE:
+        case SDLK_F1:
             animate = !animate;
-            if ( animate )
-                message = "Animating...";
-            else
-                message = "Animation paused";
             break;
+
+        // Toggle highlight
+        case SDLK_F2:
+            highlight = !highlight;
+            return true;
 
         // Previous character
         case SDLK_PAGEUP:
+        case SDLK_KP9:
             colorNumber = paletteNumber = 0;
             frameDisp.command ( COMMAND_CHARACTER_PREV, 0 );
             frameDisp.command ( COMMAND_CHARACTER_PREV, 0 );
@@ -338,6 +373,7 @@ static bool handleNavigationKeys ( const SDL_keysym& keysym )
 
         // Next character
         case SDLK_PAGEDOWN:
+        case SDLK_KP3:
             colorNumber = paletteNumber = 0;
             frameDisp.command ( COMMAND_CHARACTER_NEXT, 0 );
             frameDisp.command ( COMMAND_CHARACTER_NEXT, 0 );
@@ -349,6 +385,7 @@ static bool handleNavigationKeys ( const SDL_keysym& keysym )
 
         // Previous palette
         case SDLK_UP:
+        case SDLK_KP8:
             colorNumber = 0;
             paletteNumber = ( paletteNumber + 35 ) % 36;
             frameDisp.command ( COMMAND_PALETTE_SET, &paletteNumber );
@@ -357,6 +394,7 @@ static bool handleNavigationKeys ( const SDL_keysym& keysym )
 
         // Next palette
         case SDLK_DOWN:
+        case SDLK_KP2:
             colorNumber = 0;
             paletteNumber = ( paletteNumber + 1 ) % 36;
             frameDisp.command ( COMMAND_PALETTE_SET, &paletteNumber );
@@ -365,25 +403,35 @@ static bool handleNavigationKeys ( const SDL_keysym& keysym )
 
         // Previous color
         case SDLK_LEFT:
+        case SDLK_KP4:
             colorNumber = ( colorNumber + 255 ) % 256;
             message.clear();
             return true;
 
         // Next color
         case SDLK_RIGHT:
+        case SDLK_KP6:
             colorNumber = ( colorNumber + 1 ) % 256;
             message.clear();
             return true;
 
         // First sequence
         case SDLK_HOME:
+        case SDLK_KP7:
             frameDisp.command ( COMMAND_SEQUENCE_SET, &zero );
-            return true;
+            break;
+
+        // Previous sequence
+        case SDLK_MINUS:
+        case SDLK_KP_MINUS:
+            frameDisp.command ( COMMAND_SEQUENCE_PREV, 0 );
+            break;
 
         // Next sequence
-        case SDLK_END:
+        case SDLK_EQUALS:
+        case SDLK_KP_PLUS:
             frameDisp.command ( COMMAND_SEQUENCE_NEXT, 0 );
-            return true;
+            break;
 
         // Copy the current color to clipboard
         case SDLK_c:
@@ -402,9 +450,12 @@ static bool handleNavigationKeys ( const SDL_keysym& keysym )
             {
                 string clip = trimmed ( getClipboard() );
 
-                if ( !clip.empty() && clip[0] == '#' )
+                if ( !clip.empty() && ( clip[0] == '#' || isValidColorCode ( clip ) ) )
                 {
-                    colorHexStr = clip.substr ( 1, 6 );
+                    if ( clip[0] == '#' )
+                        colorHexStr = clip.substr ( 1, 6 );
+                    else
+                        colorHexStr = clip.substr ( 0, 6 );
 
                     for ( char& c : colorHexStr )
                         c = toupper ( c );
@@ -413,41 +464,6 @@ static bool handleNavigationKeys ( const SDL_keysym& keysym )
                 }
             }
             break;
-
-        // Reset current color to the original
-        case SDLK_DELETE:
-        {
-            ++deleteDownTicks;
-
-            // Held delete resets all colors of the current palette to the original
-            if ( deleteDownTicks > HELD_DELETE_TICKS )
-            {
-                palMans[getChara()].clear ( paletteNumber );
-                palMans[getChara()].apply ( frameDisp.get_palette_data() );
-                savePalMan();
-
-                message = "Current palette reset to original colors";
-                uiMode = Navigation;
-                return true;
-            }
-
-            const uint32_t oldColor = 0xFFFFFF & palMans[getChara()].get ( paletteNumber, colorNumber );
-
-            palMans[getChara()].clear ( paletteNumber, colorNumber );
-            savePalMan();
-
-            const uint32_t newColor = 0xFFFFFF & palMans[getChara()].get ( paletteNumber, colorNumber );
-
-            uint32_t& currColor = frameDisp.get_palette_data() [paletteNumber][colorNumber];
-            currColor = ( currColor & 0xFF000000 ) | newColor;
-
-            if ( oldColor == newColor )
-                break;
-
-            message = format ( "Current color #%06X reset to original #%06X", oldColor, newColor );
-            uiMode = Navigation;
-            return true;
-        }
 
         // Backspace a letter and enter color hex entry mode
         case SDLK_BACKSPACE:
@@ -465,6 +481,7 @@ static bool handleNavigationKeys ( const SDL_keysym& keysym )
 
     return false;
 }
+
 static bool handleColorHexEntryKeys ( const SDL_keysym& keysym )
 {
     static const string allowedUnicode = "0123456789ABCDEFabcdef";
@@ -500,12 +517,7 @@ static bool handleColorHexEntryKeys ( const SDL_keysym& keysym )
         case SDLK_v:
             if ( ( keysym.mod & KMOD_CTRL ) && colorHexStr.size() < 6 )
             {
-                string clip = trimmed ( getClipboard() );
-
-                if ( !clip.empty() && clip[0] == '#' )
-                    clip = clip.substr ( 1 );
-
-                colorHexStr += clip.substr ( 0, 6 - colorHexStr.size() );
+                colorHexStr += trimmed ( getClipboard() ).substr ( 0, 6 - colorHexStr.size() );
 
                 for ( char& c : colorHexStr )
                     c = toupper ( c );
@@ -520,6 +532,7 @@ static bool handleColorHexEntryKeys ( const SDL_keysym& keysym )
 
         // Parse color and return to navigation
         case SDLK_RETURN:
+        case SDLK_KP_ENTER:
             if ( colorHexStr.empty() )
             {
                 uiMode = Navigation;
@@ -529,15 +542,10 @@ static bool handleColorHexEntryKeys ( const SDL_keysym& keysym )
             while ( colorHexStr.size() < 6 )
                 colorHexStr.push_back ( colorHexStr.back() );
 
-            for ( char& c : colorHexStr )
+            if ( ! isValidColorCode ( colorHexStr ) )
             {
-                c = toupper ( c );
-
-                if ( ! ( ( c >= '0' && c <= '9' ) || ( c >= 'A' && c <= 'F' ) ) )
-                {
-                    uiMode = Navigation;
-                    return false;
-                }
+                uiMode = Navigation;
+                return false;
             }
 
             if ( colorHexStr.size() == 6 )
@@ -613,6 +621,25 @@ int main ( int argc, char *argv[] )
         if ( animate )
             frameDisp.command ( COMMAND_SUBFRAME_NEXT, 0 );
 
+        if ( highlight && ( ticker % 30 == 0 ) )
+        {
+            const uint32_t color = 0xFFFFFF & SWAP_R_AND_B ( palMans[getChara()].get ( paletteNumber, colorNumber ) );
+            const uint32_t highlight = 0xFFFFFF & PaletteManager::computeHighlightColor ( color );
+
+            uint32_t& currColor = frameDisp.get_palette_data() [paletteNumber][colorNumber];
+
+            if ( ( currColor & 0xFFFFFF ) == color )
+                currColor = ( currColor & 0xFF000000 ) | highlight;
+            else
+                currColor = ( currColor & 0xFF000000 ) | color;
+
+            frameDisp.flush_texture();
+        }
+
+        status = format ( "Display options: (F1) Animation %s (F2) Highlight %s",
+                          ( animate ? "ON" : "OFF" ),
+                          ( highlight ? "ON" : "OFF" ) );
+
         displayScene();
         SDL_GL_SwapBuffers();
 
@@ -642,6 +669,43 @@ int main ( int argc, char *argv[] )
                         break;
                     }
 
+                    // Reset current color to the original
+                    if ( ( event.key.keysym.sym == SDLK_DELETE ) || ( event.key.keysym.sym == SDLK_KP_PERIOD ) )
+                    {
+                        uiMode = Navigation;
+
+                        ++deleteDownTicks;
+
+                        // Held delete resets all colors of the current palette to the original
+                        if ( deleteDownTicks > HELD_DELETE_TICKS )
+                        {
+                            palMans[getChara()].clear ( paletteNumber );
+                            palMans[getChara()].apply ( frameDisp.get_palette_data() );
+                            savePalMan();
+
+                            message = "Current palette reset to original colors";
+                            changed = true;
+                            break;
+                        }
+
+                        const uint32_t oldColor = 0xFFFFFF & palMans[getChara()].get ( paletteNumber, colorNumber );
+
+                        palMans[getChara()].clear ( paletteNumber, colorNumber );
+                        savePalMan();
+
+                        const uint32_t newColor = 0xFFFFFF & palMans[getChara()].get ( paletteNumber, colorNumber );
+
+                        uint32_t& currColor = frameDisp.get_palette_data() [paletteNumber][colorNumber];
+                        currColor = ( currColor & 0xFF000000 ) | newColor;
+
+                        if ( oldColor == newColor )
+                            break;
+
+                        message = format ( "Current color #%06X reset to original #%06X", oldColor, newColor );
+                        changed = true;
+                        break;
+                    }
+
                     switch ( uiMode )
                     {
                         default:
@@ -668,7 +732,7 @@ int main ( int argc, char *argv[] )
                     break;
 
                 case SDL_KEYUP:
-                    if ( event.key.keysym.sym == SDLK_DELETE )
+                    if ( ( event.key.keysym.sym == SDLK_DELETE ) || ( event.key.keysym.sym == SDLK_KP_PERIOD ) )
                         deleteDownTicks = 0;
                     break;
 

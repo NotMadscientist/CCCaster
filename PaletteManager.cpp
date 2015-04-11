@@ -20,7 +20,7 @@ uint32_t PaletteManager::computeHighlightColor ( uint32_t color )
 
     if ( r * r + g * g + b * b > absDivColor2 )
     {
-        return ( color & 0xFF000000 ) | 0x111111; // Dark grey
+        return ( color & 0xFF000000 ) | 0x888888; // Gray
     }
     else
     {
