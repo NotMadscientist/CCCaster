@@ -160,6 +160,9 @@ bool PaletteManager::save ( const string& folder, const string& charaName ) cons
     if ( good )
     {
         fout << "\n######## " << charaName << " palettes ########" << endl;
+        fout << endl;
+        fout << "# Color are specified as 'color_NUMBER_ID=#HEX_CODE'" << endl;
+        fout << "# Lines starting with # are ignored" << endl;
 
         for ( auto it = palettes.cbegin(); it != palettes.cend(); ++it )
         {
@@ -193,6 +196,9 @@ bool PaletteManager::load ( const string& folder, const string& charaName )
 
         while ( getline ( fin, line ) )
         {
+            if ( line.empty() || line[0] == '#' )
+                continue;
+
             vector<string> parts = split ( line, "=" );
 
             if ( parts.size() != 2 || parts[0].empty() || parts[1].empty() || parts[1][0] != '#' )

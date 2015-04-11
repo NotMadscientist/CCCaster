@@ -272,7 +272,6 @@ static void initPalMan()
     {
         palMans[getChara()].cache ( static_cast<const MBAACC_FrameDisplay&> ( frameDisp ).get_palette_data() );
         palMans[getChara()].load ( PALETTES_FOLDER, getCharaName() );
-        savePalMan();
     }
 
     palMans[getChara()].apply ( frameDisp.get_palette_data() );
