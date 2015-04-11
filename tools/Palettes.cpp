@@ -26,7 +26,13 @@ using namespace std;
 
 #define DATA_FILE               "0002.p"
 
-#define EDITOR_FRAME_INTERVAL   ( 16 )
+#define KEY_REPEAT_DELAY        ( 300 )
+
+#define KEY_REPEAT_INTERVAL     ( 50 )
+
+#define HELD_DELETE_TICKS       ( ( 1000 - KEY_REPEAT_DELAY ) / KEY_REPEAT_INTERVAL )
+
+#define EDITOR_FRAME_INTERVAL   ( 1000 / 60 )
 
 #define EDITOR_FONT             "Tahoma"
 
@@ -58,6 +64,8 @@ static float spriteX = 0.3;
 static float spriteY = 0.9;
 
 static uint32_t ticker = 0;
+
+static bool animate = true;
 
 static int colorNumber = 0, paletteNumber = 0;
 
@@ -97,6 +105,20 @@ static string getClipboard()
     return string ( buffer );
 }
 
+static void setClipboard ( const string& str )
+{
+    if ( OpenClipboard ( 0 ) )
+    {
+        HGLOBAL clipbuffer = GlobalAlloc ( GMEM_DDESHARE, str.size() + 1 );
+        char *buffer = ( char * ) GlobalLock ( clipbuffer );
+        strcpy ( buffer, LPCSTR ( str.c_str() ) );
+        GlobalUnlock ( clipbuffer );
+        EmptyClipboard();
+        SetClipboardData ( CF_TEXT, clipbuffer );
+        CloseClipboard();
+    }
+}
+
 static bool setupSDL()
 {
     SDL_Init ( SDL_INIT_VIDEO | SDL_INIT_TIMER );
@@ -109,7 +131,7 @@ static bool setupSDL()
         return false;
 
     SDL_EnableUNICODE ( 1 );
-    SDL_EnableKeyRepeat ( 300, 50 );
+    SDL_EnableKeyRepeat ( KEY_REPEAT_DELAY, KEY_REPEAT_INTERVAL );
     SDL_WM_SetCaption ( WINDOW_TITLE, 0 );
 
     return true;
@@ -259,7 +281,7 @@ static void displayScene()
 
 static void savePalMan()
 {
-    if ( palMans.find ( getChara() ) == palMans.end() || palMans[getChara()].empty() )
+    if ( palMans.find ( getChara() ) == palMans.end() )
         return;
 
     _mkdir ( PALETTES_FOLDER );
@@ -277,12 +299,32 @@ static void initPalMan()
     palMans[getChara()].apply ( frameDisp.get_palette_data() );
 }
 
+static uint32_t deleteDownTicks = 0;
+
 static bool handleNavigationKeys ( const SDL_keysym& keysym )
 {
+    // Zero constant for FrameDisplay parameters
     static const int zero = 0;
+
+    // Enter color hex entry mode
+    if ( keysym.unicode == '#' )
+    {
+        colorHexStr.clear();
+        uiMode = ColorHexEntry;
+        return false;
+    }
 
     switch ( keysym.sym )
     {
+        // Toggle animation
+        case SDLK_SPACE:
+            animate = !animate;
+            if ( animate )
+                message = "Animating...";
+            else
+                message = "Animation paused";
+            break;
+
         // Previous character
         case SDLK_PAGEUP:
             colorNumber = paletteNumber = 0;
@@ -290,6 +332,7 @@ static bool handleNavigationKeys ( const SDL_keysym& keysym )
             frameDisp.command ( COMMAND_CHARACTER_PREV, 0 );
             frameDisp.command ( COMMAND_CHARACTER_PREV, 0 );
             frameDisp.command ( COMMAND_PALETTE_SET, &paletteNumber );
+            message.clear();
             initPalMan();
             return true;
 
@@ -300,6 +343,7 @@ static bool handleNavigationKeys ( const SDL_keysym& keysym )
             frameDisp.command ( COMMAND_CHARACTER_NEXT, 0 );
             frameDisp.command ( COMMAND_CHARACTER_NEXT, 0 );
             frameDisp.command ( COMMAND_PALETTE_SET, &paletteNumber );
+            message.clear();
             initPalMan();
             return true;
 
@@ -308,6 +352,7 @@ static bool handleNavigationKeys ( const SDL_keysym& keysym )
             colorNumber = 0;
             paletteNumber = ( paletteNumber + 35 ) % 36;
             frameDisp.command ( COMMAND_PALETTE_SET, &paletteNumber );
+            message.clear();
             return true;
 
         // Next palette
@@ -315,16 +360,19 @@ static bool handleNavigationKeys ( const SDL_keysym& keysym )
             colorNumber = 0;
             paletteNumber = ( paletteNumber + 1 ) % 36;
             frameDisp.command ( COMMAND_PALETTE_SET, &paletteNumber );
+            message.clear();
             return true;
 
         // Previous color
         case SDLK_LEFT:
             colorNumber = ( colorNumber + 255 ) % 256;
+            message.clear();
             return true;
 
         // Next color
         case SDLK_RIGHT:
             colorNumber = ( colorNumber + 1 ) % 256;
+            message.clear();
             return true;
 
         // First sequence
@@ -336,6 +384,17 @@ static bool handleNavigationKeys ( const SDL_keysym& keysym )
         case SDLK_END:
             frameDisp.command ( COMMAND_SEQUENCE_NEXT, 0 );
             return true;
+
+        // Copy the current color to clipboard
+        case SDLK_c:
+            if ( keysym.mod & KMOD_CTRL )
+            {
+                const uint32_t currColor = 0xFFFFFF & frameDisp.get_palette_data() [paletteNumber][colorNumber];
+                const string str = format ( "#%06X", SWAP_R_AND_B ( currColor ) );
+                setClipboard ( str );
+                message = "Current color " + str + " copied to clipboard";
+            }
+            break;
 
         // Paste a color and enter color hex entry mode
         case SDLK_v:
@@ -354,6 +413,41 @@ static bool handleNavigationKeys ( const SDL_keysym& keysym )
                 }
             }
             break;
+
+        // Reset current color to the original
+        case SDLK_DELETE:
+        {
+            ++deleteDownTicks;
+
+            // Held delete resets all colors of the current palette to the original
+            if ( deleteDownTicks > HELD_DELETE_TICKS )
+            {
+                palMans[getChara()].clear ( paletteNumber );
+                palMans[getChara()].apply ( frameDisp.get_palette_data() );
+                savePalMan();
+
+                message = "Current palette reset to original colors";
+                uiMode = Navigation;
+                return true;
+            }
+
+            uint32_t& currColor = frameDisp.get_palette_data() [paletteNumber][colorNumber];
+
+            const uint32_t oldColor = 0xFFFFFF & currColor;
+            const string str = format ( "#%06X", SWAP_R_AND_B ( oldColor ) );
+
+            palMans[getChara()].clear ( paletteNumber, colorNumber );
+            currColor = SWAP_R_AND_B ( palMans[getChara()].get ( paletteNumber, colorNumber ) );
+            savePalMan();
+
+            if ( oldColor == ( 0xFFFFFF & currColor ) )
+                break;
+
+            message = "Current color " + str + " reset to original "
+                      + format ( "#%06X", 0xFFFFFF & SWAP_R_AND_B ( currColor ) );
+            uiMode = Navigation;
+            return true;
+        }
 
         // Backspace a letter and enter color hex entry mode
         case SDLK_BACKSPACE:
@@ -389,6 +483,8 @@ static bool handleColorNumEntryKeys ( const SDL_keysym& keysym )
 
 static bool handleColorHexEntryKeys ( const SDL_keysym& keysym )
 {
+    message.clear();
+
     switch ( keysym.sym )
     {
         // Only allow hex letter
@@ -458,10 +554,10 @@ static bool handleColorHexEntryKeys ( const SDL_keysym& keysym )
 
             if ( colorHexStr.size() == 6 )
             {
-                const uint32_t newColor = 0xFFFFFF & parseHex<uint32_t> ( colorHexStr );
+                const uint32_t newColor = 0xFFFFFF & SWAP_R_AND_B ( parseHex<uint32_t> ( colorHexStr ) );
 
                 uint32_t& currColor = frameDisp.get_palette_data() [paletteNumber][colorNumber];
-                currColor = ( currColor & 0xFF000000 ) | SWAP_R_AND_B ( newColor );
+                currColor = ( currColor & 0xFF000000 ) | newColor;
 
                 palMans[getChara()].set ( paletteNumber, colorNumber, newColor );
                 savePalMan();
@@ -505,24 +601,17 @@ int main ( int argc, char *argv[] )
 
     setupOpenGL();
 
-    bool done = false, render = false, animate = true;
+    bool done = false;
 
     while ( !done )
     {
         bool changed = false;
 
         if ( animate )
-        {
             frameDisp.command ( COMMAND_SUBFRAME_NEXT, 0 );
-            render = true;
-        }
 
-        if ( render )
-        {
-            displayScene();
-            SDL_GL_SwapBuffers();
-            render = false;
-        }
+        displayScene();
+        SDL_GL_SwapBuffers();
 
         ++ticker;
 
@@ -547,34 +636,6 @@ int main ( int argc, char *argv[] )
                     if ( event.key.keysym.sym == SDLK_ESCAPE )
                     {
                         uiMode = Navigation;
-                        break;
-                    }
-
-                    // Toggle animation
-                    if ( event.key.keysym.sym == SDLK_SPACE )
-                    {
-                        animate = !animate;
-                        break;
-                    }
-
-                    // Reset current color
-                    if ( event.key.keysym.sym == SDLK_DELETE )
-                    {
-                        uint32_t& currColor = frameDisp.get_palette_data() [paletteNumber][colorNumber];
-                        palMans[getChara()].clear ( paletteNumber, colorNumber );
-                        currColor = SWAP_R_AND_B ( palMans[getChara()].get ( paletteNumber, colorNumber ) );
-                        savePalMan();
-
-                        uiMode = Navigation;
-                        changed = true;
-                        break;
-                    }
-
-                    // Enter color hex entry mode
-                    if ( event.key.keysym.unicode == '#' )
-                    {
-                        colorHexStr.clear();
-                        uiMode = ColorHexEntry;
                         break;
                     }
 
@@ -603,6 +664,11 @@ int main ( int argc, char *argv[] )
                     }
                     break;
 
+                case SDL_KEYUP:
+                    if ( event.key.keysym.sym == SDLK_DELETE )
+                        deleteDownTicks = 0;
+                    break;
+
                 case SDL_VIDEOEXPOSE:
                     changed = true;
                     break;
@@ -615,8 +681,6 @@ int main ( int argc, char *argv[] )
                     screenHeight = event.resize.h;
 
                     setupOpenGL();
-
-                    frameDisp.flush_texture();
                     changed = true;
                     break;
 
@@ -628,7 +692,7 @@ int main ( int argc, char *argv[] )
 
         if ( changed )
         {
-            render = true;
+            frameDisp.flush_texture();
         }
     }
 

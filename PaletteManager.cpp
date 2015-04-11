@@ -159,10 +159,15 @@ bool PaletteManager::save ( const string& folder, const string& charaName ) cons
 
     if ( good )
     {
-        fout << "\n######## " << charaName << " palettes ########" << endl;
+        fout << "######## " << charaName << " palettes ########" << endl;
         fout << endl;
-        fout << "# Color are specified as 'color_NUMBER_ID=#HEX_CODE'" << endl;
-        fout << "# Lines starting with # are ignored" << endl;
+        fout << "#"                                                  << endl;
+        fout << "# Color are specified as color_NUMBER_ID=#HEX_CODE" << endl;
+        fout << "#"                                                  << endl;
+        fout << "#   eg. color_03_123=#FF0000"                       << endl;
+        fout << "#"                                                  << endl;
+        fout << "# Lines starting with # are ignored"                << endl;
+        fout << "#"                                                  << endl;
 
         for ( auto it = palettes.cbegin(); it != palettes.cend(); ++it )
         {
@@ -170,7 +175,8 @@ bool PaletteManager::save ( const string& folder, const string& charaName ) cons
 
             for ( const auto& kv : it->second )
             {
-                const string line = format ( "color_%02d_%03d=#%06X", it->first + 1, kv.first + 1, kv.second );
+                const string line = format ( "color_%02d_%03d=#%06X",
+                                             it->first + 1, kv.first + 1, SWAP_R_AND_B ( kv.second ) );
 
                 fout << line << endl;
             }
@@ -217,7 +223,7 @@ bool PaletteManager::load ( const string& folder, const string& charaName )
             stringstream ss ( parts[1].substr ( 1 ) );
             ss >> hex >> color;
 
-            palettes[paletteNumber][colorNumber] = color;
+            palettes[paletteNumber][colorNumber] = SWAP_R_AND_B ( color );
         }
 
 #ifndef DISABLE_SERIALIZATION
