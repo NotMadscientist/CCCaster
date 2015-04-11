@@ -175,8 +175,7 @@ bool PaletteManager::save ( const string& folder, const string& charaName ) cons
 
             for ( const auto& kv : it->second )
             {
-                const string line = format ( "color_%02d_%03d=#%06X",
-                                             it->first + 1, kv.first + 1, SWAP_R_AND_B ( kv.second ) );
+                const string line = format ( "color_%02d_%03d=#%06X", it->first + 1, kv.first + 1, kv.second );
 
                 fout << line << endl;
             }
@@ -223,7 +222,7 @@ bool PaletteManager::load ( const string& folder, const string& charaName )
             stringstream ss ( parts[1].substr ( 1 ) );
             ss >> hex >> color;
 
-            palettes[paletteNumber][colorNumber] = SWAP_R_AND_B ( color );
+            palettes[paletteNumber][colorNumber] = color;
         }
 
 #ifndef DISABLE_SERIALIZATION

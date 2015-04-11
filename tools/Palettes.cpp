@@ -254,12 +254,12 @@ static void displayText()
     const uint32_t origColor = 0xFFFFFF & palMans[getChara()].getOriginal ( paletteNumber, colorNumber );
 
     glRasterPos2f ( 0.0, 5.0 + EDITOR_FONT_HEIGHT );
-    renderText ( format ( "Original #%06X", SWAP_R_AND_B ( origColor ) ) );
+    renderText ( format ( "Original #%06X", origColor ) );
 
     const uint32_t currColor = 0xFFFFFF & palMans[getChara()].get ( paletteNumber, colorNumber );
 
     if ( uiMode != ColorHexEntry )
-        colorHexStr = format ( "%06X", SWAP_R_AND_B ( currColor ) );
+        colorHexStr = format ( "%06X", currColor );
 
     string blinker = ( ( uiMode != ColorHexEntry ) || ( ( ticker % 40 ) > 20 ) ) ? "" : "_";
 
@@ -390,7 +390,7 @@ static bool handleNavigationKeys ( const SDL_keysym& keysym )
             if ( keysym.mod & KMOD_CTRL )
             {
                 const uint32_t currColor = 0xFFFFFF & palMans[getChara()].get ( paletteNumber, colorNumber );
-                const string str = format ( "#%06X", SWAP_R_AND_B ( currColor ) );
+                const string str = format ( "#%06X", currColor );
                 setClipboard ( str );
                 message = "Current color " + str + " copied to clipboard";
             }
@@ -444,8 +444,7 @@ static bool handleNavigationKeys ( const SDL_keysym& keysym )
             if ( oldColor == newColor )
                 break;
 
-            message = format ( "Current color #%06X reset to original #%06X",
-                               SWAP_R_AND_B ( oldColor ), SWAP_R_AND_B ( newColor ) );
+            message = format ( "Current color #%06X reset to original #%06X", oldColor, newColor );
             uiMode = Navigation;
             return true;
         }
@@ -454,7 +453,7 @@ static bool handleNavigationKeys ( const SDL_keysym& keysym )
         case SDLK_BACKSPACE:
         {
             const uint32_t currColor = 0xFFFFFF & palMans[getChara()].get ( paletteNumber, colorNumber );
-            colorHexStr = format ( "%06X", SWAP_R_AND_B ( currColor ) );
+            colorHexStr = format ( "%06X", currColor );
             colorHexStr.pop_back();
             uiMode = ColorHexEntry;
             break;
@@ -466,29 +465,15 @@ static bool handleNavigationKeys ( const SDL_keysym& keysym )
 
     return false;
 }
-
-static bool handleCharacterEntryKeys ( const SDL_keysym& keysym )
-{
-    return false;
-}
-
-static bool handlePaletteEntryKeys ( const SDL_keysym& keysym )
-{
-    return false;
-}
-
-static bool handleColorNumEntryKeys ( const SDL_keysym& keysym )
-{
-    return false;
-}
-
 static bool handleColorHexEntryKeys ( const SDL_keysym& keysym )
 {
+    static const string allowedUnicode = "0123456789ABCDEFabcdef";
+
     message.clear();
 
     switch ( keysym.sym )
     {
-        // Only allow hex letter
+        // Only allow hex codes
         case SDLK_0:
         case SDLK_1:
         case SDLK_2:
@@ -505,6 +490,8 @@ static bool handleColorHexEntryKeys ( const SDL_keysym& keysym )
         case SDLK_d:
         case SDLK_e:
         case SDLK_f:
+            if ( allowedUnicode.find ( ( char ) keysym.unicode ) == string::npos )
+                break;
             if ( colorHexStr.size() < 6 )
                 colorHexStr.push_back ( toupper ( ( char ) keysym.unicode ) );
             break;
@@ -555,7 +542,7 @@ static bool handleColorHexEntryKeys ( const SDL_keysym& keysym )
 
             if ( colorHexStr.size() == 6 )
             {
-                const uint32_t newColor = 0xFFFFFF & SWAP_R_AND_B ( parseHex<uint32_t> ( colorHexStr ) );
+                const uint32_t newColor = 0xFFFFFF & parseHex<uint32_t> ( colorHexStr );
 
                 uint32_t& currColor = frameDisp.get_palette_data() [paletteNumber][colorNumber];
                 currColor = ( currColor & 0xFF000000 ) | newColor;
@@ -572,6 +559,21 @@ static bool handleColorHexEntryKeys ( const SDL_keysym& keysym )
             break;
     }
 
+    return false;
+}
+
+static bool handleCharacterEntryKeys ( const SDL_keysym& keysym )
+{
+    return false;
+}
+
+static bool handlePaletteEntryKeys ( const SDL_keysym& keysym )
+{
+    return false;
+}
+
+static bool handleColorNumEntryKeys ( const SDL_keysym& keysym )
+{
     return false;
 }
 
@@ -644,23 +646,23 @@ int main ( int argc, char *argv[] )
                     {
                         default:
                         case Navigation:
-                            changed = handleNavigationKeys ( event.key.keysym );
+                            changed |= handleNavigationKeys ( event.key.keysym );
                             break;
 
                         case CharacterEntry:
-                            changed = handleCharacterEntryKeys ( event.key.keysym );
+                            changed |= handleCharacterEntryKeys ( event.key.keysym );
                             break;
 
                         case PaletteEntry:
-                            changed = handlePaletteEntryKeys ( event.key.keysym );
+                            changed |= handlePaletteEntryKeys ( event.key.keysym );
                             break;
 
                         case ColorNumEntry:
-                            changed = handleColorNumEntryKeys ( event.key.keysym );
+                            changed |= handleColorNumEntryKeys ( event.key.keysym );
                             break;
 
                         case ColorHexEntry:
-                            changed = handleColorHexEntryKeys ( event.key.keysym );
+                            changed |= handleColorHexEntryKeys ( event.key.keysym );
                             break;
                     }
                     break;
@@ -693,6 +695,8 @@ int main ( int argc, char *argv[] )
 
         if ( changed )
         {
+            ticker = 0;
+            palMans[getChara()].apply ( frameDisp.get_palette_data() );
             frameDisp.flush_texture();
         }
     }
