@@ -236,6 +236,15 @@ then assigning 0.0 to [ebp+20]
 
 Can hide the color selector by assigning 1 to CC_P1_SELECTOR_MODE_ADDR (0x74D8EC)
 
-Team characters palettes?
+Team character color loading:
+ - During character select, the loading order is always (initial) point character then assist character
 
-Assist character palettes (eg. H.Mech or Neko assists)?
+   eg. for either P1/P2 Maids: Hisui colors would be loaded first then Kohaku colors
+
+ - During loading state, the loading order is: P1 point, P2 point, then P1 assist, P2 assist
+
+   eg. for Maids vs Sion the order is: Hisui, Sion, Koha, because Koha is the assist initially
+
+   eg. for Sion vs NekoMech the order is: Sion, Mech, Neko, because Neko is the assist
+
+   eg. for Maids vs NekoMech the order is: Hisui, Mech, Koha, Neko
