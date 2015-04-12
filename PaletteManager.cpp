@@ -91,7 +91,7 @@ void PaletteManager::apply ( uint32_t paletteNumber, uint32_t *singlePaletteData
 
 uint32_t PaletteManager::getOriginal ( uint32_t paletteNumber, uint32_t colorNumber ) const
 {
-    return originals[paletteNumber][colorNumber];
+    return 0xFFFFFF & originals[paletteNumber][colorNumber];
 }
 
 uint32_t PaletteManager::get ( uint32_t paletteNumber, uint32_t colorNumber ) const
@@ -103,7 +103,7 @@ uint32_t PaletteManager::get ( uint32_t paletteNumber, uint32_t colorNumber ) co
         const auto jt = it->second.find ( colorNumber );
 
         if ( jt != it->second.end() )
-            return jt->second;
+            return 0xFFFFFF & jt->second;
     }
 
     return getOriginal ( paletteNumber, colorNumber );
@@ -111,7 +111,7 @@ uint32_t PaletteManager::get ( uint32_t paletteNumber, uint32_t colorNumber ) co
 
 void PaletteManager::set ( uint32_t paletteNumber, uint32_t colorNumber, uint32_t color )
 {
-    palettes[paletteNumber][colorNumber] = color;
+    palettes[paletteNumber][colorNumber] = 0xFFFFFF & color;
 
 #ifndef DISABLE_SERIALIZATION
     invalidate();

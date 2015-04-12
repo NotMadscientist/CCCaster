@@ -9,6 +9,7 @@
 *.png binary
 *.ico binary
 *.so binary
+*.pdf binary
 contrib/astyle binary
 
 # Text files

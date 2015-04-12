@@ -24,6 +24,10 @@ class PaletteEditor
 
     void loadCurrentChara();
 
+    void saveCurrentChara();
+
+    void applyColor ( uint32_t color );
+
     int getCharaIndex();
 
 public:
@@ -44,7 +48,12 @@ public:
 
     void setCurrentColor ( uint32_t color );
 
-    void setCurrentColor ( const std::string& colorHex );
+    void setCurrentColor ( std::string colorHex );
+
+    void clearCurrentColor();
+
+
+    void highlightCurrentColor ( bool highlight );
 
 
     int getPaletteNumber() const;
@@ -76,4 +85,6 @@ public:
 
     void renderSprite();
 
+
+    static bool isValidColor ( const std::string& str );
 };

@@ -16,7 +16,7 @@
 
 #include <AntTweakBar.h>
 #include "TwColors.h"
-  
+
 #define ANT_TWEAK_BAR_DLL "AntTweakBar"
 
 
@@ -341,9 +341,9 @@ protected:
     void                    DrawHierHandle();
 
     enum EValuesWidthFit    { VALUES_WIDTH_FIT = -5555 };
-  
+
     // RotoSlider
-    struct  CPoint 
+    struct  CPoint
     {
         int                 x, y;
                             CPoint() {}

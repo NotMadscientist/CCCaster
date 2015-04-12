@@ -5519,7 +5519,7 @@ bool CTwBar::MouseMotion(int _X, int _Y)
                     {
                         if( static_cast<CTwVarAtom *>(m_HierTags[m_HighlightedLine].m_Var)->m_ReadOnly && !m_IsHelpBar
                             && !(static_cast<CTwVarAtom *>(m_HierTags[m_HighlightedLine].m_Var)->m_Type==TW_TYPE_BUTTON && static_cast<CTwVarAtom *>(m_HierTags[m_HighlightedLine].m_Var)->m_Val.m_Button.m_Callback==NULL) )
-                            ANT_SET_CURSOR(No); //(Arrow);
+                            ANT_SET_CURSOR(Arrow); //(Arrow);
                         else
                         {
                             ANT_SET_CURSOR(Arrow);
@@ -5556,7 +5556,7 @@ bool CTwBar::MouseMotion(int _X, int _Y)
                     else if( !m_HierTags[m_HighlightedLine].m_Var->IsGroup() && static_cast<CTwVarAtom *>(m_HierTags[m_HighlightedLine].m_Var)->m_ReadOnly )
                     {
                         if( !m_IsHelpBar )
-                            ANT_SET_CURSOR(No);
+                            ANT_SET_CURSOR(Arrow);
                         else
                             ANT_SET_CURSOR(Arrow);
                     }
@@ -5659,7 +5659,7 @@ bool CTwBar::MouseMotion(int _X, int _Y)
                     RotoOnMouseMove(_X, _Y);
 
                 if( static_cast<CTwVarAtom *>(m_HierTags[m_HighlightedLine].m_Var)->m_ReadOnly )
-                    ANT_SET_CURSOR(No);
+                    ANT_SET_CURSOR(Arrow);
                 else if( static_cast<CTwVarAtom *>(m_HierTags[m_HighlightedLine].m_Var)->m_NoSlider )
                 {
                     ANT_SET_CURSOR(Arrow);
@@ -6165,12 +6165,12 @@ bool CTwBar::MouseButton(ETwMouseButtonID _Button, bool _Pressed, int _X, int _Y
                         }
                         EditInPlaceActive = m_EditInPlace.m_Active;
                         if( Var->m_ReadOnly )
-                            ANT_SET_CURSOR(No);
+                            ANT_SET_CURSOR(Arrow);
                         else
                             ANT_SET_CURSOR(IBeam);
                     }
                 else if( Var->m_ReadOnly )
-                    ANT_SET_CURSOR(No);
+                    ANT_SET_CURSOR(Arrow);
                 else
                 {
                     ANT_SET_CURSOR(Arrow);
@@ -6199,7 +6199,7 @@ bool CTwBar::MouseButton(ETwMouseButtonID _Button, bool _Pressed, int _X, int _Y
                 */
 
                 if( static_cast<CTwVarAtom *>(m_HierTags[m_HighlightedLine].m_Var)->m_ReadOnly )
-                    ANT_SET_CURSOR(No);
+                    ANT_SET_CURSOR(Arrow);
                 else
                 {
                     ANT_SET_CURSOR(Arrow);

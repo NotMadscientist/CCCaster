@@ -228,7 +228,7 @@ FRAMEDISPLAY_CC_FLAGS = -s -Os -Ofast -fno-rtti -DPALETTES_FOLDER='"$(PALETTES_F
 
 FRAMEDISPLAY_LD_FLAGS = -L$(CURDIR)/3rdparty/libpng -L$(CURDIR)/3rdparty/libz -L"$(CURDIR)/3rdparty/AntTweakBar/lib"
 FRAMEDISPLAY_LD_FLAGS += -L$(CURDIR)/3rdparty/glfw
-FRAMEDISPLAY_LD_FLAGS += -mwindows -static -lAntTweakBar -lmingw32 -lpng -lz -lglfw -lopengl32 -lglu32
+FRAMEDISPLAY_LD_FLAGS += -mwindows -static -lmingw32 -lpng -lz -lglfw -lopengl32 -lglu32
 
 3rdparty/framedisplay/%.o: 3rdparty/framedisplay/%.cc
 	$(CXX) $(FRAMEDISPLAY_CC_FLAGS) $(FRAMEDISPLAY_INCLUDES) -o $@ -c $<
@@ -236,7 +236,7 @@ FRAMEDISPLAY_LD_FLAGS += -mwindows -static -lAntTweakBar -lmingw32 -lpng -lz -lg
 3rdparty/AntTweakBar/lib/libAntTweakBar.a: $(wildcard 3rdparty/AntTweakBar/src/*.c* 3rdparty/AntTweakBar/src/*.h)
 	$(MAKE) --directory=3rdparty/AntTweakBar/src
 
-$(PALETTES): $(PALETTES_SRC) $(FRAMEDISPLAY_OBJECTS) res/palettes.res | 3rdparty/AntTweakBar/lib/libAntTweakBar.a
+$(PALETTES): $(PALETTES_SRC) $(FRAMEDISPLAY_OBJECTS) res/palettes.res 3rdparty/AntTweakBar/lib/libAntTweakBar.a
 	$(CXX) $(FRAMEDISPLAY_CC_FLAGS) -o $@ $(FRAMEDISPLAY_INCLUDES) -Wall -std=c++11 -C $^ $(FRAMEDISPLAY_LD_FLAGS)
 	@echo
 	$(PREFIX)strip $@
