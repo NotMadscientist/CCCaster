@@ -1,0 +1,44 @@
+diff -ur src.orig/TwMgr.cpp src/TwMgr.cpp
+--- src.orig/TwMgr.cpp	2013-03-21 11:21:46 +0000
++++ src/TwMgr.cpp	2014-07-08 21:12:05 +0000
+@@ -15,10 +15,12 @@
+ #include "TwFonts.h"
+ #include "TwOpenGL.h"
+ #include "TwOpenGLCore.h"
+-#ifdef ANT_WINDOWS
++#if defined(ANT_WINDOWS)
++#if !defined(__MINGW32__)
+ #   include "TwDirect3D9.h"
+ #   include "TwDirect3D10.h"
+ #   include "TwDirect3D11.h"
++#endif // __MINGW32__
+ #   include "resource.h"
+ #   ifdef _DEBUG
+ #       include <crtdbg.h>
+@@ -1752,7 +1754,7 @@
+         g_TwMgr->m_Graph = new CTwGraphOpenGLCore;
+         break;
+     case TW_DIRECT3D9:
+-        #ifdef ANT_WINDOWS
++        #if defined(ANT_WINDOWS) && !defined(__MINGW32__)
+             if( g_TwMgr->m_Device!=NULL )
+                 g_TwMgr->m_Graph = new CTwGraphDirect3D9;
+             else
+@@ -1763,7 +1765,7 @@
+         #endif // ANT_WINDOWS
+         break;
+     case TW_DIRECT3D10:
+-        #ifdef ANT_WINDOWS
++        #if defined(ANT_WINDOWS) && !defined(__MINGW32__)
+             if( g_TwMgr->m_Device!=NULL )
+                 g_TwMgr->m_Graph = new CTwGraphDirect3D10;
+             else
+@@ -1774,7 +1776,7 @@
+         #endif // ANT_WINDOWS
+         break;
+     case TW_DIRECT3D11:
+-        #ifdef ANT_WINDOWS
++        #if defined(ANT_WINDOWS) && !defined(__MINGW32__)
+             if( g_TwMgr->m_Device!=NULL )
+                 g_TwMgr->m_Graph = new CTwGraphDirect3D11;
+             else

@@ -77,6 +77,7 @@ DEFINES += -DMBAA_EXE='"$(MBAA_EXE)"' -DBINARY='"$(BINARY)"' -DFOLDER='"$(FOLDER
 DEFINES += -DHOOK_DLL='"$(FOLDER)\\$(DLL)"' -DLAUNCHER='"$(FOLDER)\\$(LAUNCHER)"' -DUPDATER='"$(UPDATER)"'
 INCLUDES = -I$(CURDIR) -I$(CURDIR)/lib -I$(CURDIR)/tests -I$(CURDIR)/3rdparty -I$(CURDIR)/3rdparty/cereal/include
 INCLUDES += -I$(CURDIR)/3rdparty/gtest/include -I$(CURDIR)/3rdparty/minhook/include -I$(CURDIR)/3rdparty/d3dhook
+INCLUDES += -I$(CURDIR)/3rdparty/framedisplay
 CC_FLAGS = -m32 $(INCLUDES) $(DEFINES)
 
 # Linker flags
@@ -214,23 +215,28 @@ tools/$(GENERATOR): tools/Generator.cpp $(GENERATOR_LIB_OBJECTS)
 	@echo
 
 
-PALETTES_SRC = tools/Palettes.cpp PaletteManager.cpp CharacterSelect.cpp lib/StringUtils.cpp
+PALETTES_SRC = tools/Palettes.cpp tools/PaletteEditor.cpp PaletteManager.cpp CharacterSelect.cpp lib/StringUtils.cpp
 
 FRAMEDISPLAY_SRC = $(wildcard 3rdparty/framedisplay/*.cc)
 FRAMEDISPLAY_OBJECTS = $(FRAMEDISPLAY_SRC:.cc=.o)
 
-FRAMEDISPLAY_INCLUDES = -I$(CURDIR) -I$(CURDIR)/lib -I$(CURDIR)/3rdparty/framedisplay -I"$(CURDIR)/3rdparty/SDL"
-FRAMEDISPLAY_INCLUDES += -I$(CURDIR)/3rdparty/libpng -I$(CURDIR)/3rdparty/libz -I$(OPENGL_HEADERS)
+FRAMEDISPLAY_INCLUDES = -I$(CURDIR) -I$(CURDIR)/lib -I$(CURDIR)/3rdparty/framedisplay -I$(CURDIR)/3rdparty/libpng
+FRAMEDISPLAY_INCLUDES += -I$(CURDIR)/3rdparty/libz -I$(CURDIR)/3rdparty/glfw
+FRAMEDISPLAY_INCLUDES += -I"$(CURDIR)/3rdparty/AntTweakBar/include" -I$(OPENGL_HEADERS)
 
 FRAMEDISPLAY_CC_FLAGS = -s -Os -Ofast -fno-rtti -DPALETTES_FOLDER='"$(PALETTES_FOLDER)\\"' -DDISABLE_SERIALIZATION
 
-FRAMEDISPLAY_LD_FLAGS = -L$(CURDIR)/3rdparty/libpng -L$(CURDIR)/3rdparty/libz -L$(CURDIR)/3rdparty/SDL -mwindows
-FRAMEDISPLAY_LD_FLAGS += -static -lmingw32 -lSDLmain -lSDL -lpng -lz -lopengl32 -lcomctl32 -lole32 -lwinmm -ldxguid
+FRAMEDISPLAY_LD_FLAGS = -L$(CURDIR)/3rdparty/libpng -L$(CURDIR)/3rdparty/libz -L"$(CURDIR)/3rdparty/AntTweakBar/lib"
+FRAMEDISPLAY_LD_FLAGS += -L$(CURDIR)/3rdparty/glfw
+FRAMEDISPLAY_LD_FLAGS += -mwindows -static -lAntTweakBar -lmingw32 -lpng -lz -lglfw -lopengl32 -lglu32
 
 3rdparty/framedisplay/%.o: 3rdparty/framedisplay/%.cc
 	$(CXX) $(FRAMEDISPLAY_CC_FLAGS) $(FRAMEDISPLAY_INCLUDES) -o $@ -c $<
 
-$(PALETTES): $(PALETTES_SRC) $(FRAMEDISPLAY_OBJECTS) res/palettes.res
+3rdparty/AntTweakBar/lib/libAntTweakBar.a: $(wildcard 3rdparty/AntTweakBar/src/*.c* 3rdparty/AntTweakBar/src/*.h)
+	$(MAKE) --directory=3rdparty/AntTweakBar/src
+
+$(PALETTES): $(PALETTES_SRC) $(FRAMEDISPLAY_OBJECTS) res/palettes.res | 3rdparty/AntTweakBar/lib/libAntTweakBar.a
 	$(CXX) $(FRAMEDISPLAY_CC_FLAGS) -o $@ $(FRAMEDISPLAY_INCLUDES) -Wall -std=c++11 -C $^ $(FRAMEDISPLAY_LD_FLAGS)
 	@echo
 	$(PREFIX)strip $@
@@ -282,8 +288,13 @@ clean-res:
 	rm -f res/rollback.* res/icon.res
 	rm -rf GRP
 
-clean-common: clean-proto clean-res
-	rm -f .depend_$(BRANCH) .include_$(BRANCH) *.exe *.zip tools/*.exe 3rdparty/framedisplay/*.o \
+clean-lib:
+	$(MAKE) --directory=3rdparty/AntTweakBar/src clean
+	rm -f 3rdparty/framedisplay/*.o
+
+clean-common: clean-proto clean-res clean-lib
+	rm -rf tmp*
+	rm -f .depend_$(BRANCH) .include_$(BRANCH) *.exe *.zip tools/*.exe \
 $(filter-out $(FOLDER)/config.ini $(wildcard $(FOLDER)/*.mappings) $(wildcard $(FOLDER)/*.log),$(wildcard $(FOLDER)/*))
 
 clean-debug: clean-common
@@ -324,7 +335,7 @@ format:
     --align-pointer=name        	\
     --align-reference=type      	\
 $(filter-out tools/Generator.cpp CharacterSelect.cpp lib/KeyboardVKeyNames.h targets/DllAsmHacks.h,\
-	$(NON_GEN_SRCS) $(NON_GEN_HEADERS))
+$(NON_GEN_SRCS) $(NON_GEN_HEADERS))
 
 count:
 	@wc -l $(NON_GEN_SRCS) $(NON_GEN_HEADERS) | sort -nr | head -n 10 && echo '    ...'

@@ -11,6 +11,9 @@
 #include <string>
 
 
+#define COLOR_RGB(R, G, B) \
+    ( 0xFFFFFF & ( ( ( 0xFF & ( R ) ) << 16 ) | ( ( 0xFF & ( G ) ) << 8 ) | ( 0xFF & ( B ) ) ) )
+
 #define SWAP_R_AND_B(COLOR) \
     ( ( ( COLOR & 0xFF ) << 16 ) | ( COLOR & 0xFF00 ) | ( ( COLOR & 0xFF0000 ) >> 16 ) | ( COLOR & 0xFF000000 ) )
 

@@ -1,5 +1,6 @@
 #include "PaletteManager.h"
 #include "StringUtils.h"
+#include "Algorithms.h"
 
 #include <fstream>
 #include <sstream>
@@ -16,15 +17,20 @@ uint32_t PaletteManager::computeHighlightColor ( uint32_t color )
     const uint32_t g = ( color & 0xFF00 ) >> 8;
     const uint32_t b = ( color & 0xFF0000 ) >> 16;
 
-    const uint32_t absDivColor2 = 3 * 220 * 220;
+    const uint32_t absDivColor2 = 3 * 230 * 230;
 
     if ( r * r + g * g + b * b > absDivColor2 )
     {
-        return ( color & 0xFF000000 ) | 0x888888; // Gray
+        // If too light, use inverse color
+        const uint32_t R = clamped<uint32_t> ( 255 - r, 0, 255 );
+        const uint32_t G = clamped<uint32_t> ( 255 - g, 0, 255 );
+        const uint32_t B = clamped<uint32_t> ( 255 - b, 0, 255 );
+
+        return ( color & 0xFF000000 ) | COLOR_RGB ( R, G, B );
     }
     else
     {
-        return ( color & 0xFF000000 ) | 0xFFFFFF; // White
+        return ( color & 0xFF000000 ) | 0xFFFFFF;
     }
 }
 
