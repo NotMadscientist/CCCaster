@@ -1,5 +1,6 @@
 #include "PaletteEditor.h"
-#include "StringUtils.h"
+#include "Algorithms.h"
+#include "KeyValueStore.h"
 
 #include <AntTweakBar.h>
 
@@ -11,6 +12,8 @@
 #include <direct.h>
 
 #include <cstdarg>
+#include <climits>
+#include <cmath>
 #include <string>
 #include <algorithm>
 #include <unordered_map>
@@ -22,12 +25,19 @@ using namespace std;
 
 #define DATA_FILE               "0002.p"
 
+#define CONFIG_FILE             "palettes.ini"
 
-static int screenWidth = 640;
-static int screenHeight = 480;
+#define DEFAULT_SPRITE_X        ( 0.5 )
 
-static float spriteX = 0.5;
-static float spriteY = 0.7;
+#define DEFAULT_SPRITE_Y        ( 0.7 )
+
+
+static int screenWidth = 640, screenHeight = 480;
+static double spriteX = DEFAULT_SPRITE_X, spriteY = DEFAULT_SPRITE_Y;
+static double zoom = 1.0;
+static bool animate = true, highlight = true;
+
+static KeyValueStore config;
 
 static PaletteEditor editor;
 
@@ -46,6 +56,7 @@ GET_SET_PAIR ( Chara, 0 )
 GET_SET_PAIR ( PaletteNumber, 1 )
 GET_SET_PAIR ( ColorNumber, 1 )
 GET_SET_PAIR ( SpriteNumber, 1 )
+GET_SET_PAIR ( SpriteFrame, 1 )
 
 static void TW_CALL getOriginalColor ( void *value, void *clientData )
 {
@@ -63,6 +74,49 @@ static void TW_CALL setCurrentColor ( const void *value, void *clientData )
         editor.clearCurrentColor();
     else
         editor.setCurrentColor ( * ( string * ) value );
+}
+
+static void cachedEditorState()
+{
+    config.setInteger ( "screenWidth", screenWidth );
+    config.setInteger ( "screenHeight", screenHeight );
+
+    config.setDouble ( "spriteX", spriteX );
+    config.setDouble ( "spriteY", spriteY );
+    config.setDouble ( "zoom", zoom );
+
+    config.setInteger ( "lastCharacter",   editor.getChara()         + 1 );
+    config.setInteger ( "lastPalette",     editor.getPaletteNumber() + 1 );
+    config.setInteger ( "lastColorNumber", editor.getColorNumber()   + 1 );
+    config.setInteger ( "lastSprite",      editor.getSpriteNumber()  + 1 );
+    config.setInteger ( "lastFrame",       editor.getSpriteFrame()   + 1 );
+}
+
+static void loadEditorState()
+{
+    cachedEditorState();
+
+    config.load ( CONFIG_FILE );
+
+    screenWidth  = config.getInteger ( "screenWidth" );
+    screenHeight = config.getInteger ( "screenHeight" );
+
+    spriteX      = config.getDouble ( "spriteX" );
+    spriteY      = config.getDouble ( "spriteY" );
+    zoom         = config.getDouble ( "zoom" );
+
+    editor.setChara         ( config.getInteger ( "lastCharacter" )   - 1 );
+    editor.setPaletteNumber ( config.getInteger ( "lastPalette" )     - 1 );
+    editor.setColorNumber   ( config.getInteger ( "lastColorNumber" ) - 1 );
+    editor.setSpriteNumber  ( config.getInteger ( "lastSprite" )      - 1 );
+    editor.setSpriteFrame   ( config.getInteger ( "lastFrame" )      - 1 );
+}
+
+static void saveEditorState()
+{
+    cachedEditorState();
+
+    config.save ( CONFIG_FILE );
 }
 
 int GLFWCALL glfwKeyboardEvent ( int key, int action )
@@ -84,6 +138,15 @@ int GLFWCALL glfwKeyboardEvent ( int key, int action )
                 TwRefreshBar ( bar );
                 return 1;
 
+            case GLFW_KEY_F1:
+                animate = !animate;
+                return 1;
+
+            case GLFW_KEY_F2:
+                highlight = !highlight;
+                editor.ticker = 0;
+                return 1;
+
             default:
                 break;
         }
@@ -92,18 +155,78 @@ int GLFWCALL glfwKeyboardEvent ( int key, int action )
     return 0;
 }
 
+int GLFWCALL glfwMouseMoveEvent ( int mouseX, int mouseY )
+{
+    if ( TwEventMousePosGLFW ( mouseX, mouseY ) )
+        return 1;
+
+    static int lastX = INT_MIN, lastY = INT_MIN;
+
+    int handled = 0;
+
+    if ( glfwGetMouseButton ( GLFW_MOUSE_BUTTON_LEFT ) && lastX != INT_MIN && lastY != INT_MIN )
+    {
+        const int deltaX = mouseX - lastX, deltaY = mouseY - lastY;
+
+        spriteX = ( screenWidth * spriteX + deltaX ) / screenWidth;
+        spriteY = ( screenHeight * spriteY + deltaY ) / screenHeight;
+
+        handled = 1;
+    }
+
+    lastX = mouseX;
+    lastY = mouseY;
+
+    return handled;
+}
+
+int GLFWCALL glfwMouseWheelEvent ( int wheelPos )
+{
+    if ( TwEventMouseWheelGLFW ( wheelPos ) )
+        return 1;
+
+    static int lastPos = INT_MIN;
+
+    int handled = 0;
+
+    if ( lastPos != INT_MIN )
+    {
+        const int deltaPos = wheelPos - lastPos;
+
+        if ( deltaPos < 0 )
+            zoom = clamped ( zoom * pow ( 0.95, ( double ) - deltaPos ), 1.0, 10.0 );
+        else
+            zoom = clamped ( zoom * pow ( 1.05, ( double ) deltaPos ), 1.0, 10.0 );
+
+        handled = 1;
+    }
+
+    lastPos = wheelPos;
+
+    return handled;
+}
+
+
 void GLFWCALL glfwResizeWindow ( int width, int height )
 {
     glViewport ( 0, 0, width, height );
 
     glMatrixMode ( GL_PROJECTION );
     glLoadIdentity();
-    glOrtho ( 0, screenWidth, screenHeight, 0, -2048, 2048 );
+    glOrtho ( 0, width, height, 0, -2048, 2048 );
 
     TwWindowSize ( width, height );
 
     screenWidth = width;
     screenHeight = height;
+}
+
+
+void GLFWCALL glfwRefreshWindow()
+{
+    int width, height;
+    glfwGetWindowSize ( &width, &height );
+    glfwResizeWindow ( width, height );
 }
 
 int main ( int argc, char *argv[] )
@@ -122,6 +245,9 @@ int main ( int argc, char *argv[] )
         MessageBox ( 0, "Could not load palette data!\n\nIs " DATA_FILE " in the same folder?", "Error", MB_OK );
         return -1;
     }
+
+    loadEditorState();
+    saveEditorState();
 
     // Init GLFW
     if ( !glfwInit() )
@@ -146,6 +272,7 @@ int main ( int argc, char *argv[] )
     glfwEnable ( GLFW_KEY_REPEAT );
     glfwSetWindowTitle ( WINDOW_TITLE );
     glfwSetWindowSizeCallback ( glfwResizeWindow );
+    glfwSetWindowRefreshCallback ( glfwRefreshWindow );
 
     // Init OpenGL
     glMatrixMode ( GL_PROJECTION );
@@ -166,8 +293,8 @@ int main ( int argc, char *argv[] )
     TwWindowSize ( screenWidth, screenHeight );
 
     glfwSetMouseButtonCallback ( ( GLFWmousebuttonfun ) TwEventMouseButtonGLFW );
-    glfwSetMousePosCallback ( ( GLFWmouseposfun ) TwEventMousePosGLFW );
-    glfwSetMouseWheelCallback ( ( GLFWmousewheelfun ) TwEventMouseWheelGLFW );
+    glfwSetMousePosCallback ( ( GLFWmouseposfun ) glfwMouseMoveEvent );
+    glfwSetMouseWheelCallback ( ( GLFWmousewheelfun ) glfwMouseWheelEvent );
     glfwSetKeyCallback ( ( GLFWkeyfun ) glfwKeyboardEvent );
     glfwSetCharCallback ( ( GLFWcharfun ) TwEventCharGLFW );
 
@@ -188,13 +315,16 @@ int main ( int argc, char *argv[] )
     TwAddVarCB ( bar, "Character", charaType, setChara, getChara, 0, "" );
 
     TwAddVarCB ( bar, "Sprite", TW_TYPE_INT32, setSpriteNumber, getSpriteNumber, 0,
-                 " label='Sprite' keyincr=PGDOWN keydecr=PGUP" );
+                 " label='Sprite' keydecr=PGUP keyincr=PGDOWN" );
+
+    TwAddVarCB ( bar, "Frame", TW_TYPE_INT32, setSpriteFrame, getSpriteFrame, 0,
+                 " label='Frame' keydecr=< keyincr=>" );
 
     TwAddVarCB ( bar, "Palette", TW_TYPE_INT32, setPaletteNumber, getPaletteNumber, 0,
-                 " label='Palette' min=1, max=36 keyincr=DOWN keydecr=UP" );
+                 " label='Palette' keydecr=UP keyincr=DOWN" );
 
     TwAddVarCB ( bar, "ColorNumber", TW_TYPE_INT32, setColorNumber, getColorNumber, 0,
-                 " label='Color Number' min=1, max=256 keyincr=RIGHT keydecr=LEFT" );
+                 " label='Color Number' keydecr=LEFT keyincr=RIGHT" );
 
     TwAddVarCB ( bar, "Original", TW_TYPE_STDSTRING, 0, getOriginalColor, 0,
                  " label='Original Color'" );
@@ -211,9 +341,19 @@ int main ( int argc, char *argv[] )
 
         // Render sprite
         glPushMatrix();
-        glTranslatef ( screenWidth * spriteX, screenHeight * spriteY, 0.0 );
+        glTranslated ( screenWidth * spriteX, screenHeight * spriteY, 0.0 );
+        glScaled ( zoom, zoom, 1.0 );
+
+        editor.highlightCurrentColor ( highlight && ( editor.ticker % 60 ) < 30 );
+
         editor.renderSprite();
-        editor.nextSpriteFrame();
+
+        if ( animate )
+        {
+            editor.nextSpriteSubFrame();
+            TwRefreshBar ( bar );
+        }
+
         glPopMatrix();
 
         // Render UI
@@ -221,7 +361,10 @@ int main ( int argc, char *argv[] )
 
         glfwSwapBuffers();
         Sleep ( 16 );
+        ++editor.ticker;
     }
+
+    saveEditorState();
 
     TwTerminate();
 

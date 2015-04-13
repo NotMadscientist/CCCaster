@@ -465,6 +465,16 @@ void MBAACC_FrameDisplay::command(FrameDisplayCommand command, const void *param
 		}
 		break;
 	case COMMAND_SUBFRAME_SET:
+		if (!param) {
+			break;
+		}
+		set_frame(0);
+		for (int i = 0; i < *(int *)param; ++i) {
+			m_subframe++;
+			if (m_subframe >= m_subframe_next) {
+				set_frame(m_frame+1);
+			}
+		}
 		break;
 	}
 }

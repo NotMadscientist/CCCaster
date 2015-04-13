@@ -1,6 +1,7 @@
 #include "PaletteEditor.h"
 #include "CharacterSelect.h"
 #include "StringUtils.h"
+#include "Algorithms.h"
 
 #include <direct.h>
 
@@ -32,7 +33,12 @@ void PaletteEditor::saveCurrentChara()
 void PaletteEditor::applyColor ( uint32_t color )
 {
     uint32_t& currColor = frameDisp.get_palette_data() [paletteNumber][colorNumber];
-    currColor = ( currColor & 0xFF000000 ) | ( color & 0xFFFFFF );
+    const uint32_t newColor = ( currColor & 0xFF000000 ) | ( SWAP_R_AND_B ( color ) & 0xFFFFFF );
+
+    if ( currColor == newColor )
+        return;
+
+    currColor = newColor;
     frameDisp.flush_texture();
 }
 
@@ -93,6 +99,8 @@ void PaletteEditor::setCurrentColor ( uint32_t color )
 
     saveCurrentChara();
     applyColor ( color );
+
+    ticker = 0;
 }
 
 void PaletteEditor::setCurrentColor ( string colorHex )
@@ -119,8 +127,6 @@ void PaletteEditor::clearCurrentColor()
 
 void PaletteEditor::highlightCurrentColor ( bool highlight )
 {
-    loadCurrentChara();
-
     uint32_t color = palMans[getChara()].get ( paletteNumber, colorNumber );
 
     if ( highlight )
@@ -136,6 +142,11 @@ int PaletteEditor::getPaletteNumber() const
 
 void PaletteEditor::setPaletteNumber ( int paletteNumber )
 {
+    if ( paletteNumber < 0 )
+        paletteNumber = 35;
+    else if ( paletteNumber > 35 )
+        paletteNumber = 0;
+
     frameDisp.command ( COMMAND_PALETTE_SET, &paletteNumber );
     this->paletteNumber = frameDisp.get_palette();
     loadCurrentChara();
@@ -148,7 +159,13 @@ int PaletteEditor::getColorNumber() const
 
 void PaletteEditor::setColorNumber ( int colorNumber )
 {
-    PaletteEditor::colorNumber = colorNumber;
+    if ( colorNumber < 0 )
+        this->colorNumber = 255;
+    else if ( colorNumber > 255 )
+        this->colorNumber = 0;
+    else
+        this->colorNumber = colorNumber;
+    ticker = 0;
 }
 
 int PaletteEditor::getChara()
@@ -192,7 +209,29 @@ void PaletteEditor::setSpriteNumber ( int spriteNumber )
     frameDisp.command ( COMMAND_SEQUENCE_SET, &spriteNumber );
 }
 
-void PaletteEditor::nextSpriteFrame()
+int PaletteEditor::getSpriteFrame()
+{
+    return frameDisp.get_subframe();
+}
+
+void PaletteEditor::setSpriteFrame ( int spriteFrame )
+{
+    if ( spriteFrame == frameDisp.get_subframe() - 1 )
+    {
+        frameDisp.command ( COMMAND_FRAME_PREV, 0 );
+        return;
+    }
+
+    if ( spriteFrame == frameDisp.get_subframe() + 1 )
+    {
+        frameDisp.command ( COMMAND_FRAME_NEXT, 0 );
+        return;
+    }
+
+    frameDisp.command ( COMMAND_SUBFRAME_SET, &spriteFrame );
+}
+
+void PaletteEditor::nextSpriteSubFrame()
 {
     frameDisp.command ( COMMAND_SUBFRAME_NEXT, 0 );
 }

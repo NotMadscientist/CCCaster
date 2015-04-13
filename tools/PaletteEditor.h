@@ -32,6 +32,9 @@ class PaletteEditor
 
 public:
 
+    uint32_t ticker = 0;
+
+
     bool init ( const std::string& palettesFolder, const std::string& dataFile );
 
     void free();
@@ -81,7 +84,14 @@ public:
 
     void setSpriteNumber ( int spriteNumber );
 
-    void nextSpriteFrame();
+
+    int getSpriteFrame();
+
+    void setSpriteFrame ( int spriteFrame );
+
+
+    void nextSpriteSubFrame();
+
 
     void renderSprite();
 

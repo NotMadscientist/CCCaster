@@ -8,37 +8,70 @@
 using namespace std;
 
 
+bool KeyValueStore::hasString ( const string& key ) const
+{
+    return ( types.find ( key ) != types.end() )
+           && ( types.find ( key )->second == Type::String )
+           && ( strings.find ( key ) != strings.end() );
+}
+
 string KeyValueStore::getString ( const string& key ) const
 {
     ASSERT ( types.find ( key ) != types.end() );
     ASSERT ( types.find ( key )->second == Type::String );
-    ASSERT ( settings.find ( key ) != settings.end() );
+    ASSERT ( strings.find ( key ) != strings.end() );
 
-    return settings.find ( key )->second;
+    return strings.find ( key )->second;
 }
 
-void KeyValueStore::putString ( const string& key, const string& str )
+void KeyValueStore::putString ( const string& key, const string& value )
 {
-    settings[key] = str;
     types[key] = Type::String;
+    strings[key] = value;
+}
+
+bool KeyValueStore::hasInteger ( const string& key ) const
+{
+    return ( types.find ( key ) != types.end() )
+           && ( types.find ( key )->second == Type::Integer )
+           && ( integers.find ( key ) != integers.end() );
 }
 
 int KeyValueStore::getInteger ( const string& key ) const
 {
     ASSERT ( types.find ( key ) != types.end() );
     ASSERT ( types.find ( key )->second == Type::Integer );
-    ASSERT ( settings.find ( key ) != settings.end() );
+    ASSERT ( integers.find ( key ) != integers.end() );
 
-    int i;
-    stringstream ss ( settings.find ( key )->second );
-    ss >> i;
-    return i;
+    return integers.find ( key )->second;
 }
 
-void KeyValueStore::setInteger ( const string& key, int i )
+void KeyValueStore::setInteger ( const string& key, int value )
 {
-    settings[key] = format ( i );
     types[key] = Type::Integer;
+    integers[key] = value;
+}
+
+bool KeyValueStore::hasDouble ( const string& key ) const
+{
+    return ( types.find ( key ) != types.end() )
+           && ( types.find ( key )->second == Type::Double )
+           && ( doubles.find ( key ) != doubles.end() );
+}
+
+double KeyValueStore::getDouble ( const string& key ) const
+{
+    ASSERT ( types.find ( key ) != types.end() );
+    ASSERT ( types.find ( key )->second == Type::Double );
+    ASSERT ( doubles.find ( key ) != doubles.end() );
+
+    return doubles.find ( key )->second;
+}
+
+void KeyValueStore::setDouble ( const string& key, double value )
+{
+    types[key] = Type::Double;
+    doubles[key] = value;
 }
 
 bool KeyValueStore::save ( const string& file ) const
@@ -48,11 +81,30 @@ bool KeyValueStore::save ( const string& file ) const
 
     if ( good )
     {
-        fout << endl;
-
-        for ( auto it = settings.cbegin(); it != settings.cend(); ++it )
+        for ( const auto& kv : types )
         {
-            fout << ( it == settings.cbegin() ? "" : "\n" ) << it->first << '=' << it->second << endl;
+            fout << "\n" << kv.first << '=';
+
+            switch ( kv.second )
+            {
+                case Type::String:
+                    fout << strings.find ( kv.first )->second;
+                    break;
+
+                case Type::Integer:
+                    fout << integers.find ( kv.first )->second;
+                    break;
+
+                case Type::Double:
+                    fout << doubles.find ( kv.first )->second;
+                    break;
+
+                default:
+                    ASSERT_IMPOSSIBLE;
+                    break;
+            }
+
+            fout << endl;
         }
 
         good = fout.good();
@@ -82,28 +134,19 @@ bool KeyValueStore::load ( const string& file )
 
             if ( it != types.end() )
             {
-                stringstream ss ( parts[1] );
-                ss >> ws;
-
                 switch ( it->second )
                 {
                     case Type::String:
-                    {
-                        string str;
-                        getline ( ss, str );
-                        putString ( it->first, str );
+                        putString ( it->first, parts[1] );
                         break;
-                    }
 
                     case Type::Integer:
-                    {
-                        int i;
-                        ss >> i;
-                        if ( ss.fail() )
-                            continue;
-                        setInteger ( it->first, i );
+                        setInteger ( it->first, lexical_cast<int> ( trimmed ( parts[1] ) ) );
                         break;
-                    }
+
+                    case Type::Double:
+                        setDouble ( it->first, lexical_cast<double> ( trimmed ( parts[1] ) ) );
+                        break;
 
                     default:
                         break;

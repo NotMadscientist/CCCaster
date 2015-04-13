@@ -19,4 +19,4 @@ gmon.out
 profile*.txt
 rollback.*
 GRP
-palettes
+palettes*

@@ -215,7 +215,8 @@ tools/$(GENERATOR): tools/Generator.cpp $(GENERATOR_LIB_OBJECTS)
 	@echo
 
 
-PALETTES_SRC = tools/Palettes.cpp tools/PaletteEditor.cpp PaletteManager.cpp CharacterSelect.cpp lib/StringUtils.cpp
+PALETTES_SRC = tools/Palettes.cpp tools/PaletteEditor.cpp PaletteManager.cpp CharacterSelect.cpp
+PALETTES_SRC += lib/StringUtils.cpp lib/KeyValueStore.cpp
 
 FRAMEDISPLAY_SRC = $(wildcard 3rdparty/framedisplay/*.cc)
 FRAMEDISPLAY_OBJECTS = $(FRAMEDISPLAY_SRC:.cc=.o)
@@ -224,7 +225,9 @@ FRAMEDISPLAY_INCLUDES = -I$(CURDIR) -I$(CURDIR)/lib -I$(CURDIR)/3rdparty/framedi
 FRAMEDISPLAY_INCLUDES += -I$(CURDIR)/3rdparty/libz -I$(CURDIR)/3rdparty/glfw
 FRAMEDISPLAY_INCLUDES += -I"$(CURDIR)/3rdparty/AntTweakBar/include" -I$(OPENGL_HEADERS)
 
-FRAMEDISPLAY_CC_FLAGS = -s -Os -Ofast -fno-rtti -DPALETTES_FOLDER='"$(PALETTES_FOLDER)\\"' -DDISABLE_SERIALIZATION
+# FRAMEDISPLAY_CC_FLAGS = -ggdb3 -O0 -fno-inline -D_GLIBCXX_DEBUG -DDEBUG
+FRAMEDISPLAY_CC_FLAGS = -s -Os -Ofast -fno-rtti
+FRAMEDISPLAY_CC_FLAGS += -DDISABLE_LOGGING -DDISABLE_SERIALIZATION -DPALETTES_FOLDER='"$(PALETTES_FOLDER)\\"'
 
 FRAMEDISPLAY_LD_FLAGS = -L$(CURDIR)/3rdparty/libpng -L$(CURDIR)/3rdparty/libz -L"$(CURDIR)/3rdparty/AntTweakBar/lib"
 FRAMEDISPLAY_LD_FLAGS += -L$(CURDIR)/3rdparty/glfw
