@@ -5607,7 +5607,7 @@ bool CTwBar::MouseMotion(int _X, int _Y)
             }
             else if( InBar && m_Resizable && !m_IsPopupList && _X>=m_PosX && _X<m_PosX+m_Font->m_CharHeight && _Y>=m_PosY && _Y<m_PosY+m_Font->m_CharHeight )
                 ANT_SET_CURSOR(TopLeft);
-            else if( InBar && !m_IsPopupList && _X>=m_PosX && _X<m_PosX+m_Font->m_CharHeight && _Y>=m_PosY+m_Height-m_Font->m_CharHeight && _Y<m_PosY+m_Height )
+            else if( InBar && m_Resizable && !m_IsPopupList && _X>=m_PosX && _X<m_PosX+m_Font->m_CharHeight && _Y>=m_PosY+m_Height-m_Font->m_CharHeight && _Y<m_PosY+m_Height )
                 ANT_SET_CURSOR(BottomLeft);
             else if( InBar && m_Resizable && !m_IsPopupList && _X>=m_PosX+m_Width-m_Font->m_CharHeight && _X<m_PosX+m_Width && _Y>=m_PosY && _Y<m_PosY+m_Font->m_CharHeight )
                 ANT_SET_CURSOR(TopRight);
