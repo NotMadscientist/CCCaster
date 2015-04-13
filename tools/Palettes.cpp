@@ -33,9 +33,12 @@ using namespace std;
 
 
 static int screenWidth = 640, screenHeight = 480;
+
+static bool animation = true, highlight = true;
+
 static double spriteX = DEFAULT_SPRITE_X, spriteY = DEFAULT_SPRITE_Y;
+
 static double zoom = 1.0;
-static bool animate = true, highlight = true;
 
 static KeyValueStore config;
 
@@ -76,10 +79,25 @@ static void TW_CALL setCurrentColor ( const void *value, void *clientData )
         editor.setCurrentColor ( * ( string * ) value );
 }
 
+static void TW_CALL getHighlight ( void *value, void *clientData )
+{
+    * ( bool * ) value = highlight;
+}
+
+static void TW_CALL setHighlight ( const void *value, void *clientData )
+{
+    highlight = * ( bool * ) value;
+
+    if ( highlight )
+        editor.ticker = 0;
+}
+
 static void cachedEditorState()
 {
     config.setInteger ( "screenWidth", screenWidth );
     config.setInteger ( "screenHeight", screenHeight );
+    config.setInteger ( "animation", animation );
+    config.setInteger ( "highlight", highlight );
 
     config.setDouble ( "spriteX", spriteX );
     config.setDouble ( "spriteY", spriteY );
@@ -100,6 +118,8 @@ static void loadEditorState()
 
     screenWidth  = config.getInteger ( "screenWidth" );
     screenHeight = config.getInteger ( "screenHeight" );
+    animation    = config.getInteger ( "animation" );
+    highlight    = config.getInteger ( "highlight" );
 
     spriteX      = config.getDouble ( "spriteX" );
     spriteY      = config.getDouble ( "spriteY" );
@@ -136,15 +156,6 @@ int GLFWCALL glfwKeyboardEvent ( int key, int action )
             case GLFW_KEY_DEL:
                 editor.clearCurrentColor();
                 TwRefreshBar ( bar );
-                return 1;
-
-            case GLFW_KEY_F1:
-                animate = !animate;
-                return 1;
-
-            case GLFW_KEY_F2:
-                highlight = !highlight;
-                editor.ticker = 0;
                 return 1;
 
             default:
@@ -206,7 +217,6 @@ int GLFWCALL glfwMouseWheelEvent ( int wheelPos )
     return handled;
 }
 
-
 void GLFWCALL glfwResizeWindow ( int width, int height )
 {
     glViewport ( 0, 0, width, height );
@@ -220,7 +230,6 @@ void GLFWCALL glfwResizeWindow ( int width, int height )
     screenWidth = width;
     screenHeight = height;
 }
-
 
 void GLFWCALL glfwRefreshWindow()
 {
@@ -300,8 +309,8 @@ int main ( int argc, char *argv[] )
 
     TwDefine ( " GLOBAL fontsize=3 fontstyle=default fontresizable=false " );
 
-    bar = TwNewBar ( "Main" );
-    TwDefine ( " Main label='Main Options' size='200 320' valueswidth=60"
+    bar = TwNewBar ( "main" );
+    TwDefine ( " main label='Main Options' position='16 16' size='200 320' valueswidth=60"
                " resizable=false movable=false iconifiable=false " );
 
     vector<TwEnumVal> charas;
@@ -312,25 +321,34 @@ int main ( int argc, char *argv[] )
     }
 
     TwType charaType = TwDefineEnum ( "CharaType", &charas[0], charas.size() );
-    TwAddVarCB ( bar, "Character", charaType, setChara, getChara, 0, "" );
+    TwAddVarCB ( bar, "character", charaType, setChara, getChara, 0,
+                 " label='Character' " );
 
-    TwAddVarCB ( bar, "Sprite", TW_TYPE_INT32, setSpriteNumber, getSpriteNumber, 0,
-                 " label='Sprite' keydecr=PGUP keyincr=PGDOWN" );
+    TwAddVarCB ( bar, "spriteNumber", TW_TYPE_INT32, setSpriteNumber, getSpriteNumber, 0,
+                 " label='Sprite' keydecr=PGUP keyincr=PGDOWN " );
 
-    TwAddVarCB ( bar, "Frame", TW_TYPE_INT32, setSpriteFrame, getSpriteFrame, 0,
-                 " label='Frame' keydecr=< keyincr=>" );
+    TwAddVarCB ( bar, "spriteFrame", TW_TYPE_INT32, setSpriteFrame, getSpriteFrame, 0,
+                 " label='Frame' keydecr=[ keyincr=] " );
 
-    TwAddVarCB ( bar, "Palette", TW_TYPE_INT32, setPaletteNumber, getPaletteNumber, 0,
-                 " label='Palette' keydecr=UP keyincr=DOWN" );
+    TwAddVarCB ( bar, "paletteNumber", TW_TYPE_INT32, setPaletteNumber, getPaletteNumber, 0,
+                 " label='Palette' keydecr=UP keyincr=DOWN " );
 
-    TwAddVarCB ( bar, "ColorNumber", TW_TYPE_INT32, setColorNumber, getColorNumber, 0,
-                 " label='Color Number' keydecr=LEFT keyincr=RIGHT" );
+    TwAddVarCB ( bar, "colorNumber", TW_TYPE_INT32, setColorNumber, getColorNumber, 0,
+                 " label='Color Number' keydecr=LEFT keyincr=RIGHT " );
 
-    TwAddVarCB ( bar, "Original", TW_TYPE_STDSTRING, 0, getOriginalColor, 0,
-                 " label='Original Color'" );
+    TwAddVarCB ( bar, "originalColor", TW_TYPE_STDSTRING, 0, getOriginalColor, 0,
+                 " label='Original Color' " );
 
-    TwAddVarCB ( bar, "Color", TW_TYPE_STDSTRING, setCurrentColor, getCurrentColor, 0,
-                 " label='Current Color' key=#" );
+    TwAddVarCB ( bar, "currentColor", TW_TYPE_STDSTRING, setCurrentColor, getCurrentColor, 0,
+                 " label='Current Color' key=# " );
+
+    TwAddButton ( bar, "blank1", 0, 0, " label=' ' " );
+
+    TwAddVarRW ( bar, "animation", TW_TYPE_BOOLCPP, &animation,
+                 " label='Animation' key=F1 " );
+
+    TwAddVarCB ( bar, "highlight", TW_TYPE_BOOLCPP, setHighlight, getHighlight, 0,
+                 " label='Highlight' key=F2 " );
 
     // Main loop
     while ( glfwGetWindowParam ( GLFW_OPENED ) )
@@ -348,7 +366,7 @@ int main ( int argc, char *argv[] )
 
         editor.renderSprite();
 
-        if ( animate )
+        if ( animation )
         {
             editor.nextSpriteSubFrame();
             TwRefreshBar ( bar );
