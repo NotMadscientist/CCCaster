@@ -70,6 +70,22 @@ void PaletteEditor::free()
     frameDisp.free();
 }
 
+void PaletteEditor::save ( int paletteNumber )
+{
+    if ( paletteNumber >= 0 && paletteNumber != this->paletteNumber )
+    {
+        for ( int i = 0; i < 256; ++i )
+        {
+            palMans[getChara()].set ( paletteNumber, i, palMans[getChara()].get ( this->paletteNumber, i ) );
+        }
+
+        palMans[getChara()].apply ( frameDisp.get_palette_data() );
+        frameDisp.flush_texture();
+    }
+
+    saveCurrentChara();
+}
+
 uint32_t PaletteEditor::getOriginalColor()
 {
     loadCurrentChara();
@@ -97,7 +113,6 @@ void PaletteEditor::setCurrentColor ( uint32_t color )
     loadCurrentChara();
     palMans[getChara()].set ( paletteNumber, colorNumber, color );
 
-    saveCurrentChara();
     applyColor ( color );
 
     ticker = 0;
@@ -121,7 +136,6 @@ void PaletteEditor::clearCurrentColor()
     loadCurrentChara();
     palMans[getChara()].clear ( paletteNumber, colorNumber );
 
-    saveCurrentChara();
     applyColor ( palMans[getChara()].get ( paletteNumber, colorNumber ) );
 }
 

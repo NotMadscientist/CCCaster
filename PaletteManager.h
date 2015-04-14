@@ -28,6 +28,8 @@ class PaletteManager
 
     std::array<std::array<uint32_t, 256>, 36> originals;
 
+    void optimize();
+
 public:
 
     static uint32_t computeHighlightColor ( uint32_t color );
@@ -49,7 +51,7 @@ public:
 
     bool empty() const;
 
-    bool save ( const std::string& folder, const std::string& charaName ) const;
+    bool save ( const std::string& folder, const std::string& charaName );
     bool load ( const std::string& folder, const std::string& charaName );
 
 #ifndef DISABLE_SERIALIZATION

@@ -40,6 +40,9 @@ public:
     void free();
 
 
+    void save ( int palettteNumber = -1 );
+
+
     uint32_t getOriginalColor();
 
     std::string getOriginalColorHex();

@@ -238,6 +238,63 @@ void GLFWCALL glfwRefreshWindow()
     glfwResizeWindow ( width, height );
 }
 
+
+static TwBar *savePrompt = 0;
+
+static int targetPalette = 0;
+
+
+static void TW_CALL getTargetPalette ( void *value, void *clientData )
+{
+    * ( int * ) value = targetPalette + 1;
+}
+
+static void TW_CALL setTargetPalette ( const void *value, void *clientData )
+{
+    targetPalette = * ( int * ) value - 1;
+}
+
+static void TW_CALL savePromptSaveButton ( void *clientData )
+{
+    editor.save ( targetPalette );
+
+    TwDeleteBar ( savePrompt );
+    savePrompt = 0;
+}
+
+static void TW_CALL savePromptCancelButtom ( void *clientData )
+{
+    TwDeleteBar ( savePrompt );
+    savePrompt = 0;
+}
+
+static void TW_CALL saveCurrentColorPrompt ( void *clientData )
+{
+    if ( savePrompt )
+    {
+        TwDefine ( " savePrompt iconified=false " );
+        return;
+    }
+
+    targetPalette = editor.getPaletteNumber();
+
+    savePrompt = TwNewBar ( "savePrompt" );
+    TwDefine ( " savePrompt label='Save Current Palette To' position='16 352' size='200 112' color='15 97 127' alpha=64"
+               " resizable=false " );
+
+    TwAddVarCB ( savePrompt, "targetPalette", TW_TYPE_INT32, setTargetPalette, getTargetPalette, 0,
+                 " label='Palette' " );
+
+    TwAddButton ( savePrompt, "blankSave", 0, 0, " label=' ' " );
+
+    TwAddButton ( savePrompt, "saveButton", savePromptSaveButton, 0,
+                  " label='Save' " );
+
+    TwAddButton ( savePrompt, "cancelButton", savePromptCancelButtom, 0,
+                  " label='Cancel' " );
+
+}
+
 int main ( int argc, char *argv[] )
 {
     // Init PaletteEditor
@@ -349,6 +406,10 @@ int main ( int argc, char *argv[] )
 
     TwAddVarCB ( bar, "highlight", TW_TYPE_BOOLCPP, setHighlight, getHighlight, 0,
                  " label='Highlight' key=F2 " );
+
+    TwAddButton ( bar, "blank2", 0, 0, " label=' ' " );
+
+    TwAddButton ( bar, "save", saveCurrentColorPrompt, 0, " label='Save' key=CTRL+s " );
 
     // Main loop
     while ( glfwGetWindowParam ( GLFW_OPENED ) )

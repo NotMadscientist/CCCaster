@@ -96,7 +96,7 @@ uint32_t PaletteManager::getOriginal ( uint32_t paletteNumber, uint32_t colorNum
 
 uint32_t PaletteManager::get ( uint32_t paletteNumber, uint32_t colorNumber ) const
 {
-    auto it = palettes.find ( paletteNumber );
+    const auto it = palettes.find ( paletteNumber );
 
     if ( it != palettes.end() )
     {
@@ -158,8 +158,44 @@ bool PaletteManager::empty() const
     return palettes.empty();
 }
 
-bool PaletteManager::save ( const string& folder, const string& charaName ) const
+void PaletteManager::optimize()
 {
+    for ( uint32_t i = 0; i < 36; ++i )
+    {
+        const auto it = palettes.find ( i );
+
+        if ( it == palettes.end() )
+            continue;
+
+        for ( uint32_t j = 0; j < 256; ++j )
+        {
+            const auto jt = it->second.find ( j );
+
+            if ( jt == it->second.end() )
+                continue;
+
+            if ( ( 0xFFFFFF & jt->second ) != ( 0xFFFFFF & originals[i][j] ) )
+                continue;
+
+            it->second.erase ( j );
+
+            if ( it->second.empty() )
+            {
+                palettes.erase ( i );
+                break;
+            }
+        }
+    }
+
+#ifndef DISABLE_SERIALIZATION
+    invalidate();
+#endif
+}
+
+bool PaletteManager::save ( const string& folder, const string& charaName )
+{
+    optimize();
+
     ofstream fout ( ( folder + charaName + PALETTES_FILE_SUFFIX ).c_str() );
     bool good = fout.good();
 
@@ -230,6 +266,8 @@ bool PaletteManager::load ( const string& folder, const string& charaName )
 
             palettes[paletteNumber][colorNumber] = color;
         }
+
+        optimize();
 
 #ifndef DISABLE_SERIALIZATION
         invalidate();
