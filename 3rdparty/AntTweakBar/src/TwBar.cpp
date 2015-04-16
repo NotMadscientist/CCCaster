@@ -2240,8 +2240,7 @@ void CTwVarAtom::Increment(int _Step)
                     m_SetCallback(&v, m_ClientData);
             }
         }
-        else
-            fprintf(stderr, "CTwVarAtom::Increment : unknown or unimplemented type\n");
+        break;
     }
 }
 
