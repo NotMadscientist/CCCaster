@@ -2055,7 +2055,8 @@ extern "C" void callback()
         // Joystick must be deinitialized on the main thread it was initialized
         ControllerManager::get().deinitialize();
         deinitialize();
-        exit ( 0 );
+
+        *CC_ALIVE_FLAG_ADDR = 0;
     }
 }
 
