@@ -113,7 +113,10 @@ static void loadingStateColorCb2 ( uint32_t *singlePaletteData )
 
     if ( hasTeam1 || hasTeam2 )
     {
-        const uint32_t player = ( numLoadedColors % 2 ) + 1;
+        uint32_t player = ( numLoadedColors % 2 ) + 1;
+
+        if ( ! hasTeam1 && hasTeam2 )
+            player = ( numLoadedColors < 1 ? 1 : 2 );
 
         uint32_t chara = ( player == 1 ? chara1 : chara2 );
 
@@ -128,7 +131,7 @@ static void loadingStateColorCb2 ( uint32_t *singlePaletteData )
             * ( player == 1 ? CC_P1_COLOR_SELECTOR_ADDR : CC_P2_COLOR_SELECTOR_ADDR ),
             singlePaletteData );
     }
-    else
+    else if ( numLoadedColors < 2 )
     {
         colorLoadCallback (
             numLoadedColors + 1,
