@@ -57,7 +57,7 @@ void Socket::disconnect()
     state = State::Disconnected;
     fd = 0;
     freeBuffer();
-    packetLoss = checkSumFail = 0;
+    packetLoss = hashFailRate = 0;
 }
 
 void Socket::init()

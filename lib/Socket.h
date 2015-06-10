@@ -106,8 +106,8 @@ protected:
     // Packet loss percentage for testing purposes
     uint8_t packetLoss = 0;
 
-    // Check sum fail percentage for testing purposes
-    uint8_t checkSumFail = 0;
+    // Hash failure percentage for testing purposes
+    uint8_t hashFailRate = 0;
 
     // TCP event callbacks
     virtual void acceptEvent() {}
@@ -177,7 +177,7 @@ public:
     void setPacketLoss ( uint8_t percentage ) { packetLoss = percentage; }
 
     // Set the check sum fail percentage for testing purposes
-    void setCheckSumFail ( uint8_t percentage ) { checkSumFail = percentage; }
+    void setCheckSumFail ( uint8_t percentage ) { hashFailRate = percentage; }
 
     // Cast this to another socket type
     TcpSocket& getAsTCP();

@@ -12,8 +12,8 @@ using namespace cereal;
 // Useful options for debugging and testing
 // #define LOG_PROTOCOL
 // #define FORCE_COMPRESSION
-// #define DISABLE_UPDATE_MD5
-// #define DISABLE_CHECK_MD5
+// #define DISABLE_UPDATE_HASH
+// #define DISABLE_CHECK_HASH
 
 
 /* Message binary structure:
@@ -27,7 +27,7 @@ Compressed:
     ...     compressed data
             ========================
             ...     raw data
-            16 byte MD5 checksum
+            16 byte hash
             ========================
 
 Not compressed:
@@ -36,7 +36,7 @@ Not compressed:
     1 byte  compression level
     ========================
     ...     raw data
-    16 byte MD5 checksum
+    16 byte hash
     ========================
 
 */
@@ -85,24 +85,24 @@ string Protocol::encode ( const MsgPtr& msg )
     // Encode actual message data
     msg->save ( archive );
 
-#ifndef DISABLE_UPDATE_MD5
-    // Update the MD5
-    if ( msg->md5empty )
+#ifndef DISABLE_UPDATE_HASH
+    // Update the hash
+    if ( msg->hashValid )
     {
-        getMD5 ( ss.str(), msg->md5 );
-        msg->md5empty = false;
+        getMD5 ( ss.str(), &msg->hash[0] );
+        msg->hashValid = false;
 
 #ifdef LOG_PROTOCOL
         LOG ( "%s", msg->getMsgType() );
         if ( ss.str().size() <= 256 )
             LOG ( "data=[ %s ]", formatAsHex ( ss.str() ) );
-        LOG ( "md5=[ %s ]", formatAsHex ( msg->md5, sizeof ( msg->md5 ) ) );
+        LOG ( "hash=[ %s ]", formatAsHex ( msg->hash, msg->hash.size() ) );
 #endif
     }
-#endif // NOT DISABLE_UPDATE_MD5
+#endif // NOT DISABLE_UPDATE_HASH
 
-    // Encode MD5 at the end of message data
-    archive ( msg->md5 );
+    // Encode hash at the end of message data
+    archive ( msg->hash );
 
     // Encode with compression
     return encodeStageTwo ( msg, ss.str() );
@@ -160,9 +160,9 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
         // Decode actual message data
         msg->load ( archive );
 
-        // Decode MD5 at end of message data
-        archive ( msg->md5 );
-        msg->md5empty = false;
+        // Decode hash at end of message data
+        archive ( msg->hash );
+        msg->hashValid = false;
     }
     catch ( const cereal::Exception& exc )
     {
@@ -204,21 +204,21 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
         dataSize = ( data.size() - remaining );
     }
 
-#ifndef DISABLE_UPDATE_MD5
-    // Check if the MD5 is correct
-    if ( !checkMD5 ( &data[0], dataSize - sizeof ( msg->md5 ), msg->md5 ) )
+#ifndef DISABLE_UPDATE_HASH
+    // Check if the hash is correct
+    if ( !checkMD5 ( &data[0], dataSize - msg->hash.size(), &msg->hash[0] ) )
     {
 #ifdef LOG_PROTOCOL
-        LOG ( "MD5 checksum failed for %s", type );
-        LOG ( "data=[ %s ]", formatAsHex ( &data[0], dataSize - sizeof ( msg->md5 ) ) );
-        LOG ( "md5     =[ %s ]", formatAsHex ( msg->md5, sizeof ( msg->md5 ) ) );
-        char md5[sizeof ( msg->md5 )];
-        getMD5 ( &data[0], dataSize - sizeof ( msg->md5 ), md5 );
-        LOG ( "expected=[ %s ]", formatAsHex ( md5, sizeof ( msg->md5 ) ) );
+        LOG ( "hash check failed for %s", type );
+        LOG ( "data=[ %s ]", formatAsHex ( &data[0], dataSize - msg->hash.size() ) );
+        LOG ( "hash    =[ %s ]", formatAsHex ( msg->hash, msg->hash.size() ) );
+        char hash[msg->hash.size()];
+        gethash ( &data[0], dataSize - msg->hash.size(), hash );
+        LOG ( "expected=[ %s ]", formatAsHex ( hash, msg->hash.size() ) );
 #endif
         return NullMsg;
     }
-#endif // NOT DISABLE_UPDATE_MD5
+#endif // NOT DISABLE_UPDATE_HASH
 
     return msg;
 }

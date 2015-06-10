@@ -104,7 +104,7 @@ struct Serializable
     template<typename T> const T& getAs() const { return *static_cast<const T *> ( this ); }
 
     // Invalidate any cached data
-    virtual void invalidate() const { md5empty = true; }
+    virtual void invalidate() const { hashValid = true; }
 
     // Return a string representation of this message, defaults to the message type
     virtual std::string str() const { std::stringstream ss; ss << getMsgType(); return ss.str(); }
@@ -114,9 +114,11 @@ struct Serializable
 
 private:
 
-    // Cached MD5 data
-    mutable char md5[16];
-    mutable bool md5empty = true;
+    typedef std::array<char, 16> HashType;
+
+    // Cached hash data
+    mutable HashType hash;
+    mutable bool hashValid = true;
 
     // Serialize and deserialize the base type
     virtual void saveBase ( cereal::BinaryOutputArchive& ar ) const {}
@@ -127,7 +129,7 @@ private:
     friend struct SerializableSequence;
 
 #ifndef RELEASE
-    // Allow UdpSocket access to munge the checksum for testing purposes
+    // Allow UdpSocket access to munge the hash for testing purposes
     friend class UdpSocket;
 #endif
 };
