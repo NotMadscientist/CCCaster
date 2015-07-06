@@ -4,7 +4,9 @@
 #include "Timer.hpp"
 
 
-class TcpSocket : public Socket, private Timer::Owner
+class TcpSocket
+    : public Socket
+    , private Timer::Owner
 {
 public:
 

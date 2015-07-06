@@ -14,6 +14,8 @@ for server in $servers; do
 
     scp cccaster*.zip root@$server:/var/www/html
 
+    scp ChangeLog.txt root@$server:/var/www/html
+
 done
 
 for server in $servers; do

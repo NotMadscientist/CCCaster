@@ -15,7 +15,9 @@ struct UdpControl : public SerializableSequence
 };
 
 
-class UdpSocket : public Socket, private GoBackN::Owner
+class UdpSocket
+    : public Socket
+    , private GoBackN::Owner
 {
 public:
 

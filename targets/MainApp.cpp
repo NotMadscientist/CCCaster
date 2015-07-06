@@ -72,12 +72,12 @@ static void setClipboard ( const string& str )
 }
 
 struct MainApp
-        : public Main
-        , public Pinger::Owner
-        , public ExternalIpAddress::Owner
-        , public KeyboardManager::Owner
-        , public Thread
-        , public SpectatorManager
+    : public Main
+    , public Pinger::Owner
+    , public ExternalIpAddress::Owner
+    , public KeyboardManager::Owner
+    , public Thread
+    , public SpectatorManager
 {
     IpAddrPort originalAddress;
 

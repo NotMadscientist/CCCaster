@@ -91,11 +91,10 @@ rm -f $DIR/tmp*
 
 
 # Check if we should regenerate protocol
-if [ "$SHOULD_REGEN" = "1" ] || [ ! -f "$DIR/Protocol.includes.hpp" ]      \
-                             || [ ! -f "$DIR/Protocol.clone.hpp" ]         \
-                             || [ ! -f "$DIR/Protocol.types.hpp" ]         \
-                             || [ ! -f "$DIR/Protocol.strings.hpp" ]       \
-                             || [ ! -f "$DIR/Protocol.decode.hpp" ]; then
+if [ "$SHOULD_REGEN" = "1" ] || [ ! -f "$DIR/Protocol.include.hpp" ]       \
+                             || [ ! -f "$DIR/Protocol.inline.hpp" ]        \
+                             || [ ! -f "$DIR/Protocol.switchdecode.hpp" ]  \
+                             || [ ! -f "$DIR/Protocol.switchstring.hpp" ]; then
 
   echo Regenerating protocol
 
@@ -104,7 +103,9 @@ if [ "$SHOULD_REGEN" = "1" ] || [ ! -f "$DIR/Protocol.includes.hpp" ]      \
       's/^(.+\.hpp):[a-z]+ ([A-Za-z0-9]+) .+$$/#include "\1"/' \
     | sort \
     | uniq \
-    > $DIR/Protocol.includes.hpp
+    > $DIR/Protocol.include.hpp
+
+  rm -f $DIR/Protocol.inline.hpp
 
   grep --extended-regexp "$REGEX" "$@" | grep --invert-match "no-clone" \
     | sed --regexp-extended \
@@ -112,25 +113,27 @@ if [ "$SHOULD_REGEN" = "1" ] || [ ! -f "$DIR/Protocol.includes.hpp" ]      \
 MsgPtr \2::clone() const { MsgPtr msg ( new \2 ( *this ) ); msg->invalidate(); return msg; }/' \
     | sort \
     | uniq \
-    > $DIR/Protocol.clone.hpp
+    >> $DIR/Protocol.inline.hpp
+
+  echo '' >> $DIR/Protocol.inline.hpp
 
   grep --extended-regexp "$REGEX" "$@" | grep --invert-match "no-type" \
     | sed --regexp-extended \
       's/^(.+\.hpp):[a-z]+ ([A-Za-z0-9]+) .+$$/MsgType \2::getMsgType() const { return MsgType::\2; }/' \
     | sort \
     | uniq \
-    > $DIR/Protocol.types.hpp
-
-  grep --extended-regexp "$REGEX" "$@" \
-    | sed --regexp-extended \
-      's/^.+\.hpp:[a-z]+ ([A-Za-z0-9]+) .+$$/case MsgType::\1: return ( os << "\1" );/' \
-    | sort \
-    > $DIR/Protocol.strings.hpp
+    >> $DIR/Protocol.inline.hpp
 
   grep --extended-regexp "$REGEX" "$@" \
     | sed --regexp-extended \
       's/^.+\.hpp:[a-z]+ ([A-Za-z0-9]+) .+$$/case MsgType::\1: msg.reset ( new \1() ); break;/' \
     | sort \
-    > $DIR/Protocol.decode.hpp
+    > $DIR/Protocol.switchdecode.hpp
+
+  grep --extended-regexp "$REGEX" "$@" \
+    | sed --regexp-extended \
+      's/^.+\.hpp:[a-z]+ ([A-Za-z0-9]+) .+$$/case MsgType::\1: return ( os << "\1" );/' \
+    | sort \
+    > $DIR/Protocol.switchstring.hpp
 
 fi

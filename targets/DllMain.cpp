@@ -93,11 +93,11 @@ bool stopping = false;
 
 
 struct DllMain
-        : public Main
-        , public RefChangeMonitor<Variable, uint32_t>::Owner
-        , public PtrToRefChangeMonitor<Variable, uint32_t>::Owner
-        , public SpectatorManager
-        , public DllControllerManager
+    : public Main
+    , public RefChangeMonitor<Variable, uint32_t>::Owner
+    , public PtrToRefChangeMonitor<Variable, uint32_t>::Owner
+    , public SpectatorManager
+    , public DllControllerManager
 {
     // NetplayManager instance
     NetplayManager netMan;

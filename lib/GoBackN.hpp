@@ -41,7 +41,7 @@ struct SplitMessage : public SerializableSequence
 };
 
 
-class GoBackN : private Timer::Owner, public SerializableSequence
+class GoBackN : public SerializableSequence, private Timer::Owner
 {
 public:
 

@@ -9,7 +9,9 @@
 #define DEFAULT_GET_TIMEOUT ( 5000 )
 
 
-class HttpGet : private Socket::Owner, private Timer::Owner
+class HttpGet
+    : private Socket::Owner
+    , private Timer::Owner
 {
 public:
 

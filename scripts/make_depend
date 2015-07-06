@@ -1,6 +1,6 @@
 #!/bin/sh
 
-files="*.cpp *.hpp tools/*.cpp targets/*.cpp targets/*.hpp lib/*.cpp lib/*.hpp tests/*.cpp tests/*.hpp"
+files="netplay/*.cpp netplay/*.hpp tools/*.cpp targets/*.cpp targets/*.hpp lib/*.cpp lib/*.hpp tests/*.cpp tests/*.hpp"
 
 branch=`git rev-parse --abbrev-ref HEAD`
 
@@ -17,7 +17,7 @@ if [ $? -ne 0 ]; then
 
     echo "Regenerating .depend_$branch"
 
-    $1 $2 -std=c++11 -MM *.cpp         *.hpp         > tmp_depend1 & \
+    $1 $2 -std=c++11 -MM netplay/*.cpp netplay/*.hpp > tmp_depend1 & \
     $1 $2 -std=c++11 -MM tools/*.cpp                 > tmp_depend2 & \
     $1 $2 -std=c++11 -MM targets/*.cpp targets/*.hpp > tmp_depend3 & \
     $1 $2 -std=c++11 -MM lib/*.cpp     lib/*.hpp     > tmp_depend4 & \
@@ -28,7 +28,7 @@ if [ $? -ne 0 ]; then
     cp /dev/null .depend_$branch
 
     for type in build_debug_$branch build_release_$branch build_logging_$branch; do
-        sed -r "s/^([A-Za-z.]+\.o\: )/$type\/\1/"          tmp_depend1 >> .depend_$branch
+        sed -r "s/^([A-Za-z.]+\.o\: )/$type\/netplay\/\1/" tmp_depend1 >> .depend_$branch
         sed -r "s/^([A-Za-z.]+\.o\: )/$type\/tools\/\1/"   tmp_depend2 >> .depend_$branch
         sed -r "s/^([A-Za-z.]+\.o\: )/$type\/targets\/\1/" tmp_depend3 >> .depend_$branch
         sed -r "s/^([A-Za-z.]+\.o\: )/$type\/lib\/\1/"     tmp_depend4 >> .depend_$branch

@@ -8,7 +8,10 @@
 
 // Socket class that tries to listen / connect over the desired protocol, but automatically falls back
 // to using UDP tunnel if the initial protocol fails. Queries a remote server for UDP tunnel data.
-class SmartSocket : public Socket, public Socket::Owner, public Timer::Owner
+class SmartSocket
+    : public Socket
+    , private Socket::Owner
+    , private Timer::Owner
 {
 public:
     // Listen for connections on the given port.

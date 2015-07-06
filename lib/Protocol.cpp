@@ -1,7 +1,6 @@
 #include "Protocol.hpp"
-#include "Protocol.includes.hpp"
-#include "Protocol.clone.hpp"
-#include "Protocol.types.hpp"
+#include "Protocol.include.hpp"
+#include "Protocol.inline.hpp"
 #include "Compression.hpp"
 #include "Logger.hpp"
 #include "Enum.hpp"
@@ -147,7 +146,7 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
         // Construct the correct message type
         switch ( type )
         {
-#include "Protocol.decode.hpp"
+#include "Protocol.switchdecode.hpp"
 
             default:
                 consumed = 0;
@@ -337,7 +336,7 @@ ostream& operator<< ( ostream& os, MsgType type )
 {
     switch ( type )
     {
-#include "Protocol.strings.hpp"
+#include "Protocol.switchstring.hpp"
 
         default:
             break;
