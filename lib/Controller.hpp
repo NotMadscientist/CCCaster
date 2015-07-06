@@ -162,7 +162,7 @@ struct JoystickInfo
 };
 
 
-class Controller : public KeyboardManager::Owner
+class Controller : private KeyboardManager::Owner
 {
 public:
 
@@ -172,74 +172,6 @@ public:
     };
 
     Owner *owner = 0;
-
-private:
-
-    // Enum type for keyboard controller
-    enum KeyboardEnum { Keyboard };
-
-    // Original controller name
-    const std::string name;
-
-    // Controller states
-    uint32_t prevState = 0, state = 0;
-
-    // Keyboard mappings
-    KeyboardMappings keyboardMappings;
-
-    // Joystick mappings
-    JoystickMappings joystickMappings;
-
-    struct JoystickInternalState
-    {
-        // Joystick information
-        const JoystickInfo info;
-
-        // Joystick states
-        JoystickState prevState, state;
-
-        JoystickInternalState() {}
-        JoystickInternalState ( const JoystickInfo& info ) : info ( info ) {}
-    };
-
-    JoystickInternalState joystick;
-
-    struct MappingInternalState
-    {
-        // The current key to map to an event
-        uint32_t key = 0;
-
-        // Mappings options
-        uint8_t options = 0;
-
-        // The current active joystick state
-        JoystickState active;
-    };
-
-    MappingInternalState mapping;
-
-    // Main mutex
-    Mutex mutex;
-
-    // Keyboard event callback
-    void keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown );
-
-    // Joystick event callbacks
-    void joystickAxisEvent ( uint8_t axis, uint8_t value );
-    void joystickHatEvent ( uint8_t hat, uint8_t value );
-    void joystickButtonEvent ( uint8_t button, uint8_t value );
-
-    // Construct a keyboard / joystick controller
-    Controller ( KeyboardEnum );
-    Controller ( const JoystickInfo& info );
-
-    // Clear this controller's mapping(s) without callback to ControllerManager
-    void doClearMapping ( uint32_t keys = 0xFFFFFFFF );
-
-    // Reset this joystick's mapping(s) without callback to ControllerManager
-    void doResetToDefaults();
-
-public:
 
     // Basic destructor
     ~Controller();
@@ -310,4 +242,76 @@ public:
 
     friend class ControllerManager;
     friend class DllControllerManager;
+
+private:
+
+    // Enum type for keyboard controller
+    enum KeyboardEnum { Keyboard };
+
+    // Original controller name
+    const std::string name;
+
+    // Controller states
+    uint32_t prevState = 0, state = 0;
+
+    // Keyboard mappings
+    KeyboardMappings keyboardMappings;
+
+    // Joystick mappings
+    JoystickMappings joystickMappings;
+
+    struct JoystickInternalState
+    {
+        // Joystick information
+        const JoystickInfo info;
+
+        // Joystick states
+        JoystickState prevState, state;
+
+        JoystickInternalState() {}
+        JoystickInternalState ( const JoystickInfo& info ) : info ( info ) {}
+    };
+
+    JoystickInternalState joystick;
+
+    struct MappingInternalState
+    {
+        // The current key to map to an event
+        uint32_t key = 0;
+
+        // Mappings options
+        uint8_t options = 0;
+
+        // The current active joystick state
+        JoystickState active;
+    };
+
+    MappingInternalState mapping;
+
+    // Main mutex
+    Mutex mutex;
+
+    // Keyboard event callback
+    void keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown );
+
+    // Joystick event callbacks
+    void joystickAxisEvent ( uint8_t axis, uint8_t value );
+    void joystickHatEvent ( uint8_t hat, uint8_t value );
+    void joystickButtonEvent ( uint8_t button, uint8_t value );
+
+    // Private constructor, instances should only be created by ControllerManager
+    Controller();
+    Controller ( const Controller& );
+    const Controller& operator= ( const Controller& );
+
+    // Construct a keyboard / joystick controller
+    Controller ( KeyboardEnum );
+    Controller ( const JoystickInfo& info );
+
+    // Clear this controller's mapping(s) without callback to ControllerManager
+    void doClearMapping ( uint32_t keys = 0xFFFFFFFF );
+
+    // Reset this joystick's mapping(s) without callback to ControllerManager
+    void doResetToDefaults();
+
 };

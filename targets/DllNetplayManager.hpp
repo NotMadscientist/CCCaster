@@ -11,79 +11,6 @@
 // Class that manages netplay state and inputs
 class NetplayManager
 {
-    // Netplay state
-    NetplayState state;
-
-    // State of the menu navigation input
-    int32_t targetMenuState = -1;
-
-    // Target menu index to navigate to
-    int8_t targetMenuIndex = -1;
-
-    // Local retry menu selected index
-    int8_t localRetryMenuIndex = -1;
-
-    // Remote retry menu selected index
-    int8_t remoteRetryMenuIndex = -1;
-
-    // State of the training mode reset
-    int32_t trainingResetState = -1;
-
-    // Type of the training mode reset
-    int32_t trainingResetType = 0;
-
-    // The value of *CC_MENU_STATE_COUNTER_ADDR at the beginning of the RetryMenu state.
-    // This is used to determine if any other menus are open in front of the retry menu.
-    uint32_t retryMenuStateCounter = 0;
-
-    // The starting value of CC_WORLD_TIMER_ADDR, where frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime.
-    // This is reset to the current world time whenever the NetplayState changes, ie a state transition happens.
-    uint32_t startWorldTime = 0;
-
-    // Current transition index, incremented whenever the NetplayState changes (after CharaSelect).
-    // Current netplay frame, frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime.
-    IndexedFrame indexedFrame = {{ 0, 0 }};
-
-    // The current starting index for the offset index data
-    uint32_t startIndex = 0;
-
-    // The starting index for spectators
-    uint32_t spectateStartIndex = 0;
-
-    // Mapping: player -> index offset -> frame -> input
-    std::array<InputsContainer<uint16_t>, 2> inputs;
-
-    // Mapping: index offset -> RngState (can be null)
-    std::vector<MsgPtr> rngStates;
-
-    // Mapping: index offset -> retry menu index (invalid is -1)
-    std::vector<int8_t> retryMenuIndicies;
-
-    // The local player, ie the one where setInput is called each frame locally
-    uint8_t localPlayer = 1;
-
-    // The remote player, ie the one where setInputs gets called for each input message
-    uint8_t remotePlayer = 2;
-
-    // Get the input for the specific NetplayState
-    uint16_t getPreInitialInput ( uint8_t player );
-    uint16_t getInitialInput ( uint8_t player );
-    uint16_t getAutoCharaSelectInput ( uint8_t player );
-    uint16_t getCharaSelectInput ( uint8_t player );
-    uint16_t getSkippableInput ( uint8_t player );
-    uint16_t getInGameInput ( uint8_t player );
-    uint16_t getRetryMenuInput ( uint8_t player );
-
-    // Get the input needed to navigate the menu
-    uint16_t getMenuNavInput();
-
-    // Detect if a key has been pressed by either player in the last 2 frames
-    bool hasUpDownInLast2f ( uint8_t player ) const;
-    bool hasButtonInPrev2f ( uint8_t player, uint16_t button ) const;
-
-    // Get the buffered preserveStartIndex
-    uint32_t getBufferedPreserveStartIndex() const;
-
 public:
 
     // Netplay config
@@ -190,4 +117,79 @@ public:
     bool isValidNext ( NetplayState state );
 
     friend class DllRollbackManager;
+
+private:
+
+    // Netplay state
+    NetplayState state;
+
+    // State of the menu navigation input
+    int32_t targetMenuState = -1;
+
+    // Target menu index to navigate to
+    int8_t targetMenuIndex = -1;
+
+    // Local retry menu selected index
+    int8_t localRetryMenuIndex = -1;
+
+    // Remote retry menu selected index
+    int8_t remoteRetryMenuIndex = -1;
+
+    // State of the training mode reset
+    int32_t trainingResetState = -1;
+
+    // Type of the training mode reset
+    int32_t trainingResetType = 0;
+
+    // The value of *CC_MENU_STATE_COUNTER_ADDR at the beginning of the RetryMenu state.
+    // This is used to determine if any other menus are open in front of the retry menu.
+    uint32_t retryMenuStateCounter = 0;
+
+    // The starting value of CC_WORLD_TIMER_ADDR, where frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime.
+    // This is reset to the current world time whenever the NetplayState changes, ie a state transition happens.
+    uint32_t startWorldTime = 0;
+
+    // Current transition index, incremented whenever the NetplayState changes (after CharaSelect).
+    // Current netplay frame, frame = ( *CC_WORLD_TIMER_ADDR ) - startWorldTime.
+    IndexedFrame indexedFrame = {{ 0, 0 }};
+
+    // The current starting index for the offset index data
+    uint32_t startIndex = 0;
+
+    // The starting index for spectators
+    uint32_t spectateStartIndex = 0;
+
+    // Mapping: player -> index offset -> frame -> input
+    std::array<InputsContainer<uint16_t>, 2> inputs;
+
+    // Mapping: index offset -> RngState (can be null)
+    std::vector<MsgPtr> rngStates;
+
+    // Mapping: index offset -> retry menu index (invalid is -1)
+    std::vector<int8_t> retryMenuIndicies;
+
+    // The local player, ie the one where setInput is called each frame locally
+    uint8_t localPlayer = 1;
+
+    // The remote player, ie the one where setInputs gets called for each input message
+    uint8_t remotePlayer = 2;
+
+    // Get the input for the specific NetplayState
+    uint16_t getPreInitialInput ( uint8_t player );
+    uint16_t getInitialInput ( uint8_t player );
+    uint16_t getAutoCharaSelectInput ( uint8_t player );
+    uint16_t getCharaSelectInput ( uint8_t player );
+    uint16_t getSkippableInput ( uint8_t player );
+    uint16_t getInGameInput ( uint8_t player );
+    uint16_t getRetryMenuInput ( uint8_t player );
+
+    // Get the input needed to navigate the menu
+    uint16_t getMenuNavInput();
+
+    // Detect if a key has been pressed by either player in the last 2 frames
+    bool hasUpDownInLast2f ( uint8_t player ) const;
+    bool hasButtonInPrev2f ( uint8_t player, uint16_t button ) const;
+
+    // Get the buffered preserveStartIndex
+    uint32_t getBufferedPreserveStartIndex() const;
 };

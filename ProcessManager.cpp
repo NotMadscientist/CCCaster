@@ -30,6 +30,13 @@ string ProcessManager::gameDir;
 string ProcessManager::appDir;
 
 
+ProcessManager::ProcessManager ( Owner *owner ) : owner ( owner ) {}
+
+ProcessManager::~ProcessManager()
+{
+    disconnectPipe();
+}
+
 void ProcessManager::acceptEvent ( Socket *serverSocket )
 {
     ASSERT ( serverSocket == ipcSocket.get() );
@@ -239,13 +246,6 @@ void ProcessManager::disconnectPipe()
     }
 
     connected = false;
-}
-
-ProcessManager::ProcessManager ( Owner *owner ) : owner ( owner ) {}
-
-ProcessManager::~ProcessManager()
-{
-    disconnectPipe();
 }
 
 bool ProcessManager::getIsWindowed()

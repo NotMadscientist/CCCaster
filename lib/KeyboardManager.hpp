@@ -20,7 +20,7 @@ struct KeyboardEvent : public SerializableMessage
 };
 
 
-class KeyboardManager : public Socket::Owner
+class KeyboardManager : private Socket::Owner
 {
 public:
 
@@ -30,22 +30,6 @@ public:
     };
 
     Owner *owner = 0;
-
-private:
-
-    // If we're hooked
-    bool hooked = false;
-
-    // Socket to receive KeyboardEvent messages
-    SocketPtr recvSocket;
-
-    // Socket callbacks
-    void acceptEvent ( Socket *socket ) override {}
-    void connectEvent ( Socket *socket ) override {}
-    void disconnectEvent ( Socket *socket ) override {}
-    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override;
-
-public:
 
     // Window to match for keyboard events, 0 to match all, NOT safe to modify when hooked!
     const void *keyboardWindow = 0;
@@ -67,4 +51,18 @@ public:
 
     // Get the singleton instance
     static KeyboardManager& get();
+
+private:
+
+    // If we're hooked
+    bool hooked = false;
+
+    // Socket to receive KeyboardEvent messages
+    SocketPtr recvSocket;
+
+    // Socket callbacks
+    void acceptEvent ( Socket *socket ) override {}
+    void connectEvent ( Socket *socket ) override {}
+    void disconnectEvent ( Socket *socket ) override {}
+    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override;
 };

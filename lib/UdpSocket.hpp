@@ -15,7 +15,7 @@ struct UdpControl : public SerializableSequence
 };
 
 
-class UdpSocket : public Socket, public GoBackN::Owner
+class UdpSocket : public Socket, private GoBackN::Owner
 {
 public:
 
@@ -24,61 +24,6 @@ public:
 
     // UDP socket type constant
     Type type = Type::Unknown;
-
-private:
-
-    // UDP child socket enum type for choosing the right constructor
-    enum ChildSocketEnum { ChildSocket };
-
-    // GoBackN instance
-    GoBackN gbn;
-
-    // Timeout for keep alive packets
-    uint64_t keepAlive = DEFAULT_KEEP_ALIVE_TIMEOUT;
-
-    // Parent socket
-    UdpSocket *parentSocket = 0;
-
-    // Child sockets
-    std::unordered_map<IpAddrPort, SocketPtr> childSockets;
-
-    // Currently accepted socket
-    SocketPtr acceptedSocket;
-
-    // GoBackN callbacks
-    void sendRaw ( GoBackN *gbn, const MsgPtr& msg ) override;
-    void recvRaw ( GoBackN *gbn, const MsgPtr& msg ) override;
-    void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override;
-    void timeoutGoBackN ( GoBackN *gbn ) override;
-
-    // Callback into the correctly addressed socket
-    void readEventAddressed ( const MsgPtr& msg, const IpAddrPort& address );
-
-    // Send a protocol message directly, not over GoBackN
-    bool sendRaw ( const MsgPtr& msg, const IpAddrPort& address );
-
-    // Construct a server socket
-    UdpSocket ( Socket::Owner *owner, uint16_t port, const Type& type, bool isRaw );
-
-    // Construct a client socket
-    UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, const Type& type,
-                bool isRaw, uint64_t connectTimeout );
-
-    // Construct a socket from SocketShareData
-    UdpSocket ( Socket::Owner *owner, const SocketShareData& data );
-
-    // Construct a child socket from the parent socket
-    UdpSocket ( ChildSocketEnum, UdpSocket *parentSocket, const IpAddrPort& address );
-
-    // Construct a child socket from GoBackN state
-    UdpSocket ( ChildSocketEnum, UdpSocket *parentSocket, const IpAddrPort& address, const GoBackN& state );
-
-protected:
-
-    // Socket read event callback
-    void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) override;
-
-public:
 
     // Listen for connections on the given port
     static SocketPtr listen ( Socket::Owner *owner, uint16_t port );
@@ -146,4 +91,57 @@ public:
 
     // Reset the state of the GoBackN instance
     void resetGbnState() { gbn.reset(); }
+
+protected:
+
+    // Socket read event callback
+    void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) override;
+
+private:
+
+    // UDP child socket enum type for choosing the right constructor
+    enum ChildSocketEnum { ChildSocket };
+
+    // GoBackN instance
+    GoBackN gbn;
+
+    // Timeout for keep alive packets
+    uint64_t keepAlive = DEFAULT_KEEP_ALIVE_TIMEOUT;
+
+    // Parent socket
+    UdpSocket *parentSocket = 0;
+
+    // Child sockets
+    std::unordered_map<IpAddrPort, SocketPtr> childSockets;
+
+    // Currently accepted socket
+    SocketPtr acceptedSocket;
+
+    // GoBackN callbacks
+    void sendRaw ( GoBackN *gbn, const MsgPtr& msg ) override;
+    void recvRaw ( GoBackN *gbn, const MsgPtr& msg ) override;
+    void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override;
+    void timeoutGoBackN ( GoBackN *gbn ) override;
+
+    // Callback into the correctly addressed socket
+    void readEventAddressed ( const MsgPtr& msg, const IpAddrPort& address );
+
+    // Send a protocol message directly, not over GoBackN
+    bool sendRaw ( const MsgPtr& msg, const IpAddrPort& address );
+
+    // Construct a server socket
+    UdpSocket ( Socket::Owner *owner, uint16_t port, const Type& type, bool isRaw );
+
+    // Construct a client socket
+    UdpSocket ( Socket::Owner *owner, const IpAddrPort& address, const Type& type,
+                bool isRaw, uint64_t connectTimeout );
+
+    // Construct a socket from SocketShareData
+    UdpSocket ( Socket::Owner *owner, const SocketShareData& data );
+
+    // Construct a child socket from the parent socket
+    UdpSocket ( ChildSocketEnum, UdpSocket *parentSocket, const IpAddrPort& address );
+
+    // Construct a child socket from GoBackN state
+    UdpSocket ( ChildSocketEnum, UdpSocket *parentSocket, const IpAddrPort& address, const GoBackN& state );
 };

@@ -34,26 +34,6 @@ struct Spectator
 
 class SpectatorManager
 {
-    std::unordered_map<Socket *, SocketPtr> pendingSockets;
-
-    std::unordered_map<Socket *, TimerPtr> pendingSocketTimers;
-
-    std::unordered_map<Timer *, Socket *> pendingTimerToSocket;
-
-    std::unordered_map<Socket *, Spectator> spectatorMap;
-
-    std::list<Socket *> spectatorList;
-
-    std::list<Socket *>::iterator spectatorListPos;
-
-    std::unordered_map<Socket *, Spectator>::const_iterator spectatorMapPos;
-
-    uint32_t currentMinIndex = UINT_MAX;
-
-    NetplayManager *netManPtr = 0;
-
-    const ProcessManager *procManPtr = 0;
-
 public:
 
     // Timeout for pending sockets, ie sockets that have been accepted but not doing anything yet.
@@ -87,4 +67,26 @@ public:
     void newRngState ( const RngState& rngState );
 
     void frameStepSpectators();
+
+private:
+
+    std::unordered_map<Socket *, SocketPtr> pendingSockets;
+
+    std::unordered_map<Socket *, TimerPtr> pendingSocketTimers;
+
+    std::unordered_map<Timer *, Socket *> pendingTimerToSocket;
+
+    std::unordered_map<Socket *, Spectator> spectatorMap;
+
+    std::list<Socket *> spectatorList;
+
+    std::list<Socket *>::iterator spectatorListPos;
+
+    std::unordered_map<Socket *, Spectator>::const_iterator spectatorMapPos;
+
+    uint32_t currentMinIndex = UINT_MAX;
+
+    NetplayManager *netManPtr = 0;
+
+    const ProcessManager *procManPtr = 0;
 };

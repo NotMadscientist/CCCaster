@@ -80,58 +80,6 @@ public:
     // In message mode, this is automatically managed, and is only reset when a decode fails.
     size_t readPos = 0;
 
-    // Reset the read buffer to its initial size
-    void resetBuffer();
-
-    // Free the read buffer
-    void freeBuffer();
-
-    // Consume bytes from the front of the buffer
-    void consumeBuffer ( size_t bytes );
-
-protected:
-
-    // Raw socket type flag
-    bool isRaw = false;
-
-    // Initial connect timeout
-    uint64_t connectTimeout = DEFAULT_CONNECT_TIMEOUT;
-
-    // Connection state
-    State state = State::Disconnected;
-
-    // Underlying socket fd
-    int fd = 0;
-
-    // Packet loss percentage for testing purposes
-    uint8_t packetLoss = 0;
-
-    // Hash failure percentage for testing purposes
-    uint8_t hashFailRate = 0;
-
-    // TCP event callbacks
-    virtual void acceptEvent() {}
-    virtual void connectEvent() {}
-    virtual void disconnectEvent() {}
-
-    // Read event callback, calls the function below if NOT isRaw
-    virtual void readEvent();
-
-    // Read protocol message callback, must be implemented, only called if NOT isRaw
-    virtual void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) = 0;
-
-    // Initialize the socket fd with the provided address and protocol
-    void init();
-
-    // Read raw bytes directly, 0 on success, otherwise returns the socket error code
-    int recv ( char *buffer, size_t& len );
-    int recvfrom ( char *buffer, size_t& len, IpAddrPort& address );
-
-public:
-
-    // Create a socket from SocketShareData
-    static SocketPtr shared ( Socket::Owner *owner, const SocketShareData& data );
-
     // Basic constructors
     Socket ( Owner *owner, const IpAddrPort& address, Protocol protocol, bool isRaw );
 
@@ -140,6 +88,15 @@ public:
 
     // Completely disconnect the socket
     virtual void disconnect();
+
+    // Reset the read buffer to its initial size
+    void resetBuffer();
+
+    // Free the read buffer
+    void freeBuffer();
+
+    // Consume bytes from the front of the buffer
+    void consumeBuffer ( size_t bytes );
 
     // Socket state query functions
     bool isTCP() const { return ( protocol == Protocol::TCP ); }
@@ -190,7 +147,48 @@ public:
     // Force reuse of existing ports
     static void forceReusePort ( bool enable );
 
+    // Create a socket from SocketShareData
+    static SocketPtr shared ( Socket::Owner *owner, const SocketShareData& data );
+
     friend class SocketManager;
+
+protected:
+
+    // Raw socket type flag
+    bool isRaw = false;
+
+    // Initial connect timeout
+    uint64_t connectTimeout = DEFAULT_CONNECT_TIMEOUT;
+
+    // Connection state
+    State state = State::Disconnected;
+
+    // Underlying socket fd
+    int fd = 0;
+
+    // Packet loss percentage for testing purposes
+    uint8_t packetLoss = 0;
+
+    // Hash failure percentage for testing purposes
+    uint8_t hashFailRate = 0;
+
+    // TCP event callbacks
+    virtual void acceptEvent() {}
+    virtual void connectEvent() {}
+    virtual void disconnectEvent() {}
+
+    // Read event callback, calls the function below if NOT isRaw
+    virtual void readEvent();
+
+    // Read protocol message callback, must be implemented, only called if NOT isRaw
+    virtual void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) = 0;
+
+    // Initialize the socket fd with the provided address and protocol
+    void init();
+
+    // Read raw bytes directly, 0 on success, otherwise returns the socket error code
+    int recv ( char *buffer, size_t& len );
+    int recvfrom ( char *buffer, size_t& len, IpAddrPort& address );
 };
 
 

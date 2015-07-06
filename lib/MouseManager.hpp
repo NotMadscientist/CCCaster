@@ -12,11 +12,9 @@ public:
 
     Owner *owner = 0;
 
+    static MouseManager& get();
+
 private:
 
     // TODO implement hooks when needed
-
-public:
-
-    static MouseManager& get();
 };

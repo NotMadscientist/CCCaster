@@ -21,8 +21,6 @@ inline timespec gettimeoffset ( long milliseconds )
 
 class Mutex
 {
-    pthread_mutex_t mutex;
-
 public:
 
     Mutex()
@@ -49,13 +47,15 @@ public:
     }
 
     friend class CondVar;
+
+private:
+
+    pthread_mutex_t mutex;
 };
 
 
 class Lock
 {
-    Mutex& mutex;
-
 public:
 
     Lock ( Mutex& mutex ) : mutex ( mutex )
@@ -67,6 +67,10 @@ public:
     {
         mutex.unlock();
     }
+
+private:
+
+    Mutex& mutex;
 };
 
 
@@ -75,8 +79,6 @@ public:
 
 class CondVar
 {
-    pthread_cond_t cond;
-
 public:
 
     CondVar()
@@ -109,16 +111,15 @@ public:
     {
         pthread_cond_broadcast ( &cond );
     }
+
+private:
+
+    pthread_cond_t cond;
 };
 
 
 class Thread
 {
-    mutable Mutex mutex;
-    bool running = false;
-    pthread_t thread;
-    static void *func ( void *ptr );
-
 public:
 
     virtual ~Thread() { join(); }
@@ -136,6 +137,15 @@ public:
     }
 
     virtual void run() = 0;
+
+private:
+    bool running = false;
+
+    pthread_t thread;
+
+    mutable Mutex mutex;
+
+    static void *func ( void *ptr );
 };
 
 

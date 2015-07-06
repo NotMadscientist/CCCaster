@@ -4,12 +4,6 @@
 template<typename T, size_t N>
 class RollingAverage
 {
-    T values[N];
-
-    T sum, average;
-
-    size_t index, num;
-
 public:
 
     RollingAverage() { reset(); }
@@ -62,4 +56,12 @@ public:
     {
         return ( num == N );
     }
+
+private:
+
+    T values[N];
+
+    T sum, average;
+
+    size_t index, num;
 };

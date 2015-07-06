@@ -63,8 +63,10 @@ const MsgPtr NullMsg;
 
 
 // Contains protocol methods
-struct Protocol
+class Protocol
 {
+public:
+
     // Encode a message to a series of bytes
     static std::string encode ( const Serializable& message );
     static std::string encode ( Serializable *message );
@@ -82,8 +84,10 @@ struct Protocol
 
 
 // Abstract base class for all serializable messages
-struct Serializable
+class Serializable
 {
+public:
+
     // Basic constructor and destructor
     Serializable();
     virtual ~Serializable() {}
@@ -136,8 +140,10 @@ private:
 
 
 // Represents a regular message, should only be used when size constrained AND reliability is not required
-struct SerializableMessage : public Serializable
+class SerializableMessage : public Serializable
 {
+public:
+
     BaseType getBaseType() const override
     {
         static const BaseType baseType = BaseType::SerializableMessage;
@@ -147,8 +153,10 @@ struct SerializableMessage : public Serializable
 
 
 // Represents a sequential message, should be used for any message that's not size constrained
-struct SerializableSequence : public Serializable
+class SerializableSequence : public Serializable
 {
+public:
+
     // Basic constructors
     SerializableSequence() {}
     SerializableSequence ( uint32_t sequence ) : sequence ( sequence ) {}

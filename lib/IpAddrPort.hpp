@@ -23,8 +23,10 @@ const char *inet_ntop ( int af, const void *src, char *dst, size_t size );
 
 
 // IP address with port
-struct IpAddrPort : public SerializableSequence
+class IpAddrPort : public SerializableSequence
 {
+public:
+
     std::string addr;
     uint16_t port = 0;
     uint8_t isV4 = true;

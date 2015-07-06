@@ -11,17 +11,6 @@
 // Template class to calculate stats with an online algorithm
 class Statistics : public SerializableSequence
 {
-    // Number of samples
-    size_t count = 0;
-
-    double worst = -std::numeric_limits<double>::infinity();
-
-    // Current mean value
-    double mean = 0.0;
-
-    // Sum of (latency - mean)^2 for each latency value
-    double sumOfSquaredDeltas = 0.0;
-
 public:
 
     template<typename T>
@@ -96,5 +85,18 @@ public:
     }
 
     PROTOCOL_MESSAGE_BOILERPLATE ( Statistics, count, worst, mean, sumOfSquaredDeltas )
+
+private:
+
+    // Number of samples
+    size_t count = 0;
+
+    double worst = -std::numeric_limits<double>::infinity();
+
+    // Current mean value
+    double mean = 0.0;
+
+    // Sum of (latency - mean)^2 for each latency value
+    double sumOfSquaredDeltas = 0.0;
 };
 

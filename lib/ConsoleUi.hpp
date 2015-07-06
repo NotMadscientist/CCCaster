@@ -44,8 +44,10 @@ class ConsoleUi
 public:
 
     // Base UI element
-    struct Element
+    class Element
     {
+    public:
+
         // Indicates this is an element that requires user interaction
         const bool requiresUser;
 
@@ -87,36 +89,14 @@ public:
         friend ConsoleUi;
     };
 
-private:
-
-    static const std::string ellipsis; // "..."
-
-    static const std::string minText; // "A..."
-
-    static const std::string minMenuItem; // "[1] A..."
-
-    static const std::string borders; // "**"
-
-    static const std::string paddedBorders; // "*  *"
-
-    static const size_t bordersHeight = 2; // 2 borders
-
-    static const size_t maxMenuItems = 9 + 26; // 1-9 and A-Z
-
-    typedef std::shared_ptr<Element> ElementPtr;
-
-    // UI elements stack
-    std::vector<ElementPtr> stack;
-
-    // Initialize the element and push it onto the stack
-    void initalizeAndPush ( Element *element, const COORD& expand );
-
-public:
-
     // Auto-wrapped text box
     class TextBox : public Element
     {
-        std::vector<std::string> lines;
+    public:
+
+        const std::string text;
+
+        TextBox ( const std::string& text ) : Element ( false ), text ( trimmed ( text, "\n" ) ) {}
 
     protected:
 
@@ -187,28 +167,59 @@ public:
                 ConsoleCore::GetInstance()->Prints ( lines[i], false, 0, pos.X + 1, pos.Y + 1 + i );
         }
 
-    public:
+    private:
 
-        const std::string text;
-
-        TextBox ( const std::string& text ) : Element ( false ), text ( trimmed ( text, "\n" ) ) {}
+        std::vector<std::string> lines;
     };
 
     // Scrollable menu
     class Menu : public Element
     {
-        std::vector<std::string> items;
-        std::string lastItem;
+    public:
 
-        WindowedMenu menu;
+        const std::string title;
 
-        std::string shortenWithEllipsis ( const std::string& text )
+        void setPosition ( int position )
         {
-            if ( text.size() + paddedBorders.size() > ( size_t ) size.X )
-                return text.substr ( 0, size.X - paddedBorders.size() - ellipsis.size() ) + ellipsis;
+            if ( position < 0 )
+                position = 0;
+            else if ( position >= ( int ) menu.Count() )
+                position = menu.Count() - 1;
 
-            return text;
+            menu.SelectedItem ( position );
         }
+
+        void setEscape ( bool enabled )
+        {
+            menu.EnableEscape ( enabled );
+        }
+
+        void setDelete ( int enabled )
+        {
+            menu.EnableDelete ( enabled );
+        }
+
+        void overlayCurrentPosition ( const std::string& text, bool selected = false )
+        {
+            const COORD pos = menu.CursorPosition();
+            const size_t i = menu.SelectedValue();
+            const std::string padded = items[i].substr ( 0, 4 ) + text;
+
+            // Pad remaining text if necessary
+            std::string remaining;
+            if ( 4 + text.size() < items[i].size() )
+                remaining = std::string ( items[i].substr ( 4 + text.size() ).size(), ' ' );
+
+            ConsoleCore::GetInstance()->Prints ( " " + shortenWithEllipsis ( padded + remaining ) + " ",
+                                                 false, ( selected ? &menu.SelectionFormat() : 0 ), pos.X, pos.Y );
+        }
+
+        Menu ( const std::string& title, const std::vector<std::string>& items, const std::string& lastItem = "" )
+            : Element ( true ), title ( title ), items ( items ), lastItem ( lastItem )
+            , menu ( pos, items.size() + ( lastItem.empty() ? 0 : 1 ), title, THEME ) {}
+
+        Menu ( const std::vector<std::string>& items, const std::string& lastItem = "" )
+            : Menu ( "", items, lastItem ) {}
 
     protected:
 
@@ -273,51 +284,21 @@ public:
             }
         }
 
-    public:
+    private:
 
-        const std::string title;
+        std::vector<std::string> items;
 
-        void setPosition ( int position )
+        std::string lastItem;
+
+        WindowedMenu menu;
+
+        std::string shortenWithEllipsis ( const std::string& text )
         {
-            if ( position < 0 )
-                position = 0;
-            else if ( position >= ( int ) menu.Count() )
-                position = menu.Count() - 1;
+            if ( text.size() + paddedBorders.size() > ( size_t ) size.X )
+                return text.substr ( 0, size.X - paddedBorders.size() - ellipsis.size() ) + ellipsis;
 
-            menu.SelectedItem ( position );
+            return text;
         }
-
-        void setEscape ( bool enabled )
-        {
-            menu.EnableEscape ( enabled );
-        }
-
-        void setDelete ( int enabled )
-        {
-            menu.EnableDelete ( enabled );
-        }
-
-        void overlayCurrentPosition ( const std::string& text, bool selected = false )
-        {
-            const COORD pos = menu.CursorPosition();
-            const size_t i = menu.SelectedValue();
-            const std::string padded = items[i].substr ( 0, 4 ) + text;
-
-            // Pad remaining text if necessary
-            std::string remaining;
-            if ( 4 + text.size() < items[i].size() )
-                remaining = std::string ( items[i].substr ( 4 + text.size() ).size(), ' ' );
-
-            ConsoleCore::GetInstance()->Prints ( " " + shortenWithEllipsis ( padded + remaining ) + " ",
-                                                 false, ( selected ? &menu.SelectionFormat() : 0 ), pos.X, pos.Y );
-        }
-
-        Menu ( const std::string& title, const std::vector<std::string>& items, const std::string& lastItem = "" )
-            : Element ( true ), items ( items ), lastItem ( lastItem )
-            , menu ( pos, items.size() + ( lastItem.empty() ? 0 : 1 ), title, THEME ), title ( title ) {}
-
-        Menu ( const std::vector<std::string>& items, const std::string& lastItem = "" )
-            : Menu ( "", items, lastItem ) {}
     };
 
     // Prompt types
@@ -327,6 +308,38 @@ public:
     // Integer or string prompt
     class Prompt : public Element
     {
+    public:
+
+        const std::string title;
+
+        const bool isIntegerPrompt = false;
+
+        bool allowNegative = true;
+
+        size_t maxDigits = 9;
+
+        void setInitial ( int initial )
+        {
+            if ( !isIntegerPrompt )
+                return;
+
+            resultInt = initial;
+        }
+
+        void setInitial ( const std::string& initial )
+        {
+            if ( isIntegerPrompt )
+                return;
+
+            resultStr = initial;
+        }
+
+        Prompt ( PromptTypeString, const std::string& title = "" )
+            : Element ( true ), title ( title ), isIntegerPrompt ( false ) {}
+
+        Prompt ( PromptTypeInteger, const std::string& title = "" )
+            : Element ( true ), title ( title ), isIntegerPrompt ( true ) {}
+
     protected:
 
         void initialize() override
@@ -379,43 +392,32 @@ public:
                 }
             }
         }
-
-    public:
-
-        const std::string title;
-
-        const bool isIntegerPrompt = false;
-
-        bool allowNegative = true;
-
-        size_t maxDigits = 9;
-
-        void setInitial ( int initial )
-        {
-            if ( !isIntegerPrompt )
-                return;
-
-            resultInt = initial;
-        }
-
-        void setInitial ( const std::string& initial )
-        {
-            if ( isIntegerPrompt )
-                return;
-
-            resultStr = initial;
-        }
-
-        Prompt ( PromptTypeString, const std::string& title = "" )
-            : Element ( true ), title ( title ), isIntegerPrompt ( false ) {}
-
-        Prompt ( PromptTypeInteger, const std::string& title = "" )
-            : Element ( true ), title ( title ), isIntegerPrompt ( true ) {}
     };
 
     // Progress bar
     class ProgressBar : public Element
     {
+    public:
+
+        const std::string title;
+
+        const size_t length;
+
+        ProgressBar ( const std::string& title, size_t length )
+            : Element ( false ), title ( title ), length ( length ) {}
+
+        ProgressBar ( size_t length )
+            : Element ( false ), title ( "" ), length ( length ) {}
+
+        void update ( size_t progress ) const
+        {
+            std::string bar ( clamped ( progress, 0u, length ), '.' );
+            if ( progress < length )
+                bar += std::string ( clamped ( length - progress, 0u, length ), ' ' );
+
+            ConsoleCore::GetInstance()->Prints ( bar, false, 0, pos.X + 2, pos.Y + size.Y - 2 );
+        }
+
     protected:
 
         void initialize() override
@@ -442,26 +444,6 @@ public:
             }
         }
 
-    public:
-
-        const std::string title;
-
-        const size_t length;
-
-        void update ( size_t progress ) const
-        {
-            std::string bar ( clamped ( progress, 0u, length ), '.' );
-            if ( progress < length )
-                bar += std::string ( clamped ( length - progress, 0u, length ), ' ' );
-
-            ConsoleCore::GetInstance()->Prints ( bar, false, 0, pos.X + 2, pos.Y + size.Y - 2 );
-        }
-
-        ProgressBar ( const std::string& title, size_t length )
-            : Element ( false ), title ( title ), length ( length ) {}
-
-        ProgressBar ( size_t length )
-            : Element ( false ), title ( "" ), length ( length ) {}
     };
 
     // Basic constructor
@@ -618,4 +600,28 @@ public:
 
     // Get console window handle
     static void *getConsoleWindow();
+
+private:
+
+    static const std::string ellipsis; // "..."
+
+    static const std::string minText; // "A..."
+
+    static const std::string minMenuItem; // "[1] A..."
+
+    static const std::string borders; // "**"
+
+    static const std::string paddedBorders; // "*  *"
+
+    static const size_t bordersHeight = 2; // 2 borders
+
+    static const size_t maxMenuItems = 9 + 26; // 1-9 and A-Z
+
+    typedef std::shared_ptr<Element> ElementPtr;
+
+    // UI elements stack
+    std::vector<ElementPtr> stack;
+
+    // Initialize the element and push it onto the stack
+    void initalizeAndPush ( Element *element, const COORD& expand );
 };

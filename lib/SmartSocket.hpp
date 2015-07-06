@@ -10,6 +10,40 @@
 // to using UDP tunnel if the initial protocol fails. Queries a remote server for UDP tunnel data.
 class SmartSocket : public Socket, public Socket::Owner, public Timer::Owner
 {
+public:
+    // Listen for connections on the given port.
+    // Opens a regular server socket of the given protocol, but also listens for UDP tunnel connections.
+    static SocketPtr listenTCP ( Socket::Owner *owner, uint16_t port );
+    static SocketPtr listenUDP ( Socket::Owner *owner, uint16_t port );
+
+    // Connect to the given address and port.
+    // Tries to connect using the given protocol, with fallback to UDP tunnel.
+    static SocketPtr connectTCP ( Socket::Owner *owner, const IpAddrPort& address, bool forceTunnel = false );
+    static SocketPtr connectUDP ( Socket::Owner *owner, const IpAddrPort& address, bool forceTunnel = false );
+
+    // Destructor
+    ~SmartSocket() override;
+
+    // Completely disconnect the socket
+    void disconnect() override;
+
+    // Accept a new socket
+    SocketPtr accept ( Socket::Owner *owner ) override;
+
+    // If this client UDP socket is connected over the UDP tunnel
+    bool isTunnel() const;
+
+    // Send raw bytes directly, a return value of false indicates socket is disconnected
+    bool send ( const char *buffer, size_t len );
+    bool send ( const char *buffer, size_t len, const IpAddrPort& address );
+
+    // Send a protocol message, a return value of false indicates socket is disconnected
+    bool send ( SerializableMessage *message, const IpAddrPort& address = NullAddress ) override;
+    bool send ( SerializableSequence *message, const IpAddrPort& address = NullAddress ) override;
+    bool send ( const MsgPtr& message, const IpAddrPort& address = NullAddress ) override;
+
+private:
+
     // Child UDP socket enum type for choosing the right constructor
     enum ChildSocketEnum { ChildSocket };
 
@@ -87,36 +121,4 @@ class SmartSocket : public Socket, public Socket::Owner, public Timer::Owner
     // Construct a client socket
     SmartSocket ( Socket::Owner *owner, const IpAddrPort& address, Socket::Protocol protocol, bool forceTunnel );
 
-public:
-
-    // Listen for connections on the given port.
-    // Opens a regular server socket of the given protocol, but also listens for UDP tunnel connections.
-    static SocketPtr listenTCP ( Socket::Owner *owner, uint16_t port );
-    static SocketPtr listenUDP ( Socket::Owner *owner, uint16_t port );
-
-    // Connect to the given address and port.
-    // Tries to connect using the given protocol, with fallback to UDP tunnel.
-    static SocketPtr connectTCP ( Socket::Owner *owner, const IpAddrPort& address, bool forceTunnel = false );
-    static SocketPtr connectUDP ( Socket::Owner *owner, const IpAddrPort& address, bool forceTunnel = false );
-
-    // Destructor
-    ~SmartSocket() override;
-
-    // Completely disconnect the socket
-    void disconnect() override;
-
-    // Accept a new socket
-    SocketPtr accept ( Socket::Owner *owner ) override;
-
-    // If this client UDP socket is connected over the UDP tunnel
-    bool isTunnel() const;
-
-    // Send raw bytes directly, a return value of false indicates socket is disconnected
-    bool send ( const char *buffer, size_t len );
-    bool send ( const char *buffer, size_t len, const IpAddrPort& address );
-
-    // Send a protocol message, a return value of false indicates socket is disconnected
-    bool send ( SerializableMessage *message, const IpAddrPort& address = NullAddress ) override;
-    bool send ( SerializableSequence *message, const IpAddrPort& address = NullAddress ) override;
-    bool send ( const MsgPtr& message, const IpAddrPort& address = NullAddress ) override;
 };

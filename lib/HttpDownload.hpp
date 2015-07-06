@@ -7,7 +7,7 @@
 #include <fstream>
 
 
-class HttpDownload : public HttpGet::Owner
+class HttpDownload : private HttpGet::Owner
 {
 public:
 
@@ -22,6 +22,14 @@ public:
 
     Owner *owner = 0;
 
+    const std::string url, file;
+
+    HttpDownload ( Owner *owner, const std::string& url, const std::string& file );
+
+    void start();
+
+    void stop();
+
 private:
 
     std::ofstream outputFile;
@@ -33,14 +41,4 @@ private:
     void httpFailed ( HttpGet *httpGet ) override;
 
     void httpProgress ( HttpGet *httpGet, uint32_t receivedBytes, uint32_t totalBytes ) override;
-
-public:
-
-    const std::string url, file;
-
-    HttpDownload ( Owner *owner, const std::string& url, const std::string& file );
-
-    void start();
-
-    void stop();
 };

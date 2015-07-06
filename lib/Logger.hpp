@@ -19,29 +19,6 @@
 
 class Logger
 {
-    // Log file path
-    std::string file;
-
-    // Log identifier, to match up reinitialized logs
-    std::string logId;
-
-    // Bit mask of options
-    uint32_t options = 0;
-
-    // Log file descriptor
-    FILE *fd = 0;
-
-    // Char buffer
-    char buffer[4096];
-
-    // Flag to indicate if initialized
-    bool initialized = false;
-
-    // Optionally mutexed logging
-#ifdef LOGGER_MUTEXED
-    Mutex mutex;
-#endif
-
 public:
 
     // Session ID
@@ -65,6 +42,31 @@ public:
 
     // Get the singleton instance
     static Logger& get();
+
+private:
+
+    // Log file path
+    std::string file;
+
+    // Log identifier, to match up reinitialized logs
+    std::string logId;
+
+    // Bit mask of options
+    uint32_t options = 0;
+
+    // Log file descriptor
+    FILE *fd = 0;
+
+    // Char buffer
+    char buffer[4096];
+
+    // Flag to indicate if initialized
+    bool initialized = false;
+
+    // Optionally mutexed logging
+#ifdef LOGGER_MUTEXED
+    Mutex mutex;
+#endif
 };
 
 

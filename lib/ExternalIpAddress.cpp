@@ -7,7 +7,7 @@ using namespace std;
 
 
 // Unknown IP address
-const string ExternalIpAddress::Unknown = "unknown";
+const string ExternalIpAddress::Unknown = "Unknown";
 
 // Web services to query for external IP address
 static const vector<string> externalIpServices =

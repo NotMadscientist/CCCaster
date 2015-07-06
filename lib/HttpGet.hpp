@@ -9,7 +9,7 @@
 #define DEFAULT_GET_TIMEOUT ( 5000 )
 
 
-class HttpGet : public Socket::Owner, public Timer::Owner
+class HttpGet : private Socket::Owner, private Timer::Owner
 {
 public:
 
@@ -23,6 +23,22 @@ public:
     };
 
     Owner *owner = 0;
+
+    const std::string url;
+
+    const uint64_t timeout;
+
+    const enum Mode { Buffered, Incremental } mode;
+
+    HttpGet ( Owner *owner, const std::string& url, uint64_t timeout = DEFAULT_GET_TIMEOUT, Mode mode = Buffered );
+
+    void start();
+
+    int getCode() const { return code; }
+
+    const std::string& getResponse() const { return dataBuffer; }
+
+    uint32_t getContentLength() const { return contentLength; }
 
 private:
 
@@ -51,22 +67,4 @@ private:
     std::string headerBuffer, dataBuffer;
 
     uint32_t contentLength, remainingBytes;
-
-public:
-
-    const std::string url;
-
-    const uint64_t timeout;
-
-    const enum Mode { Buffered, Incremental } mode;
-
-    HttpGet ( Owner *owner, const std::string& url, uint64_t timeout = DEFAULT_GET_TIMEOUT, Mode mode = Buffered );
-
-    void start();
-
-    int getCode() const { return code; }
-
-    const std::string& getResponse() const { return dataBuffer; }
-
-    uint32_t getContentLength() const { return contentLength; }
 };

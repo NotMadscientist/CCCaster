@@ -17,24 +17,6 @@ public:
         uint16_t p1, p2;
     };
 
-private:
-
-    std::vector<uint32_t> modes;
-
-    std::vector<std::string> states;
-
-    std::vector<std::vector<Inputs>> inputs;
-
-    std::vector<MsgPtr> rngStates;
-
-    std::vector<std::vector<IndexedFrame>> rollbacks;
-
-    std::vector<std::vector<std::vector<Inputs>>> reinputs;
-
-    std::vector<MsgPtr> initialStates;
-
-public:
-
     bool load ( const std::string& replayFile, bool real );
 
     uint32_t getGameMode ( IndexedFrame indexedFrame );
@@ -54,4 +36,21 @@ public:
     uint32_t getLastFrame() const;
 
     MsgPtr getInitialStateBefore ( uint32_t index ) const;
+
+private:
+
+    std::vector<uint32_t> modes;
+
+    std::vector<std::string> states;
+
+    std::vector<std::vector<Inputs>> inputs;
+
+    std::vector<MsgPtr> rngStates;
+
+    std::vector<std::vector<IndexedFrame>> rollbacks;
+
+    std::vector<std::vector<std::vector<Inputs>>> reinputs;
+
+    std::vector<MsgPtr> initialStates;
+
 };

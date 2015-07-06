@@ -14,18 +14,6 @@ public:
         virtual bool check() = 0;
     };
 
-private:
-
-    // List of all the ChangeMonitor::Interface implementations
-    std::vector<std::shared_ptr<ChangeMonitor::Interface>> monitors;
-
-    // Private constructor, etc. for singleton class
-    ChangeMonitor();
-    ChangeMonitor ( const ChangeMonitor& );
-    const ChangeMonitor& operator= ( const ChangeMonitor& );
-
-public:
-
     // Add a RefChangeMonitor, returns a pointer that can be used to remove the monitor
     template<typename O, typename K, typename T>
     ChangeMonitor::Interface *addRef ( O *owner, K key, const T& ref );
@@ -65,6 +53,16 @@ public:
 
     // Get the singleton instance
     static ChangeMonitor& get();
+
+private:
+
+    // List of all the ChangeMonitor::Interface implementations
+    std::vector<std::shared_ptr<ChangeMonitor::Interface>> monitors;
+
+    // Private constructor, etc. for singleton class
+    ChangeMonitor();
+    ChangeMonitor ( const ChangeMonitor& );
+    const ChangeMonitor& operator= ( const ChangeMonitor& );
 };
 
 typedef std::shared_ptr<ChangeMonitor::Interface> ChangeMonitorPtr;
@@ -83,19 +81,6 @@ public:
 
     Owner *owner = 0;
 
-private:
-
-    // The key that identifies the callback
-    const K key;
-
-    // The reference of the current value
-    const T& current;
-
-    // The previous value, also initial value
-    T previous;
-
-public:
-
     RefChangeMonitor ( Owner *owner, K key, const T& ref )
         : owner ( owner )
         , key ( key )
@@ -113,6 +98,17 @@ public:
         previous = current;
         return true;
     }
+
+private:
+
+    // The key that identifies the callback
+    const K key;
+
+    // The reference of the current value
+    const T& current;
+
+    // The previous value, also initial value
+    T previous;
 };
 
 template<typename O, typename K, typename T>
@@ -141,22 +137,6 @@ public:
 
     Owner *owner = 0;
 
-private:
-
-    // The key that identifies the callback
-    const K key;
-
-    // The pointer to the reference of the current of value
-    const T *&ptr;
-
-    // The previous value, also initial value
-    T previous;
-
-    // The value to use if the pointer is null
-    const T nullPtrValue;
-
-public:
-
     PtrToRefChangeMonitor ( Owner *owner, K key, const T *&ptr, T nullPtrValue )
         : owner ( owner )
         , key ( key )
@@ -184,6 +164,20 @@ public:
         previous = current;
         return true;
     }
+
+private:
+
+    // The key that identifies the callback
+    const K key;
+
+    // The pointer to the reference of the current of value
+    const T *&ptr;
+
+    // The previous value, also initial value
+    T previous;
+
+    // The value to use if the pointer is null
+    const T nullPtrValue;
 };
 
 template<typename O, typename K, typename T>

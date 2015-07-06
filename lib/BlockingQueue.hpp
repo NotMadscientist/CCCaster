@@ -8,10 +8,6 @@
 
 template<typename T> class BlockingQueue
 {
-    std::list<T> queue;
-    mutable Mutex mutex;
-    mutable CondVar cond;
-
 public:
 
     void push ( const T& t )
@@ -78,16 +74,19 @@ public:
         LOCK ( mutex );
         queue.clear();
     }
+
+private:
+
+    std::list<T> queue;
+
+    mutable Mutex mutex;
+
+    mutable CondVar cond;
 };
 
 
 template<typename T> class BlockingSetQueue
 {
-    std::list<T> queue;
-    std::unordered_set<T> set;
-    mutable Mutex mutex;
-    mutable CondVar cond;
-
 public:
 
     bool push ( const T& t )
@@ -172,16 +171,21 @@ public:
         LOCK ( mutex );
         queue.clear();
     }
+
+private:
+
+    std::list<T> queue;
+
+    std::unordered_set<T> set;
+
+    mutable Mutex mutex;
+
+    mutable CondVar cond;
 };
 
 
 template<typename T, size_t N> class StaticBlockingQueue
 {
-    T elements[N];
-    size_t count = 0, head = 0, tail = 0;
-    mutable Mutex mutex;
-    mutable CondVar cond;
-
 public:
 
     void push ( const T& t )
@@ -272,4 +276,14 @@ public:
         LOCK ( mutex );
         count = head = tail = 0;
     }
+
+private:
+
+    T elements[N];
+
+    size_t count = 0, head = 0, tail = 0;
+
+    mutable Mutex mutex;
+
+    mutable CondVar cond;
 };

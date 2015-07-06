@@ -31,44 +31,6 @@ public:
 
     Owner *owner = 0;
 
-private:
-
-    // All controllers mappings
-    ControllerMappings mappings;
-
-    // Keyboard controller instance
-    Controller keyboard;
-
-    // Maps of joystick controller instances
-    std::unordered_map<Guid, std::shared_ptr<Controller>> joysticks;
-    std::unordered_map<std::string, Controller *> joysticksByName;
-
-    // Flag to indicate if initialized
-    bool initialized = false;
-
-    // Main mutex
-    mutable Mutex mutex;
-
-    // Thread that polls the controllers at a high frequency
-    class PollingThread : public Thread
-    {
-    public:
-        void run() override;
-    };
-
-    PollingThread pollingThread;
-
-    // Attach / detach a joystick
-    void attachJoystick ( const Guid& guid, JoystickInfo& info );
-    void detachJoystick ( const Guid& guid );
-
-    // Private constructor, etc. for singleton class
-    ControllerManager();
-    ControllerManager ( const ControllerManager& );
-    const ControllerManager& operator= ( const ControllerManager& );
-
-public:
-
     // Window handle to match for keyboard and joystick events
     void *windowHandle = 0;
 
@@ -138,4 +100,40 @@ public:
     static ControllerManager& get();
 
     friend class DllControllerManager;
+
+private:
+
+    // All controllers mappings
+    ControllerMappings mappings;
+
+    // Keyboard controller instance
+    Controller keyboard;
+
+    // Maps of joystick controller instances
+    std::unordered_map<Guid, std::shared_ptr<Controller>> joysticks;
+    std::unordered_map<std::string, Controller *> joysticksByName;
+
+    // Flag to indicate if initialized
+    bool initialized = false;
+
+    // Main mutex
+    mutable Mutex mutex;
+
+    // Thread that polls the controllers at a high frequency
+    class PollingThread : public Thread
+    {
+    public:
+        void run() override;
+    };
+
+    PollingThread pollingThread;
+
+    // Attach / detach a joystick
+    void attachJoystick ( const Guid& guid, JoystickInfo& info );
+    void detachJoystick ( const Guid& guid );
+
+    // Private constructor, etc. for singleton class
+    ControllerManager();
+    ControllerManager ( const ControllerManager& );
+    const ControllerManager& operator= ( const ControllerManager& );
 };

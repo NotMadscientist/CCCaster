@@ -41,7 +41,7 @@ struct SplitMessage : public SerializableSequence
 };
 
 
-class GoBackN : public Timer::Owner, public SerializableSequence
+class GoBackN : private Timer::Owner, public SerializableSequence
 {
 public:
 
@@ -61,6 +61,45 @@ public:
     };
 
     Owner *owner = 0;
+
+    // Basic constructors
+    GoBackN ( const GoBackN& other ) { *this = other; }
+    GoBackN ( Owner *owner, uint64_t interval = DEFAULT_SEND_INTERVAL, uint64_t timeout = 0 );
+    GoBackN ( Owner *owner, const GoBackN& state );
+    GoBackN& operator= ( const GoBackN& other );
+
+    // Send a message via GoBackN
+    void sendGoBackN ( SerializableSequence *message );
+    void sendGoBackN ( const MsgPtr& msg );
+
+    // Receive a message from the raw socket
+    void recvRaw ( const MsgPtr& msg );
+
+    // Get / set the interval to send packets, should be non-zero
+    uint64_t getSendInterval() const { return interval; }
+    void setSendInterval ( uint64_t interval );
+
+    // Get / set the timeout for keep alive packets, 0 to disable
+    uint64_t getKeepAlive() const { return keepAlive; }
+    void setKeepAlive ( uint64_t timeout );
+
+    // Get the number of messages sent and received
+    uint32_t getSendCount() const { return sendSequence; }
+    uint32_t getRecvCount() const { return recvSequence; }
+
+    // Get the number of messages ACKed
+    uint32_t getAckCount() const { return ackSequence; }
+
+    // Delay sending the next keep alive packet
+    void delayKeepAliveOnce() { skipNextKeepAlive = true; }
+
+    // Reset the state of GoBackN
+    void reset();
+
+    // Log the send the list for debugging purposes
+    void logSendList() const;
+
+    DECLARE_MESSAGE_BOILERPLATE ( GoBackN )
 
 private:
 
@@ -102,45 +141,4 @@ private:
 
     // Refresh keep alive count down
     void refreshKeepAlive() { countDown = ( keepAlive / interval ); }
-
-public:
-
-    // Basic constructors
-    GoBackN ( const GoBackN& other ) { *this = other; }
-    GoBackN ( Owner *owner, uint64_t interval = DEFAULT_SEND_INTERVAL, uint64_t timeout = 0 );
-    GoBackN ( Owner *owner, const GoBackN& state );
-    GoBackN& operator= ( const GoBackN& other );
-
-    // Send a message via GoBackN
-    void sendGoBackN ( SerializableSequence *message );
-    void sendGoBackN ( const MsgPtr& msg );
-
-    // Receive a message from the raw socket
-    void recvRaw ( const MsgPtr& msg );
-
-    // Get / set the interval to send packets, should be non-zero
-    uint64_t getSendInterval() const { return interval; }
-    void setSendInterval ( uint64_t interval );
-
-    // Get / set the timeout for keep alive packets, 0 to disable
-    uint64_t getKeepAlive() const { return keepAlive; }
-    void setKeepAlive ( uint64_t timeout );
-
-    // Get the number of messages sent and received
-    uint32_t getSendCount() const { return sendSequence; }
-    uint32_t getRecvCount() const { return recvSequence; }
-
-    // Get the number of messages ACKed
-    uint32_t getAckCount() const { return ackSequence; }
-
-    // Delay sending the next keep alive packet
-    void delayKeepAliveOnce() { skipNextKeepAlive = true; }
-
-    // Reset the state of GoBackN
-    void reset();
-
-    // Log the send the list for debugging purposes
-    void logSendList() const;
-
-    DECLARE_MESSAGE_BOILERPLATE ( GoBackN )
 };

@@ -12,10 +12,6 @@
 
 class KeyboardState
 {
-    static std::unordered_map<uint32_t, bool> states, previous;
-    static std::unordered_map<uint32_t, uint64_t> pressedTimestamp;
-    static uint32_t repeatTimer;
-
 public:
 
     static void *windowHandle;
@@ -71,4 +67,12 @@ public:
     }
 
     friend class KeyboardManager;
+
+private:
+
+    static std::unordered_map<uint32_t, bool> states, previous;
+
+    static std::unordered_map<uint32_t, uint64_t> pressedTimestamp;
+
+    static uint32_t repeatTimer;
 };

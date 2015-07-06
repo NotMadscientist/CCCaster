@@ -17,7 +17,7 @@ struct Ping : public SerializableMessage
 };
 
 
-class Pinger : public Timer::Owner
+class Pinger : private Timer::Owner
 {
 public:
 
@@ -29,22 +29,6 @@ public:
     };
 
     Owner *owner = 0;
-
-private:
-
-    TimerPtr pingTimer;
-
-    size_t pingCount = 0;
-
-    Statistics stats;
-
-    uint8_t packetLoss = 0;
-
-    bool pinging = false;
-
-    void timerExpired ( Timer *timer ) override;
-
-public:
 
     uint64_t pingInterval = 0;
 
@@ -67,4 +51,18 @@ public:
     uint8_t getPacketLoss() const { return packetLoss; }
 
     bool isPinging() const { return pinging; }
+
+private:
+
+    TimerPtr pingTimer;
+
+    size_t pingCount = 0;
+
+    Statistics stats;
+
+    uint8_t packetLoss = 0;
+
+    bool pinging = false;
+
+    void timerExpired ( Timer *timer ) override;
 };

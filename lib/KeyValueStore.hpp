@@ -7,16 +7,6 @@
 
 class KeyValueStore
 {
-    enum class Type : uint8_t { String, Integer, Double };
-
-    std::map<std::string, Type> types;
-
-    std::unordered_map<std::string, std::string> strings;
-
-    std::unordered_map<std::string, int> integers;
-
-    std::unordered_map<std::string, double> doubles;
-
 public:
 
     bool hasString ( const std::string& key ) const;
@@ -43,5 +33,17 @@ public:
     bool save ( const std::string& file ) const;
 
     bool load ( const std::string& file );
+
+private:
+
+    enum class Type : uint8_t { String, Integer, Double };
+
+    std::map<std::string, Type> types;
+
+    std::unordered_map<std::string, std::string> strings;
+
+    std::unordered_map<std::string, int> integers;
+
+    std::unordered_map<std::string, double> doubles;
 };
 

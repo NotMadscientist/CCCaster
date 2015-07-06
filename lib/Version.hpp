@@ -7,8 +7,10 @@
 #include <string>
 
 
-struct Version : public SerializableSequence
+class Version : public SerializableSequence
 {
+public:
+
     enum PartEnum { Major, Minor, Suffix };
 
     std::string code;

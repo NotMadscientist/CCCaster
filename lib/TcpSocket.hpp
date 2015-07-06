@@ -4,34 +4,8 @@
 #include "Timer.hpp"
 
 
-class TcpSocket : public Socket, public Timer::Owner
+class TcpSocket : public Socket, private Timer::Owner
 {
-    // Timeout for initial connect
-    TimerPtr connectTimer;
-
-    // Timer callback
-    void timerExpired ( Timer *timer ) override;
-
-    // Construct a server socket
-    TcpSocket ( Socket::Owner *owner, uint16_t port, bool isRaw );
-
-    // Construct a client socket
-    TcpSocket ( Socket::Owner *owner, const IpAddrPort& address, bool isRaw, uint64_t connectTimeout );
-
-    // Construct an accepted client socket
-    TcpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address, bool isRaw );
-
-    // Construct a socket from SocketShareData
-    TcpSocket ( Socket::Owner *owner, const SocketShareData& data );
-
-protected:
-
-    // Socket event callbacks
-    void acceptEvent() override;
-    void connectEvent() override;
-    void disconnectEvent() override;
-    void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) override;
-
 public:
 
     // Listen for connections on the given port
@@ -57,4 +31,33 @@ public:
     bool send ( SerializableMessage *message, const IpAddrPort& address = NullAddress ) override;
     bool send ( SerializableSequence *message, const IpAddrPort& address = NullAddress ) override;
     bool send ( const MsgPtr& message, const IpAddrPort& address = NullAddress ) override;
+
+protected:
+
+    // Socket event callbacks
+    void acceptEvent() override;
+    void connectEvent() override;
+    void disconnectEvent() override;
+    void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) override;
+
+private:
+
+    // Timeout for initial connect
+    TimerPtr connectTimer;
+
+    // Timer callback
+    void timerExpired ( Timer *timer ) override;
+
+    // Construct a server socket
+    TcpSocket ( Socket::Owner *owner, uint16_t port, bool isRaw );
+
+    // Construct a client socket
+    TcpSocket ( Socket::Owner *owner, const IpAddrPort& address, bool isRaw, uint64_t connectTimeout );
+
+    // Construct an accepted client socket
+    TcpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address, bool isRaw );
+
+    // Construct a socket from SocketShareData
+    TcpSocket ( Socket::Owner *owner, const SocketShareData& data );
+
 };

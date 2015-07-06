@@ -8,32 +8,6 @@ class Timer;
 
 class TimerManager
 {
-    // Sets of active and allocated timer instances
-    std::unordered_set<Timer *> activeTimers, allocatedTimers;
-
-    // Indicates if the hi-res timer should be used
-    bool useHiResTimer;
-
-    // Hi-res timer variables
-    uint64_t ticksPerSecond = 0, ticks = 0;
-
-    // The current time in milliseconds
-    uint64_t now = 0;
-
-    // The next time when a timer will expire
-    uint64_t nextExpiry = 0;
-
-    // Flag to indicate the set of allocated timers has changed
-    bool changed = false;
-
-    // Flag to indicate if initialized
-    bool initialized = false;
-
-    // Private constructor, etc. for singleton class
-    TimerManager();
-    TimerManager ( const TimerManager& );
-    const TimerManager& operator= ( const TimerManager& );
-
 public:
 
     // Update current time
@@ -64,4 +38,32 @@ public:
 
     // Get the singleton instance
     static TimerManager& get();
+
+private:
+
+    // Sets of active and allocated timer instances
+    std::unordered_set<Timer *> activeTimers, allocatedTimers;
+
+    // Indicates if the hi-res timer should be used
+    bool useHiResTimer;
+
+    // Hi-res timer variables
+    uint64_t ticksPerSecond = 0, ticks = 0;
+
+    // The current time in milliseconds
+    uint64_t now = 0;
+
+    // The next time when a timer will expire
+    uint64_t nextExpiry = 0;
+
+    // Flag to indicate the set of allocated timers has changed
+    bool changed = false;
+
+    // Flag to indicate if initialized
+    bool initialized = false;
+
+    // Private constructor, etc. for singleton class
+    TimerManager();
+    TimerManager ( const TimerManager& );
+    const TimerManager& operator= ( const TimerManager& );
 };

@@ -11,6 +11,24 @@
 
 class DllRollbackManager
 {
+public:
+
+    // Allocate / deallocate memory for saving game states
+    void allocateStates();
+    void deallocateStates();
+
+    // Save / load current game state
+    void saveState ( const NetplayManager& netMan );
+    bool loadState ( IndexedFrame indexedFrame, NetplayManager& netMan );
+
+    // Save sounds during rollback re-run
+    void saveRerunSounds ( uint32_t frame );
+
+    // Finalize rollback sound effects
+    void finishedRerunSounds();
+
+private:
+
     struct GameState
     {
         // Each game state is uniquely identified by (netplayState, startWorldTime, indexedFrame).
@@ -38,20 +56,4 @@ class DllRollbackManager
 
     // History of sound effect playbacks
     std::array<std::array<uint8_t, CC_SFX_ARRAY_LEN>, NUM_ROLLBACK_STATES> sfxHistory;
-
-public:
-
-    // Allocate / deallocate memory for saving game states
-    void allocateStates();
-    void deallocateStates();
-
-    // Save / load current game state
-    void saveState ( const NetplayManager& netMan );
-    bool loadState ( IndexedFrame indexedFrame, NetplayManager& netMan );
-
-    // Save sounds during rollback re-run
-    void saveRerunSounds ( uint32_t frame );
-
-    // Finalize rollback sound effects
-    void finishedRerunSounds();
 };

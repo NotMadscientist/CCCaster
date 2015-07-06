@@ -11,19 +11,11 @@
 
 
 class DllControllerManager
-    : public KeyboardManager::Owner
-    , public ControllerManager::Owner
-    , public Controller::Owner
+    : private KeyboardManager::Owner
+    , private ControllerManager::Owner
+    , private Controller::Owner
     , protected DllControllerUtils
 {
-    std::vector<Controller *> allControllers;
-
-    std::array<Controller *, 2> playerControllers = {{ 0, 0 }};
-
-    std::array<size_t, 2> overlayPositions = {{ 0, 0 }};
-
-    std::array<bool, 2> finishedMapping = {{ false, false }};
-
 public:
 
     // Local vs remote player numbers
@@ -53,4 +45,14 @@ public:
 
     // To be implemented
     virtual void saveMappings ( const Controller *controller ) const = 0;
+
+private:
+
+    std::vector<Controller *> allControllers;
+
+    std::array<Controller *, 2> playerControllers = {{ 0, 0 }};
+
+    std::array<size_t, 2> overlayPositions = {{ 0, 0 }};
+
+    std::array<bool, 2> finishedMapping = {{ false, false }};
 };

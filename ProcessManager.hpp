@@ -16,7 +16,7 @@
 struct IpcConnected : public SerializableSequence { EMPTY_MESSAGE_BOILERPLATE ( IpcConnected ) };
 
 
-class ProcessManager : public Socket::Owner, public Timer::Owner
+class ProcessManager : private Socket::Owner, private Timer::Owner
 {
 public:
 
@@ -33,37 +33,6 @@ public:
     };
 
     Owner *owner = 0;
-
-private:
-
-    // Named pipe
-    void *pipe = 0;
-
-    // Process ID
-    int processId = 0;
-
-    // IPC socket
-    SocketPtr ipcSocket;
-
-    // Game start timer
-    TimerPtr gameStartTimer;
-
-    // Number of attempts to start the game
-    int gameStartCount = 0;
-
-    // IPC connected flag
-    bool connected = false;
-
-    // IPC socket callbacks
-    void acceptEvent ( Socket *socket ) override;
-    void connectEvent ( Socket *socket ) override;
-    void disconnectEvent ( Socket *socket ) override;
-    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override;
-
-    // IPC connect timer callback
-    void timerExpired ( Timer *timer ) override;
-
-public:
 
     // Game directory, empty means current working directory
     static std::string gameDir;
@@ -87,7 +56,6 @@ public:
 
     // True if we're running on Wine, this caches the result of the first call (NOT thread safe)
     static bool isWine();
-
 
     // Basic constructor / destructor
     ProcessManager ( Owner *owner );
@@ -129,4 +97,34 @@ public:
     // Get / set the game RngState
     MsgPtr getRngState ( uint32_t index ) const;
     void setRngState ( const RngState& rngState );
+
+private:
+
+    // Named pipe
+    void *pipe = 0;
+
+    // Process ID
+    int processId = 0;
+
+    // IPC socket
+    SocketPtr ipcSocket;
+
+    // Game start timer
+    TimerPtr gameStartTimer;
+
+    // Number of attempts to start the game
+    int gameStartCount = 0;
+
+    // IPC connected flag
+    bool connected = false;
+
+    // IPC socket callbacks
+    void acceptEvent ( Socket *socket ) override;
+    void connectEvent ( Socket *socket ) override;
+    void disconnectEvent ( Socket *socket ) override;
+    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override;
+
+    // IPC connect timer callback
+    void timerExpired ( Timer *timer ) override;
+
 };

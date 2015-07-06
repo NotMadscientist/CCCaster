@@ -24,12 +24,6 @@ class PaletteManager : public SerializableSequence
 class PaletteManager
 #endif
 {
-    std::map<uint32_t, std::map<uint32_t, uint32_t>> palettes;
-
-    std::array<std::array<uint32_t, 256>, 36> originals;
-
-    void optimize();
-
 public:
 
     static uint32_t computeHighlightColor ( uint32_t color );
@@ -57,4 +51,12 @@ public:
 #ifndef DISABLE_SERIALIZATION
     PROTOCOL_MESSAGE_BOILERPLATE ( PaletteManager, palettes )
 #endif
+
+private:
+
+    std::map<uint32_t, std::map<uint32_t, uint32_t>> palettes;
+
+    std::array<std::array<uint32_t, 256>, 36> originals;
+
+    void optimize();
 };

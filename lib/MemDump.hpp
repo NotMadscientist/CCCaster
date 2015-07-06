@@ -8,11 +8,13 @@
 #include <string>
 
 
-struct MemDumpPtr;
+class MemDumpPtr;
 
 
-struct MemDumpBase
+class MemDumpBase
 {
+public:
+
     // Size of this memory dump
     const size_t size;
 
@@ -46,8 +48,10 @@ protected:
 };
 
 
-struct MemDumpPtr : public MemDumpBase
+class MemDumpPtr : public MemDumpBase
 {
+public:
+
     // The parent memory dump
     const MemDumpBase *const parent = 0;
 
@@ -111,8 +115,10 @@ inline size_t MemDumpBase::getTotalSize() const
 }
 
 
-struct MemDump : public MemDumpBase
+class MemDump : public MemDumpBase
 {
+public:
+
     // The starting address of the memory dump
     char *const addr;
 
@@ -156,8 +162,10 @@ struct MemDump : public MemDumpBase
 };
 
 
-struct MemDumpList
+class MemDumpList
 {
+public:
+
     // Total size of memory dumps, only valid after calling update()
     size_t totalSize = 0;
 

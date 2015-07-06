@@ -25,11 +25,50 @@ inline int computeDelay ( double latency )
 
 
 class MainUi
-    : public Controller::Owner
-    , public ControllerManager::Owner
-    , public HttpDownload::Owner
-    , public HttpGet::Owner
+    : private Controller::Owner
+    , private ControllerManager::Owner
+    , private HttpDownload::Owner
+    , private HttpGet::Owner
 {
+public:
+
+    InitialConfig initialConfig;
+
+    std::string sessionMessage;
+
+    std::string sessionError;
+
+
+    void initialize();
+
+    void main ( RunFuncPtr run );
+
+    void update ( bool isStartup = false );
+
+    void display ( const std::string& message, bool replace = true );
+
+    bool connected ( const InitialConfig& initialConfig, const PingStats& pingStats );
+
+    void spectate ( const SpectateConfig& spectateConfig );
+
+    bool confirm ( const std::string& question );
+
+
+    void setMaxRealDelay ( uint8_t delay );
+
+    void setDefaultRollback ( uint8_t rollback );
+
+    const KeyValueStore& getConfig() const { return config; }
+
+    const NetplayConfig& getNetplayConfig() const { return netplayConfig; }
+
+
+    static void *getConsoleWindow();
+
+    static std::string formatStats ( const PingStats& pingStats );
+
+private:
+
     std::shared_ptr<ConsoleUi> ui;
 
     KeyValueStore config;
@@ -93,40 +132,4 @@ class MainUi
 
     bool configure ( const PingStats& pingStats );
 
-public:
-
-    InitialConfig initialConfig;
-
-    std::string sessionMessage;
-
-    std::string sessionError;
-
-
-    void initialize();
-
-    void main ( RunFuncPtr run );
-
-    void update ( bool isStartup = false );
-
-    void display ( const std::string& message, bool replace = true );
-
-    bool connected ( const InitialConfig& initialConfig, const PingStats& pingStats );
-
-    void spectate ( const SpectateConfig& spectateConfig );
-
-    bool confirm ( const std::string& question );
-
-
-    void setMaxRealDelay ( uint8_t delay );
-
-    void setDefaultRollback ( uint8_t rollback );
-
-    const KeyValueStore& getConfig() const { return config; }
-
-    const NetplayConfig& getNetplayConfig() const { return netplayConfig; }
-
-
-    static void *getConsoleWindow();
-
-    static std::string formatStats ( const PingStats& pingStats );
 };

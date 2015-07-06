@@ -15,12 +15,6 @@ public:
 
     Owner *owner = 0;
 
-private:
-
-    uint64_t delay = 0, expiry = 0;
-
-public:
-
     Timer ( Owner *owner );
     ~Timer();
 
@@ -33,6 +27,10 @@ public:
     bool isStarted() const { return ( delay > 0 || expiry > 0 ); }
 
     friend class TimerManager;
+
+private:
+
+    uint64_t delay = 0, expiry = 0;
 };
 
 typedef std::shared_ptr<Timer> TimerPtr;

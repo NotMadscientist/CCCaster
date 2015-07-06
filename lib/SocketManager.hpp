@@ -8,20 +8,6 @@ class Socket;
 
 class SocketManager
 {
-    // Sets of active and allocated socket instances
-    std::unordered_set<Socket *> activeSockets, allocatedSockets;
-
-    // Flag to indicate the set of allocated sockets has changed
-    bool changed = false;
-
-    // Flag to indicate if initialized
-    bool initialized = false;
-
-    // Private constructor, etc. for singleton class
-    SocketManager();
-    SocketManager ( const SocketManager& );
-    const SocketManager& operator= ( const SocketManager& );
-
 public:
 
     // Check for socket events
@@ -45,4 +31,20 @@ public:
 
     // Get the singleton instance
     static SocketManager& get();
+
+private:
+
+    // Sets of active and allocated socket instances
+    std::unordered_set<Socket *> activeSockets, allocatedSockets;
+
+    // Flag to indicate the set of allocated sockets has changed
+    bool changed = false;
+
+    // Flag to indicate if initialized
+    bool initialized = false;
+
+    // Private constructor, etc. for singleton class
+    SocketManager();
+    SocketManager ( const SocketManager& );
+    const SocketManager& operator= ( const SocketManager& );
 };
