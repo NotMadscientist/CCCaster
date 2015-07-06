@@ -120,7 +120,7 @@ public:
     // The child sockets can be restored via getChildSockets after the parent socket is constructed.
     MsgPtr share ( int processId );
 
-    // Send a protocol message, returning false indicates the socket is disconnected
+    // Send a protocol message, a return value of false indicates socket is disconnected
     bool send ( SerializableMessage *message, const IpAddrPort& address = NullAddress ) override;
     bool send ( SerializableSequence *message, const IpAddrPort& address = NullAddress ) override;
     bool send ( const MsgPtr& message, const IpAddrPort& address = NullAddress ) override;
