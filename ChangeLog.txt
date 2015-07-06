@@ -1,3 +1,8 @@
+v3.0.015:
+- Fixed the super flash overlay glitch on the boss stages.
+- Fixed the bug that shows the color select after pressing F4.
+- Added an option to view changes before updating.
+
 v3.0.014:
 - Fixed alt-enter crash.
 

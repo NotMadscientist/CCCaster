@@ -376,10 +376,10 @@ static const Asm hijackIntroState = { ( void * ) 0x45C1F2, INLINE_NOP_SEVEN_TIME
 // Prevent training mode music from reseting
 static const Asm disableTrainingMusicReset = { ( void * ) 0x472C6D, { 0xEB, 0x05 } }; // jmp 00472C74
 
-// Fix the super flash overlays on the two giant stages.
+// Fix the super flash overlays on the two boss stages.
 // This is done by changing the string that the games searches for in the stage config .ini.
-// See bg/BgList.ini in 0000.p.
-static const Asm fixGiantStageSuperFlashOverlay = { ( void * ) 0x53B3C8, INLINE_FF_12_BYTES };
+// Search for 'IsGiantStage' in bg/BgList.ini inside 0000.p.
+static const Asm fixBossStageSuperFlashOverlay = { ( void * ) 0x53B3C8, INLINE_FF_12_BYTES };
 
 // The color load callback during character select
 extern "C" void charaSelectColorCb();
