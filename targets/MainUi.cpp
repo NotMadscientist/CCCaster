@@ -1315,7 +1315,7 @@ void MainUi::update ( bool isStartup )
 
 void MainUi::openChangeLog()
 {
-    const DWORD val = GetFileAttributes ( ( ProcessManager::appDir + CHANGELOG ).c_str() );
+    const DWORD val = GetFileAttributes ( ( ProcessManager::appDir + FOLDER CHANGELOG ).c_str() );
 
     if ( val == INVALID_FILE_ATTRIBUTES )
     {
@@ -1324,7 +1324,7 @@ void MainUi::openChangeLog()
         return;
     }
 
-    system ( ( "\"start \"Viewing change log\" notepad " + ProcessManager::appDir + CHANGELOG "\"" ).c_str() );
+    system ( ( "\"start \"Viewing change log\" notepad " + ProcessManager::appDir + FOLDER CHANGELOG "\"" ).c_str() );
 }
 
 void MainUi::fetch ( const MainUpdater::Type& type )
