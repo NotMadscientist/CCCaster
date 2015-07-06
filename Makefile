@@ -128,7 +128,7 @@ generator: tools/$(GENERATOR)
 palettes: $(PALETTES)
 
 
-$(ARCHIVE): $(BINARY) $(PALETTES) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER) $(FOLDER)/$(UPDATER)
+$(ARCHIVE): $(BINARY) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER) $(FOLDER)/$(UPDATER)
 $(ARCHIVE): $(FOLDER)/unzip.exe $(FOLDER)/ReadMe.txt $(FOLDER)/ChangeLog.txt
 	@echo
 	rm -f $(wildcard $(NAME)*.zip)
