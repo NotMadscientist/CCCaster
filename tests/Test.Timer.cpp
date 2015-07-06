@@ -1,9 +1,9 @@
 #ifndef RELEASE
 
-#include "EventManager.h"
-#include "SocketManager.h"
-#include "TimerManager.h"
-#include "Timer.h"
+#include "EventManager.hpp"
+#include "SocketManager.hpp"
+#include "TimerManager.hpp"
+#include "Timer.hpp"
 
 #include <gtest/gtest.h>
 

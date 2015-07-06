@@ -12,13 +12,13 @@ REGEX="^(struct|class) [A-Za-z0-9]+ .+ public Serializable[A-Z]"
 
 # Scan for all protocol classes, sorted alphabetically
 grep --extended-regexp "$REGEX" "$@" \
-  | sed --regexp-extended 's/^.+\.h:[a-z]+ ([A-Za-z0-9]+) .+$$/\1,/' \
+  | sed --regexp-extended 's/^.+\.hpp:[a-z]+ ([A-Za-z0-9]+) .+$$/\1,/' \
   | sort \
   | uniq \
   > $DIR/tmp_all
 
 # Use a sorted list of the current enums
-grep --invert-match --fixed-strings ' // Deleted message' $DIR/ProtocolEnums.h \
+grep --invert-match --fixed-strings ' // Deleted message' $DIR/ProtocolEnums.hpp \
   | sort \
   > $DIR/tmp_enums
 
@@ -66,13 +66,13 @@ if [ $? -ne 0 ]; then
       echo $message >> $DIR/tmp_enums
     fi
 
-  done < "$DIR/ProtocolEnums.h"
+  done < "$DIR/ProtocolEnums.hpp"
 
   # Append new messages at the end
   cat $DIR/tmp_new >> $DIR/tmp_enums
 
   # Check for changes to the final list of enums
-  diff $DIR/tmp_enums $DIR/ProtocolEnums.h 1> /dev/null 2>&1
+  diff $DIR/tmp_enums $DIR/ProtocolEnums.hpp 1> /dev/null 2>&1
 
   # Regenerate protocol only if the final list is different
   if [ $? -ne 0 ]; then
@@ -80,7 +80,7 @@ if [ $? -ne 0 ]; then
   fi
 
   # Use the final list of enums
-  mv -f $DIR/tmp_enums $DIR/ProtocolEnums.h
+  mv -f $DIR/tmp_enums $DIR/ProtocolEnums.hpp
 
 fi
 
@@ -91,46 +91,46 @@ rm -f $DIR/tmp*
 
 
 # Check if we should regenerate protocol
-if [ "$SHOULD_REGEN" = "1" ] || [ ! -f "$DIR/Protocol.includes.h" ]      \
-                             || [ ! -f "$DIR/Protocol.clone.h" ]         \
-                             || [ ! -f "$DIR/Protocol.types.h" ]         \
-                             || [ ! -f "$DIR/Protocol.strings.h" ]       \
-                             || [ ! -f "$DIR/Protocol.decode.h" ]; then
+if [ "$SHOULD_REGEN" = "1" ] || [ ! -f "$DIR/Protocol.includes.hpp" ]      \
+                             || [ ! -f "$DIR/Protocol.clone.hpp" ]         \
+                             || [ ! -f "$DIR/Protocol.types.hpp" ]         \
+                             || [ ! -f "$DIR/Protocol.strings.hpp" ]       \
+                             || [ ! -f "$DIR/Protocol.decode.hpp" ]; then
 
   echo Regenerating protocol
 
   grep --extended-regexp "$REGEX" "$@" \
     | sed --regexp-extended \
-      's/^(.+\.h):[a-z]+ ([A-Za-z0-9]+) .+$$/#include "\1"/' \
+      's/^(.+\.hpp):[a-z]+ ([A-Za-z0-9]+) .+$$/#include "\1"/' \
     | sort \
     | uniq \
-    > $DIR/Protocol.includes.h
+    > $DIR/Protocol.includes.hpp
 
   grep --extended-regexp "$REGEX" "$@" | grep --invert-match "no-clone" \
     | sed --regexp-extended \
-      's/^(.+\.h):[a-z]+ ([A-Za-z0-9]+) .+$$/\
+      's/^(.+\.hpp):[a-z]+ ([A-Za-z0-9]+) .+$$/\
 MsgPtr \2::clone() const { MsgPtr msg ( new \2 ( *this ) ); msg->invalidate(); return msg; }/' \
     | sort \
     | uniq \
-    > $DIR/Protocol.clone.h
+    > $DIR/Protocol.clone.hpp
 
   grep --extended-regexp "$REGEX" "$@" | grep --invert-match "no-type" \
     | sed --regexp-extended \
-      's/^(.+\.h):[a-z]+ ([A-Za-z0-9]+) .+$$/MsgType \2::getMsgType() const { return MsgType::\2; }/' \
+      's/^(.+\.hpp):[a-z]+ ([A-Za-z0-9]+) .+$$/MsgType \2::getMsgType() const { return MsgType::\2; }/' \
     | sort \
     | uniq \
-    > $DIR/Protocol.types.h
+    > $DIR/Protocol.types.hpp
 
   grep --extended-regexp "$REGEX" "$@" \
     | sed --regexp-extended \
-      's/^.+\.h:[a-z]+ ([A-Za-z0-9]+) .+$$/case MsgType::\1: return ( os << "\1" );/' \
+      's/^.+\.hpp:[a-z]+ ([A-Za-z0-9]+) .+$$/case MsgType::\1: return ( os << "\1" );/' \
     | sort \
-    > $DIR/Protocol.strings.h
+    > $DIR/Protocol.strings.hpp
 
   grep --extended-regexp "$REGEX" "$@" \
     | sed --regexp-extended \
-      's/^.+\.h:[a-z]+ ([A-Za-z0-9]+) .+$$/case MsgType::\1: msg.reset ( new \1() ); break;/' \
+      's/^.+\.hpp:[a-z]+ ([A-Za-z0-9]+) .+$$/case MsgType::\1: msg.reset ( new \1() ); break;/' \
     | sort \
-    > $DIR/Protocol.decode.h
+    > $DIR/Protocol.decode.hpp
 
 fi

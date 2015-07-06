@@ -1,5 +1,5 @@
-#include "TimerManager.h"
-#include "Timer.h"
+#include "TimerManager.hpp"
+#include "Timer.hpp"
 
 using namespace std;
 

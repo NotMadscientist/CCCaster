@@ -1,7 +1,7 @@
-#include "ReplayManager.h"
-#include "Exceptions.h"
-#include "Logger.h"
-#include "Messages.h"
+#include "ReplayManager.hpp"
+#include "Exceptions.hpp"
+#include "Logger.hpp"
+#include "Messages.hpp"
 
 #include <iostream>
 #include <fstream>

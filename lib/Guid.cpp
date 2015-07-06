@@ -1,5 +1,5 @@
-#include "Guid.h"
-#include "Logger.h"
+#include "Guid.hpp"
+#include "Logger.hpp"
 
 #include <algorithm>
 

@@ -1,6 +1,6 @@
-#include "TimerManager.h"
-#include "Timer.h"
-#include "Logger.h"
+#include "TimerManager.hpp"
+#include "Timer.hpp"
+#include "Logger.hpp"
 
 #include <windows.h>
 #include <mmsystem.h>

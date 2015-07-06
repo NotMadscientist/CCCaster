@@ -1,6 +1,6 @@
-#include "SpectatorManager.h"
-#include "ProcessManager.h"
-#include "Logger.h"
+#include "SpectatorManager.hpp"
+#include "ProcessManager.hpp"
+#include "Logger.hpp"
 
 using namespace std;
 

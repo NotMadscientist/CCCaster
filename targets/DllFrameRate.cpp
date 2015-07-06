@@ -1,8 +1,8 @@
-#include "DllFrameRate.h"
-#include "TimerManager.h"
-#include "Constants.h"
-#include "ProcessManager.h"
-#include "DllAsmHacks.h"
+#include "DllFrameRate.hpp"
+#include "TimerManager.hpp"
+#include "Constants.hpp"
+#include "ProcessManager.hpp"
+#include "DllAsmHacks.hpp"
 
 #include <d3dx9.h>
 

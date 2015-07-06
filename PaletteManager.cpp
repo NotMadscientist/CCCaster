@@ -1,6 +1,6 @@
-#include "PaletteManager.h"
-#include "StringUtils.h"
-#include "Algorithms.h"
+#include "PaletteManager.hpp"
+#include "StringUtils.hpp"
+#include "Algorithms.hpp"
 
 #include <fstream>
 #include <sstream>

@@ -1,7 +1,7 @@
-#include "DllRollbackManager.h"
-#include "MemDump.h"
-#include "DllAsmHacks.h"
-#include "ErrorStringsExt.h"
+#include "DllRollbackManager.hpp"
+#include "MemDump.hpp"
+#include "DllAsmHacks.hpp"
+#include "ErrorStringsExt.hpp"
 
 #include <utility>
 #include <algorithm>

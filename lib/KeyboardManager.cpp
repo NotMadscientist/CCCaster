@@ -1,7 +1,7 @@
-#include "KeyboardManager.h"
-#include "UdpSocket.h"
-#include "Logger.h"
-#include "Exceptions.h"
+#include "KeyboardManager.hpp"
+#include "UdpSocket.hpp"
+#include "Logger.hpp"
+#include "Exceptions.hpp"
 
 #include <windows.h>
 

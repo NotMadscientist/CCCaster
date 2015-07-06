@@ -1,5 +1,5 @@
-#include "Logger.h"
-#include "Version.h"
+#include "Logger.hpp"
+#include "Version.hpp"
 
 using namespace std;
 

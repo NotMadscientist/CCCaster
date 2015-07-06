@@ -1,13 +1,14 @@
-#include "DllHacks.h"
-#include "DllAsmHacks.h"
+#include "DllHacks.hpp"
+#include "DllAsmHacks.hpp"
+#include "Exceptions.hpp"
+#include "ProcessManager.hpp"
+#include "Algorithms.hpp"
+#include "KeyboardManager.hpp"
+#include "MouseManager.hpp"
+#include "ControllerManager.hpp"
+#include "DllFrameRate.hpp"
+
 #include "D3DHook.h"
-#include "Exceptions.h"
-#include "ProcessManager.h"
-#include "Algorithms.h"
-#include "KeyboardManager.h"
-#include "MouseManager.h"
-#include "ControllerManager.h"
-#include "DllFrameRate.h"
 
 #define INITGUID
 #include <windows.h>

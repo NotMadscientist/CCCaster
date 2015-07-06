@@ -1,4 +1,4 @@
-#include "MouseManager.h"
+#include "MouseManager.hpp"
 
 using namespace std;
 

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-files="*.cpp *.h tools/*.cpp targets/*.cpp targets/*.h lib/*.cpp lib/*.h tests/*.cpp tests/*.h"
+files="*.cpp *.hpp tools/*.cpp targets/*.cpp targets/*.hpp lib/*.cpp lib/*.hpp tests/*.cpp tests/*.hpp"
 
 branch=`git rev-parse --abbrev-ref HEAD`
 
@@ -17,11 +17,11 @@ if [ $? -ne 0 ]; then
 
     echo "Regenerating .depend_$branch"
 
-    $1 $2 -std=c++11 -MM *.cpp         *.h         > tmp_depend1 & \
-    $1 $2 -std=c++11 -MM tools/*.cpp               > tmp_depend2 & \
-    $1 $2 -std=c++11 -MM targets/*.cpp targets/*.h > tmp_depend3 & \
-    $1 $2 -std=c++11 -MM lib/*.cpp     lib/*.h     > tmp_depend4 & \
-    $1 $2 -std=c++11 -MM tests/*.cpp   tests/*.h   > tmp_depend5
+    $1 $2 -std=c++11 -MM *.cpp         *.hpp         > tmp_depend1 & \
+    $1 $2 -std=c++11 -MM tools/*.cpp                 > tmp_depend2 & \
+    $1 $2 -std=c++11 -MM targets/*.cpp targets/*.hpp > tmp_depend3 & \
+    $1 $2 -std=c++11 -MM lib/*.cpp     lib/*.hpp     > tmp_depend4 & \
+    $1 $2 -std=c++11 -MM tests/*.cpp   tests/*.hpp   > tmp_depend5
 
     wait
 

@@ -1,9 +1,9 @@
-#include "SpectatorManager.h"
-#include "DllNetplayManager.h"
-#include "ProcessManager.h"
-#include "Logger.h"
-#include "Algorithms.h"
-#include "Constants.h"
+#include "SpectatorManager.hpp"
+#include "DllNetplayManager.hpp"
+#include "ProcessManager.hpp"
+#include "Logger.hpp"
+#include "Algorithms.hpp"
+#include "Constants.hpp"
 
 using namespace std;
 

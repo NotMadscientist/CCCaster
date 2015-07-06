@@ -1,5 +1,5 @@
-#include "GoBackN.h"
-#include "Logger.h"
+#include "GoBackN.hpp"
+#include "Logger.hpp"
 
 #include <cereal/types/string.hpp>
 

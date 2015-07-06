@@ -1,8 +1,8 @@
-#include "ProcessManager.h"
-#include "TcpSocket.h"
-#include "Constants.h"
-#include "Exceptions.h"
-#include "ErrorStringsExt.h"
+#include "ProcessManager.hpp"
+#include "TcpSocket.hpp"
+#include "Constants.hpp"
+#include "Exceptions.hpp"
+#include "ErrorStringsExt.hpp"
 
 #include <windows.h>
 #include <direct.h>

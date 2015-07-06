@@ -1,8 +1,8 @@
-#include "DllOverlayUi.h"
-#include "DllOverlayPrimitives.h"
-#include "DllHacks.h"
-#include "ProcessManager.h"
-#include "Enum.h"
+#include "DllOverlayUi.hpp"
+#include "DllOverlayPrimitives.hpp"
+#include "DllHacks.hpp"
+#include "ProcessManager.hpp"
+#include "Enum.hpp"
 
 #include <windows.h>
 #include <d3dx9.h>

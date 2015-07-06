@@ -1,7 +1,7 @@
 #ifndef RELEASE
 
-#include "Test.Socket.h"
-#include "TcpSocket.h"
+#include "Test.Socket.hpp"
+#include "TcpSocket.hpp"
 
 
 TEST_CONNECT                ( TcpSocket, 0, 0, 0, 1000 )

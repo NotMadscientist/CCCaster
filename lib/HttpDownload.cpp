@@ -1,5 +1,5 @@
-#include "HttpDownload.h"
-#include "Logger.h"
+#include "HttpDownload.hpp"
+#include "Logger.hpp"
 
 using namespace std;
 

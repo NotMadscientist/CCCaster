@@ -1,4 +1,4 @@
-#include "Version.h"
+#include "Version.hpp"
 
 #include <vector>
 
@@ -109,4 +109,4 @@ bool operator< ( const Version& a, const Version& b )
     return false;
 }
 
-#include "Version.local.h"
+#include "Version.local.hpp"

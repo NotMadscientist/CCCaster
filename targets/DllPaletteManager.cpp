@@ -1,8 +1,8 @@
-#include "PaletteManager.h"
-#include "DllAsmHacks.h"
-#include "Logger.h"
-#include "CharacterSelect.h"
-#include "ProcessManager.h"
+#include "PaletteManager.hpp"
+#include "DllAsmHacks.hpp"
+#include "Logger.hpp"
+#include "CharacterSelect.hpp"
+#include "ProcessManager.hpp"
 
 using namespace std;
 

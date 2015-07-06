@@ -1,7 +1,7 @@
-#include "SmartSocket.h"
-#include "TcpSocket.h"
-#include "UdpSocket.h"
-#include "Logger.h"
+#include "SmartSocket.hpp"
+#include "TcpSocket.hpp"
+#include "UdpSocket.hpp"
+#include "Logger.hpp"
 
 #include <ws2tcpip.h>
 

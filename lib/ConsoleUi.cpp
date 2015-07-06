@@ -1,5 +1,5 @@
-#include "ConsoleUi.h"
-#include "StringUtils.h"
+#include "ConsoleUi.hpp"
+#include "StringUtils.hpp"
 
 #include <windows.h>
 

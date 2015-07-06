@@ -1,6 +1,6 @@
-#include "MemDump.h"
-#include "Compression.h"
-#include "Algorithms.h"
+#include "MemDump.hpp"
+#include "Compression.hpp"
+#include "Algorithms.hpp"
 
 #include <list>
 #include <algorithm>

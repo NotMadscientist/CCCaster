@@ -1,6 +1,6 @@
-#include "HttpGet.h"
-#include "TcpSocket.h"
-#include "Exceptions.h"
+#include "HttpGet.hpp"
+#include "TcpSocket.hpp"
+#include "Exceptions.hpp"
 
 #include <sstream>
 

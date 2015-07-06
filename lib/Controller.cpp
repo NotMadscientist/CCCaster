@@ -1,8 +1,8 @@
-#include "Controller.h"
-#include "ControllerManager.h"
-#include "Constants.h"
-#include "Exceptions.h"
-#include "ErrorStrings.h"
+#include "Controller.hpp"
+#include "ControllerManager.hpp"
+#include "Constants.hpp"
+#include "Exceptions.hpp"
+#include "ErrorStrings.hpp"
 
 #include <windows.h>
 
@@ -16,7 +16,7 @@ static string getVKeyName ( uint32_t vkCode, uint32_t scanCode, bool isExtended 
 {
     switch ( vkCode )
     {
-#include "KeyboardVKeyNames.h"
+#include "KeyboardVKeyNames.hpp"
 
         default:
             break;

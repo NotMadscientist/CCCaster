@@ -1,8 +1,8 @@
 #ifndef RELEASE
 
-#include "Test.Socket.h"
-#include "UdpSocket.h"
-#include "GoBackN.h"
+#include "Test.Socket.hpp"
+#include "UdpSocket.hpp"
+#include "GoBackN.hpp"
 
 #include <gtest/gtest.h>
 

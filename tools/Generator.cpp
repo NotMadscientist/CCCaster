@@ -1,5 +1,5 @@
-#include "MemDump.h"
-#include "Constants.h"
+#include "MemDump.hpp"
+#include "Constants.hpp"
 
 #include <utility>
 #include <algorithm>

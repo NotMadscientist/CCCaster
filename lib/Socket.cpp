@@ -1,10 +1,10 @@
-#include "SocketManager.h"
-#include "Socket.h"
-#include "TcpSocket.h"
-#include "UdpSocket.h"
-#include "SmartSocket.h"
-#include "Exceptions.h"
-#include "ErrorStrings.h"
+#include "SocketManager.hpp"
+#include "Socket.hpp"
+#include "TcpSocket.hpp"
+#include "UdpSocket.hpp"
+#include "SmartSocket.hpp"
+#include "Exceptions.hpp"
+#include "ErrorStrings.hpp"
 
 #include <winsock2.h>
 #include <windows.h>

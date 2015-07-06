@@ -1,9 +1,9 @@
-#include "JoystickDetector.h"
-#include "ControllerManager.h"
-#include "Thread.h"
-#include "UdpSocket.h"
-#include "Exceptions.h"
-#include "ErrorStrings.h"
+#include "JoystickDetector.hpp"
+#include "ControllerManager.hpp"
+#include "Thread.hpp"
+#include "UdpSocket.hpp"
+#include "Exceptions.hpp"
+#include "ErrorStrings.hpp"
 
 #define INITGUID
 #include <windows.h>

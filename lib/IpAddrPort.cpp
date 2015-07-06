@@ -1,6 +1,6 @@
-#include "IpAddrPort.h"
-#include "Exceptions.h"
-#include "ErrorStrings.h"
+#include "IpAddrPort.hpp"
+#include "Exceptions.hpp"
+#include "ErrorStrings.hpp"
 
 #include <winsock2.h>
 #include <windows.h>

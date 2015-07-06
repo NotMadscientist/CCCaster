@@ -1,5 +1,5 @@
-#include "Exceptions.h"
-#include "StringUtils.h"
+#include "Exceptions.hpp"
+#include "StringUtils.hpp"
 
 #include <winsock2.h>
 #include <windows.h>

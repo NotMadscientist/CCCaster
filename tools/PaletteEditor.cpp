@@ -1,7 +1,7 @@
-#include "PaletteEditor.h"
-#include "CharacterSelect.h"
-#include "StringUtils.h"
-#include "Algorithms.h"
+#include "PaletteEditor.hpp"
+#include "CharacterSelect.hpp"
+#include "StringUtils.hpp"
+#include "Algorithms.hpp"
 
 #include <direct.h>
 

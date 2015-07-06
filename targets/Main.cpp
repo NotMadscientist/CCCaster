@@ -1,8 +1,8 @@
-#include "Main.h"
-#include "MainUi.h"
-#include "Test.h"
-#include "Exceptions.h"
-#include "StringUtils.h"
+#include "Main.hpp"
+#include "MainUi.hpp"
+#include "Test.hpp"
+#include "Exceptions.hpp"
+#include "StringUtils.hpp"
 
 #include <optionparser.h>
 #include <windows.h>

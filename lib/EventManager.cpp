@@ -1,8 +1,8 @@
-#include "EventManager.h"
-#include "TimerManager.h"
-#include "SocketManager.h"
-#include "ControllerManager.h"
-#include "Logger.h"
+#include "EventManager.hpp"
+#include "TimerManager.hpp"
+#include "SocketManager.hpp"
+#include "ControllerManager.hpp"
+#include "Logger.hpp"
 
 #include <winsock2.h>
 #include <windows.h>

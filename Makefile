@@ -38,8 +38,8 @@ DLL_CPP_SRCS = $(wildcard targets/Dll*.cpp) $(BASE_CPP_SRCS)
 NON_GEN_SRCS = \
 	$(wildcard *.cpp) $(wildcard tools/*.cpp) $(wildcard targets/*.cpp) $(wildcard lib/*.cpp) $(wildcard tests/*.cpp)
 NON_GEN_HEADERS = \
-	$(filter-out lib/Version.%.h lib/Protocol.%.h,$(wildcard *.h targets/*.h lib/*.h tests/*.h))
-AUTOGEN_HEADERS = $(wildcard lib/Version.*.h) $(wildcard lib/Protocol.*.h)
+	$(filter-out lib/Version.%.hpp lib/Protocol.%.hpp,$(wildcard *.hpp targets/*.hpp lib/*.hpp tests/*.hpp))
+AUTOGEN_HEADERS = $(wildcard lib/Version.*.hpp) $(wildcard lib/Protocol.*.hpp)
 
 # Main program objects
 LIB_OBJECTS = $(LIB_CPP_SRCS:.cpp=.o) $(CONTRIB_C_SRCS:.c=.o)
@@ -252,7 +252,7 @@ res/palettes.res: res/palettes.rc res/palettes.ico
 
 
 define make_version
-@scripts/make_version $(VERSION)$(SUFFIX) > lib/Version.local.h
+@scripts/make_version $(VERSION)$(SUFFIX) > lib/Version.local.hpp
 endef
 
 define make_protocol
@@ -271,7 +271,7 @@ proto:
 	$(make_protocol)
 
 reset-proto:
-	rm -f lib/ProtocolEnums.h
+	rm -f lib/ProtocolEnums.hpp
 	@$(MAKE) proto
 
 depend: version proto
@@ -284,7 +284,7 @@ depend: version proto
 
 
 clean-proto:
-	git co -- lib/ProtocolEnums.h
+	git co -- lib/ProtocolEnums.hpp
 	rm -f $(AUTOGEN_HEADERS)
 
 clean-res:
@@ -337,7 +337,7 @@ format:
     --keep-one-line-blocks      	\
     --align-pointer=name        	\
     --align-reference=type      	\
-$(filter-out tools/Generator.cpp CharacterSelect.cpp lib/KeyboardVKeyNames.h targets/DllAsmHacks.h,\
+$(filter-out tools/Generator.cpp CharacterSelect.cpp lib/KeyboardVKeyNames.hpp targets/DllAsmHacks.hpp,\
 $(NON_GEN_SRCS) $(NON_GEN_HEADERS))
 
 count:

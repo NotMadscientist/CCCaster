@@ -1,6 +1,6 @@
-#include "ControllerManager.h"
-#include "Exceptions.h"
-#include "ErrorStrings.h"
+#include "ControllerManager.hpp"
+#include "Exceptions.hpp"
+#include "ErrorStrings.hpp"
 
 #define INITGUID
 #define DIRECTINPUT_VERSION 0x0800 // Need at least version 8

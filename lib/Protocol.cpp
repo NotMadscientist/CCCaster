@@ -1,10 +1,10 @@
-#include "Protocol.h"
-#include "Protocol.includes.h"
-#include "Protocol.clone.h"
-#include "Protocol.types.h"
-#include "Compression.h"
-#include "Logger.h"
-#include "Enum.h"
+#include "Protocol.hpp"
+#include "Protocol.includes.hpp"
+#include "Protocol.clone.hpp"
+#include "Protocol.types.hpp"
+#include "Compression.hpp"
+#include "Logger.hpp"
+#include "Enum.hpp"
 
 using namespace std;
 using namespace cereal;
@@ -147,7 +147,7 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
         // Construct the correct message type
         switch ( type )
         {
-#include "Protocol.decode.h"
+#include "Protocol.decode.hpp"
 
             default:
                 consumed = 0;
@@ -337,7 +337,7 @@ ostream& operator<< ( ostream& os, MsgType type )
 {
     switch ( type )
     {
-#include "Protocol.strings.h"
+#include "Protocol.strings.hpp"
 
         default:
             break;

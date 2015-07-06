@@ -1,10 +1,10 @@
-#include "ProcessManager.h"
-#include "TcpSocket.h"
-#include "Messages.h"
-#include "Constants.h"
-#include "EventManager.h"
-#include "Exceptions.h"
-#include "ErrorStringsExt.h"
+#include "ProcessManager.hpp"
+#include "TcpSocket.hpp"
+#include "Messages.hpp"
+#include "Constants.hpp"
+#include "EventManager.hpp"
+#include "Exceptions.hpp"
+#include "ErrorStringsExt.hpp"
 
 #include <windows.h>
 #include <direct.h>

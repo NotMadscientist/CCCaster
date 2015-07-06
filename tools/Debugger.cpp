@@ -1,7 +1,7 @@
-#include "Logger.h"
-#include "StringUtils.h"
-#include "Exceptions.h"
-#include "Constants.h"
+#include "Logger.hpp"
+#include "StringUtils.hpp"
+#include "Exceptions.hpp"
+#include "Constants.hpp"
 
 #include <distorm.h>
 #include <mnemonics.h>

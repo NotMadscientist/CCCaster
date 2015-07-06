@@ -1,8 +1,8 @@
-#include "DllAsmHacks.h"
-#include "Messages.h"
-#include "DllNetplayManager.h"
-#include "CharacterSelect.h"
-#include "Logger.h"
+#include "DllAsmHacks.hpp"
+#include "Messages.hpp"
+#include "DllNetplayManager.hpp"
+#include "CharacterSelect.hpp"
+#include "Logger.hpp"
 
 #include <windows.h>
 

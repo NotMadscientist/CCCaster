@@ -1,5 +1,5 @@
-#include "DllOverlayUi.h"
-#include "Constants.h"
+#include "DllOverlayUi.hpp"
+#include "Constants.hpp"
 
 #include <d3dx9.h>
 

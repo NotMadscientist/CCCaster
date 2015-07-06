@@ -1,9 +1,9 @@
-#include "DllControllerManager.h"
-#include "DllOverlayUi.h"
-#include "DllHacks.h"
-#include "DllAsmHacks.h"
-#include "KeyboardState.h"
-#include "CharacterSelect.h"
+#include "DllControllerManager.hpp"
+#include "DllOverlayUi.hpp"
+#include "DllHacks.hpp"
+#include "DllAsmHacks.hpp"
+#include "KeyboardState.hpp"
+#include "CharacterSelect.hpp"
 
 #include <windows.h>
 

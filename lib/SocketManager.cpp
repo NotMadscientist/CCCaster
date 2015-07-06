@@ -1,8 +1,8 @@
-#include "SocketManager.h"
-#include "Socket.h"
-#include "TimerManager.h"
-#include "Exceptions.h"
-#include "ErrorStrings.h"
+#include "SocketManager.hpp"
+#include "Socket.hpp"
+#include "TimerManager.hpp"
+#include "Exceptions.hpp"
+#include "ErrorStrings.hpp"
 
 #include <winsock2.h>
 #include <windows.h>

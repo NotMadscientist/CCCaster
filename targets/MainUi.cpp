@@ -1,12 +1,12 @@
-#include "Main.h"
-#include "MainUi.h"
-#include "Version.h"
-#include "ConsoleUi.h"
-#include "Exceptions.h"
-#include "ErrorStringsExt.h"
-#include "CharacterSelect.h"
-#include "StringUtils.h"
-#include "NetplayStates.h"
+#include "Main.hpp"
+#include "MainUi.hpp"
+#include "Version.hpp"
+#include "ConsoleUi.hpp"
+#include "Exceptions.hpp"
+#include "ErrorStringsExt.hpp"
+#include "CharacterSelect.hpp"
+#include "StringUtils.hpp"
+#include "NetplayStates.hpp"
 
 #include <mmsystem.h>
 #include <wininet.h>

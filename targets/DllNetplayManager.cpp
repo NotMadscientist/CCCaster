@@ -1,8 +1,8 @@
-#include "DllNetplayManager.h"
-#include "DllAsmHacks.h"
-#include "ProcessManager.h"
-#include "Exceptions.h"
-#include "CharacterSelect.h"
+#include "DllNetplayManager.hpp"
+#include "DllAsmHacks.hpp"
+#include "ProcessManager.hpp"
+#include "Exceptions.hpp"
+#include "CharacterSelect.hpp"
 
 #include <algorithm>
 #include <cmath>

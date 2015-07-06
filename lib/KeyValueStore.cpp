@@ -1,6 +1,6 @@
-#include "KeyValueStore.h"
-#include "StringUtils.h"
-#include "Logger.h"
+#include "KeyValueStore.hpp"
+#include "StringUtils.hpp"
+#include "Logger.hpp"
 
 #include <sstream>
 #include <fstream>

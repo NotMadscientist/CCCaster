@@ -1,6 +1,6 @@
-#include "Pinger.h"
-#include "Logger.h"
-#include "TimerManager.h"
+#include "Pinger.hpp"
+#include "Logger.hpp"
+#include "TimerManager.hpp"
 
 
 #define MAX_ROUND_TRIP 500

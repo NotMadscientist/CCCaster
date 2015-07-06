@@ -1,8 +1,8 @@
-#include "SocketManager.h"
-#include "UdpSocket.h"
-#include "Protocol.h"
-#include "Exceptions.h"
-#include "ErrorStrings.h"
+#include "SocketManager.hpp"
+#include "UdpSocket.hpp"
+#include "Protocol.hpp"
+#include "Exceptions.hpp"
+#include "ErrorStrings.hpp"
 
 #include <winsock2.h>
 #include <windows.h>

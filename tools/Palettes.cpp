@@ -1,6 +1,6 @@
-#include "PaletteEditor.h"
-#include "Algorithms.h"
-#include "KeyValueStore.h"
+#include "PaletteEditor.hpp"
+#include "Algorithms.hpp"
+#include "KeyValueStore.hpp"
 
 #include <AntTweakBar.h>
 

@@ -1,4 +1,4 @@
-#include "CharacterSelect.h"
+#include "CharacterSelect.hpp"
 
 
 uint8_t charaToSelector ( uint8_t chara )

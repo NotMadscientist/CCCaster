@@ -1,5 +1,5 @@
-#include "ExternalIpAddress.h"
-#include "Logger.h"
+#include "ExternalIpAddress.hpp"
+#include "Logger.hpp"
 
 #include <vector>
 

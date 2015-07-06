@@ -1,8 +1,8 @@
 #ifndef RELEASE
 
-#include "Test.Socket.h"
-#include "UdpSocket.h"
-#include "Timer.h"
+#include "Test.Socket.hpp"
+#include "UdpSocket.hpp"
+#include "Timer.hpp"
 
 #include <memory>
 

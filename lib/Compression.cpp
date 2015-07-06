@@ -1,5 +1,5 @@
-#include "Compression.h"
-#include "Logger.h"
+#include "Compression.hpp"
+#include "Logger.hpp"
 
 #define MINIZ_NO_ZLIB_COMPATIBLE_NAMES
 #include <miniz.h>

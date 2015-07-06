@@ -1,6 +1,6 @@
-#include "Logger.h"
-#include "Algorithms.h"
-#include "TimerManager.h"
+#include "Logger.hpp"
+#include "Algorithms.hpp"
+#include "TimerManager.hpp"
 
 using namespace std;
 
