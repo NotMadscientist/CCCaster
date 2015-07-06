@@ -162,7 +162,7 @@ struct JoystickInfo
 };
 
 
-class Controller : private KeyboardManager::Owner
+class Controller : public KeyboardManager::Owner
 {
 public:
 
