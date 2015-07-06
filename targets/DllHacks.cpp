@@ -52,6 +52,7 @@ void initializePreLoad()
     WRITE_ASM_HACK ( detectAutoReplaySave );
     WRITE_ASM_HACK ( hijackEscapeKey );
     WRITE_ASM_HACK ( disableTrainingMusicReset );
+    WRITE_ASM_HACK ( fixGiantStageSuperFlashOverlay );
 
     // TODO color hijack is temporary disabled due to some issues
     //
