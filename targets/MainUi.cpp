@@ -905,34 +905,43 @@ void MainUi::loadMappings ( Controller& controller )
     LOG ( "Failed to load: %s", file );
 }
 
+static bool isOnline()
+{
+    DWORD state;
+    InternetGetConnectedState ( &state, 0 );
+    return ( state & ( INTERNET_CONNECTION_LAN | INTERNET_CONNECTION_MODEM | INTERNET_CONNECTION_PROXY ) );
+}
+
 void MainUi::main ( RunFuncPtr run )
 {
-    static const vector<string> options =
-    {
-        "Netplay",
-        "Spectate",
-        "Broadcast",
-        "Offline",
-        "Controls",
-        "Settings",
-        "Update",
-    };
+    if ( config.getInteger ( "autoCheckUpdates" ) )
+        update ( true );
 
     ASSERT ( ui.get() != 0 );
 
     ui->clearAll();
 
-    if ( config.getInteger ( "autoCheckUpdates" ) )
-        update ( true );
-
-    ui->pushRight ( new ConsoleUi::Menu ( uiTitle, options, "Quit" ) );
-
-    mainMenu = ui->top<ConsoleUi::Menu>();
-    mainMenu->setEscape ( false );
-    mainMenu->setPosition ( config.getInteger ( "lastMainMenuPosition" ) - 1 );
+    int mainSelection = config.getInteger ( "lastMainMenuPosition" ) - 1;
 
     for ( ;; )
     {
+        const vector<string> options =
+        {
+            "Netplay",
+            "Spectate",
+            "Broadcast",
+            "Offline",
+            "Controls",
+            "Settings",
+            ( upToDate || !isOnline() ) ? "Changes" : "Update",
+        };
+
+        ui->pushRight ( new ConsoleUi::Menu ( uiTitle, options, "Quit" ) );
+
+        mainMenu = ui->top<ConsoleUi::Menu>();
+        mainMenu->setEscape ( false );
+        mainMenu->setPosition ( mainSelection );
+
         ui->clear();
 
         if ( !sessionError.empty() && !sessionMessage.empty() )
@@ -958,10 +967,14 @@ void MainUi::main ( RunFuncPtr run )
             address.invalidate();
         }
 
-        const int mainSelection = ui->popUntilUserInput()->resultInt;
+        mainSelection = ui->popUntilUserInput()->resultInt;
 
         if ( mainSelection < 0 || mainSelection >= ( int ) options.size() )
+        {
+            mainMenu = 0;
+            ui->pop();
             break;
+        }
 
         ui->clearRight();
 
@@ -998,12 +1011,18 @@ void MainUi::main ( RunFuncPtr run )
                 break;
 
             case 6:
-                update();
+                if ( upToDate )
+                    openChangeLog();
+                else
+                    update();
                 break;
 
             default:
                 break;
         }
+
+        mainMenu = 0;
+        ui->pop();
     }
 
     ControllerManager::get().deinitialize();
@@ -1240,18 +1259,11 @@ string MainUi::formatStats ( const PingStats& pingStats )
            );
 }
 
-static bool isOnline()
-{
-    DWORD state;
-    InternetGetConnectedState ( &state, 0 );
-    return ( state & ( INTERNET_CONNECTION_LAN | INTERNET_CONNECTION_MODEM | INTERNET_CONNECTION_PROXY ) );
-}
-
 void MainUi::update ( bool isStartup )
 {
     if ( !isOnline() )
     {
-        sessionMessage = "No Internet connection!";
+        sessionMessage = "No Internet connection";
         return;
     }
 
@@ -1263,7 +1275,8 @@ void MainUi::update ( bool isStartup )
     if ( LocalVersion.isSimilar ( updater.getLatestVersion(), 2 ) )
     {
         if ( ! isStartup )
-            sessionMessage = "Already up to date!";
+            sessionMessage = "You already have the latest version";
+        upToDate = true;
         return;
     }
 
@@ -1298,6 +1311,20 @@ void MainUi::update ( bool isStartup )
             return;
         }
     }
+}
+
+void MainUi::openChangeLog()
+{
+    const DWORD val = GetFileAttributes ( ( ProcessManager::appDir + CHANGELOG ).c_str() );
+
+    if ( val == INVALID_FILE_ATTRIBUTES )
+    {
+        sessionMessage = "Missing: " FOLDER CHANGELOG;
+        LOG ( "%s", sessionMessage );
+        return;
+    }
+
+    system ( ( "\"start \"Viewing change log\" notepad " + ProcessManager::appDir + CHANGELOG "\"" ).c_str() );
 }
 
 void MainUi::fetch ( const MainUpdater::Type& type )
@@ -1346,15 +1373,15 @@ void MainUi::fetchFailed ( MainUpdater *updater, const MainUpdater::Type& type )
     switch ( type.value )
     {
         case MainUpdater::Type::Version:
-            sessionMessage = "Cannot fetch latest version info!";
+            sessionMessage = "Cannot fetch latest version info";
             break;
 
         case MainUpdater::Type::ChangeLog:
-            sessionMessage = "Cannot fetch latest change log!";
+            sessionMessage = "Cannot fetch latest change log";
             break;
 
         case MainUpdater::Type::Archive:
-            sessionMessage = "Cannot download latest version!";
+            sessionMessage = "Cannot download latest version";
             break;
 
         default:

@@ -44,8 +44,6 @@ public:
 
     void main ( RunFuncPtr run );
 
-    void update ( bool isStartup = false );
-
     void display ( const std::string& message, bool replace = true );
 
     bool connected ( const InitialConfig& initialConfig, const PingStats& pingStats );
@@ -84,6 +82,8 @@ private:
 
     uint32_t mappedKey = 0;
 
+    bool upToDate = false;
+
     void netplay ( RunFuncPtr run );
     void spectate ( RunFuncPtr run );
     void broadcast ( RunFuncPtr run );
@@ -112,6 +112,10 @@ private:
     std::string formatPlayer ( const SpectateConfig& spectateConfig, uint8_t player ) const;
 
     bool configure ( const PingStats& pingStats );
+
+    void update ( bool isStartup = false );
+
+    void openChangeLog();
 
     void fetch ( const MainUpdater::Type& type );
 
