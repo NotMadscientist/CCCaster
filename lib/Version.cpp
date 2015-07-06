@@ -41,7 +41,7 @@ bool Version::isCustom() const
     return ( revision.rfind ( "-custom" ) + 7 == revision.size() );
 }
 
-bool Version::similar ( const Version& other, uint8_t level ) const
+bool Version::isSimilar ( const Version& other, uint8_t level ) const
 {
     switch ( level )
     {

@@ -29,9 +29,6 @@ using namespace std;
 // Main update archive file name
 #define UPDATE_ARCHIVE "update.zip"
 
-// Timeout for update version check
-#define VERSION_CHECK_TIMEOUT ( 1000 )
-
 // Run macro that deinitializes controllers, runs, then reinitializes controllers
 #define RUN(ADDRESS, CONFIG)                                                                            \
     do {                                                                                                \
@@ -46,12 +43,10 @@ static const string uiTitle = "CCCaster " + LocalVersion.majorMinor();
 
 static ConsoleUi::Menu *mainMenu = 0;
 
-static const vector<string> updateServers =
-{
-    "http://192.210.227.23/",
-    "http://104.206.199.123/",
-};
 
+MainUi::MainUi() : updater ( this )
+{
+}
 
 void MainUi::netplay ( RunFuncPtr run )
 {
@@ -1014,27 +1009,6 @@ void MainUi::main ( RunFuncPtr run )
     ControllerManager::get().deinitialize();
 }
 
-string MainUi::formatStats ( const PingStats& pingStats )
-{
-    return format (
-               "%-" INDENT_STATS "s Ping: %.2f ms"
-#ifndef NDEBUG
-               "\n%-" INDENT_STATS "s Worst: %.2f ms"
-               "\n%-" INDENT_STATS "s StdErr: %.2f ms"
-               "\n%-" INDENT_STATS "s StdDev: %.2f ms"
-               "\n%-" INDENT_STATS "s Packet Loss: %d%%"
-#endif
-               , format ( "Network delay: %d", computeDelay ( pingStats.latency.getMean() ) )
-               , pingStats.latency.getMean()
-#ifndef NDEBUG
-               , "", pingStats.latency.getWorst()
-               , "", pingStats.latency.getStdErr()
-               , "", pingStats.latency.getStdDev()
-               , "", pingStats.packetLoss
-#endif
-           );
-}
-
 void MainUi::display ( const string& message, bool replace )
 {
     if ( replace && ( ui->empty() || !ui->top()->requiresUser || ui->top() != mainMenu ) )
@@ -1245,95 +1219,25 @@ void *MainUi::getConsoleWindow()
     return ConsoleUi::getConsoleWindow();
 }
 
-void MainUi::httpResponse ( HttpGet *httpGet, int code, const std::string& data, uint32_t remainingBytes )
+string MainUi::formatStats ( const PingStats& pingStats )
 {
-    ASSERT ( this->httpGet.get() == httpGet );
-
-    Version version ( trimmed ( data ) );
-
-    if ( code != 200 || version.major().empty() || version.minor().empty() )
-    {
-        httpFailed ( httpGet );
-        return;
-    }
-
-    this->httpGet.reset();
-
-    latestVersion = version;
-
-    EventManager::get().stop();
-}
-
-void MainUi::httpFailed ( HttpGet *httpGet )
-{
-    ASSERT ( this->httpGet.get() == httpGet );
-
-    this->httpGet.reset();
-
-    ++serverIdx;
-
-    if ( serverIdx >= updateServers.size() )
-    {
-        EventManager::get().stop();
-        return;
-    }
-
-    updateTo ( "" );
-}
-
-void MainUi::downloadComplete ( HttpDownload *httpDl )
-{
-    ASSERT ( this->httpDl.get() == httpDl );
-
-    this->httpDl.reset();
-
-    downloadCompleted = true;
-
-    EventManager::get().stop();
-}
-
-void MainUi::downloadFailed ( HttpDownload *httpDl )
-{
-    ASSERT ( this->httpDl.get() == httpDl );
-
-    this->httpDl.reset();
-
-    ++serverIdx;
-
-    if ( serverIdx >= updateServers.size() )
-    {
-        EventManager::get().stop();
-        return;
-    }
-
-    const ConsoleUi::ProgressBar *bar = ui->top<ConsoleUi::ProgressBar>();
-    bar->update ( 0 );
-
-    updateTo ( latestVersion.code );
-}
-
-void MainUi::downloadProgress ( HttpDownload *httpDl, uint32_t downloadedBytes, uint32_t totalBytes )
-{
-    const ConsoleUi::ProgressBar *bar = ui->top<ConsoleUi::ProgressBar>();
-    bar->update ( ( bar->length * downloadedBytes ) / totalBytes );
-    LOG ( "%u / %u", downloadedBytes, totalBytes );
-}
-
-void MainUi::updateTo ( const string& version )
-{
-    if ( version.empty() )
-    {
-        httpGet.reset ( new HttpGet ( this, updateServers[serverIdx] + LATEST_VERSION_PATH, VERSION_CHECK_TIMEOUT ) );
-        httpGet->start();
-    }
-    else
-    {
-        const string file = format ( "cccaster.v%s.zip", version );
-        const string path = ( ProcessManager::isWine() ? ProcessManager::appDir : tmpDir ) + UPDATE_ARCHIVE;
-
-        httpDl.reset ( new HttpDownload ( this, updateServers[serverIdx] + file, path ) );
-        httpDl->start();
-    }
+    return format (
+               "%-" INDENT_STATS "s Ping: %.2f ms"
+#ifndef NDEBUG
+               "\n%-" INDENT_STATS "s Worst: %.2f ms"
+               "\n%-" INDENT_STATS "s StdErr: %.2f ms"
+               "\n%-" INDENT_STATS "s StdDev: %.2f ms"
+               "\n%-" INDENT_STATS "s Packet Loss: %d%%"
+#endif
+               , format ( "Network delay: %d", computeDelay ( pingStats.latency.getMean() ) )
+               , pingStats.latency.getMean()
+#ifndef NDEBUG
+               , "", pingStats.latency.getWorst()
+               , "", pingStats.latency.getStdErr()
+               , "", pingStats.latency.getStdDev()
+               , "", pingStats.packetLoss
+#endif
+           );
 }
 
 static bool isOnline()
@@ -1341,23 +1245,6 @@ static bool isOnline()
     DWORD state;
     InternetGetConnectedState ( &state, 0 );
     return ( state & ( INTERNET_CONNECTION_LAN | INTERNET_CONNECTION_MODEM | INTERNET_CONNECTION_PROXY ) );
-}
-
-static string getTmpDir()
-{
-    string tmpDir;
-
-    char buffer[4096];
-
-    if ( GetTempPath ( sizeof ( buffer ), buffer ) )
-        tmpDir = buffer;
-    else
-        return "";
-
-    if ( tmpDir.back() != '\\' )
-        tmpDir += '\\';
-
-    return tmpDir;
 }
 
 void MainUi::update ( bool isStartup )
@@ -1368,86 +1255,119 @@ void MainUi::update ( bool isStartup )
         return;
     }
 
-    AutoManager _;
+    fetch ( MainUpdater::Type::Version );
 
-    latestVersion.clear();
-    serverIdx = 0;
-    updateTo ( "" );
-
-    EventManager::get().start();
-
-    LOG ( "latestVersion=%s", latestVersion );
-
-    if ( latestVersion.code.empty() )
-    {
-        // sessionMessage = "Cannot fetch latest version info!";
+    if ( updater.getLatestVersion().empty() )
         return;
-    }
 
-    if ( LocalVersion.similar ( latestVersion, 2 ) )
+    if ( LocalVersion.isSimilar ( updater.getLatestVersion(), 2 ) )
     {
-        if ( !isStartup )
+        if ( ! isStartup )
             sessionMessage = "Already up to date!";
         return;
     }
 
-    ui->pushRight ( new ConsoleUi::TextBox ( format ( "Latest version is %s", latestVersion ) ) );
-
-    if ( !confirm ( "Update?" ) )
+    for ( ;; )
     {
+        ui->pushRight ( new ConsoleUi::TextBox ( format (
+                            "%sLatest version is %s",
+                            sessionMessage.empty() ? "" : ( sessionMessage + "\n" ),
+                            updater.getLatestVersion() ) ) );
+
+        sessionMessage.clear();
+
+        ui->pushBelow ( new ConsoleUi::Menu ( "Update?", { "Yes", "View changes" }, "No" ) );
+
+        const int ret = ui->popUntilUserInput()->resultInt;
+
         ui->pop();
-        return;
+        ui->pop();
+
+        if ( ret == 0 )         // Yes
+        {
+            fetch ( MainUpdater::Type::Archive );
+            return;
+        }
+        else if ( ret == 1 )    // View changes
+        {
+            fetch ( MainUpdater::Type::ChangeLog );
+            continue;
+        }
+        else                    // No
+        {
+            return;
+        }
     }
+}
 
-    ui->pop();
-    ui->pushRight ( new ConsoleUi::ProgressBar ( "Downloading...", 20 ) );
+void MainUi::fetch ( const MainUpdater::Type& type )
+{
+    if ( type != MainUpdater::Type::Version )
+        ui->pushRight ( new ConsoleUi::ProgressBar ( "Downloading...", 20 ) );
 
-    tmpDir = getTmpDir();
-    if ( tmpDir.empty() )
-        tmpDir = ProcessManager::appDir;
+    updater.fetch ( type );
 
-    LOG ( "tmpDir=%s", tmpDir );
-
-    downloadCompleted = false;
-    serverIdx = 0;
-    updateTo ( latestVersion.code );
+    AutoManager _;
 
     EventManager::get().start();
 
-    if ( !downloadCompleted )
-    {
+    if ( type != MainUpdater::Type::Version )
         ui->pop();
-        sessionMessage = "Cannot download latest version!";
-        return;
-    }
+}
 
-    // TODO see if there's a better way to do this
-    if ( ProcessManager::isWine() )
+void MainUi::fetchCompleted ( MainUpdater *updater, const MainUpdater::Type& type )
+{
+    ASSERT ( updater == &this->updater );
+
+    EventManager::get().stop();
+
+    switch ( type.value )
     {
-        ui->pushBelow ( new ConsoleUi::TextBox (
-                            "Please extract update.zip to update.\n"
-                            "Press any key to exit." ) );
-        system ( "@pause > nul" );
-        exit ( 0 );
-        return;
+        case MainUpdater::Type::Version:
+        default:
+            break;
+
+        case MainUpdater::Type::ChangeLog:
+            updater->openChangeLog();
+            break;
+
+        case MainUpdater::Type::Archive:
+            updater->extractArchive();
+            break;
     }
+}
 
-    const string srcUpdater = ProcessManager::appDir + FOLDER + UPDATER;
-    string tmpUpdater = tmpDir + UPDATER;
+void MainUi::fetchFailed ( MainUpdater *updater, const MainUpdater::Type& type )
+{
+    ASSERT ( updater == &this->updater );
 
-    if ( srcUpdater != tmpUpdater && !CopyFile ( srcUpdater.c_str(), tmpUpdater.c_str(), FALSE ) )
-        tmpUpdater = srcUpdater;
+    EventManager::get().stop();
 
-    ASSERT ( latestVersion.major().empty() == false );
-    ASSERT ( latestVersion.minor().empty() == false );
+    switch ( type.value )
+    {
+        case MainUpdater::Type::Version:
+            sessionMessage = "Cannot fetch latest version info!";
+            break;
 
-    const string newBinary = format ( "cccaster.v%s.%s.exe", latestVersion.major(), latestVersion.minor() );
-    const string command = format ( "\"" + tmpUpdater + "\" %d %s %s %s",
-                                    GetCurrentProcessId(), newBinary, tmpDir + UPDATE_ARCHIVE, ProcessManager::appDir );
+        case MainUpdater::Type::ChangeLog:
+            sessionMessage = "Cannot fetch latest change log!";
+            break;
 
-    LOG ( "Update command: %s", command );
+        case MainUpdater::Type::Archive:
+            sessionMessage = "Cannot download latest version!";
+            break;
 
-    system ( ( "\"start \"Updating...\" " + command + "\"" ).c_str() );
+        default:
+            break;
+    }
+}
 
-    exit ( 0 );
+void MainUi::fetchProgress ( MainUpdater *updater, const MainUpdater::Type& type, double progress )
+{
+    if ( type == MainUpdater::Type::Version )
+        return;
+
+    const ConsoleUi::ProgressBar *bar = ui->top<ConsoleUi::ProgressBar>();
+
+    bar->update ( bar->length * progress );
 }

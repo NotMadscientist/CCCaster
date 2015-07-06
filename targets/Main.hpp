@@ -21,9 +21,9 @@
 
 
 struct Main
-    : public ProcessManager::Owner
-    , public Socket::Owner
-    , public Timer::Owner
+        : public ProcessManager::Owner
+        , public Socket::Owner
+        , public Timer::Owner
 {
     OptionsMessage options;
 

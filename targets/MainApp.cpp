@@ -72,12 +72,12 @@ static void setClipboard ( const string& str )
 }
 
 struct MainApp
-    : public Main
-    , public Pinger::Owner
-    , public ExternalIpAddress::Owner
-    , public KeyboardManager::Owner
-    , public Thread
-    , public SpectatorManager
+        : public Main
+        , public Pinger::Owner
+        , public ExternalIpAddress::Owner
+        , public KeyboardManager::Owner
+        , public Thread
+        , public SpectatorManager
 {
     IpAddrPort originalAddress;
 
@@ -278,7 +278,7 @@ struct MainApp
 
         LOG ( "VersionConfig: mode=%s; flags={ %s }", versionConfig.mode, versionConfig.mode.flagString() );
 
-        if ( !LocalVersion.similar ( RemoteVersion, 1 + options[Options::StrictVersion] ) )
+        if ( !LocalVersion.isSimilar ( RemoteVersion, 1 + options[Options::StrictVersion] ) )
         {
             string local = LocalVersion.code;
             string remote = RemoteVersion.code;

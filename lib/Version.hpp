@@ -35,9 +35,9 @@ public:
     bool isCustom() const;
 
 #ifdef RELEASE
-    bool similar ( const Version& other, uint8_t level = 1 ) const;
+    bool isSimilar ( const Version& other, uint8_t level = 1 ) const;
 #else
-    bool similar ( const Version& other, uint8_t level = 0xFF ) const;
+    bool isSimilar ( const Version& other, uint8_t level = 0xFF ) const;
 #endif
 
     void clear()
@@ -45,6 +45,11 @@ public:
         code.clear();
         revision.clear();
         buildTime.clear();
+    }
+
+    bool empty() const
+    {
+        return code.empty();
     }
 
     PROTOCOL_MESSAGE_BOILERPLATE ( Version, code, revision, buildTime )
@@ -57,7 +62,7 @@ private:
 
 // Comparison operators
 bool operator< ( const Version& a, const Version& b );
-inline bool operator<= ( const Version& a, const Version& b ) { return ( a < b ) || a.similar ( b, 2 ); }
+inline bool operator<= ( const Version& a, const Version& b ) { return ( a < b ) || a.isSimilar ( b, 2 ); }
 inline bool operator> ( const Version& a, const Version& b ) { return ! ( a <= b ); }
 inline bool operator>= ( const Version& a, const Version& b ) { return ! ( a < b ); }
 

@@ -13,11 +13,11 @@ public:
 
     struct Owner
     {
-        virtual void downloadComplete ( HttpDownload *httpDl ) = 0;
+        virtual void downloadComplete ( HttpDownload *httpDownload ) = 0;
 
-        virtual void downloadFailed ( HttpDownload *httpDl ) = 0;
+        virtual void downloadFailed ( HttpDownload *httpDownload ) = 0;
 
-        virtual void downloadProgress ( HttpDownload *httpDl, uint32_t downloadedBytes, uint32_t totalBytes ) = 0;
+        virtual void downloadProgress ( HttpDownload *httpDownload, uint32_t downloadedBytes, uint32_t totalBytes ) = 0;
     };
 
     Owner *owner = 0;

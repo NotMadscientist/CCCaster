@@ -5,8 +5,7 @@
 #include "Controller.hpp"
 #include "ControllerManager.hpp"
 #include "KeyValueStore.hpp"
-#include "HttpDownload.hpp"
-#include "HttpGet.hpp"
+#include "MainUpdater.hpp"
 
 #include <string>
 #include <memory>
@@ -15,7 +14,6 @@
 // The function to run the game with the provided options
 typedef void ( * RunFuncPtr ) ( const IpAddrPort& address, const Serializable& config );
 
-class ConsoleUi;
 
 // Function that computes the delay from the latency
 inline int computeDelay ( double latency )
@@ -24,11 +22,12 @@ inline int computeDelay ( double latency )
 }
 
 
+class ConsoleUi;
+
 class MainUi
     : private Controller::Owner
     , private ControllerManager::Owner
-    , private HttpDownload::Owner
-    , private HttpGet::Owner
+    , private MainUpdater::Owner
 {
 public:
 
@@ -38,6 +37,8 @@ public:
 
     std::string sessionError;
 
+
+    MainUi();
 
     void initialize();
 
@@ -71,6 +72,8 @@ private:
 
     std::shared_ptr<ConsoleUi> ui;
 
+    MainUpdater updater;
+
     KeyValueStore config;
 
     IpAddrPort address;
@@ -80,18 +83,6 @@ private:
     Controller *currentController = 0;
 
     uint32_t mappedKey = 0;
-
-    std::shared_ptr<HttpGet> httpGet;
-
-    std::shared_ptr<HttpDownload> httpDl;
-
-    uint32_t serverIdx = 0;
-
-    Version latestVersion;
-
-    bool downloadCompleted = false;
-
-    std::string tmpDir;
 
     void netplay ( RunFuncPtr run );
     void spectate ( RunFuncPtr run );
@@ -120,16 +111,13 @@ private:
 
     std::string formatPlayer ( const SpectateConfig& spectateConfig, uint8_t player ) const;
 
-    void httpResponse ( HttpGet *httpGet, int code, const std::string& data, uint32_t remainingBytes ) override;
-    void httpFailed ( HttpGet *httpGet ) override;
-    void httpProgress ( HttpGet *httpGet, uint32_t receivedBytes, uint32_t totalBytes ) override {}
-
-    void downloadComplete ( HttpDownload *httpDl ) override;
-    void downloadFailed ( HttpDownload *httpDl ) override;
-    void downloadProgress ( HttpDownload *httpDl, uint32_t downloadedBytes, uint32_t totalBytes ) override;
-
-    void updateTo ( const std::string& version );
-
     bool configure ( const PingStats& pingStats );
 
+    void fetch ( const MainUpdater::Type& type );
+
+    void fetchCompleted ( MainUpdater *updater, const MainUpdater::Type& type ) override;
+
+    void fetchFailed ( MainUpdater *updater, const MainUpdater::Type& type ) override;
+
+    void fetchProgress ( MainUpdater *updater, const MainUpdater::Type& type, double progress ) override;
 };

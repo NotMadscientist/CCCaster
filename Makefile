@@ -1,5 +1,5 @@
 VERSION = 3.0
-SUFFIX = .015
+SUFFIX = .014
 NAME = cccaster
 TAG =
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
@@ -20,6 +20,8 @@ DEBUGGER = debugger.exe
 GENERATOR = generator.exe
 PALETTES = palettes.exe
 MBAA_EXE = MBAA.exe
+README = ReadMe.txt
+CHANGELOG = ChangeLog.txt
 
 # Library sources
 GTEST_CC_SRCS = 3rdparty/gtest/fused-src/gtest/gtest-all.cc
@@ -72,8 +74,8 @@ endif
 
 # Build flags
 DEFINES = -DWIN32_LEAN_AND_MEAN -DWINVER=0x501 -D_WIN32_WINNT=0x501 -D_M_IX86
-DEFINES += -DNAMED_PIPE='"\\\\.\\pipe\\cccaster_pipe"' -DPALETTES_FOLDER='"$(PALETTES_FOLDER)\\"'
-DEFINES += -DMBAA_EXE='"$(MBAA_EXE)"' -DBINARY='"$(BINARY)"' -DFOLDER='"$(FOLDER)\\"'
+DEFINES += -DNAMED_PIPE='"\\\\.\\pipe\\cccaster_pipe"' -DPALETTES_FOLDER='"$(PALETTES_FOLDER)\\"' -DREADME='"$(README)"'
+DEFINES += -DMBAA_EXE='"$(MBAA_EXE)"' -DBINARY='"$(BINARY)"' -DFOLDER='"$(FOLDER)\\"' -DCHANGELOG='"$(CHANGELOG)"'
 DEFINES += -DHOOK_DLL='"$(FOLDER)\\$(DLL)"' -DLAUNCHER='"$(FOLDER)\\$(LAUNCHER)"' -DUPDATER='"$(UPDATER)"'
 INCLUDES = -I$(CURDIR) -I$(CURDIR)/netplay -I$(CURDIR)/lib -I$(CURDIR)/tests -I$(CURDIR)/3rdparty
 INCLUDES += -I$(CURDIR)/3rdparty/cereal/include -I$(CURDIR)/3rdparty/gtest/include -I$(CURDIR)/3rdparty/minhook/include
@@ -129,7 +131,7 @@ palettes: $(PALETTES)
 
 
 $(ARCHIVE): $(BINARY) $(FOLDER)/$(DLL) $(FOLDER)/$(LAUNCHER) $(FOLDER)/$(UPDATER)
-$(ARCHIVE): $(FOLDER)/unzip.exe $(FOLDER)/ReadMe.txt $(FOLDER)/ChangeLog.txt
+$(ARCHIVE): $(FOLDER)/unzip.exe $(FOLDER)/$(README) $(FOLDER)/$(CHANGELOG)
 	@echo
 	rm -f $(wildcard $(NAME)*.zip)
 	$(ZIP) $(ARCHIVE) $^
@@ -171,10 +173,10 @@ $(FOLDER)/$(UPDATER): tools/Updater.cpp lib/StringUtils.cpp | $(FOLDER)
 $(FOLDER)/unzip.exe: 3rdparty/unzip.exe | $(FOLDER)
 	cp -f $^ $(FOLDER)/
 
-$(FOLDER)/ReadMe.txt: ReadMe.txt | $(FOLDER)
+$(FOLDER)/$(README): $(README) | $(FOLDER)
 	cp -f $^ $(FOLDER)/
 
-$(FOLDER)/ChangeLog.txt: ChangeLog.txt | $(FOLDER)
+$(FOLDER)/$(CHANGELOG): $(CHANGELOG) | $(FOLDER)
 	cp -f $^ $(FOLDER)/
 
 $(FOLDER):
@@ -215,14 +217,14 @@ tools/$(GENERATOR): tools/Generator.cpp $(GENERATOR_LIB_OBJECTS)
 	@echo
 
 
-PALETTES_SRC = tools/Palettes.cpp tools/PaletteEditor.cpp PaletteManager.cpp CharacterSelect.cpp
+PALETTES_SRC = tools/Palettes.cpp tools/PaletteEditor.cpp netplay/PaletteManager.cpp netplay/CharacterSelect.cpp
 PALETTES_SRC += lib/StringUtils.cpp lib/KeyValueStore.cpp
 
 FRAMEDISPLAY_SRC = $(wildcard 3rdparty/framedisplay/*.cc)
 FRAMEDISPLAY_OBJECTS = $(FRAMEDISPLAY_SRC:.cc=.o)
 
-FRAMEDISPLAY_INCLUDES = -I$(CURDIR) -I$(CURDIR)/lib -I$(CURDIR)/3rdparty/framedisplay -I$(CURDIR)/3rdparty/libpng
-FRAMEDISPLAY_INCLUDES += -I$(CURDIR)/3rdparty/libz -I$(CURDIR)/3rdparty/glfw
+FRAMEDISPLAY_INCLUDES = -I$(CURDIR) -I$(CURDIR)/netplay -I$(CURDIR)/lib -I$(CURDIR)/3rdparty/framedisplay
+FRAMEDISPLAY_INCLUDES += -I$(CURDIR)/3rdparty/libpng -I$(CURDIR)/3rdparty/libz -I$(CURDIR)/3rdparty/glfw
 FRAMEDISPLAY_INCLUDES += -I"$(CURDIR)/3rdparty/AntTweakBar/include" -I$(OPENGL_HEADERS)
 
 # FRAMEDISPLAY_CC_FLAGS = -ggdb3 -O0 -fno-inline -D_GLIBCXX_DEBUG -DDEBUG
@@ -337,7 +339,7 @@ format:
     --keep-one-line-blocks      	\
     --align-pointer=name        	\
     --align-reference=type      	\
-$(filter-out tools/Generator.cpp CharacterSelect.cpp lib/KeyboardVKeyNames.hpp targets/DllAsmHacks.hpp,\
+$(filter-out tools/Generator.cpp netplay/CharacterSelect.cpp lib/KeyboardVKeyNames.hpp targets/DllAsmHacks.hpp,\
 $(NON_GEN_SRCS) $(NON_GEN_HEADERS))
 
 count:

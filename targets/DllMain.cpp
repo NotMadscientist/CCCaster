@@ -93,11 +93,11 @@ bool stopping = false;
 
 
 struct DllMain
-    : public Main
-    , public RefChangeMonitor<Variable, uint32_t>::Owner
-    , public PtrToRefChangeMonitor<Variable, uint32_t>::Owner
-    , public SpectatorManager
-    , public DllControllerManager
+        : public Main
+        , public RefChangeMonitor<Variable, uint32_t>::Owner
+        , public PtrToRefChangeMonitor<Variable, uint32_t>::Owner
+        , public SpectatorManager
+        , public DllControllerManager
 {
     // NetplayManager instance
     NetplayManager netMan;
@@ -1263,7 +1263,7 @@ struct DllMain
             {
                 const Version RemoteVersion = msg->getAs<VersionConfig>().version;
 
-                if ( !LocalVersion.similar ( RemoteVersion, 1 + options[Options::StrictVersion] ) )
+                if ( !LocalVersion.isSimilar ( RemoteVersion, 1 + options[Options::StrictVersion] ) )
                 {
                     string local = LocalVersion.code;
                     string remote = RemoteVersion.code;
