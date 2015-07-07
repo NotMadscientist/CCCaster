@@ -24,7 +24,7 @@ string KeyValueStore::getString ( const string& key ) const
     return strings.find ( key )->second;
 }
 
-void KeyValueStore::putString ( const string& key, const string& value )
+void KeyValueStore::setString ( const string& key, const string& value )
 {
     types[key] = Type::String;
     strings[key] = value;
@@ -137,7 +137,7 @@ bool KeyValueStore::load ( const string& file )
                 switch ( it->second )
                 {
                     case Type::String:
-                        putString ( it->first, parts[1] );
+                        setString ( it->first, parts[1] );
                         break;
 
                     case Type::Integer:

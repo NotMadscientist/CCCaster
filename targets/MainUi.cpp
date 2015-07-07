@@ -539,6 +539,7 @@ void MainUi::settings()
         "Check for updates on startup",
         "Max allowed network delay",
         "Default rollback",
+        "Held start button in versus",
         "About",
     };
 
@@ -557,7 +558,7 @@ void MainUi::settings()
             {
                 ui->pushInFront ( new ConsoleUi::Menu ( "Alert when connected?",
                 { "Focus window", "Play a sound", "Do both", "Don't alert" }, "Cancel" ),
-                { 0, 0 }, true ); // Don't expand but DO clear
+                { 0, 0 }, true ); // Don't expand but DO clear top
 
                 ui->top<ConsoleUi::Menu>()->setPosition ( ( config.getInteger ( "alertOnConnect" ) + 3 ) % 4 );
                 ui->popUntilUserInput();
@@ -578,7 +579,7 @@ void MainUi::settings()
                 ui->pushInFront ( new ConsoleUi::TextBox (
                                       "Enter/paste/drag a .wav file here:\n"
                                       "(Leave blank to use SystemDefault)" ),
-                { 1, 0 }, true ); // Expand width and clear
+                { 1, 0 }, true ); // Expand width and clear top
 
                 ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::PromptString ), { 1, 0 } ); // Expand width
 
@@ -588,9 +589,9 @@ void MainUi::settings()
                 if ( ui->top()->resultInt == 0 )
                 {
                     if ( ui->top()->resultStr.empty() )
-                        config.putString ( "alertWavFile", "SystemDefault" );
+                        config.setString ( "alertWavFile", "SystemDefault" );
                     else
-                        config.putString ( "alertWavFile", ui->top()->resultStr );
+                        config.setString ( "alertWavFile", ui->top()->resultStr );
                     saveConfig();
                 }
 
@@ -601,14 +602,15 @@ void MainUi::settings()
 
             case 1:
                 ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptString,
-                                  "Enter name to show when connecting:" ), { 1, 0 }, true ); // Expand width and clear
+                                  "Enter name to show when connecting:" ),
+                { 1, 0 }, true ); // Expand width and clear top
 
                 ui->top<ConsoleUi::Prompt>()->setInitial ( config.getString ( "displayName" ) );
                 ui->popUntilUserInput();
 
                 if ( ui->top()->resultInt == 0 )
                 {
-                    config.putString ( "displayName", ui->top()->resultStr );
+                    config.setString ( "displayName", ui->top()->resultStr );
                     saveConfig();
                 }
 
@@ -618,7 +620,7 @@ void MainUi::settings()
             case 2:
                 ui->pushInFront ( new ConsoleUi::Menu ( "Show full character names when spectating?",
                 { "Yes", "No" }, "Cancel" ),
-                { 0, 0 }, true ); // Don't expand but DO clear
+                { 0, 0 }, true ); // Don't expand but DO clear top
 
                 ui->top<ConsoleUi::Menu>()->setPosition ( ( config.getInteger ( "fullCharacterName" ) + 1 ) % 2 );
                 ui->popUntilUserInput();
@@ -635,7 +637,7 @@ void MainUi::settings()
             case 3:
                 ui->pushInFront ( new ConsoleUi::Menu ( "Start game with high CPU priority?",
                 { "Yes", "No" }, "Cancel" ),
-                { 0, 0 }, true ); // Don't expand but DO clear
+                { 0, 0 }, true ); // Don't expand but DO clear top
 
                 ui->top<ConsoleUi::Menu>()->setPosition ( ( config.getInteger ( "highCpuPriority" ) + 1 ) % 2 );
                 ui->popUntilUserInput();
@@ -651,7 +653,7 @@ void MainUi::settings()
 
             case 4:
                 ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter versus mode win count:" ),
-                { 0, 0 }, true ); // Don't expand but DO clear
+                { 0, 0 }, true ); // Don't expand but DO clear top
 
                 ui->top<ConsoleUi::Prompt>()->allowNegative = false;
                 ui->top<ConsoleUi::Prompt>()->maxDigits = 1;
@@ -687,7 +689,7 @@ void MainUi::settings()
             case 5:
                 ui->pushInFront ( new ConsoleUi::Menu ( "Check for updates on startup?",
                 { "Yes", "No" }, "Cancel" ),
-                { 0, 0 }, true ); // Don't expand but DO clear
+                { 0, 0 }, true ); // Don't expand but DO clear top
 
                 ui->top<ConsoleUi::Menu>()->setPosition ( ( config.getInteger ( "autoCheckUpdates" ) + 1 ) % 2 );
                 ui->popUntilUserInput();
@@ -704,7 +706,7 @@ void MainUi::settings()
             case 6:
                 ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger,
                                   "Enter max allowed network delay:" ),
-                { 0, 0 }, true ); // Don't expand but DO clear
+                { 0, 0 }, true ); // Don't expand but DO clear top
 
                 ui->top<ConsoleUi::Prompt>()->allowNegative = false;
                 ui->top<ConsoleUi::Prompt>()->maxDigits = 3;
@@ -739,7 +741,7 @@ void MainUi::settings()
 
             case 7:
                 ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter default rollback:" ),
-                { 0, 0 }, true ); // Don't expand but DO clear
+                { 0, 0 }, true ); // Don't expand but DO clear top
 
                 ui->top<ConsoleUi::Prompt>()->allowNegative = false;
                 ui->top<ConsoleUi::Prompt>()->maxDigits = 2;
@@ -768,6 +770,44 @@ void MainUi::settings()
                 break;
 
             case 8:
+            {
+                ui->pushInFront ( new ConsoleUi::TextBox (
+                                      "Number of seconds needed to hold the start button\n"
+                                      "in versus mode before it registers:" ),
+                { 1, 0 }, true ); // Expand width and clear top
+
+                ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::PromptString ),
+                { 1, 0 } ); // Expand width
+
+                double value = config.getDouble ( "heldStartDuration" );
+
+                ui->top<ConsoleUi::Prompt>()->setInitial ( format ( "%.1f", value ) );
+
+                for ( ;; )
+                {
+                    ui->popUntilUserInput();
+
+                    if ( ui->top()->resultStr.empty() )
+                        break;
+
+                    stringstream ss ( ui->top()->resultStr );
+
+                    if ( ! ( ss >> value ) || value < 0.0 )
+                    {
+                        ui->pushBelow ( new ConsoleUi::TextBox ( "Must be a decimal number and at least 0.0!" ) );
+                        continue;
+                    }
+
+                    config.setDouble ( "heldStartDuration", value );
+                    saveConfig();
+                    break;
+                }
+
+                ui->pop();
+                break;
+            }
+
+            case 9:
                 ui->pushInFront ( new ConsoleUi::TextBox ( format ( "CCCaster %s%s\n\nRevision %s\n\nBuilt on %s\n\n"
                                   "Created by Madscientist\n\nPress any key to go back",
                                   LocalVersion.code,
@@ -779,7 +819,7 @@ void MainUi::settings()
                                   "",
 #endif
                                   LocalVersion.revision, LocalVersion.buildTime ) ),
-                { 0, 0 }, true ); // Don't expand but DO clear
+                { 0, 0 }, true ); // Don't expand but DO clear top
                 system ( "@pause > nul" );
                 break;
 
@@ -809,14 +849,15 @@ void MainUi::initialize()
 
     // Configurable settings (defaults)
     config.setInteger ( "alertOnConnect", 3 );
-    config.putString ( "alertWavFile", "SystemDefault" );
-    config.putString ( "displayName", ProcessManager::fetchGameUserName() );
+    config.setString ( "alertWavFile", "SystemDefault" );
+    config.setString ( "displayName", ProcessManager::fetchGameUserName() );
     config.setInteger ( "fullCharacterName", 0 );
     config.setInteger ( "highCpuPriority", 1 );
     config.setInteger ( "versusWinCount", 2 );
     config.setInteger ( "maxRealDelay", 254 );
     config.setInteger ( "defaultRollback", 4 );
     config.setInteger ( "autoCheckUpdates", 1 );
+    config.setDouble ( "heldStartDuration", 1.5 );
 
     // Cached UI state (defaults)
     config.setInteger ( "lastUsedPort", -1 );
@@ -1031,7 +1072,7 @@ void MainUi::main ( RunFuncPtr run )
 void MainUi::display ( const string& message, bool replace )
 {
     if ( replace && ( ui->empty() || !ui->top()->requiresUser || ui->top() != mainMenu ) )
-        ui->pushInFront ( new ConsoleUi::TextBox ( message ), { 1, 0 }, true ); // Expand width and clear
+        ui->pushInFront ( new ConsoleUi::TextBox ( message ), { 1, 0 }, true ); // Expand width and clear top
     else if ( ui->top() == 0 || ui->top()->expandWidth() )
         ui->pushBelow ( new ConsoleUi::TextBox ( message ), { 1, 0 } ); // Expand width
     else
@@ -1167,7 +1208,7 @@ bool MainUi::connected ( const InitialConfig& initialConfig, const PingStats& pi
     ui->pushInFront ( new ConsoleUi::TextBox (
                           connectString
                           + "\n\n" + modeString
-                          + "\n\n" + formatStats ( pingStats ) ), { 1, 0 }, true ); // Expand width and clear
+                          + "\n\n" + formatStats ( pingStats ) ), { 1, 0 }, true ); // Expand width and clear top
 
     if ( configure ( pingStats ) )
     {
@@ -1215,7 +1256,7 @@ void MainUi::spectate ( const SpectateConfig& spectateConfig )
 
     text += "\n\n(Tap the spacebar to toggle fast-forward)";
 
-    ui->pushInFront ( new ConsoleUi::TextBox ( text ), { 1, 0 }, true ); // Expand width and clear
+    ui->pushInFront ( new ConsoleUi::TextBox ( text ), { 1, 0 }, true ); // Expand width and clear top
 }
 
 bool MainUi::confirm ( const string& question )

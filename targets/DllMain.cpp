@@ -1440,7 +1440,11 @@ struct DllMain
             case MsgType::OptionsMessage:
                 options = msg->getAs<OptionsMessage>();
 
-                ProcessManager::appDir = options.arg ( Options::AppDir );
+                if ( options[Options::AppDir] )
+                    ProcessManager::appDir = options.arg ( Options::AppDir );
+
+                if ( options[Options::HeldStartDuration] )
+                    netMan.heldStartDuration = lexical_cast<uint32_t> ( options.arg ( Options::HeldStartDuration ) );
 
                 // This will log in the previous appDir folder it not the same
                 LOG ( "appDir='%s'", ProcessManager::appDir );

@@ -35,7 +35,8 @@ ENUM ( Options,
        // Special options
        NoFork,
        AppDir,
-       SessionId );
+       SessionId,
+       HeldStartDuration );
 
 
 // Forward declaration

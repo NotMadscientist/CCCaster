@@ -13,7 +13,7 @@ public:
 
     std::string getString ( const std::string& key ) const;
 
-    void putString ( const std::string& key, const std::string& value );
+    void setString ( const std::string& key, const std::string& value );
 
 
     bool hasInteger ( const std::string& key ) const;

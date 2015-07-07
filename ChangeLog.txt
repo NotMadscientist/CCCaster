@@ -1,3 +1,6 @@
+v3.0.016:
+- Added held start button for offline versus, default is 1.5 seconds, can be changed.
+
 v3.0.015:
 - Fixed the super flash overlay glitch on the boss stages.
 - Fixed the bug that shows the color select after pressing F4.

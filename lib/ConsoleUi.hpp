@@ -455,9 +455,9 @@ public:
 
     // Push an element in front of the current one
     void pushInFront ( Element *element, const COORD& expand = { 0, 0 } );
-    void pushInFront ( Element *element, const COORD& expand, bool clear )
+    void pushInFront ( Element *element, const COORD& expand, bool shouldClearTop )
     {
-        if ( clear )
+        if ( shouldClearTop )
             clearTop();
 
         pushInFront ( element, expand );

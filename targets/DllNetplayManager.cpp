@@ -91,7 +91,7 @@ uint16_t NetplayManager::getCharaSelectInput ( uint8_t player )
     }
 
     // Don't allow hitting Confirm or Cancel until 2f after we have stopped changing the selector mode
-    if ( hasButtonInPrev2f ( player, CC_BUTTON_A | CC_BUTTON_CONFIRM | CC_BUTTON_B | CC_BUTTON_CANCEL ) )
+    if ( hasButtonInHistory ( player, CC_BUTTON_A | CC_BUTTON_CONFIRM | CC_BUTTON_B | CC_BUTTON_CANCEL, 1, 3 ) )
     {
         input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM | CC_BUTTON_B | CC_BUTTON_CANCEL );
     }
@@ -112,8 +112,12 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player )
 {
     uint16_t input = getRawInput ( player );
 
-    // Disable pausing in netplay versus mode
-    if ( ( config.mode.isNetplay() || config.mode.isSpectateNetplay() ) && config.mode.isVersus() )
+    // Disable pausing in netplay versus mode. Also only allow start button in versus after holding it for a duration.
+    if ( ( ( config.mode.isNetplay() && config.mode.isVersus() ) || config.mode.isSpectate() )
+            || ( ! *CC_PAUSE_FLAG_ADDR
+                 && config.mode.isVersus()
+                 && heldStartDuration
+                 && ! heldButtonInHistory ( player, CC_BUTTON_START, 0, heldStartDuration ) ) )
     {
         input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_START );
     }
@@ -123,9 +127,9 @@ uint16_t NetplayManager::getInGameInput ( uint8_t player )
     {
         AsmHacks::menuConfirmState = 2;
 
-        // Don't allow hitting Confirm until 2f after we have stopped moving the cursor. This is a work around
+        // Don't allow hitting Confirm until 3f after we have stopped moving the cursor. This is a work around
         // for the issue when select is pressed after the cursor moves, but before currentMenuIndex is updated.
-        if ( hasUpDownInLast2f ( player ) )
+        if ( hasUpDownInHistory ( player, 0, 3 ) )
             input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
 
         // Disable returning to main menu; 16 and 6 are the menu positions for training and versus mode respectively
@@ -230,9 +234,9 @@ uint16_t NetplayManager::getRetryMenuInput ( uint8_t player )
     {
         input = getRawInput ( player );
 
-        // Don't allow hitting Confirm until 2f after we have stopped moving the cursor. This is a work around
+        // Don't allow hitting Confirm until 3f after we have stopped moving the cursor. This is a work around
         // for the issue when select is pressed after the cursor moves, but before currentMenuIndex is updated.
-        if ( hasUpDownInLast2f ( config.mode.isNetplay() ? player : 0 ) )
+        if ( hasUpDownInHistory ( config.mode.isNetplay() ? player : 0, 0, 3 ) )
             input &= ~ COMBINE_INPUT ( 0, CC_BUTTON_A | CC_BUTTON_CONFIRM );
 
         // Limit retry menu selectable options
@@ -399,9 +403,9 @@ uint16_t NetplayManager::getMenuNavInput()
     return 0;
 }
 
-bool NetplayManager::hasUpDownInLast2f ( uint8_t player ) const
+bool NetplayManager::hasUpDownInHistory ( uint8_t player, uint32_t start, uint32_t end ) const
 {
-    for ( size_t i = 0; i < 2; ++i )
+    for ( size_t i = start; i < end; ++i )
     {
         if ( i > getFrame() )
             break;
@@ -429,11 +433,11 @@ bool NetplayManager::hasUpDownInLast2f ( uint8_t player ) const
     return false;
 }
 
-bool NetplayManager::hasButtonInPrev2f ( uint8_t player, uint16_t button ) const
+bool NetplayManager::hasButtonInHistory ( uint8_t player, uint16_t button, uint32_t start, uint32_t end ) const
 {
     ASSERT ( player == 1 || player == 2 );
 
-    for ( size_t i = 1; i < 3; ++i )
+    for ( size_t i = start; i < end; ++i )
     {
         if ( i > getFrame() )
             break;
@@ -445,6 +449,24 @@ bool NetplayManager::hasButtonInPrev2f ( uint8_t player, uint16_t button ) const
     }
 
     return false;
+}
+
+bool NetplayManager::heldButtonInHistory ( uint8_t player, uint16_t button, uint32_t start, uint32_t end ) const
+{
+    ASSERT ( player == 1 || player == 2 );
+
+    for ( size_t i = start; i < end; ++i )
+    {
+        if ( i > getFrame() )
+            return false;
+
+        const uint16_t buttons = getRawInput ( player, getFrame() - i ) >> 4;
+
+        if ( ! ( buttons & button ) )
+            return false;
+    }
+
+    return true;
 }
 
 void NetplayManager::setRemotePlayer ( uint8_t player )

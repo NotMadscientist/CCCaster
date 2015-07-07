@@ -1189,8 +1189,14 @@ struct MainApp
         options = opt;
         originalAddress = address = addr;
 
-        if ( !ProcessManager::appDir.empty() )
+        if ( ! ProcessManager::appDir.empty() )
             options.set ( Options::AppDir, 1, ProcessManager::appDir );
+
+        if ( ui.getConfig().getDouble ( "heldStartDuration" ) > 0 )
+        {
+            options.set ( Options::HeldStartDuration, 1,
+                          format ( "%u", uint32_t ( 60 * ui.getConfig().getDouble ( "heldStartDuration" ) ) ) );
+        }
 
         if ( !ProcessManager::getIsWindowed() )
         {
@@ -1207,6 +1213,7 @@ struct MainApp
             options.set ( Options::Spectate, 0 );
             options.set ( Options::Offline, 1 );
             options.set ( Options::NoUi, 1 );
+            options.set ( Options::HeldStartDuration, 1, "90" );
         }
 
 #ifndef RELEASE

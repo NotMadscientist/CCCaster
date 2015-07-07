@@ -22,6 +22,9 @@ public:
     // Preserve input/RngState/MenuIndex starting from this index
     uint32_t preserveStartIndex = UINT_MAX;
 
+    // The number of frames it takes to register a held start button input
+    uint32_t heldStartDuration = 0;
+
     // Indicate which player is the remote player
     void setRemotePlayer ( uint8_t player );
 
@@ -186,9 +189,11 @@ private:
     // Get the input needed to navigate the menu
     uint16_t getMenuNavInput();
 
-    // Detect if a key has been pressed by either player in the last 2 frames
-    bool hasUpDownInLast2f ( uint8_t player ) const;
-    bool hasButtonInPrev2f ( uint8_t player, uint16_t button ) const;
+    // Detect if a key has been pressed / held by either player in the input history.
+    // The start and end indicies begin from the current frame and count backwards.
+    bool hasUpDownInHistory ( uint8_t player, uint32_t start, uint32_t end ) const;
+    bool hasButtonInHistory ( uint8_t player, uint16_t button, uint32_t start, uint32_t end ) const;
+    bool heldButtonInHistory ( uint8_t player, uint16_t button, uint32_t start, uint32_t end ) const;
 
     // Get the buffered preserveStartIndex
     uint32_t getBufferedPreserveStartIndex() const;
