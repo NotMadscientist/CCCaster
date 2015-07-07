@@ -256,8 +256,12 @@ static BOOL CALLBACK enumJoystickAxes ( const DIDEVICEOBJECTINSTANCE *ddoi, void
     CHECK_ADD_AXIS ( 1, GUID_YAxis, "Y-Axis" );
     CHECK_ADD_AXIS ( 2, GUID_ZAxis, "Z-Axis" );
 
-    // Workaround for the PS4 pad, because it maps some buttons to the X/Y rotation axes as well
-    if ( PS4_CONTROLLER_GUID != info.guid )
+    if ( PS4_CONTROLLER_GUID == info.guid )
+    {
+        // Workaround for the PS4 pad, because it maps some buttons to the X/Y rotation axes as well.
+        // These buttons are mapped to min/max values so they end up eating all the inputs. So we ignore them...
+    }
+    else
     {
         CHECK_ADD_AXIS ( 3, GUID_RxAxis, "X-Axis (2)" );
         CHECK_ADD_AXIS ( 4, GUID_RyAxis, "Y-Axis (2)" );
