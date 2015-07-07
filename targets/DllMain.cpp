@@ -1933,29 +1933,19 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
     {
         case DLL_PROCESS_ATTACH:
         {
+            ProcessManager::gameDir.clear();
+
             char buffer[4096];
-            string gameDir;
-
             if ( GetModuleFileName ( GetModuleHandle ( 0 ), buffer, sizeof ( buffer ) ) )
-            {
-                gameDir = buffer;
-                gameDir = gameDir.substr ( 0, gameDir.find_last_of ( "/\\" ) );
-
-                replace ( gameDir.begin(), gameDir.end(), '/', '\\' );
-
-                if ( !gameDir.empty() && gameDir.back() != '\\' )
-                    gameDir += '\\';
-            }
-
-            ProcessManager::gameDir = gameDir;
+                ProcessManager::gameDir = normalizeWindowsPath ( buffer );
 
             srand ( time ( 0 ) );
 
-            Logger::get().initialize ( gameDir + LOG_FILE );
+            Logger::get().initialize ( ProcessManager::gameDir + LOG_FILE );
             Logger::get().logVersion();
 
             LOG ( "DLL_PROCESS_ATTACH" );
-            LOG ( "gameDir='%s'", gameDir );
+            LOG ( "gameDir='%s'", ProcessManager::gameDir );
 
             // We want the DLL to be able to rebind any previously bound ports
             Socket::forceReusePort ( true );

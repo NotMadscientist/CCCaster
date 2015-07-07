@@ -31,20 +31,11 @@ static bool initDirsAndSanityCheck ( bool checkGameExe = true )
 {
     bool success = true;
 
-    char buffer[4096];
-
     ProcessManager::appDir.clear();
 
+    char buffer[4096];
     if ( GetModuleFileName ( GetModuleHandle ( 0 ), buffer, sizeof ( buffer ) ) )
-    {
-        ProcessManager::appDir = buffer;
-        ProcessManager::appDir = ProcessManager::appDir.substr ( 0, ProcessManager::appDir.find_last_of ( "/\\" ) );
-
-        replace ( ProcessManager::appDir.begin(), ProcessManager::appDir.end(), '/', '\\' );
-
-        if ( !ProcessManager::appDir.empty() && ProcessManager::appDir.back() != '\\' )
-            ProcessManager::appDir += '\\';
-    }
+        ProcessManager::appDir = normalizeWindowsPath ( buffer );
 
     DWORD val = GetFileAttributes ( ( ProcessManager::appDir + FOLDER ).c_str() );
 

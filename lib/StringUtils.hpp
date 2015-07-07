@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cctype>
 #include <type_traits>
+#include <algorithm>
 
 
 #define PRINT(...) do { std::cout << format ( __VA_ARGS__ ) << std::endl; } while ( 0 )
@@ -108,4 +109,18 @@ inline T lexical_cast ( const std::string& str )
     std::stringstream ss ( str );
     ss >> val;
     return val;
+}
+
+
+// Normalize a path to Windows backslash format and make sure there is a trailing backslash
+inline std::string normalizeWindowsPath ( std::string path )
+{
+    path = path.substr ( 0, path.find_last_of ( "/\\" ) );
+
+    std::replace ( path.begin(), path.end(), '/', '\\' );
+
+    if ( !path.empty() && path.back() != '\\' )
+        path += '\\';
+
+    return path;
 }

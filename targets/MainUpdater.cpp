@@ -36,12 +36,8 @@ MainUpdater::MainUpdater ( Owner *owner ) : owner ( owner )
     }
 
     char buffer[4096];
-
     if ( GetTempPath ( sizeof ( buffer ), buffer ) )
-        downloadDir = buffer;
-
-    if ( ! downloadDir.empty() && downloadDir.back() != '\\' )
-        downloadDir += '\\';
+        downloadDir = normalizeWindowsPath ( buffer );
 
     if ( downloadDir.empty() )
         downloadDir = ProcessManager::appDir;
