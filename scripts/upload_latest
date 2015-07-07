@@ -6,6 +6,10 @@ latest=`ls cccaster*.zip | sed -r 's/cccaster.v([0-9a-zA-Z.]+).zip/\1/'`
 
 echo Latest version $latest
 
+echo
+
+./3rdparty/megacmd.exe put cccaster*.zip mega:/CCCaster/
+
 for server in $servers; do
 
     echo
