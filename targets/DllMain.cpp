@@ -1949,7 +1949,6 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
 
             ProcessManager::gameDir = gameDir;
 
-
             srand ( time ( 0 ) );
 
             Logger::get().initialize ( gameDir + LOG_FILE );
@@ -1982,10 +1981,22 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
                 exit ( -1 );
             }
 #endif // NDEBUG
+
+            if ( ! SetThreadExecutionState ( ES_CONTINUOUS
+                                             | ES_DISPLAY_REQUIRED
+                                             | ES_SYSTEM_REQUIRED
+                                             | ES_AWAYMODE_REQUIRED ) ) // Wake mode for OS >= Windows Vista
+            {
+                SetThreadExecutionState ( ES_CONTINUOUS
+                                          | ES_DISPLAY_REQUIRED
+                                          | ES_SYSTEM_REQUIRED ); // Wake mode for OS < Windows Vista
+            }
             break;
         }
 
         case DLL_PROCESS_DETACH:
+            SetThreadExecutionState ( ES_CONTINUOUS );
+
             LOG ( "DLL_PROCESS_DETACH" );
             appState = AppState::Stopping;
             EventManager::get().release();
