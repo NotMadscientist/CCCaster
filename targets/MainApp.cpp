@@ -808,7 +808,7 @@ struct MainApp
             return;
         }
 
-        ui.display ( format ( "Starting %s mode...", clientMode.isTraining() ? "training" : "versus" ),
+        ui.display ( format ( "Starting %s mode...", getGameModeString() ),
                      clientMode.isNetplay() ); // Only replace last message if netplaying
 
         // Start game (and disconnect sockets) after a small delay since the final configs are still in flight
@@ -1071,7 +1071,7 @@ struct MainApp
 
         procMan.ipcSend ( netplayConfig );
 
-        ui.display ( format ( "Started %s mode", clientMode.isTraining() ? "training" : "versus" ) );
+        ui.display ( format ( "Started %s mode", getGameModeString() ) );
     }
 
     void ipcDisconnectEvent() override
@@ -1192,19 +1192,22 @@ struct MainApp
         if ( ! ProcessManager::appDir.empty() )
             options.set ( Options::AppDir, 1, ProcessManager::appDir );
 
+        if ( ui.isTournament() )
+            options.set ( Options::Tournament, 1 );
+
         if ( ui.getConfig().getDouble ( "heldStartDuration" ) > 0 )
         {
             options.set ( Options::HeldStartDuration, 1,
                           format ( "%u", uint32_t ( 60 * ui.getConfig().getDouble ( "heldStartDuration" ) ) ) );
         }
 
-        if ( !ProcessManager::getIsWindowed() )
+        if ( ! ProcessManager::getIsWindowed() )
         {
             ProcessManager::setIsWindowed ( true );
             options.set ( Options::Fullscreen, 1 );
         }
 
-        if ( options[Options::Tourney] )
+        if ( options[Options::Tournament] )
         {
             clientMode.value = ClientMode::Offline;
             clientMode.flags = 0;
@@ -1242,6 +1245,9 @@ struct MainApp
             ASSERT ( config.getMsgType() == MsgType::NetplayConfig );
 
             netplayConfig = config.getAs<NetplayConfig>();
+
+            if ( options[Options::Tournament] )
+                netplayConfig.winCount = 2;
         }
         else
         {
@@ -1277,6 +1283,16 @@ struct MainApp
     }
 
 private:
+
+    // Get the current game mode as a string
+    const char *getGameModeString() const
+    {
+        return options[Options::Tournament]
+               ? "tournament"
+               : ( clientMode.isTraining()
+                   ? "training"
+                   : "versus" );
+    }
 
     // Update the UI status message
     void updateStatusMessage() const

@@ -264,14 +264,14 @@ bool MainUi::gameMode ( bool below )
 
 bool MainUi::offlineGameMode()
 {
-    ui->pushRight ( new ConsoleUi::Menu ( "Mode", { "Training", "Versus", "Versus CPU" }, "Cancel" ) );
+    ui->pushRight ( new ConsoleUi::Menu ( "Mode", { "Training", "Versus", "Versus CPU", "Tournament" }, "Cancel" ) );
     ui->top<ConsoleUi::Menu>()->setPosition ( config.getInteger ( "lastOfflineMenuPosition" ) - 1 );
 
     int mode = ui->popUntilUserInput ( true )->resultInt; // Clear other messages since we're starting the game now
 
     ui->pop();
 
-    if ( mode < 0 || mode > 2 )
+    if ( mode < 0 || mode > 3 )
         return false;
 
     config.setInteger ( "lastOfflineMenuPosition", mode + 1 );
@@ -280,9 +280,13 @@ bool MainUi::offlineGameMode()
     if ( mode == 0 )
         initialConfig.mode.flags = ClientMode::Training;
     else if ( mode == 1 )
-        initialConfig.mode.flags = 0;
-    else // if ( mode == 2 )
+        initialConfig.mode.flags = 0; // Versus
+    else if ( mode == 2 )
         initialConfig.mode.flags = ClientMode::VersusCpu;
+    else if ( mode == 3 )
+        tournament = true;
+    else
+        return false;
 
     return true;
 }
@@ -983,7 +987,7 @@ void MainUi::main ( RunFuncPtr run )
         mainMenu->setEscape ( false );
         mainMenu->setPosition ( mainSelection );
 
-        ui->clear();
+        ConsoleUi::clearScreen();
 
         if ( !sessionError.empty() && !sessionMessage.empty() )
             ui->pushRight ( new ConsoleUi::TextBox ( sessionError + "\n" + sessionMessage ), { 1, 0 } ); // Expand width

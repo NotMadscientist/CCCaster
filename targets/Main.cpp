@@ -3,6 +3,7 @@
 #include "Test.hpp"
 #include "Exceptions.hpp"
 #include "StringUtils.hpp"
+#include "ConsoleUi.hpp"
 
 #include <optionparser.h>
 #include <windows.h>
@@ -231,8 +232,8 @@ int main ( int argc, char *argv[] )
         },
 
         {
-            Options::Tourney, 0, "", "tourney", Arg::None,
-            "  --tourney          Tournament mode, forces just --offline and --no-ui.\n"
+            Options::Tournament, 0, "", "tournament", Arg::None,
+            "  --tournament       Tournament mode: forces --offline, --no-ui, and 2 round games.\n"
         },
 
 #ifndef RELEASE
@@ -395,7 +396,7 @@ int main ( int argc, char *argv[] )
 
     // Initialize config
     ui.initialize();
-    ui.initialConfig.mode.flags |= ( opt[Options::Training] && !opt[Options::Tourney] ? ClientMode::Training : 0 );
+    ui.initialConfig.mode.flags |= ( opt[Options::Training] && !opt[Options::Tournament] ? ClientMode::Training : 0 );
 
     if ( opt[Options::Spectate] )
         ui.initialConfig.mode.value = ClientMode::SpectateNetplay;
@@ -428,13 +429,13 @@ int main ( int argc, char *argv[] )
     for ( int i = 2; i < parser.nonOptionsCount(); ++i )
         lastError += format ( "Non-option (%d): '%s'\n", i, parser.nonOption ( i ) );
 
-    if ( opt[Options::Offline] || opt[Options::Tourney] )
+    if ( opt[Options::Offline] || opt[Options::Tournament] )
     {
         NetplayConfig netplayConfig;
         netplayConfig.mode.value = ClientMode::Offline;
         netplayConfig.mode.flags = ui.initialConfig.mode.flags;
         netplayConfig.delay = 0;
-        netplayConfig.winCount = ui.getConfig().getInteger ( "versusWinCount" );
+        netplayConfig.winCount = 2;
 
         // TODO make this configurable
         netplayConfig.hostPlayer = 1;
@@ -442,7 +443,7 @@ int main ( int argc, char *argv[] )
         // // Rollback testing
         // netplayConfig.rollback = MAX_ROLLBACK;
 
-        if ( opt[Options::Offline].arg && !opt[Options::Tourney] )
+        if ( opt[Options::Offline].arg && !opt[Options::Tournament] )
         {
             uint32_t delay = 0;
             stringstream ss ( opt[Options::Offline].arg );
@@ -451,6 +452,7 @@ int main ( int argc, char *argv[] )
                 netplayConfig.delay = delay;
         }
 
+        ConsoleUi::clearScreen();
         run ( "", netplayConfig );
     }
     else if ( opt[Options::Broadcast] )
@@ -471,6 +473,7 @@ int main ( int argc, char *argv[] )
         if ( ! ( ss >> netplayConfig.broadcastPort ) )
             netplayConfig.broadcastPort = 0;
 
+        ConsoleUi::clearScreen();
         run ( "", netplayConfig );
     }
     else if ( parser.nonOptionsCount() == 1 )
@@ -481,7 +484,10 @@ int main ( int argc, char *argv[] )
             ui.initialConfig.mode.value = ( address.addr.empty() ? ClientMode::Host : ClientMode::Client );
 
         if ( lastError.empty() )
+        {
+            ConsoleUi::clearScreen();
             run ( address, ui.initialConfig );
+        }
     }
     else if ( parser.nonOptionsCount() == 2 )
     {
@@ -492,7 +498,10 @@ int main ( int argc, char *argv[] )
             ui.initialConfig.mode.value = ( address.addr.empty() ? ClientMode::Host : ClientMode::Client );
 
         if ( lastError.empty() )
+        {
+            ConsoleUi::clearScreen();
             run ( address, ui.initialConfig );
+        }
     }
     else if ( opt[Options::NoUi] )
     {
@@ -500,7 +509,7 @@ int main ( int argc, char *argv[] )
         return 0;
     }
 
-    if ( opt[Options::NoUi] || opt[Options::Tourney] )
+    if ( opt[Options::NoUi] || opt[Options::Tournament] )
     {
         if ( !lastError.empty() )
             PRINT ( "%s", lastError );

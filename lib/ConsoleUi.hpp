@@ -526,19 +526,6 @@ public:
         return stack.empty();
     }
 
-    // Clear the screen
-    void clear()
-    {
-        ConsoleCore::GetInstance()->ClearScreen();
-    }
-
-    // Clear all elements
-    void clearAll()
-    {
-        ConsoleCore::GetInstance()->ClearScreen();
-        stack.clear();
-    }
-
     // If the top element has a border with the element below
     bool hasBorder() const
     {
@@ -596,6 +583,19 @@ public:
         {
             CharacterBox::Draw ( { short ( top()->pos.X + top()->size.X ), top()->pos.Y }, MAX_SCREEN_SIZE, ' ' );
         }
+    }
+
+    // Clear all elements
+    void clearAll()
+    {
+        clearScreen();
+        stack.clear();
+    }
+
+    // Clear the screen
+    static void clearScreen()
+    {
+        ConsoleCore::GetInstance()->ClearScreen();
     }
 
     // Get console window handle
