@@ -100,7 +100,10 @@ bool MainUpdater::openChangeLog() const
 
         if ( val != INVALID_FILE_ATTRIBUTES )
         {
-            system ( ( "\"start \"Viewing change log\" notepad " + folder + CHANGELOG "\"" ).c_str() );
+            if ( ProcessManager::isWine() )
+                system ( ( "notepad " + folder + CHANGELOG ).c_str() );
+            else
+                system ( ( "\"start \"Viewing change log\" notepad " + folder + CHANGELOG + "\"" ).c_str() );
             return true;
         }
 

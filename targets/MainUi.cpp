@@ -1317,7 +1317,10 @@ void MainUi::update ( bool isStartup )
     fetch ( MainUpdater::Type::Version );
 
     if ( updater.getLatestVersion().empty() )
+    {
+        sessionMessage = "Cannot fetch latest version info";
         return;
+    }
 
     if ( LocalVersion.isSimilar ( updater.getLatestVersion(), 2 ) )
     {
@@ -1371,7 +1374,12 @@ void MainUi::openChangeLog()
         return;
     }
 
-    system ( ( "\"start \"Viewing change log\" notepad " + ProcessManager::appDir + FOLDER CHANGELOG "\"" ).c_str() );
+    const string file = ProcessManager::appDir + FOLDER + CHANGELOG;
+
+    if ( ProcessManager::isWine() )
+        system ( ( "notepad " + file ).c_str() );
+    else
+        system ( ( "\"start \"Viewing change log\" notepad " + file + "\"" ).c_str() );
 }
 
 void MainUi::fetch ( const MainUpdater::Type& type )
@@ -1404,6 +1412,17 @@ void MainUi::fetchCompleted ( MainUpdater *updater, const MainUpdater::Type& typ
             break;
 
         case MainUpdater::Type::Archive:
+            // TODO see if there's a better way to do this
+            if ( ProcessManager::isWine() )
+            {
+                ui->pushBelow ( new ConsoleUi::TextBox (
+                                    "Please extract update.zip to update.\n"
+                                    "Press any key to exit." ) );
+                system ( "@pause > nul" );
+                exit ( 0 );
+                return;
+            }
+
             updater->extractArchive();
             break;
     }
