@@ -4,6 +4,7 @@ v3.0.016:
 - Added a stick only shortcut to show the overlay menu:
   Hold any 3 buttons and press any direction during character select.
 - Fixed blank startup bug on Wine.
+- Fixed possible crash on disconnect.
 
 v3.0.015:
 - Fixed the super flash overlay glitch on the boss stages.
