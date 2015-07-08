@@ -5,7 +5,8 @@
 using namespace std;
 
 
-// List of versions that made compatibility breaking changes
+// List of versions that made compatibility breaking changes between the same major.minor versions.
+// There is also an implicit assumption that compatibility is broken whenever the minor version increments.
 static vector<Version> breakingVersions =
 {
     "2.1e", // Changed protocol by adding UdpControl::Disconnect
