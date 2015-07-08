@@ -1312,6 +1312,8 @@ void MainUi::update ( bool isStartup )
         return;
     }
 
+    AutoManager _;
+
     fetch ( MainUpdater::Type::Version );
 
     if ( updater.getLatestVersion().empty() )
@@ -1378,8 +1380,6 @@ void MainUi::fetch ( const MainUpdater::Type& type )
         ui->pushRight ( new ConsoleUi::ProgressBar ( "Downloading...", 20 ) );
 
     updater.fetch ( type );
-
-    AutoManager _;
 
     EventManager::get().start();
 
