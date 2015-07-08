@@ -30,6 +30,9 @@ string Version::get ( PartEnum part ) const
     if ( j == string::npos )
         return "";
 
+    if ( code[j] == '.' )
+        ++j;
+
     return code.substr ( j );
 }
 
