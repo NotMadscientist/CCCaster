@@ -85,19 +85,21 @@ struct DllControllerUtils
                && ( ( getPrevInput ( controller ) & MASK_DIRS ) != dir );
     }
 
-    static bool isAnyDirectionPressed ( const Controller *controller )
+    static uint8_t numJoystickButtonsDown ( const Controller *controller )
     {
-        if ( !controller )
+        if ( !controller || !controller->isJoystick() )
             return false;
 
-        return ( getInput ( controller ) & MASK_DIRS ) && ! ( getPrevInput ( controller ) & MASK_DIRS );
-    }
+        const uint32_t buttons = controller->getJoystickState().buttons;
 
-    static bool isAnyButtonPressed ( const Controller *controller )
-    {
-        if ( !controller )
-            return false;
+        uint8_t count = 0;
 
-        return ( getInput ( controller ) & MASK_BUTTONS ) && ! ( getPrevInput ( controller ) & MASK_BUTTONS );
+        for ( uint8_t i = 0; i < 16; ++i )
+        {
+            if ( buttons & ( 1u << i ) )
+                ++count;
+        }
+
+        return count;
     }
 };

@@ -214,7 +214,7 @@ bool ControllerManager::check()
             if ( ( buttons & ( 1u << button ) ) == ( prevButtons & ( 1u << button ) ) )
                 continue;
 
-            LOG_CONTROLLER ( controller, "button%u: %s", button, ( value ? "0 -> 1" : "1 -> 0" ) );
+            LOG_CONTROLLER ( controller, "raw=%08X; button%u: %s", buttons, button, ( value ? "0 -> 1" : "1 -> 0" ) );
             controller->joystickButtonEvent ( button, value );
         }
 

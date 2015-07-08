@@ -15,9 +15,6 @@ using namespace std;
 extern bool stopping;
 
 
-extern bool stopping;
-
-
 void DllControllerManager::initControllers ( const ControllerMappings& mappings )
 {
     Lock lock ( ControllerManager::get().mutex );
@@ -44,8 +41,12 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
 
     bool toggleOverlay = false;
 
-    if ( !stopping && KeyboardState::isPressed ( VK_TOGGLE_OVERLAY ) && !ProcessManager::isWine() )
+    if ( !stopping
+            && !ProcessManager::isWine()
+            && KeyboardState::isPressed ( VK_TOGGLE_OVERLAY ) )
+    {
         toggleOverlay = true;
+    }
 
     for ( Controller *controller : allControllers )
     {
@@ -76,6 +77,15 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
                     playerControllers[1] = controller;
                 }
             }
+        }
+
+        // Toggle with 3 held buttons + any direction
+        if ( !stopping
+                && !ProcessManager::isWine()
+                && numJoystickButtonsDown ( controller ) >= 3
+                && !controller->getJoystickState().isNeutral() )
+        {
+            toggleOverlay = true;
         }
     }
 
@@ -267,7 +277,7 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
 
         // Disable overlay if both players are done
         if ( overlayPositions[i] + 1 == options.size()
-                && ( ( playerControllers[i]->isJoystick() && isAnyButtonPressed ( playerControllers[i] ) )
+                && ( ( playerControllers[i]->isJoystick() && playerControllers[i]->getJoystickState().buttons )
                      || ( playerControllers[i]->isKeyboard() && KeyboardState::isPressed ( VK_RETURN ) ) ) )
         {
             overlayPositions[i] = 0;

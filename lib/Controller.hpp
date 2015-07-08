@@ -240,6 +240,9 @@ public:
     bool saveMappings ( const std::string& file ) const;
     bool loadMappings ( const std::string& file );
 
+    // Get the raw joystick state
+    const JoystickState& getJoystickState() const { return joystick.state; }
+
     friend class ControllerManager;
     friend class DllControllerManager;
 
