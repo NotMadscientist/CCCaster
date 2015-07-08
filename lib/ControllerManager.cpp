@@ -70,7 +70,7 @@ void ControllerManager::savePrevStates()
 {
     LOCK ( mutex );
 
-    if ( !initialized )
+    if ( ! initialized )
         return;
 
     if ( windowHandle == ( void * ) GetForegroundWindow() )
@@ -89,7 +89,7 @@ bool ControllerManager::check()
 {
     LOCK ( mutex );
 
-    if ( !initialized )
+    if ( ! initialized )
         return false;
 
     if ( windowHandle == ( void * ) GetForegroundWindow() )
@@ -99,7 +99,7 @@ bool ControllerManager::check()
 
         for ( uint8_t i = 0; i < 32; ++i )
         {
-            if ( !keyboard.keyboardMappings.codes[i] )
+            if ( ! keyboard.keyboardMappings.codes[i] )
                 continue;
 
             if ( GetKeyState ( keyboard.keyboardMappings.codes[i] ) & 0x80 )
@@ -271,7 +271,7 @@ static BOOL CALLBACK enumJoystickAxes ( const DIDEVICEOBJECTINSTANCE *ddoi, void
     CHECK_ADD_AXIS ( 6, GUID_Slider, "Slider" );
     CHECK_ADD_AXIS ( 7, GUID_Slider, "Slider (2)" );
 
-    if ( !added )
+    if ( ! added )
         return DIENUM_CONTINUE;
 
     HRESULT result;
@@ -306,7 +306,7 @@ static BOOL CALLBACK enumJoystickAxes ( const DIDEVICEOBJECTINSTANCE *ddoi, void
 
 void ControllerManager::attachJoystick ( const Guid& guid, JoystickInfo& info )
 {
-    if ( !initialized )
+    if ( ! initialized )
         return;
 
     IDirectInputDevice8 *tmp, *device;
@@ -399,7 +399,7 @@ void ControllerManager::attachJoystick ( const Guid& guid, JoystickInfo& info )
 
 void ControllerManager::detachJoystick ( const Guid& guid )
 {
-    if ( !initialized )
+    if ( ! initialized )
         return;
 
     // Find and remove the controller
@@ -444,7 +444,7 @@ void ControllerManager::refreshJoysticks()
 {
     LOCK ( mutex );
 
-    if ( !initialized )
+    if ( ! initialized )
         return;
 
     unordered_map<Guid, JoystickInfo> activeJoysticks;
@@ -513,7 +513,7 @@ void ControllerManager::deinitialize()
     {
         LOCK ( mutex );
 
-        if ( !initialized )
+        if ( ! initialized )
             return;
 
         initialized = false;
@@ -676,7 +676,7 @@ size_t ControllerManager::saveMappings ( const string& folder, const string& ext
     {
         const string file = folder + kv.first + ext;
 
-        if ( !saveMappings ( file, kv.second ) )
+        if ( ! saveMappings ( file, kv.second ) )
             continue;
 
         ++count;
@@ -717,7 +717,7 @@ size_t ControllerManager::loadMappings ( const string& folder, const string& ext
 
         MsgPtr msg = loadMappings ( folder + fd.cFileName );
 
-        if ( !msg )
+        if ( ! msg )
             continue;
 
         if ( msg->getMsgType() == MsgType::KeyboardMappings )
@@ -803,7 +803,7 @@ MsgPtr ControllerManager::loadMappings ( const string& file )
 
         msg = Protocol::decode ( &buffer[0], buffer.size(), consumed );
 
-        if ( !msg )
+        if ( ! msg )
             LOG ( "Failed to decode %u bytes", buffer.size() );
         else if ( consumed != buffer.size() )
             LOG ( "Warning: consumed bytes %u != buffer size %u", consumed, buffer.size() );

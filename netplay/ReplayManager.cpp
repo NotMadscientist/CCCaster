@@ -35,7 +35,7 @@ bool ReplayManager::load ( const string& replayFile, bool real )
                 modes[index] = 0;
             }
 
-            if ( !modes[index] )
+            if ( ! modes[index] )
                 modes[index] = gameMode;
 
             ASSERT ( modes[index] == gameMode );

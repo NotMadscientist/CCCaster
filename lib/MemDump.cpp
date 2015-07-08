@@ -241,7 +241,7 @@ bool MemDumpList::load ( const string& filename )
 
     fin.close();
 
-    if ( !good )
+    if ( ! good )
     {
         // TODO log or throw something?
         clear();

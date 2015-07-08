@@ -175,7 +175,7 @@ void Controller::joystickAxisEvent ( uint8_t axis, uint8_t value )
         return;
     }
 
-    if ( !mask )
+    if ( ! mask )
         return;
 
     const uint32_t keyMapped = joystickMappings.axes[axis][value];
@@ -245,7 +245,7 @@ void Controller::joystickHatEvent ( uint8_t hat, uint8_t value )
         return;
     }
 
-    if ( !mask )
+    if ( ! mask )
         return;
 
     const uint32_t keyMapped = joystickMappings.hats[hat][value];
@@ -535,7 +535,7 @@ void Controller::startMapping ( Owner *owner, uint32_t key, uint8_t options )
 
     LOG_CONTROLLER ( this, "Starting mapping %08x", key );
 
-    if ( !joystick.state.isNeutral() )
+    if ( ! joystick.state.isNeutral() )
         options |= MAP_WAIT_NEUTRAL;
 
     this->owner = owner;
@@ -608,7 +608,7 @@ void Controller::clearMapping ( uint32_t keys )
 
 void Controller::doResetToDefaults()
 {
-    if ( !isJoystick() )
+    if ( ! isJoystick() )
         return;
 
     // Default axis mappings
@@ -656,7 +656,7 @@ void Controller::doResetToDefaults()
 
 void Controller::resetToDefaults()
 {
-    if ( !isJoystick() )
+    if ( ! isJoystick() )
         return;
 
     doResetToDefaults();
@@ -676,7 +676,7 @@ bool Controller::loadMappings ( const string& file )
 {
     MsgPtr msg = ControllerManager::loadMappings ( file );
 
-    if ( !msg )
+    if ( ! msg )
         return false;
 
     if ( isKeyboard() )

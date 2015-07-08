@@ -93,7 +93,7 @@ private:
         std::string list;                                                                                              \
         for ( const auto& val : LIST )                                                                                 \
             list += " " + TO_STRING ( val ) + ",";                                                                     \
-        if ( !LIST.empty() )                                                                                           \
+        if ( ! LIST.empty() )                                                                                          \
             list [ list.size() - 1 ] = ' ';                                                                            \
         LOG ( "this=%08x; "#LIST "=[%s]", this, list );                                                                \
     } while ( 0 )

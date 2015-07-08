@@ -203,7 +203,7 @@ SocketPtr UdpSocket::shared ( Socket::Owner *owner, const SocketShareData& data 
 
 SocketPtr UdpSocket::accept ( Socket::Owner *owner )
 {
-    if ( !acceptedSocket.get() )
+    if ( ! acceptedSocket.get() )
         return 0;
 
     acceptedSocket->owner = owner;

@@ -246,7 +246,7 @@ struct MainApp
 
     void stop ( const string& error = "" )
     {
-        if ( !error.empty() )
+        if ( ! error.empty() )
             lastError = error;
 
         EventManager::get().stop();
@@ -278,7 +278,7 @@ struct MainApp
 
         LOG ( "VersionConfig: mode=%s; flags={ %s }", versionConfig.mode, versionConfig.mode.flagString() );
 
-        if ( !LocalVersion.isSimilar ( RemoteVersion, 1 + options[Options::StrictVersion] ) )
+        if ( ! LocalVersion.isSimilar ( RemoteVersion, 1 + options[Options::StrictVersion] ) )
         {
             string local = LocalVersion.code;
             string remote = RemoteVersion.code;
@@ -312,7 +312,7 @@ struct MainApp
 
         if ( clientMode.isSpectate() )
         {
-            if ( !versionConfig.mode.isGameStarted() )
+            if ( ! versionConfig.mode.isGameStarted() )
                 stop ( "Not in a game yet, cannot spectate!" );
 
             // Wait for SpectateConfig
@@ -330,7 +330,7 @@ struct MainApp
             ctrlSocket = popPendingSocket ( socket );
             LOG ( "ctrlSocket=%08x", ctrlSocket.get() );
 
-            if ( !ctrlSocket.get() )
+            if ( ! ctrlSocket.get() )
                 return;
 
             ASSERT ( ctrlSocket.get() != 0 );
@@ -350,7 +350,7 @@ struct MainApp
 
     void gotInitialConfig ( const InitialConfig& initialConfig )
     {
-        if ( !isInitialConfigReady )
+        if ( ! isInitialConfigReady )
         {
             isInitialConfigReady = true;
 
@@ -429,7 +429,7 @@ struct MainApp
 
     void gotSpectateConfig ( const SpectateConfig& spectateConfig )
     {
-        if ( !clientMode.isSpectate() )
+        if ( ! clientMode.isSpectate() )
         {
             LOG ( "Unexpected 'SpectateConfig'" );
             return;
@@ -455,7 +455,7 @@ struct MainApp
 
     void gotNetplayConfig ( const NetplayConfig& netplayConfig )
     {
-        if ( !clientMode.isClient() )
+        if ( ! clientMode.isClient() )
         {
             LOG ( "Unexpected 'NetplayConfig'" );
             return;
@@ -557,7 +557,7 @@ struct MainApp
         LOCK ( uiMutex );
         uiCondVar.wait ( uiMutex );
 
-        if ( !EventManager::get().isRunning() )
+        if ( ! EventManager::get().isRunning() )
             return;
 
         switch ( clientMode.value )
@@ -642,7 +642,7 @@ struct MainApp
 
     void gotConfirmConfig()
     {
-        if ( !userConfirmed )
+        if ( ! userConfirmed )
         {
             LOG ( "Unexpected 'ConfirmConfig'" );
             return;
@@ -963,7 +963,7 @@ struct MainApp
             return;
         }
 
-        if ( !msg.get() )
+        if ( ! msg.get() )
             return;
 
         stopTimer.reset();
@@ -1083,7 +1083,7 @@ struct MainApp
 
     void ipcReadEvent ( const MsgPtr& msg ) override
     {
-        if ( !msg.get() )
+        if ( ! msg.get() )
             return;
 
         switch ( msg->getMsgType() )
@@ -1137,7 +1137,7 @@ struct MainApp
         {
             startTimer.reset();
 
-            if ( !clientMode.isSpectate() )
+            if ( ! clientMode.isSpectate() )
             {
                 // We must disconnect the sockets before the game process is created,
                 // otherwise Windows say conflicting ports EVEN if they are created later.
@@ -1219,7 +1219,7 @@ struct MainApp
         }
 
 #ifndef RELEASE
-        if ( !options[Options::StrictVersion] )
+        if ( ! options[Options::StrictVersion] )
             options.set ( Options::StrictVersion, 3 );
 #endif
 
@@ -1270,7 +1270,7 @@ struct MainApp
 
         procMan.closeGame();
 
-        if ( !lastError.empty() )
+        if ( ! lastError.empty() )
         {
             LOG ( "lastError='%s'", lastError );
             ui.sessionError = lastError;

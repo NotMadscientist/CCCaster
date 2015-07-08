@@ -16,7 +16,7 @@ using namespace std;
 
 void EventManager::checkEvents ( uint64_t timeout )
 {
-    if ( !running )
+    if ( ! running )
         return;
 
     ASSERT ( TimerManager::get().isInitialized() == true );
@@ -24,7 +24,7 @@ void EventManager::checkEvents ( uint64_t timeout )
 
     TimerManager::get().check();
 
-    if ( !running )
+    if ( ! running )
         return;
 
     if ( TimerManager::get().getNextExpiry() != UINT64_MAX )
@@ -75,7 +75,7 @@ EventManager::EventManager() {}
 
 bool EventManager::poll ( uint64_t timeout )
 {
-    if ( !running )
+    if ( ! running )
         return false;
 
     ASSERT ( timeout > 0 );
@@ -89,7 +89,7 @@ bool EventManager::poll ( uint64_t timeout )
     {
         checkEvents ( end - now );
 
-        if ( !running )
+        if ( ! running )
             break;
 
         now = TimerManager::get().getNow ( true );

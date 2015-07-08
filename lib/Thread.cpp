@@ -25,7 +25,7 @@ void Thread::start()
 void Thread::join()
 {
     LOCK ( mutex );
-    if ( !running )
+    if ( ! running )
         return;
 
     pthread_join ( thread, 0 );

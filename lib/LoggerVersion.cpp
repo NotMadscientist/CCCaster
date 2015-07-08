@@ -28,7 +28,7 @@ void Logger::logVersion()
     fprintf ( fd, "BuildType 'unknown'\n" );
 #endif
 
-    if ( !sessionId.empty() )
+    if ( ! sessionId.empty() )
         fprintf ( fd, "SessionId '%s'\n", sessionId.c_str() );
 
     fflush ( fd );

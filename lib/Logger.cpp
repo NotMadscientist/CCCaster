@@ -54,7 +54,7 @@ void Logger::initialize ( const string& file, uint32_t options )
         fd = fopen ( this->file.c_str(), same ? "a" : "w" );
     }
 
-    if ( !initialized )
+    if ( ! initialized )
         logId = generateRandomId();
 
     initialized = true;
@@ -62,7 +62,7 @@ void Logger::initialize ( const string& file, uint32_t options )
 
 void Logger::deinitialize()
 {
-    if ( !initialized )
+    if ( ! initialized )
         return;
 
 #ifdef LOGGER_MUTEXED
@@ -91,7 +91,7 @@ void Logger::flush()
 
 void Logger::log ( const char *file, int line, const char *func, const char *message )
 {
-    if ( !fd )
+    if ( ! fd )
         return;
 
 #ifdef LOGGER_MUTEXED

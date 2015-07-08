@@ -343,7 +343,7 @@ void renderOverlayText ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewport 
 {
 #ifndef RELEASE
 
-    if ( !debugText.empty() )
+    if ( ! debugText.empty() )
     {
         RECT rect;
         rect.top = rect.left = 0;
@@ -411,13 +411,13 @@ void renderOverlayText ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewport 
                 DrawRectangle ( device, INLINE_RECT ( selector[1] ), OVERLAY_SELECTOR_R_COLOR );
         }
 
-        if ( !text[0].empty() )
+        if ( ! text[0].empty() )
             DrawText ( font, text[0], rect, DT_WORDBREAK | DT_LEFT, OVERLAY_TEXT_COLOR );
 
-        if ( !text[1].empty() )
+        if ( ! text[1].empty() )
             DrawText ( font, text[1], rect, DT_WORDBREAK | DT_CENTER, OVERLAY_TEXT_COLOR );
 
-        if ( !text[2].empty() )
+        if ( ! text[2].empty() )
             DrawText ( font, text[2], rect, DT_WORDBREAK | DT_RIGHT, OVERLAY_TEXT_COLOR );
     }
 }

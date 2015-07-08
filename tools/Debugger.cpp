@@ -98,8 +98,8 @@ int main ( int argc, char *argv[] )
     ZeroMemory ( &pi, sizeof ( pi ) );
     si.cb = sizeof ( si );
 
-    if ( !CreateProcess ( 0, const_cast<char *> ( exe.c_str() ), 0, 0, TRUE, DEBUG_ONLY_THIS_PROCESS, 0,
-                          cwd.empty() ? 0 : cwd.c_str(), &si, &pi ) )
+    if ( ! CreateProcess ( 0, const_cast<char *> ( exe.c_str() ), 0, 0, TRUE, DEBUG_ONLY_THIS_PROCESS, 0,
+                           cwd.empty() ? 0 : cwd.c_str(), &si, &pi ) )
     {
         PRINT ( "CreateProcess failed: %s", WinException::getLastError() );
         exit ( -1 );
@@ -120,7 +120,7 @@ int main ( int argc, char *argv[] )
     // Wait for debugging events
     for ( bool debugging = true; debugging; )
     {
-        if ( !WaitForDebugEvent ( &event, INFINITE ) )
+        if ( ! WaitForDebugEvent ( &event, INFINITE ) )
         {
             PRINT ( "WaitForDebugEvent failed: %s", WinException::getLastError() );
             exit ( -1 );
@@ -148,7 +148,7 @@ int main ( int argc, char *argv[] )
                 switch ( event.u.Exception.ExceptionRecord.ExceptionCode )
                 {
                     case EXCEPTION_BREAKPOINT:
-                        if ( !thread )
+                        if ( ! thread )
                         {
                             if ( ! ( thread = OpenThread ( THREAD_GET_CONTEXT | THREAD_SET_CONTEXT,
                                                            0, event.dwThreadId ) ) )
@@ -234,7 +234,7 @@ int main ( int argc, char *argv[] )
                 exit ( -1 );
         }
 
-        if ( !ContinueDebugEvent ( event.dwProcessId, event.dwThreadId, DBG_CONTINUE ) )
+        if ( ! ContinueDebugEvent ( event.dwProcessId, event.dwThreadId, DBG_CONTINUE ) )
         {
             PRINT ( "ContinueDebugEvent failed: %s", WinException::getLastError() );
             exit ( -1 );

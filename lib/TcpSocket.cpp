@@ -98,7 +98,7 @@ SocketPtr TcpSocket::connect ( Socket::Owner *owner, const IpAddrPort& address, 
 
 SocketPtr TcpSocket::accept ( Socket::Owner *owner )
 {
-    if ( !isServer() )
+    if ( ! isServer() )
         return 0;
 
     sockaddr_storage sas;

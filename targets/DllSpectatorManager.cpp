@@ -22,7 +22,7 @@ void SpectatorManager::pushSpectator ( Socket *socketPtr, const IpAddrPort& serv
 
     SocketPtr newSocket = popPendingSocket ( socketPtr );
 
-    if ( !newSocket )
+    if ( ! newSocket )
         return;
 
     ASSERT ( newSocket.get() == socketPtr );

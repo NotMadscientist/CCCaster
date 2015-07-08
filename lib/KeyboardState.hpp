@@ -41,7 +41,7 @@ public:
                                 uint64_t duration = DEFAULT_HELD_DURATION,
                                 uint32_t repeatInterval = DEFAULT_REPEAT_INTERVAL )
     {
-        if ( !isDown ( vkCode ) )
+        if ( ! isDown ( vkCode ) )
             return false;
 
         const auto it = pressedTimestamp.find ( vkCode );

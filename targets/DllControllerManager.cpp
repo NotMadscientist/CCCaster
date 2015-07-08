@@ -173,7 +173,7 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
                 // Only one controller (player 1)
                 continue;
             }
-            else if ( !playerControllers[1] )
+            else if ( ! playerControllers[1] )
             {
                 playerControllers[1] = controller;
                 overlayPositions[1] = 0;
@@ -197,7 +197,7 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
                 // Only one controller (player 2)
                 continue;
             }
-            else if ( !playerControllers[0] )
+            else if ( ! playerControllers[0] )
             {
                 playerControllers[0] = controller;
                 overlayPositions[0] = 0;
@@ -229,7 +229,7 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
         }
 
         // Show placeholder when player has no controller assigned
-        if ( !playerControllers[i] )
+        if ( ! playerControllers[i] )
         {
             playerText = ( i == 0 ? "Press Left on P1 controller" : "Press Right on P2 controller" );
             DllOverlayUi::updateSelector ( i );

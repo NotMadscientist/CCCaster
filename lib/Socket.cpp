@@ -457,14 +457,14 @@ void Socket::readEvent()
         consumeBuffer ( consumedBytes );
 
         // Abort if a message could not be decoded
-        if ( !msg.get() )
+        if ( ! msg.get() )
             return;
 
         LOG ( "Decoded '%s' using [ %u bytes ]; %u bytes remaining in buffer", msg, consumedBytes, readPos );
         readEvent ( msg, address );
 
         // Abort if the socket is de-allocated
-        if ( !SocketManager::get().isAllocated ( this ) )
+        if ( ! SocketManager::get().isAllocated ( this ) )
             return;
 
         // Abort if socket is disconnected

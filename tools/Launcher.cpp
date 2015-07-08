@@ -15,7 +15,7 @@ bool hookDLL ( const string& dll_path, const PROCESS_INFORMATION *pi )
     WriteProcessMemory ( pi->hProcess, dll_addr, dll_path.c_str(), dll_path.size() + 1, 0 );
 
     HANDLE hThread = CreateRemoteThread ( pi->hProcess, 0, 0, pLoadLibrary, dll_addr, 0, 0 );
-    if ( !hThread )
+    if ( ! hThread )
     {
         char buffer[4096];
         snprintf ( buffer, sizeof ( buffer ), "Could not create remote thread [%d].", ( int ) GetLastError() );
@@ -35,7 +35,7 @@ bool hookDLL ( const string& dll_path, const PROCESS_INFORMATION *pi )
 
     VirtualFreeEx ( pi->hProcess, dll_addr, 0, MEM_RELEASE );
 
-    if ( !hookedDLL )
+    if ( ! hookedDLL )
     {
         TerminateProcess ( pi->hProcess, -1 );
         // MessageBox ( 0, "Could not hook dll after all.", "launcher error", MB_OK );
@@ -72,7 +72,7 @@ bool hook ( const string& exe_path, const string& dll_path, bool high_priority )
     memset ( &pi, 0, sizeof ( pi ) );
     si.cb = sizeof ( si );
 
-    if ( !GetFileAttributesEx ( exe_path.c_str(), GetFileExInfoStandard, &exe_info ) )
+    if ( ! GetFileAttributesEx ( exe_path.c_str(), GetFileExInfoStandard, &exe_info ) )
     {
         char buffer[4096];
         snprintf ( buffer, sizeof ( buffer ), "Couldn't find exe='%s'\nError [%d].",
@@ -81,7 +81,7 @@ bool hook ( const string& exe_path, const string& dll_path, bool high_priority )
         return false;
     }
 
-    if ( !GetFileAttributesEx ( dll_path.c_str(), GetFileExInfoStandard, &dat_info ) )
+    if ( ! GetFileAttributesEx ( dll_path.c_str(), GetFileExInfoStandard, &dat_info ) )
     {
         char buffer[4096];
         snprintf ( buffer, sizeof ( buffer ), "Couldn't find dll='%s'\nError [%d].",
@@ -100,7 +100,7 @@ bool hook ( const string& exe_path, const string& dll_path, bool high_priority )
 
     const string dir_path = exe_path.substr ( 0, exe_path.find_last_of ( "/\\" ) );
 
-    if ( !CreateProcessA ( 0, buffer, 0, 0, TRUE, flags, 0, dir_path.c_str(), &si, &pi ) )
+    if ( ! CreateProcessA ( 0, buffer, 0, 0, TRUE, flags, 0, dir_path.c_str(), &si, &pi ) )
     {
         char buffer[4096];
         snprintf ( buffer, sizeof ( buffer ), "exe='%s'\ndir='%s'\nCould not create process [%d].",
@@ -113,7 +113,7 @@ bool hook ( const string& exe_path, const string& dll_path, bool high_priority )
     WORD lock_code = 0xfeeb;
     WORD orig_code;
     DWORD address;
-    if ( !getbase ( pi.hProcess, &address, &orig_code ) )
+    if ( ! getbase ( pi.hProcess, &address, &orig_code ) )
     {
         // MessageBox ( 0, "Could not find entry point", "launcher error", MB_OK | MB_ICONEXCLAMATION );
         return false;
@@ -130,7 +130,7 @@ bool hook ( const string& exe_path, const string& dll_path, bool high_priority )
         Sleep ( 10 );
         SuspendThread ( pi.hThread );
 
-        if ( !GetThreadContext ( pi.hThread, &ct ) )
+        if ( ! GetThreadContext ( pi.hThread, &ct ) )
         {
             if ( tries++ < 500 )
                 continue;
@@ -142,7 +142,7 @@ bool hook ( const string& exe_path, const string& dll_path, bool high_priority )
     }
     while ( ct.Eip != address );
 
-    if ( !hookDLL ( dll_path, &pi ) )
+    if ( ! hookDLL ( dll_path, &pi ) )
         return false;
 
     // ASM hack to skip the configuration window for MBAA

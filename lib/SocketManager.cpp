@@ -12,7 +12,7 @@ using namespace std;
 
 void SocketManager::check ( uint64_t timeout )
 {
-    if ( !initialized )
+    if ( ! initialized )
         return;
 
     if ( changed )
@@ -81,7 +81,7 @@ void SocketManager::check ( uint64_t timeout )
 
         if ( socket->isConnecting() && socket->isTCP() )
         {
-            if ( !FD_ISSET ( socket->fd, &writeFds ) )
+            if ( ! FD_ISSET ( socket->fd, &writeFds ) )
                 continue;
 
             LOG_SOCKET ( socket, "connectEvent" );
@@ -89,7 +89,7 @@ void SocketManager::check ( uint64_t timeout )
         }
         else
         {
-            if ( !FD_ISSET ( socket->fd, &readFds ) )
+            if ( ! FD_ISSET ( socket->fd, &readFds ) )
                 continue;
 
             if ( socket->isServer() && socket->isTCP() )
@@ -151,7 +151,7 @@ void SocketManager::initialize()
 
 void SocketManager::deinitialize()
 {
-    if ( !initialized )
+    if ( ! initialized )
         return;
 
     initialized = false;

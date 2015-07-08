@@ -495,7 +495,7 @@ uint32_t NetplayManager::getBufferedPreserveStartIndex() const
 
 void NetplayManager::setState ( NetplayState state )
 {
-    if ( !isValidNext ( state ) )
+    if ( ! isValidNext ( state ) )
     {
         LOG ( "Invalid transition: %s -> %s", this->state, state );
         return;

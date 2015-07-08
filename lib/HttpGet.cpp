@@ -68,7 +68,7 @@ void HttpGet::connectEvent ( Socket *socket )
     timer.reset ( new Timer ( this ) );
     timer->start ( timeout );
 
-    if ( !socket->send ( &request[0], request.size() ) )
+    if ( ! socket->send ( &request[0], request.size() ) )
     {
         LOG ( "Failed to send request!" );
 

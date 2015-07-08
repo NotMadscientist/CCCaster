@@ -87,7 +87,7 @@ void ProcessManager::connectPipe()
 
     DWORD bytes;
 
-    if ( !WriteFile ( pipe, & ( ipcSocket->address.port ), sizeof ( ipcSocket->address.port ), &bytes, 0 ) )
+    if ( ! WriteFile ( pipe, & ( ipcSocket->address.port ), sizeof ( ipcSocket->address.port ), &bytes, 0 ) )
         THROW_WIN_EXCEPTION ( GetLastError(), "WriteFile failed", ERROR_PIPE_RW );
 
     if ( bytes != sizeof ( ipcSocket->address.port ) )
@@ -95,7 +95,7 @@ void ProcessManager::connectPipe()
 
     processId = GetCurrentProcessId();
 
-    if ( !WriteFile ( pipe, &processId, sizeof ( processId ), &bytes, 0 ) )
+    if ( ! WriteFile ( pipe, &processId, sizeof ( processId ), &bytes, 0 ) )
         THROW_WIN_EXCEPTION ( GetLastError(), "WriteFile failed", ERROR_PIPE_RW );
 
     if ( bytes != sizeof ( processId ) )

@@ -118,7 +118,7 @@ void ProcessManager::timerExpired ( Timer *timer )
     if ( ! ( hwnd = FindWindowEx ( ( HWND ) hwnd, 0, 0, CC_STARTUP_BUTTON ) ) )
         return;
 
-    if ( !PostMessage ( ( HWND ) hwnd, BM_CLICK, 0, 0 ) )
+    if ( ! PostMessage ( ( HWND ) hwnd, BM_CLICK, 0, 0 ) )
         return;
 }
 
@@ -178,7 +178,7 @@ void ProcessManager::openGame ( bool highPriority )
     thread->start();
     EventManager::get().addThread ( thread );
 
-    if ( !ConnectNamedPipe ( pipe, 0 ) )
+    if ( ! ConnectNamedPipe ( pipe, 0 ) )
     {
         int error = GetLastError();
 
@@ -191,7 +191,7 @@ void ProcessManager::openGame ( bool highPriority )
     DWORD bytes;
     IpAddrPort ipcHost ( "127.0.0.1", 0 );
 
-    if ( !ReadFile ( pipe, &ipcHost.port, sizeof ( ipcHost.port ), &bytes, 0 ) )
+    if ( ! ReadFile ( pipe, &ipcHost.port, sizeof ( ipcHost.port ), &bytes, 0 ) )
         THROW_WIN_EXCEPTION ( GetLastError(), "ReadFile failed", ERROR_PIPE_RW );
 
     if ( bytes != sizeof ( ipcHost.port ) )
@@ -203,7 +203,7 @@ void ProcessManager::openGame ( bool highPriority )
 
     LOG ( "ipcSocket=%08x", ipcSocket.get() );
 
-    if ( !ReadFile ( pipe, &processId, sizeof ( processId ), &bytes, 0 ) )
+    if ( ! ReadFile ( pipe, &processId, sizeof ( processId ), &bytes, 0 ) )
         THROW_WIN_EXCEPTION ( GetLastError(), "ReadFile failed", ERROR_PIPE_RW );
 
     if ( bytes != sizeof ( processId ) )
@@ -218,7 +218,7 @@ void ProcessManager::openGame ( bool highPriority )
 
 void ProcessManager::closeGame()
 {
-    if ( !isConnected() )
+    if ( ! isConnected() )
         return;
 
     disconnectPipe();
@@ -380,7 +380,7 @@ void *ProcessManager::findWindow ( const string& title, bool exact )
             char buffer[4096];
             GetWindowText ( hwnd, buffer, sizeof ( buffer ) );
 
-            if ( !tmpHwnd  )
+            if ( ! tmpHwnd  )
             {
                 if ( tmpExact )
                 {
@@ -412,7 +412,7 @@ bool ProcessManager::isWine()
 
     HMODULE ntdll = GetModuleHandle ( "ntdll.dll" );
 
-    if ( !ntdll )
+    if ( ! ntdll )
     {
         isWine = 0;
         return isWine;

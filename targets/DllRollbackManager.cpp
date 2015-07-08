@@ -55,7 +55,7 @@ void DllRollbackManager::allocateStates()
     if ( allAddrs.empty() )
         THROW_EXCEPTION ( "Failed to load rollback data!", ERROR_BAD_ROLLBACK_DATA );
 
-    if ( !memoryPool )
+    if ( ! memoryPool )
         memoryPool.reset ( new char[NUM_ROLLBACK_STATES * allAddrs.totalSize], deleteArray<char> );
 
     for ( size_t i = 0; i < NUM_ROLLBACK_STATES; ++i )
@@ -71,7 +71,7 @@ void DllRollbackManager::deallocateStates()
 {
     memoryPool.reset();
 
-    while ( !freeStack.empty() )
+    while ( ! freeStack.empty() )
         freeStack.pop();
 
     statesList.clear();

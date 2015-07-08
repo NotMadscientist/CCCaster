@@ -216,7 +216,7 @@ TEST ( GoBackN, SendAndRecv )
 
         void sendRaw ( GoBackN *gbn, const MsgPtr& msg ) override
         {
-            if ( !address.empty() )
+            if ( ! address.empty() )
                 socket->send ( msg, address );
         }
 
@@ -244,7 +244,7 @@ TEST ( GoBackN, SendAndRecv )
 
         void timerExpired ( Timer *timer ) override
         {
-            if ( !sent )
+            if ( ! sent )
             {
                 gbn.sendGoBackN ( new TestMessage ( socket->isClient() ? "Client 1" : "Server 1" ) );
                 gbn.sendGoBackN ( new TestMessage ( socket->isClient() ? "Client 2" : "Server 2" ) );

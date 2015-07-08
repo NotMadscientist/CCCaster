@@ -128,7 +128,7 @@ public:
                             line += " " + token;
                     }
 
-                    if ( !line.empty() )
+                    if ( ! line.empty() )
                         lines.push_back ( " " + line + " " );
                 }
                 else
@@ -151,10 +151,10 @@ public:
             ASSERT ( ( size_t ) size.X >= longestLine + borders.size() );
             ASSERT ( ( size_t ) size.Y >= lines.size() + bordersHeight );
 
-            if ( !expand.X )
+            if ( ! expand.X )
                 size.X = longestLine + borders.size();
 
-            if ( !expand.Y )
+            if ( ! expand.Y )
                 size.Y = lines.size() + bordersHeight;
         }
 
@@ -229,7 +229,7 @@ public:
             ASSERT ( ( size_t ) size.Y > bordersHeight + ( title.empty() ? 0 : 2 ) );
             ASSERT ( items.size() <= maxMenuItems );
 
-            if ( !title.empty() )
+            if ( ! title.empty() )
                 menu.Title ( " " + shortenWithEllipsis ( title ) + " " );
 
             for ( size_t i = 0; i < items.size(); ++i )
@@ -242,7 +242,7 @@ public:
                 menu.Append ( " " + shortenWithEllipsis ( items[i] ) + " ", i );
             }
 
-            if ( !lastItem.empty() )
+            if ( ! lastItem.empty() )
             {
                 lastItem = format ( "[0] %s", lastItem );
                 menu.Append ( " " + shortenWithEllipsis ( lastItem ) + " ", items.size() );
@@ -320,7 +320,7 @@ public:
 
         void setInitial ( int initial )
         {
-            if ( !isIntegerPrompt )
+            if ( ! isIntegerPrompt )
                 return;
 
             resultInt = initial;
@@ -347,7 +347,7 @@ public:
             ASSERT ( ( size_t ) size.X >= title.size() + paddedBorders.size() );
             ASSERT ( ( size_t ) size.Y > bordersHeight + ( title.empty() ? 0 : 2 ) );
 
-            if ( !expand.X )
+            if ( ! expand.X )
                 size.X = title.size() + paddedBorders.size();
 
             // Prompts are NEVER expanded vertically
@@ -361,7 +361,7 @@ public:
             CharacterBox::Draw ( pos, pos + size, '*' );
             ConsoleCore *cc = ConsoleCore::GetInstance();
 
-            if ( !title.empty() )
+            if ( ! title.empty() )
             {
                 cc->Prints ( " " + title + " ", false, 0, pos.X + 1, pos.Y + 1 );
                 cc->Prints ( std::string ( size.X - borders.size(), '*' ), false, 0, pos.X + 1, pos.Y + 2 );
@@ -437,7 +437,7 @@ public:
             CharacterBox::Draw ( pos, pos + size, '*' );
             ConsoleCore *cc = ConsoleCore::GetInstance();
 
-            if ( !title.empty() )
+            if ( ! title.empty() )
             {
                 cc->Prints ( " " + title + " ", false, 0, pos.X + 1, pos.Y + 1 );
                 cc->Prints ( std::string ( size.X - borders.size(), '*' ), false, 0, pos.X + 1, pos.Y + 2 );
@@ -480,7 +480,7 @@ public:
     {
         ASSERT ( stack.empty() == false );
 
-        while ( !stack.empty() )
+        while ( ! stack.empty() )
         {
             if ( stack.back()->requiresUser )
             {

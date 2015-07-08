@@ -54,9 +54,9 @@ TEST ( UdpSocket, SendConnectionLess )
 
         void timerExpired ( Timer *timer ) override
         {
-            if ( !sent )
+            if ( ! sent )
             {
-                if ( !socket->getRemoteAddress().addr.empty() )
+                if ( ! socket->getRemoteAddress().addr.empty() )
                 {
                     socket->send ( new TestMessage ( "Hello server!" ) );
                     sent = true;
@@ -174,8 +174,9 @@ TEST ( UdpSocket, BindThenConnect )
         {
             if ( step == 0 )
             {
-                if ( !socket->address.addr.empty() )
+                if ( ! socket->address.addr.empty() )
                     socket->send ( new TestMessage ( "Connection-less message" ), socket->address );
+
                 timer->start ( 1000 );
                 ++step;
             }

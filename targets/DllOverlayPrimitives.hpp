@@ -52,7 +52,7 @@ static inline void DrawCircle ( IDirect3DDevice9 *device, float x, float y, floa
 
 static inline int DrawText ( ID3DXFont *font, const std::string& text, RECT& rect, int flags, const D3DCOLOR& color )
 {
-    if ( !font )
+    if ( ! font )
         return 0;
 
     return font->DrawText ( 0,                                  // text as a ID3DXSprite object

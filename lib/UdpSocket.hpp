@@ -74,11 +74,11 @@ public:
 
     // Get / set the interval to send packets, should be non-zero
     uint64_t getSendInterval() const { return gbn.getSendInterval(); }
-    void setSendInterval ( uint64_t interval ) { if ( !isConnectionLess() ) gbn.setSendInterval ( interval ); }
+    void setSendInterval ( uint64_t interval ) { if ( ! isConnectionLess() ) gbn.setSendInterval ( interval ); }
 
     // Get / set the timeout for keep alive packets, 0 to disable
     uint64_t getKeepAlive() const { return keepAlive; }
-    void setKeepAlive ( uint64_t timeout ) { if ( !isConnectionLess() ) gbn.setKeepAlive ( keepAlive = timeout ); }
+    void setKeepAlive ( uint64_t timeout ) { if ( ! isConnectionLess() ) gbn.setKeepAlive ( keepAlive = timeout ); }
 
     // Listen for connections.
     // Can only be used on a connection-less socket, where address.addr is empty.

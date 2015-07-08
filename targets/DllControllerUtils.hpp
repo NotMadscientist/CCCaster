@@ -53,7 +53,7 @@ struct DllControllerUtils
 
     static uint16_t getPrevInput ( const Controller *controller )
     {
-        if ( !controller )
+        if ( ! controller )
             return 0;
 
         return convertInputState ( controller->getPrevState(), controller->isKeyboard() );
@@ -61,7 +61,7 @@ struct DllControllerUtils
 
     static uint16_t getInput ( const Controller *controller )
     {
-        if ( !controller )
+        if ( ! controller )
             return 0;
 
         return convertInputState ( controller->getState(), controller->isKeyboard() );
@@ -69,7 +69,7 @@ struct DllControllerUtils
 
     static bool isButtonPressed ( const Controller *controller, uint16_t button )
     {
-        if ( !controller )
+        if ( ! controller )
             return false;
 
         button = COMBINE_INPUT ( 0, button );
@@ -78,7 +78,7 @@ struct DllControllerUtils
 
     static bool isDirectionPressed ( const Controller *controller, uint16_t dir )
     {
-        if ( !controller )
+        if ( ! controller )
             return false;
 
         return ( ( getInput ( controller ) & MASK_DIRS ) == dir )

@@ -43,7 +43,7 @@ int main ( int argc, char *argv[] )
     {
         char buffer[4096];
 
-        if ( !GetProcessImageFileName ( process, buffer, sizeof ( buffer ) ) )
+        if ( ! GetProcessImageFileName ( process, buffer, sizeof ( buffer ) ) )
             buffer[0] = '\0';
 
         if ( string ( buffer ).find ( "cccaster" ) != string::npos )

@@ -317,7 +317,7 @@ struct DllMain
                     if ( repMan.getGameMode ( netMan.getIndexedFrame() ) )
                         ASSERT ( repMan.getGameMode ( netMan.getIndexedFrame() ) == *CC_GAME_MODE_ADDR );
 
-                    if ( !repMan.getStateStr ( netMan.getIndexedFrame() ).empty() )
+                    if ( ! repMan.getStateStr ( netMan.getIndexedFrame() ).empty() )
                         ASSERT ( repMan.getStateStr ( netMan.getIndexedFrame() ) == netMan.getState().str() );
 
                     // Inputs
@@ -417,7 +417,7 @@ struct DllMain
 #endif // NOT RELEASE
 
                 // Assign local player input
-                if ( !clientMode.isSpectate() )
+                if ( ! clientMode.isSpectate() )
                 {
 #ifndef RELEASE
                     if ( netMan.isInRollback() )
@@ -489,7 +489,7 @@ struct DllMain
         for ( ;; )
         {
             // Poll until we are ready to run
-            if ( !EventManager::get().poll ( POLL_TIMEOUT ) )
+            if ( ! EventManager::get().poll ( POLL_TIMEOUT ) )
             {
                 appState = AppState::Stopping;
                 return;
@@ -520,7 +520,7 @@ struct DllMain
                 }
 
                 // Start resending inputs since we are waiting
-                if ( !resendTimer )
+                if ( ! resendTimer )
                 {
                     resendTimer.reset ( new Timer ( this ) );
                     resendTimer->start ( RESEND_INPUTS_INTERVAL );
@@ -619,7 +619,7 @@ struct DllMain
         //            CC_SFX_ARRAY_ADDR[SFX_NUM], AsmHacks::sfxFilterArray[SFX_NUM], AsmHacks::sfxMuteArray[SFX_NUM] );
 
 #ifndef RELEASE
-        if ( !replayInputs )
+        if ( ! replayInputs )
         {
             // Test one time rollback
             if ( KeyboardState::isPressed ( VK_F9 ) && netMan.isInGame() )
@@ -1088,7 +1088,7 @@ struct DllMain
 
     void delayedStop ( const string& error )
     {
-        if ( !error.empty() )
+        if ( ! error.empty() )
             procMan.ipcSend ( new ErrorMessage ( error ) );
 
         stopTimer.reset ( new Timer ( this ) );
@@ -1251,7 +1251,7 @@ struct DllMain
     {
         LOG ( "readEvent ( %08x, %s, %s )", socket, msg, address );
 
-        if ( !msg.get() )
+        if ( ! msg.get() )
             return;
 
         if ( redirectedSockets.find ( socket ) != redirectedSockets.end() )
@@ -1263,7 +1263,7 @@ struct DllMain
             {
                 const Version RemoteVersion = msg->getAs<VersionConfig>().version;
 
-                if ( !LocalVersion.isSimilar ( RemoteVersion, 1 + options[Options::StrictVersion] ) )
+                if ( ! LocalVersion.isSimilar ( RemoteVersion, 1 + options[Options::StrictVersion] ) )
                 {
                     string local = LocalVersion.code;
                     string remote = RemoteVersion.code;
@@ -1432,7 +1432,7 @@ struct DllMain
 
     void ipcReadEvent ( const MsgPtr& msg ) override
     {
-        if ( !msg.get() )
+        if ( ! msg.get() )
             return;
 
         switch ( msg->getMsgType() )
@@ -1583,7 +1583,7 @@ struct DllMain
                 break;
 
             case MsgType::IpAddrPort:
-                if ( !address.empty() )
+                if ( ! address.empty() )
                     break;
 
                 address = msg->getAs<IpAddrPort>();
@@ -1877,7 +1877,7 @@ private:
 
     void saveMappings ( const Controller *controller ) const override
     {
-        if ( !controller )
+        if ( ! controller )
             return;
 
         const string file = ProcessManager::appDir + FOLDER + controller->getName() + MAPPINGS_EXT;

@@ -391,7 +391,7 @@ void SmartSocket::timerExpired ( Timer *timer )
 
                 tunSocket->send ( data.buffer, sizeof ( data.buffer ), *vpsAddress );
 
-                if ( !tunClient.address.empty() )
+                if ( ! tunClient.address.empty() )
                     tunSocket->send ( NullMsg, tunClient.address );
             }
         }
@@ -403,7 +403,7 @@ void SmartSocket::timerExpired ( Timer *timer )
 
             tunSocket->send ( data.buffer, sizeof ( data.buffer ), *vpsAddress );
 
-            if ( !tunAddress.empty() )
+            if ( ! tunAddress.empty() )
                 tunSocket->send ( NullMsg, tunAddress );
         }
 
@@ -529,7 +529,7 @@ SocketPtr SmartSocket::accept ( Socket::Owner *owner )
 
     SocketPtr socket = tunSocket->accept ( owner );
 
-    if ( !socket )
+    if ( ! socket )
         return 0;
 
     auto it = pendingClients.begin();
@@ -555,7 +555,7 @@ SocketPtr SmartSocket::accept ( Socket::Owner *owner )
 
 #define BOILERPLATE_SEND(...)                                                           \
     do {                                                                                \
-        if ( !isConnected() )                                                           \
+        if ( ! isConnected() )                                                          \
             return false;                                                               \
         if ( directSocket && directSocket->isConnected() )                              \
             return directSocket->send ( __VA_ARGS__ );                                  \

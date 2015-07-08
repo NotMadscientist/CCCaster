@@ -81,7 +81,7 @@ void MainUi::netplay ( RunFuncPtr run )
             config.setInteger ( "lastUsedPort", address.port );
             saveConfig();
 
-            if ( !gameMode ( true ) ) // Show below
+            if ( ! gameMode ( true ) ) // Show below
                 continue;
 
             initialConfig.mode.value = ClientMode::Host;
@@ -97,7 +97,7 @@ void MainUi::netplay ( RunFuncPtr run )
 
         ui->popNonUserInput();
 
-        if ( !sessionError.empty() )
+        if ( ! sessionError.empty() )
         {
             ui->pushBelow ( new ConsoleUi::TextBox ( sessionError ), { 1, 0 } ); // Expand width
             sessionError.clear();
@@ -147,7 +147,7 @@ void MainUi::spectate ( RunFuncPtr run )
 
         ui->popNonUserInput();
 
-        if ( !sessionError.empty() )
+        if ( ! sessionError.empty() )
         {
             ui->pushBelow ( new ConsoleUi::TextBox ( sessionError ), { 1, 0 } ); // Expand width
             sessionError.clear();
@@ -183,7 +183,7 @@ void MainUi::broadcast ( RunFuncPtr run )
             continue;
         }
 
-        if ( !gameMode ( true ) ) // Show below
+        if ( ! gameMode ( true ) ) // Show below
             continue;
 
         netplayConfig.clear();
@@ -203,7 +203,7 @@ void MainUi::broadcast ( RunFuncPtr run )
 
         ui->popNonUserInput();
 
-        if ( !sessionError.empty() )
+        if ( ! sessionError.empty() )
         {
             ui->pushBelow ( new ConsoleUi::TextBox ( sessionError ), { 1, 0 } ); // Expand width
             sessionError.clear();
@@ -215,7 +215,7 @@ void MainUi::broadcast ( RunFuncPtr run )
 
 void MainUi::offline ( RunFuncPtr run )
 {
-    if ( !offlineGameMode() )
+    if ( ! offlineGameMode() )
         return;
 
     netplayConfig.clear();
@@ -378,7 +378,7 @@ void MainUi::controls()
                     break;
 
                 // Last 3 options (ignore delete)
-                if ( !ui->top()->resultStr.empty() )
+                if ( ! ui->top()->resultStr.empty() )
                     break;
             }
 
@@ -429,7 +429,7 @@ void MainUi::controls()
                 ui->pop();
                 ui->pop();
 
-                if ( !controller.isJoystick() )
+                if ( ! controller.isJoystick() )
                     continue;
 
                 ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptString,
@@ -515,7 +515,7 @@ void MainUi::controls()
             ui->pop();
             ui->pop();
 
-            if ( !currentController )
+            if ( ! currentController )
                 break;
 
             saveMappings ( controller );
@@ -991,7 +991,7 @@ void MainUi::main ( RunFuncPtr run )
 
         if ( !sessionError.empty() && !sessionMessage.empty() )
             ui->pushRight ( new ConsoleUi::TextBox ( sessionError + "\n" + sessionMessage ), { 1, 0 } ); // Expand width
-        else if ( !sessionError.empty() )
+        else if ( ! sessionError.empty() )
             ui->pushRight ( new ConsoleUi::TextBox ( sessionError ), { 1, 0 } ); // Expand width
         else if ( !sessionMessage.empty() )
             ui->pushRight ( new ConsoleUi::TextBox ( sessionMessage ), { 1, 0 } ); // Expand width
@@ -1306,7 +1306,7 @@ string MainUi::formatStats ( const PingStats& pingStats )
 
 void MainUi::update ( bool isStartup )
 {
-    if ( !isOnline() )
+    if ( ! isOnline() )
     {
         sessionMessage = "No Internet connection";
         return;

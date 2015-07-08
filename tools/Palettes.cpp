@@ -303,10 +303,10 @@ int main ( int argc, char *argv[] )
     if ( argc >= 2 )
         initialized = editor.init ( PALETTES_FOLDER, string ( argv[1] ) + "\\" DATA_FILE );
 
-    if ( !initialized )
+    if ( ! initialized )
         initialized = editor.init ( PALETTES_FOLDER, DATA_FILE );
 
-    if ( !initialized )
+    if ( ! initialized )
     {
         MessageBox ( 0, "Could not load palette data!\n\nIs " DATA_FILE " in the same folder?", "Error", MB_OK );
         return -1;
@@ -316,7 +316,7 @@ int main ( int argc, char *argv[] )
     saveEditorState();
 
     // Init GLFW
-    if ( !glfwInit() )
+    if ( ! glfwInit() )
     {
         MessageBox ( 0, "Could not initialize OpenGL!", "Error", MB_OK );
         return -1;
@@ -325,9 +325,9 @@ int main ( int argc, char *argv[] )
     GLFWvidmode videoMode;
     glfwGetDesktopMode ( &videoMode );
 
-    if ( !glfwOpenWindow ( screenWidth, screenHeight,
-                           videoMode.RedBits, videoMode.GreenBits, videoMode.BlueBits,
-                           0, 16, 0, GLFW_WINDOW ) )
+    if ( ! glfwOpenWindow ( screenWidth, screenHeight,
+                            videoMode.RedBits, videoMode.GreenBits, videoMode.BlueBits,
+                            0, 16, 0, GLFW_WINDOW ) )
     {
         MessageBox ( 0, "Could not create window!", "Error", MB_OK );
         glfwTerminate();

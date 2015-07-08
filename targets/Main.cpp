@@ -175,7 +175,7 @@ int main ( int argc, char *argv[] )
 
         PRINT ( "%s", msg );
 
-        if ( !msg.get() )
+        if ( ! msg.get() )
             break;
     }
 
@@ -347,7 +347,7 @@ int main ( int argc, char *argv[] )
     SetConsoleCtrlHandler ( consoleCtrl, TRUE );
 
     // Initialize the main directories, this also does a sanity check
-    if ( !initDirsAndSanityCheck ( !opt[Options::Tests] && !opt[Options::Dummy] ) )
+    if ( ! initDirsAndSanityCheck ( !opt[Options::Tests] && !opt[Options::Dummy] ) )
     {
         PRINT ( "%s", trimmed ( lastError ) );
         PRINT ( "Press any key to exit." );
@@ -504,12 +504,12 @@ int main ( int argc, char *argv[] )
 
     if ( opt[Options::NoUi] || opt[Options::Tournament] )
     {
-        if ( !lastError.empty() )
+        if ( ! lastError.empty() )
             PRINT ( "%s", lastError );
     }
     else
     {
-        if ( !lastError.empty() )
+        if ( ! lastError.empty() )
             ui.sessionError = lastError;
 
         try

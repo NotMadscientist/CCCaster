@@ -51,7 +51,7 @@ bool PaletteEditor::init ( const string& palettesFolder, const string& dataFile 
 {
     this->palettesFolder = palettesFolder;
 
-    if ( !frameDisp.init ( dataFile.c_str() ) )
+    if ( ! frameDisp.init ( dataFile.c_str() ) )
         return false;
 
     // Because FrameDisplay has each moon

@@ -94,7 +94,7 @@ public:
         {
             LOCK ( mutex );
 
-            if ( !running )
+            if ( ! running )
                 return;
 
             running = false;
@@ -108,7 +108,7 @@ public:
         // The keyboard hook needs a dedicated event loop (in the same thread?)
         HHOOK keyboardHook = SetWindowsHookEx ( WH_KEYBOARD_LL, keyboardCallback, GetModuleHandle ( 0 ), 0 );
 
-        if ( !keyboardHook )
+        if ( ! keyboardHook )
         {
             LOG ( "SetWindowsHookEx failed: %s", WinException::getLastError() );
             return;
@@ -120,7 +120,7 @@ public:
 
         for ( ;; )
         {
-            { LOCK ( mutex ); if ( !running ) break; }
+            { LOCK ( mutex ); if ( ! running ) break; }
 
             if ( PeekMessage ( &msg, 0, 0, 0, PM_REMOVE ) )
             {
@@ -175,7 +175,7 @@ void KeyboardManager::hook ( Owner *owner, bool externalHook )
 
     this->owner = owner;
 
-    if ( !externalHook )
+    if ( ! externalHook )
     {
         recvSocket = UdpSocket::bind ( this, 0 );
         sendSocket = UdpSocket::bind ( 0, { "127.0.0.1", recvSocket->address.port } );

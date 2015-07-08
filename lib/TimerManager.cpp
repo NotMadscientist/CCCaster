@@ -10,7 +10,7 @@ using namespace std;
 
 void TimerManager::updateNow()
 {
-    if ( !initialized )
+    if ( ! initialized )
         return;
 
     if ( useHiResTimer )
@@ -27,7 +27,7 @@ void TimerManager::updateNow()
 
 void TimerManager::check()
 {
-    if ( !initialized )
+    if ( ! initialized )
         return;
 
     if ( changed )
@@ -136,7 +136,7 @@ void TimerManager::initialize()
     DWORD_PTR oldMask = SetThreadAffinityMask ( GetCurrentThread(), 1 );
 
     // Check if the hi-res timer is supported
-    if ( !QueryPerformanceFrequency ( ( LARGE_INTEGER * ) &ticksPerSecond ) )
+    if ( ! QueryPerformanceFrequency ( ( LARGE_INTEGER * ) &ticksPerSecond ) )
     {
         LOG ( "Hi-res timer not supported" );
         useHiResTimer = false;
@@ -146,7 +146,7 @@ void TimerManager::initialize()
 
 void TimerManager::deinitialize()
 {
-    if ( !initialized )
+    if ( ! initialized )
         return;
 
     initialized = false;

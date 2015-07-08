@@ -32,7 +32,7 @@ void renderOverlayText ( IDirect3DDevice9 *device, const D3DVIEWPORT9& viewport 
 
 void InitializeDirectX ( IDirect3DDevice9 *device )
 {
-    if ( !shouldInitDirectX )
+    if ( ! shouldInitDirectX )
         return;
 
     initalizedDirectX = true;
@@ -42,7 +42,7 @@ void InitializeDirectX ( IDirect3DDevice9 *device )
 
 void InvalidateDeviceObjects()
 {
-    if ( !initalizedDirectX )
+    if ( ! initalizedDirectX )
         return;
 
     initalizedDirectX = false;
@@ -54,7 +54,7 @@ void InvalidateDeviceObjects()
 // Note: this is called on the SAME thread as the main application thread
 void PresentFrameBegin ( IDirect3DDevice9 *device )
 {
-    if ( !initalizedDirectX )
+    if ( ! initalizedDirectX )
         InitializeDirectX ( device );
 
     D3DVIEWPORT9 viewport;

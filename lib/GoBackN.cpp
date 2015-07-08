@@ -74,10 +74,10 @@ void GoBackN::timerExpired ( Timer *timer )
 
 void GoBackN::checkAndStartTimer()
 {
-    if ( !sendTimer )
+    if ( ! sendTimer )
         sendTimer.reset ( new Timer ( this ) );
 
-    if ( !sendTimer->isStarted() )
+    if ( ! sendTimer->isStarted() )
         sendTimer->start ( interval );
 }
 
@@ -149,7 +149,7 @@ void GoBackN::recvRaw ( const MsgPtr& msg )
     }
 
     // Ignore null keep alive messages
-    if ( !msg.get() )
+    if ( ! msg.get() )
         return;
 
     // Filter non-sequential messages

@@ -82,7 +82,7 @@ public:
         {
             LOCK ( mutex );
 
-            if ( !running )
+            if ( ! running )
                 return;
 
             running = false;
@@ -106,7 +106,7 @@ public:
         windowClass.lpfnWndProc = joystickCallback;
         windowClass.cbSize = sizeof ( windowClass );
 
-        if ( !RegisterClassEx ( &windowClass ) )
+        if ( ! RegisterClassEx ( &windowClass ) )
             THROW_WIN_EXCEPTION ( GetLastError(), "RegisterClassEx failed", ERROR_CONTROLLER_INIT );
 
         HWND windowHandle = CreateWindowEx ( 0,  "JoystickThread", 0, 0, 0, 0, 0, 0, HWND_MESSAGE, 0, 0, 0 );
@@ -130,7 +130,7 @@ public:
             {
                 LOCK ( mutex );
 
-                if ( !running )
+                if ( ! running )
                     break;
             }
 

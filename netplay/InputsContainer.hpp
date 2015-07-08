@@ -27,7 +27,7 @@ class InputsContainer
         do
         {
             --index;
-            if ( !inputs[index].empty() )
+            if ( ! inputs[index].empty() )
                 return inputs[index].back();
         }
         while ( index > 0 );
@@ -121,7 +121,7 @@ public:
             last = lastInputBefore ( inputs.size() );
             inputs.resize ( index + 1 );
         }
-        else if ( !inputs[index].empty() )
+        else if ( ! inputs[index].empty() )
         {
             last = inputs[index].back();
         }

@@ -130,7 +130,7 @@ MH_WINAPI_HOOK ( LRESULT, CALLBACK, WindowProc, HWND hwnd, UINT msg, WPARAM wPar
         case WM_MOUSEMOVE:
         {
             // Only inject mouse events when hooked
-            if ( !MouseManager::get().owner )
+            if ( ! MouseManager::get().owner )
                 break;
 
             static bool isDown = false;

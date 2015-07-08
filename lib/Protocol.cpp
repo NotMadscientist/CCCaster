@@ -63,7 +63,7 @@ string Protocol::encode ( const Serializable& message )
 
 string Protocol::encode ( Serializable *message )
 {
-    if ( !message )
+    if ( ! message )
         return "";
 
     MsgPtr msg ( message );
@@ -72,7 +72,7 @@ string Protocol::encode ( Serializable *message )
 
 string Protocol::encode ( const MsgPtr& msg )
 {
-    if ( !msg.get() )
+    if ( ! msg.get() )
         return "";
 
     ostringstream ss ( stringstream::binary );
@@ -185,7 +185,7 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
         msg.reset();
     }
 
-    if ( !msg.get() )
+    if ( ! msg.get() )
     {
         consumed = 0;
         return NullMsg;
@@ -205,7 +205,7 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
 
 #ifndef DISABLE_UPDATE_HASH
     // Check if the hash is correct
-    if ( !checkMD5 ( &data[0], dataSize - msg->hash.size(), &msg->hash[0] ) )
+    if ( ! checkMD5 ( &data[0], dataSize - msg->hash.size(), &msg->hash[0] ) )
     {
 #ifdef LOG_PROTOCOL
         LOG ( "hash check failed for %s", type );
@@ -347,7 +347,7 @@ ostream& operator<< ( ostream& os, MsgType type )
 
 ostream& operator<< ( ostream& os, const MsgPtr& msg )
 {
-    if ( !msg.get() )
+    if ( ! msg.get() )
         return ( os << "NullMsg" );
     else
         return ( os << msg->str() );

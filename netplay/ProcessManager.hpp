@@ -77,7 +77,7 @@ public:
     // Send a message over the IPC socket
     bool ipcSend ( Serializable& msg ) { return ipcSend ( MsgPtr ( &msg, ignoreMsgPtr ) ); }
     bool ipcSend ( Serializable *msg ) { return ipcSend ( MsgPtr ( msg ) ); }
-    bool ipcSend ( const MsgPtr& msg ) { if ( !isConnected() ) return false; else return ipcSocket->send ( msg ); }
+    bool ipcSend ( const MsgPtr& msg ) { if ( ! isConnected() ) return false; else return ipcSocket->send ( msg ); }
 
     // Get the process ID of the game
     int getProcessId() const { return processId; }
