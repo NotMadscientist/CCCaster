@@ -1,6 +1,8 @@
 v3.0.016:
 - Added held start button for offline versus, default is 1.5 seconds, can be changed.
 - Added tournament mode for offline, forces 2 round games and 1.5 second start button.
+- Added a stick only shortcut to show the overlay menu:
+  Hold any 3 buttons and press any direction during character select.
 
 v3.0.015:
 - Fixed the super flash overlay glitch on the boss stages.

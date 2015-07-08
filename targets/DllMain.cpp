@@ -930,7 +930,7 @@ struct DllMain
     void netplayStateChanged ( NetplayState state )
     {
         // Catch invalid transitions
-        if ( !netMan.isValidNext ( state ) )
+        if ( ! netMan.isValidNext ( state ) )
         {
             LOG_TO ( syncLog, "Desync!" );
             LOG_TO ( syncLog, "Invalid transition: %s -> %s", netMan.getState(), state );
@@ -941,7 +941,7 @@ struct DllMain
         }
 
         // Close the overlay if not mapping
-        if ( !DllOverlayUi::isShowingMessage() && isNotMapping() )
+        if ( ! DllOverlayUi::isShowingMessage() && isNotMapping() )
         {
             DllOverlayUi::disable();
         }
@@ -955,7 +955,7 @@ struct DllMain
 #endif // RELEASE
 
             // Enable controllers now
-            if ( !ProcessManager::isWine() )
+            if ( ! ProcessManager::isWine() )
                 ControllerManager::get().startHighFreqPolling();
 
             // Initialize the overlay now

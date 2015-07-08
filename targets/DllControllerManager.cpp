@@ -79,9 +79,10 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
             }
         }
 
-        // Toggle with 3 held buttons + any direction
+        // Toggle with 3 held buttons + any direction during chara select
         if ( !stopping
                 && !ProcessManager::isWine()
+                && *CC_GAME_MODE_ADDR == CC_GAME_MODE_CHARA_SELECT
                 && numJoystickButtonsDown ( controller ) >= 3
                 && !controller->getJoystickState().isNeutral() )
         {
