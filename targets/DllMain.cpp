@@ -1922,8 +1922,6 @@ static void deinitialize()
     // Joystick must be deinitialized on the same thread it was initialized, ie not here
     Logger::get().deinitialize();
 
-    DllHacks::deinitialize();
-
     appState = AppState::Deinitialized;
 }
 
@@ -1985,9 +1983,10 @@ extern "C" BOOL APIENTRY DllMain ( HMODULE, DWORD reason, LPVOID )
         }
 
         case DLL_PROCESS_DETACH:
+            LOG ( "DLL_PROCESS_DETACH" );
+
             SetThreadExecutionState ( ES_CONTINUOUS );
 
-            LOG ( "DLL_PROCESS_DETACH" );
             appState = AppState::Stopping;
             EventManager::get().release();
             exit ( 0 );
