@@ -1215,7 +1215,6 @@ struct MainApp
             options.set ( Options::Broadcast, 0 );
             options.set ( Options::Spectate, 0 );
             options.set ( Options::Offline, 1 );
-            options.set ( Options::NoUi, 1 );
             options.set ( Options::HeldStartDuration, 1, "90" );
         }
 

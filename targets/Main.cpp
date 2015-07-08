@@ -194,66 +194,68 @@ int main ( int argc, char *argv[] )
             "Options:"
         },
 
-        { Options::Help,      0, "h",      "help", Arg::None,     "  --help, -h         Print help and exit.\n" },
-        { Options::GameDir,   0, "f",    "folder", Arg::Required, "  --folder, -f F     Specify game folder F.\n" },
+        { Options::Help,      0, "h",      "help", Arg::None,     "  --help, -h           Print help and exit.\n" },
+        { Options::GameDir,   0, "f",    "folder", Arg::Required, "  --folder, -f F       Use game folder at F.\n" },
 
-        { Options::Training,  0, "t",  "training", Arg::None,     "  --training, -t     Force training mode." },
-        { Options::Broadcast, 0, "b", "broadcast", Arg::None,     "  --broadcast, -b    Force broadcast mode." },
-        { Options::Spectate,  0, "s",  "spectate", Arg::None,     "  --spectate, -s     Force spectator mode.\n" },
+        { Options::Training,  0, "t",  "training", Arg::None,     "  --training, -t       Force training mode." },
+        { Options::Broadcast, 0, "b", "broadcast", Arg::None,     "  --broadcast, -b      Force broadcast mode." },
+        { Options::Spectate,  0, "s",  "spectate", Arg::None,     "  --spectate, -s       Force spectator mode.\n" },
 
         {
             Options::MaxDelay, 0, "d", "max-delay", Arg::Numeric,
-            "  --max-delay, -d N  Set max allowed network delay to N.\n"
+            "  --max-delay, -d N    Set max allowed network delay to N.\n"
         },
 
         {
             Options::MaxDelay, 0, "r", "rollback", Arg::Numeric,
-            "  --rollback, -r N   Set the default rollback to N.\n"
+            "  --rollback, -r N     Set the default rollback to N.\n"
         },
 
         {
             Options::Offline, 0, "o", "offline", Arg::OptionalNumeric,
-            "  --offline, -o D    Force offline mode.\n"
-            "                     D is the optional delay, defaults to 0.\n"
+            "  --offline, -o D      Force offline mode.\n"
+            "                         D is the optional delay, defaults to 0.\n"
         },
 
         {
             Options::NoUi, 0, "n", "no-ui", Arg::None,
-            "  --no-ui, -n        No UI, just quits after running once.\n"
+            "  --no-ui, -n          No UI, just quits after running once.\n"
         },
 
         {
-            Options::Tournament, 0, "", "tournament", Arg::None,
-            "  --tournament       Tournament mode: forces --offline, --no-ui, and 2 round games.\n"
+            Options::Tournament, 0, "T", "tournament", Arg::None,
+            "  --tournament, -T     Tournament mode.\n"
+            "                         Forces offline versus mode, 2 rounds,\n"
+            "                         with 1.5 second held start button."
         },
 
 #ifndef RELEASE
         { Options::Unknown,   0,  "",       "", Arg::None,        "Debug options:" },
         { Options::Tests,     0,  "",  "tests", Arg::None,        "  --tests              Run unit tests and exit" },
         { Options::Stdout,    0,  "", "stdout", Arg::None,        "  --stdout,            Output logs to stdout"},
-        { Options::Tunnel,    0, "T", "tunnel", Arg::None,        "  --tunnel, -T         Force UDP tunnel" },
-        { Options::Dummy,     0, "D",  "dummy", Arg::None,        "  --dummy, -D          Dummy with fake inputs" },
-        { Options::PidLog,    0, "P", "pidlog", Arg::None,        "  --pidlog, -P         Tag log files with the PID" },
-        { Options::FakeUi,    0, "F",   "fake", Arg::None,        "  --fake, -F           Fake UI mode\n" },
+        { Options::Tunnel,    0,  "", "tunnel", Arg::None,        "  --tunnel             Force UDP tunnel" },
+        { Options::Dummy,     0,  "",  "dummy", Arg::None,        "  --dummy              Dummy with fake inputs" },
+        { Options::PidLog,    0,  "", "pidlog", Arg::None,        "  --pidlog             Tag log files with the PID" },
+        { Options::FakeUi,    0,  "",   "fake", Arg::None,        "  --fake               Fake UI mode\n" },
 
         {
             Options::StrictVersion, 0, "S", "strict", Arg::None,
             "  --strict, -S         Strict version match, can be stacked up to 3 times.\n"
-            "                       -S means version suffix must match.\n"
-            "                       -SS means commit ID must match.\n"
-            "                       -SSS means build time must match.\n"
+            "                         -S means version suffix must match.\n"
+            "                         -SS means commit ID must match.\n"
+            "                         -SSS means build time must match.\n"
         },
 
         {
             Options::SyncTest, 0, "Y", "synctest", Arg::None,
             "  --synctest, -Y       Test synchronization.\n"
-            "                       TODO rollback/delay arguments.\n"
+            "                         TODO rollback/delay arguments.\n"
         },
 
         {
             Options::Replay, 0, "R", "replay", Arg::Required,
             "  --replay, -R args    Replay the given file with options.\n"
-            "                       TODO list possible arguments.\n"
+            "                         TODO list possible arguments.\n"
         },
 #else
         { Options::Tunnel, 0, "", "tunnel", Arg::None, 0 },
