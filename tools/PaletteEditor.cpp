@@ -47,7 +47,7 @@ int PaletteEditor::getCharaIndex()
     return charaNumToIndex[frameDisp.get_character() / 3]; // Because FrameDisplay has each moon
 }
 
-bool PaletteEditor::init ( const std::string& palettesFolder, const std::string& dataFile )
+bool PaletteEditor::init ( const string& palettesFolder, const string& dataFile )
 {
     this->palettesFolder = palettesFolder;
 

@@ -540,7 +540,7 @@ int main ( int argc, char *argv[] )
 
 
 // This is here because only MainApp creates and sends OptionsMessages
-OptionsMessage::OptionsMessage ( const std::vector<option::Option>& opt )
+OptionsMessage::OptionsMessage ( const vector<option::Option>& opt )
 {
     for ( size_t i = 0; i < opt.size(); ++i )
     {

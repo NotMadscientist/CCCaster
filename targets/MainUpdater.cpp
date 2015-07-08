@@ -156,7 +156,7 @@ bool MainUpdater::extractArchive() const
     return true;
 }
 
-void MainUpdater::httpResponse ( HttpGet *httpGet, int code, const std::string& data, uint32_t remainingBytes )
+void MainUpdater::httpResponse ( HttpGet *httpGet, int code, const string& data, uint32_t remainingBytes )
 {
     ASSERT ( this->httpGet.get() == httpGet );
     ASSERT ( type == Type::Version );

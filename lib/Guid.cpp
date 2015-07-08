@@ -8,7 +8,7 @@
 using namespace std;
 
 
-Guid::Guid ( std::initializer_list<uint8_t> guid )
+Guid::Guid ( initializer_list<uint8_t> guid )
 {
     ASSERT ( guid.size() == sizeof ( this->guid ) );
 
