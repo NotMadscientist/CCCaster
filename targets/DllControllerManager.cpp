@@ -439,14 +439,14 @@ void DllControllerManager::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, b
     }
 }
 
-void DllControllerManager::attachedJoystick ( Controller *controller )
+void DllControllerManager::joystickAttached ( Controller *controller )
 {
     // This is a callback from within ControllerManager, so we don't need to lock the main mutex
 
     allControllers.push_back ( controller );
 }
 
-void DllControllerManager::detachedJoystick ( Controller *controller )
+void DllControllerManager::joystickToBeDetached ( Controller *controller )
 {
     // This is a callback from within ControllerManager, so we don't need to lock the main mutex
 
@@ -469,7 +469,7 @@ void DllControllerManager::detachedJoystick ( Controller *controller )
     allControllers.erase ( it );
 }
 
-void DllControllerManager::doneMapping ( Controller *controller, uint32_t key )
+void DllControllerManager::controllerKeyMapped ( Controller *controller, uint32_t key )
 {
     // This is a callback from within ControllerManager, so we don't need to lock the main mutex
 

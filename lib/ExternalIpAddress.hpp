@@ -12,10 +12,10 @@ public:
 
     struct Owner
     {
-        virtual void foundExternalIpAddress ( ExternalIpAddress *extIpAddr, const std::string& address ) = 0;
+        virtual void externalIpAddrFound ( ExternalIpAddress *extIpAddr, const std::string& address ) = 0;
 
         // Note: this sets address to the string Unknown
-        virtual void unknownExternalIpAddress ( ExternalIpAddress *extIpAddr ) = 0;
+        virtual void externalIpAddrUnknown ( ExternalIpAddress *extIpAddr ) = 0;
     };
 
     Owner *owner = 0;

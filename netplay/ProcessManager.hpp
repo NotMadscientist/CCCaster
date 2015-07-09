@@ -25,13 +25,13 @@ public:
     struct Owner
     {
         // IPC connected event
-        virtual void ipcConnectEvent() = 0;
+        virtual void ipcConnected() = 0;
 
         // IPC disconnected event
-        virtual void ipcDisconnectEvent() = 0;
+        virtual void ipcDisconnected() = 0;
 
         // IPC read event
-        virtual void ipcReadEvent ( const MsgPtr& msg ) = 0;
+        virtual void ipcRead ( const MsgPtr& msg ) = 0;
     };
 
     Owner *owner = 0;
@@ -121,10 +121,10 @@ private:
     bool connected = false;
 
     // IPC socket callbacks
-    void acceptEvent ( Socket *socket ) override;
-    void connectEvent ( Socket *socket ) override;
-    void disconnectEvent ( Socket *socket ) override;
-    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override;
+    void socketAccepted ( Socket *socket ) override;
+    void socketConnected ( Socket *socket ) override;
+    void socketDisconnected ( Socket *socket ) override;
+    void socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override;
 
     // IPC connect timer callback
     void timerExpired ( Timer *timer ) override;

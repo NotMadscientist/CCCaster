@@ -35,7 +35,7 @@ void ExternalIpAddress::httpResponse ( HttpGet *httpGet, int code, const string&
     this->httpGet.reset();
 
     if ( owner )
-        owner->foundExternalIpAddress ( this, address );
+        owner->externalIpAddrFound ( this, address );
 }
 
 void ExternalIpAddress::httpFailed ( HttpGet *httpGet )
@@ -51,7 +51,7 @@ void ExternalIpAddress::httpFailed ( HttpGet *httpGet )
         address = Unknown;
 
         if ( owner )
-            owner->unknownExternalIpAddress ( this );
+            owner->externalIpAddrUnknown ( this );
         return;
     }
 

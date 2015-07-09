@@ -169,7 +169,7 @@ public:
 static JoystickThread joystickThread;
 
 
-void JoystickDetector::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
+void JoystickDetector::socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
 {
     ASSERT ( socket == recvSocket.get() );
 

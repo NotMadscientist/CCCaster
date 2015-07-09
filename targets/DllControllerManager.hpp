@@ -37,11 +37,11 @@ public:
     void keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown ) override;
 
     // ControllerManager callbacks
-    void attachedJoystick ( Controller *controller ) override;
-    void detachedJoystick ( Controller *controller ) override;
+    void joystickAttached ( Controller *controller ) override;
+    void joystickToBeDetached ( Controller *controller ) override;
 
     // Controller callback
-    void doneMapping ( Controller *controller, uint32_t key ) override;
+    void controllerKeyMapped ( Controller *controller, uint32_t key ) override;
 
     // To be implemented
     virtual void saveMappings ( const Controller *controller ) const = 0;

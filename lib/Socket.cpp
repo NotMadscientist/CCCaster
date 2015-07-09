@@ -250,7 +250,7 @@ bool Socket::send ( const char *buffer, size_t len )
             {
                 LOG_SOCKET ( this, "%s; send failed", err );
                 LOG_SOCKET ( this, "disconnect due to send error" );
-                disconnectEvent();
+                socketDisconnected();
             }
             else
             {
@@ -368,7 +368,7 @@ void Socket::consumeBuffer ( size_t bytes )
     readPos -= bytes;
 }
 
-void Socket::readEvent()
+void Socket::socketRead()
 {
     ASSERT ( readPos < readBuffer.size() );
 
@@ -401,7 +401,7 @@ void Socket::readEvent()
         LOG_SOCKET ( this, "disconnect due to read error" );
 
         if ( isTCP() )
-            disconnectEvent();
+            socketDisconnected();
         else
             disconnect();
         return;
@@ -422,7 +422,7 @@ void Socket::readEvent()
         LOG ( "Read [ %u bytes ] from '%s'", bufferLen, address );
 
         if ( owner )
-            owner->readEvent ( this, bufferStart, bufferLen, address );
+            owner->socketRead ( this, bufferStart, bufferLen, address );
         return;
     }
 
@@ -434,7 +434,7 @@ void Socket::readEvent()
     if ( bufferLen == 0 )
     {
         LOG ( "Decoded 'NullMsg' using [ 0 bytes ]" );
-        readEvent ( NullMsg, address );
+        socketRead ( NullMsg, address );
         return;
     }
 
@@ -461,7 +461,7 @@ void Socket::readEvent()
             return;
 
         LOG ( "Decoded '%s' using [ %u bytes ]; %u bytes remaining in buffer", msg, consumedBytes, readPos );
-        readEvent ( msg, address );
+        socketRead ( msg, address );
 
         // Abort if the socket is de-allocated
         if ( ! SocketManager::get().isAllocated ( this ) )

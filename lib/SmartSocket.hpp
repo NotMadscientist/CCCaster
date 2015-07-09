@@ -14,15 +14,22 @@ class SmartSocket
     , private Timer::Owner
 {
 public:
+
+    // SmartSocket owner interface
+    struct Owner : public Socket::Owner
+    {
+        virtual void smartSocketSwitchedToUDP ( SmartSocket *smartSocket ) {}
+    };
+
     // Listen for connections on the given port.
     // Opens a regular server socket of the given protocol, but also listens for UDP tunnel connections.
-    static SocketPtr listenTCP ( Socket::Owner *owner, uint16_t port );
-    static SocketPtr listenUDP ( Socket::Owner *owner, uint16_t port );
+    static SocketPtr listenTCP ( Owner *owner, uint16_t port );
+    static SocketPtr listenUDP ( Owner *owner, uint16_t port );
 
     // Connect to the given address and port.
     // Tries to connect using the given protocol, with fallback to UDP tunnel.
-    static SocketPtr connectTCP ( Socket::Owner *owner, const IpAddrPort& address, bool forceTunnel = false );
-    static SocketPtr connectUDP ( Socket::Owner *owner, const IpAddrPort& address, bool forceTunnel = false );
+    static SocketPtr connectTCP ( Owner *owner, const IpAddrPort& address, bool forceTunnel = false );
+    static SocketPtr connectUDP ( Owner *owner, const IpAddrPort& address, bool forceTunnel = false );
 
     // Destructor
     ~SmartSocket() override;
@@ -96,18 +103,18 @@ private:
     // UDP tunnel send timer
     TimerPtr sendTimer;
 
-    // True if the acceptEvent is for directSocket
+    // True if the socketAccepted is for directSocket
     bool isDirectAccept = false;
 
     // Unused base socket callback
-    void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) override {}
+    void socketRead ( const MsgPtr& msg, const IpAddrPort& address ) override {}
 
     // Socket callbacks
-    void acceptEvent ( Socket *serverSocket ) override;
-    void connectEvent ( Socket *socket ) override;
-    void disconnectEvent ( Socket *socket ) override;
-    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override;
-    void readEvent ( Socket *socket, const char *buffer, size_t len, const IpAddrPort& address ) override;
+    void socketAccepted ( Socket *serverSocket ) override;
+    void socketConnected ( Socket *socket ) override;
+    void socketDisconnected ( Socket *socket ) override;
+    void socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override;
+    void socketRead ( Socket *socket, const char *buffer, size_t len, const IpAddrPort& address ) override;
 
     // Timer callback
     void timerExpired ( Timer *timer ) override;
@@ -119,9 +126,9 @@ private:
     void gotTunInfo ( uint32_t matchId, const IpAddrPort& address );
 
     // Construct a server socket
-    SmartSocket ( Socket::Owner *owner, uint16_t port, Socket::Protocol protocol );
+    SmartSocket ( Owner *owner, uint16_t port, Socket::Protocol protocol );
 
     // Construct a client socket
-    SmartSocket ( Socket::Owner *owner, const IpAddrPort& address, Socket::Protocol protocol, bool forceTunnel );
+    SmartSocket ( Owner *owner, const IpAddrPort& address, Socket::Protocol protocol, bool forceTunnel );
 
 };

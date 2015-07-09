@@ -37,22 +37,19 @@ public:
     struct Owner
     {
         // Accepted a socket from server socket
-        virtual void acceptEvent ( Socket *serverSocket ) = 0;
+        virtual void socketAccepted ( Socket *serverSocket ) = 0;
 
         // Socket connected event
-        virtual void connectEvent ( Socket *socket ) = 0;
+        virtual void socketConnected ( Socket *socket ) = 0;
 
         // Socket disconnected event
-        virtual void disconnectEvent ( Socket *socket ) = 0;
+        virtual void socketDisconnected ( Socket *socket ) = 0;
 
         // Socket protocol message read event (only called if NOT isRaw)
-        virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) = 0;
+        virtual void socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) = 0;
 
         // Socket raw data read event (only called if isRaw)
-        virtual void readEvent ( Socket *socket, const char *buffer, size_t len, const IpAddrPort& address ) {}
-
-        // SmartSocket callback
-        virtual void switchedToUdpTunnel ( Socket *socket ) {}
+        virtual void socketRead ( Socket *socket, const char *buffer, size_t len, const IpAddrPort& address ) {}
     };
 
     // Socket protocol
@@ -114,7 +111,7 @@ public:
     virtual bool send ( const char *buffer, size_t len );
     virtual bool send ( const char *buffer, size_t len, const IpAddrPort& address );
 
-    // Accept a new socket, should not be called without an acceptEvent.
+    // Accept a new socket, should not be called without an socketAccepted.
     // Check socket implementation for specific behaviours.
     virtual SocketPtr accept ( Owner *owner ) = 0;
 
@@ -173,15 +170,15 @@ protected:
     uint8_t hashFailRate = 0;
 
     // TCP event callbacks
-    virtual void acceptEvent() {}
-    virtual void connectEvent() {}
-    virtual void disconnectEvent() {}
+    virtual void socketAccepted() {}
+    virtual void socketConnected() {}
+    virtual void socketDisconnected() {}
 
     // Read event callback, calls the function below if NOT isRaw
-    virtual void readEvent();
+    virtual void socketRead();
 
     // Read protocol message callback, must be implemented, only called if NOT isRaw
-    virtual void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) = 0;
+    virtual void socketRead ( const MsgPtr& msg, const IpAddrPort& address ) = 0;
 
     // Initialize the socket fd with the provided address and protocol
     void init();

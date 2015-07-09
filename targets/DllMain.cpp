@@ -1127,7 +1127,7 @@ struct DllMain
     }
 
     // ChangeMonitor callback
-    void hasChanged ( Variable var, uint32_t previous, uint32_t current ) override
+    void changedValue ( Variable var, uint32_t previous, uint32_t current ) override
     {
         switch ( var.value )
         {
@@ -1153,9 +1153,9 @@ struct DllMain
     }
 
     // Socket callbacks
-    void acceptEvent ( Socket *serverSocket ) override
+    void socketAccepted ( Socket *serverSocket ) override
     {
-        LOG ( "acceptEvent ( %08x )", serverSocket );
+        LOG ( "socketAccepted ( %08x )", serverSocket );
 
         if ( serverSocket == serverCtrlSocket.get() )
         {
@@ -1202,15 +1202,15 @@ struct DllMain
         }
         else
         {
-            LOG ( "Unexpected acceptEvent from serverSocket=%08x", serverSocket );
+            LOG ( "Unexpected socketAccepted from serverSocket=%08x", serverSocket );
             serverSocket->accept ( 0 ).reset();
             return;
         }
     }
 
-    void connectEvent ( Socket *socket ) override
+    void socketConnected ( Socket *socket ) override
     {
-        LOG ( "connectEvent ( %08x )", socket );
+        LOG ( "socketConnected ( %08x )", socket );
 
         ASSERT ( dataSocket.get() != 0 );
         ASSERT ( dataSocket->isConnected() == true );
@@ -1222,9 +1222,9 @@ struct DllMain
         initialTimer.reset();
     }
 
-    void disconnectEvent ( Socket *socket ) override
+    void socketDisconnected ( Socket *socket ) override
     {
-        LOG ( "disconnectEvent ( %08x )", socket );
+        LOG ( "socketDisconnected ( %08x )", socket );
 
         if ( socket == dataSocket.get() )
         {
@@ -1247,9 +1247,9 @@ struct DllMain
         popSpectator ( socket );
     }
 
-    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
+    void socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
     {
-        LOG ( "readEvent ( %08x, %s, %s )", socket, msg, address );
+        LOG ( "socketRead ( %08x, %s, %s )", socket, msg, address );
 
         if ( ! msg.get() )
             return;
@@ -1419,18 +1419,18 @@ struct DllMain
     }
 
     // ProcessManager callbacks
-    void ipcConnectEvent() override
+    void ipcConnected() override
     {
     }
 
-    void ipcDisconnectEvent() override
+    void ipcDisconnected() override
     {
         appState = AppState::Stopping;
         EventManager::get().stop();
         stopping = true;
     }
 
-    void ipcReadEvent ( const MsgPtr& msg ) override
+    void ipcRead ( const MsgPtr& msg ) override
     {
         if ( ! msg.get() )
             return;
@@ -1765,7 +1765,7 @@ struct DllMain
             default:
                 if ( clientMode.isSpectate() )
                 {
-                    readEvent ( 0, msg, NullAddress );
+                    socketRead ( 0, msg, NullAddress );
                     break;
                 }
 
@@ -1830,7 +1830,7 @@ struct DllMain
         if ( appState != AppState::Polling )
             return;
 
-        // Check if the world timer changed, this calls hasChanged if changed, which calls frameStep
+        // Check if the world timer changed, this calls changedValue if changed, which calls frameStep
         worldTimerMoniter.check();
     }
 

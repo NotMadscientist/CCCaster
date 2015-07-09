@@ -25,8 +25,9 @@ public:
 
     struct Owner
     {
-        virtual void attachedJoystick ( Controller *controller ) = 0;
-        virtual void detachedJoystick ( Controller *controller ) = 0;
+        virtual void joystickAttached ( Controller *controller ) = 0;
+
+        virtual void joystickToBeDetached ( Controller *controller ) = 0;
     };
 
     Owner *owner = 0;

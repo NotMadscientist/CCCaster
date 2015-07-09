@@ -38,10 +38,10 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
     SocketPtr socket, accepted;
     Timer timer;
 
-    virtual void acceptEvent ( Socket *socket ) override {}
-    virtual void connectEvent ( Socket *socket ) override {}
-    virtual void disconnectEvent ( Socket *socket ) override {}
-    virtual void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override {}
+    virtual void socketAccepted ( Socket *socket ) override {}
+    virtual void socketConnected ( Socket *socket ) override {}
+    virtual void socketDisconnected ( Socket *socket ) override {}
+    virtual void socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override {}
 
     BaseTestSocket ( uint16_t port )
         : socket ( T::listen ( this, port ) ), timer ( this )
@@ -66,7 +66,7 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         static int done = 0;                                                                                        \
         done = 0;                                                                                                   \
         struct TestSocket : public BaseTestSocket<T, KEEP_ALIVE, TIMEOUT> {                                         \
-            void acceptEvent ( Socket *serverSocket ) override {                                                    \
+            void socketAccepted ( Socket *serverSocket ) override {                                                 \
                 accepted = serverSocket->accept ( this );                                                           \
                 ++done;                                                                                             \
                 if ( done >= 2 ) {                                                                                  \
@@ -74,7 +74,7 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
                     EventManager::get().stop();                                                                     \
                 }                                                                                                   \
             }                                                                                                       \
-            void connectEvent ( Socket *socket ) override {                                                         \
+            void socketConnected ( Socket *socket ) override {                                                      \
                 ++done;                                                                                             \
                 if ( done >= 2 ) {                                                                                  \
                     LOG ( "Stopping because connected" );                                                           \
@@ -132,9 +132,9 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         static int done = 0;                                                                                        \
         done = 0;                                                                                                   \
         struct TestSocket : public BaseTestSocket<T, KEEP_ALIVE, TIMEOUT> {                                         \
-            void acceptEvent ( Socket *serverSocket ) override { accepted = serverSocket->accept ( this ); }        \
-            void connectEvent ( Socket *socket ) override { socket->disconnect(); ++done; }                         \
-            void disconnectEvent ( Socket *socket ) override {                                                      \
+            void socketAccepted ( Socket *serverSocket ) override { accepted = serverSocket->accept ( this ); }     \
+            void socketConnected ( Socket *socket ) override { socket->disconnect(); ++done; }                      \
+            void socketDisconnected ( Socket *socket ) override {                                                   \
                 ++done;                                                                                             \
                 if ( done >= 2 ) {                                                                                  \
                     LOG ( "Stopping because both sockets have disconnected" );                                      \
@@ -174,12 +174,12 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         static int done = 0;                                                                                        \
         done = 0;                                                                                                   \
         struct TestSocket : public BaseTestSocket<T, KEEP_ALIVE, TIMEOUT> {                                         \
-            void acceptEvent ( Socket *serverSocket ) override {                                                    \
+            void socketAccepted ( Socket *serverSocket ) override {                                                 \
                 accepted = serverSocket->accept ( this );                                                           \
                 accepted->disconnect();                                                                             \
                 ++done;                                                                                             \
             }                                                                                                       \
-            void disconnectEvent ( Socket *socket ) override {                                                      \
+            void socketDisconnected ( Socket *socket ) override {                                                   \
                 ++done;                                                                                             \
                 if ( done >= 2 ) {                                                                                  \
                     LOG ( "Stopping because both sockets have disconnected" );                                      \
@@ -220,14 +220,14 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         done = 0;                                                                                                   \
         struct TestSocket : public BaseTestSocket<T, KEEP_ALIVE, TIMEOUT> {                                         \
             MsgPtr msg;                                                                                             \
-            void acceptEvent ( Socket *serverSocket ) override {                                                    \
+            void socketAccepted ( Socket *serverSocket ) override {                                                 \
                 accepted = serverSocket->accept ( this );                                                           \
                 accepted->send ( new TestMessage ( "Hello client!" ) );                                             \
             }                                                                                                       \
-            void connectEvent ( Socket *socket ) override {                                                         \
+            void socketConnected ( Socket *socket ) override {                                                      \
                 socket->send ( new TestMessage ( "Hello server!" ) );                                               \
             }                                                                                                       \
-            void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override {              \
+            void socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override {             \
                 this->msg = msg;                                                                                    \
                 ++done;                                                                                             \
                 if ( done >= 2 ) {                                                                                  \
@@ -279,15 +279,15 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         done = 0;                                                                                                   \
         struct TestSocket : public BaseTestSocket<T, KEEP_ALIVE, TIMEOUT> {                                         \
             MsgPtr msg;                                                                                             \
-            void acceptEvent ( Socket *serverSocket ) override {                                                    \
+            void socketAccepted ( Socket *serverSocket ) override {                                                 \
                 accepted = serverSocket->accept ( this );                                                           \
                 accepted->send ( new TestMessage ( "Hello client!" ) );                                             \
                 socket.reset();                                                                                     \
             }                                                                                                       \
-            void connectEvent ( Socket *socket ) override {                                                         \
+            void socketConnected ( Socket *socket ) override {                                                      \
                 socket->send ( new TestMessage ( "Hello server!" ) );                                               \
             }                                                                                                       \
-            void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override {              \
+            void socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override {             \
                 this->msg = msg;                                                                                    \
                 ++done;                                                                                             \
                 if ( done >= 2 ) {                                                                                  \
@@ -336,12 +336,12 @@ struct BaseTestSocket : public Socket::Owner, public Timer::Owner
         struct TestSocket : public BaseTestSocket<T, 0, 1000> {                                                     \
             MsgPtr msg;                                                                                             \
             string buffer;                                                                                          \
-            void acceptEvent ( Socket *serverSocket ) override { accepted = serverSocket->accept ( this ); }        \
-            void connectEvent ( Socket *socket ) override {                                                         \
+            void socketAccepted ( Socket *serverSocket ) override { accepted = serverSocket->accept ( this ); }     \
+            void socketConnected ( Socket *socket ) override {                                                      \
                 socket->send ( &buffer[0], 5 );                                                                     \
                 buffer.erase ( 0, 5 );                                                                              \
             }                                                                                                       \
-            void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override {              \
+            void socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override {             \
                 this->msg = msg;                                                                                    \
             }                                                                                                       \
             void timerExpired ( Timer *timer ) override {                                                           \

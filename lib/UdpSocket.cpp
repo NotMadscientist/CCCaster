@@ -242,7 +242,7 @@ bool UdpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
             return sendRaw ( msg, address );
 
         case BaseType::SerializableSequence:
-            gbn.sendGoBackN ( msg );
+            gbn.sendViaGoBackN ( msg );
             return isConnected();
 
         default:
@@ -290,7 +290,7 @@ bool UdpSocket::sendRaw ( const MsgPtr& msg, const IpAddrPort& address )
     return false;
 }
 
-void UdpSocket::sendRaw ( GoBackN *gbn, const MsgPtr& msg )
+void UdpSocket::goBackNSendRaw ( GoBackN *gbn, const MsgPtr& msg )
 {
     ASSERT ( gbn == &this->gbn );
     ASSERT ( getRemoteAddress().empty() == false );
@@ -298,16 +298,16 @@ void UdpSocket::sendRaw ( GoBackN *gbn, const MsgPtr& msg )
     sendRaw ( msg, getRemoteAddress() );
 }
 
-void UdpSocket::recvRaw ( GoBackN *gbn, const MsgPtr& msg )
+void UdpSocket::goBackNRecvRaw ( GoBackN *gbn, const MsgPtr& msg )
 {
     ASSERT ( gbn == &this->gbn );
     ASSERT ( getRemoteAddress().empty() == false );
 
     if ( owner )
-        owner->readEvent ( this, msg, getRemoteAddress() );
+        owner->socketRead ( this, msg, getRemoteAddress() );
 }
 
-void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
+void UdpSocket::goBackNRecvMsg ( GoBackN *gbn, const MsgPtr& msg )
 {
     ASSERT ( gbn == &this->gbn );
     ASSERT ( getRemoteAddress().empty() == false );
@@ -335,14 +335,14 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
                             // UdpControl::ConnectFinal means the client connected properly and is now accepted
                             state = State::Connected;
 
-                            LOG_UDP_SOCKET ( this, "acceptEvent" );
+                            LOG_UDP_SOCKET ( this, "socketAccepted" );
 
                             parentSocket->acceptedSocket = parentSocket->childSockets[getRemoteAddress()];
 
                             gbn->setKeepAlive ( keepAlive );
 
                             if ( parentSocket->owner )
-                                parentSocket->owner->acceptEvent ( parentSocket );
+                                parentSocket->owner->socketAccepted ( parentSocket );
                             return;
 
                         default:
@@ -353,14 +353,14 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
 
                 if ( msg->getAs<UdpControl>().value == UdpControl::Disconnect )
                 {
-                    LOG_UDP_SOCKET ( this, "disconnectEvent" );
+                    LOG_UDP_SOCKET ( this, "socketDisconnected" );
 
                     Socket::Owner *const owner = this->owner;
 
                     disconnect();
 
                     if ( owner )
-                        owner->disconnectEvent ( this );
+                        owner->socketDisconnected ( this );
                     return;
                 }
 
@@ -369,7 +369,7 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
 
             default:
                 if ( owner )
-                    owner->readEvent ( this, msg, getRemoteAddress() );
+                    owner->socketRead ( this, msg, getRemoteAddress() );
                 return;
         }
     }
@@ -385,27 +385,27 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
                 {
                     state = State::Connected;
 
-                    LOG_UDP_SOCKET ( this, "connectEvent" );
+                    LOG_UDP_SOCKET ( this, "socketConnected" );
 
                     send ( new UdpControl ( UdpControl::ConnectFinal ) );
 
                     gbn->setKeepAlive ( keepAlive );
 
                     if ( owner )
-                        owner->connectEvent ( this );
+                        owner->socketConnected ( this );
                     return;
                 }
 
                 if ( msg->getAs<UdpControl>().value == UdpControl::Disconnect )
                 {
-                    LOG_UDP_SOCKET ( this, "disconnectEvent" );
+                    LOG_UDP_SOCKET ( this, "socketDisconnected" );
 
                     Socket::Owner *const owner = this->owner;
 
                     disconnect();
 
                     if ( owner )
-                        owner->disconnectEvent ( this );
+                        owner->socketDisconnected ( this );
                     return;
                 }
 
@@ -414,34 +414,34 @@ void UdpSocket::recvGoBackN ( GoBackN *gbn, const MsgPtr& msg )
 
             default:
                 if ( owner )
-                    owner->readEvent ( this, msg, getRemoteAddress() );
+                    owner->socketRead ( this, msg, getRemoteAddress() );
                 return;
         }
     }
 }
 
-void UdpSocket::timeoutGoBackN ( GoBackN *gbn )
+void UdpSocket::goBackNTimeout ( GoBackN *gbn )
 {
     ASSERT ( gbn == &this->gbn );
     ASSERT ( getRemoteAddress().empty() == false );
 
-    LOG_UDP_SOCKET ( this, "disconnectEvent" );
+    LOG_UDP_SOCKET ( this, "socketDisconnected" );
 
     Socket::Owner *const owner = this->owner;
 
     disconnect();
 
     if ( owner )
-        owner->disconnectEvent ( this );
+        owner->socketDisconnected ( this );
 }
 
-void UdpSocket::readEvent ( const MsgPtr& msg, const IpAddrPort& address )
+void UdpSocket::socketRead ( const MsgPtr& msg, const IpAddrPort& address )
 {
     if ( isConnectionLess() )
     {
         // Recv directly if we're in connection-less mode
         if ( owner )
-            owner->readEvent ( this, msg, address );
+            owner->socketRead ( this, msg, address );
     }
     else if ( isClient() )
     {
@@ -450,17 +450,17 @@ void UdpSocket::readEvent ( const MsgPtr& msg, const IpAddrPort& address )
                 && msg->getMsgType() == MsgType::UdpControl
                 && msg->getAs<UdpControl>().value == UdpControl::Disconnect )
         {
-            recvGoBackN ( &gbn, msg );
+            goBackNRecvMsg ( &gbn, msg );
             return;
         }
 
         // Client UDP sockets recv into the GoBackN instance
-        gbn.recvRaw ( msg );
+        gbn.recvFromSocket ( msg );
     }
     else if ( isServer() )
     {
         // Server UDP sockets recv into the addressed child socket
-        readEventAddressed ( msg, address );
+        socketReadAddressed ( msg, address );
     }
     else
     {
@@ -468,7 +468,7 @@ void UdpSocket::readEvent ( const MsgPtr& msg, const IpAddrPort& address )
     }
 }
 
-void UdpSocket::readEventAddressed ( const MsgPtr& msg, const IpAddrPort& address )
+void UdpSocket::socketReadAddressed ( const MsgPtr& msg, const IpAddrPort& address )
 {
     UdpSocket *socket;
 
@@ -495,7 +495,7 @@ void UdpSocket::readEventAddressed ( const MsgPtr& msg, const IpAddrPort& addres
 
     ASSERT ( socket != 0 );
 
-    socket->readEvent ( msg, address );
+    socket->socketRead ( msg, address );
 }
 
 MsgPtr UdpSocket::share ( int processId )

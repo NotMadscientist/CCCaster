@@ -57,7 +57,7 @@ void HttpGet::start()
     }
 }
 
-void HttpGet::connectEvent ( Socket *socket )
+void HttpGet::socketConnected ( Socket *socket )
 {
     ASSERT ( this->socket.get() == socket );
 
@@ -77,7 +77,7 @@ void HttpGet::connectEvent ( Socket *socket )
     }
 }
 
-void HttpGet::disconnectEvent ( Socket *socket )
+void HttpGet::socketDisconnected ( Socket *socket )
 {
     ASSERT ( this->socket.get() == socket );
 
@@ -105,7 +105,7 @@ void HttpGet::timerExpired ( Timer *timer )
         owner->httpFailed ( this );
 }
 
-void HttpGet::readEvent ( Socket *socket, const char *bytes, size_t len, const IpAddrPort& address )
+void HttpGet::socketRead ( Socket *socket, const char *bytes, size_t len, const IpAddrPort& address )
 {
     ASSERT ( this->socket.get() == socket );
 

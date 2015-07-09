@@ -130,7 +130,7 @@ struct TunInfo
     }
 };
 
-SmartSocket::SmartSocket ( Socket::Owner *owner, uint16_t port, Socket::Protocol protocol )
+SmartSocket::SmartSocket ( Owner *owner, uint16_t port, Socket::Protocol protocol )
     : Socket ( owner, IpAddrPort ( "", port ), Protocol::Smart, false )
     , isDirectTCP ( protocol == Protocol::TCP )
 {
@@ -163,7 +163,7 @@ SmartSocket::SmartSocket ( Socket::Owner *owner, uint16_t port, Socket::Protocol
     tunSocket = UdpSocket::listen ( this, 0 );
 }
 
-SmartSocket::SmartSocket ( Socket::Owner *owner, const IpAddrPort& address, Socket::Protocol protocol, bool forceTun )
+SmartSocket::SmartSocket ( Owner *owner, const IpAddrPort& address, Socket::Protocol protocol, bool forceTun )
     : Socket ( owner, address, Protocol::Smart, false )
     , isDirectTCP ( protocol == Protocol::TCP )
 {
@@ -207,17 +207,17 @@ void SmartSocket::disconnect()
     connectTimer.reset();
 }
 
-void SmartSocket::acceptEvent ( Socket *serverSocket )
+void SmartSocket::socketAccepted ( Socket *serverSocket )
 {
     ASSERT ( serverSocket == directSocket.get() || serverSocket == tunSocket.get() );
 
     isDirectAccept = ( serverSocket == directSocket.get() );
 
     if ( owner )
-        owner->acceptEvent ( this );
+        owner->socketAccepted ( this );
 }
 
-void SmartSocket::connectEvent ( Socket *socket )
+void SmartSocket::socketConnected ( Socket *socket )
 {
     if ( socket == directSocket.get() || socket == tunSocket.get() )
     {
@@ -227,7 +227,7 @@ void SmartSocket::connectEvent ( Socket *socket )
         this->state = State::Connected;
 
         if ( owner )
-            owner->connectEvent ( this );
+            owner->socketConnected ( this );
     }
     else if ( socket == vpsSocket.get() )
     {
@@ -257,7 +257,7 @@ void SmartSocket::connectEvent ( Socket *socket )
     }
 }
 
-void SmartSocket::disconnectEvent ( Socket *socket )
+void SmartSocket::socketDisconnected ( Socket *socket )
 {
     if ( socket == directSocket.get() && isServer() )
     {
@@ -265,7 +265,7 @@ void SmartSocket::disconnectEvent ( Socket *socket )
     }
     else if ( socket == directSocket.get() && isConnecting() )
     {
-        LOG_SMART_SOCKET ( this, "Switch to UDP tunnel" );
+        LOG_SMART_SOCKET ( this, "Switching to UDP tunnel" );
 
         directSocket.reset();
 
@@ -273,7 +273,7 @@ void SmartSocket::disconnectEvent ( Socket *socket )
         vpsSocket = TcpSocket::connect ( this, *vpsAddress, true ); // Raw socket
 
         if ( owner )
-            owner->switchedToUdpTunnel ( this );
+            ( ( SmartSocket::Owner * ) owner )->smartSocketSwitchedToUDP ( this );
     }
     else if ( ( socket == directSocket.get() && isConnected() ) || socket == tunSocket.get() )
     {
@@ -284,7 +284,7 @@ void SmartSocket::disconnectEvent ( Socket *socket )
         disconnect();
 
         if ( owner )
-            owner->disconnectEvent ( this );
+            owner->socketDisconnected ( this );
     }
     else if ( socket == vpsSocket.get() )
     {
@@ -311,7 +311,7 @@ void SmartSocket::disconnectEvent ( Socket *socket )
         disconnect();
 
         if ( owner )
-            owner->disconnectEvent ( this );
+            owner->socketDisconnected ( this );
     }
     else
     {
@@ -319,13 +319,13 @@ void SmartSocket::disconnectEvent ( Socket *socket )
     }
 }
 
-void SmartSocket::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
+void SmartSocket::socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
 {
     if ( owner )
-        owner->readEvent ( this, msg, address );
+        owner->socketRead ( this, msg, address );
 }
 
-void SmartSocket::readEvent ( Socket *socket, const char *buffer, size_t len, const IpAddrPort& address )
+void SmartSocket::socketRead ( Socket *socket, const char *buffer, size_t len, const IpAddrPort& address )
 {
     ASSERT ( socket == vpsSocket.get() );
 
@@ -376,7 +376,7 @@ void SmartSocket::timerExpired ( Timer *timer )
         disconnect();
 
         if ( owner )
-            owner->disconnectEvent ( this );
+            owner->socketDisconnected ( this );
     }
     else if ( timer == sendTimer.get() )
     {
@@ -495,23 +495,23 @@ void SmartSocket::gotTunInfo ( uint32_t matchId, const IpAddrPort& address )
     }
 }
 
-SocketPtr SmartSocket::listenTCP ( Socket::Owner *owner, uint16_t port )
+SocketPtr SmartSocket::listenTCP ( Owner *owner, uint16_t port )
 {
     return SocketPtr ( new SmartSocket ( owner, port, Socket::Protocol::TCP ) );
 }
 
-SocketPtr SmartSocket::listenUDP ( Socket::Owner *owner, uint16_t port )
+SocketPtr SmartSocket::listenUDP ( Owner *owner, uint16_t port )
 {
     return SocketPtr ( new SmartSocket ( owner, port, Socket::Protocol::UDP ) );
 }
 
-SocketPtr SmartSocket::connectTCP ( Socket::Owner *owner, const IpAddrPort& address, bool forceTunnel )
+SocketPtr SmartSocket::connectTCP ( Owner *owner, const IpAddrPort& address, bool forceTunnel )
 {
     string addr = getAddrFromSockAddr ( address.getAddrInfo()->ai_addr ); // Resolve IP address first
     return SocketPtr ( new SmartSocket ( owner, { addr, address.port }, Socket::Protocol::TCP, forceTunnel ) );
 }
 
-SocketPtr SmartSocket::connectUDP ( Socket::Owner *owner, const IpAddrPort& address, bool forceTunnel )
+SocketPtr SmartSocket::connectUDP ( Owner *owner, const IpAddrPort& address, bool forceTunnel )
 {
     string addr = getAddrFromSockAddr ( address.getAddrInfo()->ai_addr ); // Resolve IP address first
     return SocketPtr ( new SmartSocket ( owner, { addr, address.port }, Socket::Protocol::UDP, forceTunnel ) );

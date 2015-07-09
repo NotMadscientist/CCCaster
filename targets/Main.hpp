@@ -3,7 +3,7 @@
 #include "EventManager.hpp"
 #include "ProcessManager.hpp"
 #include "SocketManager.hpp"
-#include "Socket.hpp"
+#include "SmartSocket.hpp"
 #include "TimerManager.hpp"
 #include "Timer.hpp"
 #include "KeyboardManager.hpp"
@@ -22,7 +22,7 @@
 
 struct Main
         : public ProcessManager::Owner
-        , public Socket::Owner
+        , public SmartSocket::Owner
         , public Timer::Owner
 {
     OptionsMessage options;

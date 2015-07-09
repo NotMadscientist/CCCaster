@@ -48,16 +48,16 @@ public:
     struct Owner
     {
         // Send a message via raw socket
-        virtual void sendRaw ( GoBackN *gbn, const MsgPtr& msg ) = 0;
+        virtual void goBackNSendRaw ( GoBackN *gbn, const MsgPtr& msg ) = 0;
 
         // Receive a raw non-sequenced message
-        virtual void recvRaw ( GoBackN *gbn, const MsgPtr& msg ) = 0;
+        virtual void goBackNRecvRaw ( GoBackN *gbn, const MsgPtr& msg ) = 0;
 
         // Receive a message from GoBackN
-        virtual void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) = 0;
+        virtual void goBackNRecvMsg ( GoBackN *gbn, const MsgPtr& msg ) = 0;
 
         // Timeout GoBackN if keep alive is enabled
-        virtual void timeoutGoBackN ( GoBackN *gbn ) = 0;
+        virtual void goBackNTimeout ( GoBackN *gbn ) = 0;
     };
 
     Owner *owner = 0;
@@ -69,11 +69,11 @@ public:
     GoBackN& operator= ( const GoBackN& other );
 
     // Send a message via GoBackN
-    void sendGoBackN ( SerializableSequence *message );
-    void sendGoBackN ( const MsgPtr& msg );
+    void sendViaGoBackN ( SerializableSequence *message );
+    void sendViaGoBackN ( const MsgPtr& msg );
 
     // Receive a message from the raw socket
-    void recvRaw ( const MsgPtr& msg );
+    void recvFromSocket ( const MsgPtr& msg );
 
     // Get / set the interval to send packets, should be non-zero
     uint64_t getSendInterval() const { return interval; }

@@ -146,36 +146,36 @@ SocketPtr TcpSocket::shared ( Socket::Owner *owner, const SocketShareData& data 
     return SocketPtr ( new TcpSocket ( owner, data ) );
 }
 
-void TcpSocket::acceptEvent()
+void TcpSocket::socketAccepted()
 {
     if ( owner )
-        owner->acceptEvent ( this );
+        owner->socketAccepted ( this );
     else
         accept ( 0 ).reset();
 }
 
-void TcpSocket::connectEvent()
+void TcpSocket::socketConnected()
 {
     state = State::Connected;
 
     if ( owner )
-        owner->connectEvent ( this );
+        owner->socketConnected ( this );
 }
 
-void TcpSocket::disconnectEvent()
+void TcpSocket::socketDisconnected()
 {
     Socket::Owner *const owner = this->owner;
 
     disconnect();
 
     if ( owner )
-        owner->disconnectEvent ( this );
+        owner->socketDisconnected ( this );
 }
 
-void TcpSocket::readEvent ( const MsgPtr& msg, const IpAddrPort& address )
+void TcpSocket::socketRead ( const MsgPtr& msg, const IpAddrPort& address )
 {
     if ( owner )
-        owner->readEvent ( this, msg, address );
+        owner->socketRead ( this, msg, address );
 }
 
 void TcpSocket::timerExpired ( Timer *timer )
@@ -187,5 +187,5 @@ void TcpSocket::timerExpired ( Timer *timer )
     if ( isConnected() )
         return;
 
-    disconnectEvent();
+    socketDisconnected();
 }

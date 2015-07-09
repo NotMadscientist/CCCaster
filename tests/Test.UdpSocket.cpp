@@ -37,11 +37,11 @@ TEST ( UdpSocket, SendConnectionLess )
         MsgPtr msg;
         bool sent;
 
-        void acceptEvent ( Socket *socket ) override {}
-        void connectEvent ( Socket *socket ) override {}
-        void disconnectEvent ( Socket *socket ) override {}
+        void socketAccepted ( Socket *socket ) override {}
+        void socketConnected ( Socket *socket ) override {}
+        void socketDisconnected ( Socket *socket ) override {}
 
-        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
+        void socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
         {
             this->msg = msg;
 
@@ -134,25 +134,25 @@ TEST ( UdpSocket, BindThenConnect )
         MsgPtr connectedMsg;
         int step = 0;
 
-        void acceptEvent ( Socket *socket ) override
+        void socketAccepted ( Socket *socket ) override
         {
             accepted = socket->accept ( this );
             accepted->send ( new TestMessage ( "Accepted message" ), accepted->address );
             ++done;
         }
 
-        void connectEvent ( Socket *socket ) override
+        void socketConnected ( Socket *socket ) override
         {
             socket->send ( new TestMessage ( "Connected message" ), socket->address );
             ++done;
         }
 
-        void disconnectEvent ( Socket *socket ) override
+        void socketDisconnected ( Socket *socket ) override
         {
             EventManager::get().stop();
         }
 
-        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
+        void socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
         {
             if ( socket->getAsUDP().isConnectionLess() )
                 bindedMsg = msg;

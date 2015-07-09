@@ -37,7 +37,7 @@ ProcessManager::~ProcessManager()
     disconnectPipe();
 }
 
-void ProcessManager::acceptEvent ( Socket *serverSocket )
+void ProcessManager::socketAccepted ( Socket *serverSocket )
 {
     ASSERT ( serverSocket == ipcSocket.get() );
     ASSERT ( serverSocket->isServer() == true );
@@ -51,7 +51,7 @@ void ProcessManager::acceptEvent ( Socket *serverSocket )
     ipcSocket->send ( new IpcConnected() );
 }
 
-void ProcessManager::connectEvent ( Socket *socket )
+void ProcessManager::socketConnected ( Socket *socket )
 {
     ASSERT ( socket == ipcSocket.get() );
     ASSERT ( ipcSocket->address.addr == "127.0.0.1" );
@@ -59,7 +59,7 @@ void ProcessManager::connectEvent ( Socket *socket )
     ipcSocket->send ( new IpcConnected() );
 }
 
-void ProcessManager::disconnectEvent ( Socket *socket )
+void ProcessManager::socketDisconnected ( Socket *socket )
 {
     ASSERT ( socket == ipcSocket.get() );
 
@@ -68,10 +68,10 @@ void ProcessManager::disconnectEvent ( Socket *socket )
     LOG ( "IPC disconnected" );
 
     if ( owner )
-        owner->ipcDisconnectEvent();
+        owner->ipcDisconnected();
 }
 
-void ProcessManager::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
+void ProcessManager::socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
 {
     ASSERT ( socket == ipcSocket.get() );
     ASSERT ( address.addr == "127.0.0.1" );
@@ -84,11 +84,11 @@ void ProcessManager::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddr
         gameStartTimer.reset();
 
         if ( owner )
-            owner->ipcConnectEvent();
+            owner->ipcConnected();
         return;
     }
 
-    owner->ipcReadEvent ( msg );
+    owner->ipcRead ( msg );
 }
 
 void ProcessManager::timerExpired ( Timer *timer )
@@ -102,7 +102,7 @@ void ProcessManager::timerExpired ( Timer *timer )
         LOG ( "Failed to start game" );
 
         if ( owner )
-            owner->ipcDisconnectEvent();
+            owner->ipcDisconnected();
         return;
     }
 

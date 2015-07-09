@@ -23,7 +23,7 @@ void Pinger::start()
     ASSERT ( numPings > 0 );
 
     if ( owner )
-        owner->sendPing ( this, MsgPtr ( new Ping ( TimerManager::get().getNow ( true ) ) ) );
+        owner->pingerSendPing ( this, MsgPtr ( new Ping ( TimerManager::get().getNow ( true ) ) ) );
 
     pingCount = 1;
 
@@ -73,7 +73,7 @@ void Pinger::gotPong ( const MsgPtr& ping )
     else
     {
         if ( owner )
-            owner->sendPing ( this, ping );
+            owner->pingerSendPing ( this, ping );
     }
 }
 
@@ -88,14 +88,14 @@ void Pinger::timerExpired ( Timer *timer )
         packetLoss = 100 * ( numPings - stats.getNumSamples() ) / numPings;
 
         if ( owner )
-            owner->donePinging ( this, stats, packetLoss );
+            owner->pingerCompleted ( this, stats, packetLoss );
 
         stop();
         return;
     }
 
     if ( owner )
-        owner->sendPing ( this, MsgPtr ( new Ping ( TimerManager::get().getNow() ) ) );
+        owner->pingerSendPing ( this, MsgPtr ( new Ping ( TimerManager::get().getNow() ) ) );
 
     ++pingCount;
 

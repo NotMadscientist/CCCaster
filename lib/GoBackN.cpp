@@ -33,7 +33,7 @@ void GoBackN::timerExpired ( Timer *timer )
         if ( skipNextKeepAlive )
             skipNextKeepAlive = false;
         else
-            owner->sendRaw ( this, NullMsg );
+            owner->goBackNSendRaw ( this, NullMsg );
     }
     else
     {
@@ -49,7 +49,7 @@ void GoBackN::timerExpired ( Timer *timer )
         LOG ( "Sending '%s'; sequence=%u; sendSequence=%d",
               msg, msg->getAs<SerializableSequence>().getSequence(), sendSequence );
 
-        owner->sendRaw ( this, msg );
+        owner->goBackNSendRaw ( this, msg );
         ++sendListPos;
     }
 
@@ -63,8 +63,8 @@ void GoBackN::timerExpired ( Timer *timer )
         }
         else
         {
-            LOG ( "owner->timeoutGoBackN ( this=%08x ); owner=%08x", this, owner );
-            owner->timeoutGoBackN ( this );
+            LOG ( "owner->goBackNTimeout ( this=%08x ); owner=%08x", this, owner );
+            owner->goBackNTimeout ( this );
             return;
         }
     }
@@ -81,13 +81,13 @@ void GoBackN::checkAndStartTimer()
         sendTimer->start ( interval );
 }
 
-void GoBackN::sendGoBackN ( SerializableSequence *message )
+void GoBackN::sendViaGoBackN ( SerializableSequence *message )
 {
     MsgPtr msg ( message );
-    sendGoBackN ( msg );
+    sendViaGoBackN ( msg );
 }
 
-void GoBackN::sendGoBackN ( const MsgPtr& msg )
+void GoBackN::sendViaGoBackN ( const MsgPtr& msg )
 {
     LOG ( "Adding '%s'; sendSequence=%d", msg, sendSequence + 1 );
 
@@ -100,7 +100,7 @@ void GoBackN::sendGoBackN ( const MsgPtr& msg )
         MsgPtr clone = msg->clone();
         clone->getAs<SerializableSequence>().setSequence ( ++sendSequence );
 
-        owner->sendRaw ( this, clone );
+        owner->goBackNSendRaw ( this, clone );
         sendList.push_back ( clone );
     }
     else
@@ -111,7 +111,7 @@ void GoBackN::sendGoBackN ( const MsgPtr& msg )
         if ( bytes.size() <= MTU )
         {
             ++sendSequence;
-            owner->sendRaw ( this, msg );
+            owner->goBackNSendRaw ( this, msg );
             sendList.push_back ( msg );
         }
         else
@@ -124,7 +124,7 @@ void GoBackN::sendGoBackN ( const MsgPtr& msg )
                 splitMsg->setSequence ( ++sendSequence );
 
                 MsgPtr msg ( splitMsg );
-                owner->sendRaw ( this, msg );
+                owner->goBackNSendRaw ( this, msg );
                 sendList.push_back ( msg );
             }
         }
@@ -135,7 +135,7 @@ void GoBackN::sendGoBackN ( const MsgPtr& msg )
     checkAndStartTimer();
 }
 
-void GoBackN::recvRaw ( const MsgPtr& msg )
+void GoBackN::recvFromSocket ( const MsgPtr& msg )
 {
     ASSERT ( owner != 0 );
 
@@ -156,7 +156,7 @@ void GoBackN::recvRaw ( const MsgPtr& msg )
     if ( msg->getBaseType() != BaseType::SerializableSequence )
     {
         LOG ( "Received '%s'", msg );
-        owner->recvRaw ( this, msg );
+        owner->goBackNRecvRaw ( this, msg );
         return;
     }
 
@@ -181,7 +181,7 @@ void GoBackN::recvRaw ( const MsgPtr& msg )
 
     if ( sequence != recvSequence + 1 )
     {
-        owner->sendRaw ( this, MsgPtr ( new AckSequence ( recvSequence ) ) );
+        owner->goBackNSendRaw ( this, MsgPtr ( new AckSequence ( recvSequence ) ) );
         return;
     }
 
@@ -189,7 +189,7 @@ void GoBackN::recvRaw ( const MsgPtr& msg )
 
     ++recvSequence;
 
-    owner->sendRaw ( this, MsgPtr ( new AckSequence ( recvSequence ) ) );
+    owner->goBackNSendRaw ( this, MsgPtr ( new AckSequence ( recvSequence ) ) );
 
     if ( msg->getMsgType() == MsgType::SplitMessage )
     {
@@ -213,14 +213,14 @@ void GoBackN::recvRaw ( const MsgPtr& msg )
             if ( msg )
             {
                 LOG ( "Recreated '%s'", msg );
-                owner->recvGoBackN ( this, msg );
+                owner->goBackNRecvMsg ( this, msg );
             }
         }
 
         return;
     }
 
-    owner->recvGoBackN ( this, msg );
+    owner->goBackNRecvMsg ( this, msg );
 }
 
 void GoBackN::setSendInterval ( uint64_t interval )

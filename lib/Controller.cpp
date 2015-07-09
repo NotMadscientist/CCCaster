@@ -121,7 +121,7 @@ void Controller::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExte
         ControllerManager::get().mappingsChanged ( this );
 
     if ( owner )
-        owner->doneMapping ( this, key );
+        owner->controllerKeyMapped ( this, key );
 }
 
 void Controller::joystickAxisEvent ( uint8_t axis, uint8_t value )
@@ -164,7 +164,7 @@ void Controller::joystickAxisEvent ( uint8_t axis, uint8_t value )
             ControllerManager::get().mappingsChanged ( this );
 
             if ( owner )
-                owner->doneMapping ( this, key );
+                owner->controllerKeyMapped ( this, key );
         }
 
         // Otherwise ignore already active joystick mappings
@@ -234,7 +234,7 @@ void Controller::joystickHatEvent ( uint8_t hat, uint8_t value )
             ControllerManager::get().mappingsChanged ( this );
 
             if ( owner )
-                owner->doneMapping ( this, key );
+                owner->controllerKeyMapped ( this, key );
         }
 
         // Otherwise ignore already active joystick mappings
@@ -292,7 +292,7 @@ void Controller::joystickButtonEvent ( uint8_t button, uint8_t value )
             ControllerManager::get().mappingsChanged ( this );
 
             if ( owner )
-                owner->doneMapping ( this, key );
+                owner->controllerKeyMapped ( this, key );
         }
 
         // Otherwise ignore already active joystick buttons

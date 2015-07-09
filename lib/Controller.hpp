@@ -168,7 +168,7 @@ public:
 
     struct Owner
     {
-        virtual void doneMapping ( Controller *controller, uint32_t key ) = 0;
+        virtual void controllerKeyMapped ( Controller *controller, uint32_t key ) = 0;
     };
 
     Owner *owner = 0;

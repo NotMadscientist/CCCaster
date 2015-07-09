@@ -143,7 +143,7 @@ public:
 static ThreadPtr keyboardThread;
 
 
-void KeyboardManager::readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
+void KeyboardManager::socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
 {
     ASSERT ( socket == recvSocket.get() );
 

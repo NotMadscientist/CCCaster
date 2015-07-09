@@ -37,10 +37,10 @@ public:
 protected:
 
     // Socket event callbacks
-    void acceptEvent() override;
-    void connectEvent() override;
-    void disconnectEvent() override;
-    void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) override;
+    void socketAccepted() override;
+    void socketConnected() override;
+    void socketDisconnected() override;
+    void socketRead ( const MsgPtr& msg, const IpAddrPort& address ) override;
 
 private:
 

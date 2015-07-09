@@ -817,7 +817,7 @@ struct MainApp
     }
 
     // Pinger callbacks
-    void sendPing ( Pinger *pinger, const MsgPtr& ping ) override
+    void pingerSendPing ( Pinger *pinger, const MsgPtr& ping ) override
     {
         if ( !dataSocket || !dataSocket->isConnected() )
         {
@@ -830,7 +830,7 @@ struct MainApp
         dataSocket->send ( ping );
     }
 
-    void donePinging ( Pinger *pinger, const Statistics& stats, uint8_t packetLoss ) override
+    void pingerCompleted ( Pinger *pinger, const Statistics& stats, uint8_t packetLoss ) override
     {
         ASSERT ( pinger == &this->pinger );
 
@@ -844,9 +844,9 @@ struct MainApp
     }
 
     // Socket callbacks
-    void acceptEvent ( Socket *serverSocket ) override
+    void socketAccepted ( Socket *serverSocket ) override
     {
-        LOG ( "acceptEvent ( %08x )", serverSocket );
+        LOG ( "socketAccepted ( %08x )", serverSocket );
 
         if ( serverSocket == serverCtrlSocket.get() )
         {
@@ -877,14 +877,14 @@ struct MainApp
         }
         else
         {
-            LOG ( "Unexpected acceptEvent from serverSocket=%08x", serverSocket );
+            LOG ( "Unexpected socketAccepted from serverSocket=%08x", serverSocket );
             serverSocket->accept ( 0 ).reset();
         }
     }
 
-    void connectEvent ( Socket *socket ) override
+    void socketConnected ( Socket *socket ) override
     {
-        LOG ( "connectEvent ( %08x )", socket );
+        LOG ( "socketConnected ( %08x )", socket );
 
         if ( socket == ctrlSocket.get() )
         {
@@ -910,9 +910,9 @@ struct MainApp
         }
     }
 
-    void disconnectEvent ( Socket *socket ) override
+    void socketDisconnected ( Socket *socket ) override
     {
-        LOG ( "disconnectEvent ( %08x )", socket );
+        LOG ( "socketDisconnected ( %08x )", socket );
 
         if ( socket == ctrlSocket.get() || socket == dataSocket.get() )
         {
@@ -953,9 +953,9 @@ struct MainApp
         popPendingSocket ( socket );
     }
 
-    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
+    void socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
     {
-        LOG ( "readEvent ( %08x, %s, %s )", socket, msg, address );
+        LOG ( "socketRead ( %08x, %s, %s )", socket, msg, address );
 
         if ( socket == uiRecvSocket.get() && !msg.get() )
         {
@@ -1040,16 +1040,16 @@ struct MainApp
         LOG ( "Unexpected '%s' from socket=%08x", msg, socket );
     }
 
-    void switchedToUdpTunnel ( Socket *socket ) override
+    void smartSocketSwitchedToUDP ( SmartSocket *smartSocket ) override
     {
-        if ( socket != ctrlSocket.get() )
+        if ( smartSocket != ctrlSocket.get() )
             return;
 
         ui.display ( format ( "Trying %s (UDP tunnel)", address ) );
     }
 
     // ProcessManager callbacks
-    void ipcConnectEvent() override
+    void ipcConnected() override
     {
         ASSERT ( clientMode != ClientMode::Unknown );
 
@@ -1074,14 +1074,14 @@ struct MainApp
         ui.display ( format ( "Started %s mode", getGameModeString() ) );
     }
 
-    void ipcDisconnectEvent() override
+    void ipcDisconnected() override
     {
         if ( lastError.empty() )
             lastError = "Game closed!";
         stop();
     }
 
-    void ipcReadEvent ( const MsgPtr& msg ) override
+    void ipcRead ( const MsgPtr& msg ) override
     {
         if ( ! msg.get() )
             return;
@@ -1120,7 +1120,7 @@ struct MainApp
                 return;
 
             default:
-                LOG ( "Unexpected ipcReadEvent ( '%s' )", msg );
+                LOG ( "Unexpected ipcRead ( '%s' )", msg );
                 return;
         }
     }
@@ -1147,7 +1147,7 @@ struct MainApp
                 serverCtrlSocket.reset();
             }
 
-            // Open the game and wait for callback to ipcConnectEvent
+            // Open the game and wait for callback to ipcConnected
             procMan.openGame ( ui.getConfig().getInteger ( "highCpuPriority" ) );
         }
         else
@@ -1157,13 +1157,13 @@ struct MainApp
     }
 
     // ExternalIpAddress callbacks
-    void foundExternalIpAddress ( ExternalIpAddress *extIpAddr, const string& address ) override
+    void externalIpAddrFound ( ExternalIpAddress *extIpAddr, const string& address ) override
     {
         LOG ( "External IP address: '%s'", address );
         updateStatusMessage();
     }
 
-    void unknownExternalIpAddress ( ExternalIpAddress *extIpAddr ) override
+    void externalIpAddrUnknown ( ExternalIpAddress *extIpAddr ) override
     {
         LOG ( "Unknown external IP address!" );
         updateStatusMessage();

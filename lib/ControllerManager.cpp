@@ -394,7 +394,7 @@ void ControllerManager::attachJoystick ( const Guid& guid, JoystickInfo& info )
     LOG_CONTROLLER ( controller, "attached" );
 
     if ( owner )
-        owner->attachedJoystick ( controller );
+        owner->joystickAttached ( controller );
 }
 
 void ControllerManager::detachJoystick ( const Guid& guid )
@@ -413,7 +413,7 @@ void ControllerManager::detachJoystick ( const Guid& guid )
     LOG_CONTROLLER ( controller, "detached" );
 
     if ( owner )
-        owner->detachedJoystick ( controller );
+        owner->joystickToBeDetached ( controller );
 
     joysticksByName.erase ( controller->getName() );
     joysticks.erase ( it );
@@ -559,7 +559,7 @@ void ControllerManager::clear()
     if ( owner )
     {
         for ( auto& kv : joysticks )
-            owner->detachedJoystick ( kv.second.get() );
+            owner->joystickToBeDetached ( kv.second.get() );
     }
 
     joysticks.clear();

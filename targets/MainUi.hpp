@@ -100,10 +100,10 @@ private:
     bool gameMode ( bool below );
     bool offlineGameMode();
 
-    void doneMapping ( Controller *controller, uint32_t key ) override;
+    void controllerKeyMapped ( Controller *controller, uint32_t key ) override;
 
-    void attachedJoystick ( Controller *controller ) override {};
-    void detachedJoystick ( Controller *controller ) override;
+    void joystickAttached ( Controller *controller ) override {};
+    void joystickToBeDetached ( Controller *controller ) override;
 
     void saveConfig();
     void loadConfig();

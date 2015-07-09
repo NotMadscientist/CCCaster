@@ -11,20 +11,21 @@
 using namespace std;
 
 
-#define PACKET_LOSS     ( 50 )
+#define PACKET_LOSS     50
+#define CHECK_SUM_FAIL  50
 #define LONG_TIMEOUT    ( 120 * 1000 )
 
 
 struct TestClass : public GoBackN::Owner, public Socket::Owner, public Timer::Owner
 {
-    virtual void sendRaw ( GoBackN *gbn, const MsgPtr& msg ) override {}
-    virtual void recvRaw ( GoBackN *gbn, const MsgPtr& msg ) override {}
-    virtual void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override {}
-    virtual void timeoutGoBackN ( GoBackN *gbn ) override {}
+    virtual void goBackNSendRaw ( GoBackN *gbn, const MsgPtr& msg ) override {}
+    virtual void goBackNRecvRaw ( GoBackN *gbn, const MsgPtr& msg ) override {}
+    virtual void goBackNRecvMsg ( GoBackN *gbn, const MsgPtr& msg ) override {}
+    virtual void goBackNTimeout ( GoBackN *gbn ) override {}
 
-    virtual void acceptEvent ( Socket *socket ) override {}
-    virtual void connectEvent ( Socket *socket ) override {}
-    virtual void disconnectEvent ( Socket *socket ) override {}
+    virtual void socketAccepted ( Socket *socket ) override {}
+    virtual void socketConnected ( Socket *socket ) override {}
+    virtual void socketDisconnected ( Socket *socket ) override {}
 
     virtual void timerExpired ( Timer *timer ) override {}
 };
@@ -40,12 +41,12 @@ TEST ( GoBackN, SendOnce )
         Timer timer;
         MsgPtr msg;
 
-        void sendRaw ( GoBackN *gbn, const MsgPtr& msg ) override
+        void goBackNSendRaw ( GoBackN *gbn, const MsgPtr& msg ) override
         {
             socket->send ( msg, address );
         }
 
-        void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override
+        void goBackNRecvMsg ( GoBackN *gbn, const MsgPtr& msg ) override
         {
             this->msg = msg;
 
@@ -53,19 +54,19 @@ TEST ( GoBackN, SendOnce )
             EventManager::get().stop();
         }
 
-        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
+        void socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
         {
             if ( this->address.empty() )
                 this->address = address;
 
-            gbn.recvRaw ( msg );
+            gbn.recvFromSocket ( msg );
         }
 
         void timerExpired ( Timer *timer ) override
         {
             if ( socket->isClient() )
             {
-                gbn.sendGoBackN ( new TestMessage ( "Hello server!" ) );
+                gbn.sendViaGoBackN ( new TestMessage ( "Hello server!" ) );
             }
             else
             {
@@ -79,6 +80,7 @@ TEST ( GoBackN, SendOnce )
             , gbn ( this ), timer ( this )
         {
             socket->setPacketLoss ( PACKET_LOSS );
+            socket->setCheckSumFail ( CHECK_SUM_FAIL );
             timer.start ( LONG_TIMEOUT );
         }
 
@@ -87,6 +89,7 @@ TEST ( GoBackN, SendOnce )
             , address ( address, port ), gbn ( this ), timer ( this )
         {
             socket->setPacketLoss ( PACKET_LOSS );
+            socket->setCheckSumFail ( CHECK_SUM_FAIL );
             timer.start ( 1000 );
         }
     };
@@ -121,12 +124,12 @@ TEST ( GoBackN, SendSequential )
         Timer timer;
         vector<MsgPtr> msgs;
 
-        void sendRaw ( GoBackN *gbn, const MsgPtr& msg ) override
+        void goBackNSendRaw ( GoBackN *gbn, const MsgPtr& msg ) override
         {
             socket->send ( msg, address );
         }
 
-        void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override
+        void goBackNRecvMsg ( GoBackN *gbn, const MsgPtr& msg ) override
         {
             msgs.push_back ( msg );
 
@@ -137,23 +140,23 @@ TEST ( GoBackN, SendSequential )
             }
         }
 
-        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
+        void socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
         {
             if ( this->address.empty() )
                 this->address = address;
 
-            gbn.recvRaw ( msg );
+            gbn.recvFromSocket ( msg );
         }
 
         void timerExpired ( Timer *timer ) override
         {
             if ( socket->isClient() )
             {
-                gbn.sendGoBackN ( new TestMessage ( "Message 1" ) );
-                gbn.sendGoBackN ( new TestMessage ( "Message 2" ) );
-                gbn.sendGoBackN ( new TestMessage ( "Message 3" ) );
-                gbn.sendGoBackN ( new TestMessage ( "Message 4" ) );
-                gbn.sendGoBackN ( new TestMessage ( "Message 5" ) );
+                gbn.sendViaGoBackN ( new TestMessage ( "Message 1" ) );
+                gbn.sendViaGoBackN ( new TestMessage ( "Message 2" ) );
+                gbn.sendViaGoBackN ( new TestMessage ( "Message 3" ) );
+                gbn.sendViaGoBackN ( new TestMessage ( "Message 4" ) );
+                gbn.sendViaGoBackN ( new TestMessage ( "Message 5" ) );
             }
             else
             {
@@ -167,6 +170,7 @@ TEST ( GoBackN, SendSequential )
             , gbn ( this ), timer ( this )
         {
             socket->setPacketLoss ( PACKET_LOSS );
+            socket->setCheckSumFail ( CHECK_SUM_FAIL );
             timer.start ( LONG_TIMEOUT );
         }
 
@@ -175,6 +179,7 @@ TEST ( GoBackN, SendSequential )
             , address ( address, port ), gbn ( this ), timer ( this )
         {
             socket->setPacketLoss ( PACKET_LOSS );
+            socket->setCheckSumFail ( CHECK_SUM_FAIL );
             timer.start ( 1000 );
         }
     };
@@ -214,13 +219,13 @@ TEST ( GoBackN, SendAndRecv )
         vector<MsgPtr> msgs;
         bool sent;
 
-        void sendRaw ( GoBackN *gbn, const MsgPtr& msg ) override
+        void goBackNSendRaw ( GoBackN *gbn, const MsgPtr& msg ) override
         {
             if ( ! address.empty() )
                 socket->send ( msg, address );
         }
 
-        void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override
+        void goBackNRecvMsg ( GoBackN *gbn, const MsgPtr& msg ) override
         {
             msgs.push_back ( msg );
 
@@ -234,23 +239,23 @@ TEST ( GoBackN, SendAndRecv )
             }
         }
 
-        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
+        void socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
         {
             if ( this->address.empty() )
                 this->address = address;
 
-            gbn.recvRaw ( msg );
+            gbn.recvFromSocket ( msg );
         }
 
         void timerExpired ( Timer *timer ) override
         {
             if ( ! sent )
             {
-                gbn.sendGoBackN ( new TestMessage ( socket->isClient() ? "Client 1" : "Server 1" ) );
-                gbn.sendGoBackN ( new TestMessage ( socket->isClient() ? "Client 2" : "Server 2" ) );
-                gbn.sendGoBackN ( new TestMessage ( socket->isClient() ? "Client 3" : "Server 3" ) );
-                gbn.sendGoBackN ( new TestMessage ( socket->isClient() ? "Client 4" : "Server 4" ) );
-                gbn.sendGoBackN ( new TestMessage ( socket->isClient() ? "Client 5" : "Server 5" ) );
+                gbn.sendViaGoBackN ( new TestMessage ( socket->isClient() ? "Client 1" : "Server 1" ) );
+                gbn.sendViaGoBackN ( new TestMessage ( socket->isClient() ? "Client 2" : "Server 2" ) );
+                gbn.sendViaGoBackN ( new TestMessage ( socket->isClient() ? "Client 3" : "Server 3" ) );
+                gbn.sendViaGoBackN ( new TestMessage ( socket->isClient() ? "Client 4" : "Server 4" ) );
+                gbn.sendViaGoBackN ( new TestMessage ( socket->isClient() ? "Client 5" : "Server 5" ) );
                 sent = true;
                 timer->start ( LONG_TIMEOUT );
             }
@@ -266,6 +271,7 @@ TEST ( GoBackN, SendAndRecv )
             , gbn ( this ), timer ( this ), sent ( false )
         {
             socket->setPacketLoss ( PACKET_LOSS );
+            socket->setCheckSumFail ( CHECK_SUM_FAIL );
             timer.start ( 1000 );
         }
 
@@ -274,6 +280,7 @@ TEST ( GoBackN, SendAndRecv )
             , address ( address, port ), gbn ( this ), timer ( this ), sent ( false )
         {
             socket->setPacketLoss ( PACKET_LOSS );
+            socket->setCheckSumFail ( CHECK_SUM_FAIL );
             timer.start ( 1000 );
         }
     };
@@ -324,16 +331,12 @@ TEST ( GoBackN, Timeout )
         bool properTimeout;
         int stage;
 
-        void sendRaw ( GoBackN *gbn, const MsgPtr& msg ) override
+        void goBackNSendRaw ( GoBackN *gbn, const MsgPtr& msg ) override
         {
             socket->send ( msg, address );
         }
 
-        void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override
-        {
-        }
-
-        void timeoutGoBackN ( GoBackN *gbn ) override
+        void goBackNTimeout ( GoBackN *gbn ) override
         {
             properTimeout = true;
             ++done;
@@ -345,12 +348,12 @@ TEST ( GoBackN, Timeout )
             }
         }
 
-        void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
+        void socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override
         {
             if ( this->address.empty() )
                 this->address = address;
 
-            gbn.recvRaw ( msg );
+            gbn.recvFromSocket ( msg );
         }
 
         void timerExpired ( Timer *timer ) override
@@ -358,7 +361,7 @@ TEST ( GoBackN, Timeout )
             if ( stage == 0 )
             {
                 if ( socket->isClient() )
-                    gbn.sendGoBackN ( new TestMessage ( "Hello server!" ) );
+                    gbn.sendViaGoBackN ( new TestMessage ( "Hello server!" ) );
                 timer->start ( 1000 );
             }
             else if ( stage == 1 )

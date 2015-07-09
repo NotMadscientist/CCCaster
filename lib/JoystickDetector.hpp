@@ -27,8 +27,8 @@ public:
 private:
 
     // Socket callbacks
-    void acceptEvent ( Socket *socket ) override {}
-    void connectEvent ( Socket *socket ) override {}
-    void disconnectEvent ( Socket *socket ) override {}
-    void readEvent ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override;
+    void socketAccepted ( Socket *socket ) override {}
+    void socketConnected ( Socket *socket ) override {}
+    void socketDisconnected ( Socket *socket ) override {}
+    void socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address ) override;
 };

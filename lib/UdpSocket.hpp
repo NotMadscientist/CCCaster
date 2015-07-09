@@ -97,7 +97,7 @@ public:
 protected:
 
     // Socket read event callback
-    void readEvent ( const MsgPtr& msg, const IpAddrPort& address ) override;
+    void socketRead ( const MsgPtr& msg, const IpAddrPort& address ) override;
 
 private:
 
@@ -120,13 +120,13 @@ private:
     SocketPtr acceptedSocket;
 
     // GoBackN callbacks
-    void sendRaw ( GoBackN *gbn, const MsgPtr& msg ) override;
-    void recvRaw ( GoBackN *gbn, const MsgPtr& msg ) override;
-    void recvGoBackN ( GoBackN *gbn, const MsgPtr& msg ) override;
-    void timeoutGoBackN ( GoBackN *gbn ) override;
+    void goBackNSendRaw ( GoBackN *gbn, const MsgPtr& msg ) override;
+    void goBackNRecvRaw ( GoBackN *gbn, const MsgPtr& msg ) override;
+    void goBackNRecvMsg ( GoBackN *gbn, const MsgPtr& msg ) override;
+    void goBackNTimeout ( GoBackN *gbn ) override;
 
     // Callback into the correctly addressed socket
-    void readEventAddressed ( const MsgPtr& msg, const IpAddrPort& address );
+    void socketReadAddressed ( const MsgPtr& msg, const IpAddrPort& address );
 
     // Send a protocol message directly, not over GoBackN
     bool sendRaw ( const MsgPtr& msg, const IpAddrPort& address );

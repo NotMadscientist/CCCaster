@@ -84,8 +84,8 @@ void SocketManager::check ( uint64_t timeout )
             if ( ! FD_ISSET ( socket->fd, &writeFds ) )
                 continue;
 
-            LOG_SOCKET ( socket, "connectEvent" );
-            socket->connectEvent();
+            LOG_SOCKET ( socket, "socketConnected" );
+            socket->socketConnected();
         }
         else
         {
@@ -94,13 +94,13 @@ void SocketManager::check ( uint64_t timeout )
 
             if ( socket->isServer() && socket->isTCP() )
             {
-                LOG_SOCKET ( socket, "acceptEvent" );
-                socket->acceptEvent();
+                LOG_SOCKET ( socket, "socketAccepted" );
+                socket->socketAccepted();
             }
             else
             {
-                LOG_SOCKET ( socket, "readEvent" );
-                socket->readEvent();
+                LOG_SOCKET ( socket, "socketRead" );
+                socket->socketRead();
             }
         }
     }

@@ -291,7 +291,7 @@ bool MainUi::offlineGameMode()
     return true;
 }
 
-void MainUi::detachedJoystick ( Controller *controller )
+void MainUi::joystickToBeDetached ( Controller *controller )
 {
     LOG ( "controller=%08x; currentController=%08x", controller, currentController );
 
@@ -302,7 +302,7 @@ void MainUi::detachedJoystick ( Controller *controller )
     EventManager::get().stop();
 }
 
-void MainUi::doneMapping ( Controller *controller, uint32_t key )
+void MainUi::controllerKeyMapped ( Controller *controller, uint32_t key )
 {
     ASSERT ( controller == currentController );
 

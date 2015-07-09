@@ -76,7 +76,7 @@ public:
 
     struct Owner
     {
-        virtual void hasChanged ( K key, T previous, T current ) = 0;
+        virtual void changedValue ( K key, T previous, T current ) = 0;
     };
 
     Owner *owner = 0;
@@ -93,7 +93,7 @@ public:
             return false;
 
         if ( owner )
-            owner->hasChanged ( key, previous, current );
+            owner->changedValue ( key, previous, current );
 
         previous = current;
         return true;
@@ -132,7 +132,7 @@ public:
 
     struct Owner
     {
-        virtual void hasChanged ( K key, T previous, T current ) = 0;
+        virtual void changedValue ( K key, T previous, T current ) = 0;
     };
 
     Owner *owner = 0;
@@ -159,7 +159,7 @@ public:
             return false;
 
         if ( owner )
-            owner->hasChanged ( key, previous, current );
+            owner->changedValue ( key, previous, current );
 
         previous = current;
         return true;
