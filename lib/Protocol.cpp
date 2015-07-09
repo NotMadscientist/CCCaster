@@ -1,6 +1,6 @@
 #include "Protocol.hpp"
 #include "Protocol.include.hpp"
-#include "Protocol.inline.hpp"
+#include "Protocol.inlineimpl.hpp"
 #include "Compression.hpp"
 #include "Logger.hpp"
 #include "Enum.hpp"

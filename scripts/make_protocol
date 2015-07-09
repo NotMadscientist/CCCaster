@@ -92,7 +92,7 @@ rm -f $DIR/tmp*
 
 # Check if we should regenerate protocol
 if [ "$SHOULD_REGEN" = "1" ] || [ ! -f "$DIR/Protocol.include.hpp" ]       \
-                             || [ ! -f "$DIR/Protocol.inline.hpp" ]        \
+                             || [ ! -f "$DIR/Protocol.inlineimpl.hpp" ]        \
                              || [ ! -f "$DIR/Protocol.switchdecode.hpp" ]  \
                              || [ ! -f "$DIR/Protocol.switchstring.hpp" ]; then
 
@@ -105,24 +105,23 @@ if [ "$SHOULD_REGEN" = "1" ] || [ ! -f "$DIR/Protocol.include.hpp" ]       \
     | uniq \
     > $DIR/Protocol.include.hpp
 
-  rm -f $DIR/Protocol.inline.hpp
+  rm -f $DIR/Protocol.inlineimpl.hpp
 
   grep --extended-regexp "$REGEX" "$@" | grep --invert-match "no-clone" \
     | sed --regexp-extended \
       's/^(.+\.hpp):[a-z]+ ([A-Za-z0-9]+) .+$$/\
-MsgPtr \2::clone() const { MsgPtr msg ( new \2 ( *this ) ); msg->invalidate(); return msg; }/' \
+inline MsgPtr \2::clone() const { MsgPtr msg ( new \2 ( *this ) ); msg->invalidate(); return msg; }/' \
     | sort \
     | uniq \
-    >> $DIR/Protocol.inline.hpp
-
-  echo '' >> $DIR/Protocol.inline.hpp
+    >> $DIR/Protocol.inlineimpl.hpp
 
   grep --extended-regexp "$REGEX" "$@" | grep --invert-match "no-type" \
     | sed --regexp-extended \
-      's/^(.+\.hpp):[a-z]+ ([A-Za-z0-9]+) .+$$/MsgType \2::getMsgType() const { return MsgType::\2; }/' \
+      's/^(.+\.hpp):[a-z]+ ([A-Za-z0-9]+) .+$$/\
+inline MsgType \2::getMsgType() const { return MsgType::\2; }/' \
     | sort \
     | uniq \
-    >> $DIR/Protocol.inline.hpp
+    >> $DIR/Protocol.inlineimpl.hpp
 
   grep --extended-regexp "$REGEX" "$@" \
     | sed --regexp-extended \
