@@ -55,4 +55,6 @@ private:
     std::array<size_t, 2> overlayPositions = {{ 0, 0 }};
 
     std::array<bool, 2> finishedMapping = {{ false, false }};
+
+    bool controllerAttached = false;
 };

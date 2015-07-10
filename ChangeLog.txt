@@ -1,4 +1,5 @@
 v3.0.017:
+- Automatically show overlay menu at character select when a controller is connected.
 - Fix tournament mode getting stuck for other offline modes.
 
 v3.0.016:
