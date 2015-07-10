@@ -1572,8 +1572,8 @@ struct DllMain
 
                 if ( clientMode.isTraining() )
                     WRITE_ASM_HACK ( AsmHacks::forceGotoTraining );
-                else if ( clientMode.isVersusCpu() )
-                    WRITE_ASM_HACK ( AsmHacks::forceGotoVersusCpu );
+                else if ( clientMode.isVersusCPU() )
+                    WRITE_ASM_HACK ( AsmHacks::forceGotoVersusCPU );
                 else
                     WRITE_ASM_HACK ( AsmHacks::forceGotoVersus );
 

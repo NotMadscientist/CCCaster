@@ -218,11 +218,14 @@ void MainUi::offline ( RunFuncPtr run )
     if ( ! offlineGameMode() )
         return;
 
+    const bool tournament = netplayConfig.tournament;
+
     netplayConfig.clear();
     netplayConfig.mode.value = ClientMode::Offline;
     netplayConfig.mode.flags = initialConfig.mode.flags;
     netplayConfig.delay = 0;
     netplayConfig.hostPlayer = 1; // TODO make this configurable
+    netplayConfig.tournament = tournament;
 
     RUN ( "", netplayConfig );
 
@@ -282,9 +285,9 @@ bool MainUi::offlineGameMode()
     else if ( mode == 1 )
         initialConfig.mode.flags = 0; // Versus
     else if ( mode == 2 )
-        initialConfig.mode.flags = ClientMode::VersusCpu;
+        initialConfig.mode.flags = ClientMode::VersusCPU;
     else if ( mode == 3 )
-        tournament = true;
+        netplayConfig.tournament = true;
     else
         return false;
 
@@ -1005,6 +1008,7 @@ void MainUi::main ( RunFuncPtr run )
 
         // Reset flags
         initialConfig.mode.flags = 0;
+        netplayConfig.clear();
 
         if ( address.empty() && config.getInteger ( "lastUsedPort" ) > 0 )
         {

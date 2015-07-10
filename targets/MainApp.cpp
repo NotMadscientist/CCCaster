@@ -81,7 +81,7 @@ struct MainApp
 {
     IpAddrPort originalAddress;
 
-    ExternalIpAddress externaIpAddress;
+    ExternalIpAddress externalIpAddress;
 
     InitialConfig initialConfig;
 
@@ -188,7 +188,7 @@ struct MainApp
 
         if ( clientMode.isHost() )
         {
-            externaIpAddress.start();
+            externalIpAddress.start();
             updateStatusMessage();
         }
         else
@@ -236,7 +236,7 @@ struct MainApp
         AutoManager _;
 
         if ( clientMode.isBroadcast() )
-            externaIpAddress.start();
+            externalIpAddress.start();
 
         // Open the game immediately
         startGame();
@@ -1181,7 +1181,7 @@ struct MainApp
         : Main ( config.getMsgType() == MsgType::InitialConfig
                  ? config.getAs<InitialConfig>().mode
                  : config.getAs<NetplayConfig>().mode )
-        , externaIpAddress ( this )
+        , externalIpAddress ( this )
     {
         LOG ( "clientMode=%s; flags={ %s }; address='%s'; config=%s",
               clientMode, clientMode.flagString(), addr, config.getMsgType() );
@@ -1191,9 +1191,6 @@ struct MainApp
 
         if ( ! ProcessManager::appDir.empty() )
             options.set ( Options::AppDir, 1, ProcessManager::appDir );
-
-        if ( ui.isTournament() )
-            options.set ( Options::Tournament, 1 );
 
         if ( ui.getConfig().getDouble ( "heldStartDuration" ) > 0 )
         {
@@ -1205,17 +1202,6 @@ struct MainApp
         {
             ProcessManager::setIsWindowed ( true );
             options.set ( Options::Fullscreen, 1 );
-        }
-
-        if ( options[Options::Tournament] )
-        {
-            clientMode.value = ClientMode::Offline;
-            clientMode.flags = 0;
-            options.set ( Options::Training, 0 );
-            options.set ( Options::Broadcast, 0 );
-            options.set ( Options::Spectate, 0 );
-            options.set ( Options::Offline, 1 );
-            options.set ( Options::HeldStartDuration, 1, "90" );
         }
 
 #ifndef RELEASE
@@ -1245,8 +1231,15 @@ struct MainApp
 
             netplayConfig = config.getAs<NetplayConfig>();
 
-            if ( options[Options::Tournament] )
-                netplayConfig.winCount = 2;
+            if ( netplayConfig.tournament )
+            {
+                options.set ( Options::Offline, 1 );
+                options.set ( Options::Training, 0 );
+                options.set ( Options::Broadcast, 0 );
+                options.set ( Options::Spectate, 0 );
+                options.set ( Options::Tournament, 1 );
+                options.set ( Options::HeldStartDuration, 1, "90" );
+            }
         }
         else
         {
@@ -1278,7 +1271,7 @@ struct MainApp
 
         syncLog.deinitialize();
 
-        externaIpAddress.owner = 0;
+        externalIpAddress.owner = 0;
     }
 
 private:
@@ -1286,7 +1279,7 @@ private:
     // Get the current game mode as a string
     const char *getGameModeString() const
     {
-        return options[Options::Tournament]
+        return netplayConfig.tournament
                ? "tournament"
                : ( clientMode.isTraining()
                    ? "training"
@@ -1304,23 +1297,23 @@ private:
 
         const uint16_t port = ( clientMode.isBroadcast() ? netplayConfig.broadcastPort : address.port );
 
-        if ( externaIpAddress.address.empty() || externaIpAddress.address == ExternalIpAddress::Unknown )
+        if ( externalIpAddress.address.empty() || externalIpAddress.address == ExternalIpAddress::Unknown )
         {
             ui.display ( format ( "%s on port %u%s\n",
                                   ( clientMode.isBroadcast() ? "Broadcasting" : "Hosting" ),
                                   port,
                                   ( clientMode.isTraining() ? " (training mode)" : "" ) )
-                         + ( externaIpAddress.address.empty()
+                         + ( externalIpAddress.address.empty()
                              ? "(Fetching external IP address...)"
                              : "(Could not find external IP address!)" ) );
         }
         else
         {
-            setClipboard ( format ( "%s:%u", externaIpAddress.address, port ) );
+            setClipboard ( format ( "%s:%u", externalIpAddress.address, port ) );
 
             ui.display ( format ( "%s at %s:%u%s\n(Address copied to clipboard)",
                                   ( clientMode.isBroadcast() ? "Broadcasting" : "Hosting" ),
-                                  externaIpAddress.address,
+                                  externalIpAddress.address,
                                   port,
                                   ( clientMode.isTraining() ? " (training mode)" : "" ) ) );
         }

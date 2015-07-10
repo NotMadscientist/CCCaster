@@ -61,8 +61,6 @@ public:
 
     const NetplayConfig& getNetplayConfig() const { return netplayConfig; }
 
-    bool isTournament() const { return tournament; }
-
 
     static void *getConsoleWindow();
 
@@ -85,8 +83,6 @@ private:
     uint32_t mappedKey = 0;
 
     bool upToDate = false;
-
-    bool tournament = false;
 
     void netplay ( RunFuncPtr run );
     void spectate ( RunFuncPtr run );

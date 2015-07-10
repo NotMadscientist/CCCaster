@@ -429,6 +429,7 @@ int main ( int argc, char *argv[] )
         netplayConfig.mode.flags = ui.initialConfig.mode.flags;
         netplayConfig.delay = 0;
         netplayConfig.winCount = 2;
+        netplayConfig.tournament = opt[Options::Tournament];
 
         // TODO make this configurable
         netplayConfig.hostPlayer = 1;
@@ -502,7 +503,7 @@ int main ( int argc, char *argv[] )
         return 0;
     }
 
-    if ( opt[Options::NoUi] || opt[Options::Tournament] )
+    if ( opt[Options::NoUi] )
     {
         if ( ! lastError.empty() )
             PRINT ( "%s", lastError );

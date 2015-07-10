@@ -33,7 +33,7 @@ struct ClientMode : public SerializableSequence
 {
     ENUM_BOILERPLATE ( ClientMode, Host, Client, SpectateNetplay, SpectateBroadcast, Broadcast, Offline )
 
-    enum { Training = 0x01, GameStarted = 0x02, UdpTunnel = 0x04, IsWine = 0x08, VersusCpu = 0x10 };
+    enum { Training = 0x01, GameStarted = 0x02, UdpTunnel = 0x04, IsWine = 0x08, VersusCPU = 0x10 };
 
     uint8_t flags = 0;
 
@@ -56,12 +56,12 @@ struct ClientMode : public SerializableSequence
     bool isLocal() const { return ( value == Broadcast || value == Offline ); }
 
     bool isVersus() const { return !isTraining(); }
-    bool isVersusCpu() const { return ( flags & VersusCpu ) && !isTraining(); }
+    bool isVersusCPU() const { return ( flags & VersusCPU ) && !isTraining(); }
     bool isTraining() const { return ( flags & Training ); }
     bool isGameStarted() const { return ( flags & GameStarted ); }
     bool isUdpTunnel() const { return ( flags & UdpTunnel ); }
     bool isWine() const { return ( flags & IsWine ); }
-    bool isSinglePlayer() const { return ( isNetplay() || isVersusCpu() ); }
+    bool isSinglePlayer() const { return ( isNetplay() || isVersusCPU() ); }
 
     std::string flagString() const
     {
@@ -79,8 +79,8 @@ struct ClientMode : public SerializableSequence
         if ( flags & IsWine )
             str += std::string ( str.empty() ? "" : ", " ) + "IsWine";
 
-        if ( flags & VersusCpu )
-            str += std::string ( str.empty() ? "" : ", " ) + "VersusCpu";
+        if ( flags & VersusCPU )
+            str += std::string ( str.empty() ? "" : ", " ) + "VersusCPU";
 
         return str;
     }
@@ -158,6 +158,9 @@ struct NetplayConfig : public SerializableSequence
     // Session ID
     std::string sessionId;
 
+    // Offline only tournament mode flag (DO NOT SERIALIZE)
+    bool tournament = false;
+
     void setNames ( const std::string& localName, const std::string& remoteName )
     {
         ASSERT ( hostPlayer == 1 || hostPlayer == 2 );
@@ -184,6 +187,7 @@ struct NetplayConfig : public SerializableSequence
         names[0].clear();
         names[1].clear();
         sessionId.clear();
+        tournament = false;
     }
 
     PROTOCOL_MESSAGE_BOILERPLATE ( NetplayConfig, mode, delay, rollback, rollbackDelay,
