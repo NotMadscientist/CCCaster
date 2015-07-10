@@ -104,11 +104,11 @@ SocketPtr TcpSocket::accept ( Socket::Owner *owner )
     sockaddr_storage sas;
     int saLen = sizeof ( sas );
 
-    int newFd = ::accept ( fd, ( sockaddr * ) &sas, &saLen );
+    const int newFd = ::accept ( fd, ( sockaddr * ) &sas, &saLen );
 
     if ( newFd == INVALID_SOCKET )
     {
-        int error = WSAGetLastError();
+        const int error = WSAGetLastError();
         LOG_SOCKET ( this, "[%d] %s; accept failed", error, WinException::getAsString ( error ) );
         return 0;
     }
@@ -128,7 +128,7 @@ bool TcpSocket::send ( SerializableSequence *message, const IpAddrPort& address 
 
 bool TcpSocket::send ( const MsgPtr& msg, const IpAddrPort& address )
 {
-    string buffer = ::Protocol::encode ( msg );
+    const string buffer = ::Protocol::encode ( msg );
 
     LOG ( "Encoded '%s' to [ %u bytes ]", msg, buffer.size() );
 

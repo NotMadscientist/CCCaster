@@ -798,7 +798,7 @@ MsgPtr ControllerManager::loadMappings ( const string& file )
         stringstream ss;
         ss << fin.rdbuf();
 
-        string buffer = ss.str();
+        const string buffer = ss.str();
         size_t consumed;
 
         msg = Protocol::decode ( &buffer[0], buffer.size(), consumed );

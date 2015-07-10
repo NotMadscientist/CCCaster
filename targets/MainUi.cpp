@@ -1096,7 +1096,7 @@ void MainUi::alertUser()
 
     if ( alert & 2 )
     {
-        string buffer = config.getString ( "alertWavFile" );
+        const string buffer = config.getString ( "alertWavFile" );
 
         if ( buffer.find ( SYSTEM_ALERT_PREFEX ) == 0 )
             PlaySound ( TEXT ( buffer.c_str() ), 0, SND_ALIAS | SND_ASYNC );

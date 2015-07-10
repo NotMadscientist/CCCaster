@@ -271,7 +271,7 @@ bool UdpSocket::sendRaw ( const MsgPtr& msg, const IpAddrPort& address )
     }
 #endif // NOT RELEASE
 
-    string buffer = ::Protocol::encode ( msg );
+    const string buffer = ::Protocol::encode ( msg );
 
     LOG ( "Encoded '%s' to [ %u bytes ]", msg, buffer.size() );
 
