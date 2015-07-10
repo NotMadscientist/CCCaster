@@ -8,8 +8,6 @@ echo Latest version $latest
 
 echo
 
-./3rdparty/megacmd.exe -force=true -skip-same-size=false -verbose=1 put cccaster*.zip mega:/CCCaster/
-
 for server in $servers; do
 
     echo
