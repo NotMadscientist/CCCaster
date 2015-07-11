@@ -26,9 +26,9 @@ void DllControllerManager::initControllers ( const ControllerMappings& mappings 
 
     allControllers = ControllerManager::get().getControllers();
 
-    // The first controller is keyboard which is always attached.
-    // So we only set this flag for controllers beyond the first one.
-    controllerAttached = ( allControllers.size() > 1 );
+    // // The first controller is keyboard which is always attached.
+    // // So we only set this flag for controllers beyond the first one.
+    // controllerAttached = ( allControllers.size() > 1 );
 }
 
 bool DllControllerManager::isNotMapping() const
@@ -48,14 +48,14 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
 
     bool toggleOverlay = false;
 
-    // Automatically show overlay when a controller is attached during chara select
-    if ( controllerAttached )
-    {
-        controllerAttached = false;
+    // // Automatically show overlay when a controller is attached during chara select
+    // if ( controllerAttached )
+    // {
+    //     controllerAttached = false;
 
-        if ( !DllOverlayUi::isEnabled() && *CC_GAME_MODE_ADDR == CC_GAME_MODE_CHARA_SELECT )
-            toggleOverlay = true;
-    }
+    //     if ( !DllOverlayUi::isEnabled() && *CC_GAME_MODE_ADDR == CC_GAME_MODE_CHARA_SELECT )
+    //         toggleOverlay = true;
+    // }
 
     // Toggle with a keyboard hotkey
     if ( KeyboardState::isPressed ( VK_TOGGLE_OVERLAY ) )
