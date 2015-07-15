@@ -6,7 +6,7 @@ latest=`ls cccaster*.zip | sed -r 's/cccaster.v([0-9a-zA-Z.]+).zip/\1/'`
 
 echo Latest version $latest
 
-echo
+echo "!!! Remember to upload to MEGA !!!"
 
 for server in $servers; do
 
@@ -33,3 +33,5 @@ for server in $servers; do
     ssh root@$server $command
 
 done
+
+echo "!!! Remember to upload to MEGA !!!"
