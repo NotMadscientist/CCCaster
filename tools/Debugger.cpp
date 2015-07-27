@@ -98,8 +98,12 @@ int main ( int argc, char *argv[] )
     ZeroMemory ( &pi, sizeof ( pi ) );
     si.cb = sizeof ( si );
 
-    if ( ! CreateProcess ( 0, const_cast<char *> ( exe.c_str() ), 0, 0, TRUE, DEBUG_ONLY_THIS_PROCESS, 0,
-                           cwd.empty() ? 0 : cwd.c_str(), &si, &pi ) )
+
+    char buffer[exe.size() + 1];
+    strcpy ( buffer, ( "\"" + exe + "\"" ).c_str() );
+
+    if ( ! CreateProcessA ( 0, buffer, 0, 0, TRUE, DEBUG_ONLY_THIS_PROCESS,
+                            0, cwd.empty() ? 0 : cwd.c_str(), &si, &pi ) )
     {
         PRINT ( "CreateProcess failed: %s", WinException::getLastError() );
         exit ( -1 );

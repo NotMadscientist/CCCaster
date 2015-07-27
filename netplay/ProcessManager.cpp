@@ -147,6 +147,10 @@ void ProcessManager::openGame ( bool highPriority )
     if ( highPriority )
         command += " --high";
 
+#ifndef DISABLE_LOGGING
+    command += " --popup_errors";
+#endif
+
     LOG ( "Running: %s", command );
 
     int returnCode = system ( ( "\"" + command + "\"" ).c_str() );

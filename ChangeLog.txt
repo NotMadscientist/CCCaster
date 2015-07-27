@@ -1,3 +1,7 @@
+v3.0.018:
+- Fix "Could not create process [193]" launcher error.
+- Fix crash during game start when controller is plugged in or disconnected.
+
 v3.0.017:
 - Fix tournament mode getting stuck for other offline modes.
 

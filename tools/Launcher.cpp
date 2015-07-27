@@ -2,8 +2,13 @@
 #include <windows.h>
 
 #include <string>
+#include <tr1/unordered_set>
 
 using namespace std;
+using namespace std::tr1;
+
+
+static bool popup_errors = true;
 
 
 bool hookDLL ( const string& dll_path, const PROCESS_INFORMATION *pi )
@@ -19,7 +24,9 @@ bool hookDLL ( const string& dll_path, const PROCESS_INFORMATION *pi )
     {
         char buffer[4096];
         snprintf ( buffer, sizeof ( buffer ), "Could not create remote thread [%d].", ( int ) GetLastError() );
-        MessageBox ( 0, buffer, "launcher error", MB_OK );
+
+        if ( popup_errors )
+            MessageBox ( 0, buffer, "launcher error", MB_OK );
 
         // Cleanup
         VirtualFreeEx ( pi->hProcess, dll_addr, 0, MEM_RELEASE );
@@ -38,7 +45,9 @@ bool hookDLL ( const string& dll_path, const PROCESS_INFORMATION *pi )
     if ( ! hookedDLL )
     {
         TerminateProcess ( pi->hProcess, -1 );
-        // MessageBox ( 0, "Could not hook dll after all.", "launcher error", MB_OK );
+
+        if ( popup_errors )
+            MessageBox ( 0, "Could not hook dll", "launcher error", MB_OK );
         return false;
     }
 
@@ -77,7 +86,9 @@ bool hook ( const string& exe_path, const string& dll_path, bool high_priority )
         char buffer[4096];
         snprintf ( buffer, sizeof ( buffer ), "Couldn't find exe='%s'\nError [%d].",
                    exe_path.c_str(), ( int ) GetLastError() );
-        MessageBox ( 0, buffer, "launcher error", MB_OK );
+
+        if ( popup_errors )
+            MessageBox ( 0, buffer, "launcher error", MB_OK );
         return false;
     }
 
@@ -86,7 +97,9 @@ bool hook ( const string& exe_path, const string& dll_path, bool high_priority )
         char buffer[4096];
         snprintf ( buffer, sizeof ( buffer ), "Couldn't find dll='%s'\nError [%d].",
                    dll_path.c_str(), ( int ) GetLastError() );
-        MessageBox ( 0, buffer, "launcher error", MB_OK );
+
+        if ( popup_errors )
+            MessageBox ( 0, buffer, "launcher error", MB_OK );
         return false;
     }
 
@@ -96,7 +109,7 @@ bool hook ( const string& exe_path, const string& dll_path, bool high_priority )
         flags |= HIGH_PRIORITY_CLASS;
 
     char buffer[exe_path.size() + 1];
-    strcpy ( buffer, exe_path.c_str() );
+    strcpy ( buffer, ( "\"" + exe_path + "\"" ).c_str() );
 
     const string dir_path = exe_path.substr ( 0, exe_path.find_last_of ( "/\\" ) );
 
@@ -105,7 +118,9 @@ bool hook ( const string& exe_path, const string& dll_path, bool high_priority )
         char buffer[4096];
         snprintf ( buffer, sizeof ( buffer ), "exe='%s'\ndir='%s'\nCould not create process [%d].",
                    exe_path.c_str(), dir_path.c_str(), ( int ) GetLastError() );
-        MessageBox ( 0, buffer, "launcher error", MB_OK );
+
+        if ( popup_errors )
+            MessageBox ( 0, buffer, "launcher error", MB_OK );
         return false;
     }
 
@@ -115,7 +130,8 @@ bool hook ( const string& exe_path, const string& dll_path, bool high_priority )
     DWORD address;
     if ( ! getbase ( pi.hProcess, &address, &orig_code ) )
     {
-        // MessageBox ( 0, "Could not find entry point", "launcher error", MB_OK | MB_ICONEXCLAMATION );
+        if ( popup_errors )
+            MessageBox ( 0, "Could not find entry point", "launcher error", MB_OK | MB_ICONEXCLAMATION );
         return false;
     }
 
@@ -136,7 +152,9 @@ bool hook ( const string& exe_path, const string& dll_path, bool high_priority )
                 continue;
             Sleep ( 100 );
             TerminateProcess ( pi.hProcess, -1 );
-            // MessageBox ( 0, "Could not get thread context.", "launcher error", MB_OK );
+
+            if ( popup_errors )
+                MessageBox ( 0, "Could not get thread context.", "launcher error", MB_OK );
             return false;
         }
     }
@@ -162,8 +180,14 @@ bool hook ( const string& exe_path, const string& dll_path, bool high_priority )
 
 int main ( int argc, char *argv[] )
 {
+    unordered_set<string> options;
+    for ( int i = 3; i < argc; ++i )
+        options.insert ( string ( argv[i] ) );
+
+    popup_errors = ( options.find ( "--popup_errors" ) != options.end() );
+
     // Create process and hook library.
-    if ( argc > 2 && hook ( argv[1], argv[2], ( argc > 3 && string ( argv[3] ) == "--high" ) ) )
+    if ( argc > 2 && hook ( argv[1], argv[2], options.find ( "--high" ) != options.end() ) )
         return 0;
 
     return -1;

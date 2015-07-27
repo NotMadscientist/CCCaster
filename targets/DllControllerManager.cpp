@@ -19,16 +19,18 @@ void DllControllerManager::initControllers ( const ControllerMappings& mappings 
 {
     Lock lock ( ControllerManager::get().mutex );
 
-    ControllerManager::get().owner = this;
     ControllerManager::get().getKeyboard()->setMappings ( ProcessManager::fetchKeyboardConfig() );
     ControllerManager::get().setMappings ( mappings );
     ControllerManager::get().check();
 
     allControllers = ControllerManager::get().getControllers();
 
-    // // The first controller is keyboard which is always attached.
-    // // So we only set this flag for controllers beyond the first one.
-    // controllerAttached = ( allControllers.size() > 1 );
+    // Set the owner (Which enables callbacks) AFTER we have the list of all controllers
+    ControllerManager::get().owner = this;
+
+    // The first controller is keyboard which is always attached.
+    // So we only set this flag for controllers beyond the first one.
+    controllerAttached = ( allControllers.size() > 1 );
 }
 
 bool DllControllerManager::isNotMapping() const
