@@ -34,4 +34,6 @@ for server in $servers; do
 
 done
 
+echo
+
 echo "!!! Remember to upload to MEGA !!!"
