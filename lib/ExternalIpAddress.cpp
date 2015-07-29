@@ -13,9 +13,11 @@ const string ExternalIpAddress::Unknown = "Unknown";
 static const vector<string> externalIpServices =
 {
     "http://checkip.amazonaws.com",
-    "http://ifcfg.net",
+    "http://ipv4.wtfismyip.com/text",
     "http://ipv4.icanhazip.com",
+    "http://ifcfg.net",
 };
+
 
 ExternalIpAddress::ExternalIpAddress ( Owner *owner ) : owner ( owner ) {}
 
