@@ -58,10 +58,10 @@ public:
         std::string resultStr;
 
         // True if the element fills the width of the screen.
-        bool expandWidth() const { return expand.X; }
+        bool expandWidth() const { return _expand.X; }
 
         // True if the element fills the height of the screen.
-        bool expandHeight() const { return expand.X; }
+        bool expandHeight() const { return _expand.X; }
 
     protected:
 
@@ -69,16 +69,16 @@ public:
         Element ( bool requiresUser ) : requiresUser ( requiresUser ) {}
 
         // Position that the element should be displayed
-        COORD pos;
+        COORD _pos;
 
         // Size of the element. Used as both input and output parameters.
         // It is first set to the max size bounding box available to draw.
         // Then it is set to the actual size of the of element drawn.
-        COORD size;
+        COORD _size;
 
         // Indicates if this element should expand to take up the remaining screen space in either dimension.
         // Note the X and Y components are treated as boolean values.
-        COORD expand = { 0, 0 };
+        COORD _expand = { 0, 0 };
 
         // Initialize the element based on the current size, this also updates the size
         virtual void initialize() = 0;
@@ -107,7 +107,7 @@ public:
 
             while ( getline ( ss, line ) )
             {
-                if ( line.size() + paddedBorders.size() > ( size_t ) size.X )
+                if ( line.size() + paddedBorders.size() > ( size_t ) _size.X )
                 {
                     std::vector<std::string> tokens = split ( line );
                     line.clear();
@@ -116,9 +116,9 @@ public:
                     {
                         const size_t prefix = ( line.empty() ? 0 : line.size() + 1 );
 
-                        if ( prefix + token.size() + paddedBorders.size() > ( size_t ) size.X )
+                        if ( prefix + token.size() + paddedBorders.size() > ( size_t ) _size.X )
                         {
-                            lines.push_back ( " " + line + " " );
+                            _lines.push_back ( " " + line + " " );
                             line.clear();
                         }
 
@@ -129,47 +129,47 @@ public:
                     }
 
                     if ( ! line.empty() )
-                        lines.push_back ( " " + line + " " );
+                        _lines.push_back ( " " + line + " " );
                 }
                 else
                 {
-                    lines.push_back ( " " + line + " " );
+                    _lines.push_back ( " " + line + " " );
                 }
             }
 
-            if ( lines.size() + bordersHeight > ( size_t ) size.Y )
+            if ( _lines.size() + bordersHeight > ( size_t ) _size.Y )
             {
-                lines.resize ( size.Y - bordersHeight - 1 );
-                lines.push_back ( " ... " );
+                _lines.resize ( _size.Y - bordersHeight - 1 );
+                _lines.push_back ( " ... " );
             }
 
             size_t longestLine = 0;
-            for ( const std::string& line : lines )
+            for ( const std::string& line : _lines )
                 if ( line.size() > longestLine )
                     longestLine = line.size();
 
-            ASSERT ( ( size_t ) size.X >= longestLine + borders.size() );
-            ASSERT ( ( size_t ) size.Y >= lines.size() + bordersHeight );
+            ASSERT ( ( size_t ) _size.X >= longestLine + borders.size() );
+            ASSERT ( ( size_t ) _size.Y >= _lines.size() + bordersHeight );
 
-            if ( ! expand.X )
-                size.X = longestLine + borders.size();
+            if ( ! _expand.X )
+                _size.X = longestLine + borders.size();
 
-            if ( ! expand.Y )
-                size.Y = lines.size() + bordersHeight;
+            if ( ! _expand.Y )
+                _size.Y = _lines.size() + bordersHeight;
         }
 
         void show() override
         {
-            LOG ( "text='%s'; pos=%s; size=%s", text, pos, size );
+            LOG ( "text='%s'; pos=%s; size=%s", text, _pos, _size );
 
-            CharacterBox::Draw ( pos, pos + size, '*' );
-            for ( size_t i = 0; i < lines.size(); ++i )
-                ConsoleCore::GetInstance()->Prints ( lines[i], false, 0, pos.X + 1, pos.Y + 1 + i );
+            CharacterBox::Draw ( _pos, _pos + _size, '*' );
+            for ( size_t i = 0; i < _lines.size(); ++i )
+                ConsoleCore::GetInstance()->Prints ( _lines[i], false, 0, _pos.X + 1, _pos.Y + 1 + i );
         }
 
     private:
 
-        std::vector<std::string> lines;
+        std::vector<std::string> _lines;
     };
 
     // Scrollable menu
@@ -216,7 +216,7 @@ public:
 
         Menu ( const std::string& title, const std::vector<std::string>& items, const std::string& lastItem = "" )
             : Element ( true ), title ( title ), items ( items ), lastItem ( lastItem )
-            , menu ( pos, items.size() + ( lastItem.empty() ? 0 : 1 ), title, THEME ) {}
+            , menu ( _pos, items.size() + ( lastItem.empty() ? 0 : 1 ), title, THEME ) {}
 
         Menu ( const std::vector<std::string>& items, const std::string& lastItem = "" )
             : Menu ( "", items, lastItem ) {}
@@ -225,8 +225,8 @@ public:
 
         void initialize() override
         {
-            ASSERT ( ( size_t ) size.X >= minMenuItem.size() + paddedBorders.size() );
-            ASSERT ( ( size_t ) size.Y > bordersHeight + ( title.empty() ? 0 : 2 ) );
+            ASSERT ( ( size_t ) _size.X >= minMenuItem.size() + paddedBorders.size() );
+            ASSERT ( ( size_t ) _size.Y > bordersHeight + ( title.empty() ? 0 : 2 ) );
             ASSERT ( items.size() <= maxMenuItems );
 
             if ( ! title.empty() )
@@ -250,21 +250,21 @@ public:
 
             // TODO this is broken because WindowedMenu::SelectedItem doesn't work when the menu is scrolled off-screen
             // // Limit the menu vertical display size
-            // menu.MaxToShow ( std::min ( size.Y - bordersHeight - ( title.empty() ? 0 : 2 ), menu.Count() ) );
+            // menu.MaxToShow ( std::min ( _size.Y - bordersHeight - ( title.empty() ? 0 : 2 ), menu.Count() ) );
 
-            ASSERT ( menu.Count() <= size.Y - bordersHeight - ( title.empty() ? 0 : 2 ) );
+            ASSERT ( menu.Count() <= _size.Y - bordersHeight - ( title.empty() ? 0 : 2 ) );
 
             // Menus are NEVER expanded
-            size.X = std::max ( menu.LongestItem() + borders.size(), title.size() + borders.size() );
-            size.Y = bordersHeight + ( title.empty() ? 0 : 2 ) + items.size() + ( lastItem.empty() ? 0 : 1 );
+            _size.X = std::max ( menu.LongestItem() + borders.size(), title.size() + borders.size() );
+            _size.Y = bordersHeight + ( title.empty() ? 0 : 2 ) + items.size() + ( lastItem.empty() ? 0 : 1 );
 
-            menu.Origin ( pos );
+            menu.Origin ( _pos );
             menu.Scrollable ( true );
         }
 
         void show() override
         {
-            LOG ( "title='%s'; pos=%s; size=%s", title, pos, size );
+            LOG ( "title='%s'; pos=%s; size=%s", title, _pos, _size );
 
             ASSERT ( menu.Count() > 0 );
 
@@ -294,8 +294,8 @@ public:
 
         std::string shortenWithEllipsis ( const std::string& text )
         {
-            if ( text.size() + paddedBorders.size() > ( size_t ) size.X )
-                return text.substr ( 0, size.X - paddedBorders.size() - ellipsis.size() ) + ellipsis;
+            if ( text.size() + paddedBorders.size() > ( size_t ) _size.X )
+                return text.substr ( 0, _size.X - paddedBorders.size() - ellipsis.size() ) + ellipsis;
 
             return text;
         }
@@ -344,35 +344,35 @@ public:
 
         void initialize() override
         {
-            ASSERT ( ( size_t ) size.X >= title.size() + paddedBorders.size() );
-            ASSERT ( ( size_t ) size.Y > bordersHeight + ( title.empty() ? 0 : 2 ) );
+            ASSERT ( ( size_t ) _size.X >= title.size() + paddedBorders.size() );
+            ASSERT ( ( size_t ) _size.Y > bordersHeight + ( title.empty() ? 0 : 2 ) );
 
-            if ( ! expand.X )
-                size.X = title.size() + paddedBorders.size();
+            if ( ! _expand.X )
+                _size.X = title.size() + paddedBorders.size();
 
             // Prompts are NEVER expanded vertically
-            size.Y = 1 + bordersHeight + ( title.empty() ? 0 : 2 );
+            _size.Y = 1 + bordersHeight + ( title.empty() ? 0 : 2 );
         }
 
         void show() override
         {
-            LOG ( "title='%s'; pos=%s; size=%s", title, pos, size );
+            LOG ( "title='%s'; pos=%s; size=%s", title, _pos, _size );
 
-            CharacterBox::Draw ( pos, pos + size, '*' );
+            CharacterBox::Draw ( _pos, _pos + _size, '*' );
             ConsoleCore *cc = ConsoleCore::GetInstance();
 
             if ( ! title.empty() )
             {
-                cc->Prints ( " " + title + " ", false, 0, pos.X + 1, pos.Y + 1 );
-                cc->Prints ( std::string ( size.X - borders.size(), '*' ), false, 0, pos.X + 1, pos.Y + 2 );
+                cc->Prints ( " " + title + " ", false, 0, _pos.X + 1, _pos.Y + 1 );
+                cc->Prints ( std::string ( _size.X - borders.size(), '*' ), false, 0, _pos.X + 1, _pos.Y + 2 );
             }
 
-            COORD scanPos = { short ( pos.X + 2 ), short ( pos.Y + ( title.empty() ? 1 : 3 ) ) };
+            COORD scanPos = { short ( _pos.X + 2 ), short ( _pos.Y + ( title.empty() ? 1 : 3 ) ) };
             cc->CursorPosition ( &scanPos );
 
             if ( isIntegerPrompt )
             {
-                if ( cc->ScanNumber ( scanPos, resultInt, std::min ( maxDigits, size.X - paddedBorders.size() ),
+                if ( cc->ScanNumber ( scanPos, resultInt, std::min ( maxDigits, _size.X - paddedBorders.size() ),
                                       allowNegative, resultInt != INT_MIN ) )
                     LOG ( "resultInt=%d", resultInt );
                 else
@@ -380,7 +380,7 @@ public:
             }
             else
             {
-                if ( cc->ScanString ( scanPos, resultStr, size.X - paddedBorders.size() ) )
+                if ( cc->ScanString ( scanPos, resultStr, _size.X - paddedBorders.size() ) )
                 {
                     LOG ( "resultStr='%s'", resultStr );
                     resultInt = 0;
@@ -415,32 +415,32 @@ public:
             if ( progress < length )
                 bar += std::string ( clamped ( length - progress, 0u, length ), ' ' );
 
-            ConsoleCore::GetInstance()->Prints ( bar, false, 0, pos.X + 2, pos.Y + size.Y - 2 );
+            ConsoleCore::GetInstance()->Prints ( bar, false, 0, _pos.X + 2, _pos.Y + _size.Y - 2 );
         }
 
     protected:
 
         void initialize() override
         {
-            ASSERT ( ( size_t ) size.X >= std::max ( title.size(), length ) + paddedBorders.size() );
-            ASSERT ( ( size_t ) size.Y > bordersHeight + ( title.empty() ? 0 : 2 ) );
+            ASSERT ( ( size_t ) _size.X >= std::max ( title.size(), length ) + paddedBorders.size() );
+            ASSERT ( ( size_t ) _size.Y > bordersHeight + ( title.empty() ? 0 : 2 ) );
 
             // Progress bars are NEVER expanded
-            size.X = std::max ( title.size(), length ) + paddedBorders.size();
-            size.Y = 1 + bordersHeight + ( title.empty() ? 0 : 2 );
+            _size.X = std::max ( title.size(), length ) + paddedBorders.size();
+            _size.Y = 1 + bordersHeight + ( title.empty() ? 0 : 2 );
         }
 
         void show() override
         {
-            LOG ( "title='%s'; length=%u; pos=%s; size=%s", title, length, pos, size );
+            LOG ( "title='%s'; length=%u; pos=%s; size=%s", title, length, _pos, _size );
 
-            CharacterBox::Draw ( pos, pos + size, '*' );
+            CharacterBox::Draw ( _pos, _pos + _size, '*' );
             ConsoleCore *cc = ConsoleCore::GetInstance();
 
             if ( ! title.empty() )
             {
-                cc->Prints ( " " + title + " ", false, 0, pos.X + 1, pos.Y + 1 );
-                cc->Prints ( std::string ( size.X - borders.size(), '*' ), false, 0, pos.X + 1, pos.Y + 2 );
+                cc->Prints ( " " + title + " ", false, 0, _pos.X + 1, _pos.Y + 1 );
+                cc->Prints ( std::string ( _size.X - borders.size(), '*' ), false, 0, _pos.X + 1, _pos.Y + 2 );
             }
         }
 
@@ -531,9 +531,10 @@ public:
     {
         for ( size_t i = 2; i < stack.size(); ++i )
         {
-            if ( top()->pos.X >= stack[stack.size() - i]->pos.X
-                    && top()->pos.X + top()->size.X <= stack[stack.size() - i]->pos.X + stack[stack.size() - i]->size.X
-                    && top()->pos.Y > stack[stack.size() - i]->pos.Y )
+            if ( top()->_pos.X >= stack[stack.size() - i]->_pos.X
+                    && ( top()->_pos.X + top()->_size.X
+                         <= stack[stack.size() - i]->_pos.X + stack[stack.size() - i]->_size.X )
+                    && top()->_pos.Y > stack[stack.size() - i]->_pos.Y )
             {
                 return true;
             }
@@ -548,9 +549,9 @@ public:
         if ( stack.empty() || stack.size() == 1 )
             ConsoleCore::GetInstance()->ClearScreen();
         else if ( hasBorder() )
-            CharacterBox::Draw ( { top()->pos.X, short ( top()->pos.Y + 1 ) }, MAX_SCREEN_SIZE, ' ' );
+            CharacterBox::Draw ( { top()->_pos.X, short ( top()->_pos.Y + 1 ) }, MAX_SCREEN_SIZE, ' ' );
         else
-            CharacterBox::Draw ( top()->pos, MAX_SCREEN_SIZE, ' ' );
+            CharacterBox::Draw ( top()->_pos, MAX_SCREEN_SIZE, ' ' );
     }
 
     // Clear below the top element (visually)
@@ -562,7 +563,7 @@ public:
         }
         else
         {
-            const COORD pos = { top()->pos.X, short ( top()->pos.Y + top()->size.Y - ( preserveBorder ? 0 : 1 ) ) };
+            const COORD pos = { top()->_pos.X, short ( top()->_pos.Y + top()->_size.Y - ( preserveBorder ? 0 : 1 ) ) };
             CharacterBox::Draw ( pos, MAX_SCREEN_SIZE, ' ' );
         }
     }
@@ -576,12 +577,12 @@ public:
         }
         else if ( hasBorder() )
         {
-            const COORD pos = { short ( top()->pos.X + top()->size.X ), short ( top()->pos.Y + 1 ) };
+            const COORD pos = { short ( top()->_pos.X + top()->_size.X ), short ( top()->_pos.Y + 1 ) };
             CharacterBox::Draw ( pos, MAX_SCREEN_SIZE, ' ' );
         }
         else
         {
-            CharacterBox::Draw ( { short ( top()->pos.X + top()->size.X ), top()->pos.Y }, MAX_SCREEN_SIZE, ' ' );
+            CharacterBox::Draw ( { short ( top()->_pos.X + top()->_size.X ), top()->_pos.Y }, MAX_SCREEN_SIZE, ' ' );
         }
     }
 

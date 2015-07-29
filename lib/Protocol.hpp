@@ -108,7 +108,7 @@ public:
     template<typename T> const T& getAs() const { return *static_cast<const T *> ( this ); }
 
     // Invalidate any cached data
-    virtual void invalidate() const { hashValid = true; }
+    virtual void invalidate() const;
 
     // Return a string representation of this message, defaults to the message type
     virtual std::string str() const { std::stringstream ss; ss << getMsgType(); return ss.str(); }
@@ -121,8 +121,8 @@ private:
     typedef std::array<char, 16> HashType;
 
     // Cached hash data
-    mutable HashType hash;
-    mutable bool hashValid = true;
+    mutable HashType _hash;
+    mutable bool _hashValid = true;
 
     // Serialize and deserialize the base type
     virtual void saveBase ( cereal::BinaryOutputArchive& ar ) const {}
@@ -157,9 +157,9 @@ class SerializableSequence : public Serializable
 {
 public:
 
-    // Basic constructors
-    SerializableSequence() {}
-    SerializableSequence ( uint32_t sequence ) : sequence ( sequence ) {}
+    // Constructor
+    SerializableSequence();
+    SerializableSequence ( uint32_t sequence );
 
     BaseType getBaseType() const override
     {
@@ -168,14 +168,14 @@ public:
     }
 
     // Get and set the message sequence
-    uint32_t getSequence() const { return sequence; }
-    void setSequence ( uint32_t sequence ) const { invalidate(); this->sequence = sequence; }
+    uint32_t getSequence() const { return _sequence; }
+    void setSequence ( uint32_t sequence ) const;
 
 private:
 
     // Message sequence number
-    mutable uint32_t sequence = 0;
+    mutable uint32_t _sequence = 0;
 
-    void saveBase ( cereal::BinaryOutputArchive& ar ) const override { ar ( sequence ); };
-    void loadBase ( cereal::BinaryInputArchive& ar ) override { ar ( sequence ); };
+    void saveBase ( cereal::BinaryOutputArchive& ar ) const override { ar ( _sequence ); };
+    void loadBase ( cereal::BinaryInputArchive& ar ) override { ar ( _sequence ); };
 };

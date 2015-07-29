@@ -84,11 +84,11 @@ void ConsoleUi::initalizeAndPush ( ConsoleUi::Element *element, const COORD& exp
 {
     if ( stack.empty() )
     {
-        element->pos = ORIGIN;
-        element->size = MAX_SCREEN_SIZE;
+        element->_pos = ORIGIN;
+        element->_size = MAX_SCREEN_SIZE;
     }
 
-    element->expand = expand;
+    element->_expand = expand;
     element->initialize();
 
     stack.push_back ( ConsoleUi::ElementPtr ( element ) );
@@ -101,9 +101,9 @@ void ConsoleUi::pushRight ( ConsoleUi::Element *element, const COORD& expand )
 {
     if ( ! stack.empty() )
     {
-        element->pos = { short ( stack.back()->pos.X + stack.back()->size.X ), stack.back()->pos.Y };
-        element->size = MAX_SCREEN_SIZE;
-        element->size -= element->pos;
+        element->_pos = { short ( stack.back()->_pos.X + stack.back()->_size.X ), stack.back()->_pos.Y };
+        element->_size = MAX_SCREEN_SIZE;
+        element->_size -= element->_pos;
     }
 
     initalizeAndPush ( element, expand );
@@ -113,10 +113,10 @@ void ConsoleUi::pushBelow ( ConsoleUi::Element *element, const COORD& expand )
 {
     if ( ! stack.empty() )
     {
-        element->pos = { stack.back()->pos.X, short ( stack.back()->pos.Y + stack.back()->size.Y ) };
-        element->pos.Y -= 1; // Merge horizontal borders
-        element->size = MAX_SCREEN_SIZE;
-        element->size -= element->pos;
+        element->_pos = { stack.back()->_pos.X, short ( stack.back()->_pos.Y + stack.back()->_size.Y ) };
+        element->_pos.Y -= 1; // Merge horizontal borders
+        element->_size = MAX_SCREEN_SIZE;
+        element->_size -= element->_pos;
     }
 
     initalizeAndPush ( element, expand );
@@ -126,9 +126,9 @@ void ConsoleUi::pushInFront ( ConsoleUi::Element *element, const COORD& expand )
 {
     if ( ! stack.empty() )
     {
-        element->pos = stack.back()->pos;
-        element->size = MAX_SCREEN_SIZE;
-        element->size -= element->pos;
+        element->_pos = stack.back()->_pos;
+        element->_size = MAX_SCREEN_SIZE;
+        element->_size -= element->_pos;
     }
 
     initalizeAndPush ( element, expand );

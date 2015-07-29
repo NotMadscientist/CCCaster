@@ -10,7 +10,7 @@ using namespace std;
 const string ExternalIpAddress::Unknown = "Unknown";
 
 // Web services to query for external IP address
-static const vector<string> externalIpServices =
+static const vector<string> ExternalIpServices =
 {
     "http://checkip.amazonaws.com",
     "http://ipv4.wtfismyip.com/text",
@@ -23,7 +23,7 @@ ExternalIpAddress::ExternalIpAddress ( Owner *owner ) : owner ( owner ) {}
 
 void ExternalIpAddress::httpResponse ( HttpGet *httpGet, int code, const string& data, uint32_t remainingBytes )
 {
-    ASSERT ( this->httpGet.get() == httpGet );
+    ASSERT ( _httpGet.get() == httpGet );
 
     LOG ( "Received HTTP response (%d): '%s'", code, data );
 
@@ -34,7 +34,8 @@ void ExternalIpAddress::httpResponse ( HttpGet *httpGet, int code, const string&
     }
 
     address = trimmed ( data );
-    this->httpGet.reset();
+
+    _httpGet.reset();
 
     if ( owner )
         owner->externalIpAddrFound ( this, address );
@@ -42,13 +43,13 @@ void ExternalIpAddress::httpResponse ( HttpGet *httpGet, int code, const string&
 
 void ExternalIpAddress::httpFailed ( HttpGet *httpGet )
 {
-    ASSERT ( this->httpGet.get() == httpGet );
+    ASSERT ( _httpGet.get() == httpGet );
 
-    LOG ( "HTTP GET failed for: %s", httpGet->url );
+    LOG ( "HTTP GET failed for: %s", _httpGet->url );
 
-    this->httpGet.reset();
+    _httpGet.reset();
 
-    if ( nextQueryIndex == externalIpServices.size() )
+    if ( _nextQueryIndex == ExternalIpServices.size() )
     {
         address = Unknown;
 
@@ -57,20 +58,21 @@ void ExternalIpAddress::httpFailed ( HttpGet *httpGet )
         return;
     }
 
-    this->httpGet.reset ( new HttpGet ( this, externalIpServices[nextQueryIndex++] ) );
-    this->httpGet->start();
+    _httpGet.reset ( new HttpGet ( this, ExternalIpServices[_nextQueryIndex++] ) );
+    _httpGet->start();
 }
 
 void ExternalIpAddress::start()
 {
-    nextQueryIndex = 1;
     address.clear();
 
-    httpGet.reset ( new HttpGet ( this, externalIpServices[0] ) );
-    httpGet->start();
+    _nextQueryIndex = 1;
+
+    _httpGet.reset ( new HttpGet ( this, ExternalIpServices[0] ) );
+    _httpGet->start();
 }
 
 void ExternalIpAddress::stop()
 {
-    httpGet.reset();
+    _httpGet.reset();
 }

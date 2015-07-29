@@ -9,7 +9,9 @@
 Pinger::Pinger() {}
 
 Pinger::Pinger ( Owner *owner, uint64_t pingInterval, size_t numPings )
-    : owner ( owner ), pingInterval ( pingInterval ), numPings ( numPings )
+    : owner ( owner )
+    , pingInterval ( pingInterval )
+    , numPings ( numPings )
 {
     ASSERT ( pingInterval > 0 );
     ASSERT ( numPings > 0 );
@@ -25,31 +27,31 @@ void Pinger::start()
     if ( owner )
         owner->pingerSendPing ( this, MsgPtr ( new Ping ( TimerManager::get().getNow ( true ) ) ) );
 
-    pingCount = 1;
+    _pingCount = 1;
 
     ASSERT ( pingInterval > 0 );
 
-    pingTimer.reset ( new Timer ( this ) );
-    pingTimer->start ( pingInterval );
+    _pingTimer.reset ( new Timer ( this ) );
+    _pingTimer->start ( pingInterval );
 
-    pinging = true;
+    _pinging = true;
 }
 
 void Pinger::stop()
 {
     LOG ( "Stop pinging" );
 
-    pingTimer.reset();
-    pingCount = 0;
-    pinging = false;
+    _pingTimer.reset();
+    _pingCount = 0;
+    _pinging = false;
 }
 
 void Pinger::reset()
 {
     stop();
 
-    stats.reset();
-    packetLoss = 0;
+    _stats.reset();
+    _packetLoss = 0;
 }
 
 void Pinger::gotPong ( const MsgPtr& ping )
@@ -57,7 +59,7 @@ void Pinger::gotPong ( const MsgPtr& ping )
     ASSERT ( ping.get() != 0 );
     ASSERT ( ping->getMsgType() == MsgType::Ping );
 
-    if ( pinging )
+    if ( _pinging )
     {
         const uint64_t now = TimerManager::get().getNow();
 
@@ -68,7 +70,7 @@ void Pinger::gotPong ( const MsgPtr& ping )
 
         LOG ( "latency=%llu ms", latency );
 
-        stats.addSample ( latency );
+        _stats.addSample ( latency );
     }
     else
     {
@@ -79,16 +81,16 @@ void Pinger::gotPong ( const MsgPtr& ping )
 
 void Pinger::timerExpired ( Timer *timer )
 {
-    ASSERT ( timer == pingTimer.get() );
+    ASSERT ( timer == _pingTimer.get() );
 
-    if ( pingCount >= numPings )
+    if ( _pingCount >= numPings )
     {
         LOG ( "Done pinging" );
 
-        packetLoss = 100 * ( numPings - stats.getNumSamples() ) / numPings;
+        _packetLoss = 100 * ( numPings - _stats.getNumSamples() ) / numPings;
 
         if ( owner )
-            owner->pingerCompleted ( this, stats, packetLoss );
+            owner->pingerCompleted ( this, _stats, _packetLoss );
 
         stop();
         return;
@@ -97,9 +99,9 @@ void Pinger::timerExpired ( Timer *timer )
     if ( owner )
         owner->pingerSendPing ( this, MsgPtr ( new Ping ( TimerManager::get().getNow() ) ) );
 
-    ++pingCount;
+    ++_pingCount;
 
     ASSERT ( pingInterval > 0 );
 
-    pingTimer->start ( pingCount < numPings ? pingInterval : MAX_ROUND_TRIP );
+    _pingTimer->start ( _pingCount < numPings ? pingInterval : MAX_ROUND_TRIP );
 }

@@ -38,12 +38,12 @@ private:
 
     enum class Type : uint8_t { String, Integer, Double };
 
-    std::map<std::string, Type> types;
+    std::map<std::string, Type> _types;
 
-    std::unordered_map<std::string, std::string> strings;
+    std::unordered_map<std::string, std::string> _strings;
 
-    std::unordered_map<std::string, int> integers;
+    std::unordered_map<std::string, int> _integers;
 
-    std::unordered_map<std::string, double> doubles;
+    std::unordered_map<std::string, double> _doubles;
 };
 

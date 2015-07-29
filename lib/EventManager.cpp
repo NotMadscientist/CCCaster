@@ -16,7 +16,7 @@ using namespace std;
 
 void EventManager::checkEvents ( uint64_t timeout )
 {
-    if ( ! running )
+    if ( ! _running )
         return;
 
     ASSERT ( TimerManager::get().isInitialized() == true );
@@ -24,7 +24,7 @@ void EventManager::checkEvents ( uint64_t timeout )
 
     TimerManager::get().check();
 
-    if ( ! running )
+    if ( ! _running )
         return;
 
     if ( TimerManager::get().getNextExpiry() != UINT64_MAX )
@@ -49,7 +49,7 @@ void EventManager::eventLoop()
     {
         timeBeginPeriod ( 1 ); // for select, see comment in SocketManager
 
-        while ( running )
+        while ( _running )
         {
             Sleep ( 1 );
             checkEvents ( DEFAULT_TIMEOUT_MILLISECONDS );
@@ -61,7 +61,7 @@ void EventManager::eventLoop()
     {
         timeBeginPeriod ( 1 ); // for timeGetTime AND select
 
-        while ( running )
+        while ( _running )
         {
             Sleep ( 1 );
             checkEvents ( DEFAULT_TIMEOUT_MILLISECONDS );
@@ -75,7 +75,7 @@ EventManager::EventManager() {}
 
 bool EventManager::poll ( uint64_t timeout )
 {
-    if ( ! running )
+    if ( ! _running )
         return false;
 
     ASSERT ( timeout > 0 );
@@ -89,7 +89,7 @@ bool EventManager::poll ( uint64_t timeout )
     {
         checkEvents ( end - now );
 
-        if ( ! running )
+        if ( ! _running )
             break;
 
         now = TimerManager::get().getNow ( true );
@@ -97,13 +97,13 @@ bool EventManager::poll ( uint64_t timeout )
 
     timeEndPeriod ( 1 ); // for select, see comment in SocketManager
 
-    if ( running )
+    if ( _running )
         return true;
 
     LOG ( "Finished polling" );
 
     // LOG ( "Joining reaper thread" );
-    // reaperThread.join();
+    // _reaperThread.join();
     // LOG ( "Joined reaper thread" );
 
     return false;
@@ -111,14 +111,14 @@ bool EventManager::poll ( uint64_t timeout )
 
 void EventManager::startPolling()
 {
-    running = true;
+    _running = true;
 
     LOG ( "Starting polling" );
 }
 
 void EventManager::start()
 {
-    running = true;
+    _running = true;
 
     LOG ( "Starting event loop" );
 
@@ -133,10 +133,10 @@ void EventManager::stop()
 {
     LOG ( "Stopping everything" );
 
-    running = false;
+    _running = false;
 
     // LOG ( "Joining reaper thread" );
-    // reaperThread.join();
+    // _reaperThread.join();
     // LOG ( "Joined reaper thread" );
 }
 
@@ -144,11 +144,11 @@ void EventManager::release()
 {
     LOG ( "Releasing everything" );
 
-    running = false;
+    _running = false;
 
     LOG ( "Releasing reaper thread" );
 
-    reaperThread.release();
+    _reaperThread.release();
 }
 
 EventManager& EventManager::get()
@@ -183,6 +183,6 @@ void EventManager::ReaperThread::join()
 
 void EventManager::addThread ( const shared_ptr<Thread>& thread )
 {
-    reaperThread.start();
-    reaperThread.zombieThreads.push ( thread );
+    _reaperThread.start();
+    _reaperThread.zombieThreads.push ( thread );
 }

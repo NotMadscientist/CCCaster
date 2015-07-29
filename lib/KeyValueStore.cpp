@@ -10,68 +10,68 @@ using namespace std;
 
 bool KeyValueStore::hasString ( const string& key ) const
 {
-    return ( types.find ( key ) != types.end() )
-           && ( types.find ( key )->second == Type::String )
-           && ( strings.find ( key ) != strings.end() );
+    return ( _types.find ( key ) != _types.end() )
+           && ( _types.find ( key )->second == Type::String )
+           && ( _strings.find ( key ) != _strings.end() );
 }
 
 string KeyValueStore::getString ( const string& key ) const
 {
-    ASSERT ( types.find ( key ) != types.end() );
-    ASSERT ( types.find ( key )->second == Type::String );
-    ASSERT ( strings.find ( key ) != strings.end() );
+    ASSERT ( _types.find ( key ) != _types.end() );
+    ASSERT ( _types.find ( key )->second == Type::String );
+    ASSERT ( _strings.find ( key ) != _strings.end() );
 
-    return strings.find ( key )->second;
+    return _strings.find ( key )->second;
 }
 
 void KeyValueStore::setString ( const string& key, const string& value )
 {
-    types[key] = Type::String;
-    strings[key] = value;
+    _types[key] = Type::String;
+    _strings[key] = value;
 }
 
 bool KeyValueStore::hasInteger ( const string& key ) const
 {
-    return ( types.find ( key ) != types.end() )
-           && ( types.find ( key )->second == Type::Integer )
-           && ( integers.find ( key ) != integers.end() );
+    return ( _types.find ( key ) != _types.end() )
+           && ( _types.find ( key )->second == Type::Integer )
+           && ( _integers.find ( key ) != _integers.end() );
 }
 
 int KeyValueStore::getInteger ( const string& key ) const
 {
-    ASSERT ( types.find ( key ) != types.end() );
-    ASSERT ( types.find ( key )->second == Type::Integer );
-    ASSERT ( integers.find ( key ) != integers.end() );
+    ASSERT ( _types.find ( key ) != _types.end() );
+    ASSERT ( _types.find ( key )->second == Type::Integer );
+    ASSERT ( _integers.find ( key ) != _integers.end() );
 
-    return integers.find ( key )->second;
+    return _integers.find ( key )->second;
 }
 
 void KeyValueStore::setInteger ( const string& key, int value )
 {
-    types[key] = Type::Integer;
-    integers[key] = value;
+    _types[key] = Type::Integer;
+    _integers[key] = value;
 }
 
 bool KeyValueStore::hasDouble ( const string& key ) const
 {
-    return ( types.find ( key ) != types.end() )
-           && ( types.find ( key )->second == Type::Double )
-           && ( doubles.find ( key ) != doubles.end() );
+    return ( _types.find ( key ) != _types.end() )
+           && ( _types.find ( key )->second == Type::Double )
+           && ( _doubles.find ( key ) != _doubles.end() );
 }
 
 double KeyValueStore::getDouble ( const string& key ) const
 {
-    ASSERT ( types.find ( key ) != types.end() );
-    ASSERT ( types.find ( key )->second == Type::Double );
-    ASSERT ( doubles.find ( key ) != doubles.end() );
+    ASSERT ( _types.find ( key ) != _types.end() );
+    ASSERT ( _types.find ( key )->second == Type::Double );
+    ASSERT ( _doubles.find ( key ) != _doubles.end() );
 
-    return doubles.find ( key )->second;
+    return _doubles.find ( key )->second;
 }
 
 void KeyValueStore::setDouble ( const string& key, double value )
 {
-    types[key] = Type::Double;
-    doubles[key] = value;
+    _types[key] = Type::Double;
+    _doubles[key] = value;
 }
 
 bool KeyValueStore::save ( const string& file ) const
@@ -81,22 +81,22 @@ bool KeyValueStore::save ( const string& file ) const
 
     if ( good )
     {
-        for ( const auto& kv : types )
+        for ( const auto& kv : _types )
         {
             fout << "\n" << kv.first << '=';
 
             switch ( kv.second )
             {
                 case Type::String:
-                    fout << strings.find ( kv.first )->second;
+                    fout << _strings.find ( kv.first )->second;
                     break;
 
                 case Type::Integer:
-                    fout << integers.find ( kv.first )->second;
+                    fout << _integers.find ( kv.first )->second;
                     break;
 
                 case Type::Double:
-                    fout << doubles.find ( kv.first )->second;
+                    fout << _doubles.find ( kv.first )->second;
                     break;
 
                 default:
@@ -130,9 +130,9 @@ bool KeyValueStore::load ( const string& file )
             if ( parts.size() != 2 )
                 continue;
 
-            const auto it = types.find ( parts[0] );
+            const auto it = _types.find ( parts[0] );
 
-            if ( it != types.end() )
+            if ( it != _types.end() )
             {
                 switch ( it->second )
                 {

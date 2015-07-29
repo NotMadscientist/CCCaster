@@ -25,11 +25,11 @@ public:
     // Remove a ChangeMonitor::Interface, returns true only if something was removed
     bool remove ( ChangeMonitor::Interface *monitor )
     {
-        for ( auto it = monitors.begin(); it != monitors.end(); ++it )
+        for ( auto it = _monitors.begin(); it != _monitors.end(); ++it )
         {
             if ( it->get() == monitor )
             {
-                monitors.erase ( it );
+                _monitors.erase ( it );
                 return true;
             }
         }
@@ -41,14 +41,14 @@ public:
     void check()
     {
         // Iterate using indices, because the list can change
-        for ( size_t i = 0; i < monitors.size(); ++i )
-            monitors[i]->check();
+        for ( size_t i = 0; i < _monitors.size(); ++i )
+            _monitors[i]->check();
     }
 
     // Clear all monitors
     void clear()
     {
-        monitors.clear();
+        _monitors.clear();
     }
 
     // Get the singleton instance
@@ -57,7 +57,7 @@ public:
 private:
 
     // List of all the ChangeMonitor::Interface implementations
-    std::vector<std::shared_ptr<ChangeMonitor::Interface>> monitors;
+    std::vector<std::shared_ptr<ChangeMonitor::Interface>> _monitors;
 
     // Private constructor, etc. for singleton class
     ChangeMonitor();
@@ -83,32 +83,32 @@ public:
 
     RefChangeMonitor ( Owner *owner, K key, const T& ref )
         : owner ( owner )
-        , key ( key )
-        , current ( ref )
-        , previous ( ref ) {}
+        , _key ( key )
+        , _current ( ref )
+        , _previous ( ref ) {}
 
     bool check() override
     {
-        if ( current == previous )
+        if ( _current == _previous )
             return false;
 
         if ( owner )
-            owner->changedValue ( key, previous, current );
+            owner->changedValue ( _key, _previous, _current );
 
-        previous = current;
+        _previous = _current;
         return true;
     }
 
 private:
 
     // The key that identifies the callback
-    const K key;
+    const K _key;
 
     // The reference of the current value
-    const T& current;
+    const T& _current;
 
     // The previous value, also initial value
-    T previous;
+    T _previous;
 };
 
 template<typename O, typename K, typename T>
@@ -118,7 +118,7 @@ ChangeMonitor::Interface *ChangeMonitor::addRef ( O *owner, K key, const T& ref 
 
     ChangeMonitorPtr monitor ( new RefChangeMonitor<K, T> ( static_cast<Owner *> ( owner ), key, ref ) );
 
-    monitors.push_back ( monitor );
+    _monitors.push_back ( monitor );
 
     return monitor.get();
 }
@@ -139,45 +139,45 @@ public:
 
     PtrToRefChangeMonitor ( Owner *owner, K key, const T *&ptr, T nullPtrValue )
         : owner ( owner )
-        , key ( key )
-        , ptr ( ptr )
-        , previous ( nullPtrValue )
-        , nullPtrValue ( nullPtrValue )
+        , _key ( key )
+        , _ptr ( ptr )
+        , _previous ( nullPtrValue )
+        , _nullPtrValue ( nullPtrValue )
     {
-        if ( ptr )
-            previous = *ptr;
+        if ( _ptr )
+            _previous = *_ptr;
     }
 
     bool check() override
     {
-        T current = nullPtrValue;
+        T current = _nullPtrValue;
 
-        if ( ptr )
-            current = *ptr;
+        if ( _ptr )
+            current = *_ptr;
 
-        if ( current == previous )
+        if ( current == _previous )
             return false;
 
         if ( owner )
-            owner->changedValue ( key, previous, current );
+            owner->changedValue ( _key, _previous, current );
 
-        previous = current;
+        _previous = current;
         return true;
     }
 
 private:
 
     // The key that identifies the callback
-    const K key;
+    const K _key;
 
     // The pointer to the reference of the current of value
-    const T *&ptr;
+    const T *&_ptr;
 
     // The previous value, also initial value
-    T previous;
+    T _previous;
 
     // The value to use if the pointer is null
-    const T nullPtrValue;
+    const T _nullPtrValue;
 };
 
 template<typename O, typename K, typename T>
@@ -188,7 +188,7 @@ ChangeMonitor::Interface *ChangeMonitor::addPtrToRef ( O *owner, K key, const T 
     ChangeMonitorPtr monitor (
         new PtrToRefChangeMonitor<K, T> ( static_cast<Owner *> ( owner ), key, ptr, nullPtrValue ) );
 
-    monitors.push_back ( monitor );
+    _monitors.push_back ( monitor );
 
     return monitor.get();
 }

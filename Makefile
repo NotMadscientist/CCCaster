@@ -196,7 +196,8 @@ res/icon.res: res/icon.rc res/icon.ico
 
 
 LOGGING_PREFIX = build_logging_$(BRANCH)
-DEBUGGER_LIB_OBJECTS = $(addprefix $(LOGGING_PREFIX)/,$(filter-out lib/Version.o lib/LoggerVersion.o,$(LIB_OBJECTS)))
+DEBUGGER_LIB_OBJECTS = \
+	$(addprefix $(LOGGING_PREFIX)/,$(filter-out lib/Version.o lib/LoggerLogVersion.o,$(LIB_OBJECTS)))
 
 tools/$(DEBUGGER): tools/Debugger.cpp $(DEBUGGER_LIB_OBJECTS)
 	$(CXX) -o $@ $(CC_FLAGS) $(LOGGING_FLAGS) -Wall -std=c++11 $^ $(LD_FLAGS) \
@@ -207,7 +208,8 @@ tools/$(DEBUGGER): tools/Debugger.cpp $(DEBUGGER_LIB_OBJECTS)
 	@echo
 
 
-GENERATOR_LIB_OBJECTS = $(addprefix $(LOGGING_PREFIX)/,$(filter-out lib/Version.o lib/LoggerVersion.o,$(LIB_OBJECTS)))
+GENERATOR_LIB_OBJECTS = \
+	$(addprefix $(LOGGING_PREFIX)/,$(filter-out lib/Version.o lib/LoggerLogVersion.o,$(LIB_OBJECTS)))
 
 tools/$(GENERATOR): tools/Generator.cpp $(GENERATOR_LIB_OBJECTS)
 	$(CXX) -o $@ $(CC_FLAGS) $(LOGGING_FLAGS) -Wall -std=c++11 $^ $(LD_FLAGS)
@@ -314,7 +316,7 @@ clean-release: clean-common
 clean: clean-debug clean-logging clean-release
 
 clean-all: clean-debug clean-logging clean-release
-	rm -rf .include_* .depend_* build_*
+	rm -rf .include* .depend* build*
 
 
 check:

@@ -24,9 +24,9 @@ public:
 
     static bool wasDown ( uint32_t vkCode )
     {
-        const auto it = previous.find ( vkCode );
+        const auto it = _previous.find ( vkCode );
 
-        if ( it == previous.end() )
+        if ( it == _previous.end() )
             return false;
 
         return it->second;
@@ -44,14 +44,14 @@ public:
         if ( ! isDown ( vkCode ) )
             return false;
 
-        const auto it = pressedTimestamp.find ( vkCode );
+        const auto it = _pressedTimestamp.find ( vkCode );
 
-        if ( it == pressedTimestamp.end() )
+        if ( it == _pressedTimestamp.end() )
             return false;
 
         const uint64_t now = TimerManager::get().getNow ( true );
 
-        return ( now - it->second >= duration ) && ( repeatTimer % repeatInterval == 0 );
+        return ( now - it->second >= duration ) && ( _repeatTimer % repeatInterval == 0 );
     }
 
     static inline bool isPressedOrHeld ( uint32_t vkCode,
@@ -70,9 +70,9 @@ public:
 
 private:
 
-    static std::unordered_map<uint32_t, bool> states, previous;
+    static std::unordered_map<uint32_t, bool> _state, _previous;
 
-    static std::unordered_map<uint32_t, uint64_t> pressedTimestamp;
+    static std::unordered_map<uint32_t, uint64_t> _pressedTimestamp;
 
-    static uint32_t repeatTimer;
+    static uint32_t _repeatTimer;
 };

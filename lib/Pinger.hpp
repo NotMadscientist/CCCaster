@@ -46,23 +46,23 @@ public:
 
     void gotPong ( const MsgPtr& ping );
 
-    const Statistics& getStats() const { return stats; }
+    const Statistics& getStats() const { return _stats; }
 
-    uint8_t getPacketLoss() const { return packetLoss; }
+    uint8_t getPacketLoss() const { return _packetLoss; }
 
-    bool isPinging() const { return pinging; }
+    bool isPinging() const { return _pinging; }
 
 private:
 
-    TimerPtr pingTimer;
+    TimerPtr _pingTimer;
 
-    size_t pingCount = 0;
+    size_t _pingCount = 0;
 
-    Statistics stats;
+    Statistics _stats;
 
-    uint8_t packetLoss = 0;
+    uint8_t _packetLoss = 0;
 
-    bool pinging = false;
+    bool _pinging = false;
 
     void timerExpired ( Timer *timer ) override;
 };

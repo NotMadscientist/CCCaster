@@ -34,7 +34,7 @@ public:
     void release();
 
     // Indicate the EventManager is running
-    bool isRunning() const { return running; }
+    bool isRunning() const { return _running; }
 
     // Get the singleton instance
     static EventManager& get();
@@ -53,10 +53,10 @@ private:
     };
 
     // Single instance of the reaper thread, to garbage collect finished thread
-    ReaperThread reaperThread;
+    ReaperThread _reaperThread;
 
     // Flag to indicate the event loop is running
-    volatile bool running = false;
+    volatile bool _running = false;
 
     // Check for events
     void checkEvents ( uint64_t timeout );

@@ -12,76 +12,76 @@ public:
 
     void push ( const T& t )
     {
-        LOCK ( mutex );
+        LOCK ( _mutex );
 
-        queue.push_back ( t );
-        cond.signal();
+        _queue.push_back ( t );
+        _cond.signal();
     }
 
     void push_front ( const T& t )
     {
-        LOCK ( mutex );
+        LOCK ( _mutex );
 
-        queue.push_front ( t );
-        cond.signal();
+        _queue.push_front ( t );
+        _cond.signal();
     }
 
     T pop()
     {
         T t;
-        LOCK ( mutex );
+        LOCK ( _mutex );
 
-        while ( queue.empty() )
-            cond.wait ( mutex );
+        while ( _queue.empty() )
+            _cond.wait ( _mutex );
 
-        t = queue.front();
-        queue.pop_front();
+        t = _queue.front();
+        _queue.pop_front();
 
         return t;
     }
 
-    T pop ( long timeout, T placebo )
+    T pop ( long timeout, T placeholder )
     {
         int ret = 0;
-        LOCK ( mutex );
+        LOCK ( _mutex );
 
-        while ( !ret && queue.empty() )
-            ret = cond.wait ( mutex, timeout );
+        while ( !ret && _queue.empty() )
+            ret = _cond.wait ( _mutex, timeout );
 
-        if ( !ret && !queue.empty() )
+        if ( !ret && !_queue.empty() )
         {
-            placebo = queue.front();
-            queue.pop_front();
+            placeholder = _queue.front();
+            _queue.pop_front();
         }
 
-        return placebo;
+        return placeholder;
     }
 
     size_t size() const
     {
-        LOCK ( mutex );
-        return queue.size();
+        LOCK ( _mutex );
+        return _queue.size();
     }
 
     bool empty() const
     {
-        LOCK ( mutex );
-        return queue.empty();
+        LOCK ( _mutex );
+        return _queue.empty();
     }
 
     void clear()
     {
-        LOCK ( mutex );
-        queue.clear();
+        LOCK ( _mutex );
+        _queue.clear();
     }
 
 private:
 
-    std::list<T> queue;
+    std::list<T> _queue;
 
-    mutable Mutex mutex;
+    mutable Mutex _mutex;
 
-    mutable CondVar cond;
+    mutable CondVar _cond;
 };
 
 
@@ -91,14 +91,14 @@ public:
 
     bool push ( const T& t )
     {
-        LOCK ( mutex );
+        LOCK ( _mutex );
 
-        if ( set.find ( t ) == set.end() )
+        if ( _set.find ( t ) == _set.end() )
         {
-            queue.push_back ( t );
-            set.insert ( t );
+            _queue.push_back ( t );
+            _set.insert ( t );
 
-            cond.signal();
+            _cond.signal();
             return true;
         }
 
@@ -107,14 +107,14 @@ public:
 
     bool push_front ( const T& t )
     {
-        LOCK ( mutex );
+        LOCK ( _mutex );
 
-        if ( set.find ( t ) == set.end() )
+        if ( _set.find ( t ) == _set.end() )
         {
-            queue.push_front ( t );
-            set.insert ( t );
+            _queue.push_front ( t );
+            _set.insert ( t );
 
-            cond.signal();
+            _cond.signal();
             return true;
         }
 
@@ -124,63 +124,63 @@ public:
     T pop()
     {
         T t;
-        LOCK ( mutex );
+        LOCK ( _mutex );
 
-        while ( queue.empty() )
-            cond.wait ( mutex );
+        while ( _queue.empty() )
+            _cond.wait ( _mutex );
 
-        t = queue.front();
-        queue.pop_front();
-        set.erase ( t );
+        t = _queue.front();
+        _queue.pop_front();
+        _set.erase ( t );
 
         return t;
     }
 
-    T pop ( long timeout, T placebo )
+    T pop ( long timeout, T placeholder )
     {
         int ret = 0;
-        LOCK ( mutex );
+        LOCK ( _mutex );
 
-        while ( !ret && queue.empty() )
-            ret = cond.wait ( mutex, timeout );
+        while ( !ret && _queue.empty() )
+            ret = _cond.wait ( _mutex, timeout );
 
-        if ( !ret && !queue.empty() )
+        if ( !ret && !_queue.empty() )
         {
-            placebo = queue.front();
-            queue.pop_front();
-            set.erase ( placebo );
+            placeholder = _queue.front();
+            _queue.pop_front();
+            _set.erase ( placeholder );
         }
 
-        return placebo;
+        return placeholder;
     }
 
     size_t size() const
     {
-        LOCK ( mutex );
-        return queue.size();
+        LOCK ( _mutex );
+        return _queue.size();
     }
 
     bool empty() const
     {
-        LOCK ( mutex );
-        return queue.empty();
+        LOCK ( _mutex );
+        return _queue.empty();
     }
 
     void clear()
     {
-        LOCK ( mutex );
-        queue.clear();
+        LOCK ( _mutex );
+        _queue.clear();
     }
 
 private:
 
-    std::list<T> queue;
+    std::list<T> _queue;
 
-    std::unordered_set<T> set;
+    std::unordered_set<T> _set;
 
-    mutable Mutex mutex;
+    mutable Mutex _mutex;
 
-    mutable CondVar cond;
+    mutable CondVar _cond;
 };
 
 
@@ -190,33 +190,33 @@ public:
 
     void push ( const T& t )
     {
-        LOCK ( mutex );
+        LOCK ( _mutex );
 
-        while ( count == N )
-            cond.wait ( mutex );
+        while ( _count == N )
+            _cond.wait ( _mutex );
 
-        elements[head++] = t;
-        head %= N;
-        ++count;
+        _elements[_head++] = t;
+        _head %= N;
+        ++_count;
 
-        cond.signal();
+        _cond.signal();
     }
 
     bool push ( const T& t, long timeout )
     {
         int ret = 0;
-        LOCK ( mutex );
+        LOCK ( _mutex );
 
-        while ( !ret && count == N )
-            ret = cond.wait ( mutex, timeout );
+        while ( !ret && _count == N )
+            ret = _cond.wait ( _mutex, timeout );
 
-        if ( !ret && count < N )
+        if ( !ret && _count < N )
         {
-            elements[head++] = t;
-            head %= N;
-            ++count;
+            _elements[_head++] = t;
+            _head %= N;
+            ++_count;
 
-            cond.signal();
+            _cond.signal();
             return true;
         }
 
@@ -226,64 +226,64 @@ public:
     T pop()
     {
         T t;
-        LOCK ( mutex );
+        LOCK ( _mutex );
 
-        while ( count == 0 )
-            cond.wait ( mutex );
+        while ( _count == 0 )
+            _cond.wait ( _mutex );
 
-        t = elements[tail++];
-        tail %= N;
-        --count;
+        t = _elements[_tail++];
+        _tail %= N;
+        --_count;
 
-        cond.signal();
+        _cond.signal();
         return t;
     }
 
-    T pop ( long timeout, T placebo )
+    T pop ( long timeout, T placeholder )
     {
         int ret = 0;
-        LOCK ( mutex );
+        LOCK ( _mutex );
 
-        while ( !ret && count == 0 )
-            ret = cond.wait ( mutex, timeout );
+        while ( !ret && _count == 0 )
+            ret = _cond.wait ( _mutex, timeout );
 
-        if ( !ret && count > 0 )
+        if ( !ret && _count > 0 )
         {
-            placebo = elements[tail++];
-            tail %= N;
-            --count;
+            placeholder = _elements[_tail++];
+            _tail %= N;
+            --_count;
 
-            cond.signal();
+            _cond.signal();
         }
 
-        return placebo;
+        return placeholder;
     }
 
     size_t size() const
     {
-        LOCK ( mutex );
-        return count;
+        LOCK ( _mutex );
+        return _count;
     }
 
     bool empty() const
     {
-        LOCK ( mutex );
-        return ( count == 0 );
+        LOCK ( _mutex );
+        return ( _count == 0 );
     }
 
     void clear()
     {
-        LOCK ( mutex );
-        count = head = tail = 0;
+        LOCK ( _mutex );
+        _count = _head = _tail = 0;
     }
 
 private:
 
-    T elements[N];
+    T _elements[N];
 
-    size_t count = 0, head = 0, tail = 0;
+    size_t _count = 0, _head = 0, _tail = 0;
 
-    mutable Mutex mutex;
+    mutable Mutex _mutex;
 
-    mutable CondVar cond;
+    mutable CondVar _cond;
 };

@@ -10,45 +10,48 @@ using namespace std;
 
 
 HttpGet::HttpGet ( Owner *owner, const string& url, uint64_t timeout, Mode mode )
-    : owner ( owner ), url ( url ), timeout ( timeout ), mode ( mode )
+    : owner ( owner )
+    , url ( url )
+    , timeout ( timeout )
+    , mode ( mode )
 {
     if ( url.substr ( 0, 8 ) == "https://" )
         THROW_EXCEPTION ( "url='%s'", "Unsupported https protocol!", url );
 
     if ( url.substr ( 0, 7 ) == "http://" )
-        host = url.substr ( 7 );
+        _host = url.substr ( 7 );
 
-    size_t i = host.find_last_of ( '/' );
+    const size_t i = _host.find_last_of ( '/' );
 
     if ( i < string::npos - 1 )
-        path = host.substr ( i );
+        _path = _host.substr ( i );
 
-    if ( path.empty() )
-        path = "/";
+    if ( _path.empty() )
+        _path = "/";
 
     if ( i != string::npos )
-        host = host.substr ( 0, i );
+        _host = _host.substr ( 0, i );
 
-    ASSERT ( host.empty() == false );
-    ASSERT ( path.empty() == false );
+    ASSERT ( _host.empty() == false );
+    ASSERT ( _path.empty() == false );
 }
 
 void HttpGet::start()
 {
-    code = -1;
-    headerBuffer.clear();
-    dataBuffer.clear();
-    remainingBytes = 0;
+    _statusCode = -1;
+    _headerBuffer.clear();
+    _dataBuffer.clear();
+    _remainingBytes = 0;
 
-    LOG ( "Connecting to: '%s:80'", host );
+    LOG ( "Connecting to: '%s:80'", _host );
 
     try
     {
-        socket = TcpSocket::connect ( this, host + ":80", true, timeout ); // Raw socket
+        _socket = TcpSocket::connect ( this, _host + ":80", true, timeout ); // Raw socket
     }
     catch ( ... )
     {
-        socket.reset();
+        _socket.reset();
 
         LOG ( "Failed to create socket!" );
 
@@ -59,16 +62,16 @@ void HttpGet::start()
 
 void HttpGet::socketConnected ( Socket *socket )
 {
-    ASSERT ( this->socket.get() == socket );
+    ASSERT ( _socket.get() == socket );
 
-    string request = format ( "GET %s HTTP/1.1\r\nUser-Agent: %s\r\nHost: %s\r\n\r\n", path, USER_AGENT, host );
+    const string request = format ( "GET %s HTTP/1.1\r\nUser-Agent: %s\r\nHost: %s\r\n\r\n", _path, USER_AGENT, _host );
 
     LOG ( "Sending request:\n%s", request );
 
-    timer.reset ( new Timer ( this ) );
-    timer->start ( timeout );
+    _timer.reset ( new Timer ( this ) );
+    _timer->start ( timeout );
 
-    if ( ! socket->send ( &request[0], request.size() ) )
+    if ( ! _socket->send ( &request[0], request.size() ) )
     {
         LOG ( "Failed to send request!" );
 
@@ -79,13 +82,13 @@ void HttpGet::socketConnected ( Socket *socket )
 
 void HttpGet::socketDisconnected ( Socket *socket )
 {
-    ASSERT ( this->socket.get() == socket );
+    ASSERT ( _socket.get() == socket );
 
-    if ( code >= 0 && remainingBytes == 0 )
+    if ( _statusCode >= 0 && _remainingBytes == 0 )
         return;
 
-    this->socket.reset();
-    this->timer.reset();
+    _socket.reset();
+    _timer.reset();
 
     if ( owner )
         owner->httpFailed ( this );
@@ -93,13 +96,13 @@ void HttpGet::socketDisconnected ( Socket *socket )
 
 void HttpGet::timerExpired ( Timer *timer )
 {
-    ASSERT ( this->timer.get() == timer );
+    ASSERT ( _timer.get() == timer );
 
-    if ( code >= 0 && remainingBytes == 0 )
+    if ( _statusCode >= 0 && _remainingBytes == 0 )
         return;
 
-    this->socket.reset();
-    this->timer.reset();
+    _socket.reset();
+    _timer.reset();
 
     if ( owner )
         owner->httpFailed ( this );
@@ -107,11 +110,11 @@ void HttpGet::timerExpired ( Timer *timer )
 
 void HttpGet::socketRead ( Socket *socket, const char *bytes, size_t len, const IpAddrPort& address )
 {
-    ASSERT ( this->socket.get() == socket );
+    ASSERT ( _socket.get() == socket );
 
     const string data ( bytes, len );
 
-    if ( remainingBytes == 0 )
+    if ( _remainingBytes == 0 )
         parseResponse ( data );
     else
         parseData ( data );
@@ -120,25 +123,25 @@ void HttpGet::socketRead ( Socket *socket, const char *bytes, size_t len, const 
 void HttpGet::parseResponse ( const string& data )
 {
     // Append to the read buffer
-    headerBuffer += data;
+    _headerBuffer += data;
 
     // Start a timeout for the next read event
-    timer->start ( timeout );
+    _timer->start ( timeout );
 
-    LOG ( "Trying to parse response:\n%s", headerBuffer );
+    LOG ( "Trying to parse response:\n%s", _headerBuffer );
 
-    stringstream ss ( headerBuffer );
+    stringstream ss ( _headerBuffer );
     string header;
 
-    // Get the HTTP version header and status code
-    ss >> header >> code;
+    // Get the HTTP version header and status _statusCode
+    ss >> header >> _statusCode;
 
     while ( getline ( ss, header ) )
     {
         // Stop if we reached the end of the headers
         if ( header == "\r" )
         {
-            remainingBytes = contentLength;
+            _remainingBytes = _contentLength;
 
             // Get the remaining response bytes from the header buffer
             const size_t responseBytes = ss.rdbuf()->in_avail();
@@ -162,9 +165,9 @@ void HttpGet::parseResponse ( const string& data )
         if ( header.find ( "Content-Length:" ) == 0 )
         {
             stringstream ss ( header );
-            ss >> header >> contentLength;
+            ss >> header >> _contentLength;
 
-            LOG ( "contentLength=%u", contentLength );
+            LOG ( "_contentLength=%u", _contentLength );
             continue;
         }
     }
@@ -172,25 +175,25 @@ void HttpGet::parseResponse ( const string& data )
 
 void HttpGet::parseData ( const string& data )
 {
-    remainingBytes -= data.size();
+    _remainingBytes -= data.size();
 
-    if ( owner && contentLength )
-        owner->httpProgress ( this, contentLength - remainingBytes, contentLength );
+    if ( owner && _contentLength )
+        owner->httpProgress ( this, _contentLength - _remainingBytes, _contentLength );
 
     if ( mode == Buffered )
     {
-        dataBuffer += data;
+        _dataBuffer += data;
     }
     else if ( mode == Incremental )
     {
-        if ( remainingBytes == 0 )
+        if ( _remainingBytes == 0 )
         {
-            socket.reset();
-            timer.reset();
+            _socket.reset();
+            _timer.reset();
         }
 
         if ( owner )
-            owner->httpResponse ( this, code, data, remainingBytes );
+            owner->httpResponse ( this, _statusCode, data, _remainingBytes );
         return;
     }
     else
@@ -198,17 +201,17 @@ void HttpGet::parseData ( const string& data )
         ASSERT_IMPOSSIBLE;
     }
 
-    if ( remainingBytes == 0 )
+    if ( _remainingBytes == 0 )
         finalize();
 }
 
 void HttpGet::finalize()
 {
-    ASSERT ( remainingBytes == 0 );
+    ASSERT ( _remainingBytes == 0 );
 
-    socket.reset();
-    timer.reset();
+    _socket.reset();
+    _timer.reset();
 
     if ( owner )
-        owner->httpResponse ( this, code, dataBuffer, 0 );
+        owner->httpResponse ( this, _statusCode, _dataBuffer, 0 );
 }

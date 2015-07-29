@@ -145,7 +145,7 @@ static ThreadPtr keyboardThread;
 
 void KeyboardManager::socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
 {
-    ASSERT ( socket == recvSocket.get() );
+    ASSERT ( socket == _recvSocket.get() );
 
     if ( !msg.get() || msg->getMsgType() != MsgType::KeyboardEvent )
     {
@@ -171,14 +171,14 @@ void KeyboardManager::hook ( Owner *owner, bool externalHook )
 
     LOG ( "Hooking keyboard manager" );
 
-    hooked = true;
+    _hooked = true;
 
     this->owner = owner;
 
     if ( ! externalHook )
     {
-        recvSocket = UdpSocket::bind ( this, 0 );
-        sendSocket = UdpSocket::bind ( 0, { "127.0.0.1", recvSocket->address.port } );
+        _recvSocket = UdpSocket::bind ( this, 0 );
+        sendSocket = UdpSocket::bind ( 0, { "127.0.0.1", _recvSocket->address.port } );
 
         keyboardThread.reset ( new KeyboardThread() );
         keyboardThread->start();
@@ -193,18 +193,13 @@ void KeyboardManager::unhook()
 
     keyboardThread.reset();
     sendSocket.reset();
-    recvSocket.reset();
+    _recvSocket.reset();
 
     owner = 0;
 
-    hooked = false;
+    _hooked = false;
 
     LOG ( "Unhooked keyboard manager" );
-}
-
-bool KeyboardManager::isHooked() const
-{
-    return hooked;
 }
 
 KeyboardManager& KeyboardManager::get()

@@ -21,45 +21,45 @@ string formatSerializableSequence ( const MsgPtr& msg )
 
 void GoBackN::timerExpired ( Timer *timer )
 {
-    ASSERT ( timer == sendTimer.get() );
+    ASSERT ( timer == _sendTimer.get() );
     ASSERT ( owner != 0 );
 
-    if ( sendList.empty() && !keepAlive )
+    if ( _sendList.empty() && !_keepAlive )
     {
         return;
     }
-    else if ( sendList.empty() && keepAlive )
+    else if ( _sendList.empty() && _keepAlive )
     {
-        if ( skipNextKeepAlive )
-            skipNextKeepAlive = false;
+        if ( _skipNextKeepAlive )
+            _skipNextKeepAlive = false;
         else
             owner->goBackNSendRaw ( this, NullMsg );
     }
     else
     {
-        if ( sendListPos == sendList.cend() )
-            sendListPos = sendList.cbegin();
+        if ( _sendListPos == _sendList.cend() )
+            _sendListPos = _sendList.cbegin();
 
 #ifndef DISABLE_LOGGING
         logSendList();
 #endif
 
-        const MsgPtr& msg = *sendListPos;
+        const MsgPtr& msg = *_sendListPos;
 
         LOG ( "Sending '%s'; sequence=%u; sendSequence=%d",
-              msg, msg->getAs<SerializableSequence>().getSequence(), sendSequence );
+              msg, msg->getAs<SerializableSequence>().getSequence(), _sendSequence );
 
         owner->goBackNSendRaw ( this, msg );
-        ++sendListPos;
+        ++_sendListPos;
     }
 
-    if ( keepAlive )
+    if ( _keepAlive )
     {
-        LOG ( "this=%08x; keepAlive=%llu; countDown=%d", this, keepAlive, countDown );
+        LOG ( "this=%08x; keepAlive=%llu; countDown=%d", this, _keepAlive, _countDown );
 
-        if ( countDown )
+        if ( _countDown )
         {
-            --countDown;
+            --_countDown;
         }
         else
         {
@@ -69,16 +69,16 @@ void GoBackN::timerExpired ( Timer *timer )
         }
     }
 
-    sendTimer->start ( interval );
+    _sendTimer->start ( _interval );
 }
 
 void GoBackN::checkAndStartTimer()
 {
-    if ( ! sendTimer )
-        sendTimer.reset ( new Timer ( this ) );
+    if ( ! _sendTimer )
+        _sendTimer.reset ( new Timer ( this ) );
 
-    if ( ! sendTimer->isStarted() )
-        sendTimer->start ( interval );
+    if ( ! _sendTimer->isStarted() )
+        _sendTimer->start ( _interval );
 }
 
 void GoBackN::sendViaGoBackN ( SerializableSequence *message )
@@ -89,30 +89,30 @@ void GoBackN::sendViaGoBackN ( SerializableSequence *message )
 
 void GoBackN::sendViaGoBackN ( const MsgPtr& msg )
 {
-    LOG ( "Adding '%s'; sendSequence=%d", msg, sendSequence + 1 );
+    LOG ( "Adding '%s'; sendSequence=%d", msg, _sendSequence + 1 );
 
     ASSERT ( msg->getBaseType() == BaseType::SerializableSequence );
-    ASSERT ( sendList.empty() || sendList.back()->getAs<SerializableSequence>().getSequence() == sendSequence );
+    ASSERT ( _sendList.empty() || _sendList.back()->getAs<SerializableSequence>().getSequence() == _sendSequence );
     ASSERT ( owner != 0 );
 
     if ( msg->getAs<SerializableSequence>().getSequence() != 0 )
     {
         MsgPtr clone = msg->clone();
-        clone->getAs<SerializableSequence>().setSequence ( ++sendSequence );
+        clone->getAs<SerializableSequence>().setSequence ( ++_sendSequence );
 
         owner->goBackNSendRaw ( this, clone );
-        sendList.push_back ( clone );
+        _sendList.push_back ( clone );
     }
     else
     {
-        msg->getAs<SerializableSequence>().setSequence ( sendSequence + 1 );
+        msg->getAs<SerializableSequence>().setSequence ( _sendSequence + 1 );
         string bytes = ::Protocol::encode ( msg );
 
         if ( bytes.size() <= MTU )
         {
-            ++sendSequence;
+            ++_sendSequence;
             owner->goBackNSendRaw ( this, msg );
-            sendList.push_back ( msg );
+            _sendList.push_back ( msg );
         }
         else
         {
@@ -121,11 +121,11 @@ void GoBackN::sendViaGoBackN ( const MsgPtr& msg )
             for ( uint32_t pos = 0, i = 0; pos < bytes.size(); pos += MTU, ++i )
             {
                 SplitMessage *splitMsg = new SplitMessage ( msg->getMsgType(), bytes.substr ( pos, MTU ), i, count );
-                splitMsg->setSequence ( ++sendSequence );
+                splitMsg->setSequence ( ++_sendSequence );
 
                 MsgPtr msg ( splitMsg );
                 owner->goBackNSendRaw ( this, msg );
-                sendList.push_back ( msg );
+                _sendList.push_back ( msg );
             }
         }
     }
@@ -139,11 +139,11 @@ void GoBackN::recvFromSocket ( const MsgPtr& msg )
 {
     ASSERT ( owner != 0 );
 
-    if ( keepAlive )
+    if ( _keepAlive )
     {
         refreshKeepAlive();
 
-        LOG ( "this=%08x; keepAlive=%llu; countDown=%d", this, keepAlive, countDown );
+        LOG ( "this=%08x; keepAlive=%llu; countDown=%d", this, _keepAlive, _countDown );
 
         checkAndStartTimer();
     }
@@ -160,55 +160,55 @@ void GoBackN::recvFromSocket ( const MsgPtr& msg )
         return;
     }
 
-    uint32_t sequence = msg->getAs<SerializableSequence>().getSequence();
+    const uint32_t sequence = msg->getAs<SerializableSequence>().getSequence();
 
     // Check for ACK messages
     if ( msg->getMsgType() == MsgType::AckSequence )
     {
-        if ( sequence > ackSequence )
-            ackSequence = sequence;
+        if ( sequence > _ackSequence )
+            _ackSequence = sequence;
 
-        LOG ( "Got AckSequence; sequence=%u; sendSequence=%u", sequence, sendSequence );
+        LOG ( "Got AckSequence; sequence=%u; sendSequence=%u", sequence, _sendSequence );
 
         // Remove messages from sendList with sequence <= the ACKed sequence
-        while ( !sendList.empty() && sendList.front()->getAs<SerializableSequence>().getSequence() <= sequence )
-            sendList.pop_front();
-        sendListPos = sendList.cend();
+        while ( !_sendList.empty() && _sendList.front()->getAs<SerializableSequence>().getSequence() <= sequence )
+            _sendList.pop_front();
+        _sendListPos = _sendList.cend();
 
         logSendList();
         return;
     }
 
-    if ( sequence != recvSequence + 1 )
+    if ( sequence != _recvSequence + 1 )
     {
-        owner->goBackNSendRaw ( this, MsgPtr ( new AckSequence ( recvSequence ) ) );
+        owner->goBackNSendRaw ( this, MsgPtr ( new AckSequence ( _recvSequence ) ) );
         return;
     }
 
-    LOG ( "Received '%s'; sequence=%u; recvSequence=%u", msg, sequence, recvSequence );
+    LOG ( "Received '%s'; sequence=%u; recvSequence=%u", msg, sequence, _recvSequence );
 
-    ++recvSequence;
+    ++_recvSequence;
 
-    owner->goBackNSendRaw ( this, MsgPtr ( new AckSequence ( recvSequence ) ) );
+    owner->goBackNSendRaw ( this, MsgPtr ( new AckSequence ( _recvSequence ) ) );
 
     if ( msg->getMsgType() == MsgType::SplitMessage )
     {
         const SplitMessage& splitMsg = msg->getAs<SplitMessage>();
 
-        recvBuffer += splitMsg.bytes;
+        _recvBuffer += splitMsg.bytes;
 
         if ( splitMsg.isLastMessage() )
         {
             size_t consumed = 0;
-            MsgPtr msg = ::Protocol::decode ( &recvBuffer[0], recvBuffer.size(), consumed );
+            MsgPtr msg = ::Protocol::decode ( &_recvBuffer[0], _recvBuffer.size(), consumed );
 
-            if ( !msg.get() || msg->getMsgType() != splitMsg.origMsgType || consumed != recvBuffer.size() )
+            if ( !msg.get() || msg->getMsgType() != splitMsg.origMsgType || consumed != _recvBuffer.size() )
             {
-                LOG ( "Failed to recreate '%s' from [ %u bytes ]", splitMsg.origMsgType, recvBuffer.size() );
+                LOG ( "Failed to recreate '%s' from [ %u bytes ]", splitMsg.origMsgType, _recvBuffer.size() );
                 msg.reset();
             }
 
-            recvBuffer.clear();
+            _recvBuffer.clear();
 
             if ( msg )
             {
@@ -227,77 +227,84 @@ void GoBackN::setSendInterval ( uint64_t interval )
 {
     ASSERT ( interval > 0 );
 
-    this->interval = interval;
+    _interval = interval;
 
     refreshKeepAlive();
 
-    LOG ( "interval=%llu; countDown=%d", interval, countDown );
+    LOG ( "interval=%llu; countDown=%d", _interval, _countDown );
 }
 
 void GoBackN::setKeepAlive ( uint64_t timeout )
 {
-    keepAlive = timeout;
+    _keepAlive = timeout;
 
     refreshKeepAlive();
 
-    LOG ( "keepAlive=%llu; countDown=%d", keepAlive, countDown );
+    LOG ( "keepAlive=%llu; countDown=%d", _keepAlive, _countDown );
 }
 
 void GoBackN::reset()
 {
-    LOG ( "this=%08x; sendTimer=%08x", this, sendTimer.get() );
+    LOG ( "this=%08x; sendTimer=%08x", this, _sendTimer.get() );
 
-    sendSequence = recvSequence = 0;
-    sendList.clear();
-    sendListPos = sendList.cend();
-    sendTimer.reset();
-    recvBuffer.clear();
+    _sendSequence = _recvSequence = 0;
+    _sendList.clear();
+    _sendListPos = _sendList.cend();
+    _sendTimer.reset();
+    _recvBuffer.clear();
 }
 
 GoBackN::GoBackN ( Owner *owner, uint64_t interval, uint64_t timeout )
     : owner ( owner )
-    , sendListPos ( sendList.cend() )
-    , interval ( interval )
-    , keepAlive ( timeout )
+    , _sendListPos ( _sendList.cend() )
+    , _interval ( interval )
+    , _keepAlive ( timeout )
 {
-    ASSERT ( interval > 0 );
+    ASSERT ( _interval > 0 );
 
     refreshKeepAlive();
 }
 
-GoBackN::GoBackN ( Owner *owner, const GoBackN& state ) : owner ( owner ), sendListPos ( sendList.cend() )
+GoBackN::GoBackN ( Owner *owner, const GoBackN& state )
+    : owner ( owner )
+    , _sendListPos ( _sendList.cend() )
 {
     *this = state;
 }
 
+GoBackN::GoBackN ( const GoBackN& other )
+{
+    *this = other;
+}
+
 GoBackN& GoBackN::operator= ( const GoBackN& other )
 {
-    sendSequence = other.sendSequence;
-    recvSequence = other.recvSequence;
-    ackSequence = other.ackSequence;
-    sendList = other.sendList;
-    interval = other.interval;
-    keepAlive = other.keepAlive;
-    countDown = other.keepAlive;
+    _sendSequence = other._sendSequence;
+    _recvSequence = other._recvSequence;
+    _ackSequence = other._ackSequence;
+    _sendList = other._sendList;
+    _interval = other._interval;
+    _keepAlive = other._keepAlive;
+    _countDown = other._keepAlive;
 
-    ASSERT ( interval > 0 );
+    ASSERT ( _interval > 0 );
 
     return *this;
 }
 
 void GoBackN::save ( cereal::BinaryOutputArchive& ar ) const
 {
-    ar ( recvBuffer, keepAlive, sendSequence, recvSequence, ackSequence );
+    ar ( _recvBuffer, _keepAlive, _sendSequence, _recvSequence, _ackSequence );
 
-    ar ( sendList.size() );
+    ar ( _sendList.size() );
 
-    for ( const MsgPtr& msg : sendList )
+    for ( const MsgPtr& msg : _sendList )
         ar ( Protocol::encode ( msg ) );
 }
 
 void GoBackN::load ( cereal::BinaryInputArchive& ar )
 {
-    ar ( recvBuffer, keepAlive, sendSequence, recvSequence, ackSequence );
+    ar ( _recvBuffer, _keepAlive, _sendSequence, _recvSequence, _ackSequence );
 
     size_t size, consumed;
     ar ( size );
@@ -306,11 +313,21 @@ void GoBackN::load ( cereal::BinaryInputArchive& ar )
     for ( size_t i = 0; i < size; ++i )
     {
         ar ( buffer );
-        sendList.push_back ( Protocol::decode ( &buffer[0], buffer.size(), consumed ) );
+        _sendList.push_back ( Protocol::decode ( &buffer[0], buffer.size(), consumed ) );
     }
 }
 
 void GoBackN::logSendList() const
 {
-    LOG_LIST ( sendList, formatSerializableSequence );
+    LOG_LIST ( _sendList, formatSerializableSequence );
+}
+
+void GoBackN::delayKeepAliveOnce()
+{
+    _skipNextKeepAlive = true;
+}
+
+void GoBackN::refreshKeepAlive()
+{
+    _countDown = ( _keepAlive / _interval );
 }

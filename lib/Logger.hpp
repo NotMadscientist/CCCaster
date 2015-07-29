@@ -28,7 +28,7 @@ public:
     Logger() {}
 
     // Initialize / deinitialize logging
-    void initialize ( const std::string& file = "", uint32_t options = LOG_DEFAULT_OPTIONS );
+    void initialize ( const std::string& filePath = "", uint32_t options = LOG_DEFAULT_OPTIONS );
     void deinitialize();
 
     // Flush to file
@@ -37,8 +37,8 @@ public:
     // Log the system version
     void logVersion();
 
-    // Log a message with file, line, and function
-    void log ( const char *file, int line, const char *func, const char *message );
+    // Log a message with source file, line, and function
+    void log ( const char *srcFile, int srcLine, const char *srcFunc, const char *logMessage );
 
     // Get the singleton instance
     static Logger& get();
@@ -46,26 +46,26 @@ public:
 private:
 
     // Log file path
-    std::string file;
+    std::string _filePath;
 
     // Log identifier, to match up reinitialized logs
-    std::string logId;
+    std::string _logId;
 
     // Bit mask of options
-    uint32_t options = 0;
+    uint32_t _options = 0;
 
     // Log file descriptor
-    FILE *fd = 0;
+    FILE *_fd = 0;
 
-    // Char buffer
-    char buffer[4096];
+    // Main character buffer
+    char _buffer[4096];
 
     // Flag to indicate if initialized
-    bool initialized = false;
+    bool _initialized = false;
 
     // Optionally mutexed logging
 #ifdef LOGGER_MUTEXED
-    Mutex mutex;
+    Mutex _mutex;
 #endif
 };
 

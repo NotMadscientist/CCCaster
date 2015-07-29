@@ -75,13 +75,13 @@ void ControllerManager::savePrevStates()
 
     if ( windowHandle == ( void * ) GetForegroundWindow() )
     {
-        keyboard.prevState = keyboard.state;
+        keyboard._prevState = keyboard._state;
     }
 
     for ( auto& kv : joysticks )
     {
         Controller *controller = kv.second.get();
-        controller->prevState = controller->state;
+        controller->_prevState = controller->_state;
     }
 }
 
@@ -95,15 +95,15 @@ bool ControllerManager::check()
     if ( windowHandle == ( void * ) GetForegroundWindow() )
     {
         // Update keyboard controller state
-        keyboard.state = 0;
+        keyboard._state = 0;
 
         for ( uint8_t i = 0; i < 32; ++i )
         {
-            if ( ! keyboard.keyboardMappings.codes[i] )
+            if ( ! keyboard._keyboardMappings.codes[i] )
                 continue;
 
-            if ( GetKeyState ( keyboard.keyboardMappings.codes[i] ) & 0x80 )
-                keyboard.state |= ( 1u << i );
+            if ( GetKeyState ( keyboard._keyboardMappings.codes[i] ) & 0x80 )
+                keyboard._state |= ( 1u << i );
         }
     }
 
@@ -113,13 +113,13 @@ bool ControllerManager::check()
     for ( auto it = joysticks.begin(); it != joysticks.end(); )
     {
         Controller *controller = it->second.get();
-        const JoystickInfo info = controller->joystick.info;
+        const JoystickInfo info = controller->_joystick.info;
         IDirectInputDevice8 *const device = ( IDirectInputDevice8 * ) info.device;
-        const uint32_t deadzone = controller->joystickMappings.deadzone;
+        const uint32_t deadzone = controller->_joystickMappings.deadzone;
 
         // Save previous joystick states to generate regular controller events.
         // Note: this is independent of the prevState property, which is used to detect edge events per frame.
-        controller->joystick.prevState = controller->joystick.state;
+        controller->_joystick.prevState = controller->_joystick.state;
 
         // Poll device state
         result = IDirectInputDevice8_Poll ( device );
@@ -154,7 +154,7 @@ bool ControllerManager::check()
         }
 
         const uint8_t axisMask = info.axisMask;
-        uint8_t *const axes = controller->joystick.state.axes;
+        uint8_t *const axes = controller->_joystick.state.axes;
         uint8_t axis = 0;
 
         if ( axisMask & 0x01u )
@@ -176,7 +176,7 @@ bool ControllerManager::check()
 
         ASSERT ( axis == info.numAxes );
 
-        uint8_t *const prevAxes = controller->joystick.prevState.axes;
+        uint8_t *const prevAxes = controller->_joystick.prevState.axes;
 
         for ( axis = 0; axis < info.numAxes; ++axis )
         {
@@ -187,8 +187,8 @@ bool ControllerManager::check()
             controller->joystickAxisEvent ( axis, axes[axis] );
         }
 
-        uint8_t *const hats = controller->joystick.state.hats;
-        uint8_t *const prevHats = controller->joystick.prevState.hats;
+        uint8_t *const hats = controller->_joystick.state.hats;
+        uint8_t *const prevHats = controller->_joystick.prevState.hats;
 
         for ( uint8_t hat = 0; hat < info.numHats; ++hat )
         {
@@ -201,10 +201,10 @@ bool ControllerManager::check()
             controller->joystickHatEvent ( hat, hats[hat] );
         }
 
-        uint32_t& buttons = controller->joystick.state.buttons;
+        uint32_t& buttons = controller->_joystick.state.buttons;
         buttons = 0;
 
-        const uint32_t prevButtons = controller->joystick.prevState.buttons;
+        const uint32_t prevButtons = controller->_joystick.prevState.buttons;
 
         for ( uint8_t button = 0; button < info.numButtons; ++button )
         {
@@ -386,7 +386,7 @@ void ControllerManager::attachJoystick ( const Guid& guid, JoystickInfo& info )
     }
     else
     {
-        it = mappings.mappings.find ( controller->getOrigName() );
+        it = mappings.mappings.find ( controller->_origName );
         if ( it != mappings.mappings.end() && it->second->getMsgType() == MsgType::JoystickMappings )
             controller->setMappings ( it->second->getAs<JoystickMappings>() );
     }
@@ -408,7 +408,7 @@ void ControllerManager::detachJoystick ( const Guid& guid )
     ASSERT ( it != joysticks.end() );
 
     Controller *controller = it->second.get();
-    IDirectInputDevice8 *const device = ( IDirectInputDevice8 * ) controller->joystick.info.device;
+    IDirectInputDevice8 *const device = ( IDirectInputDevice8 * ) controller->_joystick.info.device;
 
     LOG_CONTROLLER ( controller, "detached" );
 

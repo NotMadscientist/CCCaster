@@ -260,13 +260,13 @@ bool UdpSocket::sendRaw ( const MsgPtr& msg, const IpAddrPort& address )
         if ( rand() % 100 < hashFailRate )
         {
             LOG ( "Munging hash for '%s'", msg );
-            for ( char& byte : msg->hash )
+            for ( char& byte : msg->_hash )
                 byte = ( rand() % 0x100 );
-            msg->hashValid = false;
+            msg->_hashValid = false;
         }
         else
         {
-            msg->hashValid = true;
+            msg->_hashValid = true;
         }
     }
 #endif // NOT RELEASE

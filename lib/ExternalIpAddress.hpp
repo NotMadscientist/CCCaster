@@ -14,7 +14,7 @@ public:
     {
         virtual void externalIpAddrFound ( ExternalIpAddress *extIpAddr, const std::string& address ) = 0;
 
-        // Note: this sets address to the string Unknown
+        // Note: the address will be set to the string Unknown
         virtual void externalIpAddrUnknown ( ExternalIpAddress *extIpAddr ) = 0;
     };
 
@@ -32,9 +32,9 @@ public:
 
 private:
 
-    std::shared_ptr<HttpGet> httpGet;
+    std::shared_ptr<HttpGet> _httpGet;
 
-    size_t nextQueryIndex = 0;
+    size_t _nextQueryIndex = 0;
 
     void httpResponse ( HttpGet *httpGet, int code, const std::string& data, uint32_t remainingBytes ) override;
 

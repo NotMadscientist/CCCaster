@@ -13,7 +13,7 @@
 
 #define LOG_CONTROLLER(CONTROLLER, FORMAT, ...)                                                                 \
     LOG ( "%s: controller=%08x; state=%08x; " FORMAT,                                                           \
-          CONTROLLER->getName(), CONTROLLER, CONTROLLER->state, ## __VA_ARGS__ )
+          CONTROLLER->getName(), CONTROLLER, CONTROLLER->_state, ## __VA_ARGS__ )
 
 
 #define BIT_UP              ( 0x00000001u )
@@ -180,13 +180,10 @@ public:
     const std::string& getName() const
     {
         if ( isKeyboard() )
-            return keyboardMappings.name;
+            return _keyboardMappings.name;
         else
-            return joystickMappings.name;
+            return _joystickMappings.name;
     }
-
-    // Get the original name of the controller
-    const std::string& getOrigName() const { return name; }
 
     // Indicates if this is the only controller with its original name
     bool isUniqueName() const;
@@ -198,9 +195,9 @@ public:
     MsgPtr getMappings() const
     {
         if ( isKeyboard() )
-            return keyboardMappings.clone();
+            return _keyboardMappings.clone();
         else
-            return joystickMappings.clone();
+            return _joystickMappings.clone();
     }
 
     // Set the mappings for this controller
@@ -211,7 +208,7 @@ public:
     // Start / cancel mapping for the given key
     void startMapping ( Owner *owner, uint32_t key, uint8_t options = 0 );
     void cancelMapping();
-    bool isMapping() const { return ( mapping.key != 0 ); }
+    bool isMapping() const { return ( _toMap.key != 0 ); }
 
     // Clear this controller's mapping(s)
     void clearMapping ( uint32_t keys );
@@ -221,27 +218,27 @@ public:
     void resetToDefaults();
 
     // Get / set joystick deadzone
-    float getDeadzone() { return joystickMappings.deadzone / 32767.0f; }
+    float getDeadzone() { return _joystickMappings.deadzone / 32767.0f; }
     void setDeadzone ( float deadzone )
     {
-        joystickMappings.deadzone = ( uint32_t ) clamped<float> ( deadzone * 32767, MIN_DEADZONE, MAX_DEADZONE );
-        joystickMappings.invalidate();
+        _joystickMappings.deadzone = ( uint32_t ) clamped<float> ( deadzone * 32767, MIN_DEADZONE, MAX_DEADZONE );
+        _joystickMappings.invalidate();
     }
 
     // Get the controller state
-    uint32_t getPrevState() const { return prevState; }
-    uint32_t getState() const { return state; }
+    uint32_t getPrevState() const { return _prevState; }
+    uint32_t getState() const { return _state; }
 
     // Indicates if this is a keyboard / joystick controller
-    bool isKeyboard() const { return ( joystick.info.device == 0 ); }
-    bool isJoystick() const { return ( joystick.info.device != 0 ); }
+    bool isKeyboard() const { return ( _joystick.info.device == 0 ); }
+    bool isJoystick() const { return ( _joystick.info.device != 0 ); }
 
     // Save / load mappings for this controller
     bool saveMappings ( const std::string& file ) const;
     bool loadMappings ( const std::string& file );
 
     // Get the raw joystick state
-    const JoystickState& getJoystickState() const { return joystick.state; }
+    const JoystickState& getJoystickState() const { return _joystick.state; }
 
     friend class ControllerManager;
     friend class DllControllerManager;
@@ -252,16 +249,16 @@ private:
     enum KeyboardEnum { Keyboard };
 
     // Original controller name
-    const std::string name;
+    const std::string _origName;
 
     // Controller states
-    uint32_t prevState = 0, state = 0;
+    uint32_t _prevState = 0, _state = 0;
 
     // Keyboard mappings
-    KeyboardMappings keyboardMappings;
+    KeyboardMappings _keyboardMappings;
 
     // Joystick mappings
-    JoystickMappings joystickMappings;
+    JoystickMappings _joystickMappings;
 
     struct JoystickInternalState
     {
@@ -275,7 +272,7 @@ private:
         JoystickInternalState ( const JoystickInfo& info ) : info ( info ) {}
     };
 
-    JoystickInternalState joystick;
+    JoystickInternalState _joystick;
 
     struct MappingInternalState
     {
@@ -289,7 +286,7 @@ private:
         JoystickState active;
     };
 
-    MappingInternalState mapping;
+    MappingInternalState _toMap;
 
     // Keyboard event callback
     void keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown );

@@ -41,10 +41,6 @@ Not compressed:
 */
 
 
-// Basic constructor with default compression level
-Serializable::Serializable() : compressionLevel ( 9 ) {}
-
-
 // Encode with compression
 string encodeStageTwo ( const MsgPtr& msg, const string& msgData );
 
@@ -86,22 +82,22 @@ string Protocol::encode ( const MsgPtr& msg )
 
 #ifndef DISABLE_UPDATE_HASH
     // Update the hash
-    if ( msg->hashValid )
+    if ( msg->_hashValid )
     {
-        getMD5 ( ss.str(), &msg->hash[0] );
-        msg->hashValid = false;
+        getMD5 ( ss.str(), &msg->_hash[0] );
+        msg->_hashValid = false;
 
 #ifdef LOG_PROTOCOL
         LOG ( "%s", msg->getMsgType() );
         if ( ss.str().size() <= 256 )
             LOG ( "data=[ %s ]", formatAsHex ( ss.str() ) );
-        LOG ( "hash=[ %s ]", formatAsHex ( msg->hash, msg->hash.size() ) );
+        LOG ( "hash=[ %s ]", formatAsHex ( msg->_hash, msg->_hash.size() ) );
 #endif
     }
 #endif // NOT DISABLE_UPDATE_HASH
 
     // Encode hash at the end of message data
-    archive ( msg->hash );
+    archive ( msg->_hash );
 
     // Encode with compression
     return encodeStageTwo ( msg, ss.str() );
@@ -160,8 +156,8 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
         msg->load ( archive );
 
         // Decode hash at end of message data
-        archive ( msg->hash );
-        msg->hashValid = false;
+        archive ( msg->_hash );
+        msg->_hashValid = false;
     }
     catch ( const cereal::Exception& exc )
     {
@@ -205,15 +201,17 @@ MsgPtr Protocol::decode ( const char *bytes, size_t len, size_t& consumed )
 
 #ifndef DISABLE_UPDATE_HASH
     // Check if the hash is correct
-    if ( ! checkMD5 ( &data[0], dataSize - msg->hash.size(), &msg->hash[0] ) )
+    if ( ! checkMD5 ( &data[0], dataSize - msg->_hash.size(), &msg->_hash[0] ) )
     {
 #ifdef LOG_PROTOCOL
         LOG ( "hash check failed for %s", type );
-        LOG ( "data=[ %s ]", formatAsHex ( &data[0], dataSize - msg->hash.size() ) );
-        LOG ( "hash    =[ %s ]", formatAsHex ( msg->hash, msg->hash.size() ) );
-        char hash[msg->hash.size()];
-        gethash ( &data[0], dataSize - msg->hash.size(), hash );
-        LOG ( "expected=[ %s ]", formatAsHex ( hash, msg->hash.size() ) );
+        LOG ( "data=[ %s ]", formatAsHex ( &data[0], dataSize - msg->_hash.size() ) );
+        LOG ( "hash    =[ %s ]", formatAsHex ( msg->_hash, msg->_hash.size() ) );
+
+        char hash[msg->_hash.size()];
+        gethash ( &data[0], dataSize - msg->_hash.size(), hash );
+
+        LOG ( "expected=[ %s ]", formatAsHex ( hash, msg->_hash.size() ) );
 #endif
         return NullMsg;
     }
@@ -356,4 +354,25 @@ ostream& operator<< ( ostream& os, const MsgPtr& msg )
 ostream& operator<< ( ostream& os, const Serializable& msg )
 {
     return ( os << msg.str() );
+}
+
+
+// Serializable methods
+Serializable::Serializable() : compressionLevel ( 9 ) {}
+
+void Serializable::invalidate() const
+{
+    _hashValid = true;
+}
+
+
+// SerializableSequence methods
+SerializableSequence::SerializableSequence() {}
+
+SerializableSequence::SerializableSequence ( uint32_t sequence ) : _sequence ( sequence ) {}
+
+void SerializableSequence::setSequence ( uint32_t sequence ) const
+{
+    invalidate();
+    _sequence = sequence;
 }

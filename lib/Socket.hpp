@@ -77,7 +77,7 @@ public:
     // In message mode, this is automatically managed, and is only reset when a decode fails.
     size_t readPos = 0;
 
-    // Basic constructors
+    // Constructor
     Socket ( Owner *owner, const IpAddrPort& address, Protocol protocol, bool isRaw );
 
     // Virtual destructor

@@ -82,7 +82,7 @@ void Controller::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExte
         return;
 
     // Only use keyboard down events for mapping
-    if ( isKeyboard() && ! ( isDown && mapping.key ) )
+    if ( isKeyboard() && ! ( isDown && _toMap.key ) )
         return;
 
     Owner *owner = this->owner;
@@ -90,31 +90,31 @@ void Controller::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExte
 
     if ( vkCode != VK_ESCAPE )
     {
-        doClearMapping ( mapping.key );
+        doClearMapping ( _toMap.key );
 
         const string name = getVKeyName ( vkCode, scanCode, isExtended );
 
         for ( uint8_t i = 0; i < 32; ++i )
         {
-            if ( mapping.key & ( 1u << i ) )
+            if ( _toMap.key & ( 1u << i ) )
             {
-                keyboardMappings.codes[i] = vkCode;
-                keyboardMappings.names[i] = name;
+                _keyboardMappings.codes[i] = vkCode;
+                _keyboardMappings.names[i] = name;
             }
-            else if ( keyboardMappings.codes[i] == vkCode )
+            else if ( _keyboardMappings.codes[i] == vkCode )
             {
-                keyboardMappings.codes[i] = 0;
-                keyboardMappings.names[i].clear();
+                _keyboardMappings.codes[i] = 0;
+                _keyboardMappings.names[i].clear();
             }
         }
 
-        keyboardMappings.invalidate();
-        key = mapping.key;
+        _keyboardMappings.invalidate();
+        key = _toMap.key;
 
-        LOG_CONTROLLER ( this, "Mapped key [0x%02X] %s to %08x ", vkCode, name, mapping.key );
+        LOG_CONTROLLER ( this, "Mapped key [0x%02X] %s to %08x ", vkCode, name, _toMap.key );
     }
 
-    if ( ! ( mapping.options & MAP_CONTINUOUSLY ) )
+    if ( ! ( _toMap.options & MAP_CONTINUOUSLY ) )
         cancelMapping();
 
     if ( key )
@@ -126,38 +126,38 @@ void Controller::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExte
 
 void Controller::joystickAxisEvent ( uint8_t axis, uint8_t value )
 {
-    if ( joystick.state.isNeutral() && ( mapping.options & MAP_WAIT_NEUTRAL ) )
-        mapping.options &= ~MAP_WAIT_NEUTRAL;
+    if ( _joystick.state.isNeutral() && ( _toMap.options & MAP_WAIT_NEUTRAL ) )
+        _toMap.options &= ~MAP_WAIT_NEUTRAL;
 
-    const uint32_t mask = joystickMappings.axes[axis][AXIS_CENTERED];
+    const uint32_t mask = _joystickMappings.axes[axis][AXIS_CENTERED];
 
-    if ( mapping.key != 0
-            && ! ( mapping.options & MAP_WAIT_NEUTRAL )
-            && ! ( ( mapping.options & MAP_PRESERVE_DIRS ) && ( mask & MASK_DIRS ) ) )
+    if ( _toMap.key != 0
+            && ! ( _toMap.options & MAP_WAIT_NEUTRAL )
+            && ! ( ( _toMap.options & MAP_PRESERVE_DIRS ) && ( mask & MASK_DIRS ) ) )
     {
-        const uint8_t activeValue = mapping.active.axes[axis];
+        const uint8_t activeValue = _toMap.active.axes[axis];
 
         // Done mapping if the axis returned to neutral
         if ( value == AXIS_CENTERED && activeValue != AXIS_CENTERED )
         {
-            doClearMapping ( mapping.key );
+            doClearMapping ( _toMap.key );
 
-            joystickMappings.axes[axis][activeValue] = mapping.key;
+            _joystickMappings.axes[axis][activeValue] = _toMap.key;
 
             // Set bit mask for neutral value
-            joystickMappings.axes[axis][AXIS_CENTERED] =
-                ( joystickMappings.axes[axis][AXIS_POSITIVE] |
-                  joystickMappings.axes[axis][AXIS_NEGATIVE] );
+            _joystickMappings.axes[axis][AXIS_CENTERED] =
+                ( _joystickMappings.axes[axis][AXIS_POSITIVE] |
+                  _joystickMappings.axes[axis][AXIS_NEGATIVE] );
 
-            joystickMappings.invalidate();
+            _joystickMappings.invalidate();
 
-            LOG_CONTROLLER ( this, "Mapped axis%u value=%c to %08x", axis, getAxisSign ( activeValue ), mapping.key );
+            LOG_CONTROLLER ( this, "Mapped axis%u value=%c to %08x", axis, getAxisSign ( activeValue ), _toMap.key );
 
             Owner *owner = this->owner;
-            const uint32_t key = mapping.key;
+            const uint32_t key = _toMap.key;
 
-            if ( mapping.options & MAP_CONTINUOUSLY )
-                mapping.active.clear();
+            if ( _toMap.options & MAP_CONTINUOUSLY )
+                _toMap.active.clear();
             else
                 cancelMapping();
 
@@ -171,63 +171,63 @@ void Controller::joystickAxisEvent ( uint8_t axis, uint8_t value )
         if ( activeValue != AXIS_CENTERED )
             return;
 
-        mapping.active.axes[axis] = value;
+        _toMap.active.axes[axis] = value;
         return;
     }
 
     if ( ! mask )
         return;
 
-    const uint32_t keyMapped = joystickMappings.axes[axis][value];
+    const uint32_t keyMapped = _joystickMappings.axes[axis][value];
 
-    state &= ~mask;
+    _state &= ~mask;
 
     if ( value != AXIS_CENTERED )
-        state |= keyMapped;
+        _state |= keyMapped;
 
     LOG_CONTROLLER ( this, "value=%c", getAxisSign ( value ) );
 }
 
 void Controller::joystickHatEvent ( uint8_t hat, uint8_t value )
 {
-    if ( joystick.state.isNeutral() && ( mapping.options & MAP_WAIT_NEUTRAL ) )
-        mapping.options &= ~MAP_WAIT_NEUTRAL;
+    if ( _joystick.state.isNeutral() && ( _toMap.options & MAP_WAIT_NEUTRAL ) )
+        _toMap.options &= ~MAP_WAIT_NEUTRAL;
 
-    const uint32_t mask = joystickMappings.hats[hat][5];
+    const uint32_t mask = _joystickMappings.hats[hat][5];
 
-    if ( mapping.key != 0
+    if ( _toMap.key != 0
             && ( value % 2 == 0 || value == 5 ) // Only map up/down/left/right, and finish on neutral
-            && ! ( mapping.options & MAP_WAIT_NEUTRAL )
-            && ! ( ( mapping.options & MAP_PRESERVE_DIRS ) && ( mask & MASK_DIRS ) ) )
+            && ! ( _toMap.options & MAP_WAIT_NEUTRAL )
+            && ! ( ( _toMap.options & MAP_PRESERVE_DIRS ) && ( mask & MASK_DIRS ) ) )
     {
-        const uint8_t activeValue = mapping.active.hats[hat];
+        const uint8_t activeValue = _toMap.active.hats[hat];
 
         // Done mapping if the hat is centered again
         if ( value == 5 && activeValue != 5 )
         {
-            doClearMapping ( mapping.key );
+            doClearMapping ( _toMap.key );
 
-            joystickMappings.hats[hat][activeValue] = mapping.key;
+            _joystickMappings.hats[hat][activeValue] = _toMap.key;
 
             // Set bit mask for neutral value
-            joystickMappings.hats[hat][5] = ( joystickMappings.hats[hat][2] | joystickMappings.hats[hat][4] |
-                                              joystickMappings.hats[hat][6] | joystickMappings.hats[hat][8] );
+            _joystickMappings.hats[hat][5] = ( _joystickMappings.hats[hat][2] | _joystickMappings.hats[hat][4] |
+                                               _joystickMappings.hats[hat][6] | _joystickMappings.hats[hat][8] );
 
             // Set bit masks for diagonal values
-            joystickMappings.hats[hat][1] = ( joystickMappings.hats[hat][2] | joystickMappings.hats[hat][4] );
-            joystickMappings.hats[hat][3] = ( joystickMappings.hats[hat][2] | joystickMappings.hats[hat][6] );
-            joystickMappings.hats[hat][7] = ( joystickMappings.hats[hat][8] | joystickMappings.hats[hat][4] );
-            joystickMappings.hats[hat][9] = ( joystickMappings.hats[hat][8] | joystickMappings.hats[hat][6] );
+            _joystickMappings.hats[hat][1] = ( _joystickMappings.hats[hat][2] | _joystickMappings.hats[hat][4] );
+            _joystickMappings.hats[hat][3] = ( _joystickMappings.hats[hat][2] | _joystickMappings.hats[hat][6] );
+            _joystickMappings.hats[hat][7] = ( _joystickMappings.hats[hat][8] | _joystickMappings.hats[hat][4] );
+            _joystickMappings.hats[hat][9] = ( _joystickMappings.hats[hat][8] | _joystickMappings.hats[hat][6] );
 
-            joystickMappings.invalidate();
+            _joystickMappings.invalidate();
 
-            LOG_CONTROLLER ( this, "Mapped hat%u value=%d to %08x", hat, activeValue, mapping.key );
+            LOG_CONTROLLER ( this, "Mapped hat%u value=%d to %08x", hat, activeValue, _toMap.key );
 
             Owner *owner = this->owner;
-            const uint32_t key = mapping.key;
+            const uint32_t key = _toMap.key;
 
-            if ( mapping.options & MAP_CONTINUOUSLY )
-                mapping.active.clear();
+            if ( _toMap.options & MAP_CONTINUOUSLY )
+                _toMap.active.clear();
             else
                 cancelMapping();
 
@@ -241,51 +241,51 @@ void Controller::joystickHatEvent ( uint8_t hat, uint8_t value )
         if ( activeValue != 5 )
             return;
 
-        mapping.active.hats[hat] = value;
+        _toMap.active.hats[hat] = value;
         return;
     }
 
     if ( ! mask )
         return;
 
-    const uint32_t keyMapped = joystickMappings.hats[hat][value];
+    const uint32_t keyMapped = _joystickMappings.hats[hat][value];
 
-    state &= ~mask;
+    _state &= ~mask;
 
     if ( value != 5 )
-        state |= keyMapped;
+        _state |= keyMapped;
 
     LOG_CONTROLLER ( this, "value=%u", value );
 }
 
 void Controller::joystickButtonEvent ( uint8_t button, uint8_t value )
 {
-    if ( joystick.state.isNeutral() && ( mapping.options & MAP_WAIT_NEUTRAL ) )
-        mapping.options &= ~MAP_WAIT_NEUTRAL;
+    if ( _joystick.state.isNeutral() && ( _toMap.options & MAP_WAIT_NEUTRAL ) )
+        _toMap.options &= ~MAP_WAIT_NEUTRAL;
 
-    const uint32_t keyMapped = joystickMappings.buttons[button];
+    const uint32_t keyMapped = _joystickMappings.buttons[button];
 
-    if ( mapping.key != 0
-            && ! ( mapping.options & MAP_WAIT_NEUTRAL )
-            && ! ( ( mapping.options & MAP_PRESERVE_DIRS ) && ( keyMapped & MASK_DIRS ) ) )
+    if ( _toMap.key != 0
+            && ! ( _toMap.options & MAP_WAIT_NEUTRAL )
+            && ! ( ( _toMap.options & MAP_PRESERVE_DIRS ) && ( keyMapped & MASK_DIRS ) ) )
     {
-        const bool isActive = ( mapping.active.buttons & ( 1u << button ) );
+        const bool isActive = ( _toMap.active.buttons & ( 1u << button ) );
 
         // Done mapping if the button was released
         if ( !value && isActive )
         {
-            doClearMapping ( mapping.key );
+            doClearMapping ( _toMap.key );
 
-            joystickMappings.buttons[button] = mapping.key;
-            joystickMappings.invalidate();
+            _joystickMappings.buttons[button] = _toMap.key;
+            _joystickMappings.invalidate();
 
-            LOG_CONTROLLER ( this, "Mapped button%d to %08x", button, mapping.key );
+            LOG_CONTROLLER ( this, "Mapped button%d to %08x", button, _toMap.key );
 
             Owner *owner = this->owner;
-            const uint32_t key = mapping.key;
+            const uint32_t key = _toMap.key;
 
-            if ( mapping.options & MAP_CONTINUOUSLY )
-                mapping.active.clear();
+            if ( _toMap.options & MAP_CONTINUOUSLY )
+                _toMap.active.clear();
             else
                 cancelMapping();
 
@@ -299,7 +299,7 @@ void Controller::joystickButtonEvent ( uint8_t button, uint8_t value )
         if ( isActive )
             return;
 
-        mapping.active.buttons |= ( 1u << button );
+        _toMap.active.buttons |= ( 1u << button );
         return;
     }
 
@@ -307,9 +307,9 @@ void Controller::joystickButtonEvent ( uint8_t button, uint8_t value )
         return;
 
     if ( value )
-        state |= keyMapped;
+        _state |= keyMapped;
     else
-        state &= ~keyMapped;
+        _state &= ~keyMapped;
 
     LOG_CONTROLLER ( this, "button=%d; value=%d", button, value );
 }
@@ -336,13 +336,13 @@ static string nextName ( const string& name )
     return format ( "%s (%d)", name, index );
 }
 
-bool Controller::isUniqueName() const { return ( origNameCount[name] == 1 ); }
+bool Controller::isUniqueName() const { return ( origNameCount[_origName] == 1 ); }
 
-Controller::Controller ( KeyboardEnum ) : name ( "Keyboard" )
+Controller::Controller ( KeyboardEnum ) : _origName ( "Keyboard" )
 {
-    keyboardMappings.name = name;
-    namesWithIndex.insert ( keyboardMappings.name );
-    origNameCount[name] = 1;
+    _keyboardMappings.name = _origName;
+    namesWithIndex.insert ( _keyboardMappings.name );
+    origNameCount[_origName] = 1;
 
     doClearMapping();
     doResetToDefaults();
@@ -350,14 +350,14 @@ Controller::Controller ( KeyboardEnum ) : name ( "Keyboard" )
     LOG_CONTROLLER ( this, "New keyboard" );
 }
 
-Controller::Controller ( const JoystickInfo& info ) : name ( info.name ), joystick ( info )
+Controller::Controller ( const JoystickInfo& info ) : _origName ( info.name ), _joystick ( info )
 {
-    joystickMappings.name = nextName ( name );
-    namesWithIndex.insert ( joystickMappings.name );
+    _joystickMappings.name = nextName ( _origName );
+    namesWithIndex.insert ( _joystickMappings.name );
 
-    const auto it = origNameCount.find ( name );
+    const auto it = origNameCount.find ( _origName );
     if ( it == origNameCount.end() )
-        origNameCount[name] = 1;
+        origNameCount[_origName] = 1;
     else
         ++it->second;
 
@@ -365,7 +365,7 @@ Controller::Controller ( const JoystickInfo& info ) : name ( info.name ), joysti
     doResetToDefaults();
 
     LOG_CONTROLLER ( this, "New joystick: %s; %u axe(s); %u hat(s); %u button(s)",
-                     name, joystick.info.numAxes, joystick.info.numHats, joystick.info.numButtons );
+                     _origName, _joystick.info.numAxes, _joystick.info.numHats, _joystick.info.numButtons );
 }
 
 Controller::~Controller()
@@ -374,26 +374,26 @@ Controller::~Controller()
 
     namesWithIndex.erase ( getName() );
 
-    uint32_t& count = origNameCount[name];
+    uint32_t& count = origNameCount[_origName];
 
     if ( count > 1 )
         --count;
     else
-        origNameCount.erase ( name );
+        origNameCount.erase ( _origName );
 
     KeyboardManager::get().unhook();
 }
 
 string Controller::getMapping ( uint32_t key, const string& placeholder ) const
 {
-    if ( key == mapping.key && !placeholder.empty() )
+    if ( key == _toMap.key && !placeholder.empty() )
         return placeholder;
 
     if ( isKeyboard() )
     {
         for ( uint8_t i = 0; i < 32; ++i )
-            if ( ( key & ( 1u << i ) ) && keyboardMappings.codes[i] )
-                return keyboardMappings.names[i];
+            if ( ( key & ( 1u << i ) ) && _keyboardMappings.codes[i] )
+                return _keyboardMappings.names[i];
 
         return "";
     }
@@ -401,14 +401,14 @@ string Controller::getMapping ( uint32_t key, const string& placeholder ) const
     {
         string mapping;
 
-        for ( uint8_t axis = 0; axis < joystick.info.numAxes; ++axis )
+        for ( uint8_t axis = 0; axis < _joystick.info.numAxes; ++axis )
         {
             for ( uint8_t value = AXIS_POSITIVE; value <= AXIS_NEGATIVE; ++value )
             {
-                if ( joystickMappings.axes[axis][value] != key )
+                if ( _joystickMappings.axes[axis][value] != key )
                     continue;
 
-                const string str = format ( "%c %s", getAxisSign ( value ), joystick.info.axisNames[axis] );
+                const string str = format ( "%c %s", getAxisSign ( value ), _joystick.info.axisNames[axis] );
 
                 if ( mapping.empty() )
                     mapping = str;
@@ -417,11 +417,11 @@ string Controller::getMapping ( uint32_t key, const string& placeholder ) const
             }
         }
 
-        for ( uint8_t hat = 0; hat < joystick.info.numHats; ++hat )
+        for ( uint8_t hat = 0; hat < _joystick.info.numHats; ++hat )
         {
             for ( uint8_t value = 2; value <= 8; value += 2 )
             {
-                if ( joystickMappings.hats[hat][value] != key )
+                if ( _joystickMappings.hats[hat][value] != key )
                     continue;
 
                 string str = "DPad " + getHatString ( value );
@@ -429,21 +429,21 @@ string Controller::getMapping ( uint32_t key, const string& placeholder ) const
                 if ( hat > 0 )
                     str += format ( " (%u)", hat + 1 );
 
-                if ( mapping.empty() )
+                if ( _origName.empty() )
                     mapping = str;
                 else
                     mapping += ", " + str;
             }
         }
 
-        for ( uint8_t button = 0; button < joystick.info.numButtons; ++button )
+        for ( uint8_t button = 0; button < _joystick.info.numButtons; ++button )
         {
-            if ( joystickMappings.buttons[button] != key )
+            if ( _joystickMappings.buttons[button] != key )
                 continue;
 
             const string str = format ( "Button %u", button + 1 );
 
-            if ( mapping.empty() )
+            if ( _origName.empty() )
                 mapping = str;
             else
                 mapping += ", " + str;
@@ -486,18 +486,18 @@ void Controller::setMappings ( const array<char, 10>& config )
         {
             if ( bits[i] & ( 1u << j ) )
             {
-                keyboardMappings.codes[j] = vkCode;
-                keyboardMappings.names[j] = name;
+                _keyboardMappings.codes[j] = vkCode;
+                _keyboardMappings.names[j] = name;
             }
-            else if ( keyboardMappings.codes[j] == vkCode )
+            else if ( _keyboardMappings.codes[j] == vkCode )
             {
-                keyboardMappings.codes[j] = 0;
-                keyboardMappings.names[j].clear();
+                _keyboardMappings.codes[j] = 0;
+                _keyboardMappings.names[j].clear();
             }
         }
     }
 
-    keyboardMappings.invalidate();
+    _keyboardMappings.invalidate();
 
     ControllerManager::get().mappingsChanged ( this );
 }
@@ -508,8 +508,8 @@ void Controller::setMappings ( const KeyboardMappings& mappings )
 
     LOG_CONTROLLER ( this, "KeyboardMappings" );
 
-    keyboardMappings = mappings;
-    keyboardMappings.invalidate();
+    _keyboardMappings = mappings;
+    _keyboardMappings.invalidate();
 
     ControllerManager::get().mappingsChanged ( this );
 }
@@ -520,37 +520,37 @@ void Controller::setMappings ( const JoystickMappings& mappings )
 
     LOG_CONTROLLER ( this, "JoystickMappings" );
 
-    joystickMappings = mappings;
-    joystickMappings.invalidate();
+    _joystickMappings = mappings;
+    _joystickMappings.invalidate();
 
     ControllerManager::get().mappingsChanged ( this );
 }
 
 void Controller::startMapping ( Owner *owner, uint32_t key, uint8_t options )
 {
-    if ( this->mapping.options & MAP_CONTINUOUSLY )
-        mapping.active.clear();
+    if ( _toMap.options & MAP_CONTINUOUSLY )
+        _toMap.active.clear();
     else
         cancelMapping();
 
     LOG_CONTROLLER ( this, "Starting mapping %08x", key );
 
-    if ( ! joystick.state.isNeutral() )
+    if ( ! _joystick.state.isNeutral() )
         options |= MAP_WAIT_NEUTRAL;
 
     this->owner = owner;
-    this->mapping.key = key;
-    this->mapping.options = options;
+    _toMap.key = key;
+    _toMap.options = options;
 }
 
 void Controller::cancelMapping()
 {
-    LOG_CONTROLLER ( this, "Cancel mapping %08x", mapping.key );
+    LOG_CONTROLLER ( this, "Cancel mapping %08x", _toMap.key );
 
     owner = 0;
-    mapping.key = 0;
-    mapping.options = 0;
-    mapping.active.clear();
+    _toMap.key = 0;
+    _toMap.options = 0;
+    _toMap.active.clear();
 }
 
 void Controller::doClearMapping ( uint32_t keys )
@@ -559,42 +559,42 @@ void Controller::doClearMapping ( uint32_t keys )
     {
         if ( keys & ( 1u << i ) )
         {
-            keyboardMappings.codes[i] = 0;
-            keyboardMappings.names[i].clear();
-            keyboardMappings.invalidate();
+            _keyboardMappings.codes[i] = 0;
+            _keyboardMappings.names[i].clear();
+            _keyboardMappings.invalidate();
         }
     }
 
-    for ( auto& a : joystickMappings.axes )
+    for ( auto& a : _joystickMappings.axes )
     {
         for ( auto& b : a )
         {
             if ( b & keys )
             {
                 b = 0;
-                joystickMappings.invalidate();
+                _joystickMappings.invalidate();
             }
         }
     }
 
-    for ( auto& a : joystickMappings.hats )
+    for ( auto& a : _joystickMappings.hats )
     {
         for ( auto& b : a )
         {
             if ( b & keys )
             {
                 b = 0;
-                joystickMappings.invalidate();
+                _joystickMappings.invalidate();
             }
         }
     }
 
-    for ( auto& a : joystickMappings.buttons )
+    for ( auto& a : _joystickMappings.buttons )
     {
         if ( a & keys )
         {
             a = 0;
-            joystickMappings.invalidate();
+            _joystickMappings.invalidate();
         }
     }
 }
@@ -612,46 +612,46 @@ void Controller::doResetToDefaults()
         return;
 
     // Default axis mappings
-    for ( uint8_t axis = 0; axis < joystick.info.numAxes; ++axis )
+    for ( uint8_t axis = 0; axis < _joystick.info.numAxes; ++axis )
     {
-        if ( joystick.info.axisNames[axis].empty() )
+        if ( _joystick.info.axisNames[axis].empty() )
             continue;
 
-        if ( joystick.info.axisNames[axis][0] == 'X' )
+        if ( _joystick.info.axisNames[axis][0] == 'X' )
         {
-            joystickMappings.axes[axis][AXIS_CENTERED] = MASK_X_AXIS;
-            joystickMappings.axes[axis][AXIS_POSITIVE] = BIT_RIGHT;
-            joystickMappings.axes[axis][AXIS_NEGATIVE] = BIT_LEFT;
+            _joystickMappings.axes[axis][AXIS_CENTERED] = MASK_X_AXIS;
+            _joystickMappings.axes[axis][AXIS_POSITIVE] = BIT_RIGHT;
+            _joystickMappings.axes[axis][AXIS_NEGATIVE] = BIT_LEFT;
         }
-        else if ( joystick.info.axisNames[axis][0] == 'Y' )
+        else if ( _joystick.info.axisNames[axis][0] == 'Y' )
         {
-            joystickMappings.axes[axis][AXIS_CENTERED] = MASK_Y_AXIS;
-            joystickMappings.axes[axis][AXIS_POSITIVE] = BIT_UP;
-            joystickMappings.axes[axis][AXIS_NEGATIVE] = BIT_DOWN;
+            _joystickMappings.axes[axis][AXIS_CENTERED] = MASK_Y_AXIS;
+            _joystickMappings.axes[axis][AXIS_POSITIVE] = BIT_UP;
+            _joystickMappings.axes[axis][AXIS_NEGATIVE] = BIT_DOWN;
         }
     }
 
     // Default hat mappings
-    for ( uint8_t hat = 0; hat < joystick.info.numHats; ++hat )
+    for ( uint8_t hat = 0; hat < _joystick.info.numHats; ++hat )
     {
-        joystickMappings.hats[hat][5] = MASK_DIRS;
-        joystickMappings.hats[hat][8] = BIT_UP;
-        joystickMappings.hats[hat][9] = BIT_UP | BIT_RIGHT;
-        joystickMappings.hats[hat][6] = BIT_RIGHT;
-        joystickMappings.hats[hat][3] = BIT_DOWN | BIT_RIGHT;
-        joystickMappings.hats[hat][2] = BIT_DOWN;
-        joystickMappings.hats[hat][1] = BIT_DOWN | BIT_LEFT;
-        joystickMappings.hats[hat][4] = BIT_LEFT;
-        joystickMappings.hats[hat][7] = BIT_UP | BIT_LEFT;
+        _joystickMappings.hats[hat][5] = MASK_DIRS;
+        _joystickMappings.hats[hat][8] = BIT_UP;
+        _joystickMappings.hats[hat][9] = BIT_UP | BIT_RIGHT;
+        _joystickMappings.hats[hat][6] = BIT_RIGHT;
+        _joystickMappings.hats[hat][3] = BIT_DOWN | BIT_RIGHT;
+        _joystickMappings.hats[hat][2] = BIT_DOWN;
+        _joystickMappings.hats[hat][1] = BIT_DOWN | BIT_LEFT;
+        _joystickMappings.hats[hat][4] = BIT_LEFT;
+        _joystickMappings.hats[hat][7] = BIT_UP | BIT_LEFT;
     }
 
     // Clear all buttons
     doClearMapping ( MASK_BUTTONS );
 
     // Default deadzone
-    joystickMappings.deadzone = DEFAULT_DEADZONE;
+    _joystickMappings.deadzone = DEFAULT_DEADZONE;
 
-    joystickMappings.invalidate();
+    _joystickMappings.invalidate();
 }
 
 void Controller::resetToDefaults()
@@ -667,9 +667,9 @@ void Controller::resetToDefaults()
 bool Controller::saveMappings ( const string& file ) const
 {
     if ( isKeyboard() )
-        return ControllerManager::saveMappings ( file, keyboardMappings );
+        return ControllerManager::saveMappings ( file, _keyboardMappings );
     else
-        return ControllerManager::saveMappings ( file, joystickMappings );
+        return ControllerManager::saveMappings ( file, _joystickMappings );
 }
 
 bool Controller::loadMappings ( const string& file )
@@ -687,13 +687,13 @@ bool Controller::loadMappings ( const string& file )
             return false;
         }
 
-        if ( msg->getAs<KeyboardMappings>().name != keyboardMappings.name )
+        if ( msg->getAs<KeyboardMappings>().name != _keyboardMappings.name )
         {
             LOG ( "Name mismatch: decoded '%s' != keyboard '%s'",
-                  msg->getAs<KeyboardMappings>().name, keyboardMappings.name );
+                  msg->getAs<KeyboardMappings>().name, _keyboardMappings.name );
         }
 
-        keyboardMappings = msg->getAs<KeyboardMappings>();
+        _keyboardMappings = msg->getAs<KeyboardMappings>();
         ControllerManager::get().mappingsChanged ( this );
     }
     else // if ( isJoystick() )
@@ -704,13 +704,13 @@ bool Controller::loadMappings ( const string& file )
             return false;
         }
 
-        if ( msg->getAs<JoystickMappings>().name != joystickMappings.name )
+        if ( msg->getAs<JoystickMappings>().name != _joystickMappings.name )
         {
             LOG ( "Name mismatch: decoded '%s' != joystick '%s'",
-                  msg->getAs<JoystickMappings>().name, joystickMappings.name );
+                  msg->getAs<JoystickMappings>().name, _joystickMappings.name );
         }
 
-        joystickMappings = msg->getAs<JoystickMappings>();
+        _joystickMappings = msg->getAs<JoystickMappings>();
         ControllerManager::get().mappingsChanged ( this );
     }
 

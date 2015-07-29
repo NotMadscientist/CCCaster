@@ -36,13 +36,25 @@ public:
 
     void start();
 
-    int getCode() const { return code; }
+    int getStatusCode() const { return _statusCode; }
 
-    const std::string& getResponse() const { return dataBuffer; }
+    const std::string& getResponse() const { return _dataBuffer; }
 
-    uint32_t getContentLength() const { return contentLength; }
+    uint32_t getContentLength() const { return _contentLength; }
 
 private:
+
+    SocketPtr _socket;
+
+    TimerPtr _timer;
+
+    std::string _host, _path;
+
+    int _statusCode;
+
+    std::string _headerBuffer, _dataBuffer;
+
+    uint32_t _contentLength, _remainingBytes;
 
     void socketAccepted ( Socket *socket ) override {}
     void socketConnected ( Socket *socket ) override;
@@ -58,15 +70,4 @@ private:
 
     void finalize();
 
-    SocketPtr socket;
-
-    TimerPtr timer;
-
-    std::string host, path;
-
-    int code;
-
-    std::string headerBuffer, dataBuffer;
-
-    uint32_t contentLength, remainingBytes;
 };

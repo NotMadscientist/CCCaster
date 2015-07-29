@@ -106,12 +106,14 @@ IpAddrPort::IpAddrPort ( const string& addrPort ) : addr ( addrPort ), port ( 0 
 }
 
 IpAddrPort::IpAddrPort ( const sockaddr *sa )
-    : addr ( getAddrFromSockAddr ( sa ) ), port ( getPortFromSockAddr ( sa ) ), isV4 ( sa->sa_family == AF_INET ) {}
+    : addr ( getAddrFromSockAddr ( sa ) )
+    , port ( getPortFromSockAddr ( sa ) )
+    , isV4 ( sa->sa_family == AF_INET ) {}
 
 const shared_ptr<addrinfo>& IpAddrPort::getAddrInfo() const
 {
-    if ( addrInfo.get() )
-        return addrInfo;
+    if ( _addrInfo.get() )
+        return _addrInfo;
     else
-        return ( addrInfo = ::getAddrInfo ( addr, port, isV4 ) );
+        return ( _addrInfo = ::getAddrInfo ( addr, port, isV4 ) );
 }

@@ -5,13 +5,13 @@
 using namespace std;
 
 
-unordered_map<uint32_t, bool> KeyboardState::states;
+unordered_map<uint32_t, bool> KeyboardState::_state;
 
-unordered_map<uint32_t, bool> KeyboardState::previous;
+unordered_map<uint32_t, bool> KeyboardState::_previous;
 
-unordered_map<uint32_t, uint64_t> KeyboardState::pressedTimestamp;
+unordered_map<uint32_t, uint64_t> KeyboardState::_pressedTimestamp;
 
-uint32_t KeyboardState::repeatTimer = 0;
+uint32_t KeyboardState::_repeatTimer = 0;
 
 void *KeyboardState::windowHandle = 0;
 
@@ -27,42 +27,42 @@ static inline bool getKeyState ( uint32_t vkCode )
 
 void KeyboardState::clear()
 {
-    states.clear();
-    previous.clear();
-    pressedTimestamp.clear();
+    _state.clear();
+    _previous.clear();
+    _pressedTimestamp.clear();
 }
 
 void KeyboardState::update()
 {
-    previous = states;
+    _previous = _state;
 
-    for ( auto& kv : states )
+    for ( auto& kv : _state )
     {
         kv.second = getKeyState ( kv.first );
 
         if ( kv.second && !wasDown ( kv.first ) )
         {
-            pressedTimestamp[kv.first] = TimerManager::get().getNow ( true );
+            _pressedTimestamp[kv.first] = TimerManager::get().getNow ( true );
         }
         else if ( !kv.second && wasDown ( kv.first ) )
         {
-            pressedTimestamp.erase ( kv.first );
+            _pressedTimestamp.erase ( kv.first );
         }
     }
 
-    ++repeatTimer;
+    ++_repeatTimer;
 }
 
 bool KeyboardState::isDown ( uint32_t vkCode )
 {
-    const auto it = states.find ( vkCode );
+    const auto it = _state.find ( vkCode );
 
-    if ( it != states.end() )
+    if ( it != _state.end() )
         return it->second;
 
-    if ( ( states[vkCode] = getKeyState ( vkCode ) ) )
+    if ( ( _state[vkCode] = getKeyState ( vkCode ) ) )
     {
-        pressedTimestamp[vkCode] = TimerManager::get().getNow ( true );
+        _pressedTimestamp[vkCode] = TimerManager::get().getNow ( true );
         return true;
     }
 

@@ -47,7 +47,7 @@ public:
     void unhook();
 
     // Indicates if keyboard events are hooked
-    bool isHooked() const;
+    bool isHooked() const { return _hooked; }
 
     // Get the singleton instance
     static KeyboardManager& get();
@@ -55,10 +55,10 @@ public:
 private:
 
     // If we're hooked
-    bool hooked = false;
+    bool _hooked = false;
 
     // Socket to receive KeyboardEvent messages
-    SocketPtr recvSocket;
+    SocketPtr _recvSocket;
 
     // Socket callbacks
     void socketAccepted ( Socket *socket ) override {}

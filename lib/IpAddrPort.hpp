@@ -51,7 +51,7 @@ public:
     void invalidate() const override
     {
         Serializable::invalidate();
-        addrInfo.reset();
+        _addrInfo.reset();
     }
 
     const std::shared_ptr<addrinfo>& getAddrInfo() const;
@@ -90,7 +90,7 @@ public:
 
 private:
 
-    mutable std::shared_ptr<addrinfo> addrInfo;
+    mutable std::shared_ptr<addrinfo> _addrInfo;
 };
 
 

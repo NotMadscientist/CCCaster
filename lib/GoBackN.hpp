@@ -62,8 +62,8 @@ public:
 
     Owner *owner = 0;
 
-    // Basic constructors
-    GoBackN ( const GoBackN& other ) { *this = other; }
+    // Constructors
+    GoBackN ( const GoBackN& other );
     GoBackN ( Owner *owner, uint64_t interval = DEFAULT_SEND_INTERVAL, uint64_t timeout = 0 );
     GoBackN ( Owner *owner, const GoBackN& state );
     GoBackN& operator= ( const GoBackN& other );
@@ -76,22 +76,22 @@ public:
     void recvFromSocket ( const MsgPtr& msg );
 
     // Get / set the interval to send packets, should be non-zero
-    uint64_t getSendInterval() const { return interval; }
+    uint64_t getSendInterval() const { return _interval; }
     void setSendInterval ( uint64_t interval );
 
     // Get / set the timeout for keep alive packets, 0 to disable
-    uint64_t getKeepAlive() const { return keepAlive; }
+    uint64_t getKeepAlive() const { return _keepAlive; }
     void setKeepAlive ( uint64_t timeout );
 
     // Get the number of messages sent and received
-    uint32_t getSendCount() const { return sendSequence; }
-    uint32_t getRecvCount() const { return recvSequence; }
+    uint32_t getSendCount() const { return _sendSequence; }
+    uint32_t getRecvCount() const { return _recvSequence; }
 
     // Get the number of messages ACKed
-    uint32_t getAckCount() const { return ackSequence; }
+    uint32_t getAckCount() const { return _ackSequence; }
 
     // Delay sending the next keep alive packet
-    void delayKeepAliveOnce() { skipNextKeepAlive = true; }
+    void delayKeepAliveOnce();
 
     // Reset the state of GoBackN
     void reset();
@@ -104,34 +104,34 @@ public:
 private:
 
     // Last sent and received sequences
-    uint32_t sendSequence = 0, recvSequence = 0;
+    uint32_t _sendSequence = 0, _recvSequence = 0;
 
     // Last ACKed sequence
-    uint32_t ackSequence = 0;
+    uint32_t _ackSequence = 0;
 
     // Current list of messages to repeatedly send
-    std::list<MsgPtr> sendList;
+    std::list<MsgPtr> _sendList;
 
     // Current position in the sendList
-    std::list<MsgPtr>::const_iterator sendListPos;
+    std::list<MsgPtr>::const_iterator _sendListPos;
 
     // Timer for repeatedly sending messages
-    TimerPtr sendTimer;
+    TimerPtr _sendTimer;
 
     // Buffer for accumulating split messages
-    std::string recvBuffer;
+    std::string _recvBuffer;
 
     // The interval to send packets, should be non-zero
-    uint64_t interval = DEFAULT_SEND_INTERVAL;
+    uint64_t _interval = DEFAULT_SEND_INTERVAL;
 
     // The timeout for keep alive packets, 0 to disable
-    uint64_t keepAlive = 0;
+    uint64_t _keepAlive = 0;
 
     // The countdown timer for the keep alive packets
-    uint32_t countDown = 0;
+    uint32_t _countDown = 0;
 
     // Delay sending the keep alive packet for one iteration
-    bool skipNextKeepAlive = false;
+    bool _skipNextKeepAlive = false;
 
     // Timer callback that sends the messages
     void timerExpired ( Timer *timer ) override;
@@ -140,5 +140,5 @@ private:
     void checkAndStartTimer();
 
     // Refresh keep alive count down
-    void refreshKeepAlive() { countDown = ( keepAlive / interval ); }
+    void refreshKeepAlive();
 };

@@ -32,9 +32,9 @@ public:
 
 private:
 
-    std::ofstream outputFile;
+    std::ofstream _outputFile;
 
-    std::shared_ptr<HttpGet> httpGet;
+    std::shared_ptr<HttpGet> _httpGet;
 
     void httpResponse ( HttpGet *httpGet, int code, const std::string& data, uint32_t remainingBytes ) override;
 
