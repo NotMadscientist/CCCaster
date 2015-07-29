@@ -291,9 +291,6 @@ private:
 
     MappingInternalState mapping;
 
-    // Main mutex
-    Mutex mutex;
-
     // Keyboard event callback
     void keyboardEvent ( uint32_t vkCode, uint32_t scanCode, bool isExtended, bool isDown );
 
