@@ -22,15 +22,15 @@ public:
 
     void stop();
 
-    uint64_t getDelay() const { return delay; }
+    uint64_t getDelay() const { return _delay; }
 
-    bool isStarted() const { return ( delay > 0 || expiry > 0 ); }
+    bool isStarted() const { return ( _delay > 0 || _expiry > 0 ); }
 
     friend class TimerManager;
 
 private:
 
-    uint64_t delay = 0, expiry = 0;
+    uint64_t _delay = 0, _expiry = 0;
 };
 
 typedef std::shared_ptr<Timer> TimerPtr;

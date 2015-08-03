@@ -39,29 +39,29 @@ ProcessManager::~ProcessManager()
 
 void ProcessManager::socketAccepted ( Socket *serverSocket )
 {
-    ASSERT ( serverSocket == ipcSocket.get() );
+    ASSERT ( serverSocket == _ipcSocket.get() );
     ASSERT ( serverSocket->isServer() == true );
 
-    ipcSocket = serverSocket->accept ( this );
+    _ipcSocket = serverSocket->accept ( this );
 
-    ASSERT ( ipcSocket->address.addr == "127.0.0.1" );
+    LOG ( "ipcSocket=%08x", _ipcSocket.get() );
 
-    LOG ( "ipcSocket=%08x", ipcSocket.get() );
+    ASSERT ( _ipcSocket->address.addr == "127.0.0.1" );
 
-    ipcSocket->send ( new IpcConnected() );
+    _ipcSocket->send ( new IpcConnected() );
 }
 
 void ProcessManager::socketConnected ( Socket *socket )
 {
-    ASSERT ( socket == ipcSocket.get() );
-    ASSERT ( ipcSocket->address.addr == "127.0.0.1" );
+    ASSERT ( socket == _ipcSocket.get() );
+    ASSERT ( _ipcSocket->address.addr == "127.0.0.1" );
 
-    ipcSocket->send ( new IpcConnected() );
+    _ipcSocket->send ( new IpcConnected() );
 }
 
 void ProcessManager::socketDisconnected ( Socket *socket )
 {
-    ASSERT ( socket == ipcSocket.get() );
+    ASSERT ( socket == _ipcSocket.get() );
 
     disconnectPipe();
 
@@ -73,15 +73,15 @@ void ProcessManager::socketDisconnected ( Socket *socket )
 
 void ProcessManager::socketRead ( Socket *socket, const MsgPtr& msg, const IpAddrPort& address )
 {
-    ASSERT ( socket == ipcSocket.get() );
+    ASSERT ( socket == _ipcSocket.get() );
     ASSERT ( address.addr == "127.0.0.1" );
 
     if ( msg && msg->getMsgType() == MsgType::IpcConnected )
     {
-        ASSERT ( connected == false );
+        ASSERT ( _connected == false );
 
-        connected = true;
-        gameStartTimer.reset();
+        _connected = true;
+        _gameStartTimer.reset();
 
         if ( owner )
             owner->ipcConnected();
@@ -93,9 +93,9 @@ void ProcessManager::socketRead ( Socket *socket, const MsgPtr& msg, const IpAdd
 
 void ProcessManager::timerExpired ( Timer *timer )
 {
-    ASSERT ( timer == gameStartTimer.get() );
+    ASSERT ( timer == _gameStartTimer.get() );
 
-    if ( gameStartCount >= GAME_START_ATTEMPTS && !isConnected() )
+    if ( _gameStartCount >= GAME_START_ATTEMPTS && !isConnected() )
     {
         disconnectPipe();
 
@@ -106,10 +106,10 @@ void ProcessManager::timerExpired ( Timer *timer )
         return;
     }
 
-    gameStartTimer->start ( GAME_START_INTERVAL );
-    ++gameStartCount;
+    _gameStartTimer->start ( GAME_START_INTERVAL );
+    ++_gameStartCount;
 
-    LOG ( "Trying to start game (%d)", gameStartCount );
+    LOG ( "Trying to start game (%d)", _gameStartCount );
 
     void *hwnd = 0;
     if ( ! ( hwnd = findWindow ( CC_STARTUP_TITLE, false ) ) )
@@ -126,17 +126,17 @@ void ProcessManager::openGame ( bool highPriority )
 {
     LOG ( "Opening pipe" );
 
-    pipe = CreateNamedPipe (
-               NAMED_PIPE,                                          // name of the pipe
-               PIPE_ACCESS_DUPLEX,                                  // 2-way pipe
-               PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,     // byte stream + blocking
-               1,                                                   // only allow 1 instance of this pipe
-               1024,                                                // outbound buffer size
-               1024,                                                // inbound buffer size
-               0,                                                   // use default wait time
-               0 );                                                 // use default security attributes
+    _pipe = CreateNamedPipe (
+                NAMED_PIPE,                                          // name of the pipe
+                PIPE_ACCESS_DUPLEX,                                  // 2-way pipe
+                PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,     // byte stream + blocking
+                1,                                                   // only allow 1 instance of this pipe
+                1024,                                                // outbound buffer size
+                1024,                                                // inbound buffer size
+                0,                                                   // use default wait time
+                0 );                                                 // use default security attributes
 
-    if ( pipe == INVALID_HANDLE_VALUE )
+    if ( _pipe == INVALID_HANDLE_VALUE )
         THROW_WIN_EXCEPTION ( GetLastError(), "CreateNamedPipe failed", ERROR_PIPE_OPEN );
 
     LOG ( "appDir='%s'", appDir );
@@ -168,13 +168,13 @@ void ProcessManager::openGame ( bool highPriority )
         {
             Sleep ( PIPE_CONNECT_TIMEOUT );
 
-            HANDLE pipe = CreateFile ( NAMED_PIPE, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
-                                       0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0 );
+            HANDLE tmpPipe = CreateFile ( NAMED_PIPE, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                          0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0 );
 
-            if ( pipe == INVALID_HANDLE_VALUE )
+            if ( tmpPipe == INVALID_HANDLE_VALUE )
                 return;
 
-            CloseHandle ( pipe );
+            CloseHandle ( tmpPipe );
         }
     };
 
@@ -182,7 +182,7 @@ void ProcessManager::openGame ( bool highPriority )
     thread->start();
     EventManager::get().addThread ( thread );
 
-    if ( ! ConnectNamedPipe ( pipe, 0 ) )
+    if ( ! ConnectNamedPipe ( _pipe, 0 ) )
     {
         int error = GetLastError();
 
@@ -195,7 +195,7 @@ void ProcessManager::openGame ( bool highPriority )
     DWORD bytes;
     IpAddrPort ipcHost ( "127.0.0.1", 0 );
 
-    if ( ! ReadFile ( pipe, &ipcHost.port, sizeof ( ipcHost.port ), &bytes, 0 ) )
+    if ( ! ReadFile ( _pipe, &ipcHost.port, sizeof ( ipcHost.port ), &bytes, 0 ) )
         THROW_WIN_EXCEPTION ( GetLastError(), "ReadFile failed", ERROR_PIPE_RW );
 
     if ( bytes != sizeof ( ipcHost.port ) )
@@ -203,21 +203,21 @@ void ProcessManager::openGame ( bool highPriority )
 
     LOG ( "ipcHost='%s'", ipcHost );
 
-    ipcSocket = TcpSocket::connect ( this, ipcHost );
+    _ipcSocket = TcpSocket::connect ( this, ipcHost );
 
-    LOG ( "ipcSocket=%08x", ipcSocket.get() );
+    LOG ( "ipcSocket=%08x", _ipcSocket.get() );
 
-    if ( ! ReadFile ( pipe, &processId, sizeof ( processId ), &bytes, 0 ) )
+    if ( ! ReadFile ( _pipe, &_processId, sizeof ( _processId ), &bytes, 0 ) )
         THROW_WIN_EXCEPTION ( GetLastError(), "ReadFile failed", ERROR_PIPE_RW );
 
-    if ( bytes != sizeof ( processId ) )
-        THROW_EXCEPTION ( "read %d bytes, expected %d", ERROR_PIPE_RW, bytes, sizeof ( processId ) );
+    if ( bytes != sizeof ( _processId ) )
+        THROW_EXCEPTION ( "read %d bytes, expected %d", ERROR_PIPE_RW, bytes, sizeof ( _processId ) );
 
-    LOG ( "processId=%08x", processId );
+    LOG ( "processId=%08x", _processId );
 
-    gameStartTimer.reset ( new Timer ( this ) );
-    gameStartTimer->start ( GAME_START_INTERVAL );
-    gameStartCount = 0;
+    _gameStartTimer.reset ( new Timer ( this ) );
+    _gameStartTimer->start ( GAME_START_INTERVAL );
+    _gameStartCount = 0;
 }
 
 void ProcessManager::closeGame()
@@ -240,16 +240,16 @@ void ProcessManager::closeGame()
 
 void ProcessManager::disconnectPipe()
 {
-    gameStartTimer.reset();
-    ipcSocket.reset();
+    _gameStartTimer.reset();
+    _ipcSocket.reset();
 
-    if ( pipe )
+    if ( _pipe )
     {
-        CloseHandle ( ( HANDLE ) pipe );
-        pipe = 0;
+        CloseHandle ( ( HANDLE ) _pipe );
+        _pipe = 0;
     }
 
-    connected = false;
+    _connected = false;
 }
 
 bool ProcessManager::getIsWindowed()
@@ -424,4 +424,28 @@ bool ProcessManager::isWine()
 
     isWine = ( GetProcAddress ( ntdll, "wine_get_version" ) ? 1 : 0 );
     return isWine;
+}
+
+
+bool ProcessManager::isConnected() const
+{
+    return ( _pipe && _ipcSocket && _ipcSocket->isClient() && _connected );
+}
+
+bool ProcessManager::ipcSend ( Serializable& msg )
+{
+    return ipcSend ( MsgPtr ( &msg, ignoreMsgPtr ) );
+}
+
+bool ProcessManager::ipcSend ( Serializable *msg )
+{
+    return ipcSend ( MsgPtr ( msg ) );
+}
+
+bool ProcessManager::ipcSend ( const MsgPtr& msg )
+{
+    if ( ! isConnected() )
+        return false;
+    else
+        return _ipcSocket->send ( msg );
 }

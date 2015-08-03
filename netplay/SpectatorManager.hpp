@@ -46,7 +46,7 @@ public:
     SpectatorManager ( NetplayManager *netManPtr, const ProcessManager *procManPtr );
 
 
-    bool isPendingSocket ( Socket *socket ) const { return ( pendingSockets.find ( socket ) != pendingSockets.end() ); }
+    bool isPendingSocket ( Socket *socket ) const { return ( _pendingSockets.find ( socket ) != _pendingSockets.end() ); }
 
     void pushPendingSocket ( Timer::Owner *owner, const SocketPtr& socket );
 
@@ -55,7 +55,7 @@ public:
     void timerExpired ( Timer *timer );
 
 
-    size_t numSpectators() const { return spectatorMap.size(); }
+    size_t numSpectators() const { return _spectatorMap.size(); }
 
     void pushSpectator ( Socket *socket, const IpAddrPort& serverAddr );
 
@@ -70,23 +70,23 @@ public:
 
 private:
 
-    std::unordered_map<Socket *, SocketPtr> pendingSockets;
+    std::unordered_map<Socket *, SocketPtr> _pendingSockets;
 
-    std::unordered_map<Socket *, TimerPtr> pendingSocketTimers;
+    std::unordered_map<Socket *, TimerPtr> _pendingSocketTimers;
 
-    std::unordered_map<Timer *, Socket *> pendingTimerToSocket;
+    std::unordered_map<Timer *, Socket *> _pendingTimerToSocket;
 
-    std::unordered_map<Socket *, Spectator> spectatorMap;
+    std::unordered_map<Socket *, Spectator> _spectatorMap;
 
-    std::list<Socket *> spectatorList;
+    std::list<Socket *> _spectatorList;
 
-    std::list<Socket *>::iterator spectatorListPos;
+    std::list<Socket *>::iterator _spectatorListPos;
 
-    std::unordered_map<Socket *, Spectator>::const_iterator spectatorMapPos;
+    std::unordered_map<Socket *, Spectator>::const_iterator _spectatorMapPos;
 
-    uint32_t currentMinIndex = UINT_MAX;
+    uint32_t _currentMinIndex = UINT_MAX;
 
-    NetplayManager *netManPtr = 0;
+    NetplayManager *_netManPtr = 0;
 
-    const ProcessManager *procManPtr = 0;
+    const ProcessManager *_procManPtr = 0;
 };

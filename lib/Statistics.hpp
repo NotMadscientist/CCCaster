@@ -18,49 +18,49 @@ public:
     {
         static_assert ( std::numeric_limits<double>::is_iec559, "IEEE 754 required" );
 
-        if ( value > worst )
-            worst = value;
+        if ( value > _worst )
+            _worst = value;
 
         // http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Incremental_algorithm
-        double delta = value - mean;
-        ++count;
-        mean += delta / count;
-        sumOfSquaredDeltas += delta * ( value - mean );
+        double delta = value - _mean;
+        ++_count;
+        _mean += delta / _count;
+        _sumOfSquaredDeltas += delta * ( value - _mean );
     }
 
     void reset()
     {
-        count = 0;
-        worst = -std::numeric_limits<double>::infinity();
-        mean = sumOfSquaredDeltas = 0.0;
+        _count = 0;
+        _worst = -std::numeric_limits<double>::infinity();
+        _mean = _sumOfSquaredDeltas = 0.0;
     }
 
     size_t getNumSamples() const
     {
-        return count;
+        return _count;
     }
 
     double getWorst() const
     {
-        return worst;
+        return _worst;
     }
 
     double getMean() const
     {
-        if ( count < 1 )
+        if ( _count < 1 )
             return 0;
 
-        return mean;
+        return _mean;
     }
 
     double getVariance() const
     {
-        if ( count < 2 )
+        if ( _count < 2 )
             return 0;
 
-        ASSERT ( sumOfSquaredDeltas >= 0 );
+        ASSERT ( _sumOfSquaredDeltas >= 0 );
 
-        return sumOfSquaredDeltas / ( count - 1 );
+        return _sumOfSquaredDeltas / ( _count - 1 );
     }
 
     double getStdDev() const
@@ -70,33 +70,33 @@ public:
 
     double getStdErr() const
     {
-        if ( count < 2 )
+        if ( _count < 2 )
             return 0;
 
-        return getStdDev() / std::sqrt ( count );
+        return getStdDev() / std::sqrt ( _count );
     }
 
     void merge ( const Statistics& stats )
     {
-        worst = std::max ( worst, stats.worst );
-        mean = ( mean * count + stats.mean * stats.count ) / ( count + stats.count );
-        sumOfSquaredDeltas += stats.sumOfSquaredDeltas;
-        count += stats.count;
+        _worst = std::max ( _worst, stats._worst );
+        _mean = ( _mean * _count + stats._mean * stats._count ) / ( _count + stats._count );
+        _sumOfSquaredDeltas += stats._sumOfSquaredDeltas;
+        _count += stats._count;
     }
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( Statistics, count, worst, mean, sumOfSquaredDeltas )
+    PROTOCOL_MESSAGE_BOILERPLATE ( Statistics, _count, _worst, _mean, _sumOfSquaredDeltas )
 
 private:
 
     // Number of samples
-    size_t count = 0;
+    size_t _count = 0;
 
-    double worst = -std::numeric_limits<double>::infinity();
+    double _worst = -std::numeric_limits<double>::infinity();
 
     // Current mean value
-    double mean = 0.0;
+    double _mean = 0.0;
 
     // Sum of (latency - mean)^2 for each latency value
-    double sumOfSquaredDeltas = 0.0;
+    double _sumOfSquaredDeltas = 0.0;
 };
 

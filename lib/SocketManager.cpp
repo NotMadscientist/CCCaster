@@ -12,48 +12,48 @@ using namespace std;
 
 void SocketManager::check ( uint64_t timeout )
 {
-    if ( ! initialized )
+    if ( ! _initialized )
         return;
 
-    if ( changed )
+    if ( _changed )
     {
-        for ( Socket *socket : allocatedSockets )
+        for ( Socket *socket : _allocatedSockets )
         {
-            if ( activeSockets.find ( socket ) != activeSockets.end() )
+            if ( _activeSockets.find ( socket ) != _activeSockets.end() )
                 continue;
 
             LOG_SOCKET ( socket, "added" );
-            activeSockets.insert ( socket );
+            _activeSockets.insert ( socket );
         }
 
-        for ( auto it = activeSockets.cbegin(); it != activeSockets.cend(); )
+        for ( auto it = _activeSockets.cbegin(); it != _activeSockets.cend(); )
         {
-            if ( allocatedSockets.find ( *it ) != allocatedSockets.end() )
+            if ( _allocatedSockets.find ( *it ) != _allocatedSockets.end() )
             {
                 ++it;
                 continue;
             }
 
             LOG ( "socket=%08x removed", *it ); // Don't log any extra data cus already deleted
-            activeSockets.erase ( it++ );
+            _activeSockets.erase ( it++ );
         }
 
-        changed = false;
+        _changed = false;
     }
 
-    if ( activeSockets.empty() )
+    if ( _activeSockets.empty() )
         return;
 
     fd_set readFds, writeFds;
     FD_ZERO ( &readFds );
     FD_ZERO ( &writeFds );
 
-    for ( Socket *socket : activeSockets )
+    for ( Socket *socket : _activeSockets )
     {
         if ( socket->isConnecting() && socket->isTCP() )
-            FD_SET ( socket->fd, &writeFds );
+            FD_SET ( socket->_fd, &writeFds );
         else
-            FD_SET ( socket->fd, &readFds );
+            FD_SET ( socket->_fd, &readFds );
     }
 
     ASSERT ( timeout > 0 );
@@ -74,14 +74,14 @@ void SocketManager::check ( uint64_t timeout )
     ASSERT ( TimerManager::get().isInitialized() == true );
     TimerManager::get().updateNow();
 
-    for ( Socket *socket : activeSockets )
+    for ( Socket *socket : _activeSockets )
     {
-        if ( allocatedSockets.find ( socket ) == allocatedSockets.end() )
+        if ( _allocatedSockets.find ( socket ) == _allocatedSockets.end() )
             continue;
 
         if ( socket->isConnecting() && socket->isTCP() )
         {
-            if ( ! FD_ISSET ( socket->fd, &writeFds ) )
+            if ( ! FD_ISSET ( socket->_fd, &writeFds ) )
                 continue;
 
             LOG_SOCKET ( socket, "socketConnected" );
@@ -89,7 +89,7 @@ void SocketManager::check ( uint64_t timeout )
         }
         else
         {
-            if ( ! FD_ISSET ( socket->fd, &readFds ) )
+            if ( ! FD_ISSET ( socket->_fd, &readFds ) )
                 continue;
 
             if ( socket->isServer() && socket->isTCP() )
@@ -109,37 +109,41 @@ void SocketManager::check ( uint64_t timeout )
 void SocketManager::add ( Socket *socket )
 {
     LOG_SOCKET ( socket, "Adding socket" );
-    allocatedSockets.insert ( socket );
-    changed = true;
+
+    _allocatedSockets.insert ( socket );
+    _changed = true;
 }
 
 void SocketManager::remove ( Socket *socket )
 {
-    if ( allocatedSockets.erase ( socket ) )
+    if ( _allocatedSockets.erase ( socket ) )
     {
         LOG_SOCKET ( socket, "Removing socket" );
-        changed = true;
+
+        _changed = true;
     }
 }
 
 void SocketManager::clear()
 {
     LOG ( "Clearing sockets" );
-    for ( auto it = allocatedSockets.begin(); it != allocatedSockets.end(); )
+
+    for ( auto it = _allocatedSockets.begin(); it != _allocatedSockets.end(); )
         ( *it++ )->disconnect();
-    activeSockets.clear();
-    allocatedSockets.clear();
-    changed = true;
+
+    _activeSockets.clear();
+    _allocatedSockets.clear();
+    _changed = true;
 }
 
 SocketManager::SocketManager() {}
 
 void SocketManager::initialize()
 {
-    if ( initialized )
+    if ( _initialized )
         return;
 
-    initialized = true;
+    _initialized = true;
 
     // Initialize WinSock
     WSADATA wsaData;
@@ -151,10 +155,10 @@ void SocketManager::initialize()
 
 void SocketManager::deinitialize()
 {
-    if ( ! initialized )
+    if ( ! _initialized )
         return;
 
-    initialized = false;
+    _initialized = false;
 
     SocketManager::get().clear();
 

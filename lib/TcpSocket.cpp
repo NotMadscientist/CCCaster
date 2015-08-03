@@ -16,7 +16,7 @@ using namespace std;
 TcpSocket::TcpSocket ( Socket::Owner *owner, uint16_t port, bool isRaw )
     : Socket ( owner, IpAddrPort ( "", port ), Protocol::TCP, isRaw )
 {
-    this->state = State::Listening;
+    _state = State::Listening;
 
     Socket::init();
     SocketManager::get().add ( this );
@@ -25,22 +25,22 @@ TcpSocket::TcpSocket ( Socket::Owner *owner, uint16_t port, bool isRaw )
 TcpSocket::TcpSocket ( Socket::Owner *owner, const IpAddrPort& address, bool isRaw, uint64_t connectTimeout )
     : Socket ( owner, address, Protocol::TCP, isRaw )
 {
-    this->state = State::Connecting;
+    _state = State::Connecting;
 
     Socket::init();
     SocketManager::get().add ( this );
 
-    this->connectTimeout = connectTimeout;
+    _connectTimeout = connectTimeout;
 
-    connectTimer.reset ( new Timer ( this ) );
-    connectTimer->start ( connectTimeout );
+    _connectTimer.reset ( new Timer ( this ) );
+    _connectTimer->start ( connectTimeout );
 }
 
 TcpSocket::TcpSocket ( Socket::Owner *owner, int fd, const IpAddrPort& address, bool isRaw )
     : Socket ( owner, address, Protocol::TCP, isRaw )
 {
-    this->state = State::Connected;
-    this->fd = fd;
+    _state = State::Connected;
+    _fd = fd;
 
     SocketManager::get().add ( this );
 }
@@ -52,20 +52,20 @@ TcpSocket::TcpSocket ( Socket::Owner *owner, const SocketShareData& data )
 
     this->owner = owner;
 
-    this->connectTimeout = data.connectTimeout;
-    this->state = data.state;
-    this->readBuffer = data.readBuffer;
-    this->readPos = data.readPos;
+    _connectTimeout = data.connectTimeout;
+    _state = data.state;
+    _readBuffer = data.readBuffer;
+    _readPos = data.readPos;
 
     ASSERT ( data.info->iSocketType == SOCK_STREAM );
     ASSERT ( data.info->iProtocol == IPPROTO_TCP );
 
-    this->fd = WSASocket ( data.info->iAddressFamily, SOCK_STREAM, IPPROTO_TCP, data.info.get(), 0, 0 );
+    _fd = WSASocket ( data.info->iAddressFamily, SOCK_STREAM, IPPROTO_TCP, data.info.get(), 0, 0 );
 
-    if ( this->fd == INVALID_SOCKET )
+    if ( _fd == INVALID_SOCKET )
     {
         LOG_SOCKET ( this, "WSASocket failed" );
-        this->fd = 0;
+        _fd = 0;
         THROW_WIN_EXCEPTION ( WSAGetLastError(), "WSASocket failed", ERROR_NETWORK_GENERIC );
     }
 
@@ -83,7 +83,7 @@ void TcpSocket::disconnect()
 
     Socket::disconnect();
 
-    connectTimer.reset();
+    _connectTimer.reset();
 }
 
 SocketPtr TcpSocket::listen ( Socket::Owner *owner, uint16_t port, bool isRaw )
@@ -104,7 +104,7 @@ SocketPtr TcpSocket::accept ( Socket::Owner *owner )
     sockaddr_storage sas;
     int saLen = sizeof ( sas );
 
-    const int newFd = ::accept ( fd, ( sockaddr * ) &sas, &saLen );
+    const int newFd = ::accept ( _fd, ( sockaddr * ) &sas, &saLen );
 
     if ( newFd == INVALID_SOCKET )
     {
@@ -113,7 +113,7 @@ SocketPtr TcpSocket::accept ( Socket::Owner *owner )
         return 0;
     }
 
-    return SocketPtr ( new TcpSocket ( owner, newFd, IpAddrPort ( ( sockaddr * ) &sas ), isRaw ) );
+    return SocketPtr ( new TcpSocket ( owner, newFd, IpAddrPort ( ( sockaddr * ) &sas ), _isRaw ) );
 }
 
 bool TcpSocket::send ( SerializableMessage *message, const IpAddrPort& address )
@@ -156,7 +156,7 @@ void TcpSocket::socketAccepted()
 
 void TcpSocket::socketConnected()
 {
-    state = State::Connected;
+    _state = State::Connected;
 
     if ( owner )
         owner->socketConnected ( this );
@@ -180,9 +180,9 @@ void TcpSocket::socketRead ( const MsgPtr& msg, const IpAddrPort& address )
 
 void TcpSocket::timerExpired ( Timer *timer )
 {
-    ASSERT ( timer == connectTimer.get() );
+    ASSERT ( timer == _connectTimer.get() );
 
-    connectTimer.reset();
+    _connectTimer.reset();
 
     if ( isConnected() )
         return;

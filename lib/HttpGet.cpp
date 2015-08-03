@@ -133,7 +133,7 @@ void HttpGet::parseResponse ( const string& data )
     stringstream ss ( _headerBuffer );
     string header;
 
-    // Get the HTTP version header and status _statusCode
+    // Get the HTTP version header and status code
     ss >> header >> _statusCode;
 
     while ( getline ( ss, header ) )
@@ -167,7 +167,7 @@ void HttpGet::parseResponse ( const string& data )
             stringstream ss ( header );
             ss >> header >> _contentLength;
 
-            LOG ( "_contentLength=%u", _contentLength );
+            LOG ( "contentLength=%u", _contentLength );
             continue;
         }
     }

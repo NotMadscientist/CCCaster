@@ -16,10 +16,10 @@ Timer::~Timer()
 
 void Timer::start ( uint64_t delay )
 {
-    this->delay = delay;
+    _delay = delay;
 }
 
 void Timer::stop()
 {
-    delay = expiry = 0;
+    _delay = _expiry = 0;
 }

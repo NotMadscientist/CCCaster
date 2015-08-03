@@ -14,30 +14,30 @@ void SpectatorManager::pushPendingSocket ( Timer::Owner *owner, const SocketPtr&
     TimerPtr timer ( new Timer ( owner ) );
     timer->start ( pendingSocketTimeout );
 
-    pendingSockets[socket.get()] = socket;
-    pendingSocketTimers[socket.get()] = timer;
-    pendingTimerToSocket[timer.get()] = socket.get();
+    _pendingSockets[socket.get()] = socket;
+    _pendingSocketTimers[socket.get()] = timer;
+    _pendingTimerToSocket[timer.get()] = socket.get();
 }
 
 SocketPtr SpectatorManager::popPendingSocket ( Socket *socketPtr )
 {
     LOG ( "socket=%08x", socketPtr );
 
-    const auto it = pendingSockets.find ( socketPtr );
+    const auto it = _pendingSockets.find ( socketPtr );
 
-    if ( it == pendingSockets.end() )
+    if ( it == _pendingSockets.end() )
         return 0;
 
-    ASSERT ( pendingSocketTimers.find ( socketPtr ) != pendingSocketTimers.end() );
+    ASSERT ( _pendingSocketTimers.find ( socketPtr ) != _pendingSocketTimers.end() );
 
     SocketPtr socket = it->second;
-    Timer *timerPtr = pendingSocketTimers[socketPtr].get();
+    Timer *timerPtr = _pendingSocketTimers[socketPtr].get();
 
-    ASSERT ( pendingTimerToSocket.find ( timerPtr ) != pendingTimerToSocket.end() );
+    ASSERT ( _pendingTimerToSocket.find ( timerPtr ) != _pendingTimerToSocket.end() );
 
-    pendingTimerToSocket.erase ( timerPtr );
-    pendingSocketTimers.erase ( socketPtr );
-    pendingSockets.erase ( socketPtr );
+    _pendingTimerToSocket.erase ( timerPtr );
+    _pendingSocketTimers.erase ( socketPtr );
+    _pendingSockets.erase ( socketPtr );
 
     return socket;
 }
@@ -46,17 +46,17 @@ void SpectatorManager::timerExpired ( Timer *timerPtr )
 {
     LOG ( "timer=%08x", timerPtr );
 
-    const auto it = pendingTimerToSocket.find ( timerPtr );
+    const auto it = _pendingTimerToSocket.find ( timerPtr );
 
-    if ( it == pendingTimerToSocket.end() )
+    if ( it == _pendingTimerToSocket.end() )
         return;
 
     LOG ( "socket=%08x", it->second );
 
-    ASSERT ( pendingSockets.find ( it->second ) != pendingSockets.end() );
-    ASSERT ( pendingSocketTimers.find ( it->second ) != pendingSocketTimers.end() );
+    ASSERT ( _pendingSockets.find ( it->second ) != _pendingSockets.end() );
+    ASSERT ( _pendingSocketTimers.find ( it->second ) != _pendingSocketTimers.end() );
 
-    pendingSocketTimers.erase ( it->second );
-    pendingSockets.erase ( it->second );
-    pendingTimerToSocket.erase ( timerPtr );
+    _pendingSocketTimers.erase ( it->second );
+    _pendingSockets.erase ( it->second );
+    _pendingTimerToSocket.erase ( timerPtr );
 }

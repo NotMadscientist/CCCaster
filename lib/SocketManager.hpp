@@ -21,12 +21,12 @@ public:
     // Initialize / deinitialize socket manager
     void initialize();
     void deinitialize();
-    bool isInitialized() const { return initialized; }
+    bool isInitialized() const { return _initialized; }
 
     // Check if a socket is still allocated
     bool isAllocated ( Socket *socket ) const
     {
-        return ( allocatedSockets.find ( socket ) != allocatedSockets.end() );
+        return ( _allocatedSockets.find ( socket ) != _allocatedSockets.end() );
     }
 
     // Get the singleton instance
@@ -35,13 +35,13 @@ public:
 private:
 
     // Sets of active and allocated socket instances
-    std::unordered_set<Socket *> activeSockets, allocatedSockets;
+    std::unordered_set<Socket *> _activeSockets, _allocatedSockets;
 
     // Flag to indicate the set of allocated sockets has changed
-    bool changed = false;
+    bool _changed = false;
 
     // Flag to indicate if initialized
-    bool initialized = false;
+    bool _initialized = false;
 
     // Private constructor, etc. for singleton class
     SocketManager();

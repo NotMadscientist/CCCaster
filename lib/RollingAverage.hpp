@@ -12,39 +12,39 @@ public:
 
     void set ( T value )
     {
-        sum += value;
+        _sum += value;
 
-        if ( num < N )
-            ++num;
+        if ( _count < N )
+            ++_count;
         else
-            sum -= values[index];
+            _sum -= _values[_index];
 
-        average = sum / num;
+        _average = _sum / _count;
 
-        values[index] = value;
+        _values[_index] = value;
 
-        index = ( index + 1 ) % N;
+        _index = ( _index + 1 ) % N;
     }
 
     T get() const
     {
-        return average;
+        return _average;
     }
 
     void reset()
     {
-        sum = average = index = num = 0;
+        _sum = _average = _index = _count = 0;
     }
 
     void reset ( T initial )
     {
-        sum = average = initial;
-        index = num = 1;
+        _sum = _average = initial;
+        _index = _count = 1;
     }
 
     size_t count() const
     {
-        return num;
+        return _count;
     }
 
     size_t size() const
@@ -54,14 +54,14 @@ public:
 
     bool full() const
     {
-        return ( num == N );
+        return ( _count == N );
     }
 
 private:
 
-    T values[N];
+    T _values[N];
 
-    T sum, average;
+    T _sum, _average;
 
-    size_t index, num;
+    size_t _index, _count;
 };

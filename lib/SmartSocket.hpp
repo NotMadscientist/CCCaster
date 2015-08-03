@@ -58,33 +58,36 @@ private:
     enum ChildSocketEnum { ChildSocket };
 
     // If direct socket was supposed to be TCP
-    bool isDirectTCP = false;
+    bool _isDirectTCP = false;
+
+    // True if the socketAccepted is for directSocket
+    bool _isDirectAccept = false;
 
     // Socket that tries to listen / connect directly
-    SocketPtr directSocket;
+    SocketPtr _directSocket;
 
     // Socket that connects to the notification and tunnel server
-    SocketPtr vpsSocket;
+    SocketPtr _vpsSocket;
 
     // Current tunnel server to try
-    std::vector<IpAddrPort>::const_iterator vpsAddress;
+    std::vector<IpAddrPort>::const_iterator _vpsAddress;
 
     // Timeout for UDP tunnel match
-    TimerPtr connectTimer;
+    TimerPtr _connectTimer;
 
-    // Integer that matches the server to the client
-    uint32_t matchId = 0;
+    // Client socket's connecting matchId
+    uint32_t _matchId = 0;
 
     // UDP tunnel socket
-    SocketPtr tunSocket;
+    SocketPtr _tunSocket;
 
     // Address of the server's UDP hole
-    IpAddrPort tunAddress;
+    IpAddrPort _tunAddress;
 
     // Connecting client data
     struct TunnelClient
     {
-        // Integer that matches the server to the client
+        // Remote client socket's connecting matchId
         uint32_t matchId = 0;
 
         // Timeout for the connecting client
@@ -94,17 +97,14 @@ private:
         IpAddrPort address;
     };
 
-    // Connecting matchId -> client data
-    std::unordered_map<uint32_t, TunnelClient> pendingClients;
+    // Remote connecting matchId -> remote client data
+    std::unordered_map<uint32_t, TunnelClient> _pendingClients;
 
     // Connecting client timer -> matchId
-    std::unordered_map<Timer *, uint32_t> pendingTimers;
+    std::unordered_map<Timer *, uint32_t> _pendingTimers;
 
     // UDP tunnel send timer
-    TimerPtr sendTimer;
-
-    // True if the socketAccepted is for directSocket
-    bool isDirectAccept = false;
+    TimerPtr _sendTimer;
 
     // Unused base socket callback
     void socketRead ( const MsgPtr& msg, const IpAddrPort& address ) override {}

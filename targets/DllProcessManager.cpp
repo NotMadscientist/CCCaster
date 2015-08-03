@@ -67,37 +67,41 @@ void ProcessManager::connectPipe()
 {
     LOG ( "Listening on IPC socket" );
 
-    ipcSocket = TcpSocket::listen ( this, 0 );
+    _ipcSocket = TcpSocket::listen ( this, 0 );
+
+    LOG ( "ipcSocket=%08x", _ipcSocket.get() );
 
     LOG ( "Creating pipe" );
 
-    pipe = CreateFile (
-               NAMED_PIPE,                              // name of the pipe
-               GENERIC_READ | GENERIC_WRITE,            // 2-way pipe
-               FILE_SHARE_READ | FILE_SHARE_WRITE,      // R/W sharing mode
-               0,                                       // default security
-               OPEN_EXISTING,                           // open existing pipe
-               FILE_ATTRIBUTE_NORMAL,                   // default attributes
-               0 );                                     // no template file
+    _pipe = CreateFile (
+                NAMED_PIPE,                              // name of the pipe
+                GENERIC_READ | GENERIC_WRITE,            // 2-way pipe
+                FILE_SHARE_READ | FILE_SHARE_WRITE,      // R/W sharing mode
+                0,                                       // default security
+                OPEN_EXISTING,                           // open existing pipe
+                FILE_ATTRIBUTE_NORMAL,                   // default attributes
+                0 );                                     // no template file
 
-    if ( pipe == INVALID_HANDLE_VALUE )
+    if ( _pipe == INVALID_HANDLE_VALUE )
         THROW_WIN_EXCEPTION ( GetLastError(), "CreateFile failed", ERROR_PIPE_START );
 
     LOG ( "Pipe created" );
 
     DWORD bytes;
 
-    if ( ! WriteFile ( pipe, & ( ipcSocket->address.port ), sizeof ( ipcSocket->address.port ), &bytes, 0 ) )
+    if ( ! WriteFile ( _pipe, & ( _ipcSocket->address.port ), sizeof ( _ipcSocket->address.port ), &bytes, 0 ) )
         THROW_WIN_EXCEPTION ( GetLastError(), "WriteFile failed", ERROR_PIPE_RW );
 
-    if ( bytes != sizeof ( ipcSocket->address.port ) )
-        THROW_EXCEPTION ( "wrote %d bytes, expected %d", ERROR_PIPE_RW, bytes, sizeof ( ipcSocket->address.port ) );
+    if ( bytes != sizeof ( _ipcSocket->address.port ) )
+        THROW_EXCEPTION ( "wrote %d bytes, expected %d", ERROR_PIPE_RW, bytes, sizeof ( _ipcSocket->address.port ) );
 
-    processId = GetCurrentProcessId();
+    _processId = GetCurrentProcessId();
 
-    if ( ! WriteFile ( pipe, &processId, sizeof ( processId ), &bytes, 0 ) )
+    LOG ( "processId=%08x", _processId );
+
+    if ( ! WriteFile ( _pipe, &_processId, sizeof ( _processId ), &bytes, 0 ) )
         THROW_WIN_EXCEPTION ( GetLastError(), "WriteFile failed", ERROR_PIPE_RW );
 
-    if ( bytes != sizeof ( processId ) )
-        THROW_EXCEPTION ( "wrote %d bytes, expected %d", ERROR_PIPE_RW, bytes, sizeof ( processId ) );
+    if ( bytes != sizeof ( _processId ) )
+        THROW_EXCEPTION ( "wrote %d bytes, expected %d", ERROR_PIPE_RW, bytes, sizeof ( _processId ) );
 }

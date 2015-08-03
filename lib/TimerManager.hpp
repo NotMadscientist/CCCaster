@@ -24,17 +24,17 @@ public:
     // Initialize / deinitialize timer manager
     void initialize();
     void deinitialize();
-    bool isInitialized() const { return initialized; }
+    bool isInitialized() const { return _initialized; }
 
     // Indicates if using the hi-res timer
-    bool isHiRes() const { return useHiResTimer; }
+    bool isHiRes() const { return _useHiResTimer; }
 
     // Get the current time in milliseconds
-    uint64_t getNow() const { return now; }
-    uint64_t getNow ( bool update ) { if ( update ) updateNow(); return now; }
+    uint64_t getNow() const { return _now; }
+    uint64_t getNow ( bool update ) { if ( update ) updateNow(); return _now; }
 
     // Get the next time when a timer will expire
-    uint64_t getNextExpiry() const { return nextExpiry; }
+    uint64_t getNextExpiry() const { return _nextExpiry; }
 
     // Get the singleton instance
     static TimerManager& get();
@@ -42,25 +42,25 @@ public:
 private:
 
     // Sets of active and allocated timer instances
-    std::unordered_set<Timer *> activeTimers, allocatedTimers;
+    std::unordered_set<Timer *> _activeTimers, _allocatedTimers;
 
     // Indicates if the hi-res timer should be used
-    bool useHiResTimer;
+    bool _useHiResTimer;
 
     // Hi-res timer variables
-    uint64_t ticksPerSecond = 0, ticks = 0;
+    uint64_t _ticksPerSecond = 0, _ticks = 0;
 
     // The current time in milliseconds
-    uint64_t now = 0;
+    uint64_t _now = 0;
 
     // The next time when a timer will expire
-    uint64_t nextExpiry = 0;
+    uint64_t _nextExpiry = 0;
 
     // Flag to indicate the set of allocated timers has changed
-    bool changed = false;
+    bool _changed = false;
 
     // Flag to indicate if initialized
-    bool initialized = false;
+    bool _initialized = false;
 
     // Private constructor, etc. for singleton class
     TimerManager();

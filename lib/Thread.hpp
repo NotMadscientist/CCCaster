@@ -28,29 +28,29 @@ public:
         pthread_mutexattr_t attr;
         pthread_mutexattr_init ( &attr );
         pthread_mutexattr_settype ( &attr, PTHREAD_MUTEX_RECURSIVE );
-        pthread_mutex_init ( &mutex, &attr );
+        pthread_mutex_init ( &_mutex, &attr );
     }
 
     ~Mutex()
     {
-        pthread_mutex_destroy ( &mutex );
+        pthread_mutex_destroy ( &_mutex );
     }
 
     void lock()
     {
-        pthread_mutex_lock ( &mutex );
+        pthread_mutex_lock ( &_mutex );
     }
 
     void unlock()
     {
-        pthread_mutex_unlock ( &mutex );
+        pthread_mutex_unlock ( &_mutex );
     }
 
     friend class CondVar;
 
 private:
 
-    pthread_mutex_t mutex;
+    pthread_mutex_t _mutex;
 };
 
 
@@ -58,19 +58,19 @@ class Lock
 {
 public:
 
-    Lock ( Mutex& mutex ) : mutex ( mutex )
+    Lock ( Mutex& mutex ) : _mutex ( mutex )
     {
-        mutex.lock();
+        _mutex.lock();
     }
 
     ~Lock()
     {
-        mutex.unlock();
+        _mutex.unlock();
     }
 
 private:
 
-    Mutex& mutex;
+    Mutex& _mutex;
 };
 
 
@@ -93,13 +93,13 @@ public:
 
     int wait ( Mutex& mutex )
     {
-        return pthread_cond_wait ( &cond, & ( mutex.mutex ) );
+        return pthread_cond_wait ( &cond, & ( mutex._mutex ) );
     }
 
     int wait ( Mutex& mutex, long timeout )
     {
         timespec ts = gettimeoffset ( timeout );
-        return pthread_cond_timedwait ( &cond, & ( mutex.mutex ), &ts );
+        return pthread_cond_timedwait ( &cond, & ( mutex._mutex ), &ts );
     }
 
     void signal()
@@ -132,18 +132,18 @@ public:
 
     bool isRunning() const
     {
-        LOCK ( mutex );
-        return running;
+        LOCK ( _mutex );
+        return _running;
     }
 
     virtual void run() = 0;
 
 private:
-    bool running = false;
+    bool _running = false;
 
     pthread_t thread;
 
-    mutable Mutex mutex;
+    mutable Mutex _mutex;
 
     static void *func ( void *ptr );
 };

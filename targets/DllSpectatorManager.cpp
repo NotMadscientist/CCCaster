@@ -9,10 +9,10 @@ using namespace std;
 
 
 SpectatorManager::SpectatorManager ( NetplayManager *netManPtr, const ProcessManager *procManPtr )
-    : spectatorListPos ( spectatorList.end() )
-    , spectatorMapPos ( spectatorMap.end() )
-    , netManPtr ( netManPtr )
-    , procManPtr ( procManPtr )
+    : _spectatorListPos ( _spectatorList.end() )
+    , _spectatorMapPos ( _spectatorMap.end() )
+    , _netManPtr ( netManPtr )
+    , _procManPtr ( procManPtr )
 {
 }
 
@@ -43,43 +43,43 @@ void SpectatorManager::pushSpectator ( Socket *socketPtr, const IpAddrPort& serv
     //
     list<Socket *>::iterator it;
 
-    if ( spectatorList.empty() )
-        it = spectatorList.insert ( spectatorList.end(), socketPtr );
-    else if ( spectatorListPos == spectatorList.end() )
-        it = spectatorList.insert ( spectatorList.begin(), socketPtr );
+    if ( _spectatorList.empty() )
+        it = _spectatorList.insert ( _spectatorList.end(), socketPtr );
+    else if ( _spectatorListPos == _spectatorList.end() )
+        it = _spectatorList.insert ( _spectatorList.begin(), socketPtr );
     else
-        it = spectatorList.insert ( incremented ( spectatorListPos ), socketPtr );
+        it = _spectatorList.insert ( incremented ( _spectatorListPos ), socketPtr );
 
     Spectator spectator;
     spectator.socket = newSocket;
     spectator.serverAddr = serverAddr;
     spectator.it = it;
     spectator.pos.parts.frame = NUM_INPUTS - 1;
-    spectator.pos.parts.index = netManPtr->getSpectateStartIndex();
+    spectator.pos.parts.index = _netManPtr->getSpectateStartIndex();
 
-    spectatorMap[socketPtr] = spectator;
+    _spectatorMap[socketPtr] = spectator;
 
-    if ( spectatorMap.size() == 1 || spectatorMapPos == spectatorMap.cend() )
-        spectatorMapPos = spectatorMap.cbegin();
+    if ( _spectatorMap.size() == 1 || _spectatorMapPos == _spectatorMap.cend() )
+        _spectatorMapPos = _spectatorMap.cbegin();
 
-    netManPtr->preserveStartIndex = min ( netManPtr->preserveStartIndex, spectator.pos.parts.index );
+    _netManPtr->preserveStartIndex = min ( _netManPtr->preserveStartIndex, spectator.pos.parts.index );
 
     LOG ( "socket=%08x; spectator.pos=[%s]; preserveStartIndex=%u",
-          socketPtr, spectator.pos, netManPtr->preserveStartIndex );
+          socketPtr, spectator.pos, _netManPtr->preserveStartIndex );
 
-    const uint8_t netplayState = netManPtr->getState().value;
-    const bool isTraining = netManPtr->config.mode.isTraining();
+    const uint8_t netplayState = _netManPtr->getState().value;
+    const bool isTraining = _netManPtr->config.mode.isTraining();
 
     switch ( netplayState )
     {
         case NetplayState::CharaSelect:
-            newSocket->send ( netManPtr->getRngState ( spectator.pos.parts.index ) );
+            newSocket->send ( _netManPtr->getRngState ( spectator.pos.parts.index ) );
             break;
 
         case NetplayState::Skippable:
         case NetplayState::InGame:
         case NetplayState::RetryMenu:
-            newSocket->send ( netManPtr->getRngState ( spectator.pos.parts.index + ( isTraining ? 1 : 2 ) ) );
+            newSocket->send ( _netManPtr->getRngState ( spectator.pos.parts.index + ( isTraining ? 1 : 2 ) ) );
             break;
     }
 
@@ -90,53 +90,53 @@ void SpectatorManager::popSpectator ( Socket *socketPtr )
 {
     LOG ( "socket=%08x", socketPtr );
 
-    const auto it = spectatorMap.find ( socketPtr );
+    const auto it = _spectatorMap.find ( socketPtr );
 
-    if ( it == spectatorMap.end() )
+    if ( it == _spectatorMap.end() )
         return;
 
-    if ( spectatorListPos == it->second.it )
-        ++spectatorListPos;
+    if ( _spectatorListPos == it->second.it )
+        ++_spectatorListPos;
 
-    if ( spectatorMapPos == it )
-        ++spectatorMapPos;
+    if ( _spectatorMapPos == it )
+        ++_spectatorMapPos;
 
-    spectatorList.erase ( it->second.it );
-    spectatorMap.erase ( socketPtr );
+    _spectatorList.erase ( it->second.it );
+    _spectatorMap.erase ( socketPtr );
 }
 
 void SpectatorManager::newRngState ( const RngState& rngState )
 {
-    for ( Socket *socket : spectatorList )
+    for ( Socket *socket : _spectatorList )
         socket->send ( rngState );
 }
 
 void SpectatorManager::frameStepSpectators()
 {
-    if ( spectatorMap.empty() )
+    if ( _spectatorMap.empty() )
     {
-        spectatorListPos = spectatorList.end();
-        spectatorMapPos = spectatorMap.cend();
+        _spectatorListPos = _spectatorList.end();
+        _spectatorMapPos = _spectatorMap.cend();
 
         // Reset the preserve index
-        netManPtr->preserveStartIndex = currentMinIndex = UINT_MAX;
+        _netManPtr->preserveStartIndex = _currentMinIndex = UINT_MAX;
         return;
     }
 
-    if ( spectatorMapPos == spectatorMap.cend() )
-        spectatorMapPos = spectatorMap.cbegin();
+    if ( _spectatorMapPos == _spectatorMap.cend() )
+        _spectatorMapPos = _spectatorMap.cbegin();
 
-    if ( spectatorMap.size() > 1 )
-        ++spectatorMapPos;
+    if ( _spectatorMap.size() > 1 )
+        ++_spectatorMapPos;
 
-    if ( spectatorMapPos == spectatorMap.cend() )
-        spectatorMapPos = spectatorMap.cbegin();
+    if ( _spectatorMapPos == _spectatorMap.cend() )
+        _spectatorMapPos = _spectatorMap.cbegin();
 
     // Number of times to broadcast per frame
-    const uint32_t multiplier = 1 + ( spectatorList.size() * 2 ) / ( NUM_INPUTS + 1 );
+    const uint32_t multiplier = 1 + ( _spectatorList.size() * 2 ) / ( NUM_INPUTS + 1 );
 
     // Number of frames between each broadcast
-    const uint32_t interval = ( multiplier * NUM_INPUTS / 2 ) / spectatorList.size();
+    const uint32_t interval = ( multiplier * NUM_INPUTS / 2 ) / _spectatorList.size();
 
     if ( ( *CC_WORLD_TIMER_ADDR ) % interval )
         return;
@@ -144,30 +144,30 @@ void SpectatorManager::frameStepSpectators()
     for ( uint32_t i = 0; i < multiplier; ++i )
     {
         // Once we reach the end
-        if ( spectatorListPos == spectatorList.end() )
+        if ( _spectatorListPos == _spectatorList.end() )
         {
             // Restart from the beginning
-            spectatorListPos = spectatorList.begin();
+            _spectatorListPos = _spectatorList.begin();
 
             // Update the preserve index
-            netManPtr->preserveStartIndex = currentMinIndex;
+            _netManPtr->preserveStartIndex = _currentMinIndex;
 
             // Reset the current min index
-            currentMinIndex = UINT_MAX;
+            _currentMinIndex = UINT_MAX;
         }
 
-        const auto it = spectatorMap.find ( *spectatorListPos );
+        const auto it = _spectatorMap.find ( *_spectatorListPos );
 
-        ASSERT ( it != spectatorMap.end() );
+        ASSERT ( it != _spectatorMap.end() );
 
         Socket *socket = it->first;
         Spectator& spectator = it->second;
         const uint32_t oldIndex = spectator.pos.parts.index;
 
         LOG ( "socket=%08x; spectator.pos=[%s]; preserveStartIndex=%u",
-              socket, spectator.pos, netManPtr->preserveStartIndex );
+              socket, spectator.pos, _netManPtr->preserveStartIndex );
 
-        MsgPtr msgBothInputs = netManPtr->getBothInputs ( spectator.pos );
+        MsgPtr msgBothInputs = _netManPtr->getBothInputs ( spectator.pos );
 
         // Send inputs if available
         if ( msgBothInputs )
@@ -180,7 +180,7 @@ void SpectatorManager::frameStepSpectators()
             spectator.sentRetryMenuIndex = false;
         }
 
-        MsgPtr msgRngState = netManPtr->getRngState ( oldIndex );
+        MsgPtr msgRngState = _netManPtr->getRngState ( oldIndex );
 
         // Send RngState ONCE if available
         if ( msgRngState && !spectator.sentRngState )
@@ -189,7 +189,7 @@ void SpectatorManager::frameStepSpectators()
             spectator.sentRngState = true;
         }
 
-        MsgPtr msgMenuIndex = netManPtr->getRetryMenuIndex ( oldIndex );
+        MsgPtr msgMenuIndex = _netManPtr->getRetryMenuIndex ( oldIndex );
 
         // Send retry menu index ONCE if available
         if ( msgMenuIndex && !spectator.sentRetryMenuIndex )
@@ -198,22 +198,22 @@ void SpectatorManager::frameStepSpectators()
             spectator.sentRetryMenuIndex = true;
         }
 
-        ++spectatorListPos;
+        ++_spectatorListPos;
 
         // Update the current min index
-        currentMinIndex = min ( currentMinIndex, spectator.pos.parts.index );
+        _currentMinIndex = min ( _currentMinIndex, spectator.pos.parts.index );
     }
 }
 
 const IpAddrPort& SpectatorManager::getRandomSpectatorAddress() const
 {
-    if ( spectatorMap.empty() || spectatorMapPos == spectatorMap.cend() )
+    if ( _spectatorMap.empty() || _spectatorMapPos == _spectatorMap.cend() )
     {
         LOG ( "'%s'", NullAddress );
         return NullAddress;
     }
 
-    auto it = spectatorMapPos;
+    auto it = _spectatorMapPos;
 
 #ifndef RELEASE
     if ( it->second.serverAddr.port == 0 )
@@ -222,10 +222,10 @@ const IpAddrPort& SpectatorManager::getRandomSpectatorAddress() const
         {
             ++it;
 
-            if ( it == spectatorMap.end() )
-                it = spectatorMap.begin();
+            if ( it == _spectatorMap.end() )
+                it = _spectatorMap.begin();
         }
-        while ( it->second.serverAddr.port == 0 && it != spectatorMapPos );
+        while ( it->second.serverAddr.port == 0 && it != _spectatorMapPos );
     }
 #endif
 

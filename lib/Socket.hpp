@@ -11,9 +11,9 @@
 #define DEFAULT_CONNECT_TIMEOUT ( 5000 )
 
 
-#define LOG_SOCKET(SOCKET, FORMAT, ...)                                                                         \
-    LOG ( "%s socket=%08x; fd=%08x; state=%s; address='%s'; isRaw=%u; " FORMAT,                                 \
-          SOCKET->protocol, SOCKET, SOCKET->fd, SOCKET->state, SOCKET->address, SOCKET->isRaw, ## __VA_ARGS__ )
+#define LOG_SOCKET(SOCKET, FORMAT, ...)                                                                             \
+    LOG ( "%s socket=%08x; fd=%08x; state=%s; address='%s'; isRaw=%u; " FORMAT,                                     \
+          SOCKET->protocol, SOCKET, SOCKET->_fd, SOCKET->_state, SOCKET->address, SOCKET->_isRaw, ## __VA_ARGS__ )
 
 
 // Forward declarations
@@ -69,14 +69,6 @@ public:
     // Socket protocol
     const Protocol protocol;
 
-    // Socket read buffer
-    std::string readBuffer;
-
-    // The position for the next read event.
-    // In raw mode, this should be manually updated, otherwise each read will at the same position.
-    // In message mode, this is automatically managed, and is only reset when a decode fails.
-    size_t readPos = 0;
-
     // Constructor
     Socket ( Owner *owner, const IpAddrPort& address, Protocol protocol, bool isRaw );
 
@@ -86,23 +78,14 @@ public:
     // Completely disconnect the socket
     virtual void disconnect();
 
-    // Reset the read buffer to its initial size
-    void resetBuffer();
-
-    // Free the read buffer
-    void freeBuffer();
-
-    // Consume bytes from the front of the buffer
-    void consumeBuffer ( size_t bytes );
-
     // Socket state query functions
     bool isTCP() const { return ( protocol == Protocol::TCP ); }
     bool isUDP() const { return ( protocol == Protocol::UDP ); }
     bool isSmart() const { return ( protocol == Protocol::Smart ); }
-    virtual State getState() const { return state; }
-    virtual bool isConnecting() const { return isClient() && ( state == State::Connecting ); }
-    virtual bool isConnected() const { return isClient() && ( state == State::Connected ); }
-    virtual bool isDisconnected() const { return ( state == State::Disconnected ); }
+    virtual State getState() const { return _state; }
+    virtual bool isConnecting() const { return isClient() && ( _state == State::Connecting ); }
+    virtual bool isConnected() const { return isClient() && ( _state == State::Connected ); }
+    virtual bool isDisconnected() const { return ( _state == State::Disconnected ); }
     virtual bool isClient() const { return !address.addr.empty(); }
     virtual bool isServer() const { return address.addr.empty(); }
     virtual const IpAddrPort& getRemoteAddress() const { if ( isServer() ) return NullAddress; return address; }
@@ -128,10 +111,10 @@ public:
     }
 
     // Set the packet loss for testing purposes
-    void setPacketLoss ( uint8_t percentage ) { packetLoss = percentage; }
+    void setPacketLoss ( uint8_t percentage );
 
     // Set the check sum fail percentage for testing purposes
-    void setCheckSumFail ( uint8_t percentage ) { hashFailRate = percentage; }
+    void setCheckSumFail ( uint8_t percentage );
 
     // Cast this to another socket type
     TcpSocket& getAsTCP();
@@ -148,26 +131,44 @@ public:
     static SocketPtr shared ( Socket::Owner *owner, const SocketShareData& data );
 
     friend class SocketManager;
+    friend class SmartSocket;
 
 protected:
 
-    // Raw socket type flag
-    bool isRaw = false;
+    // Socket read buffer
+    std::string _readBuffer;
 
-    // Initial connect timeout
-    uint64_t connectTimeout = DEFAULT_CONNECT_TIMEOUT;
+    // The position for the next read event.
+    // In raw mode, this should be manually updated, otherwise each read will at the same position.
+    // In message mode, this is automatically managed, and is only reset when a decode fails.
+    size_t _readPos = 0;
+
+    // Raw socket type flag
+    bool _isRaw = false;
 
     // Connection state
-    State state = State::Disconnected;
+    State _state = State::Disconnected;
 
     // Underlying socket fd
-    int fd = 0;
+    int _fd = 0;
+
+    // Initial connect timeout
+    uint64_t _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
 
     // Packet loss percentage for testing purposes
-    uint8_t packetLoss = 0;
+    uint8_t _packetLoss = 0;
 
     // Hash failure percentage for testing purposes
-    uint8_t hashFailRate = 0;
+    uint8_t _hashFailRate = 0;
+
+    // Reset the read buffer to its initial size
+    void resetBuffer();
+
+    // Free the read buffer
+    void freeBuffer();
+
+    // Consume bytes from the front of the buffer
+    void consumeBuffer ( size_t bytes );
 
     // TCP event callbacks
     virtual void socketAccepted() {}
@@ -194,11 +195,11 @@ struct SocketShareData : public SerializableSequence
 {
     IpAddrPort address;
     Socket::Protocol protocol;
-    uint8_t isRaw = 0;
-    uint64_t connectTimeout = DEFAULT_CONNECT_TIMEOUT;
-    Socket::State state;
     std::string readBuffer;
     size_t readPos = 0;
+    uint8_t isRaw = 0;
+    Socket::State state;
+    uint64_t connectTimeout = DEFAULT_CONNECT_TIMEOUT;
     std::shared_ptr<WSAPROTOCOL_INFO> info;
 
     // Extra data for UDP sockets
@@ -208,12 +209,10 @@ struct SocketShareData : public SerializableSequence
 
     SocketShareData ( const IpAddrPort& address,
                       Socket::Protocol protocol,
-                      Socket::State state,
                       const std::string& readBuffer,
                       size_t readPos,
-                      const std::shared_ptr<WSAPROTOCOL_INFO>& info )
-        : address ( address ), protocol ( protocol ), state ( state )
-        , readBuffer ( readBuffer ), readPos ( readPos ), info ( info ) {}
+                      Socket::State state,
+                      const std::shared_ptr<WSAPROTOCOL_INFO>& info );
 
     bool isTCP() const { return ( protocol == Socket::Protocol::TCP ); }
     bool isUDP() const { return ( protocol == Socket::Protocol::UDP ); }

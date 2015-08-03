@@ -34,6 +34,8 @@ void KeyboardState::clear()
 
 void KeyboardState::update()
 {
+    const uint64_t now = TimerManager::get().getNow ( true );
+
     _previous = _state;
 
     for ( auto& kv : _state )
@@ -42,7 +44,7 @@ void KeyboardState::update()
 
         if ( kv.second && !wasDown ( kv.first ) )
         {
-            _pressedTimestamp[kv.first] = TimerManager::get().getNow ( true );
+            _pressedTimestamp[kv.first] = now;
         }
         else if ( !kv.second && wasDown ( kv.first ) )
         {

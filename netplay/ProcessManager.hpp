@@ -72,15 +72,15 @@ public:
     void disconnectPipe();
 
     // Indicates if the IPC pipe and socket are connected
-    bool isConnected() const { return ( pipe && ipcSocket && ipcSocket->isClient() && connected ); }
+    bool isConnected() const;
 
     // Send a message over the IPC socket
-    bool ipcSend ( Serializable& msg ) { return ipcSend ( MsgPtr ( &msg, ignoreMsgPtr ) ); }
-    bool ipcSend ( Serializable *msg ) { return ipcSend ( MsgPtr ( msg ) ); }
-    bool ipcSend ( const MsgPtr& msg ) { if ( ! isConnected() ) return false; else return ipcSocket->send ( msg ); }
+    bool ipcSend ( Serializable& msg );
+    bool ipcSend ( Serializable *msg );
+    bool ipcSend ( const MsgPtr& msg );
 
     // Get the process ID of the game
-    int getProcessId() const { return processId; }
+    int getProcessId() const { return _processId; }
 
     // Write game input
     void writeGameInput ( uint8_t player, uint16_t direction, uint16_t buttons );
@@ -103,22 +103,22 @@ public:
 private:
 
     // Named pipe
-    void *pipe = 0;
+    void *_pipe = 0;
 
     // Process ID
-    int processId = 0;
+    int _processId = 0;
 
     // IPC socket
-    SocketPtr ipcSocket;
+    SocketPtr _ipcSocket;
 
     // Game start timer
-    TimerPtr gameStartTimer;
+    TimerPtr _gameStartTimer;
 
     // Number of attempts to start the game
-    int gameStartCount = 0;
+    int _gameStartCount = 0;
 
     // IPC connected flag
-    bool connected = false;
+    bool _connected = false;
 
     // IPC socket callbacks
     void socketAccepted ( Socket *socket ) override;

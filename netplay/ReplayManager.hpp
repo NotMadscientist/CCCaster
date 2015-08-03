@@ -39,18 +39,18 @@ public:
 
 private:
 
-    std::vector<uint32_t> modes;
+    std::vector<uint32_t> _modes;
 
-    std::vector<std::string> states;
+    std::vector<std::string> _states;
 
-    std::vector<std::vector<Inputs>> inputs;
+    std::vector<std::vector<Inputs>> _inputs;
 
-    std::vector<MsgPtr> rngStates;
+    std::vector<MsgPtr> _rngStates;
 
-    std::vector<std::vector<IndexedFrame>> rollbacks;
+    std::vector<std::vector<IndexedFrame>> _rollbacks;
 
-    std::vector<std::vector<std::vector<Inputs>>> reinputs;
+    std::vector<std::vector<std::vector<Inputs>>> _reinputs;
 
-    std::vector<MsgPtr> initialStates;
+    std::vector<MsgPtr> _initialStates;
 
 };

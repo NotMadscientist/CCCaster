@@ -45,7 +45,7 @@ protected:
 private:
 
     // Timeout for initial connect
-    TimerPtr connectTimer;
+    TimerPtr _connectTimer;
 
     // Timer callback
     void timerExpired ( Timer *timer ) override;

@@ -10,124 +10,127 @@ using namespace std;
 
 void TimerManager::updateNow()
 {
-    if ( ! initialized )
+    if ( ! _initialized )
         return;
 
-    if ( useHiResTimer )
+    if ( _useHiResTimer )
     {
-        QueryPerformanceCounter ( ( LARGE_INTEGER * ) &ticks );
-        now = ( 1000 * ticks ) / ticksPerSecond;
+        QueryPerformanceCounter ( ( LARGE_INTEGER * ) &_ticks );
+        _now = ( 1000 * _ticks ) / _ticksPerSecond;
     }
     else
     {
         // Note: timeGetTime should be called between timeBeginPeriod / timeEndPeriod to ensure accuracy
-        now = timeGetTime();
+        _now = timeGetTime();
     }
 }
 
 void TimerManager::check()
 {
-    if ( ! initialized )
+    if ( ! _initialized )
         return;
 
-    if ( changed )
+    if ( _changed )
     {
-        for ( Timer *timer : allocatedTimers )
+        for ( Timer *timer : _allocatedTimers )
         {
-            if ( activeTimers.find ( timer ) != activeTimers.end() )
+            if ( _activeTimers.find ( timer ) != _activeTimers.end() )
                 continue;
 
-            LOG ( "Added timer %08x; delay='%llu ms'", timer, timer->delay );
-            activeTimers.insert ( timer );
+            LOG ( "Added timer %08x; delay='%llu ms'", timer, timer->_delay );
+            _activeTimers.insert ( timer );
         }
 
-        for ( auto it = activeTimers.begin(); it != activeTimers.end(); )
+        for ( auto it = _activeTimers.begin(); it != _activeTimers.end(); )
         {
-            if ( allocatedTimers.find ( *it ) != allocatedTimers.end() )
+            if ( _allocatedTimers.find ( *it ) != _allocatedTimers.end() )
             {
                 ++it;
                 continue;
             }
 
             LOG ( "Removed timer %08x", *it ); // Don't log any extra data cus already de-allocated
-            activeTimers.erase ( it++ );
+            _activeTimers.erase ( it++ );
         }
 
-        changed = false;
+        _changed = false;
     }
 
-    nextExpiry = UINT64_MAX;
+    _nextExpiry = UINT64_MAX;
 
-    if ( activeTimers.empty() )
+    if ( _activeTimers.empty() )
         return;
 
     updateNow();
 
-    for ( Timer *timer : activeTimers )
+    for ( Timer *timer : _activeTimers )
     {
-        if ( allocatedTimers.find ( timer ) == allocatedTimers.end() )
+        if ( _allocatedTimers.find ( timer ) == _allocatedTimers.end() )
             continue;
 
-        if ( timer->expiry > 0 && now >= timer->expiry )
+        if ( timer->_expiry > 0 && _now >= timer->_expiry )
         {
             LOG ( "Expired timer %08x", timer );
 
-            timer->delay = timer->expiry = 0;
+            timer->_delay = timer->_expiry = 0;
 
             if ( timer->owner )
             {
                 timer->owner->timerExpired ( timer );
 
-                if ( allocatedTimers.find ( timer ) == allocatedTimers.end() )
+                if ( _allocatedTimers.find ( timer ) == _allocatedTimers.end() )
                     continue;
             }
         }
 
-        if ( timer->delay > 0 )
+        if ( timer->_delay > 0 )
         {
-            LOG ( "Started timer %08x; delay='%llu ms'", timer, timer->delay );
+            LOG ( "Started timer %08x; delay='%llu ms'", timer, timer->_delay );
 
-            timer->expiry = now + timer->delay;
-            timer->delay = 0;
+            timer->_expiry = _now + timer->_delay;
+            timer->_delay = 0;
         }
 
-        if ( timer->expiry > 0 && timer->expiry < nextExpiry )
-            nextExpiry = timer->expiry;
+        if ( timer->_expiry > 0 && timer->_expiry < _nextExpiry )
+            _nextExpiry = timer->_expiry;
     }
 }
 
 void TimerManager::add ( Timer *timer )
 {
     LOG ( "Adding timer %08x", timer );
-    allocatedTimers.insert ( timer );
-    changed = true;
+
+    _allocatedTimers.insert ( timer );
+    _changed = true;
 }
 
 void TimerManager::remove ( Timer *timer )
 {
-    if ( allocatedTimers.erase ( timer ) )
+    if ( _allocatedTimers.erase ( timer ) )
     {
         LOG ( "Removing timer %08x", timer );
-        changed = true;
+
+        _changed = true;
     }
 }
 
 void TimerManager::clear()
 {
     LOG ( "Clearing timers" );
-    activeTimers.clear();
-    allocatedTimers.clear();
-    changed = true;
+
+    _activeTimers.clear();
+    _allocatedTimers.clear();
+    _changed = true;
 }
 
-TimerManager::TimerManager() : useHiResTimer ( true ) {}
+TimerManager::TimerManager() : _useHiResTimer ( true ) {}
 
 void TimerManager::initialize()
 {
-    if ( initialized )
+    if ( _initialized )
         return;
 
-    initialized = true;
+    _initialized = true;
 
     // Seed the RNG in this thread because Windows has per-thread RNG, and timers are also thread specific
     srand ( time ( 0 ) );
@@ -136,20 +139,22 @@ void TimerManager::initialize()
     DWORD_PTR oldMask = SetThreadAffinityMask ( GetCurrentThread(), 1 );
 
     // Check if the hi-res timer is supported
-    if ( ! QueryPerformanceFrequency ( ( LARGE_INTEGER * ) &ticksPerSecond ) )
+    if ( ! QueryPerformanceFrequency ( ( LARGE_INTEGER * ) &_ticksPerSecond ) )
     {
         LOG ( "Hi-res timer not supported" );
-        useHiResTimer = false;
+
+        _useHiResTimer = false;
+
         SetThreadAffinityMask ( GetCurrentThread(), oldMask );
     }
 }
 
 void TimerManager::deinitialize()
 {
-    if ( ! initialized )
+    if ( ! _initialized )
         return;
 
-    initialized = false;
+    _initialized = false;
 
     TimerManager::get().clear();
 }

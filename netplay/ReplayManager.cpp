@@ -29,59 +29,59 @@ bool ReplayManager::load ( const string& replayFile, bool real )
             getline ( fin, str );
             ss << trimmed ( str );
 
-            if ( index >= modes.size() )
+            if ( index >= _modes.size() )
             {
-                modes.resize ( index + 1 );
-                modes[index] = 0;
+                _modes.resize ( index + 1 );
+                _modes[index] = 0;
             }
 
-            if ( ! modes[index] )
-                modes[index] = gameMode;
+            if ( ! _modes[index] )
+                _modes[index] = gameMode;
 
-            ASSERT ( modes[index] == gameMode );
+            ASSERT ( _modes[index] == gameMode );
 
-            if ( index >= states.size() )
-                states.resize ( index + 1 );
+            if ( index >= _states.size() )
+                _states.resize ( index + 1 );
 
-            if ( states[index].empty() )
-                states[index] = "NetplayState::" + netplayState;
+            if ( _states[index].empty() )
+                _states[index] = "NetplayState::" + netplayState;
 
             if ( gameMode == CC_GAME_MODE_LOADING )
             {
-                if ( initialStates.empty() )
-                    initialStates.push_back ( MsgPtr ( new InitialGameState ( { 0, index } ) ) );
+                if ( _initialStates.empty() )
+                    _initialStates.push_back ( MsgPtr ( new InitialGameState ( { 0, index } ) ) );
 
-                ASSERT ( initialStates.back().get() != 0 );
+                ASSERT ( _initialStates.back().get() != 0 );
 
-                if ( initialStates.back()->getAs<InitialGameState>().indexedFrame.parts.index != index )
-                    initialStates.push_back ( MsgPtr ( new InitialGameState ( { 0, index } ) ) );
+                if ( _initialStates.back()->getAs<InitialGameState>().indexedFrame.parts.index != index )
+                    _initialStates.push_back ( MsgPtr ( new InitialGameState ( { 0, index } ) ) );
             }
 
-            ASSERT ( states[index] == "NetplayState::" + netplayState );
+            ASSERT ( _states[index] == "NetplayState::" + netplayState );
 
             if ( tag == "Inputs" || ( real && tag == "Reinputs" ) )
             {
-                if ( index >= inputs.size() )
-                    inputs.resize ( index + 1 );
+                if ( index >= _inputs.size() )
+                    _inputs.resize ( index + 1 );
 
-                ASSERT ( index + 1 == inputs.size() );
+                ASSERT ( index + 1 == _inputs.size() );
 
-                if ( frame >= inputs[index].size() )
-                    inputs[index].resize ( frame + 1 );
+                if ( frame >= _inputs[index].size() )
+                    _inputs[index].resize ( frame + 1 );
 
                 Inputs i;
                 i.indexedFrame.parts.index = index;
                 i.indexedFrame.parts.frame = frame;
                 ss >> hex >> i.p1 >> i.p2;
 
-                inputs[index][frame] = i;
+                _inputs[index][frame] = i;
             }
             else if ( tag == "RngState" )
             {
-                if ( index >= rngStates.size() )
-                    rngStates.resize ( index + 1 );
+                if ( index >= _rngStates.size() )
+                    _rngStates.resize ( index + 1 );
 
-                ASSERT ( rngStates[index].get() == 0 );
+                ASSERT ( _rngStates[index].get() == 0 );
 
                 RngState *rngState = 0;
 
@@ -126,75 +126,75 @@ bool ReplayManager::load ( const string& replayFile, bool real )
                     THROW_EXCEPTION ( "Unknown RngState size: %u", "Invalid replay file!", ss.str().size() );
                 }
 
-                rngStates[index].reset ( rngState );
+                _rngStates[index].reset ( rngState );
             }
             else if ( tag == "Rollback" )
             {
                 if ( real )
                     continue;
 
-                if ( index >= rollbacks.size() )
-                    rollbacks.resize ( index + 1 );
+                if ( index >= _rollbacks.size() )
+                    _rollbacks.resize ( index + 1 );
 
-                ASSERT ( index + 1 == rollbacks.size() );
+                ASSERT ( index + 1 == _rollbacks.size() );
 
-                if ( frame >= rollbacks[index].size() )
-                    rollbacks[index].resize ( frame + 1, MaxIndexedFrame );
+                if ( frame >= _rollbacks[index].size() )
+                    _rollbacks[index].resize ( frame + 1, MaxIndexedFrame );
 
                 IndexedFrame i;
                 ss >> i.parts.index >> i.parts.frame;
 
-                rollbacks[index][frame] = i;
+                _rollbacks[index][frame] = i;
             }
             else if ( tag == "Reinputs" )
             {
                 if ( real )
                     continue;
 
-                if ( rollbacks.size() > reinputs.size() )
-                    reinputs.resize ( rollbacks.size() );
+                if ( _rollbacks.size() > _reinputs.size() )
+                    _reinputs.resize ( _rollbacks.size() );
 
-                ASSERT ( rollbacks.size() == reinputs.size() );
+                ASSERT ( _rollbacks.size() == _reinputs.size() );
 
-                if ( rollbacks.back().size() > reinputs.back().size() )
-                    reinputs.back().resize ( rollbacks.back().size() );
+                if ( _rollbacks.back().size() > _reinputs.back().size() )
+                    _reinputs.back().resize ( _rollbacks.back().size() );
 
-                ASSERT ( rollbacks.back().size() == reinputs.back().size() );
+                ASSERT ( _rollbacks.back().size() == _reinputs.back().size() );
 
                 Inputs i;
                 i.indexedFrame.parts.index = index;
                 i.indexedFrame.parts.frame = frame;
                 ss >> hex >> i.p1 >> i.p2;
 
-                reinputs.back().back().push_back ( i );
+                _reinputs.back().back().push_back ( i );
             }
             else if ( tag == "P1" )
             {
                 if ( gameMode != CC_GAME_MODE_IN_GAME )
                     continue;
 
-                ASSERT ( initialStates.back().get() != 0 );
+                ASSERT ( _initialStates.back().get() != 0 );
 
                 uint32_t chara, moon, color;
                 ss >> chara >> moon >> color;
 
-                initialStates.back()->getAs<InitialGameState>().chara[0] = chara;
-                initialStates.back()->getAs<InitialGameState>().moon[0] = moon;
-                initialStates.back()->getAs<InitialGameState>().color[0] = color;
+                _initialStates.back()->getAs<InitialGameState>().chara[0] = chara;
+                _initialStates.back()->getAs<InitialGameState>().moon[0] = moon;
+                _initialStates.back()->getAs<InitialGameState>().color[0] = color;
             }
             else if ( tag == "P2" )
             {
                 if ( gameMode != CC_GAME_MODE_IN_GAME )
                     continue;
 
-                ASSERT ( initialStates.back().get() != 0 );
+                ASSERT ( _initialStates.back().get() != 0 );
 
                 uint32_t chara, moon, color;
                 ss >> chara >> moon >> color;
 
-                initialStates.back()->getAs<InitialGameState>().chara[1] = chara;
-                initialStates.back()->getAs<InitialGameState>().moon[1] = moon;
-                initialStates.back()->getAs<InitialGameState>().color[1] = color;
+                _initialStates.back()->getAs<InitialGameState>().chara[1] = chara;
+                _initialStates.back()->getAs<InitialGameState>().moon[1] = moon;
+                _initialStates.back()->getAs<InitialGameState>().color[1] = color;
             }
             else
             {
@@ -202,7 +202,7 @@ bool ReplayManager::load ( const string& replayFile, bool real )
             }
         }
 
-        LOG ( "Processed up to [%u:%u]", inputs.size() - 1, inputs.back().size() - 1 );
+        LOG ( "Processed up to [%u:%u]", _inputs.size() - 1, _inputs.back().size() - 1 );
     }
 
     fin.close();
@@ -211,21 +211,21 @@ bool ReplayManager::load ( const string& replayFile, bool real )
 
 uint32_t ReplayManager::getGameMode ( IndexedFrame indexedFrame )
 {
-    if ( indexedFrame.parts.index >= modes.size() )
+    if ( indexedFrame.parts.index >= _modes.size() )
         return 0;
 
-    return modes[indexedFrame.parts.index];
+    return _modes[indexedFrame.parts.index];
 }
 
 const string& ReplayManager::getStateStr ( IndexedFrame indexedFrame )
 {
-    if ( indexedFrame.parts.index >= states.size() )
+    if ( indexedFrame.parts.index >= _states.size() )
     {
         static const string empty;
         return empty;
     }
 
-    return states[indexedFrame.parts.index];
+    return _states[indexedFrame.parts.index];
 }
 
 const ReplayManager::Inputs& ReplayManager::getInputs ( IndexedFrame indexedFrame )
@@ -234,12 +234,12 @@ const ReplayManager::Inputs& ReplayManager::getInputs ( IndexedFrame indexedFram
     static const Inputs down = { MaxIndexedFrame, 2, 2 };
     static const Inputs empty = { MaxIndexedFrame, 0, 0 };
 
-    if ( modes[indexedFrame.parts.index] == CC_GAME_MODE_LOADING )
+    if ( _modes[indexedFrame.parts.index] == CC_GAME_MODE_LOADING )
         return ( ( indexedFrame.parts.frame % 2 ) ? empty : confirm );
 
-    if ( modes[indexedFrame.parts.index] == CC_GAME_MODE_RETRY )
+    if ( _modes[indexedFrame.parts.index] == CC_GAME_MODE_RETRY )
     {
-        if ( modes[indexedFrame.parts.index + 1] == CC_GAME_MODE_LOADING )
+        if ( _modes[indexedFrame.parts.index + 1] == CC_GAME_MODE_LOADING )
             return ( ( indexedFrame.parts.frame % 2 ) ? empty : confirm );
 
         if ( indexedFrame.parts.frame == 30 )
@@ -254,73 +254,73 @@ const ReplayManager::Inputs& ReplayManager::getInputs ( IndexedFrame indexedFram
         return empty;
     }
 
-    if ( indexedFrame.parts.index >= inputs.size()
-            || indexedFrame.parts.frame >= inputs[indexedFrame.parts.index].size() )
+    if ( indexedFrame.parts.index >= _inputs.size()
+            || indexedFrame.parts.frame >= _inputs[indexedFrame.parts.index].size() )
     {
         return empty;
     }
 
-    return inputs[indexedFrame.parts.index][indexedFrame.parts.frame];
+    return _inputs[indexedFrame.parts.index][indexedFrame.parts.frame];
 }
 
 IndexedFrame ReplayManager::getRollbackTarget ( IndexedFrame indexedFrame )
 {
-    if ( indexedFrame.parts.index >= rollbacks.size()
-            || indexedFrame.parts.frame >= rollbacks[indexedFrame.parts.index].size() )
+    if ( indexedFrame.parts.index >= _rollbacks.size()
+            || indexedFrame.parts.frame >= _rollbacks[indexedFrame.parts.index].size() )
     {
         return MaxIndexedFrame;
     }
 
-    return rollbacks[indexedFrame.parts.index][indexedFrame.parts.frame];
+    return _rollbacks[indexedFrame.parts.index][indexedFrame.parts.frame];
 }
 
 const vector<ReplayManager::Inputs>& ReplayManager::getReinputs ( IndexedFrame indexedFrame )
 {
-    if ( indexedFrame.parts.index >= reinputs.size()
-            || indexedFrame.parts.frame >= reinputs[indexedFrame.parts.index].size() )
+    if ( indexedFrame.parts.index >= _reinputs.size()
+            || indexedFrame.parts.frame >= _reinputs[indexedFrame.parts.index].size() )
     {
         static const vector<ReplayManager::Inputs> empty;
         return empty;
     }
 
-    return reinputs[indexedFrame.parts.index][indexedFrame.parts.frame];
+    return _reinputs[indexedFrame.parts.index][indexedFrame.parts.frame];
 }
 
 MsgPtr ReplayManager::getRngState ( IndexedFrame indexedFrame )
 {
-    if ( indexedFrame.parts.index >= rngStates.size() )
+    if ( indexedFrame.parts.index >= _rngStates.size() )
         return 0;
 
-    return rngStates[indexedFrame.parts.index];
+    return _rngStates[indexedFrame.parts.index];
 }
 
 uint32_t ReplayManager::getLastIndex() const
 {
-    if ( inputs.empty() )
+    if ( _inputs.empty() )
         return 0;
 
-    return inputs.size() - 1;
+    return _inputs.size() - 1;
 }
 
 uint32_t ReplayManager::getLastFrame() const
 {
-    if ( inputs.empty() )
+    if ( _inputs.empty() )
         return 0;
 
-    if ( inputs.back().empty() )
+    if ( _inputs.back().empty() )
         return 0;
 
-    return inputs.back().size() - 1;
+    return _inputs.back().size() - 1;
 }
 
 MsgPtr ReplayManager::getInitialStateBefore ( uint32_t index ) const
 {
-    for ( int i = initialStates.size() - 1; i >= 0; --i )
+    for ( int i = _initialStates.size() - 1; i >= 0; --i )
     {
-        ASSERT ( initialStates[i].get() != 0 );
+        ASSERT ( _initialStates[i].get() != 0 );
 
-        if ( initialStates[i]->getAs<InitialGameState>().indexedFrame.parts.index < index )
-            return initialStates[i];
+        if ( _initialStates[i]->getAs<InitialGameState>().indexedFrame.parts.index < index )
+            return _initialStates[i];
     }
 
     return 0;

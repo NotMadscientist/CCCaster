@@ -10,11 +10,11 @@ void *Thread::func ( void *ptr )
 
 void Thread::start()
 {
-    LOCK ( mutex );
-    if ( running )
+    LOCK ( _mutex );
+    if ( _running )
         return;
 
-    running = true;
+    _running = true;
 
     pthread_attr_t attr;
     pthread_attr_init ( &attr );
@@ -24,16 +24,16 @@ void Thread::start()
 
 void Thread::join()
 {
-    LOCK ( mutex );
-    if ( ! running )
+    LOCK ( _mutex );
+    if ( ! _running )
         return;
 
     pthread_join ( thread, 0 );
-    running = false;
+    _running = false;
 }
 
 void Thread::release()
 {
-    LOCK ( mutex );
-    running = false;
+    LOCK ( _mutex );
+    _running = false;
 }

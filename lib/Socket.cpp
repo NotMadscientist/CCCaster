@@ -23,10 +23,10 @@ using namespace std;
 #define SET_NON_BLOCKING_MODE(VALUE)                                                                                \
     do {                                                                                                            \
         u_long flag = VALUE;                                                                                        \
-        if ( ioctlsocket ( fd, FIONBIO, &flag ) != 0 ) {                                                            \
+        if ( ioctlsocket ( _fd, FIONBIO, &flag ) != 0 ) {                                                            \
             LOG_SOCKET ( this, "ioctlsocket(FIONBIO, %u) failed", VALUE );                                          \
-            closesocket ( fd );                                                                                     \
-            fd = 0;                                                                                                 \
+            closesocket ( _fd );                                                                                     \
+            _fd = 0;                                                                                                 \
             THROW_WIN_EXCEPTION ( WSAGetLastError(), "ioctlsocket(FIONBIO, %u) failed", ERROR_NETWORK_GENERIC );    \
         }                                                                                                           \
     } while ( 0 )
@@ -36,7 +36,7 @@ static bool enableForceReusePort = true;
 
 
 Socket::Socket ( Owner *owner, const IpAddrPort& address, Protocol protocol, bool isRaw )
-    : owner ( owner ), address ( address ), protocol ( protocol ), isRaw ( isRaw )
+    : owner ( owner ), address ( address ), protocol ( protocol ), _isRaw ( isRaw )
 {
     resetBuffer();
 }
@@ -50,19 +50,21 @@ void Socket::disconnect()
 {
     LOG_SOCKET ( this, "disconnected" );
 
-    if ( fd )
-        closesocket ( fd );
+    if ( _fd )
+        closesocket ( _fd );
 
     owner = 0;
-    state = State::Disconnected;
-    fd = 0;
+    _state = State::Disconnected;
+    _fd = 0;
+
     freeBuffer();
-    packetLoss = hashFailRate = 0;
+
+    _packetLoss = _hashFailRate = 0;
 }
 
 void Socket::init()
 {
-    ASSERT ( fd == 0 );
+    ASSERT ( _fd == 0 );
 
     WinException exc;
     shared_ptr<addrinfo> addrInfo;
@@ -84,14 +86,14 @@ void Socket::init()
     for ( ; res; res = res->ai_next )
     {
         if ( isTCP() )
-            fd = ::socket ( res->ai_family, SOCK_STREAM, IPPROTO_TCP );
+            _fd = ::socket ( res->ai_family, SOCK_STREAM, IPPROTO_TCP );
         else
-            fd = ::socket ( res->ai_family, SOCK_DGRAM, IPPROTO_UDP );
+            _fd = ::socket ( res->ai_family, SOCK_DGRAM, IPPROTO_UDP );
 
-        if ( fd == INVALID_SOCKET )
+        if ( _fd == INVALID_SOCKET )
         {
             exc = WinException ( WSAGetLastError(), "socket failed", ERROR_NETWORK_GENERIC );
-            fd = 0;
+            _fd = 0;
             LOG_SOCKET ( this, "%s", exc );
             continue;
         }
@@ -102,7 +104,7 @@ void Socket::init()
 
             // SO_REUSEADDR can replace existing port binds
             // SO_EXCLUSIVEADDRUSE only replaces if not exact match
-            if ( setsockopt ( fd, SOL_SOCKET, SO_REUSEADDR, &yes, 1 ) == SOCKET_ERROR )
+            if ( setsockopt ( _fd, SOL_SOCKET, SO_REUSEADDR, &yes, 1 ) == SOCKET_ERROR )
             {
                 exc = WinException ( WSAGetLastError(), "setsockopt failed", ERROR_NETWORK_GENERIC );
                 LOG_SOCKET ( this, "%s", exc );
@@ -116,7 +118,7 @@ void Socket::init()
         {
             if ( isTCP() )
             {
-                if ( ::connect ( fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
+                if ( ::connect ( _fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
                 {
                     int error = WSAGetLastError();
 
@@ -126,19 +128,19 @@ void Socket::init()
 
                     exc = WinException ( error, "connect failed", ERROR_NETWORK_GENERIC );
                     LOG_SOCKET ( this, "%s", exc );
-                    closesocket ( fd );
-                    fd = 0;
+                    closesocket ( _fd );
+                    _fd = 0;
                     continue;
                 }
             }
             else
             {
-                if ( ::bind ( fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
+                if ( ::bind ( _fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
                 {
                     exc = WinException ( WSAGetLastError(), "bind failed", ERROR_NETWORK_GENERIC );
                     LOG_SOCKET ( this, "%s", exc );
-                    closesocket ( fd );
-                    fd = 0;
+                    closesocket ( _fd );
+                    _fd = 0;
                     continue;
                 }
 
@@ -148,21 +150,21 @@ void Socket::init()
         }
         else
         {
-            if ( ::bind ( fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
+            if ( ::bind ( _fd, res->ai_addr, res->ai_addrlen ) == SOCKET_ERROR )
             {
                 exc = WinException ( WSAGetLastError(), format ( ERROR_NETWORK_PORT_BIND, address.port ), "" );
                 LOG_SOCKET ( this, "%s", exc );
-                closesocket ( fd );
-                fd = 0;
+                closesocket ( _fd );
+                _fd = 0;
                 continue;
             }
 
-            if ( isTCP() && ( ::listen ( fd, SOMAXCONN ) == SOCKET_ERROR ) )
+            if ( isTCP() && ( ::listen ( _fd, SOMAXCONN ) == SOCKET_ERROR ) )
             {
                 exc = WinException ( WSAGetLastError(), "listen failed", ERROR_NETWORK_GENERIC );
                 LOG_SOCKET ( this, "%s", exc );
-                closesocket ( fd );
-                fd = 0;
+                closesocket ( _fd );
+                _fd = 0;
             }
 
             // Successful bind
@@ -170,14 +172,14 @@ void Socket::init()
         }
     }
 
-    if ( fd == 0 )
+    if ( _fd == 0 )
     {
         LOG_SOCKET ( this, "%s; init failed", exc );
         throw exc;
     }
 
     // Update the address to resolve hostname
-    if ( !address.empty() && state != State::Listening )
+    if ( !address.empty() && _state != State::Listening )
     {
         if ( isTCP() && res )
         {
@@ -198,11 +200,11 @@ void Socket::init()
         sockaddr_storage sas;
         int saLen = sizeof ( sas );
 
-        if ( getsockname ( fd, ( sockaddr * ) &sas, &saLen ) == SOCKET_ERROR )
+        if ( getsockname ( _fd, ( sockaddr * ) &sas, &saLen ) == SOCKET_ERROR )
         {
             LOG_SOCKET ( this, "getsockname failed" );
-            closesocket ( fd );
-            fd = 0;
+            closesocket ( _fd );
+            _fd = 0;
             THROW_WIN_EXCEPTION ( WSAGetLastError(), "getsockname failed", ERROR_NETWORK_GENERIC );
         }
 
@@ -213,14 +215,14 @@ void Socket::init()
 
 bool Socket::send ( const char *buffer, size_t len )
 {
-    if ( fd == 0 || isDisconnected() )
+    if ( _fd == 0 || isDisconnected() )
     {
         LOG_SOCKET ( this, "Cannot send over disconnected socket" );
         return false;
     }
 
     ASSERT ( isClient() == true );
-    ASSERT ( fd != 0 );
+    ASSERT ( _fd != 0 );
     ASSERT ( address.addr.empty() == false );
 
     size_t totalBytes = 0;
@@ -232,12 +234,12 @@ bool Socket::send ( const char *buffer, size_t len )
         if ( isTCP() )
         {
             LOG_SOCKET ( this, "send ( [ %u bytes ] )", len );
-            sentBytes = ::send ( fd, buffer, len, 0 );
+            sentBytes = ::send ( _fd, buffer, len, 0 );
         }
         else
         {
             LOG_SOCKET ( this, "sendto ( [ %u bytes ], '%s' )", len, address );
-            sentBytes = ::sendto ( fd, buffer, len, 0,
+            sentBytes = ::sendto ( _fd, buffer, len, 0,
                                    address.getAddrInfo()->ai_addr, address.getAddrInfo()->ai_addrlen );
         }
 
@@ -272,14 +274,14 @@ bool Socket::send ( const char *buffer, size_t len )
 
 bool Socket::send ( const char *buffer, size_t len, const IpAddrPort& address )
 {
-    if ( fd == 0 || isDisconnected() )
+    if ( _fd == 0 || isDisconnected() )
     {
         LOG_SOCKET ( this, "Cannot send over disconnected socket" );
         return false;
     }
 
     ASSERT ( isUDP() == true );
-    ASSERT ( fd != 0 );
+    ASSERT ( _fd != 0 );
     ASSERT ( address.addr.empty() == false );
 
     size_t totalBytes = 0;
@@ -287,7 +289,7 @@ bool Socket::send ( const char *buffer, size_t len, const IpAddrPort& address )
     while ( totalBytes < len || len == 0 )
     {
         LOG_SOCKET ( this, "sendto ( [ %u bytes ], '%s' )", len, address );
-        int sentBytes = ::sendto ( fd, buffer, len, 0,
+        int sentBytes = ::sendto ( _fd, buffer, len, 0,
                                    address.getAddrInfo()->ai_addr, address.getAddrInfo()->ai_addrlen );
 
         if ( sentBytes == SOCKET_ERROR )
@@ -309,9 +311,9 @@ int Socket::recv ( char *buffer, size_t& len )
 {
     ASSERT ( isClient() == true );
     ASSERT ( isTCP() == true );
-    ASSERT ( fd != 0 );
+    ASSERT ( _fd != 0 );
 
-    int recvBytes = ::recv ( fd, buffer, len, 0 );
+    int recvBytes = ::recv ( _fd, buffer, len, 0 );
 
     if ( recvBytes == 0 )
         return WSAECONNRESET;
@@ -326,12 +328,12 @@ int Socket::recv ( char *buffer, size_t& len )
 int Socket::recvfrom ( char *buffer, size_t& len, IpAddrPort& address )
 {
     ASSERT ( isUDP() == true );
-    ASSERT ( fd != 0 );
+    ASSERT ( _fd != 0 );
 
     sockaddr_storage sas;
     int saLen = sizeof ( sas );
 
-    int recvBytes = ::recvfrom ( fd, buffer, len, 0, ( sockaddr * ) &sas, &saLen );
+    int recvBytes = ::recvfrom ( _fd, buffer, len, 0, ( sockaddr * ) &sas, &saLen );
 
     if ( recvBytes == SOCKET_ERROR )
         return WSAGetLastError();
@@ -343,16 +345,16 @@ int Socket::recvfrom ( char *buffer, size_t& len, IpAddrPort& address )
 
 void Socket::resetBuffer()
 {
-    readBuffer.reserve ( READ_BUFFER_SIZE );
-    readBuffer.resize ( READ_BUFFER_SIZE, ( char ) 0 );
-    readPos = 0;
+    _readBuffer.reserve ( READ_BUFFER_SIZE );
+    _readBuffer.resize ( READ_BUFFER_SIZE, ( char ) 0 );
+    _readPos = 0;
 }
 
 void Socket::freeBuffer()
 {
-    readBuffer.clear();
-    readBuffer.shrink_to_fit();
-    readPos = 0;
+    _readBuffer.clear();
+    _readBuffer.shrink_to_fit();
+    _readPos = 0;
 }
 
 void Socket::consumeBuffer ( size_t bytes )
@@ -361,19 +363,19 @@ void Socket::consumeBuffer ( size_t bytes )
         return;
 
     // Erase the consumed bytes (shifting the array)
-    ASSERT ( bytes <= readPos );
-    readBuffer.erase ( 0, bytes );
-    readBuffer.reserve ( READ_BUFFER_SIZE );
-    readBuffer.resize ( READ_BUFFER_SIZE, ( char ) 0 );
-    readPos -= bytes;
+    ASSERT ( bytes <= _readPos );
+    _readBuffer.erase ( 0, bytes );
+    _readBuffer.reserve ( READ_BUFFER_SIZE );
+    _readBuffer.resize ( READ_BUFFER_SIZE, ( char ) 0 );
+    _readPos -= bytes;
 }
 
 void Socket::socketRead()
 {
-    ASSERT ( readPos < readBuffer.size() );
+    ASSERT ( _readPos < _readBuffer.size() );
 
-    char *bufferStart = &readBuffer[readPos];
-    size_t bufferLen = readBuffer.size() - readPos;
+    char *bufferStart = &_readBuffer[_readPos];
+    size_t bufferLen = _readBuffer.size() - _readPos;
 
     IpAddrPort address = getRemoteAddress();
     int error = 0;
@@ -409,7 +411,7 @@ void Socket::socketRead()
 
 #ifndef RELEASE
     // Simulated packet loss
-    if ( rand() % 100 < packetLoss )
+    if ( rand() % 100 < _packetLoss )
     {
         LOG ( "Discarding [ %u bytes ] from '%s'", bufferLen, address );
         return;
@@ -417,7 +419,7 @@ void Socket::socketRead()
 #endif
 
     // Raw read mode
-    if ( isRaw )
+    if ( _isRaw )
     {
         LOG ( "Read [ %u bytes ] from '%s'", bufferLen, address );
 
@@ -427,8 +429,8 @@ void Socket::socketRead()
     }
 
     // Increment the buffer position
-    readPos += bufferLen;
-    LOG ( "Read [ %u bytes ] from '%s'; %u bytes remaining in buffer", bufferLen, address, readPos );
+    _readPos += bufferLen;
+    LOG ( "Read [ %u bytes ] from '%s'; %u bytes remaining in buffer", bufferLen, address, _readPos );
 
     // Handle zero byte packets
     if ( bufferLen == 0 )
@@ -442,7 +444,7 @@ void Socket::socketRead()
         LOG ( "Hex: %s", formatAsHex ( bufferStart, bufferLen ) );
 
     // Check if the first byte is a valid message type
-    if ( readPos >= sizeof ( MsgType ) && ! ::Protocol::checkMsgType ( * ( MsgType * ) &readBuffer[0] ) )
+    if ( _readPos >= sizeof ( MsgType ) && ! ::Protocol::checkMsgType ( * ( MsgType * ) &_readBuffer[0] ) )
     {
         LOG ( "Clearing invalid buffer!" );
         resetBuffer();
@@ -453,14 +455,14 @@ void Socket::socketRead()
     for ( ;; )
     {
         size_t consumedBytes = 0;
-        MsgPtr msg = ::Protocol::decode ( &readBuffer[0], readPos, consumedBytes );
+        MsgPtr msg = ::Protocol::decode ( &_readBuffer[0], _readPos, consumedBytes );
         consumeBuffer ( consumedBytes );
 
         // Abort if a message could not be decoded
         if ( ! msg.get() )
             return;
 
-        LOG ( "Decoded '%s' using [ %u bytes ]; %u bytes remaining in buffer", msg, consumedBytes, readPos );
+        LOG ( "Decoded '%s' using [ %u bytes ]; %u bytes remaining in buffer", msg, consumedBytes, _readPos );
         socketRead ( msg, address );
 
         // Abort if the socket is de-allocated
@@ -477,7 +479,7 @@ MsgPtr Socket::share ( int processId )
 {
     shared_ptr<WSAPROTOCOL_INFO> info ( new WSAPROTOCOL_INFO() );
 
-    if ( WSADuplicateSocket ( fd, processId, info.get() ) )
+    if ( WSADuplicateSocket ( _fd, processId, info.get() ) )
         THROW_WIN_EXCEPTION ( WSAGetLastError(), "WSADuplicateSocket failed", ERROR_NETWORK_GENERIC );
 
     // Workaround for Wine, because apparently these aren't set
@@ -495,14 +497,27 @@ MsgPtr Socket::share ( int processId )
     SocketManager::get().remove ( this );
 
     LOG ( "Sharing:" );
-    LOG ( "address='%s'; protocol=%s; state=%s", address, protocol, state );
+    LOG ( "address='%s'; protocol=%s; state=%s", address, protocol, _state );
 
-    return MsgPtr ( new SocketShareData ( address, protocol, state, readBuffer, readPos, info ) );
+    return MsgPtr ( new SocketShareData ( address, protocol, _readBuffer, _readPos, _state, info ) );
 }
+
+SocketShareData::SocketShareData ( const IpAddrPort& address,
+                                   Socket::Protocol protocol,
+                                   const string& readBuffer,
+                                   size_t readPos,
+                                   Socket::State state,
+                                   const shared_ptr<WSAPROTOCOL_INFO>& info )
+    : address ( address )
+    , protocol ( protocol )
+    , readBuffer ( readBuffer )
+    , readPos ( readPos )
+    , state ( state )
+    , info ( info ) {}
 
 void SocketShareData::save ( cereal::BinaryOutputArchive& ar ) const
 {
-    ar ( address, protocol, isRaw, connectTimeout, readBuffer, readPos, state,
+    ar ( address, protocol, readBuffer, readPos, isRaw, state, connectTimeout,
          info->dwServiceFlags1,
          info->dwServiceFlags2,
          info->dwServiceFlags3,
@@ -535,7 +550,7 @@ void SocketShareData::load ( cereal::BinaryInputArchive& ar )
 {
     info.reset ( new WSAPROTOCOL_INFO() );
 
-    ar ( address, protocol, isRaw, connectTimeout, readBuffer, readPos, state,
+    ar ( address, protocol, readBuffer, readPos, isRaw, state, connectTimeout,
          info->dwServiceFlags1,
          info->dwServiceFlags2,
          info->dwServiceFlags3,
@@ -618,3 +633,14 @@ void Socket::forceReusePort ( bool enable )
 {
     enableForceReusePort = enable;
 }
+
+void Socket::setPacketLoss ( uint8_t percentage )
+{
+    _packetLoss = percentage;
+}
+
+void Socket::setCheckSumFail ( uint8_t percentage )
+{
+    _hashFailRate = percentage;
+}
+
