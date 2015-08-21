@@ -23,22 +23,22 @@ void DllControllerManager::initControllers ( const ControllerMappings& mappings 
     ControllerManager::get().setMappings ( mappings );
     ControllerManager::get().check();
 
-    allControllers = ControllerManager::get().getControllers();
+    _allControllers = ControllerManager::get().getControllers();
 
     // Set the owner (Which enables callbacks) AFTER we have the list of all controllers
     ControllerManager::get().owner = this;
 
     // The first controller is keyboard which is always attached.
     // So we only set this flag for controllers beyond the first one.
-    controllerAttached = ( allControllers.size() > 1 );
+    _controllerAttached = ( _allControllers.size() > 1 );
 }
 
 bool DllControllerManager::isNotMapping() const
 {
     Lock lock ( ControllerManager::get().mutex );
 
-    return  ( !playerControllers[0] || !playerControllers[0]->isMapping() )
-            && ( !playerControllers[1] || !playerControllers[1]->isMapping() );
+    return  ( !_playerControllers[0] || !_playerControllers[0]->isMapping() )
+            && ( !_playerControllers[1] || !_playerControllers[1]->isMapping() );
 }
 
 void DllControllerManager::updateControls ( uint16_t *localInputs )
@@ -51,9 +51,9 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
     bool toggleOverlay = false;
 
     // // Automatically show overlay when a controller is attached during chara select
-    // if ( controllerAttached )
+    // if ( _controllerAttached )
     // {
-    //     controllerAttached = false;
+    //     _controllerAttached = false;
 
     //     if ( !DllOverlayUi::isEnabled() && *CC_GAME_MODE_ADDR == CC_GAME_MODE_CHARA_SELECT )
     //         toggleOverlay = true;
@@ -65,7 +65,7 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
         toggleOverlay = true;
     }
 
-    for ( Controller *controller : allControllers )
+    for ( Controller *controller : _allControllers )
     {
         // Don't sticky controllers if the overlay is enabled
         if ( DllOverlayUi::isEnabled() )
@@ -77,21 +77,21 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
             if ( isSinglePlayer )
             {
                 // Only sticky the local player in single player modes
-                if ( !playerControllers[localPlayer - 1] && controller != playerControllers[localPlayer - 1] )
+                if ( !_playerControllers[localPlayer - 1] && controller != _playerControllers[localPlayer - 1] )
                 {
-                    playerControllers[localPlayer - 1] = controller;
+                    _playerControllers[localPlayer - 1] = controller;
                 }
             }
             else
             {
                 // Sticky player 1 then player 2 optimistically
-                if ( !playerControllers[0] && controller != playerControllers[1] )
+                if ( !_playerControllers[0] && controller != _playerControllers[1] )
                 {
-                    playerControllers[0] = controller;
+                    _playerControllers[0] = controller;
                 }
-                else if ( !playerControllers[1] && controller != playerControllers[0] )
+                else if ( !_playerControllers[1] && controller != _playerControllers[0] )
                 {
-                    playerControllers[1] = controller;
+                    _playerControllers[1] = controller;
                 }
             }
         }
@@ -134,13 +134,13 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
         else
         {
             // Cancel all mapping if we're disabling the overlay
-            if ( playerControllers[0] )
-                playerControllers[0]->cancelMapping();
-            if ( playerControllers[1] )
-                playerControllers[1]->cancelMapping();
+            if ( _playerControllers[0] )
+                _playerControllers[0]->cancelMapping();
+            if ( _playerControllers[1] )
+                _playerControllers[1]->cancelMapping();
 
-            overlayPositions[0] = 0;
-            overlayPositions[1] = 0;
+            _overlayPositions[0] = 0;
+            _overlayPositions[1] = 0;
 
             // Disable keyboard events, since we use GetKeyState for regular controller inputs
             KeyboardManager::get().unhook();
@@ -156,29 +156,29 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
     // Only update player controls when the overlay is NOT enabled
     if ( !DllOverlayUi::isEnabled() || ProcessManager::isWine() )
     {
-        if ( playerControllers[localPlayer - 1] )
-            localInputs[0] = getInput ( playerControllers[localPlayer - 1] );
+        if ( _playerControllers[localPlayer - 1] )
+            localInputs[0] = getInput ( _playerControllers[localPlayer - 1] );
 
-        if ( playerControllers[remotePlayer - 1] )
-            localInputs[1] = getInput ( playerControllers[remotePlayer - 1] );
+        if ( _playerControllers[remotePlayer - 1] )
+            localInputs[1] = getInput ( _playerControllers[remotePlayer - 1] );
 
         return;
     }
 
     // Check all controllers
-    for ( Controller *controller : allControllers )
+    for ( Controller *controller : _allControllers )
     {
         if ( ( controller->isJoystick() && isDirectionPressed ( controller, 6 ) )
                 || ( controller->isKeyboard() && KeyboardState::isPressed ( VK_RIGHT ) ) )
         {
             // Move controller right
-            if ( controller == playerControllers[0] )
+            if ( controller == _playerControllers[0] )
             {
                 if ( ! ( controller->isKeyboard() && controller->isMapping()
-                         && overlayPositions[0] >= 1 && overlayPositions[0] <= 4 ) )
+                         && _overlayPositions[0] >= 1 && _overlayPositions[0] <= 4 ) )
                 {
-                    playerControllers[0]->cancelMapping();
-                    playerControllers[0] = 0;
+                    _playerControllers[0]->cancelMapping();
+                    _playerControllers[0] = 0;
                 }
             }
             else if ( isSinglePlayer && localPlayer == 1 )
@@ -186,23 +186,23 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
                 // Only one controller (player 1)
                 continue;
             }
-            else if ( ! playerControllers[1] )
+            else if ( ! _playerControllers[1] )
             {
-                playerControllers[1] = controller;
-                overlayPositions[1] = 0;
+                _playerControllers[1] = controller;
+                _overlayPositions[1] = 0;
             }
         }
         else if ( ( controller->isJoystick() && isDirectionPressed ( controller, 4 ) )
                   || ( controller->isKeyboard() && KeyboardState::isPressed ( VK_LEFT ) ) )
         {
             // Move controller left
-            if ( controller == playerControllers[1] )
+            if ( controller == _playerControllers[1] )
             {
                 if ( ! ( controller->isKeyboard() && controller->isMapping()
-                         && overlayPositions[1] >= 1 && overlayPositions[1] <= 4 ) )
+                         && _overlayPositions[1] >= 1 && _overlayPositions[1] <= 4 ) )
                 {
-                    playerControllers[1]->cancelMapping();
-                    playerControllers[1] = 0;
+                    _playerControllers[1]->cancelMapping();
+                    _playerControllers[1] = 0;
                 }
             }
             else if ( isSinglePlayer && localPlayer == 2 )
@@ -210,10 +210,10 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
                 // Only one controller (player 2)
                 continue;
             }
-            else if ( ! playerControllers[0] )
+            else if ( ! _playerControllers[0] )
             {
-                playerControllers[0] = controller;
-                overlayPositions[0] = 0;
+                _playerControllers[0] = controller;
+                _overlayPositions[0] = 0;
             }
         }
     }
@@ -222,11 +222,11 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
 
     // Display all controllers
     text[1] = "Controllers\n";
-    for ( const Controller *controller : allControllers )
-        if ( controller != playerControllers[0] && controller != playerControllers[1] )
+    for ( const Controller *controller : _allControllers )
+        if ( controller != _playerControllers[0] && controller != _playerControllers[1] )
             text[1] += "\n" + controller->getName();
 
-    const size_t controllersHeight = 3 + allControllers.size();
+    const size_t controllersHeight = 3 + _allControllers.size();
 
     // Update player controllers
     for ( uint8_t i = 0; i < 2; ++i )
@@ -242,7 +242,7 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
         }
 
         // Show placeholder when player has no controller assigned
-        if ( ! playerControllers[i] )
+        if ( ! _playerControllers[i] )
         {
             playerText = ( i == 0 ? "Press Left on P1 controller" : "Press Right on P2 controller" );
             DllOverlayUi::updateSelector ( i );
@@ -252,9 +252,9 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
         // Generate mapping options starting with controller name
         size_t headerHeight = 0;
         vector<string> options;
-        options.push_back ( playerControllers[i]->getName() );
+        options.push_back ( _playerControllers[i]->getName() );
 
-        if ( playerControllers[i]->isKeyboard() )
+        if ( _playerControllers[i]->isKeyboard() )
         {
             headerHeight = max ( 3u, controllersHeight );
 
@@ -266,7 +266,7 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
             // Add directions to keyboard mapping options
             for ( size_t j = 0; j < 4; ++j )
             {
-                const string mapping = playerControllers[i]->getMapping ( gameInputBits[j].second, "..." );
+                const string mapping = _playerControllers[i]->getMapping ( gameInputBits[j].second, "..." );
                 options.push_back ( gameInputBits[j].first + " : " + mapping );
             }
         }
@@ -282,25 +282,25 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
         // Add buttons to mapping options
         for ( size_t j = 4; j < gameInputBits.size(); ++j )
         {
-            const string mapping = playerControllers[i]->getMapping ( gameInputBits[j].second );
+            const string mapping = _playerControllers[i]->getMapping ( gameInputBits[j].second );
             options.push_back ( gameInputBits[j].first + " : " + mapping );
         }
 
         // Finally add done option
-        options.push_back ( playerControllers[i]->isKeyboard() ? "Done (press Enter)" : "Done (press any button)" );
+        options.push_back ( _playerControllers[i]->isKeyboard() ? "Done (press Enter)" : "Done (press any button)" );
 
         // Disable overlay if both players are done
-        if ( overlayPositions[i] + 1 == options.size()
-                && ( ( playerControllers[i]->isJoystick() && playerControllers[i]->getJoystickState().buttons )
-                     || ( playerControllers[i]->isKeyboard() && KeyboardState::isPressed ( VK_RETURN ) ) ) )
+        if ( _overlayPositions[i] + 1 == options.size()
+                && ( ( _playerControllers[i]->isJoystick() && _playerControllers[i]->getJoystickState().buttons )
+                     || ( _playerControllers[i]->isKeyboard() && KeyboardState::isPressed ( VK_RETURN ) ) ) )
         {
-            overlayPositions[i] = 0;
+            _overlayPositions[i] = 0;
 
-            if ( ( !playerControllers[0] || !overlayPositions[0] )
-                    && ( !playerControllers[1] || !overlayPositions[1] ) )
+            if ( ( !_playerControllers[0] || !_overlayPositions[0] )
+                    && ( !_playerControllers[1] || !_overlayPositions[1] ) )
             {
-                overlayPositions[0] = 0;
-                overlayPositions[1] = 0;
+                _overlayPositions[0] = 0;
+                _overlayPositions[1] = 0;
                 DllOverlayUi::disable();
                 KeyboardManager::get().unhook();
                 AsmHacks::enableEscapeToExit = true;
@@ -313,29 +313,29 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
             playerText += "\n" + option;
 
         // Filter keyboard overlay controls when mapping directions
-        if ( playerControllers[i]->isKeyboard() && playerControllers[i]->isMapping()
-                && overlayPositions[i] >= 1 && overlayPositions[i] <= 4 )
+        if ( _playerControllers[i]->isKeyboard() && _playerControllers[i]->isMapping()
+                && _overlayPositions[i] >= 1 && _overlayPositions[i] <= 4 )
         {
-            DllOverlayUi::updateSelector ( i, headerHeight + overlayPositions[i], options[overlayPositions[i]] );
+            DllOverlayUi::updateSelector ( i, headerHeight + _overlayPositions[i], options[_overlayPositions[i]] );
             continue;
         }
 
         bool deleteMapping = false, mapDirections = false, changedPosition = false;
 
         if ( ( i == 0
-                && ( ( playerControllers[i]->isJoystick() && isDirectionPressed ( playerControllers[i], 4 ) )
-                     || ( playerControllers[i]->isKeyboard() && KeyboardState::isPressed ( VK_LEFT ) ) ) )
+                && ( ( _playerControllers[i]->isJoystick() && isDirectionPressed ( _playerControllers[i], 4 ) )
+                     || ( _playerControllers[i]->isKeyboard() && KeyboardState::isPressed ( VK_LEFT ) ) ) )
                 || ( i == 1
-                     && ( ( playerControllers[i]->isJoystick() && isDirectionPressed ( playerControllers[i], 6 ) )
-                          || ( playerControllers[i]->isKeyboard() && KeyboardState::isPressed ( VK_RIGHT ) ) ) ) )
+                     && ( ( _playerControllers[i]->isJoystick() && isDirectionPressed ( _playerControllers[i], 6 ) )
+                          || ( _playerControllers[i]->isKeyboard() && KeyboardState::isPressed ( VK_RIGHT ) ) ) ) )
         {
             // Delete selected mapping
             deleteMapping = true;
         }
-        else if ( playerControllers[i]->isKeyboard()
+        else if ( _playerControllers[i]->isKeyboard()
                   && ( KeyboardState::isReleased ( VK_RETURN )      // Use Return key released to prevent the
                        || KeyboardState::isPressed ( VK_DELETE ) )  // same key event from being mapped immediately.
-                  && overlayPositions[i] >= 1 && overlayPositions[i] <= 4 )
+                  && _overlayPositions[i] >= 1 && _overlayPositions[i] <= 4 )
         {
             // Press enter / delete to modify direction keys
             if ( KeyboardState::isReleased ( VK_RETURN ) )
@@ -343,72 +343,72 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
             else
                 deleteMapping = true;
         }
-        else if ( ( playerControllers[i]->isJoystick() && isDirectionPressed ( playerControllers[i], 2 ) )
-                  || ( playerControllers[i]->isKeyboard() && KeyboardState::isPressedOrHeld ( VK_DOWN ) ) )
+        else if ( ( _playerControllers[i]->isJoystick() && isDirectionPressed ( _playerControllers[i], 2 ) )
+                  || ( _playerControllers[i]->isKeyboard() && KeyboardState::isPressedOrHeld ( VK_DOWN ) ) )
         {
             // Move selector down
-            overlayPositions[i] = ( overlayPositions[i] + 1 ) % options.size();
+            _overlayPositions[i] = ( _overlayPositions[i] + 1 ) % options.size();
             changedPosition = true;
         }
-        else if ( ( playerControllers[i]->isJoystick() && isDirectionPressed ( playerControllers[i], 8 ) )
-                  || ( playerControllers[i]->isKeyboard() && KeyboardState::isPressedOrHeld ( VK_UP ) ) )
+        else if ( ( _playerControllers[i]->isJoystick() && isDirectionPressed ( _playerControllers[i], 8 ) )
+                  || ( _playerControllers[i]->isKeyboard() && KeyboardState::isPressedOrHeld ( VK_UP ) ) )
         {
             // Move selector up
-            overlayPositions[i] = ( overlayPositions[i] + options.size() - 1 ) % options.size();
+            _overlayPositions[i] = ( _overlayPositions[i] + options.size() - 1 ) % options.size();
             changedPosition = true;
         }
 
-        if ( deleteMapping || mapDirections || changedPosition || finishedMapping[i] )
+        if ( deleteMapping || mapDirections || changedPosition || _finishedMapping[i] )
         {
-            if ( overlayPositions[i] >= 1 && overlayPositions[i] < gameInputBits.size() + 1 )
+            if ( _overlayPositions[i] >= 1 && _overlayPositions[i] < gameInputBits.size() + 1 )
             {
                 // Convert selector position to game input bit position
-                const size_t pos = overlayPositions[i] - 1 + ( playerControllers[i]->isKeyboard() ? 0 : 4 );
+                const size_t pos = _overlayPositions[i] - 1 + ( _playerControllers[i]->isKeyboard() ? 0 : 4 );
 
                 if ( deleteMapping && pos < gameInputBits.size() )
                 {
                     // Delete mapping
-                    playerControllers[i]->clearMapping ( gameInputBits[pos].second );
-                    saveMappings ( playerControllers[i] );
+                    _playerControllers[i]->clearMapping ( gameInputBits[pos].second );
+                    saveMappings ( _playerControllers[i] );
                 }
                 else if ( pos >= 4 && pos < gameInputBits.size() )
                 {
                     // Map a button only
-                    playerControllers[i]->startMapping ( this, gameInputBits[pos].second,
-                                                         MAP_CONTINUOUSLY | MAP_PRESERVE_DIRS );
+                    _playerControllers[i]->startMapping ( this, gameInputBits[pos].second,
+                                                          MAP_CONTINUOUSLY | MAP_PRESERVE_DIRS );
                 }
-                else if ( ( mapDirections || finishedMapping[i] ) && pos < 4 )
+                else if ( ( mapDirections || _finishedMapping[i] ) && pos < 4 )
                 {
-                    ASSERT ( playerControllers[i]->isKeyboard() == true );
+                    ASSERT ( _playerControllers[i]->isKeyboard() == true );
 
                     // Map a keyboard direction
-                    playerControllers[i]->startMapping ( this, gameInputBits[pos].second );
+                    _playerControllers[i]->startMapping ( this, gameInputBits[pos].second );
                 }
                 else
                 {
                     // In all other situations cancel the current mapping
-                    playerControllers[i]->cancelMapping();
+                    _playerControllers[i]->cancelMapping();
                 }
             }
             else
             {
                 // In all other situations cancel the current mapping
-                playerControllers[i]->cancelMapping();
+                _playerControllers[i]->cancelMapping();
             }
 
-            finishedMapping[i] = false;
+            _finishedMapping[i] = false;
         }
 
-        if ( overlayPositions[i] == 0 )
+        if ( _overlayPositions[i] == 0 )
         {
             playerText = string ( "Press Up or Down to set keys" )
                          + string ( controllersHeight, '\n' )
-                         + playerControllers[i]->getName();
-            DllOverlayUi::updateSelector ( i, controllersHeight, playerControllers[i]->getName() );
+                         + _playerControllers[i]->getName();
+            DllOverlayUi::updateSelector ( i, controllersHeight, _playerControllers[i]->getName() );
         }
         else
         {
-            DllOverlayUi::updateSelector ( i, headerHeight + overlayPositions[i], options[overlayPositions[i]] );
+            DllOverlayUi::updateSelector ( i, headerHeight + _overlayPositions[i], options[_overlayPositions[i]] );
         }
     }
 
@@ -416,8 +416,8 @@ void DllControllerManager::updateControls ( uint16_t *localInputs )
 
     // Enable Escape to exit if neither controller is being mapped
     AsmHacks::enableEscapeToExit =
-        ( !playerControllers[0] || overlayPositions[0] == 0 )
-        && ( !playerControllers[1] || overlayPositions[1] == 0 );
+        ( !_playerControllers[0] || _overlayPositions[0] == 0 )
+        && ( !_playerControllers[1] || _overlayPositions[1] == 0 );
 
     ControllerManager::get().savePrevStates();
 }
@@ -428,11 +428,11 @@ void DllControllerManager::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, b
 
     for ( uint8_t i = 0; i < 2; ++i )
     {
-        if ( playerControllers[i] && playerControllers[i]->isKeyboard()
-                && overlayPositions[i] >= 1 && overlayPositions[i] < gameInputBits.size() + 1 )
+        if ( _playerControllers[i] && _playerControllers[i]->isKeyboard()
+                && _overlayPositions[i] >= 1 && _overlayPositions[i] < gameInputBits.size() + 1 )
         {
             // Convert selector position to game input bit position
-            const size_t pos = overlayPositions[i] - 1;
+            const size_t pos = _overlayPositions[i] - 1;
 
             // Ignore specific control keys when mapping keyboard buttons
             if ( pos >= 4 && pos < gameInputBits.size()
@@ -446,7 +446,7 @@ void DllControllerManager::keyboardEvent ( uint32_t vkCode, uint32_t scanCode, b
                 return;
             }
 
-            playerControllers[i]->keyboardEvent ( vkCode, scanCode, isExtended, isDown );
+            _playerControllers[i]->keyboardEvent ( vkCode, scanCode, isExtended, isDown );
             return;
         }
     }
@@ -456,32 +456,32 @@ void DllControllerManager::joystickAttached ( Controller *controller )
 {
     // This is a callback from within ControllerManager, so we don't need to lock the main mutex
 
-    allControllers.push_back ( controller );
+    _allControllers.push_back ( controller );
 
-    controllerAttached = true;
+    _controllerAttached = true;
 }
 
 void DllControllerManager::joystickToBeDetached ( Controller *controller )
 {
     // This is a callback from within ControllerManager, so we don't need to lock the main mutex
 
-    if ( playerControllers[0] == controller )
+    if ( _playerControllers[0] == controller )
     {
-        playerControllers[0] = 0;
-        overlayPositions[0] = 0;
+        _playerControllers[0] = 0;
+        _overlayPositions[0] = 0;
     }
 
-    if ( playerControllers[1] == controller )
+    if ( _playerControllers[1] == controller )
     {
-        playerControllers[1] = 0;
-        overlayPositions[1] = 0;
+        _playerControllers[1] = 0;
+        _overlayPositions[1] = 0;
     }
 
-    const auto it = find ( allControllers.begin(), allControllers.end(), controller );
+    const auto it = find ( _allControllers.begin(), _allControllers.end(), controller );
 
-    ASSERT ( it != allControllers.end() );
+    ASSERT ( it != _allControllers.end() );
 
-    allControllers.erase ( it );
+    _allControllers.erase ( it );
 }
 
 void DllControllerManager::controllerKeyMapped ( Controller *controller, uint32_t key )
@@ -496,17 +496,17 @@ void DllControllerManager::controllerKeyMapped ( Controller *controller, uint32_
 
         for ( uint8_t i = 0; i < 2; ++i )
         {
-            if ( controller == playerControllers[i]
-                    && overlayPositions[i] >= 1 && overlayPositions[i] < gameInputBits.size() + 1  )
+            if ( controller == _playerControllers[i]
+                    && _overlayPositions[i] >= 1 && _overlayPositions[i] < gameInputBits.size() + 1  )
             {
                 // Convert selector position to game input bit position
-                const size_t pos = overlayPositions[i] - 1 + ( playerControllers[i]->isKeyboard() ? 0 : 4 );
+                const size_t pos = _overlayPositions[i] - 1 + ( _playerControllers[i]->isKeyboard() ? 0 : 4 );
 
                 // Continue mapping
                 if ( pos + 1 < gameInputBits.size() )
-                    ++overlayPositions[i];
+                    ++_overlayPositions[i];
 
-                finishedMapping[i] = true;
+                _finishedMapping[i] = true;
                 return;
             }
         }

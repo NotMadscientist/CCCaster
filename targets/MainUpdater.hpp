@@ -35,21 +35,23 @@ public:
 
     bool extractArchive() const;
 
-    const Version& getLatestVersion() const { return latestVersion; }
+    Type getType() const { return _type; }
+
+    const Version& getLatestVersion() const { return _latestVersion; }
 
 private:
 
-    Type type;
+    Type _type;
 
-    std::shared_ptr<HttpGet> httpGet;
+    std::shared_ptr<HttpGet> _httpGet;
 
-    std::shared_ptr<HttpDownload> httpDownload;
+    std::shared_ptr<HttpDownload> _httpDownload;
 
-    uint32_t currentServerIdx = 0;
+    uint32_t _currentServerIdx = 0;
 
-    Version latestVersion;
+    Version _latestVersion;
 
-    std::string downloadDir;
+    std::string _downloadDir;
 
     void doFetch ( const Type& type );
 

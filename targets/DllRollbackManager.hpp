@@ -46,14 +46,14 @@ private:
     };
 
     // Memory pool to allocate game states
-    std::shared_ptr<char> memoryPool;
+    std::shared_ptr<char> _memoryPool;
 
     // Unused indices in the memory pool, each game state has the same size
-    std::stack<size_t> freeStack;
+    std::stack<size_t> _freeStack;
 
     // List of saved game states in chronological order
-    std::list<GameState> statesList;
+    std::list<GameState> _statesList;
 
     // History of sound effect playbacks
-    std::array<std::array<uint8_t, CC_SFX_ARRAY_LEN>, NUM_ROLLBACK_STATES> sfxHistory;
+    std::array<std::array<uint8_t, CC_SFX_ARRAY_LEN>, NUM_ROLLBACK_STATES> _sfxHistory;
 };

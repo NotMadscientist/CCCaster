@@ -546,8 +546,8 @@ OptionsMessage::OptionsMessage ( const vector<option::Option>& opt )
     for ( size_t i = 0; i < opt.size(); ++i )
     {
         if ( opt[i] && opt[i].arg )
-            options[i] = Opt ( opt[i].count(), opt[i].arg );
+            _options[i] = Opt ( opt[i].count(), opt[i].arg );
         else if ( opt[i] )
-            options[i] = Opt ( opt[i].count() );
+            _options[i] = Opt ( opt[i].count() );
     }
 }

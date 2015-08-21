@@ -57,9 +57,9 @@ public:
 
     void setDefaultRollback ( uint8_t rollback );
 
-    const KeyValueStore& getConfig() const { return config; }
+    const KeyValueStore& getConfig() const { return _config; }
 
-    const NetplayConfig& getNetplayConfig() const { return netplayConfig; }
+    const NetplayConfig& getNetplayConfig() const { return _netplayConfig; }
 
 
     static void *getConsoleWindow();
@@ -68,21 +68,21 @@ public:
 
 private:
 
-    std::shared_ptr<ConsoleUi> ui;
+    std::shared_ptr<ConsoleUi> _ui;
 
-    MainUpdater updater;
+    MainUpdater _updater;
 
-    KeyValueStore config;
+    KeyValueStore _config;
 
-    IpAddrPort address;
+    IpAddrPort _address;
 
-    NetplayConfig netplayConfig;
+    NetplayConfig _netplayConfig;
 
-    Controller *currentController = 0;
+    Controller *_currentController = 0;
 
-    uint32_t mappedKey = 0;
+    uint32_t _mappedKey = 0;
 
-    bool upToDate = false;
+    bool _upToDate = false;
 
     void netplay ( RunFuncPtr run );
     void spectate ( RunFuncPtr run );

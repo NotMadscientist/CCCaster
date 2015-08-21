@@ -31,47 +31,47 @@ MainUpdater::MainUpdater ( Owner *owner ) : owner ( owner )
 {
     if ( ProcessManager::isWine() )
     {
-        downloadDir = ProcessManager::appDir;
+        _downloadDir = ProcessManager::appDir;
         return;
     }
 
     char buffer[4096];
     if ( GetTempPath ( sizeof ( buffer ), buffer ) )
-        downloadDir = normalizeWindowsPath ( buffer );
+        _downloadDir = normalizeWindowsPath ( buffer );
 
-    if ( downloadDir.empty() )
-        downloadDir = ProcessManager::appDir;
+    if ( _downloadDir.empty() )
+        _downloadDir = ProcessManager::appDir;
 }
 
 void MainUpdater::fetch ( const Type& type )
 {
-    this->type = type;
+    _type = type;
 
-    currentServerIdx = 0;
+    _currentServerIdx = 0;
 
     doFetch ( type );
 }
 
 void MainUpdater::doFetch ( const Type& type )
 {
-    string url = updateServers[currentServerIdx];
+    string url = updateServers[_currentServerIdx];
 
     switch ( type.value )
     {
         case Type::Version:
             url += LATEST_VERSION_PATH;
-            httpGet.reset ( new HttpGet ( this, url, VERSION_CHECK_TIMEOUT ) );
-            httpGet->start();
+            _httpGet.reset ( new HttpGet ( this, url, VERSION_CHECK_TIMEOUT ) );
+            _httpGet->start();
             break;
 
         case Type::ChangeLog:
             url += CHANGELOG;
-            httpDownload.reset ( new HttpDownload ( this, url, downloadDir + CHANGELOG ) );
-            httpDownload->start();
+            _httpDownload.reset ( new HttpDownload ( this, url, _downloadDir + CHANGELOG ) );
+            _httpDownload->start();
             break;
 
         case Type::Archive:
-            if ( latestVersion.empty() )
+            if ( _latestVersion.empty() )
             {
                 LOG ( "Latest version is unknown" );
 
@@ -80,9 +80,9 @@ void MainUpdater::doFetch ( const Type& type )
                 return;
             }
 
-            url += format ( "cccaster.v%s.zip", latestVersion.code );
-            httpDownload.reset ( new HttpDownload ( this, url, downloadDir + UPDATE_ARCHIVE_FILE ) );
-            httpDownload->start();
+            url += format ( "cccaster.v%s.zip", _latestVersion.code );
+            _httpDownload.reset ( new HttpDownload ( this, url, _downloadDir + UPDATE_ARCHIVE_FILE ) );
+            _httpDownload->start();
             break;
 
         default:
@@ -92,7 +92,7 @@ void MainUpdater::doFetch ( const Type& type )
 
 bool MainUpdater::openChangeLog() const
 {
-    unordered_set<string> folders = { downloadDir, ProcessManager::appDir };
+    unordered_set<string> folders = { _downloadDir, ProcessManager::appDir };
 
     for ( const string& folder : folders )
     {
@@ -117,32 +117,32 @@ bool MainUpdater::openChangeLog() const
 
 bool MainUpdater::extractArchive() const
 {
-    DWORD val = GetFileAttributes ( ( downloadDir + CHANGELOG ).c_str() );
+    DWORD val = GetFileAttributes ( ( _downloadDir + CHANGELOG ).c_str() );
 
     if ( val == INVALID_FILE_ATTRIBUTES )
     {
-        LOG ( "Missing: %s", downloadDir + CHANGELOG );
+        LOG ( "Missing: %s", _downloadDir + CHANGELOG );
         return false;
     }
 
-    if ( latestVersion.empty() )
+    if ( _latestVersion.empty() )
     {
         LOG ( "Latest version is unknown" );
         return false;
     }
 
     const string srcUpdater = ProcessManager::appDir + FOLDER + UPDATER;
-    string tmpUpdater = downloadDir + UPDATER;
+    string tmpUpdater = _downloadDir + UPDATER;
 
     if ( srcUpdater != tmpUpdater && ! CopyFile ( srcUpdater.c_str(), tmpUpdater.c_str(), FALSE ) )
         tmpUpdater = srcUpdater;
 
-    const string binary = format ( "cccaster.v%s.%s.exe", latestVersion.major(), latestVersion.minor() );
+    const string binary = format ( "cccaster.v%s.%s.exe", _latestVersion.major(), _latestVersion.minor() );
 
     const string command = format ( "\"" + tmpUpdater + "\" %d %s %s %s",
                                     GetCurrentProcessId(),
                                     binary,
-                                    downloadDir + UPDATE_ARCHIVE_FILE,
+                                    _downloadDir + UPDATE_ARCHIVE_FILE,
                                     ProcessManager::appDir );
 
     LOG ( "Binary: %s", binary );
@@ -158,12 +158,12 @@ bool MainUpdater::extractArchive() const
 
 void MainUpdater::httpResponse ( HttpGet *httpGet, int code, const string& data, uint32_t remainingBytes )
 {
-    ASSERT ( this->httpGet.get() == httpGet );
-    ASSERT ( type == Type::Version );
+    ASSERT ( _httpGet.get() == httpGet );
+    ASSERT ( _type == Type::Version );
 
     Version version ( trimmed ( data ) );
 
-    this->httpGet.reset();
+    _httpGet.reset();
 
     if ( code != 200 || version.major().empty() || version.minor().empty() )
     {
@@ -171,9 +171,9 @@ void MainUpdater::httpResponse ( HttpGet *httpGet, int code, const string& data,
         return;
     }
 
-    this->httpGet.reset();
+    _httpGet.reset();
 
-    latestVersion = version;
+    _latestVersion = version;
 
     if ( owner )
         owner->fetchCompleted ( this, Type::Version );
@@ -181,14 +181,14 @@ void MainUpdater::httpResponse ( HttpGet *httpGet, int code, const string& data,
 
 void MainUpdater::httpFailed ( HttpGet *httpGet )
 {
-    ASSERT ( this->httpGet.get() == httpGet );
-    ASSERT ( type == Type::Version );
+    ASSERT ( _httpGet.get() == httpGet );
+    ASSERT ( _type == Type::Version );
 
-    this->httpGet.reset();
+    _httpGet.reset();
 
-    ++currentServerIdx;
+    ++_currentServerIdx;
 
-    if ( currentServerIdx >= updateServers.size() )
+    if ( _currentServerIdx >= updateServers.size() )
     {
         if ( owner )
             owner->fetchFailed ( this, Type::Version );
@@ -200,41 +200,41 @@ void MainUpdater::httpFailed ( HttpGet *httpGet )
 
 void MainUpdater::downloadComplete ( HttpDownload *httpDownload )
 {
-    ASSERT ( this->httpDownload.get() == httpDownload );
-    ASSERT ( type == Type::ChangeLog || type == Type::Archive );
+    ASSERT ( _httpDownload.get() == httpDownload );
+    ASSERT ( _type == Type::ChangeLog || _type == Type::Archive );
 
-    this->httpDownload.reset();
+    _httpDownload.reset();
 
     if ( owner )
-        owner->fetchCompleted ( this, type );
+        owner->fetchCompleted ( this, _type );
 }
 
 void MainUpdater::downloadFailed ( HttpDownload *httpDownload )
 {
-    ASSERT ( this->httpDownload.get() == httpDownload );
-    ASSERT ( type == Type::ChangeLog || type == Type::Archive );
+    ASSERT ( _httpDownload.get() == httpDownload );
+    ASSERT ( _type == Type::ChangeLog || _type == Type::Archive );
 
-    this->httpDownload.reset();
+    _httpDownload.reset();
 
-    ++currentServerIdx;
+    ++_currentServerIdx;
 
-    if ( currentServerIdx >= updateServers.size() )
+    if ( _currentServerIdx >= updateServers.size() )
     {
         if ( owner )
-            owner->fetchFailed ( this, type );
+            owner->fetchFailed ( this, _type );
         return;
     }
 
-    doFetch ( type );
+    doFetch ( _type );
 
     // Reset the download progress to zero
-    downloadProgress ( this->httpDownload.get(), 0, 1 );
+    downloadProgress ( _httpDownload.get(), 0, 1 );
 }
 
 void MainUpdater::downloadProgress ( HttpDownload *httpDownload, uint32_t downloadedBytes, uint32_t totalBytes )
 {
     if ( owner )
-        owner->fetchProgress ( this, type, double ( downloadedBytes ) / totalBytes );
+        owner->fetchProgress ( this, _type, double ( downloadedBytes ) / totalBytes );
 
     LOG ( "%u / %u", downloadedBytes, totalBytes );
 }

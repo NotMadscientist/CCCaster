@@ -55,81 +55,81 @@ void DllRollbackManager::allocateStates()
     if ( allAddrs.empty() )
         THROW_EXCEPTION ( "Failed to load rollback data!", ERROR_BAD_ROLLBACK_DATA );
 
-    if ( ! memoryPool )
-        memoryPool.reset ( new char[NUM_ROLLBACK_STATES * allAddrs.totalSize], deleteArray<char> );
+    if ( ! _memoryPool )
+        _memoryPool.reset ( new char[NUM_ROLLBACK_STATES * allAddrs.totalSize], deleteArray<char> );
 
     for ( size_t i = 0; i < NUM_ROLLBACK_STATES; ++i )
-        freeStack.push ( i * allAddrs.totalSize );
+        _freeStack.push ( i * allAddrs.totalSize );
 
-    statesList.clear();
+    _statesList.clear();
 
-    for ( auto& sfxArray : sfxHistory )
+    for ( auto& sfxArray : _sfxHistory )
         memset ( &sfxArray[0], 0, CC_SFX_ARRAY_LEN );
 }
 
 void DllRollbackManager::deallocateStates()
 {
-    memoryPool.reset();
+    _memoryPool.reset();
 
-    while ( ! freeStack.empty() )
-        freeStack.pop();
+    while ( ! _freeStack.empty() )
+        _freeStack.pop();
 
-    statesList.clear();
+    _statesList.clear();
 }
 
 void DllRollbackManager::saveState ( const NetplayManager& netMan )
 {
-    if ( freeStack.empty() )
+    if ( _freeStack.empty() )
     {
-        ASSERT ( statesList.empty() == false );
+        ASSERT ( _statesList.empty() == false );
 
-        if ( statesList.front().indexedFrame.parts.frame <= netMan.getRemoteFrame() )
+        if ( _statesList.front().indexedFrame.parts.frame <= netMan.getRemoteFrame() )
         {
-            auto it = statesList.begin();
+            auto it = _statesList.begin();
             ++it;
-            freeStack.push ( it->rawBytes - memoryPool.get() );
-            statesList.erase ( it );
+            _freeStack.push ( it->rawBytes - _memoryPool.get() );
+            _statesList.erase ( it );
         }
         else
         {
-            freeStack.push ( statesList.front().rawBytes - memoryPool.get() );
-            statesList.pop_front();
+            _freeStack.push ( _statesList.front().rawBytes - _memoryPool.get() );
+            _statesList.pop_front();
         }
     }
 
     GameState state =
     {
-        netMan.state,
-        netMan.startWorldTime,
-        netMan.indexedFrame,
-        memoryPool.get() + freeStack.top()
+        netMan._state,
+        netMan._startWorldTime,
+        netMan._indexedFrame,
+        _memoryPool.get() + _freeStack.top()
     };
 
-    freeStack.pop();
+    _freeStack.pop();
     state.save();
-    statesList.push_back ( state );
+    _statesList.push_back ( state );
 
-    uint8_t *currentSfxArray = &sfxHistory [ netMan.getFrame() % NUM_ROLLBACK_STATES ][0];
+    uint8_t *currentSfxArray = &_sfxHistory [ netMan.getFrame() % NUM_ROLLBACK_STATES ][0];
     memcpy ( currentSfxArray, AsmHacks::sfxFilterArray, CC_SFX_ARRAY_LEN );
 }
 
 bool DllRollbackManager::loadState ( IndexedFrame indexedFrame, NetplayManager& netMan )
 {
-    if ( statesList.empty() )
+    if ( _statesList.empty() )
     {
         LOG ( "Failed to load state: indexedFrame=%s", indexedFrame );
         return false;
     }
 
-    LOG ( "Trying to load state: indexedFrame=%s; statesList={ %s ... %s }",
-          indexedFrame, statesList.front().indexedFrame, statesList.back().indexedFrame );
+    LOG ( "Trying to load state: indexedFrame=%s; _statesList={ %s ... %s }",
+          indexedFrame, _statesList.front().indexedFrame, _statesList.back().indexedFrame );
 
     const uint32_t origFrame = netMan.getFrame();
 
-    for ( auto it = statesList.rbegin(); it != statesList.rend(); ++it )
+    for ( auto it = _statesList.rbegin(); it != _statesList.rend(); ++it )
     {
 #ifdef RELEASE
-        if ( ( it->indexedFrame.value <= indexedFrame.value ) || ( & ( *it ) == &statesList.front() ) )
+        if ( ( it->indexedFrame.value <= indexedFrame.value ) || ( & ( *it ) == &_statesList.front() ) )
 #else
         if ( it->indexedFrame.value <= indexedFrame.value )
 #endif
@@ -137,19 +137,19 @@ bool DllRollbackManager::loadState ( IndexedFrame indexedFrame, NetplayManager& 
             LOG ( "Loaded state: indexedFrame=%s", it->indexedFrame );
 
             // Overwrite the current game state
-            netMan.state = it->netplayState;
-            netMan.startWorldTime = it->startWorldTime;
-            netMan.indexedFrame = it->indexedFrame;
+            netMan._state = it->netplayState;
+            netMan._startWorldTime = it->startWorldTime;
+            netMan._indexedFrame = it->indexedFrame;
             it->load();
 
             // Erase all other states after the current one.
             // Note: it.base() returns 1 after the position of it, but moving forward.
-            for ( auto jt = it.base(); jt != statesList.end(); ++jt )
+            for ( auto jt = it.base(); jt != _statesList.end(); ++jt )
             {
-                freeStack.push ( jt->rawBytes - memoryPool.get() );
+                _freeStack.push ( jt->rawBytes - _memoryPool.get() );
             }
 
-            statesList.erase ( it.base(), statesList.end() );
+            _statesList.erase ( it.base(), _statesList.end() );
 
             // Initialize the SFX filter by flagging all played SFX flags in the range (R,S),
             // where R is the actual reset frame, and S is the original starting frame.
@@ -157,7 +157,7 @@ bool DllRollbackManager::loadState ( IndexedFrame indexedFrame, NetplayManager& 
             for ( uint32_t i = netMan.getFrame() + 1; i < origFrame; ++i )
             {
                 for ( uint32_t j = 0; j < CC_SFX_ARRAY_LEN; ++j )
-                    AsmHacks::sfxFilterArray[j] |= sfxHistory [ i % NUM_ROLLBACK_STATES ][j];
+                    AsmHacks::sfxFilterArray[j] |= _sfxHistory [ i % NUM_ROLLBACK_STATES ][j];
             }
 
             // We set the SFX filter flag to 0x80. Since played (but filtered) SFX are incremented,
@@ -178,7 +178,7 @@ bool DllRollbackManager::loadState ( IndexedFrame indexedFrame, NetplayManager& 
 
 void DllRollbackManager::saveRerunSounds ( uint32_t frame )
 {
-    uint8_t *currentSfxArray = &sfxHistory [ frame % NUM_ROLLBACK_STATES ][0];
+    uint8_t *currentSfxArray = &_sfxHistory [ frame % NUM_ROLLBACK_STATES ][0];
 
     // Rewrite the sound effects history during re-run
     for ( uint32_t j = 0; j < CC_SFX_ARRAY_LEN; ++j )

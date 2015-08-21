@@ -48,13 +48,13 @@ public:
 
 private:
 
-    std::vector<Controller *> allControllers;
+    std::vector<Controller *> _allControllers;
 
-    std::array<Controller *, 2> playerControllers = {{ 0, 0 }};
+    std::array<Controller *, 2> _playerControllers = {{ 0, 0 }};
 
-    std::array<size_t, 2> overlayPositions = {{ 0, 0 }};
+    std::array<size_t, 2> _overlayPositions = {{ 0, 0 }};
 
-    std::array<bool, 2> finishedMapping = {{ false, false }};
+    std::array<bool, 2> _finishedMapping = {{ false, false }};
 
-    bool controllerAttached = false;
+    bool _controllerAttached = false;
 };

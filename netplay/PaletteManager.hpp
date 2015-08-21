@@ -49,14 +49,14 @@ public:
     bool load ( const std::string& folder, const std::string& charaName );
 
 #ifndef DISABLE_SERIALIZATION
-    PROTOCOL_MESSAGE_BOILERPLATE ( PaletteManager, palettes )
+    PROTOCOL_MESSAGE_BOILERPLATE ( PaletteManager, _palettes )
 #endif
 
 private:
 
-    std::map<uint32_t, std::map<uint32_t, uint32_t>> palettes;
+    std::map<uint32_t, std::map<uint32_t, uint32_t>> _palettes;
 
-    std::array<std::array<uint32_t, 256>, 36> originals;
+    std::array<std::array<uint32_t, 256>, 36> _originals;
 
     void optimize();
 };

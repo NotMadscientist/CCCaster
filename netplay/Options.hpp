@@ -47,9 +47,9 @@ struct OptionsMessage : public SerializableSequence
 {
     size_t operator[] ( const Options& opt ) const
     {
-        const auto it = options.find ( ( size_t ) opt.value );
+        const auto it = _options.find ( ( size_t ) opt.value );
 
-        if ( it == options.end() )
+        if ( it == _options.end() )
             return 0;
         else
             return it->second.count;
@@ -58,18 +58,18 @@ struct OptionsMessage : public SerializableSequence
     void set ( const Options& opt, size_t count, const std::string& arg = "" )
     {
         if ( count == 0 )
-            options.erase ( opt.value );
+            _options.erase ( opt.value );
         else
-            options[opt.value] = Opt ( count, arg );
+            _options[opt.value] = Opt ( count, arg );
     }
 
     const std::string& arg ( const Options& opt ) const
     {
         static const std::string EmptyString = "";
 
-        const auto it = options.find ( ( size_t ) opt.value );
+        const auto it = _options.find ( ( size_t ) opt.value );
 
-        if ( it == options.end() )
+        if ( it == _options.end() )
             return EmptyString;
         else
             return it->second.arg;
@@ -77,7 +77,7 @@ struct OptionsMessage : public SerializableSequence
 
     OptionsMessage ( const std::vector<option::Option>& opt );
 
-    PROTOCOL_MESSAGE_BOILERPLATE ( OptionsMessage, options )
+    PROTOCOL_MESSAGE_BOILERPLATE ( OptionsMessage, _options )
 
 private:
 
@@ -92,5 +92,5 @@ private:
         CEREAL_CLASS_BOILERPLATE ( count, arg )
     };
 
-    std::unordered_map<size_t, Opt> options;
+    std::unordered_map<size_t, Opt> _options;
 };

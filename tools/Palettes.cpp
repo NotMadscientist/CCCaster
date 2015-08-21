@@ -449,7 +449,5 @@ int main ( int argc, char *argv[] )
 
     glfwTerminate();
 
-    editor.free();
-
     return 0;
 }
