@@ -10,7 +10,6 @@
 
 struct MBAACC_FrameDisplay;
 
-
 class PaletteEditor
 {
 public:

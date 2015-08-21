@@ -35,7 +35,7 @@ CONTRIB_C_SRCS = $(wildcard 3rdparty/*.c)
 LIB_CPP_SRCS = $(wildcard lib/*.cpp)
 BASE_CPP_SRCS = $(wildcard netplay/*.cpp) $(LIB_CPP_SRCS)
 MAIN_CPP_SRCS = $(wildcard targets/Main*.cpp tests/*.cpp) $(BASE_CPP_SRCS)
-DLL_CPP_SRCS = $(wildcard targets/Dll*.cpp) $(BASE_CPP_SRCS)
+DLL_CPP_SRCS = $(wildcard targets/Dll*.cpp) $(filter-out lib/ConsoleUi.cpp,$(BASE_CPP_SRCS))
 
 NON_GEN_SRCS = \
 	$(wildcard netplay/*.cpp tools/*.cpp targets/*.cpp lib/*.cpp tests/*.cpp)
@@ -197,7 +197,7 @@ res/icon.res: res/icon.rc res/icon.ico
 
 LOGGING_PREFIX = build_logging_$(BRANCH)
 DEBUGGER_LIB_OBJECTS = \
-	$(addprefix $(LOGGING_PREFIX)/,$(filter-out lib/Version.o lib/LoggerLogVersion.o,$(LIB_OBJECTS)))
+	$(addprefix $(LOGGING_PREFIX)/,$(filter-out lib/Version.o lib/LoggerLogVersion.o lib/ConsoleUi.o,$(LIB_OBJECTS)))
 
 tools/$(DEBUGGER): tools/Debugger.cpp $(DEBUGGER_LIB_OBJECTS)
 	$(CXX) -o $@ $(CC_FLAGS) $(LOGGING_FLAGS) -Wall -std=c++11 $^ $(LD_FLAGS) \
@@ -209,7 +209,7 @@ tools/$(DEBUGGER): tools/Debugger.cpp $(DEBUGGER_LIB_OBJECTS)
 
 
 GENERATOR_LIB_OBJECTS = \
-	$(addprefix $(LOGGING_PREFIX)/,$(filter-out lib/Version.o lib/LoggerLogVersion.o,$(LIB_OBJECTS)))
+	$(addprefix $(LOGGING_PREFIX)/,$(filter-out lib/Version.o lib/LoggerLogVersion.o lib/ConsoleUi.o,$(LIB_OBJECTS)))
 
 tools/$(GENERATOR): tools/Generator.cpp $(GENERATOR_LIB_OBJECTS)
 	$(CXX) -o $@ $(CC_FLAGS) $(LOGGING_FLAGS) -Wall -std=c++11 $^ $(LD_FLAGS)

@@ -16,16 +16,12 @@
     MsgType getMsgType() const override;
 
 #define DECLARE_MESSAGE_BOILERPLATE(NAME)                                                                   \
-    NAME() {}                                                                                               \
-    MsgPtr clone() const override;                                                                          \
-    MsgType getMsgType() const override;                                                                    \
+    EMPTY_MESSAGE_BOILERPLATE(NAME)                                                                         \
     void save ( cereal::BinaryOutputArchive& ar ) const override;                                           \
     void load ( cereal::BinaryInputArchive& ar ) override;
 
 #define PROTOCOL_MESSAGE_BOILERPLATE(NAME, ...)                                                             \
-    NAME() {}                                                                                               \
-    MsgPtr clone() const override;                                                                          \
-    MsgType getMsgType() const override;                                                                    \
+    EMPTY_MESSAGE_BOILERPLATE(NAME)                                                                         \
     void save ( cereal::BinaryOutputArchive& ar ) const override { ar ( __VA_ARGS__ ); }                    \
     void load ( cereal::BinaryInputArchive& ar ) override { ar ( __VA_ARGS__ ); }
 
@@ -34,7 +30,7 @@
     void load ( cereal::BinaryInputArchive& ar ) { ar ( __VA_ARGS__ ); }
 
 
-// Message type, auto-generated from scanning all the headers
+// Message types, auto-generated from scanning all the headers
 enum class MsgType : uint8_t
 {
     FirstType = 0,

@@ -1,31 +1,12 @@
 #pragma once
 
-#include "StringUtils.hpp"
 #include "Logger.hpp"
-#include "Algorithms.hpp"
 
-// Most of the implementation that depend on JLib is in this header so only the targets that need JLib can to link it
 #include <JLib/ConsoleCore.h>
 
 #include <memory>
 #include <vector>
-#include <climits>
 #include <sstream>
-
-
-#define ORIGIN ( ( COORD ) { 0, 0 } )
-
-#define MAX_SCREEN_SIZE ( ( COORD ) { short ( MAXSCREENX ), short ( MAXSCREENY ) } )
-
-// unselected color
-// selected color
-// outline color
-// background color
-#define THEME                                               \
-    ConsoleFormat::SYSTEM,                                  \
-    ConsoleFormat::BLACK | ConsoleFormat::ONBRIGHTWHITE,    \
-    ConsoleFormat::SYSTEM,                                  \
-    ConsoleFormat::SYSTEM
 
 
 // Operators
@@ -96,76 +77,12 @@ public:
 
         const std::string text;
 
-        TextBox ( const std::string& text ) : Element ( false ), text ( trimmed ( text, "\n" ) ) {}
+        TextBox ( const std::string& text );
 
     protected:
 
-        void initialize() override
-        {
-            std::stringstream ss ( text );
-            std::string line;
-
-            while ( getline ( ss, line ) )
-            {
-                if ( line.size() + paddedBorders.size() > ( size_t ) _size.X )
-                {
-                    std::vector<std::string> tokens = split ( line );
-                    line.clear();
-
-                    for ( const std::string& token : tokens )
-                    {
-                        const size_t prefix = ( line.empty() ? 0 : line.size() + 1 );
-
-                        if ( prefix + token.size() + paddedBorders.size() > ( size_t ) _size.X )
-                        {
-                            _lines.push_back ( " " + line + " " );
-                            line.clear();
-                        }
-
-                        if ( line.empty() )
-                            line = token;
-                        else
-                            line += " " + token;
-                    }
-
-                    if ( ! line.empty() )
-                        _lines.push_back ( " " + line + " " );
-                }
-                else
-                {
-                    _lines.push_back ( " " + line + " " );
-                }
-            }
-
-            if ( _lines.size() + bordersHeight > ( size_t ) _size.Y )
-            {
-                _lines.resize ( _size.Y - bordersHeight - 1 );
-                _lines.push_back ( " ... " );
-            }
-
-            size_t longestLine = 0;
-            for ( const std::string& line : _lines )
-                if ( line.size() > longestLine )
-                    longestLine = line.size();
-
-            ASSERT ( ( size_t ) _size.X >= longestLine + borders.size() );
-            ASSERT ( ( size_t ) _size.Y >= _lines.size() + bordersHeight );
-
-            if ( ! _expand.X )
-                _size.X = longestLine + borders.size();
-
-            if ( ! _expand.Y )
-                _size.Y = _lines.size() + bordersHeight;
-        }
-
-        void show() override
-        {
-            LOG ( "text='%s'; pos=%s; size=%s", text, _pos, _size );
-
-            CharacterBox::Draw ( _pos, _pos + _size, '*' );
-            for ( size_t i = 0; i < _lines.size(); ++i )
-                ConsoleCore::GetInstance()->Prints ( _lines[i], false, 0, _pos.X + 1, _pos.Y + 1 + i );
-        }
+        void initialize() override;
+        void show() override;
 
     private:
 
@@ -179,110 +96,19 @@ public:
 
         const std::string title;
 
-        void setPosition ( int position )
-        {
-            if ( position < 0 )
-                position = 0;
-            else if ( position >= ( int ) menu.Count() )
-                position = menu.Count() - 1;
+        Menu ( const std::string& title, const std::vector<std::string>& items, const std::string& lastItem = "" );
+        Menu ( const std::vector<std::string>& items, const std::string& lastItem = "" );
 
-            menu.SelectedItem ( position );
-        }
+        void setPosition ( int position );
+        void setEscape ( bool enabled );
+        void setDelete ( int enabled );
 
-        void setEscape ( bool enabled )
-        {
-            menu.EnableEscape ( enabled );
-        }
-
-        void setDelete ( int enabled )
-        {
-            menu.EnableDelete ( enabled );
-        }
-
-        void overlayCurrentPosition ( const std::string& text, bool selected = false )
-        {
-            const COORD pos = menu.CursorPosition();
-            const size_t i = menu.SelectedValue();
-            const std::string padded = items[i].substr ( 0, 4 ) + text;
-
-            // Pad remaining text if necessary
-            std::string remaining;
-            if ( 4 + text.size() < items[i].size() )
-                remaining = std::string ( items[i].substr ( 4 + text.size() ).size(), ' ' );
-
-            ConsoleCore::GetInstance()->Prints ( " " + shortenWithEllipsis ( padded + remaining ) + " ",
-                                                 false, ( selected ? &menu.SelectionFormat() : 0 ), pos.X, pos.Y );
-        }
-
-        Menu ( const std::string& title, const std::vector<std::string>& items, const std::string& lastItem = "" )
-            : Element ( true ), title ( title ), items ( items ), lastItem ( lastItem )
-            , menu ( _pos, items.size() + ( lastItem.empty() ? 0 : 1 ), title, THEME ) {}
-
-        Menu ( const std::vector<std::string>& items, const std::string& lastItem = "" )
-            : Menu ( "", items, lastItem ) {}
+        void overlayCurrentPosition ( const std::string& text, bool selected = false );
 
     protected:
 
-        void initialize() override
-        {
-            ASSERT ( ( size_t ) _size.X >= minMenuItem.size() + paddedBorders.size() );
-            ASSERT ( ( size_t ) _size.Y > bordersHeight + ( title.empty() ? 0 : 2 ) );
-            ASSERT ( items.size() <= maxMenuItems );
-
-            if ( ! title.empty() )
-                menu.Title ( " " + shortenWithEllipsis ( title ) + " " );
-
-            for ( size_t i = 0; i < items.size(); ++i )
-            {
-                if ( i < 9 )
-                    items[i] = format ( "[%d] %s", i + 1, items[i] );
-                else
-                    items[i] = format ( "[%c] %s", 'A' + i - 9, items[i] );
-
-                menu.Append ( " " + shortenWithEllipsis ( items[i] ) + " ", i );
-            }
-
-            if ( ! lastItem.empty() )
-            {
-                lastItem = format ( "[0] %s", lastItem );
-                menu.Append ( " " + shortenWithEllipsis ( lastItem ) + " ", items.size() );
-            }
-
-            // TODO this is broken because WindowedMenu::SelectedItem doesn't work when the menu is scrolled off-screen
-            // // Limit the menu vertical display size
-            // menu.MaxToShow ( std::min ( _size.Y - bordersHeight - ( title.empty() ? 0 : 2 ), menu.Count() ) );
-
-            ASSERT ( menu.Count() <= _size.Y - bordersHeight - ( title.empty() ? 0 : 2 ) );
-
-            // Menus are NEVER expanded
-            _size.X = std::max ( menu.LongestItem() + borders.size(), title.size() + borders.size() );
-            _size.Y = bordersHeight + ( title.empty() ? 0 : 2 ) + items.size() + ( lastItem.empty() ? 0 : 1 );
-
-            menu.Origin ( _pos );
-            menu.Scrollable ( true );
-        }
-
-        void show() override
-        {
-            LOG ( "title='%s'; pos=%s; size=%s", title, _pos, _size );
-
-            ASSERT ( menu.Count() > 0 );
-
-            resultInt = menu.Show();
-
-            if ( resultInt == 0 )
-            {
-                resultInt = menu.SelectedValue();
-                resultStr = menu.SelectedText();
-                LOG ( "resultInt=%d; resultStr='%s'", resultInt, resultStr );
-            }
-            else if ( resultInt == USERDELETE )
-            {
-                resultInt = menu.SelectedValue();
-                resultStr.clear();
-                LOG ( "resultInt=%d; deleted", resultInt );
-            }
-        }
+        void initialize();
+        void show();
 
     private:
 
@@ -292,18 +118,8 @@ public:
 
         WindowedMenu menu;
 
-        std::string shortenWithEllipsis ( const std::string& text )
-        {
-            if ( text.size() + paddedBorders.size() > ( size_t ) _size.X )
-                return text.substr ( 0, _size.X - paddedBorders.size() - ellipsis.size() ) + ellipsis;
-
-            return text;
-        }
+        std::string shortenWithEllipsis ( const std::string& text );
     };
-
-    // Prompt types
-    enum PromptTypeInteger { PromptInteger };
-    enum PromptTypeString { PromptString };
 
     // Integer or string prompt
     class Prompt : public Element
@@ -318,80 +134,19 @@ public:
 
         size_t maxDigits = 9;
 
-        void setInitial ( int initial )
-        {
-            if ( ! isIntegerPrompt )
-                return;
+        enum PromptTypeInteger { Integer };
+        enum PromptTypeString { String };
 
-            resultInt = initial;
-        }
+        Prompt ( PromptTypeString, const std::string& title = "" );
+        Prompt ( PromptTypeInteger, const std::string& title = "" );
 
-        void setInitial ( const std::string& initial )
-        {
-            if ( isIntegerPrompt )
-                return;
-
-            resultStr = initial;
-        }
-
-        Prompt ( PromptTypeString, const std::string& title = "" )
-            : Element ( true ), title ( title ), isIntegerPrompt ( false ) {}
-
-        Prompt ( PromptTypeInteger, const std::string& title = "" )
-            : Element ( true ), title ( title ), isIntegerPrompt ( true ) {}
+        void setInitial ( int initial );
+        void setInitial ( const std::string& initial );
 
     protected:
 
-        void initialize() override
-        {
-            ASSERT ( ( size_t ) _size.X >= title.size() + paddedBorders.size() );
-            ASSERT ( ( size_t ) _size.Y > bordersHeight + ( title.empty() ? 0 : 2 ) );
-
-            if ( ! _expand.X )
-                _size.X = title.size() + paddedBorders.size();
-
-            // Prompts are NEVER expanded vertically
-            _size.Y = 1 + bordersHeight + ( title.empty() ? 0 : 2 );
-        }
-
-        void show() override
-        {
-            LOG ( "title='%s'; pos=%s; size=%s", title, _pos, _size );
-
-            CharacterBox::Draw ( _pos, _pos + _size, '*' );
-            ConsoleCore *cc = ConsoleCore::GetInstance();
-
-            if ( ! title.empty() )
-            {
-                cc->Prints ( " " + title + " ", false, 0, _pos.X + 1, _pos.Y + 1 );
-                cc->Prints ( std::string ( _size.X - borders.size(), '*' ), false, 0, _pos.X + 1, _pos.Y + 2 );
-            }
-
-            COORD scanPos = { short ( _pos.X + 2 ), short ( _pos.Y + ( title.empty() ? 1 : 3 ) ) };
-            cc->CursorPosition ( &scanPos );
-
-            if ( isIntegerPrompt )
-            {
-                if ( cc->ScanNumber ( scanPos, resultInt, std::min ( maxDigits, _size.X - paddedBorders.size() ),
-                                      allowNegative, resultInt != INT_MIN ) )
-                    LOG ( "resultInt=%d", resultInt );
-                else
-                    resultInt = INT_MIN;
-            }
-            else
-            {
-                if ( cc->ScanString ( scanPos, resultStr, _size.X - paddedBorders.size() ) )
-                {
-                    LOG ( "resultStr='%s'", resultStr );
-                    resultInt = 0;
-                }
-                else
-                {
-                    resultStr.clear();
-                    resultInt = INT_MIN;
-                }
-            }
-        }
+        void initialize();
+        void show();
     };
 
     // Progress bar
@@ -403,47 +158,15 @@ public:
 
         const size_t length;
 
-        ProgressBar ( const std::string& title, size_t length )
-            : Element ( false ), title ( title ), length ( length ) {}
+        ProgressBar ( const std::string& title, size_t length );
+        ProgressBar ( size_t length );
 
-        ProgressBar ( size_t length )
-            : Element ( false ), title ( "" ), length ( length ) {}
-
-        void update ( size_t progress ) const
-        {
-            std::string bar ( clamped ( progress, 0u, length ), '.' );
-            if ( progress < length )
-                bar += std::string ( clamped ( length - progress, 0u, length ), ' ' );
-
-            ConsoleCore::GetInstance()->Prints ( bar, false, 0, _pos.X + 2, _pos.Y + _size.Y - 2 );
-        }
+        void update ( size_t progress ) const;
 
     protected:
 
-        void initialize() override
-        {
-            ASSERT ( ( size_t ) _size.X >= std::max ( title.size(), length ) + paddedBorders.size() );
-            ASSERT ( ( size_t ) _size.Y > bordersHeight + ( title.empty() ? 0 : 2 ) );
-
-            // Progress bars are NEVER expanded
-            _size.X = std::max ( title.size(), length ) + paddedBorders.size();
-            _size.Y = 1 + bordersHeight + ( title.empty() ? 0 : 2 );
-        }
-
-        void show() override
-        {
-            LOG ( "title='%s'; length=%u; pos=%s; size=%s", title, length, _pos, _size );
-
-            CharacterBox::Draw ( _pos, _pos + _size, '*' );
-            ConsoleCore *cc = ConsoleCore::GetInstance();
-
-            if ( ! title.empty() )
-            {
-                cc->Prints ( " " + title + " ", false, 0, _pos.X + 1, _pos.Y + 1 );
-                cc->Prints ( std::string ( _size.X - borders.size(), '*' ), false, 0, _pos.X + 1, _pos.Y + 2 );
-            }
-        }
-
+        void initialize() override;
+        void show() override;
     };
 
     // Basic constructor
@@ -455,173 +178,79 @@ public:
 
     // Push an element in front of the current one
     void pushInFront ( Element *element, const COORD& expand = { 0, 0 } );
-    void pushInFront ( Element *element, const COORD& expand, bool shouldClearTop )
-    {
-        if ( shouldClearTop )
-            clearTop();
-
-        pushInFront ( element, expand );
-    }
-
+    void pushInFront ( Element *element, const COORD& expand, bool shouldClearTop );
 
     // Pop an element off the stack
-    void pop()
-    {
-        ASSERT ( stack.empty() == false );
-
-        clearTop();
-        stack.pop_back();
-    }
+    void pop();
 
     // Pop and show until we reach an element that requires user interaction, then return element.
     // This should NOT be called without any such elements in the stack.
     // This does NOT pop the element that it returns.
-    Element *popUntilUserInput ( bool clearPoppedElements = false )
-    {
-        ASSERT ( stack.empty() == false );
-
-        while ( ! stack.empty() )
-        {
-            if ( stack.back()->requiresUser )
-            {
-                stack.back()->show();
-                break;
-            }
-
-            if ( clearPoppedElements )
-                pop();
-            else
-                stack.pop_back();
-        }
-
-        ASSERT ( stack.empty() == false );
-        ASSERT ( stack.back().get() != 0 );
-
-        return stack.back().get();
-    }
+    Element *popUntilUserInput ( bool clearPoppedElements = false );
 
     // Pop the non user input elements from the top of the stack
-    void popNonUserInput()
-    {
-        while ( !stack.empty() && !top()->requiresUser )
-            pop();
-    }
+    void popNonUserInput();
 
     // Get the top element
     template<typename T = Element>
     T *top() const
     {
-        if ( stack.empty() )
+        if ( _stack.empty() )
             return 0;
 
-        ASSERT ( stack.back().get() != 0 );
-        ASSERT ( typeid ( T ) == typeid ( Element ) || typeid ( *stack.back().get() ) == typeid ( T ) );
+        ASSERT ( _stack.back().get() != 0 );
+        ASSERT ( typeid ( T ) == typeid ( Element ) || typeid ( *_stack.back().get() ) == typeid ( T ) );
 
-        return ( T * ) stack.back().get();
+        return ( T * ) _stack.back().get();
     }
 
     // True if there are no elements
     bool empty() const
     {
-        return stack.empty();
+        return _stack.empty();
     }
 
     // If the top element has a border with the element below
-    bool hasBorder() const
-    {
-        for ( size_t i = 2; i < stack.size(); ++i )
-        {
-            if ( top()->_pos.X >= stack[stack.size() - i]->_pos.X
-                    && ( top()->_pos.X + top()->_size.X
-                         <= stack[stack.size() - i]->_pos.X + stack[stack.size() - i]->_size.X )
-                    && top()->_pos.Y > stack[stack.size() - i]->_pos.Y )
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
+    bool hasBorder() const;
 
     // Clear the top element (visually)
-    void clearTop() const
-    {
-        if ( stack.empty() || stack.size() == 1 )
-            ConsoleCore::GetInstance()->ClearScreen();
-        else if ( hasBorder() )
-            CharacterBox::Draw ( { top()->_pos.X, short ( top()->_pos.Y + 1 ) }, MAX_SCREEN_SIZE, ' ' );
-        else
-            CharacterBox::Draw ( top()->_pos, MAX_SCREEN_SIZE, ' ' );
-    }
+    void clearTop() const;
 
     // Clear below the top element (visually)
-    void clearBelow ( bool preserveBorder = true ) const
-    {
-        if ( stack.empty() )
-        {
-            ConsoleCore::GetInstance()->ClearScreen();
-        }
-        else
-        {
-            const COORD pos = { top()->_pos.X, short ( top()->_pos.Y + top()->_size.Y - ( preserveBorder ? 0 : 1 ) ) };
-            CharacterBox::Draw ( pos, MAX_SCREEN_SIZE, ' ' );
-        }
-    }
+    void clearBelow ( bool preserveBorder = true ) const;
 
     // Clear to the right of the top element (visually)
-    void clearRight() const
-    {
-        if ( stack.empty() )
-        {
-            ConsoleCore::GetInstance()->ClearScreen();
-        }
-        else if ( hasBorder() )
-        {
-            const COORD pos = { short ( top()->_pos.X + top()->_size.X ), short ( top()->_pos.Y + 1 ) };
-            CharacterBox::Draw ( pos, MAX_SCREEN_SIZE, ' ' );
-        }
-        else
-        {
-            CharacterBox::Draw ( { short ( top()->_pos.X + top()->_size.X ), top()->_pos.Y }, MAX_SCREEN_SIZE, ' ' );
-        }
-    }
+    void clearRight() const;
 
     // Clear all elements
-    void clearAll()
-    {
-        clearScreen();
-        stack.clear();
-    }
+    void clearAll();
 
     // Clear the screen
-    static void clearScreen()
-    {
-        ConsoleCore::GetInstance()->ClearScreen();
-    }
+    static void clearScreen();
 
     // Get console window handle
     static void *getConsoleWindow();
 
 private:
 
-    static const std::string ellipsis; // "..."
+    static const std::string Ellipsis; // "..."
 
-    static const std::string minText; // "A..."
+    static const std::string MinText; // "A..."
 
-    static const std::string minMenuItem; // "[1] A..."
+    static const std::string MinMenuItem; // "[1] A..."
 
-    static const std::string borders; // "**"
+    static const std::string Borders; // "**"
 
-    static const std::string paddedBorders; // "*  *"
+    static const std::string PaddedBorders; // "*  *"
 
-    static const size_t bordersHeight = 2; // 2 borders
+    static const size_t BordersHeight = 2; // 2 borders
 
-    static const size_t maxMenuItems = 9 + 26; // 1-9 and A-Z
+    static const size_t MaxMenuItems = 9 + 26; // 1-9 and A-Z
 
     typedef std::shared_ptr<Element> ElementPtr;
 
     // UI elements stack
-    std::vector<ElementPtr> stack;
+    std::vector<ElementPtr> _stack;
 
     // Initialize the element and push it onto the stack
     void initalizeAndPush ( Element *element, const COORD& expand );

@@ -50,7 +50,7 @@ MainUi::MainUi() : _updater ( this )
 
 void MainUi::netplay ( RunFuncPtr run )
 {
-    ConsoleUi::Prompt *menu = new ConsoleUi::Prompt ( ConsoleUi::PromptString,
+    ConsoleUi::Prompt *menu = new ConsoleUi::Prompt ( ConsoleUi::Prompt::String,
             "Enter/paste <ip>:<port> to join or <port> to host:" );
 
     _ui->pushRight ( menu, { 1, 0 } ); // Expand width
@@ -111,7 +111,7 @@ void MainUi::netplay ( RunFuncPtr run )
 
 void MainUi::spectate ( RunFuncPtr run )
 {
-    ConsoleUi::Prompt *menu = new ConsoleUi::Prompt ( ConsoleUi::PromptString,
+    ConsoleUi::Prompt *menu = new ConsoleUi::Prompt ( ConsoleUi::Prompt::String,
             "Enter/paste <ip>:<port> to spectate:" );
 
     _ui->pushRight ( menu, { 1, 0 } ); // Expand width
@@ -161,7 +161,7 @@ void MainUi::spectate ( RunFuncPtr run )
 
 void MainUi::broadcast ( RunFuncPtr run )
 {
-    _ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger,
+    _ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::Prompt::Integer,
                      "Enter/paste <port> to broadcast:" ), { 1, 0 } ); // Expand width
 
     _ui->top<ConsoleUi::Prompt>()->allowNegative = false;
@@ -437,7 +437,7 @@ void MainUi::controls()
                 if ( ! controller.isJoystick() )
                     continue;
 
-                _ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::PromptString,
+                _ui->pushRight ( new ConsoleUi::Prompt ( ConsoleUi::Prompt::String,
                                  "Enter a value between 0.0 and 1.0:" ) );
 
                 _ui->top<ConsoleUi::Prompt>()->setInitial ( format ( "%.2f", controller.getDeadzone() ) );
@@ -590,7 +590,7 @@ void MainUi::settings()
                                        "(Leave blank to use SystemDefault)" ),
                 { 1, 0 }, true ); // Expand width and clear top
 
-                _ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::PromptString ), { 1, 0 } ); // Expand width
+                _ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::Prompt::String ), { 1, 0 } ); // Expand width
 
                 _ui->top<ConsoleUi::Prompt>()->setInitial ( _config.getString ( "alertWavFile" ) );
                 _ui->popUntilUserInput();
@@ -610,7 +610,7 @@ void MainUi::settings()
             }
 
             case 1:
-                _ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptString,
+                _ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::Prompt::String,
                                    "Enter name to show when connecting:" ),
                 { 1, 0 }, true ); // Expand width and clear top
 
@@ -661,7 +661,7 @@ void MainUi::settings()
                 break;
 
             case 4:
-                _ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter versus mode win count:" ),
+                _ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::Prompt::Integer, "Enter versus mode win count:" ),
                 { 0, 0 }, true ); // Don't expand but DO clear top
 
                 _ui->top<ConsoleUi::Prompt>()->allowNegative = false;
@@ -713,7 +713,7 @@ void MainUi::settings()
                 break;
 
             case 6:
-                _ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger,
+                _ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::Prompt::Integer,
                                    "Enter max allowed network delay:" ),
                 { 0, 0 }, true ); // Don't expand but DO clear top
 
@@ -749,7 +749,7 @@ void MainUi::settings()
                 break;
 
             case 7:
-                _ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter default rollback:" ),
+                _ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::Prompt::Integer, "Enter default rollback:" ),
                 { 0, 0 }, true ); // Don't expand but DO clear top
 
                 _ui->top<ConsoleUi::Prompt>()->allowNegative = false;
@@ -785,7 +785,7 @@ void MainUi::settings()
                                        "in versus mode before it registers:" ),
                 { 1, 0 }, true ); // Expand width and clear top
 
-                _ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::PromptString ),
+                _ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::Prompt::String ),
                 { 1, 0 } ); // Expand width
 
                 double value = _config.getDouble ( "heldStartDuration" );
@@ -1129,7 +1129,7 @@ bool MainUi::configure ( const PingStats& pingStats )
 
     // TODO maybe implement this as a slider or something
 
-    _ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter max frames of rollback:" ) );
+    _ui->pushBelow ( new ConsoleUi::Prompt ( ConsoleUi::Prompt::Integer, "Enter max frames of rollback:" ) );
 
     _ui->top<ConsoleUi::Prompt>()->allowNegative = false;
     _ui->top<ConsoleUi::Prompt>()->maxDigits = 2;
@@ -1155,7 +1155,7 @@ bool MainUi::configure ( const PingStats& pingStats )
 
         rollback = _netplayConfig.rollback = menu->resultInt;
 
-        _ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::PromptInteger, "Enter input delay:" ) );
+        _ui->pushInFront ( new ConsoleUi::Prompt ( ConsoleUi::Prompt::Integer, "Enter input delay:" ) );
 
         _ui->top<ConsoleUi::Prompt>()->allowNegative = false;
         _ui->top<ConsoleUi::Prompt>()->maxDigits = 3;
