@@ -18,7 +18,7 @@ void Thread::start()
 
     pthread_attr_t attr;
     pthread_attr_init ( &attr );
-    pthread_create ( &thread, &attr, func, this );
+    pthread_create ( &_thread, &attr, func, this );
     pthread_attr_destroy ( &attr );
 }
 
@@ -28,7 +28,7 @@ void Thread::join()
     if ( ! _running )
         return;
 
-    pthread_join ( thread, 0 );
+    pthread_join ( _thread, 0 );
     _running = false;
 }
 

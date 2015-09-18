@@ -83,38 +83,38 @@ public:
 
     CondVar()
     {
-        pthread_cond_init ( &cond, 0 );
+        pthread_cond_init ( &_cond, 0 );
     }
 
     ~CondVar()
     {
-        pthread_cond_destroy ( &cond );
+        pthread_cond_destroy ( &_cond );
     }
 
     int wait ( Mutex& mutex )
     {
-        return pthread_cond_wait ( &cond, & ( mutex._mutex ) );
+        return pthread_cond_wait ( &_cond, & ( mutex._mutex ) );
     }
 
     int wait ( Mutex& mutex, long timeout )
     {
         timespec ts = gettimeoffset ( timeout );
-        return pthread_cond_timedwait ( &cond, & ( mutex._mutex ), &ts );
+        return pthread_cond_timedwait ( &_cond, & ( mutex._mutex ), &ts );
     }
 
     void signal()
     {
-        pthread_cond_signal ( &cond );
+        pthread_cond_signal ( &_cond );
     }
 
     void broadcast()
     {
-        pthread_cond_broadcast ( &cond );
+        pthread_cond_broadcast ( &_cond );
     }
 
 private:
 
-    pthread_cond_t cond;
+    pthread_cond_t _cond;
 };
 
 
@@ -141,7 +141,7 @@ public:
 private:
     bool _running = false;
 
-    pthread_t thread;
+    pthread_t _thread;
 
     mutable Mutex _mutex;
 
