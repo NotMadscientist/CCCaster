@@ -103,11 +103,13 @@ inline T parseHex ( const std::string& str )
 
 // Lexical cast
 template <typename T>
-inline T lexical_cast ( const std::string& str )
+inline T lexical_cast ( const std::string& str, T fallback = 0 )
 {
     T val;
     std::stringstream ss ( str );
     ss >> val;
+    if ( ss.fail() )
+        return fallback;
     return val;
 }
 
