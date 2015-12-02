@@ -23,10 +23,10 @@ using namespace std;
 #define SET_NON_BLOCKING_MODE(VALUE)                                                                                \
     do {                                                                                                            \
         u_long flag = VALUE;                                                                                        \
-        if ( ioctlsocket ( _fd, FIONBIO, &flag ) != 0 ) {                                                            \
+        if ( ioctlsocket ( _fd, FIONBIO, &flag ) != 0 ) {                                                           \
             LOG_SOCKET ( this, "ioctlsocket(FIONBIO, %u) failed", VALUE );                                          \
-            closesocket ( _fd );                                                                                     \
-            _fd = 0;                                                                                                 \
+            closesocket ( _fd );                                                                                    \
+            _fd = 0;                                                                                                \
             THROW_WIN_EXCEPTION ( WSAGetLastError(), "ioctlsocket(FIONBIO, %u) failed", ERROR_NETWORK_GENERIC );    \
         }                                                                                                           \
     } while ( 0 )
