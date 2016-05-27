@@ -52,5 +52,4 @@ private:
     std::vector<std::vector<std::vector<Inputs>>> _reinputs;
 
     std::vector<MsgPtr> _initialStates;
-
 };

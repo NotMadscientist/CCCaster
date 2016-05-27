@@ -69,5 +69,4 @@ private:
     void parseData ( const std::string& data );
 
     void finalize();
-
 };

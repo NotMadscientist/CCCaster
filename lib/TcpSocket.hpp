@@ -61,5 +61,4 @@ private:
 
     // Construct a socket from SocketShareData
     TcpSocket ( Socket::Owner *owner, const SocketShareData& data );
-
 };

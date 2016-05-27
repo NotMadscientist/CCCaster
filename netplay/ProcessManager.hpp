@@ -128,5 +128,4 @@ private:
 
     // IPC connect timer callback
     void timerExpired ( Timer *timer ) override;
-
 };

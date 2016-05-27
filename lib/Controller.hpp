@@ -310,5 +310,4 @@ private:
 
     // Reset this joystick's mapping(s) without callback to ControllerManager
     void doResetToDefaults();
-
 };

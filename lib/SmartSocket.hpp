@@ -130,5 +130,4 @@ private:
 
     // Construct a client socket
     SmartSocket ( Owner *owner, const IpAddrPort& address, Socket::Protocol protocol, bool forceTunnel );
-
 };
