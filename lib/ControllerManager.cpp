@@ -29,6 +29,9 @@ static IDirectInput8 *dinput = 0;
 static const Guid PS4_CONTROLLER_GUID (
 { 0x4c, 0x05, 0xc4, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x50, 0x49, 0x44, 0x56, 0x49, 0x44 } );
 
+static const Guid P3_WIRED_GAMEPAD (
+{ 0x12, 0x0c, 0x30, 0x0c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x50, 0x49, 0x44, 0x56, 0x49, 0x44 } );
+
 
 static inline uint8_t mapAxisValue ( LONG value, uint32_t deadzone )
 {
@@ -256,7 +259,7 @@ static BOOL CALLBACK enumJoystickAxes ( const DIDEVICEOBJECTINSTANCE *ddoi, void
     CHECK_ADD_AXIS ( 1, GUID_YAxis, "Y-Axis" );
     CHECK_ADD_AXIS ( 2, GUID_ZAxis, "Z-Axis" );
 
-    if ( PS4_CONTROLLER_GUID == info.guid )
+    if ( PS4_CONTROLLER_GUID == info.guid || P3_WIRED_GAMEPAD == info.guid )
     {
         // Workaround for the PS4 pad, because it maps some buttons to the X/Y rotation axes as well.
         // These buttons are mapped to min/max values so they end up eating all the inputs. So we ignore them...
