@@ -22,7 +22,7 @@ void Logger::initialize ( const string& filePath, uint32_t _options )
 
     bool same = _initialized && ( _filePath == filePath );
 
-    _options = _options;
+    this->_options = _options;
 
     if ( filePath.empty() )
     {
