@@ -1,3 +1,13 @@
+Netplay tool for Melty Blood Actress Again Current Code
+
+    Public domain, no license, no warranty. Here be dragons.
+
+    Needs MingW to compile, see Makefile for all build targets.
+
+    scripts/server.py is the UDP tunnelling relay server.
+    (The server IPs are currently hardcoded in SmartSocket.cpp)
+
+
 Install and using:
 
     Make sure to copy EVERYTHING into the MBAACC folder, including the cccaster folder.

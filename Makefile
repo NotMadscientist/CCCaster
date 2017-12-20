@@ -20,7 +20,7 @@ DEBUGGER = debugger.exe
 GENERATOR = generator.exe
 PALETTES = palettes.exe
 MBAA_EXE = MBAA.exe
-README = ReadMe.txt
+README = README.md
 CHANGELOG = ChangeLog.txt
 
 # Library sources
